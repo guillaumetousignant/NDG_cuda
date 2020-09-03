@@ -1,0 +1,43 @@
+cmake_minimum_required(VERSION 3.12)
+
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
+    message(FATAL_ERROR "Do not build in-source. Please remove CMakeCache.txt and the CMakeFiles/ directory. Then build out-of-source.")
+endif()
+
+project(NDG_cuda VERSION 1.0.0 LANGUAGES CUDA CXX)
+
+#enable_language(CUDA) # Put this somewhere conditionally if CUDA is optional
+include(CheckLanguage)
+check_language(CUDA)
+
+if(NOT DEFINED CMAKE_CUDA_STANDARD)
+    set(CMAKE_CUDA_STANDARD 14)
+    set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+endif()
+
+add_executable(NDG_cuda 
+    src/main.cu)
+
+set_target_properties(NDG_cuda PROPERTIES
+                            CUDA_SEPERABLE_COMPILATION ON)
+
+target_include_directories(NDG_cuda 
+    PRIVATE
+        include/
+)
+
+target_compile_features(NDG_cuda PRIVATE cxx_std_14)
+
+option(BUILD_TESTS "Build all tests." OFF)
+
+if (BUILD_TESTS)
+    enable_testing()
+    add_executable(unit_tests 
+        tests/main_test.cpp
+        tests/catch.hpp)
+    target_compile_features(unit_tests PRIVATE cxx_std_14)
+
+    add_test(unit_tests unit_tests)
+endif()
+
+install(TARGETS NDG_cuda DESTINATION bin)
