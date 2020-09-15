@@ -158,7 +158,7 @@ int main(void) {
         std::cout << std::endl;
     }
 
-    std::cout << std::endl << << "Weights: " << std::endl;
+    std::cout << std::endl << "Weights: " << std::endl;
     for (int N = 0; N <= N_max; ++N) {
         const int offset = N * (N + 1) /2;
 
