@@ -112,7 +112,7 @@ void chebyshev_gauss_nodes_and_weights(int N, float* all_nodes, float* all_weigh
     const int stride = blockDim.x * gridDim.x;
     const int offset = N * (N + 1) /2;
 
-    for (int i = index; i < N; i += stride) {
+    for (int i = index; i <= N; i += stride) {
         all_nodes[offset + i] = -cos(pi * (2 * i + 1) / (2 * N + 2));
         all_weights[offset + i] = pi / (N + 1);
     }
@@ -123,21 +123,42 @@ int main(void) {
     const int nodes_size = (N_max + 1) * (N_max + 2)/2;
     float* all_nodes;
     float* all_weights;
-    float* nodes;
-    float* weights;
+    float** nodes;
+    float** weights;
 
     // Allocate GPU Memory – accessible from GPU
     cudaMalloc(&all_nodes, nodes_size * sizeof(float));
     cudaMalloc(&all_weights, nodes_size * sizeof(float));
-    cudaMalloc(&nodes, N_max * sizeof(float));
-    cudaMalloc(&weights, N_max * sizeof(float));
+    cudaMalloc(&nodes, N_max * sizeof(float*));
+    cudaMalloc(&weights, N_max * sizeof(float*));
+
+    int poly_blockSize = 16; // Small number of threads per block because N will never be huge
+    for (int N = 0; N <= N_max; ++N) {
+        int numBlocks = (N + poly_blockSize - 1) / poly_blockSize;
+        chebyshev_gauss_nodes_and_weights<<<numBlocks, poly_blockSize>>>(N, all_nodes, all_weights);
+    }
+    
+    // Wait for GPU to finish before copying to host
+    cudaDeviceSynchronize();
+    // Copy vectors from device memory to host memory
+    float* host_nodes;
+    float* host_weights;
+    cudaMemcpy(host_nodes, all_nodes, nodes_size, cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_weights, all_weights, nodes_size, cudaMemcpyDeviceToHost);
 
 
+    // Free memory
+    cudaFree(all_nodes);
+    cudaFree(all_weights);
+    cudaFree(nodes);
+    cudaFree(weights);
 
+    delete host_nodes;
+    delete host_weights;
 
     
-
-
+    /**
+    // OLD
     const int N = 1000;
     float delta_t = 0.00001f;
     float time = 0.0f;
@@ -189,6 +210,8 @@ int main(void) {
     // Free memory
     cudaFree(nodes);
     cudaFree(velocity);
+    cudaFree(coordinates);
+    */
     
     return 0;
 }
