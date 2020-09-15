@@ -141,8 +141,8 @@ int main(void) {
     // Wait for GPU to finish before copying to host
     cudaDeviceSynchronize();
     // Copy vectors from device memory to host memory
-    float* host_nodes;
-    float* host_weights;
+    float* host_nodes = new float[nodes_size];
+    float* host_weights = new float[nodes_size];
     cudaMemcpy(host_nodes, all_nodes, nodes_size, cudaMemcpyDeviceToHost);
     cudaMemcpy(host_weights, all_weights, nodes_size, cudaMemcpyDeviceToHost);
 
