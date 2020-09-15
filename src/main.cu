@@ -150,7 +150,7 @@ int main(void) {
     for (int N = 0; N <= N_max; ++N) {
         const int offset = N * (N + 1) /2;
 
-        std::cout << '\t' << "N = " << N << std::endl;
+        std::cout << '\t' << "N = " << N << ": ";
         std::cout << '\t' << '\t';
         for (int i = 0; i <= N; ++i) {
             std::cout << host_nodes[offset + i] << " ";
@@ -162,7 +162,7 @@ int main(void) {
     for (int N = 0; N <= N_max; ++N) {
         const int offset = N * (N + 1) /2;
 
-        std::cout << '\t' << "N = " << N << std::endl;
+        std::cout << '\t' << "N = " << N << ": ";
         std::cout << '\t' << '\t';
         for (int i = 0; i <= N; ++i) {
             std::cout << host_weights[offset + i] << " ";
