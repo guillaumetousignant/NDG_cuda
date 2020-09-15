@@ -132,9 +132,9 @@ int main(void) {
     cudaMalloc(&nodes, N_max * sizeof(float*));
     cudaMalloc(&weights, N_max * sizeof(float*));
 
-    int poly_blockSize = 16; // Small number of threads per block because N will never be huge
+    const int poly_blockSize = 16; // Small number of threads per block because N will never be huge
     for (int N = 0; N <= N_max; ++N) {
-        int numBlocks = (N + poly_blockSize - 1) / poly_blockSize;
+        const int numBlocks = (N + poly_blockSize - 1) / poly_blockSize;
         chebyshev_gauss_nodes_and_weights<<<numBlocks, poly_blockSize>>>(N, all_nodes, all_weights);
     }
     
@@ -146,6 +146,29 @@ int main(void) {
     cudaMemcpy(host_nodes, all_nodes, nodes_size, cudaMemcpyDeviceToHost);
     cudaMemcpy(host_weights, all_weights, nodes_size, cudaMemcpyDeviceToHost);
 
+    std::cout << "Nodes: " << std::endl;
+    for (int N = 0; N <= N_max; ++N) {
+        const int offset = N * (N + 1) /2;
+
+        std::cout << '\t' << "N = " << N << std::endl;
+        std::cout << '\t' << '\t';
+        for (int i = 0; i <= N; ++i) {
+            std::cout << host_nodes[offset + i] << " ";
+        }
+        std::cout << std::endl;
+    }
+
+    std::cout << std::endl << << "Weights: " << std::endl;
+    for (int N = 0; N <= N_max; ++N) {
+        const int offset = N * (N + 1) /2;
+
+        std::cout << '\t' << "N = " << N << std::endl;
+        std::cout << '\t' << '\t';
+        for (int i = 0; i <= N; ++i) {
+            std::cout << host_weights[offset + i] << " ";
+        }
+        std::cout << std::endl;
+    }
 
     // Free memory
     cudaFree(all_nodes);
