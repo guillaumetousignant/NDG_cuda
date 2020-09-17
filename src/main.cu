@@ -119,7 +119,7 @@ void chebyshev_gauss_nodes_and_weights(int N, float* all_nodes, float* all_weigh
 }
 
 int main(void) {
-    const int N_max = 10000;
+    const int N_max = 32;
     const int nodes_size = (N_max + 1) * (N_max + 2)/2;
     float* all_nodes;
     float* all_weights;
