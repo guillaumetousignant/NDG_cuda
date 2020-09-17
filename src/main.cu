@@ -143,8 +143,8 @@ int main(void) {
     // Copy vectors from device memory to host memory
     float* host_nodes = new float[nodes_size];
     float* host_weights = new float[nodes_size];
-    cudaMemcpy(host_nodes, all_nodes, nodes_size, cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_weights, all_weights, nodes_size, cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_nodes, all_nodes, nodes_size * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_weights, all_weights, nodes_size * sizeof(float), cudaMemcpyDeviceToHost);
 
     std::cout << "Nodes: " << std::endl;
     for (int N = 0; N <= N_max; ++N) {
