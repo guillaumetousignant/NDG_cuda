@@ -132,6 +132,7 @@ int main(void) {
     cudaMalloc(&nodes, N_max * sizeof(float*));
     cudaMalloc(&weights, N_max * sizeof(float*));
 
+    auto t_start = std::chrono::high_resolution_clock::now(); 
     const int poly_blockSize = 16; // Small number of threads per block because N will never be huge
     for (int N = 0; N <= N_max; ++N) {
         const int numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
@@ -140,6 +141,11 @@ int main(void) {
     
     // Wait for GPU to finish before copying to host
     cudaDeviceSynchronize();
+    auto t_end = std::chrono::high_resolution_clock::now();
+    std::cout << "GPU computation time: " 
+            << std::chrono::duration<double, std::milli>(t_end-t_start).count()/1000.0 
+            << "s." << std::endl;
+
     // Copy vectors from device memory to host memory
     float* host_nodes = new float[nodes_size];
     float* host_weights = new float[nodes_size];
