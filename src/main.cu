@@ -119,7 +119,7 @@ void chebyshev_gauss_nodes_and_weights(int N, float* all_nodes, float* all_weigh
 }
 
 int main(void) {
-    const int N_max = 16;
+    const int N_max = 10000;
     const int nodes_size = (N_max + 1) * (N_max + 2)/2;
     float* all_nodes;
     float* all_weights;
@@ -146,7 +146,7 @@ int main(void) {
     cudaMemcpy(host_nodes, all_nodes, nodes_size * sizeof(float), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_weights, all_weights, nodes_size * sizeof(float), cudaMemcpyDeviceToHost);
 
-    std::cout << "Nodes: " << std::endl;
+    /*std::cout << "Nodes: " << std::endl;
     for (int N = 0; N <= N_max; ++N) {
         const int offset = N * (N + 1) /2;
 
@@ -168,7 +168,7 @@ int main(void) {
             std::cout << host_weights[offset + i] << " ";
         }
         std::cout << std::endl;
-    }
+    }*/
 
     // Free memory
     cudaFree(all_nodes);
