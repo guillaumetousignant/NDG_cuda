@@ -168,7 +168,7 @@ void lagrange_integrating_polynomials(float x, int N, const float* nodes, const 
 }
 
 __global__
-void normalize_lagrange_integrating_polynomials(int N_max, const float* lagrange_interpolant) {
+void normalize_lagrange_integrating_polynomials(int N_max, float* lagrange_interpolant) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
