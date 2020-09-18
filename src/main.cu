@@ -155,6 +155,7 @@ almost_equal(float x, float y) {
         || std::abs(x-y) < std::numeric_limits<float>::min();
 }
 
+// This will not work if we are on a node, or at least be pretty inefficient
 __global__
 void lagrange_integrating_polynomials(float x, int N, const float* nodes, const float* weights, float* lagrange_interpolant) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
@@ -162,7 +163,25 @@ void lagrange_integrating_polynomials(float x, int N, const float* nodes, const 
     const int offset = N * (N + 1) /2;
 
     for (int i = index; i <= N; i += stride) {
-        
+        lagrange_interpolant[offset + i] = weights[offset + i] / (x - nodes[offset + i]);
+    }
+}
+
+__global__
+void normalize_lagrange_integrating_polynomials(int N_max, const float* lagrange_interpolant) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+    const int offset = N * (N + 1) /2;
+
+    for (int N = index; N <= N_max; N += stride) {
+        const int offset = N * (N + 1) /2;
+        float sum = 0.0f;
+        for (int i = 0; i <= N; ++i) {
+            sum += lagrange_interpolant[offset + i];
+        }
+        for (int i = 0; i <= N; ++i) {
+            lagrange_interpolant[offset + i] /= sum;
+        }
     }
 }
 
@@ -197,6 +216,12 @@ int main(void) {
         lagrange_integrating_polynomials<<<numBlocks, poly_blockSize>>>(-1.0f, N, nodes, weights, lagrange_interpolant_left);
         lagrange_integrating_polynomials<<<numBlocks, poly_blockSize>>>(1.0f, N, nodes, weights, lagrange_interpolant_right);
     }
+
+    // We need to divide lagrange_integrating_polynomials by sum
+    cudaDeviceSynchronize();
+    const int numBlocks = (N_max + poly_blockSize) / poly_blockSize;
+    normalize_lagrange_integrating_polynomials<<<numBlocks, poly_blockSize>>>(N_max, lagrange_interpolant_left);
+    normalize_lagrange_integrating_polynomials<<<numBlocks, poly_blockSize>>>(N_max, lagrange_interpolant_right);
     
     // Wait for GPU to finish before copying to host
     cudaDeviceSynchronize();
