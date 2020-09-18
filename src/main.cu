@@ -146,7 +146,7 @@ bool almost_equal(float a, float b) {
 
 // From cppreference.com
 __device__
-almost_equal(float x, float y) {
+bool almost_equal(float x, float y) {
     constexpr int ulp = 2; // ULP
     // the machine epsilon has to be scaled to the magnitude of the values used
     // and multiplied by the desired precision in ULPs (units in the last place)
@@ -171,7 +171,6 @@ __global__
 void normalize_lagrange_integrating_polynomials(int N_max, const float* lagrange_interpolant) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
-    const int offset = N * (N + 1) /2;
 
     for (int N = index; N <= N_max; N += stride) {
         const int offset = N * (N + 1) /2;
