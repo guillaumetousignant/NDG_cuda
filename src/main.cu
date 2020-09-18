@@ -118,17 +118,38 @@ void chebyshev_gauss_nodes_and_weights(int N, float* all_nodes, float* all_weigh
     }
 }
 
+__global__
+void barycentric_weights(int N, float* all_nodes, float* all_barycentric_weights) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+    const int offset = N * (N + 1) /2;
+
+    for (int j = index; j <= N; j += stride) {
+        float xjxi = 1.0f;
+        for (int i = 0; i < j; ++i) {
+            xjxi *= all_nodes[offset + j] - all_nodes[offset + i];
+        }
+        for (int i = j + 1; i <= N; ++i) {
+            xjxi *= all_nodes[offset + j] - all_nodes[offset + i];
+        }
+
+        all_barycentric_weights[offset + j] = 1.0f/xjxi;
+    }
+}
+
 int main(void) {
     const int N_max = 32;
     const int nodes_size = (N_max + 1) * (N_max + 2)/2;
     float* all_nodes;
     float* all_weights;
+    float* all_barycentric_weights;
     float** nodes;
     float** weights;
 
     // Allocate GPU Memory – accessible from GPU
     cudaMalloc(&all_nodes, nodes_size * sizeof(float));
     cudaMalloc(&all_weights, nodes_size * sizeof(float));
+    cudaMalloc(&all_barycentric_weights, nodes_size * sizeof(float));
     cudaMalloc(&nodes, N_max * sizeof(float*));
     cudaMalloc(&weights, N_max * sizeof(float*));
 
@@ -137,6 +158,13 @@ int main(void) {
     for (int N = 0; N <= N_max; ++N) {
         const int numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
         chebyshev_gauss_nodes_and_weights<<<numBlocks, poly_blockSize>>>(N, all_nodes, all_weights);
+    }
+
+    // Nodes are needed to compute barycentric weights
+    cudaDeviceSynchronize();
+    for (int N = 0; N <= N_max; ++N) {
+        const int numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
+        barycentric_weights<<<numBlocks, poly_blockSize>>>(N, all_nodes, all_barycentric_weights);
     }
     
     // Wait for GPU to finish before copying to host
@@ -149,10 +177,12 @@ int main(void) {
     // Copy vectors from device memory to host memory
     float* host_nodes = new float[nodes_size];
     float* host_weights = new float[nodes_size];
+    float* host_barycentric_weights = new float[nodes_size];
     cudaMemcpy(host_nodes, all_nodes, nodes_size * sizeof(float), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_weights, all_weights, nodes_size * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_barycentric_weights, all_barycentric_weights, nodes_size * sizeof(float), cudaMemcpyDeviceToHost);
 
-    /*std::cout << "Nodes: " << std::endl;
+    std::cout << "Nodes: " << std::endl;
     for (int N = 0; N <= N_max; ++N) {
         const int offset = N * (N + 1) /2;
 
@@ -174,16 +204,30 @@ int main(void) {
             std::cout << host_weights[offset + i] << " ";
         }
         std::cout << std::endl;
-    }*/
+    }
+    
+    std::cout << std::endl << "Barycentric weights: " << std::endl;
+    for (int N = 0; N <= N_max; ++N) {
+        const int offset = N * (N + 1) /2;
+
+        std::cout << '\t' << "N = " << N << ": ";
+        std::cout << '\t' << '\t';
+        for (int i = 0; i <= N; ++i) {
+            std::cout << host_barycentric_weights[offset + i] << " ";
+        }
+        std::cout << std::endl;
+    }
 
     // Free memory
     cudaFree(all_nodes);
     cudaFree(all_weights);
+    cudaFree(all_barycentric_weights);
     cudaFree(nodes);
     cudaFree(weights);
 
     delete host_nodes;
     delete host_weights;
+    delete host_barycentric_weights;
 
     
     /**
