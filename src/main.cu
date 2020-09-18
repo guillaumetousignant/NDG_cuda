@@ -186,7 +186,7 @@ void normalize_lagrange_integrating_polynomials(int N_max, const float* lagrange
 }
 
 int main(void) {
-    const int N_max = 32;
+    const int N_max = 16;
     const int nodes_size = (N_max + 1) * (N_max + 2)/2;
     float* nodes;
     float* weights;
@@ -234,9 +234,14 @@ int main(void) {
     float* host_nodes = new float[nodes_size];
     float* host_weights = new float[nodes_size];
     float* host_barycentric_weights = new float[nodes_size];
+    float* host_lagrange_interpolant_left = new float[nodes_size];
+    float* host_lagrange_interpolant_right = new float[nodes_size];
+
     cudaMemcpy(host_nodes, nodes, nodes_size * sizeof(float), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_weights, weights, nodes_size * sizeof(float), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_barycentric_weights, barycentric_weights, nodes_size * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_lagrange_interpolant_left, lagrange_interpolant_left, nodes_size * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_lagrange_interpolant_right, lagrange_interpolant_right, nodes_size * sizeof(float), cudaMemcpyDeviceToHost);
 
     std::cout << "Nodes: " << std::endl;
     for (int N = 0; N <= N_max; ++N) {
@@ -274,6 +279,30 @@ int main(void) {
         std::cout << std::endl;
     }
 
+    std::cout << std::endl << "Lagrange interpolants -1: " << std::endl;
+    for (int N = 0; N <= N_max; ++N) {
+        const int offset = N * (N + 1) /2;
+
+        std::cout << '\t' << "N = " << N << ": ";
+        std::cout << '\t' << '\t';
+        for (int i = 0; i <= N; ++i) {
+            std::cout << host_lagrange_interpolant_left[offset + i] << " ";
+        }
+        std::cout << std::endl;
+    }
+
+    std::cout << std::endl << "Lagrange interpolants +1: " << std::endl;
+    for (int N = 0; N <= N_max; ++N) {
+        const int offset = N * (N + 1) /2;
+
+        std::cout << '\t' << "N = " << N << ": ";
+        std::cout << '\t' << '\t';
+        for (int i = 0; i <= N; ++i) {
+            std::cout << host_lagrange_interpolant_right[offset + i] << " ";
+        }
+        std::cout << std::endl;
+    }
+
     // Free memory
     cudaFree(nodes);
     cudaFree(weights);
@@ -284,6 +313,8 @@ int main(void) {
     delete host_nodes;
     delete host_weights;
     delete host_barycentric_weights;
+    delete host_lagrange_interpolant_left;
+    delete host_lagrange_interpolant_right;
 
     
     /**
