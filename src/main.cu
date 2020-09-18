@@ -120,7 +120,7 @@ void chebyshev_gauss_nodes_and_weights(int N, float* nodes, float* weights) {
 }
 
 __global__
-void barycentric_weights(int N, const float* nodes, float* barycentric_weights) {
+void calculate_barycentric_weights(int N, const float* nodes, float* barycentric_weights) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     const int offset = N * (N + 1) /2;
@@ -211,7 +211,7 @@ int main(void) {
     cudaDeviceSynchronize();
     for (int N = 0; N <= N_max; ++N) {
         const int numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
-        barycentric_weights<<<numBlocks, poly_blockSize>>>(N, nodes, barycentric_weights);
+        calculate_barycentric_weights<<<numBlocks, poly_blockSize>>>(N, nodes, barycentric_weights);
         lagrange_integrating_polynomials<<<numBlocks, poly_blockSize>>>(-1.0f, N, nodes, weights, lagrange_interpolant_left);
         lagrange_integrating_polynomials<<<numBlocks, poly_blockSize>>>(1.0f, N, nodes, weights, lagrange_interpolant_right);
     }
