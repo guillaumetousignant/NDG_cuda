@@ -150,9 +150,9 @@ bool almost_equal(float x, float y) {
     constexpr int ulp = 2; // ULP
     // the machine epsilon has to be scaled to the magnitude of the values used
     // and multiplied by the desired precision in ULPs (units in the last place)
-    return std::abs(x-y) <= std::numeric_limits<float>::epsilon() * std::abs(x+y) * ulp
+    return std::abs(x-y) <= cuda::numeric_limits<float>::epsilon() * std::abs(x+y) * ulp
         // unless the result is subnormal
-        || std::abs(x-y) < std::numeric_limits<float>::min();
+        || std::abs(x-y) < NPP_MINABS_32F; // CHECK change this to 64F if using double instead of float
 }
 
 // This will not work if we are on a node, or at least be pretty inefficient
