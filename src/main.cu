@@ -3,6 +3,7 @@
 #include <sstream> 
 #include <iomanip>
 #include <cmath>
+#include <limits>
 #include <chrono>
 
 constexpr double pi = 3.14159265358979323846;
@@ -119,7 +120,7 @@ void chebyshev_gauss_nodes_and_weights(int N, float* nodes, float* weights) {
 }
 
 __global__
-void barycentric_weights(int N, float* nodes, float* barycentric_weights) {
+void barycentric_weights(int N, const float* nodes, float* barycentric_weights) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     const int offset = N * (N + 1) /2;
@@ -134,6 +135,34 @@ void barycentric_weights(int N, float* nodes, float* barycentric_weights) {
         }
 
         barycentric_weights[offset + j] = 1.0f/xjxi;
+    }
+}
+
+/*__device__
+bool almost_equal(float a, float b) {
+    return (std::abs(a) > std::numeric_limits<float>::min()) * (std::abs(b) > std::numeric_limits<float>::min()) * ((std::abs(a - b) <= std::numeric_limits<float>::epsilon() * a) * (std::abs(a - b) <= std::numeric_limits<float>::epsilon() * b)) 
+    + (1 - (std::abs(a) > std::numeric_limits<float>::min()) * (std::abs(b) > std::numeric_limits<float>::min())) * (std::abs(a - b) <= std::numeric_limits<float>::epsilon() * 2);
+}*/
+
+// From cppreference.com
+__device__
+almost_equal(float x, float y) {
+    constexpr int ulp = 2; // ULP
+    // the machine epsilon has to be scaled to the magnitude of the values used
+    // and multiplied by the desired precision in ULPs (units in the last place)
+    return std::abs(x-y) <= std::numeric_limits<float>::epsilon() * std::abs(x+y) * ulp
+        // unless the result is subnormal
+        || std::abs(x-y) < std::numeric_limits<float>::min();
+}
+
+__global__
+void lagrange_integrating_polynomials(float x, int N, const float* nodes, const float* weights, float* lagrange_interpolant) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+    const int offset = N * (N + 1) /2;
+
+    for (int i = index; i <= N; i += stride) {
+        
     }
 }
 
@@ -165,6 +194,8 @@ int main(void) {
     for (int N = 0; N <= N_max; ++N) {
         const int numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
         barycentric_weights<<<numBlocks, poly_blockSize>>>(N, nodes, barycentric_weights);
+        lagrange_integrating_polynomials<<<numBlocks, poly_blockSize>>>(-1.0f, N, nodes, weights, lagrange_interpolant_left);
+        lagrange_integrating_polynomials<<<numBlocks, poly_blockSize>>>(1.0f, N, nodes, weights, lagrange_interpolant_right);
     }
     
     // Wait for GPU to finish before copying to host
