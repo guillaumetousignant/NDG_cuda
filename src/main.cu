@@ -107,19 +107,19 @@ void write_data(int n, float time, float* velocity, float* coordinates) {
 }
 
 __global__
-void chebyshev_gauss_nodes_and_weights(int N, float* all_nodes, float* all_weights) {
+void chebyshev_gauss_nodes_and_weights(int N, float* nodes, float* weights) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     const int offset = N * (N + 1) /2;
 
     for (int i = index; i <= N; i += stride) {
-        all_nodes[offset + i] = -cos(pi * (2 * i + 1) / (2 * N + 2));
-        all_weights[offset + i] = pi / (N + 1);
+        nodes[offset + i] = -cos(pi * (2 * i + 1) / (2 * N + 2));
+        weights[offset + i] = pi / (N + 1);
     }
 }
 
 __global__
-void barycentric_weights(int N, float* all_nodes, float* all_barycentric_weights) {
+void barycentric_weights(int N, float* nodes, float* barycentric_weights) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     const int offset = N * (N + 1) /2;
@@ -127,44 +127,44 @@ void barycentric_weights(int N, float* all_nodes, float* all_barycentric_weights
     for (int j = index; j <= N; j += stride) {
         float xjxi = 1.0f;
         for (int i = 0; i < j; ++i) {
-            xjxi *= all_nodes[offset + j] - all_nodes[offset + i];
+            xjxi *= nodes[offset + j] - nodes[offset + i];
         }
         for (int i = j + 1; i <= N; ++i) {
-            xjxi *= all_nodes[offset + j] - all_nodes[offset + i];
+            xjxi *= nodes[offset + j] - nodes[offset + i];
         }
 
-        all_barycentric_weights[offset + j] = 1.0f/xjxi;
+        barycentric_weights[offset + j] = 1.0f/xjxi;
     }
 }
 
 int main(void) {
     const int N_max = 32;
     const int nodes_size = (N_max + 1) * (N_max + 2)/2;
-    float* all_nodes;
-    float* all_weights;
-    float* all_barycentric_weights;
-    float** nodes;
-    float** weights;
+    float* nodes;
+    float* weights;
+    float* barycentric_weights;
+    float* lagrange_interpolant_left;
+    float* lagrange_interpolant_right;
 
     // Allocate GPU Memory – accessible from GPU
-    cudaMalloc(&all_nodes, nodes_size * sizeof(float));
-    cudaMalloc(&all_weights, nodes_size * sizeof(float));
-    cudaMalloc(&all_barycentric_weights, nodes_size * sizeof(float));
-    cudaMalloc(&nodes, N_max * sizeof(float*));
-    cudaMalloc(&weights, N_max * sizeof(float*));
+    cudaMalloc(&nodes, nodes_size * sizeof(float));
+    cudaMalloc(&weights, nodes_size * sizeof(float));
+    cudaMalloc(&barycentric_weights, nodes_size * sizeof(float));
+    cudaMalloc(&lagrange_interpolant_left, nodes_size * sizeof(float));
+    cudaMalloc(&lagrange_interpolant_right, nodes_size * sizeof(float));
 
     auto t_start = std::chrono::high_resolution_clock::now(); 
     const int poly_blockSize = 16; // Small number of threads per block because N will never be huge
     for (int N = 0; N <= N_max; ++N) {
         const int numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
-        chebyshev_gauss_nodes_and_weights<<<numBlocks, poly_blockSize>>>(N, all_nodes, all_weights);
+        chebyshev_gauss_nodes_and_weights<<<numBlocks, poly_blockSize>>>(N, nodes, weights);
     }
 
     // Nodes are needed to compute barycentric weights
     cudaDeviceSynchronize();
     for (int N = 0; N <= N_max; ++N) {
         const int numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
-        barycentric_weights<<<numBlocks, poly_blockSize>>>(N, all_nodes, all_barycentric_weights);
+        barycentric_weights<<<numBlocks, poly_blockSize>>>(N, nodes, barycentric_weights);
     }
     
     // Wait for GPU to finish before copying to host
@@ -178,9 +178,9 @@ int main(void) {
     float* host_nodes = new float[nodes_size];
     float* host_weights = new float[nodes_size];
     float* host_barycentric_weights = new float[nodes_size];
-    cudaMemcpy(host_nodes, all_nodes, nodes_size * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_weights, all_weights, nodes_size * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_barycentric_weights, all_barycentric_weights, nodes_size * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_nodes, nodes, nodes_size * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_weights, weights, nodes_size * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_barycentric_weights, barycentric_weights, nodes_size * sizeof(float), cudaMemcpyDeviceToHost);
 
     std::cout << "Nodes: " << std::endl;
     for (int N = 0; N <= N_max; ++N) {
@@ -219,11 +219,11 @@ int main(void) {
     }
 
     // Free memory
-    cudaFree(all_nodes);
-    cudaFree(all_weights);
-    cudaFree(all_barycentric_weights);
     cudaFree(nodes);
     cudaFree(weights);
+    cudaFree(barycentric_weights);
+    cudaFree(lagrange_interpolant_left);
+    cudaFree(lagrange_interpolant_right);
 
     delete host_nodes;
     delete host_weights;
