@@ -1,4 +1,5 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.18)
+# 3.18 enables CUDA architecture flags
 
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
     message(FATAL_ERROR "Do not build in-source. Please remove CMakeCache.txt and the CMakeFiles/ directory. Then build out-of-source.")
@@ -20,6 +21,7 @@ add_executable(NDG_cuda
 
 set_target_properties(NDG_cuda PROPERTIES
                             CUDA_SEPERABLE_COMPILATION ON)
+set_property(TARGET NDG_cuda PROPERTY CUDA_ARCHITECTURES 61) # sm_61 is GTX 10X0
 
 target_include_directories(NDG_cuda 
     PRIVATE
