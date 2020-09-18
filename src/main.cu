@@ -5,6 +5,7 @@
 #include <cmath>
 #include <limits>
 #include <chrono>
+#include <cfloat>
 
 constexpr double pi = 3.14159265358979323846;
 
@@ -150,9 +151,9 @@ bool almost_equal(float x, float y) {
     constexpr int ulp = 2; // ULP
     // the machine epsilon has to be scaled to the magnitude of the values used
     // and multiplied by the desired precision in ULPs (units in the last place)
-    return std::abs(x-y) <= cuda::numeric_limits<float>::epsilon() * std::abs(x+y) * ulp
+    return std::abs(x-y) <= FLT_EPSILON * std::abs(x+y) * ulp // CHECK change this to double equivalent if using double instead of float
         // unless the result is subnormal
-        || std::abs(x-y) < NPP_MINABS_32F; // CHECK change this to 64F if using double instead of float
+        || std::abs(x-y) < FLT_MIN; // CHECK change this to 64F if using double instead of float
 }
 
 // This will not work if we are on a node, or at least be pretty inefficient
