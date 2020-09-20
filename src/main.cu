@@ -244,17 +244,17 @@ int main(void) {
     auto t_start = std::chrono::high_resolution_clock::now(); 
     const int poly_blockSize = 16; // Small number of threads per block because N will never be huge
     for (int N = 0; N <= N_max; ++N) {
-        const int poly_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
-        chebyshev_gauss_nodes_and_weights<<<poly_numBlocks, poly_blockSize>>>(N, nodes, weights);
+        const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
+        chebyshev_gauss_nodes_and_weights<<<vector_numBlocks, poly_blockSize>>>(N, nodes, weights);
     }
 
     // Nodes are needed to compute barycentric weights
     cudaDeviceSynchronize();
     for (int N = 0; N <= N_max; ++N) {
-        const int poly_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
-        calculate_barycentric_weights<<<poly_numBlocks, poly_blockSize>>>(N, nodes, barycentric_weights);
-        lagrange_integrating_polynomials<<<poly_numBlocks, poly_blockSize>>>(-1.0f, N, nodes, weights, lagrange_interpolant_left);
-        lagrange_integrating_polynomials<<<poly_numBlocks, poly_blockSize>>>(1.0f, N, nodes, weights, lagrange_interpolant_right);
+        const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
+        calculate_barycentric_weights<<<vector_numBlocks, poly_blockSize>>>(N, nodes, barycentric_weights);
+        lagrange_integrating_polynomials<<<vector_numBlocks, poly_blockSize>>>(-1.0f, N, nodes, weights, lagrange_interpolant_left);
+        lagrange_integrating_polynomials<<<vector_numBlocks, poly_blockSize>>>(1.0f, N, nodes, weights, lagrange_interpolant_right);
     }
 
     // We need to divide lagrange_integrating_polynomials by sum, and barycentric weights for derivative matrix
@@ -266,6 +266,13 @@ int main(void) {
     for (int N = 0; N <= N_max; ++N) {
         const dim3 matrix_numBlocks((N + 1) / matrix_blockSize.x, (N + 1) / matrix_blockSize.y);
         polynomial_derivative_matrices<<<matrix_numBlocks, matrix_blockSize>>>(N, nodes, barycentric_weights, derivative_matrices);
+    }
+
+    // Then we calculate the derivative matrix diagonal
+    cudaDeviceSynchronize();
+    for (int N = 0; N <= N_max; ++N) {
+        const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
+        polynomial_derivative_matrices_diagonal<<<<vector_numBlocks, poly_blockSize>>>(N, derivative_matrices);
     }
 
     
