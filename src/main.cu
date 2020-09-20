@@ -272,7 +272,7 @@ int main(void) {
     cudaDeviceSynchronize();
     for (int N = 0; N <= N_max; ++N) {
         const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
-        polynomial_derivative_matrices_diagonal<<<<vector_numBlocks, poly_blockSize>>>(N, derivative_matrices);
+        polynomial_derivative_matrices_diagonal<<<vector_numBlocks, poly_blockSize>>>(N, derivative_matrices);
     }
 
     
