@@ -197,7 +197,7 @@ void polynomial_derivative_matrices(int N, const float* nodes, const float* bary
 
     for (int i = index_x; i <= N; i += stride_x) {
         for (int j = index_y; j <= N; j += stride_y) {
-            if (i != j) {
+            if (i != j) { // CHECK remove for branchless, i == j will be overwritten anyway
                 derivative_matrices[offset_2D + i * (N + 1) + j] = barycentric_weights[offset_1D + j] / (barycentric_weights[offset_1D + i] * (nodes[offset_1D + i] - nodes[offset_1D + j]));
             }
         }
@@ -211,14 +211,13 @@ void polynomial_derivative_matrices_diagonal(int N, float* derivative_matrices) 
     const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
 
     for (int i = index; i <= N; i += stride) {
-        float sum = 0.0f;
+        derivative_matrices[offset_2D + i * (N + 2)] = 0.0f;
         for (int j = 0; j < i; ++j) {
-            sum += derivative_matrices[offset_2D + i * (N + 1) + j];
+            derivative_matrices[offset_2D + i * (N + 2)] -= derivative_matrices[offset_2D + i * (N + 1) + j];
         }
         for (int j = i + 1; j <= N; ++j) {
-            sum += derivative_matrices[offset_2D + i * (N + 1) + j];
+            derivative_matrices[offset_2D + i * (N + 2)] -= derivative_matrices[offset_2D + i * (N + 1) + j];
         }
-        derivative_matrices[offset_2D + i * (N + 2)] = -sum;
     }
 }
 
