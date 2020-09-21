@@ -9,7 +9,7 @@
 
 constexpr double pi = 3.14159265358979323846;
 
-class Node_t { // Turn this into separate vectors, because cache exists
+/*class Node_t { // Turn this into separate vectors, because cache exists
     public:
         __device__ 
         Node_t(float coordinate, int neighbour0, int neighbour1, float velocity) 
@@ -106,7 +106,7 @@ void write_data(int n, float time, float* velocity, float* coordinates) {
     }
 
     file.close();
-}
+}*/
 
 __global__
 void chebyshev_gauss_nodes_and_weights(int N, float* nodes, float* weights) {
