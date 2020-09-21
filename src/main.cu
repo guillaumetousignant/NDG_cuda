@@ -7,7 +7,7 @@
 #include <chrono>
 #include <cfloat>
 
-constexpr double pi = 3.14159265358979323846;
+constexpr float pi = 3.14159265358979323846;
 
 /*class Node_t { // Turn this into separate vectors, because cache exists
     public:
