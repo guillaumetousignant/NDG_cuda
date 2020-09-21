@@ -221,6 +221,22 @@ void polynomial_derivative_matrices_diagonal(int N, float* derivative_matrices) 
     }
 }
 
+__global__
+void polynomial_derivative_matrices_hat(int N, const float* weights, const float* derivative_matrices, float* derivative_matrices_hat) {
+    const int index_x = blockIdx.x * blockDim.x + threadIdx.x;
+    const int index_y = blockIdx.y * blockDim.y + threadIdx.y;
+    const int stride_x = blockDim.x * gridDim.x;
+    const int stride_y = blockDim.y * gridDim.y;
+    const int offset_1D = N * (N + 1) /2;
+    const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
+
+    for (int i = index_x; i <= N; i += stride_x) {
+        for (int j = index_y; j <= N; j += stride_y) {
+            derivative_matrices_hat[offset_2D + i * (N + 1) + j] = -derivative_matrices[offset_2D + j * (N + 1) + i] * weights[offset_1D + j] / weights[offset_1D + i];
+        }
+    }
+}
+
 int main(void) {
     const int N_max = 16;
     const int vector_length = (N_max + 1) * (N_max + 2)/2; // Flattened length of all N one after the other
@@ -231,6 +247,7 @@ int main(void) {
     float* lagrange_interpolant_left;
     float* lagrange_interpolant_right;
     float* derivative_matrices;
+    float* derivative_matrices_hat;
 
     // Allocate GPU Memory – accessible from GPU
     cudaMalloc(&nodes, vector_length * sizeof(float));
@@ -239,6 +256,7 @@ int main(void) {
     cudaMalloc(&lagrange_interpolant_left, vector_length * sizeof(float));
     cudaMalloc(&lagrange_interpolant_right, vector_length * sizeof(float));
     cudaMalloc(&derivative_matrices, matrix_length * sizeof(float));
+    cudaMalloc(&derivative_matrices_hat, matrix_length * sizeof(float));
 
     auto t_start = std::chrono::high_resolution_clock::now(); 
     const int poly_blockSize = 16; // Small number of threads per block because N will never be huge
@@ -274,6 +292,13 @@ int main(void) {
         polynomial_derivative_matrices_diagonal<<<vector_numBlocks, poly_blockSize>>>(N, derivative_matrices);
     }
 
+    // All the derivative matrix has to be computed before D^
+    cudaDeviceSynchronize();
+    for (int N = 0; N <= N_max; ++N) {
+        const dim3 matrix_numBlocks((N +  matrix_blockSize.x) / matrix_blockSize.x, (N +  matrix_blockSize.y) / matrix_blockSize.y); // Should be (N + poly_blockSize - 1) if N is not inclusive
+        polynomial_derivative_matrices_hat<<<matrix_numBlocks, matrix_blockSize>>>(N, weights, derivative_matrices, derivative_matrices_hat);
+    }
+
     
     // Wait for GPU to finish before copying to host
     cudaDeviceSynchronize();
@@ -289,6 +314,7 @@ int main(void) {
     float* host_lagrange_interpolant_left = new float[vector_length];
     float* host_lagrange_interpolant_right = new float[vector_length];
     float* host_derivative_matrices = new float[matrix_length];
+    float* host_derivative_matrices_hat = new float[matrix_length];
 
     cudaMemcpy(host_nodes, nodes, vector_length * sizeof(float), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_weights, weights, vector_length * sizeof(float), cudaMemcpyDeviceToHost);
@@ -296,6 +322,7 @@ int main(void) {
     cudaMemcpy(host_lagrange_interpolant_left, lagrange_interpolant_left, vector_length * sizeof(float), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_lagrange_interpolant_right, lagrange_interpolant_right, vector_length * sizeof(float), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_derivative_matrices, derivative_matrices, matrix_length * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_derivative_matrices_hat, derivative_matrices_hat, matrix_length * sizeof(float), cudaMemcpyDeviceToHost);
 
     std::cout << "Nodes: " << std::endl;
     for (int N = 0; N <= N_max; ++N) {
@@ -371,6 +398,20 @@ int main(void) {
         }
     }
 
+    std::cout << std::endl << "Derivative matrices hat: " << std::endl;
+    for (int N = 0; N <= N_max; ++N) {
+        const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
+
+        std::cout << '\t' << "N = " << N << ": " << std::endl;
+        for (int i = 0; i <= N; ++i) {
+            std::cout << '\t' << '\t';
+            for (int j = 0; j <= N; ++j) {
+                std::cout << host_derivative_matrices_hat[offset_2D + i * (N + 1) + j] << " ";
+            }
+            std::cout << std::endl;
+        }
+    }
+
     // Free memory
     cudaFree(nodes);
     cudaFree(weights);
@@ -378,6 +419,7 @@ int main(void) {
     cudaFree(lagrange_interpolant_left);
     cudaFree(lagrange_interpolant_right);
     cudaFree(derivative_matrices);
+    cudaFree(derivative_matrices_hat);
 
     delete host_nodes;
     delete host_weights;
@@ -385,6 +427,7 @@ int main(void) {
     delete host_lagrange_interpolant_left;
     delete host_lagrange_interpolant_right;
     delete host_derivative_matrices;
+    delete host_derivative_matrices_hat;
 
     
     /**
