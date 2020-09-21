@@ -263,7 +263,7 @@ int main(void) {
     normalize_lagrange_integrating_polynomials<<<numBlocks, poly_blockSize>>>(N_max, lagrange_interpolant_right);
     const dim3 matrix_blockSize(16, 16); // Small number of threads per block because N will never be huge
     for (int N = 0; N <= N_max; ++N) {
-        const dim3 matrix_numBlocks((N + 1) / matrix_blockSize.x, (N + 1) / matrix_blockSize.y);
+        const dim3 matrix_numBlocks((N +  matrix_blockSize.x) / matrix_blockSize.x, (N +  matrix_blockSize.y) / matrix_blockSize.y); // Should be (N + poly_blockSize - 1) if N is not inclusive
         polynomial_derivative_matrices<<<matrix_numBlocks, matrix_blockSize>>>(N, nodes, barycentric_weights, derivative_matrices);
     }
 
