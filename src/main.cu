@@ -108,6 +108,35 @@ void write_data(int n, float time, float* velocity, float* coordinates) {
     file.close();
 }*/
 
+class Element_t { // Turn this into separate vectors, because cache exists
+public:
+    __device__ 
+    Element_t(int N) : N_(N) {
+        phi_ = new float[N_];
+        phi_prime_ = new float[N_];
+    }
+
+    __device__
+    ~Element_t() {
+        delete [] phi_;
+        delete [] phi_prime_;
+    }
+
+    int N_;
+    float* phi_; // Solution
+    float* phi_prime_;
+};
+
+__global__
+void build_elements(int N_elements, int N, Element_t* elements) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (int i = index; i <= N_elements; i += stride) {
+        elements[i] = Element_t(N);
+    }
+}
+
 // Algorithm 26
 __global__
 void chebyshev_gauss_nodes_and_weights(int N, float* nodes, float* weights) {
@@ -258,10 +287,28 @@ void matrix_vector_derivative(int N, const float* derivative_matrices, const flo
     }
 }
 
+// Algorithm 60
+__global__
+void compute_dg_derivative(int N_elements, int N, const float* nodes, const float* weights, float* lagrange_interpolant) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+    const int offset = N * (N + 1) /2;
+    const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
+
+    for (int i = index; i <= N_elements; i += stride) {
+
+        lagrange_interpolant[offset + i] = weights[offset + i] / (x - nodes[offset + i]);
+    }
+}
+
 int main(void) {
+    const int N_elements = 1;
+    const int initial_N = 8;
     const int N_max = 16;
     const int vector_length = (N_max + 1) * (N_max + 2)/2; // Flattened length of all N one after the other
     const int matrix_length = (N_max + 1) * (N_max + 2) * (2 * N_max + 3)/6; // Flattened length of all N² one after the other
+
+    Element_t* elements;
     float* nodes;
     float* weights;
     float* barycentric_weights;
@@ -273,6 +320,7 @@ int main(void) {
     float* phi_prime;
 
     // Allocate GPU Memory – accessible from GPU
+    cudaMalloc(&elements, N_elements * sizeof(Element_t));
     cudaMalloc(&nodes, vector_length * sizeof(float));
     cudaMalloc(&weights, vector_length * sizeof(float));
     cudaMalloc(&barycentric_weights, vector_length * sizeof(float));
@@ -289,6 +337,10 @@ int main(void) {
         const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
         chebyshev_gauss_nodes_and_weights<<<vector_numBlocks, poly_blockSize>>>(N, nodes, weights);
     }
+
+    const int elements_blockSize = 32; // For when we'll have multiple elements
+    const int elements_numBlocks = (N_elements + elements_blockSize - 1) / elements_blockSize;
+    build_elements<<<elements_numBlocks, elements_blockSize>>>(N_elements, initial_N, elements­­­­­­­­­­);
 
     // Nodes are needed to compute barycentric weights
     cudaDeviceSynchronize();
@@ -466,6 +518,7 @@ int main(void) {
     }
 
     // Free memory
+    cudaFree(elements);
     cudaFree(nodes);
     cudaFree(weights);
     cudaFree(barycentric_weights);
