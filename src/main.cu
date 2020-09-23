@@ -353,7 +353,7 @@ int main(void) {
 
     const int elements_blockSize = 32; // For when we'll have multiple elements
     const int elements_numBlocks = (N_elements + elements_blockSize - 1) / elements_blockSize;
-    build_elements<<<elements_numBlocks, elements_blockSize>>>(N_elements, initial_N, elements­­­­­­­­­­);
+    build_elements<<<elements_numBlocks, elements_blockSize>>>(N_elements, initial_N, elements);
 
     // Nodes are needed to compute barycentric weights
     cudaDeviceSynchronize();
@@ -364,7 +364,7 @@ int main(void) {
         lagrange_integrating_polynomials<<<vector_numBlocks, poly_blockSize>>>(1.0f, N, nodes, weights, lagrange_interpolant_right);
     }
 
-    initial_conditions<<<elements_numBlocks, elements_blockSize>>>(N_elements, elements­­­­­­­­­­, nodes);
+    initial_conditions<<<elements_numBlocks, elements_blockSize>>>(N_elements, elements, nodes);
 
     // We need to divide lagrange_integrating_polynomials by sum, and barycentric weights for derivative matrix
     cudaDeviceSynchronize();
