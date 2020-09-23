@@ -534,25 +534,21 @@ int main(void) {
     }
 
     std::cout << std::endl << "Phi: " << std::endl;
-    for (int N = 0; N <= N_max; ++N) {
-        const int offset = N * (N + 1) /2;
-
-        std::cout << '\t' << "N = " << N << ": ";
+    for (int i = 0; i < N_elements; ++i) {
+        std::cout << '\t' << "Element " << i << ": ";
         std::cout << '\t' << '\t';
-        for (int i = 0; i <= N; ++i) {
-            std::cout << host_phi[offset + i] << " ";
+        for (int j = 0; ji <= initial_N; ++j) {
+            std::cout << host_phi[j] << " ";
         }
         std::cout << std::endl;
     }
 
-    std::cout << std::endl << "Phi prime: " << std::endl;
-    for (int N = 0; N <= N_max; ++N) {
-        const int offset = N * (N + 1) /2;
-
-        std::cout << '\t' << "N = " << N << ": ";
+    std::cout << std::endl << "Phi: " << std::endl;
+    for (int i = 0; i < N_elements; ++i) {
+        std::cout << '\t' << "Element " << i << ": ";
         std::cout << '\t' << '\t';
-        for (int i = 0; i <= N; ++i) {
-            std::cout << host_phi_prime[offset + i] << " ";
+        for (int j = 0; ji <= initial_N; ++j) {
+            std::cout << host_phi_prime[j] << " ";
         }
         std::cout << std::endl;
     }
