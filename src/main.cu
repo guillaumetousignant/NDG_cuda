@@ -327,7 +327,12 @@ void compute_dg_derivative(int N_elements, Element_t* elements, const float* der
     for (int i = index; i <= N_elements; i += stride) {
         const int offset = elements[i].N_ * (elements[i].N_ + 1) /2;
         const int offset_2D = elements[i].N_ * (elements[i].N_ + 1) * (2 * elements[i].N_ + 1) /6;
-        //lagrange_interpolant[offset + i] = weights[offset + i] / (x - nodes[offset + i]);
+        
+        matrix_vector_derivative(elements[i].N_, derivative_matrices, elements[i].phi_, elements[i].phi_prime_);
+
+        for (int j = 0; j <= N; ++j) {
+            //elements[i].phi_prime_[j] = 
+        }
     }
 }
 
