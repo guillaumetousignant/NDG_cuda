@@ -316,8 +316,6 @@ int main(void) {
     float* lagrange_interpolant_right;
     float* derivative_matrices;
     float* derivative_matrices_hat;
-    float* phi; // Solution
-    float* phi_prime;
 
     // Allocate GPU Memory – accessible from GPU
     cudaMalloc(&elements, N_elements * sizeof(Element_t));
@@ -328,8 +326,6 @@ int main(void) {
     cudaMalloc(&lagrange_interpolant_right, vector_length * sizeof(float));
     cudaMalloc(&derivative_matrices, matrix_length * sizeof(float));
     cudaMalloc(&derivative_matrices_hat, matrix_length * sizeof(float));
-    cudaMalloc(&phi, vector_length * sizeof(float));
-    cudaMalloc(&phi_prime, vector_length * sizeof(float));
 
     auto t_start = std::chrono::high_resolution_clock::now(); 
     const int poly_blockSize = 16; // Small number of threads per block because N will never be huge
@@ -402,8 +398,8 @@ int main(void) {
     cudaMemcpy(host_lagrange_interpolant_right, lagrange_interpolant_right, vector_length * sizeof(float), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_derivative_matrices, derivative_matrices, matrix_length * sizeof(float), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_derivative_matrices_hat, derivative_matrices_hat, matrix_length * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_phi, phi, vector_length * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_phi_prime, phi_prime, vector_length * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_phi, elements[0].phi_, vector_length * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_phi_prime, elements[0].phi_prime_, vector_length * sizeof(float), cudaMemcpyDeviceToHost);
 
     std::cout << "Nodes: " << std::endl;
     for (int N = 0; N <= N_max; ++N) {
@@ -526,8 +522,6 @@ int main(void) {
     cudaFree(lagrange_interpolant_right);
     cudaFree(derivative_matrices);
     cudaFree(derivative_matrices_hat);
-    cudaFree(phi);
-    cudaFree(phi_prime);
 
     delete host_nodes;
     delete host_weights;
