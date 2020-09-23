@@ -438,12 +438,12 @@ int main(void) {
     float* phi_prime;
     float* host_phi = new float[initial_N + 1];
     float* host_phi_prime = new float[initial_N + 1];
-    cudaMalloc(&phi, initial_N * sizeof(float));
-    cudaMalloc(&phi_prime, initial_N * sizeof(float));
+    cudaMalloc(&phi, (initial_N + 1) * sizeof(float));
+    cudaMalloc(&phi_prime, (initial_N + 1) * sizeof(float));
     get_solution<<<elements_numBlocks, elements_blockSize>>>(N_elements, elements, phi, phi_prime);
     cudaDeviceSynchronize();
-    cudaMemcpy(host_phi, phi, initial_N * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_phi_prime, phi_prime, initial_N * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_phi, phi, (initial_N + 1) * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_phi_prime, phi_prime, (initial_N + 1) * sizeof(float), cudaMemcpyDeviceToHost);
 
     std::cout << "Nodes: " << std::endl;
     for (int N = 0; N <= N_max; ++N) {
