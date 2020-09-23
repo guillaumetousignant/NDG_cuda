@@ -436,8 +436,8 @@ int main(void) {
     // CHECK find better solution for multiple elements
     float* phi;
     float* phi_prime;
-    float* host_phi = new float[initial_N];
-    float* host_phi_prime = new float[initial_N];
+    float* host_phi = new float[initial_N + 1];
+    float* host_phi_prime = new float[initial_N + 1];
     cudaMalloc(&phi, initial_N * sizeof(float));
     cudaMalloc(&phi_prime, initial_N * sizeof(float));
     get_solution<<<elements_numBlocks, elements_blockSize>>>(N_elements, elements, phi, phi_prime);
