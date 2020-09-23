@@ -112,8 +112,8 @@ class Element_t { // Turn this into separate vectors, because cache exists
 public:
     __device__ 
     Element_t(int N) : N_(N) {
-        phi_ = new float[N_];
-        phi_prime_ = new float[N_];
+        phi_ = new float[N_ + 1];
+        phi_prime_ = new float[N_ + 1];
     }
 
     __device__
@@ -123,6 +123,8 @@ public:
     }
 
     int N_;
+    float phi_L_;
+    float phi_R_;
     float* phi_; // Solution
     float* phi_prime_;
 };
@@ -134,6 +136,21 @@ void build_elements(int N_elements, int N, Element_t* elements) {
 
     for (int i = index; i <= N_elements; i += stride) {
         elements[i] = Element_t(N);
+    }
+}
+
+__global__
+void initial_conditions(int N_elements, Element_t* elements, const float* nodes) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (int i = index; i <= N_elements; i += stride) {
+        const int offset = elements[i].N_ * (elements[i].N_ + 1) /2;
+        elements[i].phi_L_ = sin(-1.0f);
+        elements[i].phi_R_ = sin(1.0f);
+        for (int j = 0; j <= elements[i].N_; ++j) {
+            elements[i].phi_[j] = sin(nodes[offset + j]);
+        }
     }
 }
 
@@ -346,6 +363,8 @@ int main(void) {
         lagrange_integrating_polynomials<<<vector_numBlocks, poly_blockSize>>>(-1.0f, N, nodes, weights, lagrange_interpolant_left);
         lagrange_integrating_polynomials<<<vector_numBlocks, poly_blockSize>>>(1.0f, N, nodes, weights, lagrange_interpolant_right);
     }
+
+    initial_conditions<<<elements_numBlocks, elements_blockSize>>>(N_elements, elements­­­­­­­­­­, nodes);
 
     // We need to divide lagrange_integrating_polynomials by sum, and barycentric weights for derivative matrix
     cudaDeviceSynchronize();
