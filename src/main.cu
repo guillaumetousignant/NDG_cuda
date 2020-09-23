@@ -134,7 +134,7 @@ void build_elements(int N_elements, int N, Element_t* elements) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (int i = index; i <= N_elements; i += stride) {
+    for (int i = index; i < N_elements; i += stride) {
         elements[i] = Element_t(N);
     }
 }
@@ -144,12 +144,26 @@ void initial_conditions(int N_elements, Element_t* elements, const float* nodes)
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (int i = index; i <= N_elements; i += stride) {
+    for (int i = index; i < N_elements; i += stride) {
         const int offset = elements[i].N_ * (elements[i].N_ + 1) /2;
         elements[i].phi_L_ = sin(-1.0f);
         elements[i].phi_R_ = sin(1.0f);
         for (int j = 0; j <= elements[i].N_; ++j) {
             elements[i].phi_[j] = sin(nodes[offset + j]);
+        }
+    }
+}
+
+// Basically useless, find better solution when multiple elements.
+__global__
+void get_solution(int N_elements, const Element_t* elements, float* phi, float* phi_prime) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (int i = index; i < N_elements; i += stride) {
+        for (int j = 0; j <= elements[i].N_; ++j) {
+            phi[j] = elements[i].phi_[j];
+            phi_prime[j] = elements[i].phi_prime_[j];
         }
     }
 }
@@ -406,8 +420,6 @@ int main(void) {
     float* host_lagrange_interpolant_right = new float[vector_length];
     float* host_derivative_matrices = new float[matrix_length];
     float* host_derivative_matrices_hat = new float[matrix_length];
-    float* host_phi = new float[vector_length];
-    float* host_phi_prime = new float[vector_length];
 
     cudaMemcpy(host_nodes, nodes, vector_length * sizeof(float), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_weights, weights, vector_length * sizeof(float), cudaMemcpyDeviceToHost);
@@ -420,6 +432,18 @@ int main(void) {
     // Can't do that!
     //cudaMemcpy(host_phi, elements[0].phi_, vector_length * sizeof(float), cudaMemcpyDeviceToHost);
     //cudaMemcpy(host_phi_prime, elements[0].phi_prime_, vector_length * sizeof(float), cudaMemcpyDeviceToHost);
+
+    // CHECK find better solution for multiple elements
+    float* phi;
+    float* phi_prime;
+    float* host_phi = new float[initial_N];
+    float* host_phi_prime = new float[initial_N];
+    cudaMalloc(&phi, initial_N * sizeof(float));
+    cudaMalloc(&phi_prime, initial_N * sizeof(float));
+    get_solution<<<elements_numBlocks, elements_blockSize>>>(N_elements, elements, phi, phi_prime);
+    cudaDeviceSynchronize();
+    cudaMemcpy(host_phi, phi, initial_N * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_phi_prime, phi_prime, initial_N * sizeof(float), cudaMemcpyDeviceToHost);
 
     std::cout << "Nodes: " << std::endl;
     for (int N = 0; N <= N_max; ++N) {
@@ -542,6 +566,8 @@ int main(void) {
     cudaFree(lagrange_interpolant_right);
     cudaFree(derivative_matrices);
     cudaFree(derivative_matrices_hat);
+    cudaFree(phi);
+    cudaFree(phi_prime);
 
     delete host_nodes;
     delete host_weights;
