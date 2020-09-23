@@ -306,7 +306,7 @@ void matrix_vector_derivative(int N, const float* derivative_matrices, const flo
 
 // Algorithm 60
 __global__
-void compute_dg_derivative(int N_elements, int N, const float* nodes, const float* weights, float* lagrange_interpolant) {
+void compute_dg_derivative(int N_elements, Element_t* elements, const float* derivative_matrices, const float* lagrange_interpolant_left, const float* lagrange_interpolant_left) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     const int offset = N * (N + 1) /2;
@@ -314,7 +314,7 @@ void compute_dg_derivative(int N_elements, int N, const float* nodes, const floa
 
     for (int i = index; i <= N_elements; i += stride) {
 
-        lagrange_interpolant[offset + i] = weights[offset + i] / (x - nodes[offset + i]);
+        //lagrange_interpolant[offset + i] = weights[offset + i] / (x - nodes[offset + i]);
     }
 }
 
