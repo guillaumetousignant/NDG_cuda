@@ -537,7 +537,7 @@ int main(void) {
     for (int i = 0; i < N_elements; ++i) {
         std::cout << '\t' << "Element " << i << ": ";
         std::cout << '\t' << '\t';
-        for (int j = 0; ji <= initial_N; ++j) {
+        for (int j = 0; j <= initial_N; ++j) {
             std::cout << host_phi[j] << " ";
         }
         std::cout << std::endl;
@@ -547,7 +547,7 @@ int main(void) {
     for (int i = 0; i < N_elements; ++i) {
         std::cout << '\t' << "Element " << i << ": ";
         std::cout << '\t' << '\t';
-        for (int j = 0; ji <= initial_N; ++j) {
+        for (int j = 0; j <= initial_N; ++j) {
             std::cout << host_phi_prime[j] << " ";
         }
         std::cout << std::endl;
