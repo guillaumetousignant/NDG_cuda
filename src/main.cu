@@ -330,7 +330,7 @@ void compute_dg_derivative(int N_elements, Element_t* elements, const float* der
         
         matrix_vector_derivative(elements[i].N_, derivative_matrices, elements[i].phi_, elements[i].phi_prime_);
 
-        for (int j = 0; j <= N; ++j) {
+        for (int j = 0; j <= elements[i].N_; ++j) {
             //elements[i].phi_prime_[j] = 
         }
     }
@@ -548,7 +548,7 @@ int main(void) {
         std::cout << std::endl;
     }
 
-    std::cout << std::endl << "Phi: " << std::endl;
+    std::cout << std::endl << "Phi prime: " << std::endl;
     for (int i = 0; i < N_elements; ++i) {
         std::cout << '\t' << "Element " << i << ": ";
         std::cout << '\t' << '\t';
