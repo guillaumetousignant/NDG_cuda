@@ -125,6 +125,8 @@ public:
     int N_;
     float phi_L_;
     float phi_R_;
+    float boundary_L_;
+    float boundary_R_;
     float* phi_; // Solution
     float* phi_prime_;
 };
@@ -146,8 +148,10 @@ void initial_conditions(int N_elements, Element_t* elements, const float* nodes)
 
     for (int i = index; i < N_elements; i += stride) {
         const int offset = elements[i].N_ * (elements[i].N_ + 1) /2;
-        elements[i].phi_L_ = -sin(-1.0f);
-        elements[i].phi_R_ = -sin(1.0f);
+        elements[i].boundary_L_ = -sin(-1.0f);
+        elements[i].boundary_R_ = -sin(1.0f);
+        elements[i].phi_L_ = elements[i].boundary_L_;
+        elements[i].phi_R_ = elements[i].boundary_R_;
         for (int j = 0; j <= elements[i].N_; ++j) {
             elements[i].phi_[j] = -sin(nodes[offset + j]);
         }
@@ -319,20 +323,28 @@ void matrix_vector_derivative(int N, const float* derivative_matrices, const flo
 }
 
 // Algorithm 60
-__global__
-void compute_dg_derivative(int N_elements, Element_t* elements, const float* weights, const float* derivative_matrices, const float* lagrange_interpolant_left, const float* lagrange_interpolant_right) {
-    const int index = blockIdx.x * blockDim.x + threadIdx.x;
-    const int stride = blockDim.x * gridDim.x;
+__device__
+void compute_dg_derivative(Element_t &element, const float* weights, const float* derivative_matrices, const float* lagrange_interpolant_left, const float* lagrange_interpolant_right) {
+    const int offset_1D = element.N_ * (element.N_ + 1) /2;
+    
+    matrix_vector_derivative(element.N_, derivative_matrices, element.phi_, element.phi_prime_);
 
-    for (int i = index; i <= N_elements; i += stride) {
-        const int offset_1D = elements[i].N_ * (elements[i].N_ + 1) /2;
-        
-        matrix_vector_derivative(elements[i].N_, derivative_matrices, elements[i].phi_, elements[i].phi_prime_);
-
-        for (int j = 0; j <= elements[i].N_; ++j) {
-            elements[i].phi_prime_[j] += (elements[i].phi_L_ * elements[i].phi_L_ * lagrange_interpolant_left[offset_1D + j] - elements[i].phi_R_ * elements[i].phi_R_ * lagrange_interpolant_right[offset_1D + j]) / (2 * weights[offset_1D + j]);
-        }
+    for (int j = 0; j <= element.N_; ++j) {
+        element.phi_prime_[j] += (element.phi_L_ * element.phi_L_ * lagrange_interpolant_left[offset_1D + j] - element.phi_R_ * element.phi_R_ * lagrange_interpolant_right[offset_1D + j]) / (2 * weights[offset_1D + j]);
     }
+}
+
+// Algorithm 61
+__device__
+float interpolate_to_boundary(int N, const float* phi, const float* lagrange_interpolant) {
+    const int offset_1D = N * (N + 1) /2;
+    float result = 0.0f;
+
+    for (int j = 0; j <= N; ++j) {
+        result += lagrange_interpolant[offset_1D + j] * phi[offset_1D + j]
+    }
+
+    return result;
 }
 
 // Algorithm 61
@@ -343,12 +355,18 @@ void compute_dg_time_derivative(int N_elements, Element_t* elements, const float
 
     for (int i = index; i <= N_elements; i += stride) {
         const int offset_1D = elements[i].N_ * (elements[i].N_ + 1) /2;
-        
-        matrix_vector_derivative(elements[i].N_, derivative_matrices, elements[i].phi_, elements[i].phi_prime_);
 
-        for (int j = 0; j <= elements[i].N_; ++j) {
-            elements[i].phi_prime_[j] += (elements[i].phi_L_ * elements[i].phi_L_ * lagrange_interpolant_left[offset_1D + j] - elements[i].phi_R_ * elements[i].phi_R_ * lagrange_interpolant_right[offset_1D + j]) / (2 * weights[offset_1D + j]);
+        elements[i].phi_L_ = interpolate_to_boundary(elements[i].N_, elements[i].phi_, lagrange_interpolant_left);
+        elements[i].phi_R_ = interpolate_to_boundary(elements[i].N_, elements[i].phi_, lagrange_interpolant_right);
+
+        if (elements[i].phi_L_ > 0.0f) {
+            elements[i].phi_L_ = elements[i].boundary_L_;
         }
+        if (elements[i].phi_R_ < 0.0f) {
+            elements[i].phi_R_ = elements[i].boundary_R_;
+        }
+        
+        compute_dg_derivative(&elements[i], weights, derivative_matrices, lagrange_interpolant_left, lagrange_interpolant_right); // Multiplied by -c in textbook, here multiplied by phi in matrix_vector_derivative
     }
 }
 
