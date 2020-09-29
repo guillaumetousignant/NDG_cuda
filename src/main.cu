@@ -443,6 +443,9 @@ int main(void) {
         polynomial_derivative_matrices_hat<<<matrix_numBlocks, matrix_blockSize>>>(N, weights, derivative_matrices, derivative_matrices_hat);
     }
 
+    // Starting actual computation
+    cudaDeviceSynchronize();
+    compute_dg_time_derivative<<<elements_numBlocks, elements_blockSize>>>(N_elements, elements, weights, derivative_matrices_hat, lagrange_interpolant_left, lagrange_interpolant_right);
     
     // Wait for GPU to finish before copying to host
     cudaDeviceSynchronize();
