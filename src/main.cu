@@ -146,10 +146,10 @@ void initial_conditions(int N_elements, Element_t* elements, const float* nodes)
 
     for (int i = index; i < N_elements; i += stride) {
         const int offset = elements[i].N_ * (elements[i].N_ + 1) /2;
-        elements[i].phi_L_ = sin(-1.0f);
-        elements[i].phi_R_ = sin(1.0f);
+        elements[i].phi_L_ = -sin(-1.0f);
+        elements[i].phi_R_ = -sin(1.0f);
         for (int j = 0; j <= elements[i].N_; ++j) {
-            elements[i].phi_[j] = sin(nodes[offset + j]);
+            elements[i].phi_[j] = -sin(nodes[offset + j]);
         }
     }
 }
@@ -321,6 +321,23 @@ void matrix_vector_derivative(int N, const float* derivative_matrices, const flo
 // Algorithm 60
 __global__
 void compute_dg_derivative(int N_elements, Element_t* elements, const float* weights, const float* derivative_matrices, const float* lagrange_interpolant_left, const float* lagrange_interpolant_right) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (int i = index; i <= N_elements; i += stride) {
+        const int offset_1D = elements[i].N_ * (elements[i].N_ + 1) /2;
+        
+        matrix_vector_derivative(elements[i].N_, derivative_matrices, elements[i].phi_, elements[i].phi_prime_);
+
+        for (int j = 0; j <= elements[i].N_; ++j) {
+            elements[i].phi_prime_[j] += (elements[i].phi_L_ * elements[i].phi_L_ * lagrange_interpolant_left[offset_1D + j] - elements[i].phi_R_ * elements[i].phi_R_ * lagrange_interpolant_right[offset_1D + j]) / (2 * weights[offset_1D + j]);
+        }
+    }
+}
+
+// Algorithm 61
+__global__
+void compute_dg_time_derivative(int N_elements, Element_t* elements, const float* weights, const float* derivative_matrices, const float* lagrange_interpolant_left, const float* lagrange_interpolant_right) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
