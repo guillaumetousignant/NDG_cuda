@@ -325,8 +325,7 @@ void compute_dg_derivative(int N_elements, Element_t* elements, const float* wei
     const int stride = blockDim.x * gridDim.x;
 
     for (int i = index; i <= N_elements; i += stride) {
-        const int offset = elements[i].N_ * (elements[i].N_ + 1) /2;
-        const int offset_2D = elements[i].N_ * (elements[i].N_ + 1) * (2 * elements[i].N_ + 1) /6;
+        const int offset_1D = elements[i].N_ * (elements[i].N_ + 1) /2;
         
         matrix_vector_derivative(elements[i].N_, derivative_matrices, elements[i].phi_, elements[i].phi_prime_);
 
