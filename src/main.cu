@@ -313,14 +313,14 @@ void matrix_vector_derivative(int N, const float* derivative_matrices, const flo
     for (int i = 0; i <= N; ++i) {
         phi_prime[offset_1D + i] = 0.0f;
         for (int j = 0; j <= N; ++j) {
-            phi_prime[offset_1D + i] += derivative_matrices[offset_2D + i * (N + 1) + j] * phi[offset_1D + j];
+            phi_prime[offset_1D + i] += derivative_matrices[offset_2D + i * (N + 1) + j] * phi[offset_1D + j] * phi[offset_1D + j]; // phi not squared in textbook, squared for Burger's
         }
     }
 }
 
 // Algorithm 60
 __global__
-void compute_dg_derivative(int N_elements, Element_t* elements, const float* derivative_matrices, const float* lagrange_interpolant_left, const float* lagrange_interpolant_right) {
+void compute_dg_derivative(int N_elements, Element_t* elements, const float* weights, const float* derivative_matrices, const float* lagrange_interpolant_left, const float* lagrange_interpolant_right) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -331,7 +331,7 @@ void compute_dg_derivative(int N_elements, Element_t* elements, const float* der
         matrix_vector_derivative(elements[i].N_, derivative_matrices, elements[i].phi_, elements[i].phi_prime_);
 
         for (int j = 0; j <= elements[i].N_; ++j) {
-            //elements[i].phi_prime_[j] = 
+            elements[i].phi_prime_[j] += (elements[i].phi_L_ * elements[i].phi_L_ * lagrange_interpolant_left[offset_1D + j] - elements[i].phi_R_ * elements[i].phi_R_ * lagrange_interpolant_right[offset_1D + j]) / (2 * weights[offset_1D + j]);
         }
     }
 }
