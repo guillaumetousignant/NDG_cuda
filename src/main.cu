@@ -58,12 +58,12 @@ void initial_conditions(int N_elements, Element_t* elements, const float* nodes)
 
     for (int i = index; i < N_elements; i += stride) {
         const int offset = elements[i].N_ * (elements[i].N_ + 1) /2;
-        elements[i].boundary_L_ = -sin(-1.0f);
-        elements[i].boundary_R_ = -sin(1.0f);
+        elements[i].boundary_L_ = -sin(-pi);
+        elements[i].boundary_R_ = -sin(pi);
         elements[i].phi_L_ = elements[i].boundary_L_;
         elements[i].phi_R_ = elements[i].boundary_R_;
         for (int j = 0; j <= elements[i].N_; ++j) {
-            elements[i].phi_[j] = -sin(nodes[offset + j]);
+            elements[i].phi_[j] = -sin(pi * nodes[offset + j]);
         }
     }
 }
