@@ -631,7 +631,7 @@ int main(void) {
     NDG_transfer_t NDG_transfer;
     cudaMemcpy(&NDG_transfer, NDG, 1 * sizeof(NDG_t), cudaMemcpyDeviceToHost);
 
-    NDG_t host_NDG(N_max);
+    NDG_t host_NDG(NDG_transfer.N_max_);
 
     cudaMemcpy(host_NDG.nodes_, NDG_transfer.nodes_, vector_length * sizeof(float), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_NDG.weights_, NDG_transfer.weights_, vector_length * sizeof(float), cudaMemcpyDeviceToHost);
