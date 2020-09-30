@@ -382,8 +382,12 @@ int main(void) {
     // Starting actual computation
     cudaDeviceSynchronize();
     // This one right here officer
-    float delta_t = 0.1f;
-    gd_step_by_rk3<<<elements_numBlocks, elements_blockSize>>>(N_elements, elements, delta_t, weights, derivative_matrices_hat, lagrange_interpolant_left, lagrange_interpolant_right);
+    float t = 0.0f;
+    const int N_steps = 100;
+    const float delta_t = 0.1f;
+    for (int step = 0; step < N_steps; ++step) {
+        gd_step_by_rk3<<<elements_numBlocks, elements_blockSize>>>(N_elements, elements, delta_t, weights, derivative_matrices_hat, lagrange_interpolant_left, lagrange_interpolant_right);
+    }
     
     // Wait for GPU to finish before copying to host
     cudaDeviceSynchronize();
