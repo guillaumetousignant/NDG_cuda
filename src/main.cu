@@ -15,12 +15,20 @@ public:
     Element_t(int N) : N_(N) {
         phi_ = new float[N_ + 1];
         phi_prime_ = new float[N_ + 1];
+        intermediate_ = new float[N_ + 1];
     }
 
     __device__
     ~Element_t() {
-        delete [] phi_;
-        delete [] phi_prime_;
+        if (phi_ != nullptr){
+            delete [] phi_;
+        }
+        if (phi_prime_ != nullptr) {
+            delete [] phi_prime_;
+        }
+        if (intermediate_ != nullptr) {
+            delete [] intermediate_;
+        }
     }
 
     int N_;
@@ -30,6 +38,7 @@ public:
     float boundary_R_;
     float* phi_; // Solution
     float* phi_prime_;
+    float* intermediate_;
 };
 
 __global__
@@ -249,23 +258,51 @@ float interpolate_to_boundary(int N, const float* phi, const float* lagrange_int
 }
 
 // Algorithm 61
+__device__
+void compute_dg_time_derivative(Element_t &element, const float* weights, const float* derivative_matrices, const float* lagrange_interpolant_left, const float* lagrange_interpolant_right) {
+    element.phi_L_ = interpolate_to_boundary(element.N_, element.phi_, lagrange_interpolant_left);
+    element.phi_R_ = interpolate_to_boundary(element.N_, element.phi_, lagrange_interpolant_right);
+
+    if (element.phi_L_ > 0.0f) {
+        element.phi_L_ = element.boundary_L_;
+    }
+    if (element.phi_R_ < 0.0f) {
+        element.phi_R_ = element.boundary_R_;
+    }
+    
+    compute_dg_derivative(element, weights, derivative_matrices, lagrange_interpolant_left, lagrange_interpolant_right); // Multiplied by -c in textbook, here multiplied by phi in matrix_vector_derivative
+}
+
+// Algorithm 62
 __global__
-void compute_dg_time_derivative(int N_elements, Element_t* elements, const float* weights, const float* derivative_matrices, const float* lagrange_interpolant_left, const float* lagrange_interpolant_right) {
+void gd_step_by_rk3(int N_elements, Element_t* elements, float delta_t, const float* weights, const float* derivative_matrices, const float* lagrange_interpolant_left, const float* lagrange_interpolant_right) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
     for (int i = index; i < N_elements; i += stride) {
-        elements[i].phi_L_ = interpolate_to_boundary(elements[i].N_, elements[i].phi_, lagrange_interpolant_left);
-        elements[i].phi_R_ = interpolate_to_boundary(elements[i].N_, elements[i].phi_, lagrange_interpolant_right);
-
-        if (elements[i].phi_L_ > 0.0f) {
-            elements[i].phi_L_ = elements[i].boundary_L_;
-        }
-        if (elements[i].phi_R_ < 0.0f) {
-            elements[i].phi_R_ = elements[i].boundary_R_;
+        for (int j = 0; j <= elements[i].N_; ++j) {
+            elements[i].intermediate_[j] = 0.0f;
         }
         
-        compute_dg_derivative(elements[i], weights, derivative_matrices, lagrange_interpolant_left, lagrange_interpolant_right); // Multiplied by -c in textbook, here multiplied by phi in matrix_vector_derivative
+        // Unrolled loop from m = 1 to 3
+        // a_m and b_ at textbook p.99
+        compute_dg_time_derivative(elements[i], weights, derivative_matrices, lagrange_interpolant_left, lagrange_interpolant_right);
+        for (int j = 0; j <= elements[i].N_; ++j){
+            elements[i].intermediate_[j] = elements[i].phi_prime_[j];
+            elements[i].phi_[j] += delta_t * elements[i].intermediate_[j] /3.0f;
+        }
+
+        compute_dg_time_derivative(elements[i], weights, derivative_matrices, lagrange_interpolant_left, lagrange_interpolant_right);
+        for (int j = 0; j <= elements[i].N_; ++j){
+            elements[i].intermediate_[j] = -5.0f * elements[i].intermediate_[j] / 9.0f + elements[i].phi_prime_[j];
+            elements[i].phi_[j] += 15.0f delta_t * elements[i].intermediate_[j] /16.0f;
+        }
+
+        compute_dg_time_derivative(elements[i], weights, derivative_matrices, lagrange_interpolant_left, lagrange_interpolant_right);
+        for (int j = 0; j <= elements[i].N_; ++j){
+            elements[i].intermediate_[j] = -153.0f * elements[i].intermediate_[j] / 128.0f + elements[i].phi_prime_[j];
+            elements[i].phi_[j] += 8.0f delta_t * elements[i].intermediate_[j] /15.0f;
+        }
     }
 }
 
@@ -345,7 +382,8 @@ int main(void) {
     // Starting actual computation
     cudaDeviceSynchronize();
     // This one right here officer
-    compute_dg_time_derivative<<<elements_numBlocks, elements_blockSize>>>(N_elements, elements, weights, derivative_matrices_hat, lagrange_interpolant_left, lagrange_interpolant_right);
+    float delta_t = 0.1f;
+    gd_step_by_rk3<<<elements_numBlocks, elements_blockSize>>>(N_elements, elements, delta_t, weights, derivative_matrices_hat, lagrange_interpolant_left, lagrange_interpolant_right);
     
     // Wait for GPU to finish before copying to host
     cudaDeviceSynchronize();
