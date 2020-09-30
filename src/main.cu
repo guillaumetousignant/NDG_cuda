@@ -341,7 +341,7 @@ float interpolate_to_boundary(int N, const float* phi, const float* lagrange_int
     float result = 0.0f;
 
     for (int j = 0; j <= N; ++j) {
-        result += lagrange_interpolant[offset_1D + j] * phi[offset_1D + j]
+        result += lagrange_interpolant[offset_1D + j] * phi[offset_1D + j];
     }
 
     return result;
@@ -354,8 +354,6 @@ void compute_dg_time_derivative(int N_elements, Element_t* elements, const float
     const int stride = blockDim.x * gridDim.x;
 
     for (int i = index; i <= N_elements; i += stride) {
-        const int offset_1D = elements[i].N_ * (elements[i].N_ + 1) /2;
-
         elements[i].phi_L_ = interpolate_to_boundary(elements[i].N_, elements[i].phi_, lagrange_interpolant_left);
         elements[i].phi_R_ = interpolate_to_boundary(elements[i].N_, elements[i].phi_, lagrange_interpolant_right);
 
@@ -366,7 +364,7 @@ void compute_dg_time_derivative(int N_elements, Element_t* elements, const float
             elements[i].phi_R_ = elements[i].boundary_R_;
         }
         
-        compute_dg_derivative(&elements[i], weights, derivative_matrices, lagrange_interpolant_left, lagrange_interpolant_right); // Multiplied by -c in textbook, here multiplied by phi in matrix_vector_derivative
+        compute_dg_derivative(elements[i], weights, derivative_matrices, lagrange_interpolant_left, lagrange_interpolant_right); // Multiplied by -c in textbook, here multiplied by phi in matrix_vector_derivative
     }
 }
 
