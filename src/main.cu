@@ -442,7 +442,7 @@ int main(void) {
     }
 
     // Starting actual computation
-    //cudaDeviceSynchronize();
+    cudaDeviceSynchronize();
     // This one right here officer
     compute_dg_time_derivative<<<elements_numBlocks, elements_blockSize>>>(N_elements, elements, weights, derivative_matrices_hat, lagrange_interpolant_left, lagrange_interpolant_right);
     
