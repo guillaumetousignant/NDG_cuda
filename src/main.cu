@@ -295,13 +295,13 @@ void gd_step_by_rk3(int N_elements, Element_t* elements, float delta_t, const fl
         compute_dg_time_derivative(elements[i], weights, derivative_matrices, lagrange_interpolant_left, lagrange_interpolant_right);
         for (int j = 0; j <= elements[i].N_; ++j){
             elements[i].intermediate_[j] = -5.0f * elements[i].intermediate_[j] / 9.0f + elements[i].phi_prime_[j];
-            elements[i].phi_[j] += 15.0f delta_t * elements[i].intermediate_[j] /16.0f;
+            elements[i].phi_[j] += 15.0f * delta_t * elements[i].intermediate_[j] /16.0f;
         }
 
         compute_dg_time_derivative(elements[i], weights, derivative_matrices, lagrange_interpolant_left, lagrange_interpolant_right);
         for (int j = 0; j <= elements[i].N_; ++j){
             elements[i].intermediate_[j] = -153.0f * elements[i].intermediate_[j] / 128.0f + elements[i].phi_prime_[j];
-            elements[i].phi_[j] += 8.0f delta_t * elements[i].intermediate_[j] /15.0f;
+            elements[i].phi_[j] += 8.0f * delta_t * elements[i].intermediate_[j] /15.0f;
         }
     }
 }
