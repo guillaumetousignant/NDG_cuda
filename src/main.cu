@@ -353,7 +353,7 @@ void compute_dg_time_derivative(int N_elements, Element_t* elements, const float
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (int i = index; i <= N_elements; i += stride) {
+    for (int i = index; i < N_elements; i += stride) {
         elements[i].phi_L_ = interpolate_to_boundary(elements[i].N_, elements[i].phi_, lagrange_interpolant_left);
         elements[i].phi_R_ = interpolate_to_boundary(elements[i].N_, elements[i].phi_, lagrange_interpolant_right);
 
@@ -444,7 +444,7 @@ int main(void) {
     // Starting actual computation
     //cudaDeviceSynchronize();
     // This one right here officer
-    //compute_dg_time_derivative<<<elements_numBlocks, elements_blockSize>>>(N_elements, elements, weights, derivative_matrices_hat, lagrange_interpolant_left, lagrange_interpolant_right);
+    compute_dg_time_derivative<<<elements_numBlocks, elements_blockSize>>>(N_elements, elements, weights, derivative_matrices_hat, lagrange_interpolant_left, lagrange_interpolant_right);
     
     // Wait for GPU to finish before copying to host
     cudaDeviceSynchronize();
