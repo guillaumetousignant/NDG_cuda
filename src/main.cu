@@ -274,13 +274,12 @@ void polynomial_derivative_matrices_hat(int N, const float* weights, const float
 __device__
 void matrix_vector_derivative(int N, const float* derivative_matrices, const float* phi, float* phi_prime) {
     // s = 0, e = N (p.55 says N - 1)
-    const int offset_1D = N * (N + 1) /2;
     const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
 
     for (int i = 0; i <= N; ++i) {
-        phi_prime[offset_1D + i] = 0.0f;
+        phi_prime[i] = 0.0f;
         for (int j = 0; j <= N; ++j) {
-            phi_prime[offset_1D + i] += derivative_matrices[offset_2D + i * (N + 1) + j] * phi[offset_1D + j] * phi[offset_1D + j]; // phi not squared in textbook, squared for Burger's
+            phi_prime[i] += derivative_matrices[offset_2D + i * (N + 1) + j] * phi[j] * phi[j]/2.0f; // phi not squared in textbook, squared for Burger's
         }
     }
 }
@@ -304,7 +303,7 @@ float interpolate_to_boundary(int N, const float* phi, const float* lagrange_int
     float result = 0.0f;
 
     for (int j = 0; j <= N; ++j) {
-        result += lagrange_interpolant[offset_1D + j] * phi[offset_1D + j];
+        result += lagrange_interpolant[offset_1D + j] * phi[j];
     }
 
     return result;
@@ -420,8 +419,7 @@ int main(void) {
     // Starting actual computation
     cudaDeviceSynchronize();
     // This one right here officer
-    float t = 0.0f;
-    const int N_steps = 100;
+    const int N_steps = 1;
     const float delta_t = 0.1f;
     for (int step = 0; step < N_steps; ++step) {
         gd_step_by_rk3<<<elements_numBlocks, elements_blockSize>>>(N_elements, elements, delta_t, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
