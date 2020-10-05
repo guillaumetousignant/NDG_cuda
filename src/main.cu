@@ -582,6 +582,10 @@ int main(void) {
     delete host_derivative_matrices_hat;
     delete host_phi;
     delete host_phi_prime;
+
+    cudaFree(elements);
+    cudaFree(phi);
+    cudaFree(phi_prime);
     
     return 0;
 }
