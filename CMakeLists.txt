@@ -12,7 +12,7 @@ include(CheckLanguage)
 check_language(CUDA)
 
 if(NOT DEFINED CMAKE_CUDA_STANDARD)
-    set(CMAKE_CUDA_STANDARD 14)
+    set(CMAKE_CUDA_STANDARD 17)
     set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 endif()
 
@@ -28,7 +28,7 @@ target_include_directories(NDG_cuda
         include/
 )
 
-target_compile_features(NDG_cuda PRIVATE cxx_std_14)
+target_compile_features(NDG_cuda PRIVATE cxx_std_17)
 
 option(BUILD_TESTS "Build all tests." OFF)
 
@@ -37,7 +37,7 @@ if (BUILD_TESTS)
     add_executable(unit_tests 
         tests/main_test.cpp
         tests/catch.hpp)
-    target_compile_features(unit_tests PRIVATE cxx_std_14)
+    target_compile_features(unit_tests PRIVATE cxx_std_17)
 
     add_test(unit_tests unit_tests)
 endif()

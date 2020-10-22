@@ -6,7 +6,9 @@
 #include <limits>
 #include <chrono>
 #include <cfloat>
+#include <filesystem>
 
+namespace fs = std::filesystem;
 constexpr float pi = 3.14159265358979323846f;
 
 class NDG_t { 
@@ -358,6 +360,24 @@ void gd_step_by_rk3(int N_elements, Element_t* elements, float delta_t, const fl
     }
 }
 
+void write_data(int n, float time, float* velocity, float* coordinates) {
+    std::stringstream ss;
+    std::ofstream file;
+
+    ss << "data/output_t" << time << ".dat";
+    file.open (ss.str());
+
+    file << "TITLE = \"Velocity  at t= " << time << "\"" << std::endl;
+    file << "VARIABLES = \"X\", \"U_x\"" << std::endl;
+    file << "ZONE T= \"Zone     1\",  I= " << n << ",  J= 1,  DATAPACKING = POINT, SOLUTIONTIME = " << time << std::endl;
+
+    for (int i = 0; i < n; ++i) {
+        file << std::setw(12) << coordinates[i] << " " << std::setw(12) << velocity[i] << std::endl;
+    }
+
+    file.close();
+}
+
 int main(void) {
     const int N_elements = 1;
     const int initial_N = 8;
@@ -419,8 +439,8 @@ int main(void) {
     // Starting actual computation
     cudaDeviceSynchronize();
     // This one right here officer
-    const int N_steps = 1;
-    const float delta_t = 0.1f;
+    const int N_steps = 600;
+    const float delta_t = 0.001f;
     for (int step = 0; step < N_steps; ++step) {
         gd_step_by_rk3<<<elements_numBlocks, elements_blockSize>>>(N_elements, elements, delta_t, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
     }
