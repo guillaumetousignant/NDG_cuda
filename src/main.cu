@@ -360,18 +360,21 @@ void gd_step_by_rk3(int N_elements, Element_t* elements, float delta_t, const fl
     }
 }
 
-void write_data(int n, float time, float* velocity, float* coordinates) {
+void write_data(int N, float time, float* velocity, float* coordinates) {
     std::stringstream ss;
     std::ofstream file;
 
-    ss << "data/output_t" << time << ".dat";
-    file.open (ss.str());
+    fs::path save_dir = fs::current_path() / "data";
+    fs::create_directory(save_dir);
+
+    ss << "output_t" << time << ".dat";
+    file.open(save_dir / ss.str());
 
     file << "TITLE = \"Velocity  at t= " << time << "\"" << std::endl;
     file << "VARIABLES = \"X\", \"U_x\"" << std::endl;
-    file << "ZONE T= \"Zone     1\",  I= " << n << ",  J= 1,  DATAPACKING = POINT, SOLUTIONTIME = " << time << std::endl;
+    file << "ZONE T= \"Zone     1\",  I= " << N << ",  J= 1,  DATAPACKING = POINT, SOLUTIONTIME = " << time << std::endl;
 
-    for (int i = 0; i < n; ++i) {
+    for (int i = 0; i <= N; ++i) {
         file << std::setw(12) << coordinates[i] << " " << std::setw(12) << velocity[i] << std::endl;
     }
 
