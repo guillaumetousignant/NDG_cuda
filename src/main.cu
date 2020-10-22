@@ -519,6 +519,84 @@ void gd_step_by_rk3(int N_elements, Element_t* elements, float delta_t, const fl
     }
 }
 
+class Mesh_t {
+public:
+    Mesh_t(int N_elements, int initial_N) : N_elements_(N_elements), initial_N_(initial_N) {
+        cudaMalloc(&elements_, N_elements_ * sizeof(Element_t));
+
+        const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
+        build_elements<<<elements_numBlocks, elements_blockSize>>>(N_elements_, initial_N_, elements_);
+    }
+
+    ~Mesh_t() {
+        if (elements_ != nullptr){
+            cudaFree(elements_);
+        }
+    }
+
+    int N_elements_;
+    int initial_N_;
+    Element_t* elements_;
+
+    void set_initial_conditions(const float* nodes) {
+        const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
+        initial_conditions<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, nodes);
+    }
+
+    void solve(const NDG_t &NDG) {
+        const int N_steps = 600;
+        const float delta_t = 0.001f;
+        const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
+
+        for (int step = 0; step < N_steps; ++step) {
+            gd_step_by_rk3<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, delta_t, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        }
+    }
+
+    void print() {
+        // CHECK find better solution for multiple elements
+        float* phi;
+        float* phi_prime;
+        float* host_phi = new float[initial_N_ + 1];
+        float* host_phi_prime = new float[initial_N_ + 1];
+        cudaMalloc(&phi, (initial_N_ + 1) * sizeof(float));
+        cudaMalloc(&phi_prime, (initial_N_ + 1) * sizeof(float));
+
+        const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
+        get_solution<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, phi, phi_prime);
+        
+        cudaDeviceSynchronize();
+        cudaMemcpy(host_phi, phi, (initial_N_ + 1) * sizeof(float), cudaMemcpyDeviceToHost);
+        cudaMemcpy(host_phi_prime, phi_prime, (initial_N_ + 1) * sizeof(float), cudaMemcpyDeviceToHost);
+
+        std::cout << std::endl << "Phi: " << std::endl;
+        for (int i = 0; i < N_elements_; ++i) {
+            std::cout << '\t' << "Element " << i << ": ";
+            std::cout << '\t' << '\t';
+            for (int j = 0; j <= initial_N_; ++j) {
+                std::cout << host_phi[j] << " ";
+            }
+            std::cout << std::endl;
+        }
+
+        std::cout << std::endl << "Phi prime: " << std::endl;
+        for (int i = 0; i < N_elements_; ++i) {
+            std::cout << '\t' << "Element " << i << ": ";
+            std::cout << '\t' << '\t';
+            for (int j = 0; j <= initial_N_; ++j) {
+                std::cout << host_phi_prime[j] << " ";
+            }
+            std::cout << std::endl;
+        }
+
+        delete host_phi;
+        delete host_phi_prime;
+
+        cudaFree(phi);
+        cudaFree(phi_prime);
+    }
+};
+
 void write_data(int N, float time, float* velocity, float* coordinates) {
     std::stringstream ss;
     std::ofstream file;
@@ -545,77 +623,24 @@ int main(void) {
     const int initial_N = 8;
     const int N_max = 16;
     
-    Element_t* elements;
     NDG_t NDG(N_max);
-
-    // Allocate GPU Memory – accessible from GPU
-    cudaMalloc(&elements, N_elements * sizeof(Element_t));
-
-    const int elements_numBlocks = (N_elements + elements_blockSize - 1) / elements_blockSize;
-    build_elements<<<elements_numBlocks, elements_blockSize>>>(N_elements, initial_N, elements);
-    initial_conditions<<<elements_numBlocks, elements_blockSize>>>(N_elements, elements, NDG.nodes_);
+    Mesh_t Mesh(N_elements, initial_N);
+    Mesh.set_initial_conditions(NDG.nodes_);
 
     // Starting actual computation
     cudaDeviceSynchronize();
     auto t_start = std::chrono::high_resolution_clock::now();
-    // This one right here officer
-    const int N_steps = 600;
-    const float delta_t = 0.001f;
-    for (int step = 0; step < N_steps; ++step) {
-        gd_step_by_rk3<<<elements_numBlocks, elements_blockSize>>>(N_elements, elements, delta_t, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
-    }
-    
+    Mesh.solve(NDG);
     // Wait for GPU to finish before copying to host
     cudaDeviceSynchronize();
     auto t_end = std::chrono::high_resolution_clock::now();
+
     std::cout << "GPU computation time: " 
             << std::chrono::duration<double, std::milli>(t_end-t_start).count()/1000.0 
             << "s." << std::endl;
 
     NDG.print();
-
-    // Can't do that!
-    //cudaMemcpy(host_phi, elements[0].phi_, vector_length * sizeof(float), cudaMemcpyDeviceToHost);
-    //cudaMemcpy(host_phi_prime, elements[0].phi_prime_, vector_length * sizeof(float), cudaMemcpyDeviceToHost);
-
-    // CHECK find better solution for multiple elements
-    float* phi;
-    float* phi_prime;
-    float* host_phi = new float[initial_N + 1];
-    float* host_phi_prime = new float[initial_N + 1];
-    cudaMalloc(&phi, (initial_N + 1) * sizeof(float));
-    cudaMalloc(&phi_prime, (initial_N + 1) * sizeof(float));
-    get_solution<<<elements_numBlocks, elements_blockSize>>>(N_elements, elements, phi, phi_prime);
-    cudaDeviceSynchronize();
-    cudaMemcpy(host_phi, phi, (initial_N + 1) * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_phi_prime, phi_prime, (initial_N + 1) * sizeof(float), cudaMemcpyDeviceToHost);
-
-    std::cout << std::endl << "Phi: " << std::endl;
-    for (int i = 0; i < N_elements; ++i) {
-        std::cout << '\t' << "Element " << i << ": ";
-        std::cout << '\t' << '\t';
-        for (int j = 0; j <= initial_N; ++j) {
-            std::cout << host_phi[j] << " ";
-        }
-        std::cout << std::endl;
-    }
-
-    std::cout << std::endl << "Phi prime: " << std::endl;
-    for (int i = 0; i < N_elements; ++i) {
-        std::cout << '\t' << "Element " << i << ": ";
-        std::cout << '\t' << '\t';
-        for (int j = 0; j <= initial_N; ++j) {
-            std::cout << host_phi_prime[j] << " ";
-        }
-        std::cout << std::endl;
-    }
-
-    delete host_phi;
-    delete host_phi_prime;
-
-    cudaFree(elements);
-    cudaFree(phi);
-    cudaFree(phi_prime);
+    Mesh.print();
     
     return 0;
 }
