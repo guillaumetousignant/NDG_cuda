@@ -9,7 +9,11 @@
 #include <filesystem>
 
 namespace fs = std::filesystem;
+
 constexpr float pi = 3.14159265358979323846f;
+constexpr int poly_blockSize = 16; // Small number of threads per block because N will never be huge
+constexpr int elements_blockSize = 32; // For when we'll have multiple elements
+const dim3 matrix_blockSize(16, 16); // Small number of threads per block because N will never be huge
 
 class NDG_t { 
 public: 
@@ -510,13 +514,11 @@ int main(void) {
     cudaMalloc(&elements, N_elements * sizeof(Element_t));
 
     auto t_start = std::chrono::high_resolution_clock::now(); 
-    const int poly_blockSize = 16; // Small number of threads per block because N will never be huge
     for (int N = 0; N <= N_max; ++N) {
         const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
         chebyshev_gauss_nodes_and_weights<<<vector_numBlocks, poly_blockSize>>>(N, NDG.nodes_, NDG.weights_);
     }
 
-    const int elements_blockSize = 32; // For when we'll have multiple elements
     const int elements_numBlocks = (N_elements + elements_blockSize - 1) / elements_blockSize;
     build_elements<<<elements_numBlocks, elements_blockSize>>>(N_elements, initial_N, elements);
 
@@ -536,7 +538,6 @@ int main(void) {
     const int numBlocks = (N_max + poly_blockSize) / poly_blockSize;
     normalize_lagrange_integrating_polynomials<<<numBlocks, poly_blockSize>>>(N_max, NDG.lagrange_interpolant_left_);
     normalize_lagrange_integrating_polynomials<<<numBlocks, poly_blockSize>>>(N_max, NDG.lagrange_interpolant_right_);
-    const dim3 matrix_blockSize(16, 16); // Small number of threads per block because N will never be huge
     for (int N = 0; N <= N_max; ++N) {
         const dim3 matrix_numBlocks((N +  matrix_blockSize.x) / matrix_blockSize.x, (N +  matrix_blockSize.y) / matrix_blockSize.y); // Should be (N + poly_blockSize - 1) if N is not inclusive
         polynomial_derivative_matrices<<<matrix_numBlocks, matrix_blockSize>>>(N, NDG.nodes_, NDG.barycentric_weights_, NDG.derivative_matrices_);
