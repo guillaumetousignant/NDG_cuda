@@ -630,7 +630,7 @@ public:
     
         file << "TITLE = \"Velocity  at t= " << time << "\"" << std::endl;
         file << "VARIABLES = \"X\", \"U_x\"" << std::endl;
-        file << "ZONE T= \"Zone     1\",  I= " << N << ",  J= 1,  DATAPACKING = POINT, SOLUTIONTIME = " << time << std::endl;
+        file << "ZONE T= \"Zone     1\",  I= " << N + 1 << ",  J= 1,  DATAPACKING = POINT, SOLUTIONTIME = " << time << std::endl;
     
         for (int i = 0; i <= N; ++i) {
             file << std::setw(12) << coordinates[i] << " " << std::setw(12) << velocity[i] << std::endl;
