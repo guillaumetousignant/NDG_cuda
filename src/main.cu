@@ -683,8 +683,8 @@ int main(void) {
             << std::chrono::duration<double, std::milli>(t_end-t_start).count()/1000.0 
             << "s." << std::endl;
 
-    NDG.print();
-    Mesh.print();
+    //NDG.print();
+    //Mesh.print();
     
     return 0;
 }
