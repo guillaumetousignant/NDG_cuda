@@ -73,6 +73,8 @@ public:
         float* host_derivative_matrices = new float[matrix_length_];
         float* host_derivative_matrices_hat = new float[matrix_length_];
 
+        cudaDeviceSynchronize();
+
         cudaMemcpy(host_nodes, nodes_, vector_length_ * sizeof(float), cudaMemcpyDeviceToHost);
         cudaMemcpy(host_weights, weights_, vector_length_ * sizeof(float), cudaMemcpyDeviceToHost);
         cudaMemcpy(host_barycentric_weights, barycentric_weights_, vector_length_ * sizeof(float), cudaMemcpyDeviceToHost);
