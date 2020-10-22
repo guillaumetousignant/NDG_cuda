@@ -625,7 +625,7 @@ public:
         fs::path save_dir = fs::current_path() / "data";
         fs::create_directory(save_dir);
     
-        ss << "output_t" << time << ".dat";
+        ss << "output_t" << std::setprecision(4) << std::fixed << time << ".dat";
         file.open(save_dir / ss.str());
     
         file << "TITLE = \"Velocity  at t= " << time << "\"" << std::endl;
