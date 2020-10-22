@@ -433,7 +433,7 @@ void initial_conditions(int N_elements, Element_t* elements, const float* nodes)
 
 // Basically useless, find better solution when multiple elements.
 __global__
-void get_solution(int N_elements, const Element_t* elements, float* phi, float* phi_prime) {
+void get_phi_phi_prime(int N_elements, const Element_t* elements, float* phi, float* phi_prime) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -441,6 +441,19 @@ void get_solution(int N_elements, const Element_t* elements, float* phi, float* 
         for (int j = 0; j <= elements[i].N_; ++j) {
             phi[j] = elements[i].phi_[j];
             phi_prime[j] = elements[i].phi_prime_[j];
+        }
+    }
+}
+
+// Basically useless, find better solution when multiple elements.
+__global__
+void get_phi(int N_elements, const Element_t* elements, float* phi) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (int i = index; i < N_elements; i += stride) {
+        for (int j = 0; j <= elements[i].N_; ++j) {
+            phi[j] = elements[i].phi_[j];
         }
     }
 }
@@ -547,8 +560,10 @@ public:
         const int N_steps = 600;
         const float delta_t = 0.001f;
         const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
+        float time = 0.0;
 
         for (int step = 0; step < N_steps; ++step) {
+            time += delta_t;
             gd_step_by_rk3<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, delta_t, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
         }
     }
@@ -563,7 +578,7 @@ public:
         cudaMalloc(&phi_prime, (initial_N_ + 1) * sizeof(float));
 
         const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
-        get_solution<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, phi, phi_prime);
+        get_phi_phi_prime<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, phi, phi_prime);
         
         cudaDeviceSynchronize();
         cudaMemcpy(host_phi, phi, (initial_N_ + 1) * sizeof(float), cudaMemcpyDeviceToHost);
@@ -595,28 +610,47 @@ public:
         cudaFree(phi);
         cudaFree(phi_prime);
     }
-};
 
-void write_data(int N, float time, float* velocity, float* coordinates) {
-    std::stringstream ss;
-    std::ofstream file;
-
-    fs::path save_dir = fs::current_path() / "data";
-    fs::create_directory(save_dir);
-
-    ss << "output_t" << time << ".dat";
-    file.open(save_dir / ss.str());
-
-    file << "TITLE = \"Velocity  at t= " << time << "\"" << std::endl;
-    file << "VARIABLES = \"X\", \"U_x\"" << std::endl;
-    file << "ZONE T= \"Zone     1\",  I= " << N << ",  J= 1,  DATAPACKING = POINT, SOLUTIONTIME = " << time << std::endl;
-
-    for (int i = 0; i <= N; ++i) {
-        file << std::setw(12) << coordinates[i] << " " << std::setw(12) << velocity[i] << std::endl;
+    void write_file_data(int N, float time, const float* velocity, const float* coordinates) {
+        std::stringstream ss;
+        std::ofstream file;
+    
+        fs::path save_dir = fs::current_path() / "data";
+        fs::create_directory(save_dir);
+    
+        ss << "output_t" << time << ".dat";
+        file.open(save_dir / ss.str());
+    
+        file << "TITLE = \"Velocity  at t= " << time << "\"" << std::endl;
+        file << "VARIABLES = \"X\", \"U_x\"" << std::endl;
+        file << "ZONE T= \"Zone     1\",  I= " << N << ",  J= 1,  DATAPACKING = POINT, SOLUTIONTIME = " << time << std::endl;
+    
+        for (int i = 0; i <= N; ++i) {
+            file << std::setw(12) << coordinates[i] << " " << std::setw(12) << velocity[i] << std::endl;
+        }
+    
+        file.close();
     }
 
-    file.close();
-}
+    void write_data(float time, const float* nodes) {
+        // CHECK find better solution for multiple elements
+        float* phi;
+        float* host_phi = new float[initial_N_ + 1];
+        cudaMalloc(&phi, (initial_N_ + 1) * sizeof(float));
+        const int offset_1D = initial_N_ * (initial_N_ + 1) /2;
+
+        const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
+        get_phi<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, phi);
+        
+        cudaDeviceSynchronize();
+        cudaMemcpy(host_phi, phi, (initial_N_ + 1) * sizeof(float), cudaMemcpyDeviceToHost);
+
+        write_file_data(initial_N_, time, host_phi, nodes + offset_1D);
+
+        delete host_phi;
+        cudaFree(phi);
+    }
+};
 
 int main(void) {
     const int N_elements = 1;
