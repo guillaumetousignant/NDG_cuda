@@ -562,10 +562,17 @@ public:
         const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
         float time = 0.0;
 
+        write_data(time, NDG.nodes_);
+
         for (int step = 0; step < N_steps; ++step) {
             time += delta_t;
             gd_step_by_rk3<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, delta_t, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+            if (step % 100 == 0) {
+                write_data(time, NDG.nodes_);
+            }
         }
+
+        write_data(time, NDG.nodes_);
     }
 
     void print() {
@@ -636,6 +643,7 @@ public:
         // CHECK find better solution for multiple elements
         float* phi;
         float* host_phi = new float[initial_N_ + 1];
+        float* host_nodes = new float[initial_N_ + 1];
         cudaMalloc(&phi, (initial_N_ + 1) * sizeof(float));
         const int offset_1D = initial_N_ * (initial_N_ + 1) /2;
 
@@ -644,10 +652,12 @@ public:
         
         cudaDeviceSynchronize();
         cudaMemcpy(host_phi, phi, (initial_N_ + 1) * sizeof(float), cudaMemcpyDeviceToHost);
+        cudaMemcpy(host_nodes, nodes + offset_1D, (initial_N_ + 1) * sizeof(float), cudaMemcpyDeviceToHost);
 
-        write_file_data(initial_N_, time, host_phi, nodes + offset_1D);
+        write_file_data(initial_N_, time, host_phi, host_nodes);
 
         delete host_phi;
+        delete host_nodes;
         cudaFree(phi);
     }
 };
