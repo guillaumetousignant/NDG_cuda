@@ -62,6 +62,121 @@ public:
     float* lagrange_interpolant_right_;
     float* derivative_matrices_;
     float* derivative_matrices_hat_;
+
+    void print() {
+        // Copy vectors from device memory to host memory
+        float* host_nodes = new float[vector_length_];
+        float* host_weights = new float[vector_length_];
+        float* host_barycentric_weights = new float[vector_length_];
+        float* host_lagrange_interpolant_left = new float[vector_length_];
+        float* host_lagrange_interpolant_right = new float[vector_length_];
+        float* host_derivative_matrices = new float[matrix_length_];
+        float* host_derivative_matrices_hat = new float[matrix_length_];
+
+        cudaMemcpy(host_nodes, nodes_, vector_length_ * sizeof(float), cudaMemcpyDeviceToHost);
+        cudaMemcpy(host_weights, weights_, vector_length_ * sizeof(float), cudaMemcpyDeviceToHost);
+        cudaMemcpy(host_barycentric_weights, barycentric_weights_, vector_length_ * sizeof(float), cudaMemcpyDeviceToHost);
+        cudaMemcpy(host_lagrange_interpolant_left, lagrange_interpolant_left_, vector_length_ * sizeof(float), cudaMemcpyDeviceToHost);
+        cudaMemcpy(host_lagrange_interpolant_right, lagrange_interpolant_right_, vector_length_ * sizeof(float), cudaMemcpyDeviceToHost);
+        cudaMemcpy(host_derivative_matrices, derivative_matrices_, matrix_length_ * sizeof(float), cudaMemcpyDeviceToHost);
+        cudaMemcpy(host_derivative_matrices_hat, derivative_matrices_hat_, matrix_length_ * sizeof(float), cudaMemcpyDeviceToHost);
+
+        std::cout << "Nodes: " << std::endl;
+        for (int N = 0; N <= N_max_; ++N) {
+            const int offset = N * (N + 1) /2;
+
+            std::cout << '\t' << "N = " << N << ": ";
+            std::cout << '\t' << '\t';
+            for (int i = 0; i <= N; ++i) {
+                std::cout << host_nodes[offset + i] << " ";
+            }
+            std::cout << std::endl;
+        }
+
+        std::cout << std::endl << "Weights: " << std::endl;
+        for (int N = 0; N <= N_max_; ++N) {
+            const int offset = N * (N + 1) /2;
+
+            std::cout << '\t' << "N = " << N << ": ";
+            std::cout << '\t' << '\t';
+            for (int i = 0; i <= N; ++i) {
+                std::cout << host_weights[offset + i] << " ";
+            }
+            std::cout << std::endl;
+        }
+        
+        std::cout << std::endl << "Barycentric weights: " << std::endl;
+        for (int N = 0; N <= N_max_; ++N) {
+            const int offset = N * (N + 1) /2;
+
+            std::cout << '\t' << "N = " << N << ": ";
+            std::cout << '\t' << '\t';
+            for (int i = 0; i <= N; ++i) {
+                std::cout << host_barycentric_weights[offset + i] << " ";
+            }
+            std::cout << std::endl;
+        }
+
+        std::cout << std::endl << "Lagrange interpolants -1: " << std::endl;
+        for (int N = 0; N <= N_max_; ++N) {
+            const int offset = N * (N + 1) /2;
+
+            std::cout << '\t' << "N = " << N << ": ";
+            std::cout << '\t' << '\t';
+            for (int i = 0; i <= N; ++i) {
+                std::cout << host_lagrange_interpolant_left[offset + i] << " ";
+            }
+            std::cout << std::endl;
+        }
+
+        std::cout << std::endl << "Lagrange interpolants +1: " << std::endl;
+        for (int N = 0; N <= N_max_; ++N) {
+            const int offset = N * (N + 1) /2;
+
+            std::cout << '\t' << "N = " << N << ": ";
+            std::cout << '\t' << '\t';
+            for (int i = 0; i <= N; ++i) {
+                std::cout << host_lagrange_interpolant_right[offset + i] << " ";
+            }
+            std::cout << std::endl;
+        }
+
+        std::cout << std::endl << "Derivative matrices: " << std::endl;
+        for (int N = 0; N <= N_max_; ++N) {
+            const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
+
+            std::cout << '\t' << "N = " << N << ": " << std::endl;
+            for (int i = 0; i <= N; ++i) {
+                std::cout << '\t' << '\t';
+                for (int j = 0; j <= N; ++j) {
+                    std::cout << host_derivative_matrices[offset_2D + i * (N + 1) + j] << " ";
+                }
+                std::cout << std::endl;
+            }
+        }
+
+        std::cout << std::endl << "Derivative matrices hat: " << std::endl;
+        for (int N = 0; N <= N_max_; ++N) {
+            const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
+
+            std::cout << '\t' << "N = " << N << ": " << std::endl;
+            for (int i = 0; i <= N; ++i) {
+                std::cout << '\t' << '\t';
+                for (int j = 0; j <= N; ++j) {
+                    std::cout << host_derivative_matrices_hat[offset_2D + i * (N + 1) + j] << " ";
+                }
+                std::cout << std::endl;
+            }
+        }
+
+        delete host_nodes;
+        delete host_weights;
+        delete host_barycentric_weights;
+        delete host_lagrange_interpolant_left;
+        delete host_lagrange_interpolant_right;
+        delete host_derivative_matrices;
+        delete host_derivative_matrices_hat;
+    }
 };
 
 class Element_t { // Turn this into separate vectors, because cache exists
@@ -455,22 +570,7 @@ int main(void) {
             << std::chrono::duration<double, std::milli>(t_end-t_start).count()/1000.0 
             << "s." << std::endl;
 
-    // Copy vectors from device memory to host memory
-    float* host_nodes = new float[NDG.vector_length_];
-    float* host_weights = new float[NDG.vector_length_];
-    float* host_barycentric_weights = new float[NDG.vector_length_];
-    float* host_lagrange_interpolant_left = new float[NDG.vector_length_];
-    float* host_lagrange_interpolant_right = new float[NDG.vector_length_];
-    float* host_derivative_matrices = new float[NDG.matrix_length_];
-    float* host_derivative_matrices_hat = new float[NDG.matrix_length_];
-
-    cudaMemcpy(host_nodes, NDG.nodes_, NDG.vector_length_ * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_weights, NDG.weights_, NDG.vector_length_ * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_barycentric_weights, NDG.barycentric_weights_, NDG.vector_length_ * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_lagrange_interpolant_left, NDG.lagrange_interpolant_left_, NDG.vector_length_ * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_lagrange_interpolant_right, NDG.lagrange_interpolant_right_, NDG.vector_length_ * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_derivative_matrices, NDG.derivative_matrices_, NDG.matrix_length_ * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_derivative_matrices_hat, NDG.derivative_matrices_hat_, NDG.matrix_length_ * sizeof(float), cudaMemcpyDeviceToHost);
+    NDG.print();
 
     // Can't do that!
     //cudaMemcpy(host_phi, elements[0].phi_, vector_length * sizeof(float), cudaMemcpyDeviceToHost);
@@ -487,94 +587,6 @@ int main(void) {
     cudaDeviceSynchronize();
     cudaMemcpy(host_phi, phi, (initial_N + 1) * sizeof(float), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_phi_prime, phi_prime, (initial_N + 1) * sizeof(float), cudaMemcpyDeviceToHost);
-
-    std::cout << "Nodes: " << std::endl;
-    for (int N = 0; N <= N_max; ++N) {
-        const int offset = N * (N + 1) /2;
-
-        std::cout << '\t' << "N = " << N << ": ";
-        std::cout << '\t' << '\t';
-        for (int i = 0; i <= N; ++i) {
-            std::cout << host_nodes[offset + i] << " ";
-        }
-        std::cout << std::endl;
-    }
-
-    std::cout << std::endl << "Weights: " << std::endl;
-    for (int N = 0; N <= N_max; ++N) {
-        const int offset = N * (N + 1) /2;
-
-        std::cout << '\t' << "N = " << N << ": ";
-        std::cout << '\t' << '\t';
-        for (int i = 0; i <= N; ++i) {
-            std::cout << host_weights[offset + i] << " ";
-        }
-        std::cout << std::endl;
-    }
-    
-    std::cout << std::endl << "Barycentric weights: " << std::endl;
-    for (int N = 0; N <= N_max; ++N) {
-        const int offset = N * (N + 1) /2;
-
-        std::cout << '\t' << "N = " << N << ": ";
-        std::cout << '\t' << '\t';
-        for (int i = 0; i <= N; ++i) {
-            std::cout << host_barycentric_weights[offset + i] << " ";
-        }
-        std::cout << std::endl;
-    }
-
-    std::cout << std::endl << "Lagrange interpolants -1: " << std::endl;
-    for (int N = 0; N <= N_max; ++N) {
-        const int offset = N * (N + 1) /2;
-
-        std::cout << '\t' << "N = " << N << ": ";
-        std::cout << '\t' << '\t';
-        for (int i = 0; i <= N; ++i) {
-            std::cout << host_lagrange_interpolant_left[offset + i] << " ";
-        }
-        std::cout << std::endl;
-    }
-
-    std::cout << std::endl << "Lagrange interpolants +1: " << std::endl;
-    for (int N = 0; N <= N_max; ++N) {
-        const int offset = N * (N + 1) /2;
-
-        std::cout << '\t' << "N = " << N << ": ";
-        std::cout << '\t' << '\t';
-        for (int i = 0; i <= N; ++i) {
-            std::cout << host_lagrange_interpolant_right[offset + i] << " ";
-        }
-        std::cout << std::endl;
-    }
-
-    std::cout << std::endl << "Derivative matrices: " << std::endl;
-    for (int N = 0; N <= N_max; ++N) {
-        const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
-
-        std::cout << '\t' << "N = " << N << ": " << std::endl;
-        for (int i = 0; i <= N; ++i) {
-            std::cout << '\t' << '\t';
-            for (int j = 0; j <= N; ++j) {
-                std::cout << host_derivative_matrices[offset_2D + i * (N + 1) + j] << " ";
-            }
-            std::cout << std::endl;
-        }
-    }
-
-    std::cout << std::endl << "Derivative matrices hat: " << std::endl;
-    for (int N = 0; N <= N_max; ++N) {
-        const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
-
-        std::cout << '\t' << "N = " << N << ": " << std::endl;
-        for (int i = 0; i <= N; ++i) {
-            std::cout << '\t' << '\t';
-            for (int j = 0; j <= N; ++j) {
-                std::cout << host_derivative_matrices_hat[offset_2D + i * (N + 1) + j] << " ";
-            }
-            std::cout << std::endl;
-        }
-    }
 
     std::cout << std::endl << "Phi: " << std::endl;
     for (int i = 0; i < N_elements; ++i) {
@@ -596,13 +608,6 @@ int main(void) {
         std::cout << std::endl;
     }
 
-    delete host_nodes;
-    delete host_weights;
-    delete host_barycentric_weights;
-    delete host_lagrange_interpolant_left;
-    delete host_lagrange_interpolant_right;
-    delete host_derivative_matrices;
-    delete host_derivative_matrices_hat;
     delete host_phi;
     delete host_phi_prime;
 
