@@ -15,6 +15,155 @@ constexpr int poly_blockSize = 16; // Small number of threads per block because 
 constexpr int elements_blockSize = 32; // For when we'll have multiple elements
 const dim3 matrix_blockSize(16, 16); // Small number of threads per block because N will never be huge
 
+// Algorithm 26
+__global__
+void chebyshev_gauss_nodes_and_weights(int N, float* nodes, float* weights) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+    const int offset = N * (N + 1) /2;
+
+    for (int i = index; i <= N; i += stride) {
+        nodes[offset + i] = -cos(pi * (2 * i + 1) / (2 * N + 2));
+        weights[offset + i] = pi / (N + 1);
+    }
+}
+
+// Algorithm 30
+__global__
+void calculate_barycentric_weights(int N, const float* nodes, float* barycentric_weights) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+    const int offset = N * (N + 1) /2;
+
+    for (int j = index; j <= N; j += stride) {
+        float xjxi = 1.0f;
+        for (int i = 0; i < j; ++i) {
+            xjxi *= nodes[offset + j] - nodes[offset + i];
+        }
+        for (int i = j + 1; i <= N; ++i) {
+            xjxi *= nodes[offset + j] - nodes[offset + i];
+        }
+
+        barycentric_weights[offset + j] = 1.0f/xjxi;
+    }
+}
+
+/*__device__
+bool almost_equal(float a, float b) {
+    return (std::abs(a) > std::numeric_limits<float>::min()) * (std::abs(b) > std::numeric_limits<float>::min()) * ((std::abs(a - b) <= std::numeric_limits<float>::epsilon() * a) * (std::abs(a - b) <= std::numeric_limits<float>::epsilon() * b)) 
+    + (1 - (std::abs(a) > std::numeric_limits<float>::min()) * (std::abs(b) > std::numeric_limits<float>::min())) * (std::abs(a - b) <= std::numeric_limits<float>::epsilon() * 2);
+}*/
+
+// From cppreference.com
+__device__
+bool almost_equal(float x, float y) {
+    constexpr int ulp = 2; // ULP
+    // the machine epsilon has to be scaled to the magnitude of the values used
+    // and multiplied by the desired precision in ULPs (units in the last place)
+    return std::abs(x-y) <= FLT_EPSILON * std::abs(x+y) * ulp // CHECK change this to double equivalent if using double instead of float
+        // unless the result is subnormal
+        || std::abs(x-y) < FLT_MIN; // CHECK change this to 64F if using double instead of float
+}
+
+// This will not work if we are on a node, or at least be pretty inefficient
+// Algorithm 34
+__global__
+void lagrange_integrating_polynomials(float x, int N, const float* nodes, const float* weights, float* lagrange_interpolant) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+    const int offset = N * (N + 1) /2;
+
+    for (int i = index; i <= N; i += stride) {
+        lagrange_interpolant[offset + i] = weights[offset + i] / (x - nodes[offset + i]);
+    }
+}
+
+// Algorithm 34
+__global__
+void normalize_lagrange_integrating_polynomials(int N_max, float* lagrange_interpolant) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (int N = index; N <= N_max; N += stride) {
+        const int offset = N * (N + 1) /2;
+        float sum = 0.0f;
+        for (int i = 0; i <= N; ++i) {
+            sum += lagrange_interpolant[offset + i];
+        }
+        for (int i = 0; i <= N; ++i) {
+            lagrange_interpolant[offset + i] /= sum;
+        }
+    }
+}
+
+// Be sure to compute the diagonal afterwards
+// Algorithm 37
+__global__
+void polynomial_derivative_matrices(int N, const float* nodes, const float* barycentric_weights, float* derivative_matrices) {
+    const int index_x = blockIdx.x * blockDim.x + threadIdx.x;
+    const int index_y = blockIdx.y * blockDim.y + threadIdx.y;
+    const int stride_x = blockDim.x * gridDim.x;
+    const int stride_y = blockDim.y * gridDim.y;
+    const int offset_1D = N * (N + 1) /2;
+    const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
+
+    for (int i = index_x; i <= N; i += stride_x) {
+        for (int j = index_y; j <= N; j += stride_y) {
+            if (i != j) { // CHECK remove for branchless, i == j will be overwritten anyway
+                derivative_matrices[offset_2D + i * (N + 1) + j] = barycentric_weights[offset_1D + j] / (barycentric_weights[offset_1D + i] * (nodes[offset_1D + i] - nodes[offset_1D + j]));
+            }
+        }
+    }
+}
+
+// Algorithm 37
+__global__
+void polynomial_derivative_matrices_diagonal(int N, float* derivative_matrices) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+    const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
+
+    for (int i = index; i <= N; i += stride) {
+        derivative_matrices[offset_2D + i * (N + 2)] = 0.0f;
+        for (int j = 0; j < i; ++j) {
+            derivative_matrices[offset_2D + i * (N + 2)] -= derivative_matrices[offset_2D + i * (N + 1) + j];
+        }
+        for (int j = i + 1; j <= N; ++j) {
+            derivative_matrices[offset_2D + i * (N + 2)] -= derivative_matrices[offset_2D + i * (N + 1) + j];
+        }
+    }
+}
+
+__global__
+void polynomial_derivative_matrices_hat(int N, const float* weights, const float* derivative_matrices, float* derivative_matrices_hat) {
+    const int index_x = blockIdx.x * blockDim.x + threadIdx.x;
+    const int index_y = blockIdx.y * blockDim.y + threadIdx.y;
+    const int stride_x = blockDim.x * gridDim.x;
+    const int stride_y = blockDim.y * gridDim.y;
+    const int offset_1D = N * (N + 1) /2;
+    const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
+
+    for (int i = index_x; i <= N; i += stride_x) {
+        for (int j = index_y; j <= N; j += stride_y) {
+            derivative_matrices_hat[offset_2D + i * (N + 1) + j] = -derivative_matrices[offset_2D + j * (N + 1) + i] * weights[offset_1D + j] / weights[offset_1D + i];
+        }
+    }
+}
+
+// Algorithm 19
+__device__
+void matrix_vector_derivative(int N, const float* derivative_matrices, const float* phi, float* phi_prime) {
+    // s = 0, e = N (p.55 says N - 1)
+    const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
+
+    for (int i = 0; i <= N; ++i) {
+        phi_prime[i] = 0.0f;
+        for (int j = 0; j <= N; ++j) {
+            phi_prime[i] += derivative_matrices[offset_2D + i * (N + 1) + j] * phi[j] * phi[j]/2.0f; // phi not squared in textbook, squared for Burger's
+        }
+    }
+}
+
 class NDG_t { 
 public: 
     NDG_t(int N_max) : 
@@ -29,6 +178,44 @@ public:
         cudaMalloc(&lagrange_interpolant_right_, vector_length_ * sizeof(float));
         cudaMalloc(&derivative_matrices_, matrix_length_ * sizeof(float));
         cudaMalloc(&derivative_matrices_hat_, matrix_length_ * sizeof(float));
+
+        for (int N = 0; N <= N_max_; ++N) {
+            const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
+            chebyshev_gauss_nodes_and_weights<<<vector_numBlocks, poly_blockSize>>>(N, nodes_, weights_);
+        }
+
+        // Nodes are needed to compute barycentric weights
+        cudaDeviceSynchronize();
+        for (int N = 0; N <= N_max_; ++N) {
+            const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
+            calculate_barycentric_weights<<<vector_numBlocks, poly_blockSize>>>(N, nodes_, barycentric_weights_);
+            lagrange_integrating_polynomials<<<vector_numBlocks, poly_blockSize>>>(-1.0f, N, nodes_, weights_, lagrange_interpolant_left_);
+            lagrange_integrating_polynomials<<<vector_numBlocks, poly_blockSize>>>(1.0f, N, nodes_, weights_, lagrange_interpolant_right_);
+        }
+
+        // We need to divide lagrange_integrating_polynomials by sum, and barycentric weights for derivative matrix
+        cudaDeviceSynchronize();
+        const int numBlocks = (N_max_ + poly_blockSize) / poly_blockSize;
+        normalize_lagrange_integrating_polynomials<<<numBlocks, poly_blockSize>>>(N_max_, lagrange_interpolant_left_);
+        normalize_lagrange_integrating_polynomials<<<numBlocks, poly_blockSize>>>(N_max_, lagrange_interpolant_right_);
+        for (int N = 0; N <= N_max_; ++N) {
+            const dim3 matrix_numBlocks((N +  matrix_blockSize.x) / matrix_blockSize.x, (N +  matrix_blockSize.y) / matrix_blockSize.y); // Should be (N + poly_blockSize - 1) if N is not inclusive
+            polynomial_derivative_matrices<<<matrix_numBlocks, matrix_blockSize>>>(N, nodes_, barycentric_weights_, derivative_matrices_);
+        }
+
+        // Then we calculate the derivative matrix diagonal
+        cudaDeviceSynchronize();
+        for (int N = 0; N <= N_max_; ++N) {
+            const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
+            polynomial_derivative_matrices_diagonal<<<vector_numBlocks, poly_blockSize>>>(N, derivative_matrices_);
+        }
+
+        // All the derivative matrix has to be computed before D^
+        cudaDeviceSynchronize();
+        for (int N = 0; N <= N_max_; ++N) {
+            const dim3 matrix_numBlocks((N +  matrix_blockSize.x) / matrix_blockSize.x, (N +  matrix_blockSize.y) / matrix_blockSize.y); // Should be (N + poly_blockSize - 1) if N is not inclusive
+            polynomial_derivative_matrices_hat<<<matrix_numBlocks, matrix_blockSize>>>(N, weights_, derivative_matrices_, derivative_matrices_hat_);
+        }
     }
 
     ~NDG_t() {
@@ -258,155 +445,6 @@ void get_solution(int N_elements, const Element_t* elements, float* phi, float* 
     }
 }
 
-// Algorithm 26
-__global__
-void chebyshev_gauss_nodes_and_weights(int N, float* nodes, float* weights) {
-    const int index = blockIdx.x * blockDim.x + threadIdx.x;
-    const int stride = blockDim.x * gridDim.x;
-    const int offset = N * (N + 1) /2;
-
-    for (int i = index; i <= N; i += stride) {
-        nodes[offset + i] = -cos(pi * (2 * i + 1) / (2 * N + 2));
-        weights[offset + i] = pi / (N + 1);
-    }
-}
-
-// Algorithm 30
-__global__
-void calculate_barycentric_weights(int N, const float* nodes, float* barycentric_weights) {
-    const int index = blockIdx.x * blockDim.x + threadIdx.x;
-    const int stride = blockDim.x * gridDim.x;
-    const int offset = N * (N + 1) /2;
-
-    for (int j = index; j <= N; j += stride) {
-        float xjxi = 1.0f;
-        for (int i = 0; i < j; ++i) {
-            xjxi *= nodes[offset + j] - nodes[offset + i];
-        }
-        for (int i = j + 1; i <= N; ++i) {
-            xjxi *= nodes[offset + j] - nodes[offset + i];
-        }
-
-        barycentric_weights[offset + j] = 1.0f/xjxi;
-    }
-}
-
-/*__device__
-bool almost_equal(float a, float b) {
-    return (std::abs(a) > std::numeric_limits<float>::min()) * (std::abs(b) > std::numeric_limits<float>::min()) * ((std::abs(a - b) <= std::numeric_limits<float>::epsilon() * a) * (std::abs(a - b) <= std::numeric_limits<float>::epsilon() * b)) 
-    + (1 - (std::abs(a) > std::numeric_limits<float>::min()) * (std::abs(b) > std::numeric_limits<float>::min())) * (std::abs(a - b) <= std::numeric_limits<float>::epsilon() * 2);
-}*/
-
-// From cppreference.com
-__device__
-bool almost_equal(float x, float y) {
-    constexpr int ulp = 2; // ULP
-    // the machine epsilon has to be scaled to the magnitude of the values used
-    // and multiplied by the desired precision in ULPs (units in the last place)
-    return std::abs(x-y) <= FLT_EPSILON * std::abs(x+y) * ulp // CHECK change this to double equivalent if using double instead of float
-        // unless the result is subnormal
-        || std::abs(x-y) < FLT_MIN; // CHECK change this to 64F if using double instead of float
-}
-
-// This will not work if we are on a node, or at least be pretty inefficient
-// Algorithm 34
-__global__
-void lagrange_integrating_polynomials(float x, int N, const float* nodes, const float* weights, float* lagrange_interpolant) {
-    const int index = blockIdx.x * blockDim.x + threadIdx.x;
-    const int stride = blockDim.x * gridDim.x;
-    const int offset = N * (N + 1) /2;
-
-    for (int i = index; i <= N; i += stride) {
-        lagrange_interpolant[offset + i] = weights[offset + i] / (x - nodes[offset + i]);
-    }
-}
-
-// Algorithm 34
-__global__
-void normalize_lagrange_integrating_polynomials(int N_max, float* lagrange_interpolant) {
-    const int index = blockIdx.x * blockDim.x + threadIdx.x;
-    const int stride = blockDim.x * gridDim.x;
-
-    for (int N = index; N <= N_max; N += stride) {
-        const int offset = N * (N + 1) /2;
-        float sum = 0.0f;
-        for (int i = 0; i <= N; ++i) {
-            sum += lagrange_interpolant[offset + i];
-        }
-        for (int i = 0; i <= N; ++i) {
-            lagrange_interpolant[offset + i] /= sum;
-        }
-    }
-}
-
-// Be sure to compute the diagonal afterwards
-// Algorithm 37
-__global__
-void polynomial_derivative_matrices(int N, const float* nodes, const float* barycentric_weights, float* derivative_matrices) {
-    const int index_x = blockIdx.x * blockDim.x + threadIdx.x;
-    const int index_y = blockIdx.y * blockDim.y + threadIdx.y;
-    const int stride_x = blockDim.x * gridDim.x;
-    const int stride_y = blockDim.y * gridDim.y;
-    const int offset_1D = N * (N + 1) /2;
-    const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
-
-    for (int i = index_x; i <= N; i += stride_x) {
-        for (int j = index_y; j <= N; j += stride_y) {
-            if (i != j) { // CHECK remove for branchless, i == j will be overwritten anyway
-                derivative_matrices[offset_2D + i * (N + 1) + j] = barycentric_weights[offset_1D + j] / (barycentric_weights[offset_1D + i] * (nodes[offset_1D + i] - nodes[offset_1D + j]));
-            }
-        }
-    }
-}
-
-// Algorithm 37
-__global__
-void polynomial_derivative_matrices_diagonal(int N, float* derivative_matrices) {
-    const int index = blockIdx.x * blockDim.x + threadIdx.x;
-    const int stride = blockDim.x * gridDim.x;
-    const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
-
-    for (int i = index; i <= N; i += stride) {
-        derivative_matrices[offset_2D + i * (N + 2)] = 0.0f;
-        for (int j = 0; j < i; ++j) {
-            derivative_matrices[offset_2D + i * (N + 2)] -= derivative_matrices[offset_2D + i * (N + 1) + j];
-        }
-        for (int j = i + 1; j <= N; ++j) {
-            derivative_matrices[offset_2D + i * (N + 2)] -= derivative_matrices[offset_2D + i * (N + 1) + j];
-        }
-    }
-}
-
-__global__
-void polynomial_derivative_matrices_hat(int N, const float* weights, const float* derivative_matrices, float* derivative_matrices_hat) {
-    const int index_x = blockIdx.x * blockDim.x + threadIdx.x;
-    const int index_y = blockIdx.y * blockDim.y + threadIdx.y;
-    const int stride_x = blockDim.x * gridDim.x;
-    const int stride_y = blockDim.y * gridDim.y;
-    const int offset_1D = N * (N + 1) /2;
-    const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
-
-    for (int i = index_x; i <= N; i += stride_x) {
-        for (int j = index_y; j <= N; j += stride_y) {
-            derivative_matrices_hat[offset_2D + i * (N + 1) + j] = -derivative_matrices[offset_2D + j * (N + 1) + i] * weights[offset_1D + j] / weights[offset_1D + i];
-        }
-    }
-}
-
-// Algorithm 19
-__device__
-void matrix_vector_derivative(int N, const float* derivative_matrices, const float* phi, float* phi_prime) {
-    // s = 0, e = N (p.55 says N - 1)
-    const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
-
-    for (int i = 0; i <= N; ++i) {
-        phi_prime[i] = 0.0f;
-        for (int j = 0; j <= N; ++j) {
-            phi_prime[i] += derivative_matrices[offset_2D + i * (N + 1) + j] * phi[j] * phi[j]/2.0f; // phi not squared in textbook, squared for Burger's
-        }
-    }
-}
-
 // Algorithm 60
 __device__
 void compute_dg_derivative(Element_t &element, const float* weights, const float* derivative_matrices, const float* lagrange_interpolant_left, const float* lagrange_interpolant_right) {
@@ -513,52 +551,13 @@ int main(void) {
     // Allocate GPU Memory – accessible from GPU
     cudaMalloc(&elements, N_elements * sizeof(Element_t));
 
-    auto t_start = std::chrono::high_resolution_clock::now(); 
-    for (int N = 0; N <= N_max; ++N) {
-        const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
-        chebyshev_gauss_nodes_and_weights<<<vector_numBlocks, poly_blockSize>>>(N, NDG.nodes_, NDG.weights_);
-    }
-
     const int elements_numBlocks = (N_elements + elements_blockSize - 1) / elements_blockSize;
     build_elements<<<elements_numBlocks, elements_blockSize>>>(N_elements, initial_N, elements);
-
-    // Nodes are needed to compute barycentric weights
-    cudaDeviceSynchronize();
-    for (int N = 0; N <= N_max; ++N) {
-        const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
-        calculate_barycentric_weights<<<vector_numBlocks, poly_blockSize>>>(N, NDG.nodes_, NDG.barycentric_weights_);
-        lagrange_integrating_polynomials<<<vector_numBlocks, poly_blockSize>>>(-1.0f, N, NDG.nodes_, NDG.weights_, NDG.lagrange_interpolant_left_);
-        lagrange_integrating_polynomials<<<vector_numBlocks, poly_blockSize>>>(1.0f, N, NDG.nodes_, NDG.weights_, NDG.lagrange_interpolant_right_);
-    }
-
     initial_conditions<<<elements_numBlocks, elements_blockSize>>>(N_elements, elements, NDG.nodes_);
-
-    // We need to divide lagrange_integrating_polynomials by sum, and barycentric weights for derivative matrix
-    cudaDeviceSynchronize();
-    const int numBlocks = (N_max + poly_blockSize) / poly_blockSize;
-    normalize_lagrange_integrating_polynomials<<<numBlocks, poly_blockSize>>>(N_max, NDG.lagrange_interpolant_left_);
-    normalize_lagrange_integrating_polynomials<<<numBlocks, poly_blockSize>>>(N_max, NDG.lagrange_interpolant_right_);
-    for (int N = 0; N <= N_max; ++N) {
-        const dim3 matrix_numBlocks((N +  matrix_blockSize.x) / matrix_blockSize.x, (N +  matrix_blockSize.y) / matrix_blockSize.y); // Should be (N + poly_blockSize - 1) if N is not inclusive
-        polynomial_derivative_matrices<<<matrix_numBlocks, matrix_blockSize>>>(N, NDG.nodes_, NDG.barycentric_weights_, NDG.derivative_matrices_);
-    }
-
-    // Then we calculate the derivative matrix diagonal
-    cudaDeviceSynchronize();
-    for (int N = 0; N <= N_max; ++N) {
-        const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
-        polynomial_derivative_matrices_diagonal<<<vector_numBlocks, poly_blockSize>>>(N, NDG.derivative_matrices_);
-    }
-
-    // All the derivative matrix has to be computed before D^
-    cudaDeviceSynchronize();
-    for (int N = 0; N <= N_max; ++N) {
-        const dim3 matrix_numBlocks((N +  matrix_blockSize.x) / matrix_blockSize.x, (N +  matrix_blockSize.y) / matrix_blockSize.y); // Should be (N + poly_blockSize - 1) if N is not inclusive
-        polynomial_derivative_matrices_hat<<<matrix_numBlocks, matrix_blockSize>>>(N, NDG.weights_, NDG.derivative_matrices_, NDG.derivative_matrices_hat_);
-    }
 
     // Starting actual computation
     cudaDeviceSynchronize();
+    auto t_start = std::chrono::high_resolution_clock::now();
     // This one right here officer
     const int N_steps = 600;
     const float delta_t = 0.001f;
