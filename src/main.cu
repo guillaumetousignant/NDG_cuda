@@ -664,8 +664,8 @@ public:
 
 int main(void) {
     const int N_elements = 1;
-    const int initial_N = 8;
-    const int N_max = 16;
+    const int initial_N = 64;
+    const int N_max = 128;
     
     NDG_t NDG(N_max);
     Mesh_t Mesh(N_elements, initial_N);
