@@ -489,7 +489,7 @@ void compute_dg_time_derivative(Element_t &element, const float* weights, const 
     element.phi_L_ = interpolate_to_boundary(element.N_, element.phi_, lagrange_interpolant_left);
     element.phi_R_ = interpolate_to_boundary(element.N_, element.phi_, lagrange_interpolant_right);
 
-    if (element.phi_L_ > 0.0f) {
+    if (element.phi_L_ > 0.0f) { // CHECK this is likely wrong
         element.phi_L_ = element.boundary_L_;
     }
     if (element.phi_R_ < 0.0f) {
