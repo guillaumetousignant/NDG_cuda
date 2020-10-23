@@ -145,7 +145,7 @@ void polynomial_derivative_matrices_hat(int N, const float* weights, const float
 
     for (int i = index_x; i <= N; i += stride_x) {
         for (int j = index_y; j <= N; j += stride_y) {
-            derivative_matrices_hat[offset_2D + i * (N + 1) + j] = -derivative_matrices[offset_2D + j * (N + 1) + i] * weights[offset_1D + j] / weights[offset_1D + i];
+            derivative_matrices_hat[offset_2D + i * (N + 1) + j] = derivative_matrices[offset_2D + j * (N + 1) + i] * weights[offset_1D + j] / weights[offset_1D + i];
         }
     }
 }
@@ -159,7 +159,7 @@ void matrix_vector_derivative(int N, const float* derivative_matrices, const flo
     for (int i = 0; i <= N; ++i) {
         phi_prime[i] = 0.0f;
         for (int j = 0; j <= N; ++j) {
-            phi_prime[i] += derivative_matrices[offset_2D + i * (N + 1) + j] * phi[j] * phi[j]/2.0f; // phi not squared in textbook, squared for Burger's
+            phi_prime[i] += derivative_matrices[offset_2D + i * (N + 1) + j] * phi[j] * phi[j] * 0.5f; // phi not squared in textbook, squared for Burger's
         }
     }
 }
