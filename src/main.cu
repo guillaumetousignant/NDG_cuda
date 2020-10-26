@@ -381,7 +381,7 @@ public:
             neighbours_{neighbour_L, neighbour_R},
             faces_{face_L, face_R},
             x_{x_L, x_R},
-            delta_x(x_R - x_L) {
+            delta_x_(x_R - x_L) {
         phi_ = new float[N_ + 1];
         phi_prime_ = new float[N_ + 1];
         intermediate_ = new float[N_ + 1];
