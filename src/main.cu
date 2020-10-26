@@ -13,6 +13,7 @@ namespace fs = std::filesystem;
 constexpr float pi = 3.14159265358979323846f;
 constexpr int poly_blockSize = 16; // Small number of threads per block because N will never be huge
 constexpr int elements_blockSize = 32; // For when we'll have multiple elements
+constexpr int faces_blockSize = 32; // Same number of faces as elements for periodic BC
 const dim3 matrix_blockSize(16, 16); // Small number of threads per block because N will never be huge
 
 // Algorithm 26
@@ -375,7 +376,10 @@ public:
 class Element_t { // Turn this into separate vectors, because cache exists
 public:
     __device__ 
-    Element_t(int N) : N_(N) {
+    Element_t(int N, int neighbour_L, int neighbour_R, int face_L, int face_R) : 
+            N_(N),
+            neighbours_{neighbour_L, neighbour_R},
+            faces_{face_L, face_R} {
         phi_ = new float[N_ + 1];
         phi_prime_ = new float[N_ + 1];
         intermediate_ = new float[N_ + 1];
@@ -395,10 +399,10 @@ public:
     }
 
     int N_;
+    int neighbours_[2]; // Could also be pointers
+    int faces_[2]; // Could also be pointers
     float phi_L_;
     float phi_R_;
-    float boundary_L_;
-    float boundary_R_;
     float* phi_; // Solution
     float* phi_prime_;
     float* intermediate_;
@@ -410,7 +414,11 @@ void build_elements(int N_elements, int N, Element_t* elements) {
     const int stride = blockDim.x * gridDim.x;
 
     for (int i = index; i < N_elements; i += stride) {
-        elements[i] = Element_t(N);
+        const int neighbour_L = (i > 0) ? i - 1 : N_elements - 1; // First cell has last cell as left neighbour
+        const int neighbour_R = (i < N_elements - 1) ? i + 1 : 0; // Last cell has first cell as right neighbour
+        const int face_L = (i > 0) ? i - 1 : N_elements - 1;
+        const int face_R = i;
+        elements[i] = Element_t(N, neighbour_L, neighbour_R, face_L, face_R);
     }
 }
 
@@ -421,10 +429,8 @@ void initial_conditions(int N_elements, Element_t* elements, const float* nodes)
 
     for (int i = index; i < N_elements; i += stride) {
         const int offset = elements[i].N_ * (elements[i].N_ + 1) /2;
-        elements[i].boundary_L_ = -sin(-pi);
-        elements[i].boundary_R_ = -sin(pi);
-        elements[i].phi_L_ = elements[i].boundary_L_;
-        elements[i].phi_R_ = elements[i].boundary_R_;
+        elements[i].phi_L_ = -sin(-pi);
+        elements[i].phi_R_ = -sin(pi);
         for (int j = 0; j <= elements[i].N_; ++j) {
             elements[i].phi_[j] = -sin(pi * nodes[offset + j]);
         }
@@ -488,13 +494,6 @@ __device__
 void compute_dg_time_derivative(Element_t &element, const float* weights, const float* derivative_matrices, const float* lagrange_interpolant_left, const float* lagrange_interpolant_right) {
     element.phi_L_ = interpolate_to_boundary(element.N_, element.phi_, lagrange_interpolant_left);
     element.phi_R_ = interpolate_to_boundary(element.N_, element.phi_, lagrange_interpolant_right);
-
-    if (element.phi_L_ > 0.0f) { // CHECK this is likely wrong
-        element.phi_L_ = element.boundary_L_;
-    }
-    if (element.phi_R_ < 0.0f) {
-        element.phi_R_ = element.boundary_R_;
-    }
     
     compute_dg_derivative(element, weights, derivative_matrices, lagrange_interpolant_left, lagrange_interpolant_right); // Multiplied by -c in textbook, here multiplied by phi in matrix_vector_derivative
 }
@@ -532,24 +531,58 @@ void gd_step_by_rk3(int N_elements, Element_t* elements, float delta_t, const fl
     }
 }
 
+class Face_t {
+public:
+    __device__ 
+    Face_t(int element_L, int element_R) : elements_{element_L, element_R} {}
+
+    __device__
+    ~Face_t() {}
+
+    int elements_[2];
+    float flux_;
+};
+
+__global__
+void build_faces(int N_faces, Face_t* faces) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (int i = index; i < N_faces; i += stride) {
+        const int neighbour_L = i;
+        const int neighbour_R = (i < N_faces - 1) ? i + 1 : 0; // Last face links last element to first element
+        faces[i] = Face_t(neighbour_L, neighbour_R);
+    }
+}
+
 class Mesh_t {
 public:
-    Mesh_t(int N_elements, int initial_N) : N_elements_(N_elements), initial_N_(initial_N) {
+    Mesh_t(int N_elements, int initial_N) : N_elements_(N_elements), N_faces_(N_elements), initial_N_(initial_N) {
+        // CHECK N_faces = N_elements only for periodic BC.
         cudaMalloc(&elements_, N_elements_ * sizeof(Element_t));
+        cudaMalloc(&faces_, N_faces_ * sizeof(Face_t));
 
         const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
+        const int faces_numBlocks = (N_faces_ + faces_blockSize - 1) / faces_blockSize;
         build_elements<<<elements_numBlocks, elements_blockSize>>>(N_elements_, initial_N_, elements_);
+        build_faces<<<faces_numBlocks, faces_blockSize>>>(N_faces_, faces_); // CHECK
     }
 
     ~Mesh_t() {
         if (elements_ != nullptr){
             cudaFree(elements_);
         }
+
+        if (faces_ != nullptr){
+            cudaFree(faces_);
+        }
     }
 
     int N_elements_;
+    int N_faces_;
     int initial_N_;
     Element_t* elements_;
+    Face_t* faces_;
 
     void set_initial_conditions(const float* nodes) {
         const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
