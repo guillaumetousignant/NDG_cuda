@@ -376,10 +376,12 @@ public:
 class Element_t { // Turn this into separate vectors, because cache exists
 public:
     __device__ 
-    Element_t(int N, int neighbour_L, int neighbour_R, int face_L, int face_R) : 
+    Element_t(int N, int neighbour_L, int neighbour_R, int face_L, int face_R, float x_L, float x_R) : 
             N_(N),
             neighbours_{neighbour_L, neighbour_R},
-            faces_{face_L, face_R} {
+            faces_{face_L, face_R},
+            x_{x_L, x_R},
+            delta_x(x_R - x_L) {
         phi_ = new float[N_ + 1];
         phi_prime_ = new float[N_ + 1];
         intermediate_ = new float[N_ + 1];
@@ -401,6 +403,8 @@ public:
     int N_;
     int neighbours_[2]; // Could also be pointers
     int faces_[2]; // Could also be pointers
+    float x_[2];
+    float delta_x_;
     float phi_L_;
     float phi_R_;
     float* phi_; // Solution
@@ -418,7 +422,7 @@ void build_elements(int N_elements, int N, Element_t* elements) {
         const int neighbour_R = (i < N_elements - 1) ? i + 1 : 0; // Last cell has first cell as right neighbour
         const int face_L = (i > 0) ? i - 1 : N_elements - 1;
         const int face_R = i;
-        elements[i] = Element_t(N, neighbour_L, neighbour_R, face_L, face_R);
+        elements[i] = Element_t(N, neighbour_L, neighbour_R, face_L, face_R, -1.0f, 1.0f);
     }
 }
 
