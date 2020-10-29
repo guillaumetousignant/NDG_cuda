@@ -493,7 +493,7 @@ float interpolate_to_boundary(int N, const float* phi, const float* lagrange_int
     return result;
 }
 
-// Algorithm 61
+// Algorithm 61 (not really anymore)
 __device__
 void compute_dg_time_derivative(Element_t &element, const float* weights, const float* derivative_matrices, const float* lagrange_interpolant_left, const float* lagrange_interpolant_right) {
     element.phi_L_ = interpolate_to_boundary(element.N_, element.phi_, lagrange_interpolant_left);
@@ -532,6 +532,64 @@ void gd_step_by_rk3(int N_elements, Element_t* elements, float delta_t, const fl
     }
 }
 
+__global__
+void rk3_step(int N_elements, Element_t* elements, float delta_t, float a, float g) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (int i = index; i < N_elements; i += stride) {
+        for (int j = 0; j <= elements[i].N_; ++j){
+            elements[i].intermediate_[j] = a * elements[i].intermediate_[j] + elements[i].phi_prime_[j];
+            elements[i].phi_[j] += g * delta_t * elements[i].intermediate_[j];
+        }
+    }
+}
+
+__global__
+void interpolate_to_boundaries(int N_elements, Element_t* elements, const float* lagrange_interpolant_left, const float* lagrange_interpolant_right) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (int i = index; i < N_elements; i += stride) {
+        elements[i].phi_L_ = interpolate_to_boundary(elements[i].N_, elements[i].phi_, lagrange_interpolant_left);
+        elements[i].phi_R_ = interpolate_to_boundary(elements[i.]N_, elements[i].phi_, lagrange_interpolant_right);
+    }
+}
+
+__global__
+void calculate_fluxes(int N_faces, const Face_t* faces, Element_t* elements) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (int i = index; i < N_faces; i += stride) {
+        float u;
+        float u_left = elements[faces[i].elements_[0]].phi_R_;
+        float u_right = elements[faces[i].elements_[1]].phi_L_;
+
+        if (u_left < 0.0f && u_right > 0.0f) { // In expansion fan
+            u = 0.5f * (u_left + u_right);
+        }
+        else if (u_left > u_right) { // Shock
+            if (u_left > 0.0f) {
+                u = u_left;
+            }
+            else {
+                u = u_right;
+            }
+        }
+        else { // Expansion fan
+            if (u_left > 0.0f) {
+                u = u_left;
+            }
+            else {
+                u = u_right;
+            }
+        }
+
+        faces[i].flux_ = 0.5f * u * u;
+    }
+}
+
 class Face_t {
 public:
     __device__ 
@@ -540,7 +598,7 @@ public:
     __device__
     ~Face_t() {}
 
-    int elements_[2];
+    int elements_[2]; // left, right
     float flux_;
 };
 
@@ -601,6 +659,19 @@ public:
         for (int step = 0; step < N_steps; ++step) {
             time += delta_t;
             gd_step_by_rk3<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, delta_t, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+            
+            interpolate_to_boundaries<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+            calculate_fluxes<<<faces_numBlocks, faces_blockSize>>>(N_faces_, faces_, elements_);
+            rk3_step<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, delta_t, 0.0f, 1.0f/3.0f);
+
+            interpolate_to_boundaries<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+            calculate_fluxes<<<faces_numBlocks, faces_blockSize>>>(N_faces_, faces_, elements_);
+            rk3_step<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, delta_t, -5.0f/9.0f, 15.0f/16.0f);
+
+            interpolate_to_boundaries<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+            calculate_fluxes<<<faces_numBlocks, faces_blockSize>>>(N_faces_, faces_, elements_);
+            rk3_step<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, delta_t, -153.0f/128.0f, 8.0f/15.0f);
+                  
             if (step % 100 == 0) {
                 write_data(time, NDG.nodes_);
             }
