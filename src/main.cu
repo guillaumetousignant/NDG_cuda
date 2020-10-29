@@ -434,7 +434,7 @@ public:
         delete host_lagrange_interpolant_right;
         delete host_derivative_matrices;
         delete host_derivative_matrices_hat;
-        delete host_interpolation_length
+        delete host_interpolation_matrices;
     }
 };
 
@@ -845,7 +845,7 @@ int main(void) {
             << std::chrono::duration<double, std::milli>(t_end-t_start).count()/1000.0 
             << "s." << std::endl;
 
-    //NDG.print();
+    NDG.print();
     //Mesh.print();
     
     return 0;
