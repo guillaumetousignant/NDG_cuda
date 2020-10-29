@@ -158,22 +158,21 @@ void interpolation_matrices(int N, int N_interpolation_points, const float* node
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     const int offset_1D = N * (N + 1) /2;
-    const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
-    const int offset_interp = N * (N + 1) * N_interpolation_points_/2
+    const int offset_interp = N * (N + 1) * N_interpolation_points/2;
 
     for (int i = index; i < N_interpolation_points; i += stride) {
         bool row_has_match = false;
-        x_coord = 2.0f * i / (N_interpolation_points - 1) - 1.0f;
+        float x_coord = 2.0f * i / (N_interpolation_points - 1) - 1.0f;
 
         for (int j = 0; j <= N; ++i) {
             interpolation_matrices[offset_interp + i * (N + 1) + j] = 0.0f;
-            if almost_equal(x_coord, nodes[offset_1D + j]) {
+            if (almost_equal(x_coord, nodes[offset_1D + j])) {
                 interpolation_matrices[offset_interp + i * (N + 1) + j] = 1.0f;
                 row_has_match = true;
             }
         }
 
-        if !row_has_match {
+        if (!row_has_match) {
             float total = 0.0f;
             for (int j = 0; j <= N; ++i) {
                 interpolation_matrices[offset_interp + i * (N + 1) + j] = weights[offset_1D + j] / (x_coord - nodes[offset_1D + j]);
@@ -207,7 +206,7 @@ public:
             N_interpolation_points_(N_interpolation_points),
             vector_length_((N_max_ + 1) * (N_max_ + 2)/2), 
             matrix_length_((N_max_ + 1) * (N_max_ + 2) * (2 * N_max_ + 3)/6),
-            interpolation_length_((N_max_ + 1) * (N_max_ + 2) * N_interpolation_points_/2); {
+            interpolation_length_((N_max_ + 1) * (N_max_ + 2) * N_interpolation_points_/2) {
 
         cudaMalloc(&nodes_, vector_length_ * sizeof(float));
         cudaMalloc(&weights_, vector_length_ * sizeof(float));
@@ -313,6 +312,7 @@ public:
         float* host_lagrange_interpolant_right = new float[vector_length_];
         float* host_derivative_matrices = new float[matrix_length_];
         float* host_derivative_matrices_hat = new float[matrix_length_];
+        float* host_interpolation_matrices = new float[interpolation_length_];
 
         cudaDeviceSynchronize();
 
@@ -323,6 +323,7 @@ public:
         cudaMemcpy(host_lagrange_interpolant_right, lagrange_interpolant_right_, vector_length_ * sizeof(float), cudaMemcpyDeviceToHost);
         cudaMemcpy(host_derivative_matrices, derivative_matrices_, matrix_length_ * sizeof(float), cudaMemcpyDeviceToHost);
         cudaMemcpy(host_derivative_matrices_hat, derivative_matrices_hat_, matrix_length_ * sizeof(float), cudaMemcpyDeviceToHost);
+        cudaMemcpy(host_interpolation_matrices, interpolation_matrices_, interpolation_length_ * sizeof(float), cudaMemcpyDeviceToHost);
 
         std::cout << "Nodes: " << std::endl;
         for (int N = 0; N <= N_max_; ++N) {
@@ -412,6 +413,20 @@ public:
             }
         }
 
+        std::cout << std::endl << "Interpolation matrices hat: " << std::endl;
+        for (int N = 0; N <= N_max_; ++N) {
+            const int offset_interp = N * (N + 1) * N_interpolation_points_/2;
+
+            std::cout << '\t' << "N = " << N << ": " << std::endl;
+            for (int i = 0; i < offset_interp; ++i) {
+                std::cout << '\t' << '\t';
+                for (int j = 0; j <= N; ++j) {
+                    std::cout << host_interpolation_matrices[offset_interp + i * (N + 1) + j] << " ";
+                }
+                std::cout << std::endl;
+            }
+        }
+
         delete host_nodes;
         delete host_weights;
         delete host_barycentric_weights;
@@ -419,6 +434,7 @@ public:
         delete host_lagrange_interpolant_right;
         delete host_derivative_matrices;
         delete host_derivative_matrices_hat;
+        delete host_interpolation_length
     }
 };
 
@@ -513,6 +529,25 @@ void get_phi(int N_elements, const Element_t* elements, float* phi) {
     for (int i = index; i < N_elements; i += stride) {
         for (int j = 0; j <= elements[i].N_; ++j) {
             phi[j] = elements[i].phi_[j];
+        }
+    }
+}
+
+__global__
+void get_solution(int N_elements, int N_interpolation_points, const Element_t* elements, const float* interpolation_matrices, float* phi, float* x) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (int i = index; i < N_elements; i += stride) {
+        const int offset_interp_1D = i * N_interpolation_points;
+        const int offset_interp = elements[i].N_ * (elements[i].N_ + 1) * N_interpolation_points/2;
+
+        for (int j = 0; j < N_interpolation_points; ++j) {
+            phi[offset_interp_1D + j] = 0.0f;
+            for (int k = 0; k <= elements[i].N_; ++k) {
+                phi[offset_interp_1D + j] += interpolation_matrices[offset_interp + j * (elements[i].N_ + 1) + k] * elements[i].phi_[k];
+            }
+            x[offset_interp_1D + j] = j * (elements[i].x_[1] - elements[i].x_[0]) / (N_interpolation_points - 1) + elements[i].x_[0];
         }
     }
 }
@@ -630,23 +665,6 @@ void compute_dg_derivative(int N_elements, Element_t* elements, const Face_t* fa
     }
 }
 
-__global__
-void evaluate(int N_elements, Element_t* elements, const float* weights, const float* derivative_matrices, const float* lagrange_interpolant_left, const float* lagrange_interpolant_right) {
-    const int index = blockIdx.x * blockDim.x + threadIdx.x;
-    const int stride = blockDim.x * gridDim.x;
-
-    for (int i = index; i < N_elements; i += stride) {
-        const int offset_1D = elements[i].N_ * (elements[i].N_ + 1) /2; // CHECK cache?
-
-        matrix_vector_derivative(elements[i].N_, derivative_matrices, elements[i].phi_, elements[i].phi_prime_);
-
-        for (int j = 0; j <= elements[i].N_; ++j) {
-            elements[i].phi_prime_[j] += (faces[elements[i].faces_[0]].flux_ * lagrange_interpolant_left[offset_1D + j] - faces[elements[i].faces_[1]].flux_ * lagrange_interpolant_right[offset_1D + j]) / weights[offset_1D + j];
-            elements[i].phi_prime_[j] *= 2.0f/elements[i].delta_x_;
-        }
-    }
-}
-
 class Mesh_t {
 public:
     Mesh_t(int N_elements, int initial_N) : N_elements_(N_elements), N_faces_(N_elements), initial_N_(initial_N) {
@@ -688,7 +706,7 @@ public:
         const int faces_numBlocks = (N_faces_ + faces_blockSize - 1) / faces_blockSize;
         float time = 0.0;
 
-        write_data(time, NDG.nodes_);
+        //write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
 
         for (int step = 0; step < N_steps; ++step) {
             time += delta_t;
@@ -709,11 +727,11 @@ public:
             rk3_step<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, delta_t, -153.0f/128.0f, 8.0f/15.0f);
                   
             if (step % 100 == 0) {
-                write_data(time, NDG.nodes_);
+                //write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
             }
         }
 
-        write_data(time, NDG.nodes_);
+        //write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
     }
 
     void print() {
@@ -780,26 +798,28 @@ public:
         file.close();
     }
 
-    void write_data(float time, const float* nodes) {
+    void write_data(float time, int N_interpolation_points, const float* interpolation_matrices) {
         // CHECK find better solution for multiple elements
         float* phi;
-        float* host_phi = new float[initial_N_ + 1];
-        float* host_nodes = new float[initial_N_ + 1];
-        cudaMalloc(&phi, (initial_N_ + 1) * sizeof(float));
-        const int offset_1D = initial_N_ * (initial_N_ + 1) /2;
+        float* x;
+        float* host_phi = new float[N_elements_ * N_interpolation_points];
+        float* host_x = new float[N_elements_ * N_interpolation_points];
+        cudaMalloc(&phi, N_elements_ * N_interpolation_points * sizeof(float));
+        cudaMalloc(&x, N_elements_ * N_interpolation_points * sizeof(float));
 
         const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
-        get_phi<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, phi);
+        get_solution<<<elements_numBlocks, elements_blockSize>>>(N_elements_, N_interpolation_points, elements_, interpolation_matrices, phi, x);
         
         cudaDeviceSynchronize();
-        cudaMemcpy(host_phi, phi, (initial_N_ + 1) * sizeof(float), cudaMemcpyDeviceToHost);
-        cudaMemcpy(host_nodes, nodes + offset_1D, (initial_N_ + 1) * sizeof(float), cudaMemcpyDeviceToHost);
+        cudaMemcpy(host_phi, phi, N_elements_ * N_interpolation_points * sizeof(float), cudaMemcpyDeviceToHost);
+        cudaMemcpy(host_x, x , N_elements_ * N_interpolation_points * sizeof(float), cudaMemcpyDeviceToHost);
 
-        write_file_data(initial_N_, time, host_phi, host_nodes);
+        write_file_data(initial_N_, time, host_phi, host_x);
 
         delete host_phi;
-        delete host_nodes;
+        delete host_x;
         cudaFree(phi);
+        cudaFree(x);
     }
 };
 
