@@ -402,7 +402,7 @@ public:
 
     int N_;
     int neighbours_[2]; // Could also be pointers
-    int faces_[2]; // Could also be pointers
+    int faces_[2]; // Could also be pointers. left, right
     float x_[2];
     float delta_x_;
     float phi_L_;
@@ -468,18 +468,6 @@ void get_phi(int N_elements, const Element_t* elements, float* phi) {
     }
 }
 
-// Algorithm 60
-__device__
-void compute_dg_derivative(Element_t &element, const float* weights, const float* derivative_matrices, const float* lagrange_interpolant_left, const float* lagrange_interpolant_right) {
-    const int offset_1D = element.N_ * (element.N_ + 1) /2;
-    
-    matrix_vector_derivative(element.N_, derivative_matrices, element.phi_, element.phi_prime_);
-
-    for (int j = 0; j <= element.N_; ++j) {
-        element.phi_prime_[j] += (element.phi_L_ * element.phi_L_ * lagrange_interpolant_left[offset_1D + j] - element.phi_R_ * element.phi_R_ * lagrange_interpolant_right[offset_1D + j]) / (2 * weights[offset_1D + j]);
-    }
-}
-
 // Algorithm 61
 __device__
 float interpolate_to_boundary(int N, const float* phi, const float* lagrange_interpolant) {
@@ -491,45 +479,6 @@ float interpolate_to_boundary(int N, const float* phi, const float* lagrange_int
     }
 
     return result;
-}
-
-// Algorithm 61 (not really anymore)
-__device__
-void compute_dg_time_derivative(Element_t &element, const float* weights, const float* derivative_matrices, const float* lagrange_interpolant_left, const float* lagrange_interpolant_right) {
-    element.phi_L_ = interpolate_to_boundary(element.N_, element.phi_, lagrange_interpolant_left);
-    element.phi_R_ = interpolate_to_boundary(element.N_, element.phi_, lagrange_interpolant_right);
-    
-    compute_dg_derivative(element, weights, derivative_matrices, lagrange_interpolant_left, lagrange_interpolant_right); // Multiplied by -c in textbook, here multiplied by phi in matrix_vector_derivative
-}
-
-// Algorithm 62
-// Not used anymore, needs to calculate fluxes between elements between steps. Split between the following methods
-__global__
-void gd_step_by_rk3(int N_elements, Element_t* elements, float delta_t, const float* weights, const float* derivative_matrices, const float* lagrange_interpolant_left, const float* lagrange_interpolant_right) {
-    const int index = blockIdx.x * blockDim.x + threadIdx.x;
-    const int stride = blockDim.x * gridDim.x;
-
-    for (int i = index; i < N_elements; i += stride) {
-        // Unrolled loop from m = 1 to 3
-        // a_m and b_ at textbook p.99
-        compute_dg_time_derivative(elements[i], weights, derivative_matrices, lagrange_interpolant_left, lagrange_interpolant_right);
-        for (int j = 0; j <= elements[i].N_; ++j){
-            elements[i].intermediate_[j] = elements[i].phi_prime_[j];
-            elements[i].phi_[j] += delta_t * elements[i].intermediate_[j] /3.0f;
-        }
-
-        compute_dg_time_derivative(elements[i], weights, derivative_matrices, lagrange_interpolant_left, lagrange_interpolant_right);
-        for (int j = 0; j <= elements[i].N_; ++j){
-            elements[i].intermediate_[j] = -5.0f * elements[i].intermediate_[j] / 9.0f + elements[i].phi_prime_[j];
-            elements[i].phi_[j] += 15.0f * delta_t * elements[i].intermediate_[j] /16.0f;
-        }
-
-        compute_dg_time_derivative(elements[i], weights, derivative_matrices, lagrange_interpolant_left, lagrange_interpolant_right);
-        for (int j = 0; j <= elements[i].N_; ++j){
-            elements[i].intermediate_[j] = -153.0f * elements[i].intermediate_[j] / 128.0f + elements[i].phi_prime_[j];
-            elements[i].phi_[j] += 8.0f * delta_t * elements[i].intermediate_[j] /15.0f;
-        }
-    }
 }
 
 __global__
@@ -552,12 +501,36 @@ void interpolate_to_boundaries(int N_elements, Element_t* elements, const float*
 
     for (int i = index; i < N_elements; i += stride) {
         elements[i].phi_L_ = interpolate_to_boundary(elements[i].N_, elements[i].phi_, lagrange_interpolant_left);
-        elements[i].phi_R_ = interpolate_to_boundary(elements[i.]N_, elements[i].phi_, lagrange_interpolant_right);
+        elements[i].phi_R_ = interpolate_to_boundary(elements[i].N_, elements[i].phi_, lagrange_interpolant_right);
+    }
+}
+
+class Face_t {
+public:
+    __device__ 
+    Face_t(int element_L, int element_R) : elements_{element_L, element_R} {}
+
+    __device__
+    ~Face_t() {}
+
+    int elements_[2]; // left, right
+    float flux_;
+};
+
+__global__
+void build_faces(int N_faces, Face_t* faces) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (int i = index; i < N_faces; i += stride) {
+        const int neighbour_L = i;
+        const int neighbour_R = (i < N_faces - 1) ? i + 1 : 0; // Last face links last element to first element
+        faces[i] = Face_t(neighbour_L, neighbour_R);
     }
 }
 
 __global__
-void calculate_fluxes(int N_faces, const Face_t* faces, Element_t* elements) {
+void calculate_fluxes(int N_faces, Face_t* faces, const Element_t* elements) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -590,27 +563,21 @@ void calculate_fluxes(int N_faces, const Face_t* faces, Element_t* elements) {
     }
 }
 
-class Face_t {
-public:
-    __device__ 
-    Face_t(int element_L, int element_R) : elements_{element_L, element_R} {}
-
-    __device__
-    ~Face_t() {}
-
-    int elements_[2]; // left, right
-    float flux_;
-};
-
+// Algorithm 60 (not really anymore)
 __global__
-void build_faces(int N_faces, Face_t* faces) {
+void compute_dg_derivative(int N_elements, Element_t* elements, const Face_t* faces, const float* weights, const float* derivative_matrices, const float* lagrange_interpolant_left, const float* lagrange_interpolant_right) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (int i = index; i < N_faces; i += stride) {
-        const int neighbour_L = i;
-        const int neighbour_R = (i < N_faces - 1) ? i + 1 : 0; // Last face links last element to first element
-        faces[i] = Face_t(neighbour_L, neighbour_R);
+    for (int i = index; i < N_elements; i += stride) {
+        const int offset_1D = elements[i].N_ * (elements[i].N_ + 1) /2; // CHECK cache?
+
+        matrix_vector_derivative(elements[i].N_, derivative_matrices, elements[i].phi_, elements[i].phi_prime_);
+
+        for (int j = 0; j <= elements[i].N_; ++j) {
+            elements[i].phi_prime_[j] += (faces[elements[i].faces_[0]].flux_ * lagrange_interpolant_left[offset_1D + j] - faces[elements[i].faces_[1]].flux_ * lagrange_interpolant_right[offset_1D + j]) / weights[offset_1D + j];
+            elements[i].phi_prime_[j] *= 2.0f/elements[i].delta_x_;
+        }
     }
 }
 
@@ -652,24 +619,27 @@ public:
         const int N_steps = 600;
         const float delta_t = 0.001f;
         const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
+        const int faces_numBlocks = (N_faces_ + faces_blockSize - 1) / faces_blockSize;
         float time = 0.0;
 
         write_data(time, NDG.nodes_);
 
         for (int step = 0; step < N_steps; ++step) {
             time += delta_t;
-            gd_step_by_rk3<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, delta_t, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
-            
+
             interpolate_to_boundaries<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
             calculate_fluxes<<<faces_numBlocks, faces_blockSize>>>(N_faces_, faces_, elements_);
+            compute_dg_derivative<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
             rk3_step<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, delta_t, 0.0f, 1.0f/3.0f);
 
             interpolate_to_boundaries<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
             calculate_fluxes<<<faces_numBlocks, faces_blockSize>>>(N_faces_, faces_, elements_);
+            compute_dg_derivative<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
             rk3_step<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, delta_t, -5.0f/9.0f, 15.0f/16.0f);
 
             interpolate_to_boundaries<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
             calculate_fluxes<<<faces_numBlocks, faces_blockSize>>>(N_faces_, faces_, elements_);
+            compute_dg_derivative<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
             rk3_step<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, delta_t, -153.0f/128.0f, 8.0f/15.0f);
                   
             if (step % 100 == 0) {
