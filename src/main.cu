@@ -154,7 +154,7 @@ void polynomial_derivative_matrices_hat(int N, const float* weights, const float
 
 // Will interpolate N_interpolation_points between -1 and 1
 __global__
-void interpolation_matrices(int N, int N_interpolation_points, const float* nodes, const float* weights, float* interpolation_matrices) {
+void create_interpolation_matrices(int N, int N_interpolation_points, const float* nodes, const float* weights, float* interpolation_matrices) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     const int offset_1D = N * (N + 1) /2;
@@ -255,10 +255,10 @@ public:
             polynomial_derivative_matrices_hat<<<matrix_numBlocks, matrix_blockSize>>>(N, weights_, derivative_matrices_, derivative_matrices_hat_);
         }
 
-        /*const int interpolation_numBlocks = (N_interpolation_points_ + interpolation_blockSize) / interpolation_blockSize;
+        const int interpolation_numBlocks = (N_interpolation_points_ + interpolation_blockSize) / interpolation_blockSize;
         for (int N = 0; N <= N_max_; ++N) {
-            interpolation_matrices<<<interpolation_numBlocks, interpolation_blockSize>>>(N, N_interpolation_points_, nodes_, weights_, interpolation_matrices_);
-        }*/
+            create_interpolation_matrices<<<interpolation_numBlocks, interpolation_blockSize>>>(N, N_interpolation_points_, nodes_, weights_, interpolation_matrices_);
+        }
     }
 
     ~NDG_t() {
