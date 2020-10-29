@@ -418,7 +418,7 @@ public:
             const int offset_interp = N * (N + 1) * N_interpolation_points_/2;
 
             std::cout << '\t' << "N = " << N << ": " << std::endl;
-            for (int i = 0; i < offset_interp; ++i) {
+            for (int i = 0; i < N_interpolation_points_; ++i) {
                 std::cout << '\t' << '\t';
                 for (int j = 0; j <= N; ++j) {
                     std::cout << host_interpolation_matrices[offset_interp + i * (N + 1) + j] << " ";
