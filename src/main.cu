@@ -503,16 +503,13 @@ void compute_dg_time_derivative(Element_t &element, const float* weights, const 
 }
 
 // Algorithm 62
+// Not used anymore, needs to calculate fluxes between elements between steps. Split between the following methods
 __global__
 void gd_step_by_rk3(int N_elements, Element_t* elements, float delta_t, const float* weights, const float* derivative_matrices, const float* lagrange_interpolant_left, const float* lagrange_interpolant_right) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
     for (int i = index; i < N_elements; i += stride) {
-        for (int j = 0; j <= elements[i].N_; ++j) {
-            elements[i].intermediate_[j] = 0.0f;
-        }
-        
         // Unrolled loop from m = 1 to 3
         // a_m and b_ at textbook p.99
         compute_dg_time_derivative(elements[i], weights, derivative_matrices, lagrange_interpolant_left, lagrange_interpolant_right);
