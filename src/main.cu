@@ -14,6 +14,7 @@ constexpr float pi = 3.14159265358979323846f;
 constexpr int poly_blockSize = 16; // Small number of threads per block because N will never be huge
 constexpr int elements_blockSize = 32; // For when we'll have multiple elements
 constexpr int faces_blockSize = 32; // Same number of faces as elements for periodic BC
+constexpr int interpolation_blockSize = 32;
 const dim3 matrix_blockSize(16, 16); // Small number of threads per block because N will never be huge
 
 // Algorithm 26
@@ -151,6 +152,40 @@ void polynomial_derivative_matrices_hat(int N, const float* weights, const float
     }
 }
 
+// Will interpolate N_interpolation_points between -1 and 1
+__global__
+void interpolation_matrices(int N, int N_interpolation_points, const float* nodes, const float* weights, float* interpolation_matrices) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+    const int offset_1D = N * (N + 1) /2;
+    const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
+    const int offset_interp = N * (N + 1) * N_interpolation_points_/2
+
+    for (int i = index; i < N_interpolation_points; i += stride) {
+        bool row_has_match = false;
+        x_coord = 2.0f * i / (N_interpolation_points - 1) - 1.0f;
+
+        for (int j = 0; j <= N; ++i) {
+            interpolation_matrices[offset_interp + i * (N + 1) + j] = 0.0f;
+            if almost_equal(x_coord, nodes[offset_1D + j]) {
+                interpolation_matrices[offset_interp + i * (N + 1) + j] = 1.0f;
+                row_has_match = true;
+            }
+        }
+
+        if !row_has_match {
+            float total = 0.0f;
+            for (int j = 0; j <= N; ++i) {
+                interpolation_matrices[offset_interp + i * (N + 1) + j] = weights[offset_1D + j] / (x_coord - nodes[offset_1D + j]);
+                total += interpolation_matrices[offset_interp + i * (N + 1) + j];
+            }
+            for (int j = 0; j <= N; ++i) {
+                interpolation_matrices[offset_interp + i * (N + 1) + j] /= total;
+            }
+        }
+    }
+}
+
 // Algorithm 19
 __device__
 void matrix_vector_derivative(int N, const float* derivative_matrices, const float* phi, float* phi_prime) {
@@ -167,10 +202,12 @@ void matrix_vector_derivative(int N, const float* derivative_matrices, const flo
 
 class NDG_t { 
 public: 
-    NDG_t(int N_max) : 
+    NDG_t(int N_max, int N_interpolation_points) : 
             N_max_(N_max), 
+            N_interpolation_points_(N_interpolation_points),
             vector_length_((N_max_ + 1) * (N_max_ + 2)/2), 
-            matrix_length_((N_max_ + 1) * (N_max_ + 2) * (2 * N_max_ + 3)/6) {
+            matrix_length_((N_max_ + 1) * (N_max_ + 2) * (2 * N_max_ + 3)/6),
+            interpolation_length_((N_max_ + 1) * (N_max_ + 2) * N_interpolation_points_/2); {
 
         cudaMalloc(&nodes_, vector_length_ * sizeof(float));
         cudaMalloc(&weights_, vector_length_ * sizeof(float));
@@ -179,6 +216,7 @@ public:
         cudaMalloc(&lagrange_interpolant_right_, vector_length_ * sizeof(float));
         cudaMalloc(&derivative_matrices_, matrix_length_ * sizeof(float));
         cudaMalloc(&derivative_matrices_hat_, matrix_length_ * sizeof(float));
+        cudaMalloc(&interpolation_matrices_, interpolation_length_ * sizeof(float));
 
         for (int N = 0; N <= N_max_; ++N) {
             const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
@@ -217,6 +255,11 @@ public:
             const dim3 matrix_numBlocks((N +  matrix_blockSize.x) / matrix_blockSize.x, (N +  matrix_blockSize.y) / matrix_blockSize.y); // Should be (N + poly_blockSize - 1) if N is not inclusive
             polynomial_derivative_matrices_hat<<<matrix_numBlocks, matrix_blockSize>>>(N, weights_, derivative_matrices_, derivative_matrices_hat_);
         }
+
+        const int interpolation_numBlocks = (N_interpolation_points_ + interpolation_blockSize) / interpolation_blockSize;
+        for (int N = 0; N <= N_max_; ++N) {
+            interpolation_matrices<<<interpolation_numBlocks, interpolation_blockSize>>>(N, N_interpolation_points_, nodes_, weights_, interpolation_matrices_);
+        }
     }
 
     ~NDG_t() {
@@ -242,11 +285,16 @@ public:
         if (derivative_matrices_hat_ != nullptr){
             cudaFree(derivative_matrices_hat_);
         }
+        if (interpolation_matrices_ != nullptr){
+            cudaFree(interpolation_matrices_);
+        }
     }
 
     int N_max_;
+    int N_interpolation_points_;
     int vector_length_; // Flattened length of all N one after the other
     int matrix_length_; // Flattened length of all N² one after the other
+    int interpolation_length_;
     float* nodes_;
     float* weights_;
     float* barycentric_weights_;
@@ -254,6 +302,7 @@ public:
     float* lagrange_interpolant_right_;
     float* derivative_matrices_;
     float* derivative_matrices_hat_;
+    float* interpolation_matrices_;
 
     void print() {
         // Copy vectors from device memory to host memory
@@ -422,7 +471,7 @@ void build_elements(int N_elements, int N, Element_t* elements) {
         const int neighbour_R = (i < N_elements - 1) ? i + 1 : 0; // Last cell has first cell as right neighbour
         const int face_L = (i > 0) ? i - 1 : N_elements - 1;
         const int face_R = i;
-        elements[i] = Element_t(N, neighbour_L, neighbour_R, face_L, face_R, -1.0f, 1.0f);
+        elements[i] = Element_t(N, neighbour_L, neighbour_R, face_L, face_R, -5.0f, 5.0f);
     }
 }
 
@@ -566,6 +615,23 @@ void calculate_fluxes(int N_faces, Face_t* faces, const Element_t* elements) {
 // Algorithm 60 (not really anymore)
 __global__
 void compute_dg_derivative(int N_elements, Element_t* elements, const Face_t* faces, const float* weights, const float* derivative_matrices, const float* lagrange_interpolant_left, const float* lagrange_interpolant_right) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (int i = index; i < N_elements; i += stride) {
+        const int offset_1D = elements[i].N_ * (elements[i].N_ + 1) /2; // CHECK cache?
+
+        matrix_vector_derivative(elements[i].N_, derivative_matrices, elements[i].phi_, elements[i].phi_prime_);
+
+        for (int j = 0; j <= elements[i].N_; ++j) {
+            elements[i].phi_prime_[j] += (faces[elements[i].faces_[0]].flux_ * lagrange_interpolant_left[offset_1D + j] - faces[elements[i].faces_[1]].flux_ * lagrange_interpolant_right[offset_1D + j]) / weights[offset_1D + j];
+            elements[i].phi_prime_[j] *= 2.0f/elements[i].delta_x_;
+        }
+    }
+}
+
+__global__
+void evaluate(int N_elements, Element_t* elements, const float* weights, const float* derivative_matrices, const float* lagrange_interpolant_left, const float* lagrange_interpolant_right) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -741,8 +807,9 @@ int main(void) {
     const int N_elements = 1;
     const int initial_N = 64;
     const int N_max = 128;
+    const int N_interpolation_points = 128;
     
-    NDG_t NDG(N_max);
+    NDG_t NDG(N_max, N_interpolation_points);
     Mesh_t Mesh(N_elements, initial_N);
     Mesh.set_initial_conditions(NDG.nodes_);
 
