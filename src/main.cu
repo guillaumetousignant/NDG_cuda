@@ -450,6 +450,9 @@ public:
         phi_ = new float[N_ + 1];
         phi_prime_ = new float[N_ + 1];
         intermediate_ = new float[N_ + 1];
+        for (int i = 0; i <= N_; ++i) {
+            intermediate_[i] = 0.0f;
+        }
     }
 
     __device__
@@ -827,7 +830,7 @@ int main(void) {
     const int N_elements = 1;
     const int initial_N = 8;
     const int N_max = 16;
-    const int N_interpolation_points = 32;
+    const int N_interpolation_points = 4;
     
     NDG_t NDG(N_max, N_interpolation_points);
     Mesh_t Mesh(N_elements, initial_N);
