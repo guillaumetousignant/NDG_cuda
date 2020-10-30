@@ -160,26 +160,26 @@ void create_interpolation_matrices(int N, int N_interpolation_points, const floa
     const int offset_1D = N * (N + 1) /2;
     const int offset_interp = N * (N + 1) * N_interpolation_points/2;
 
-    for (int i = index; i < N_interpolation_points; i += stride) {
+    for (int j = index; j < N_interpolation_points; j += stride) {
         bool row_has_match = false;
-        float x_coord = 2.0f * i / (N_interpolation_points - 1) - 1.0f;
+        float x_coord = 2.0f * j / (N_interpolation_points - 1) - 1.0f;
 
-        for (int j = 0; j <= N; ++i) {
-            interpolation_matrices[offset_interp + i * (N + 1) + j] = 0.0f;
-            if (almost_equal(x_coord, nodes[offset_1D + j])) {
-                interpolation_matrices[offset_interp + i * (N + 1) + j] = 1.0f;
+        for (int k = 0; k <= N; ++k) {
+            interpolation_matrices[offset_interp + j * (N + 1) + k] = 0.0f;
+            if (almost_equal(x_coord, nodes[offset_1D + k])) {
+                interpolation_matrices[offset_interp + j * (N + 1) + k] = 1.0f;
                 row_has_match = true;
             }
         }
 
         if (!row_has_match) {
             float total = 0.0f;
-            for (int j = 0; j <= N; ++i) {
-                interpolation_matrices[offset_interp + i * (N + 1) + j] = weights[offset_1D + j] / (x_coord - nodes[offset_1D + j]);
-                total += interpolation_matrices[offset_interp + i * (N + 1) + j];
+            for (int k = 0; k <= N; ++k) {
+                interpolation_matrices[offset_interp + j * (N + 1) + k] = weights[offset_1D + k] / (x_coord - nodes[offset_1D + k]);
+                total += interpolation_matrices[offset_interp + j * (N + 1) + k];
             }
-            for (int j = 0; j <= N; ++i) {
-                interpolation_matrices[offset_interp + i * (N + 1) + j] /= total;
+            for (int k = 0; k <= N; ++k) {
+                interpolation_matrices[offset_interp + j * (N + 1) + k] /= total;
             }
         }
     }
