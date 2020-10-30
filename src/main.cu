@@ -516,9 +516,10 @@ void get_phi_phi_prime(int N_elements, const Element_t* elements, float* phi, fl
     const int stride = blockDim.x * gridDim.x;
 
     for (int i = index; i < N_elements; i += stride) {
+        const int element_offset = i * (elements[i].N_ + 1);
         for (int j = 0; j <= elements[i].N_; ++j) {
-            phi[j] = elements[i].phi_[j];
-            phi_prime[j] = elements[i].phi_prime_[j];
+            phi[element_offset + j] = elements[i].phi_[j];
+            phi_prime[element_offset + j] = elements[i].phi_prime_[j];
         }
     }
 }
@@ -738,37 +739,39 @@ public:
     }
 
     void print() {
-        // CHECK find better solution for multiple elements
+        // CHECK find better solution for multiple elements. This only works if all elements have the same N.
         float* phi;
         float* phi_prime;
-        float* host_phi = new float[initial_N_ + 1];
-        float* host_phi_prime = new float[initial_N_ + 1];
-        cudaMalloc(&phi, (initial_N_ + 1) * sizeof(float));
-        cudaMalloc(&phi_prime, (initial_N_ + 1) * sizeof(float));
+        float* host_phi = new float[(initial_N_ + 1) * N_elements_];
+        float* host_phi_prime = new float[(initial_N_ + 1) * N_elements_];
+        cudaMalloc(&phi, (initial_N_ + 1) * N_elements_ * sizeof(float));
+        cudaMalloc(&phi_prime, (initial_N_ + 1) * N_elements_ * sizeof(float));
 
         const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
         get_phi_phi_prime<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, phi, phi_prime);
         
         cudaDeviceSynchronize();
-        cudaMemcpy(host_phi, phi, (initial_N_ + 1) * sizeof(float), cudaMemcpyDeviceToHost);
-        cudaMemcpy(host_phi_prime, phi_prime, (initial_N_ + 1) * sizeof(float), cudaMemcpyDeviceToHost);
+        cudaMemcpy(host_phi, phi, (initial_N_ + 1) * N_elements_ * sizeof(float), cudaMemcpyDeviceToHost);
+        cudaMemcpy(host_phi_prime, phi_prime, (initial_N_ + 1) * N_elements_ * sizeof(float), cudaMemcpyDeviceToHost);
 
         std::cout << std::endl << "Phi: " << std::endl;
         for (int i = 0; i < N_elements_; ++i) {
+            const int element_offset = i * (initial_N_ + 1);
             std::cout << '\t' << "Element " << i << ": ";
             std::cout << '\t' << '\t';
             for (int j = 0; j <= initial_N_; ++j) {
-                std::cout << host_phi[j] << " ";
+                std::cout << host_phi[element_offset + j] << " ";
             }
             std::cout << std::endl;
         }
 
         std::cout << std::endl << "Phi prime: " << std::endl;
         for (int i = 0; i < N_elements_; ++i) {
+            const int element_offset = i * (initial_N_ + 1);
             std::cout << '\t' << "Element " << i << ": ";
             std::cout << '\t' << '\t';
             for (int j = 0; j <= initial_N_; ++j) {
-                std::cout << host_phi_prime[j] << " ";
+                std::cout << host_phi_prime[element_offset + j] << " ";
             }
             std::cout << std::endl;
         }
