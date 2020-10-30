@@ -257,7 +257,6 @@ public:
 
         const int interpolation_numBlocks = (N_interpolation_points_ + interpolation_blockSize) / interpolation_blockSize;
         for (int N = 0; N <= N_max_; ++N) {
-            // CHECK this breaks everything
             create_interpolation_matrices<<<interpolation_numBlocks, interpolation_blockSize>>>(N, N_interpolation_points_, nodes_, weights_, interpolation_matrices_);
         }
     }
@@ -812,7 +811,7 @@ public:
         cudaMalloc(&x, N_elements_ * N_interpolation_points * sizeof(float));
 
         const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
-        //get_solution<<<elements_numBlocks, elements_blockSize>>>(N_elements_, N_interpolation_points, elements_, interpolation_matrices, phi, x);
+        get_solution<<<elements_numBlocks, elements_blockSize>>>(N_elements_, N_interpolation_points, elements_, interpolation_matrices, phi, x);
         
         cudaDeviceSynchronize();
         cudaMemcpy(host_phi, phi, N_elements_ * N_interpolation_points * sizeof(float), cudaMemcpyDeviceToHost);
