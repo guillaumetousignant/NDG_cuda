@@ -833,7 +833,7 @@ public:
 
 int main(void) {
     const int N_elements = 4;
-    const int initial_N = 64;
+    const int initial_N = 16;
     const int N_max = 64;
     const int N_interpolation_points = 1000;
     
