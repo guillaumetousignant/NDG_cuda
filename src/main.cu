@@ -504,10 +504,9 @@ void initial_conditions(int N_elements, Element_t* elements, const float* nodes)
 
     for (int i = index; i < N_elements; i += stride) {
         const int offset = elements[i].N_ * (elements[i].N_ + 1) /2;
-        elements[i].phi_L_ = -sin(-pi);
-        elements[i].phi_R_ = -sin(pi);
         for (int j = 0; j <= elements[i].N_; ++j) {
-            elements[i].phi_[j] = -sin(pi * nodes[offset + j]);
+            const float x = (0.5 + nodes[offset + j]/2.0f) * (elements[i].x_[1] - elements[i].x_[0]) + elements[i].x_[0];
+            elements[i].phi_[j] = -sin(pi * x);
         }
     }
 }
