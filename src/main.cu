@@ -162,7 +162,7 @@ void create_interpolation_matrices(int N, int N_interpolation_points, const floa
 
     for (int j = index; j < N_interpolation_points; j += stride) {
         bool row_has_match = false;
-        float x_coord = 2.0f * j / (N_interpolation_points - 1) - 1.0f;
+        const float x_coord = 2.0f * j / (N_interpolation_points - 1) - 1.0f;
 
         for (int k = 0; k <= N; ++k) {
             interpolation_matrices[offset_interp + j * (N + 1) + k] = 0.0f;
@@ -257,7 +257,7 @@ public:
 
         const int interpolation_numBlocks = (N_interpolation_points_ + interpolation_blockSize) / interpolation_blockSize;
         for (int N = 0; N <= N_max_; ++N) {
-            create_interpolation_matrices<<<interpolation_numBlocks, interpolation_blockSize>>>(N, N_interpolation_points_, nodes_, weights_, interpolation_matrices_);
+            create_interpolation_matrices<<<interpolation_numBlocks, interpolation_blockSize>>>(N, N_interpolation_points_, nodes_, barycentric_weights_, interpolation_matrices_);
         }
     }
 
@@ -490,7 +490,7 @@ void build_elements(int N_elements, int N, Element_t* elements) {
         const int neighbour_R = (i < N_elements - 1) ? i + 1 : 0; // Last cell has first cell as right neighbour
         const int face_L = (i > 0) ? i - 1 : N_elements - 1;
         const int face_R = i;
-        elements[i] = Element_t(N, neighbour_L, neighbour_R, face_L, face_R, -1.0f, 1.0f);
+        elements[i] = Element_t(N, neighbour_L, neighbour_R, face_L, face_R, -5.0f, 5.0f);
     }
 }
 
@@ -831,9 +831,9 @@ public:
 
 int main(void) {
     const int N_elements = 1;
-    const int initial_N = 8;
-    const int N_max = 8;
-    const int N_interpolation_points = 16;
+    const int initial_N = 64;
+    const int N_max = 64;
+    const int N_interpolation_points = 100;
     
     NDG_t NDG(N_max, N_interpolation_points);
     Mesh_t Mesh(N_elements, initial_N);
@@ -851,8 +851,8 @@ int main(void) {
             << std::chrono::duration<double, std::milli>(t_end-t_start).count()/1000.0 
             << "s." << std::endl;
 
-    NDG.print();
-    Mesh.print();
+    //NDG.print();
+    //Mesh.print();
     
     return 0;
 }
