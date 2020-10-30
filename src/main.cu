@@ -709,7 +709,7 @@ public:
         const int faces_numBlocks = (N_faces_ + faces_blockSize - 1) / faces_blockSize;
         float time = 0.0;
 
-        //write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
+        write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
 
         for (int step = 0; step < N_steps; ++step) {
             time += delta_t;
@@ -730,11 +730,11 @@ public:
             rk3_step<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, delta_t, -153.0f/128.0f, 8.0f/15.0f);
                   
             if (step % 100 == 0) {
-                //write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
+                write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
             }
         }
 
-        //write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
+        write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
     }
 
     void print() {
