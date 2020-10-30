@@ -780,7 +780,7 @@ public:
         cudaFree(phi_prime);
     }
 
-    void write_file_data(int N, float time, const float* velocity, const float* coordinates) {
+    void write_file_data(int N_points, float time, const float* velocity, const float* coordinates) {
         std::stringstream ss;
         std::ofstream file;
     
@@ -792,9 +792,9 @@ public:
     
         file << "TITLE = \"Velocity  at t= " << time << "\"" << std::endl;
         file << "VARIABLES = \"X\", \"U_x\"" << std::endl;
-        file << "ZONE T= \"Zone     1\",  I= " << N + 1 << ",  J= 1,  DATAPACKING = POINT, SOLUTIONTIME = " << time << std::endl;
+        file << "ZONE T= \"Zone     1\",  I= " << N_points << ",  J= 1,  DATAPACKING = POINT, SOLUTIONTIME = " << time << std::endl;
     
-        for (int i = 0; i <= N; ++i) {
+        for (int i = 0; i < N_points; ++i) {
             file << std::setw(12) << coordinates[i] << " " << std::setw(12) << velocity[i] << std::endl;
         }
     
@@ -817,7 +817,7 @@ public:
         cudaMemcpy(host_phi, phi, N_elements_ * N_interpolation_points * sizeof(float), cudaMemcpyDeviceToHost);
         cudaMemcpy(host_x, x , N_elements_ * N_interpolation_points * sizeof(float), cudaMemcpyDeviceToHost);
 
-        write_file_data(initial_N_, time, host_phi, host_x);
+        write_file_data(N_elements_ * N_interpolation_points, time, host_phi, host_x);
 
         delete host_phi;
         delete host_x;
