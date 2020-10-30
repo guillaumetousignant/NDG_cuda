@@ -481,7 +481,7 @@ public:
 };
 
 __global__
-void build_elements(int N_elements, int N, Element_t* elements) {
+void build_elements(int N_elements, int N, Element_t* elements, float x_min, float x_max) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -490,7 +490,10 @@ void build_elements(int N_elements, int N, Element_t* elements) {
         const int neighbour_R = (i < N_elements - 1) ? i + 1 : 0; // Last cell has first cell as right neighbour
         const int face_L = (i > 0) ? i - 1 : N_elements - 1;
         const int face_R = i;
-        elements[i] = Element_t(N, neighbour_L, neighbour_R, face_L, face_R, -1.0f, 1.0f);
+        const float delta_x = (x_max - x_min)/N_elements;
+        const float element_x_min = x_min + i * delta_x;
+        const float element_y_min = x_min + (i + 1) * delta_x;
+        elements[i] = Element_t(N, neighbour_L, neighbour_R, face_L, face_R, element_x_min, element_y_min);
     }
 }
 
@@ -671,14 +674,14 @@ void compute_dg_derivative(int N_elements, Element_t* elements, const Face_t* fa
 
 class Mesh_t {
 public:
-    Mesh_t(int N_elements, int initial_N) : N_elements_(N_elements), N_faces_(N_elements), initial_N_(initial_N) {
+    Mesh_t(int N_elements, int initial_N, float x_min, float x_max) : N_elements_(N_elements), N_faces_(N_elements), initial_N_(initial_N) {
         // CHECK N_faces = N_elements only for periodic BC.
         cudaMalloc(&elements_, N_elements_ * sizeof(Element_t));
         cudaMalloc(&faces_, N_faces_ * sizeof(Face_t));
 
         const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
         const int faces_numBlocks = (N_faces_ + faces_blockSize - 1) / faces_blockSize;
-        build_elements<<<elements_numBlocks, elements_blockSize>>>(N_elements_, initial_N_, elements_);
+        build_elements<<<elements_numBlocks, elements_blockSize>>>(N_elements_, initial_N_, elements_, x_min, x_max);
         build_faces<<<faces_numBlocks, faces_blockSize>>>(N_faces_, faces_); // CHECK
     }
 
@@ -830,13 +833,13 @@ public:
 };
 
 int main(void) {
-    const int N_elements = 1;
+    const int N_elements = 4;
     const int initial_N = 64;
     const int N_max = 64;
     const int N_interpolation_points = 1000;
     
     NDG_t NDG(N_max, N_interpolation_points);
-    Mesh_t Mesh(N_elements, initial_N);
+    Mesh_t Mesh(N_elements, initial_N, -1.0f, 1.0f);
     Mesh.set_initial_conditions(NDG.nodes_);
 
     // Starting actual computation
