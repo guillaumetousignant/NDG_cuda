@@ -831,9 +831,9 @@ public:
 
 int main(void) {
     const int N_elements = 1;
-    const int initial_N = 64;
-    const int N_max = 64;
-    const int N_interpolation_points = 128;
+    const int initial_N = 8;
+    const int N_max = 8;
+    const int N_interpolation_points = 16;
     
     NDG_t NDG(N_max, N_interpolation_points);
     Mesh_t Mesh(N_elements, initial_N);
@@ -851,8 +851,8 @@ int main(void) {
             << std::chrono::duration<double, std::milli>(t_end-t_start).count()/1000.0 
             << "s." << std::endl;
 
-    //NDG.print();
-    //Mesh.print();
+    NDG.print();
+    Mesh.print();
     
     return 0;
 }
