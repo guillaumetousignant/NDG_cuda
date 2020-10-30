@@ -703,7 +703,7 @@ public:
     }
 
     void solve(const NDG_t &NDG) {
-        const int N_steps = 600;
+        const int N_steps = 400;
         const float delta_t = 0.001f;
         const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
         const int faces_numBlocks = (N_faces_ + faces_blockSize - 1) / faces_blockSize;
