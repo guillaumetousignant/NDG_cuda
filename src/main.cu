@@ -490,7 +490,7 @@ void build_elements(int N_elements, int N, Element_t* elements) {
         const int neighbour_R = (i < N_elements - 1) ? i + 1 : 0; // Last cell has first cell as right neighbour
         const int face_L = (i > 0) ? i - 1 : N_elements - 1;
         const int face_R = i;
-        elements[i] = Element_t(N, neighbour_L, neighbour_R, face_L, face_R, -5.0f, 5.0f);
+        elements[i] = Element_t(N, neighbour_L, neighbour_R, face_L, face_R, -1.0f, 1.0f);
     }
 }
 
@@ -704,7 +704,7 @@ public:
     }
 
     void solve(const NDG_t &NDG) {
-        const int N_steps = 400;
+        const int N_steps = 600;
         const float delta_t = 0.001f;
         const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
         const int faces_numBlocks = (N_faces_ + faces_blockSize - 1) / faces_blockSize;
@@ -833,7 +833,7 @@ int main(void) {
     const int N_elements = 1;
     const int initial_N = 64;
     const int N_max = 64;
-    const int N_interpolation_points = 100;
+    const int N_interpolation_points = 1000;
     
     NDG_t NDG(N_max, N_interpolation_points);
     Mesh_t Mesh(N_elements, initial_N);
