@@ -227,8 +227,8 @@ public:
         for (int N = 0; N <= N_max_; ++N) {
             const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
             calculate_barycentric_weights<<<vector_numBlocks, poly_blockSize>>>(N, nodes_, barycentric_weights_);
-            lagrange_integrating_polynomials<<<vector_numBlocks, poly_blockSize>>>(-1.0f, N, nodes_, weights_, lagrange_interpolant_left_);
-            lagrange_integrating_polynomials<<<vector_numBlocks, poly_blockSize>>>(1.0f, N, nodes_, weights_, lagrange_interpolant_right_);
+            lagrange_integrating_polynomials<<<vector_numBlocks, poly_blockSize>>>(-1.0f, N, nodes_, weights_, lagrange_interpolant_left_); // CHECK maybe use barycentric_weights_?
+            lagrange_integrating_polynomials<<<vector_numBlocks, poly_blockSize>>>(1.0f, N, nodes_, weights_, lagrange_interpolant_right_); // CHECK maybe use barycentric_weights_?
         }
 
         // We need to divide lagrange_integrating_polynomials by sum, and barycentric weights for derivative matrix
