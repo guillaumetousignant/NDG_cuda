@@ -490,7 +490,7 @@ void build_elements(int N_elements, int N, Element_t* elements) {
         const int neighbour_R = (i < N_elements - 1) ? i + 1 : 0; // Last cell has first cell as right neighbour
         const int face_L = (i > 0) ? i - 1 : N_elements - 1;
         const int face_R = i;
-        elements[i] = Element_t(N, neighbour_L, neighbour_R, face_L, face_R, -5.0f, 5.0f);
+        elements[i] = Element_t(N, neighbour_L, neighbour_R, face_L, face_R, -1.0f, 1.0f);
     }
 }
 
@@ -828,8 +828,8 @@ public:
 
 int main(void) {
     const int N_elements = 1;
-    const int initial_N = 8;
-    const int N_max = 16;
+    const int initial_N = 64;
+    const int N_max = 64;
     const int N_interpolation_points = 128;
     
     NDG_t NDG(N_max, N_interpolation_points);
@@ -848,7 +848,7 @@ int main(void) {
             << std::chrono::duration<double, std::milli>(t_end-t_start).count()/1000.0 
             << "s." << std::endl;
 
-    NDG.print();
+    //NDG.print();
     //Mesh.print();
     
     return 0;
