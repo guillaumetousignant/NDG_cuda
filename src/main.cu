@@ -438,7 +438,7 @@ public:
         for (int i = 0; i <= N; ++i) {
             u_prime[i] = 0.0f;
             for (int j = 0; j <= N; ++j) {
-                u_prime[i] += host_derivative_matrices[offset_2D + i * (N + 1) + j] * u[j]; // phi not squared in textbook, squared for Burger's
+                u_prime[i] += host_derivative_matrices_hat[offset_2D + i * (N + 1) + j] * u[j];
             }
         }
         
