@@ -453,7 +453,21 @@ public:
         }
     }
 
-    __device__
+    __host__
+    Element_t() :
+            N_(0),
+            neighbours_{0, 0},
+            faces_{0, 0},
+            x_{0.0f, 0.0f},
+            delta_x_(0.0f),
+            phi_L_(0.0f),
+            phi_R_(0.0f),
+            phi_(nullptr),
+            phi_prime_(nullptr),
+            intermediate_(nullptr) {}
+
+
+    __host__ __device__
     ~Element_t() {
         if (phi_ != nullptr){
             delete[] phi_;
@@ -743,41 +757,54 @@ public:
 
     void print() {
         // CHECK find better solution for multiple elements. This only works if all elements have the same N.
-        float* phi;
+        float* phi_noot;
         float* phi_prime;
         float* host_phi = new float[(initial_N_ + 1) * N_elements_];
         float* host_phi_prime = new float[(initial_N_ + 1) * N_elements_];
+        Element_t* host_elements = new Element_t[N_elements_];
         Face_t* host_faces = new Face_t[N_faces_];
-        cudaMalloc(&phi, (initial_N_ + 1) * N_elements_ * sizeof(float));
+        cudaMalloc(&phi_noot, (initial_N_ + 1) * N_elements_ * sizeof(float));
         cudaMalloc(&phi_prime, (initial_N_ + 1) * N_elements_ * sizeof(float));
 
         const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
         const int faces_numBlocks = (N_faces_ + faces_blockSize - 1) / faces_blockSize;
-        get_elements_data<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, phi, phi_prime);
+        get_elements_data<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, phi_noot, phi_prime);
         
         cudaDeviceSynchronize();
-        cudaMemcpy(host_phi, phi, (initial_N_ + 1) * N_elements_ * sizeof(float), cudaMemcpyDeviceToHost);
+        cudaMemcpy(host_phi, phi_noot, (initial_N_ + 1) * N_elements_ * sizeof(float), cudaMemcpyDeviceToHost);
         cudaMemcpy(host_phi_prime, phi_prime, (initial_N_ + 1) * N_elements_ * sizeof(float), cudaMemcpyDeviceToHost);
+        cudaMemcpy(host_elements, elements_, N_elements_ * sizeof(Element_t), cudaMemcpyDeviceToHost);
         cudaMemcpy(host_faces, faces_, N_faces_ * sizeof(Face_t), cudaMemcpyDeviceToHost);
+
+        // Reconstructing dynamic memory
+        for (int i = 0; i < N_elements_; ++i) {
+            float* phi = host_elements[i].phi_;
+            float* phi_prime = host_elements[i].phi_prime_;
+
+            host_elements[i].phi_ = new float[host_elements[i].N_ + 1];
+            host_elements[i].phi_prime_ = new float[host_elements[i].N_ + 1];
+            host_elements[i].intermediate_ = nullptr; // If we don't overwrite here, the destructor will try to delete it.
+
+            cudaMemcpy(&host_elements[i].phi_, phi, (host_elements[i].N_ + 1) * sizeof(float), cudaMemcpyDeviceToHost);
+            cudaMemcpy(&host_elements[i].phi_prime_, phi_prime, (host_elements[i].N_ + 1) * sizeof(float), cudaMemcpyDeviceToHost);
+        }
 
         std::cout << std::endl << "Phi: " << std::endl;
         for (int i = 0; i < N_elements_; ++i) {
-            const int element_offset = i * (initial_N_ + 1);
             std::cout << '\t' << "Element " << i << ": ";
             std::cout << '\t' << '\t';
-            for (int j = 0; j <= initial_N_; ++j) {
-                std::cout << host_phi[element_offset + j] << " ";
+            for (int j = 0; j <= host_elements[i].N_; ++j) {
+                std::cout << host_elements[i].phi_[j] << " ";
             }
             std::cout << std::endl;
         }
 
         std::cout << std::endl << "Phi prime: " << std::endl;
         for (int i = 0; i < N_elements_; ++i) {
-            const int element_offset = i * (initial_N_ + 1);
             std::cout << '\t' << "Element " << i << ": ";
             std::cout << '\t' << '\t';
-            for (int j = 0; j <= initial_N_; ++j) {
-                std::cout << host_phi_prime[element_offset + j] << " ";
+            for (int j = 0; j <= host_elements[i].N_; ++j) {
+                std::cout << host_elements[i].phi_prime_[j] << " ";
             }
             std::cout << std::endl;
         }
@@ -791,9 +818,10 @@ public:
 
         delete[] host_phi;
         delete[] host_phi_prime;
+        delete[] host_elements;
         delete[] host_faces;
 
-        cudaFree(phi);
+        cudaFree(phi_noot);
         cudaFree(phi_prime);
     }
 
