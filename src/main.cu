@@ -433,18 +433,33 @@ public:
         for (int i = 0; i <= N; ++i) {
             u[i] = -sin(pi * host_nodes[offset + i]);
         }
+
+        const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
+        for (int i = 0; i <= N; ++i) {
+            u_prime[i] = 0.0f;
+            for (int j = 0; j <= N; ++j) {
+                u_prime[i] += host_derivative_matrices[offset_2D + i * (N + 1) + j] * u[j]; // phi not squared in textbook, squared for Burger's
+            }
+        }
         
         std::cout << "x:" << std::endl;
         std::cout << '\t';
-        for (int i = 0; i < N; ++i) {
+        for (int i = 0; i <= N; ++i) {
             std::cout << std::setw(12) << host_nodes[offset + i] << "    ";
         }
         std::cout << std::endl;
 
         std::cout << "u:" << std::endl;
         std::cout << '\t';
-        for (int i = 0; i < N; ++i) {
+        for (int i = 0; i <= N; ++i) {
             std::cout << std::setw(12) << u[i] << "    ";
+        }
+        std::cout << std::endl;
+
+        std::cout << "u prime:" << std::endl;
+        std::cout << '\t';
+        for (int i = 0; i <= N; ++i) {
+            std::cout << std::setw(12) << u_prime[i] << "    ";
         }
         std::cout << std::endl;
 
