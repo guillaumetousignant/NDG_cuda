@@ -431,7 +431,7 @@ public:
         float* u_prime = new float[N + 1];
 
         for (int i = 0; i <= N; ++i) {
-            u[i] = -sin(pi * host_nodes[offset + i]);
+            u[i] = 5.0; // * host_nodes[offset + i]; //-sin(pi * host_nodes[offset + i]);
         }
 
         const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
