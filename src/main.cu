@@ -227,24 +227,25 @@ public:
         for (int N = 0; N <= N_max_; ++N) {
             const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
             calculate_barycentric_weights<<<vector_numBlocks, poly_blockSize>>>(N, nodes_, barycentric_weights_);
-            lagrange_integrating_polynomials<<<vector_numBlocks, poly_blockSize>>>(-1.0f, N, nodes_, weights_, lagrange_interpolant_left_); // CHECK maybe use barycentric_weights_?
-            lagrange_integrating_polynomials<<<vector_numBlocks, poly_blockSize>>>(1.0f, N, nodes_, weights_, lagrange_interpolant_right_); // CHECK maybe use barycentric_weights_?
         }
 
-        // We need to divide lagrange_integrating_polynomials by sum, and barycentric weights for derivative matrix and interpolation matrices
+        // We need the barycentric weights for derivative matrix, interpolation matrices and Lagrange interpolants
         cudaDeviceSynchronize();
         const int interpolation_numBlocks = (N_interpolation_points_ + interpolation_blockSize) / interpolation_blockSize;
+        for (int N = 0; N <= N_max_; ++N) {
+            const dim3 matrix_numBlocks((N +  matrix_blockSize.x) / matrix_blockSize.x, (N +  matrix_blockSize.y) / matrix_blockSize.y); // Should be (N + poly_blockSize - 1) if N is not inclusive
+            const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
+            polynomial_derivative_matrices<<<matrix_numBlocks, matrix_blockSize>>>(N, nodes_, barycentric_weights_, derivative_matrices_);
+            create_interpolation_matrices<<<interpolation_numBlocks, interpolation_blockSize>>>(N, N_interpolation_points_, nodes_, barycentric_weights_, interpolation_matrices_);
+            lagrange_integrating_polynomials<<<vector_numBlocks, poly_blockSize>>>(-1.0f, N, nodes_, barycentric_weights_, lagrange_interpolant_left_);
+            lagrange_integrating_polynomials<<<vector_numBlocks, poly_blockSize>>>(1.0f, N, nodes_, barycentric_weights_, lagrange_interpolant_right_);
+        }
+
+        // Then we calculate the derivative matrix diagonal and normalize the Lagrange interpolants
+        cudaDeviceSynchronize();
         const int poly_numBlocks = (N_max_ + poly_blockSize) / poly_blockSize;
         normalize_lagrange_integrating_polynomials<<<poly_numBlocks, poly_blockSize>>>(N_max_, lagrange_interpolant_left_);
         normalize_lagrange_integrating_polynomials<<<poly_numBlocks, poly_blockSize>>>(N_max_, lagrange_interpolant_right_);
-        for (int N = 0; N <= N_max_; ++N) {
-            const dim3 matrix_numBlocks((N +  matrix_blockSize.x) / matrix_blockSize.x, (N +  matrix_blockSize.y) / matrix_blockSize.y); // Should be (N + poly_blockSize - 1) if N is not inclusive
-            polynomial_derivative_matrices<<<matrix_numBlocks, matrix_blockSize>>>(N, nodes_, barycentric_weights_, derivative_matrices_);
-            create_interpolation_matrices<<<interpolation_numBlocks, interpolation_blockSize>>>(N, N_interpolation_points_, nodes_, barycentric_weights_, interpolation_matrices_);
-        }
-
-        // Then we calculate the derivative matrix diagonal
-        cudaDeviceSynchronize();
         for (int N = 0; N <= N_max_; ++N) {
             const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
             polynomial_derivative_matrices_diagonal<<<vector_numBlocks, poly_blockSize>>>(N, derivative_matrices_);
