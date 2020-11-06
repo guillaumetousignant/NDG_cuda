@@ -511,7 +511,7 @@ void initial_conditions(int N_elements, Element_t* elements, const float* nodes)
 
 // Basically useless, find better solution when multiple elements.
 __global__
-void get_phi_phi_prime(int N_elements, const Element_t* elements, float* phi, float* phi_prime) {
+void get_elements_data(int N_elements, const Element_t* elements, float* phi, float* phi_prime) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -614,6 +614,17 @@ void build_faces(int N_faces, Face_t* faces) {
         const int neighbour_L = i;
         const int neighbour_R = (i < N_faces - 1) ? i + 1 : 0; // Last face links last element to first element
         faces[i] = Face_t(neighbour_L, neighbour_R);
+    }
+}
+
+// Should be able to transfer faces directly, but it doesn't work for some reason
+__global__
+void get_faces_data(int N_faces, const Face_t* faces, float* fluxes) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (int i = index; i < N_faces; i += stride) {
+        fluxes[i] = faces[i].flux_;
     }
 }
 
@@ -742,17 +753,23 @@ public:
         // CHECK find better solution for multiple elements. This only works if all elements have the same N.
         float* phi;
         float* phi_prime;
+        float* fluxes;
         float* host_phi = new float[(initial_N_ + 1) * N_elements_];
         float* host_phi_prime = new float[(initial_N_ + 1) * N_elements_];
+        float* host_fluxes = new float[N_faces_];
         cudaMalloc(&phi, (initial_N_ + 1) * N_elements_ * sizeof(float));
         cudaMalloc(&phi_prime, (initial_N_ + 1) * N_elements_ * sizeof(float));
+        cudaMalloc(&fluxes, N_faces_ * sizeof(float));
 
         const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
-        get_phi_phi_prime<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, phi, phi_prime);
+        const int faces_numBlocks = (N_faces_ + faces_blockSize - 1) / faces_blockSize;
+        get_elements_data<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, phi, phi_prime);
+        get_faces_data<<<faces_numBlocks, faces_blockSize>>>(N_faces_, faces_, fluxes);
         
         cudaDeviceSynchronize();
         cudaMemcpy(host_phi, phi, (initial_N_ + 1) * N_elements_ * sizeof(float), cudaMemcpyDeviceToHost);
         cudaMemcpy(host_phi_prime, phi_prime, (initial_N_ + 1) * N_elements_ * sizeof(float), cudaMemcpyDeviceToHost);
+        cudaMemcpy(host_fluxes, fluxes, N_faces_ * sizeof(float), cudaMemcpyDeviceToHost);
 
         std::cout << std::endl << "Phi: " << std::endl;
         for (int i = 0; i < N_elements_; ++i) {
@@ -776,11 +793,20 @@ public:
             std::cout << std::endl;
         }
 
+        std::cout << std::endl << "Fluxes: " << std::endl;
+        for (int i = 0; i < N_faces_; ++i) {
+            std::cout << '\t' << "Face " << i << ": ";
+            std::cout << '\t' << '\t';
+            std::cout << host_fluxes[i] << std::endl;
+        }
+
         delete host_phi;
         delete host_phi_prime;
+        delete fluxes;
 
         cudaFree(phi);
         cudaFree(phi_prime);
+        cudaFree(host_fluxes);
     }
 
     void write_file_data(int N_points, float time, const float* velocity, const float* coordinates) {
