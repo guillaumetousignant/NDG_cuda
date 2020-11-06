@@ -705,7 +705,7 @@ public:
 
     void solve(const NDG_t &NDG) {
         const int N_steps = 600;
-        const float delta_t = 0.001f;
+        const float delta_t = 0.0001f;
         const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
         const int faces_numBlocks = (N_faces_ + faces_blockSize - 1) / faces_blockSize;
         float time = 0.0;
@@ -832,8 +832,8 @@ public:
 int main(void) {
     const int N_elements = 4;
     const int initial_N = 16;
-    const int N_max = 64;
-    const int N_interpolation_points = 1000;
+    const int N_max = 16;
+    const int N_interpolation_points = 100;
     
     NDG_t NDG(N_max, N_interpolation_points);
     Mesh_t Mesh(N_elements, initial_N, -1.0f, 1.0f);
@@ -851,8 +851,8 @@ int main(void) {
             << std::chrono::duration<double, std::milli>(t_end-t_start).count()/1000.0 
             << "s." << std::endl;
 
-    //NDG.print();
-    //Mesh.print();
+    NDG.print();
+    Mesh.print();
     
     return 0;
 }
