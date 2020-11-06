@@ -752,7 +752,6 @@ public:
         cudaMalloc(&phi_prime, (initial_N_ + 1) * N_elements_ * sizeof(float));
 
         const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
-        const int faces_numBlocks = (N_faces_ + faces_blockSize - 1) / faces_blockSize;
         get_elements_data<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, phi, phi_prime);
         
         cudaDeviceSynchronize();
