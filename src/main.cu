@@ -425,6 +425,22 @@ public:
             }
         }
 
+        const int n_points = 10;
+        float* x = new float[n_points];
+        const float delta_x = (1.0 + 1.0)/(n_points - 1);
+        for (int i = 0; i < n_points; ++i) {
+            x[i] = -1.0 + i * delta_x;
+        }
+
+        std::cout << "x:" << std::endl;
+        std::cout << '\t';
+        for (int i = 0; i < n_points; ++i) {
+            std::cout << std::setw(12) << x[i] << "    ";
+        }
+        std::cout << std::endl;
+
+        delete[] x;
+
         delete[] host_nodes;
         delete[] host_weights;
         delete[] host_barycentric_weights;
@@ -852,6 +868,8 @@ int main(void) {
     Mesh_t Mesh(N_elements, initial_N, -1.0f, 1.0f);
     Mesh.set_initial_conditions(NDG.nodes_);
 
+    
+
     // Starting actual computation
     cudaDeviceSynchronize();
     auto t_start = std::chrono::high_resolution_clock::now();
@@ -865,7 +883,7 @@ int main(void) {
             << "s." << std::endl;
 
     NDG.print();
-    Mesh.print();
+    //Mesh.print();
     
     return 0;
 }
