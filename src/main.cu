@@ -425,14 +425,14 @@ public:
             }
         }
 
-        delete host_nodes;
-        delete host_weights;
-        delete host_barycentric_weights;
-        delete host_lagrange_interpolant_left;
-        delete host_lagrange_interpolant_right;
-        delete host_derivative_matrices;
-        delete host_derivative_matrices_hat;
-        delete host_interpolation_matrices;
+        delete[] host_nodes;
+        delete[] host_weights;
+        delete[] host_barycentric_weights;
+        delete[] host_lagrange_interpolant_left;
+        delete[] host_lagrange_interpolant_right;
+        delete[] host_derivative_matrices;
+        delete[] host_derivative_matrices_hat;
+        delete[] host_interpolation_matrices;
     }
 };
 
@@ -456,13 +456,13 @@ public:
     __device__
     ~Element_t() {
         if (phi_ != nullptr){
-            delete [] phi_;
+            delete[] phi_;
         }
         if (phi_prime_ != nullptr) {
-            delete [] phi_prime_;
+            delete[] phi_prime_;
         }
         if (intermediate_ != nullptr) {
-            delete [] intermediate_;
+            delete[] intermediate_;
         }
     }
 
@@ -598,7 +598,10 @@ public:
     __device__ 
     Face_t(int element_L, int element_R) : elements_{element_L, element_R} {}
 
-    __device__
+    __host__
+    Face_t() {}
+
+    __host__ __device__
     ~Face_t() {}
 
     int elements_[2]; // left, right
@@ -614,17 +617,6 @@ void build_faces(int N_faces, Face_t* faces) {
         const int neighbour_L = i;
         const int neighbour_R = (i < N_faces - 1) ? i + 1 : 0; // Last face links last element to first element
         faces[i] = Face_t(neighbour_L, neighbour_R);
-    }
-}
-
-// Should be able to transfer faces directly, but it doesn't work for some reason
-__global__
-void get_faces_data(int N_faces, const Face_t* faces, float* fluxes) {
-    const int index = blockIdx.x * blockDim.x + threadIdx.x;
-    const int stride = blockDim.x * gridDim.x;
-
-    for (int i = index; i < N_faces; i += stride) {
-        fluxes[i] = faces[i].flux_;
     }
 }
 
@@ -715,7 +707,7 @@ public:
     }
 
     void solve(const NDG_t &NDG) {
-        const int N_steps = 600;
+        const int N_steps = 1;
         const float delta_t = 0.0001f;
         const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
         const int faces_numBlocks = (N_faces_ + faces_blockSize - 1) / faces_blockSize;
@@ -753,23 +745,20 @@ public:
         // CHECK find better solution for multiple elements. This only works if all elements have the same N.
         float* phi;
         float* phi_prime;
-        float* fluxes;
         float* host_phi = new float[(initial_N_ + 1) * N_elements_];
         float* host_phi_prime = new float[(initial_N_ + 1) * N_elements_];
-        float* host_fluxes = new float[N_faces_];
+        Face_t* host_faces = new Face_t[N_faces_];
         cudaMalloc(&phi, (initial_N_ + 1) * N_elements_ * sizeof(float));
         cudaMalloc(&phi_prime, (initial_N_ + 1) * N_elements_ * sizeof(float));
-        cudaMalloc(&fluxes, N_faces_ * sizeof(float));
 
         const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
         const int faces_numBlocks = (N_faces_ + faces_blockSize - 1) / faces_blockSize;
         get_elements_data<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, phi, phi_prime);
-        get_faces_data<<<faces_numBlocks, faces_blockSize>>>(N_faces_, faces_, fluxes);
         
         cudaDeviceSynchronize();
         cudaMemcpy(host_phi, phi, (initial_N_ + 1) * N_elements_ * sizeof(float), cudaMemcpyDeviceToHost);
         cudaMemcpy(host_phi_prime, phi_prime, (initial_N_ + 1) * N_elements_ * sizeof(float), cudaMemcpyDeviceToHost);
-        cudaMemcpy(host_fluxes, fluxes, N_faces_ * sizeof(float), cudaMemcpyDeviceToHost);
+        cudaMemcpy(host_faces, faces_, N_faces_ * sizeof(Face_t), cudaMemcpyDeviceToHost);
 
         std::cout << std::endl << "Phi: " << std::endl;
         for (int i = 0; i < N_elements_; ++i) {
@@ -797,16 +786,15 @@ public:
         for (int i = 0; i < N_faces_; ++i) {
             std::cout << '\t' << "Face " << i << ": ";
             std::cout << '\t' << '\t';
-            std::cout << host_fluxes[i] << std::endl;
+            std::cout << host_faces[i].flux_ << std::endl;
         }
 
-        delete host_phi;
-        delete host_phi_prime;
-        delete fluxes;
+        delete[] host_phi;
+        delete[] host_phi_prime;
+        delete[] host_faces;
 
         cudaFree(phi);
         cudaFree(phi_prime);
-        cudaFree(host_fluxes);
     }
 
     void write_file_data(int N_points, float time, const float* velocity, const float* coordinates) {
@@ -848,8 +836,8 @@ public:
 
         write_file_data(N_elements_ * N_interpolation_points, time, host_phi, host_x);
 
-        delete host_phi;
-        delete host_x;
+        delete[] host_phi;
+        delete[] host_x;
         cudaFree(phi);
         cudaFree(x);
     }
@@ -857,8 +845,8 @@ public:
 
 int main(void) {
     const int N_elements = 4;
-    const int initial_N = 16;
-    const int N_max = 16;
+    const int initial_N = 8;
+    const int N_max = 8;
     const int N_interpolation_points = 100;
     
     NDG_t NDG(N_max, N_interpolation_points);
