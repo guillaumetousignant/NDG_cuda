@@ -427,9 +427,12 @@ public:
 
         const int n_points = 10;
         float* x = new float[n_points];
+        float* u = new float[n_points];
+        float* u_prime = new float[n_points];
         const float delta_x = (1.0 + 1.0)/(n_points - 1);
         for (int i = 0; i < n_points; ++i) {
             x[i] = -1.0 + i * delta_x;
+            u = 
         }
 
         std::cout << "x:" << std::endl;
@@ -440,6 +443,8 @@ public:
         std::cout << std::endl;
 
         delete[] x;
+        delete[] u;
+        delete[] u_prime;
 
         delete[] host_nodes;
         delete[] host_weights;
