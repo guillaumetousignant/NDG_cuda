@@ -425,24 +425,29 @@ public:
             }
         }
 
-        const int n_points = 10;
-        float* x = new float[n_points];
-        float* u = new float[n_points];
-        float* u_prime = new float[n_points];
-        const float delta_x = (1.0 + 1.0)/(n_points - 1);
-        for (int i = 0; i < n_points; ++i) {
-            x[i] = -1.0 + i * delta_x;
-            u = 
-        }
+        const int N = 8;
+        const int offset = N * (N + 1) /2;
+        float* u = new float[N + 1];
+        float* u_prime = new float[N + 1];
 
+        for (int i = 0; i <= N; ++i) {
+            u[i] = -sin(pi * host_nodes[offset + i]);
+        }
+        
         std::cout << "x:" << std::endl;
         std::cout << '\t';
-        for (int i = 0; i < n_points; ++i) {
-            std::cout << std::setw(12) << x[i] << "    ";
+        for (int i = 0; i < N; ++i) {
+            std::cout << std::setw(12) << host_nodes[offset + i] << "    ";
         }
         std::cout << std::endl;
 
-        delete[] x;
+        std::cout << "u:" << std::endl;
+        std::cout << '\t';
+        for (int i = 0; i < N; ++i) {
+            std::cout << std::setw(12) << u[i] << "    ";
+        }
+        std::cout << std::endl;
+
         delete[] u;
         delete[] u_prime;
 
