@@ -981,7 +981,7 @@ public:
 
 int main(void) {
     const int N_elements = 4;
-    const int N_max = 4;
+    const int N_max = 8;
     const int initial_N = N_max;
     const int N_interpolation_points = 100;
     
