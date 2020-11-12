@@ -36,8 +36,7 @@ for filename in filenames:
 legend_list = []
 fig, ax = plt.subplots(1, 1)
 for i in range(len(filenames)):
-    ind = np.argsort(x_arrays[i], axis=0)
-    ax.plot(np.take_along_axis(x_arrays[i], ind, axis=0), np.take_along_axis(ux_arrays[i], ind, axis=0))
+    ax.plot(x_arrays[i], ux_arrays[i])
     legend_list.append(f"t = {times[i]} s")
 
 ax.grid()
