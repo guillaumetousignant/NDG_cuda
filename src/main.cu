@@ -761,7 +761,7 @@ public:
     }
 
     void solve(const NDG_t &NDG) {
-        const int N_steps = 400;
+        const int N_steps = 1;
         const float delta_t = 0.0001f;
         const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
         const int faces_numBlocks = (N_faces_ + faces_blockSize - 1) / faces_blockSize;
@@ -922,7 +922,7 @@ int main(void) {
             << "s." << std::endl;
 
     NDG.print();
-    //Mesh.print();
+    Mesh.print();
     
     return 0;
 }
