@@ -507,7 +507,10 @@ public:
         }
     }
 
-    __device__
+    __host__ 
+    Element_t() {};
+
+    __host__ __device__
     ~Element_t() {
         if (phi_ != nullptr){
             delete[] phi_;
@@ -803,6 +806,7 @@ public:
         float* host_phi = new float[(initial_N_ + 1) * N_elements_];
         float* host_phi_prime = new float[(initial_N_ + 1) * N_elements_];
         Face_t* host_faces = new Face_t[N_faces_];
+        Element_t* host_elements = new Element_t[N_elements_];
         cudaMalloc(&phi, (initial_N_ + 1) * N_elements_ * sizeof(float));
         cudaMalloc(&phi_prime, (initial_N_ + 1) * N_elements_ * sizeof(float));
 
@@ -813,6 +817,14 @@ public:
         cudaMemcpy(host_phi, phi, (initial_N_ + 1) * N_elements_ * sizeof(float), cudaMemcpyDeviceToHost);
         cudaMemcpy(host_phi_prime, phi_prime, (initial_N_ + 1) * N_elements_ * sizeof(float), cudaMemcpyDeviceToHost);
         cudaMemcpy(host_faces, faces_, N_faces_ * sizeof(Face_t), cudaMemcpyDeviceToHost);
+        cudaMemcpy(host_elements, elements_, N_elements_ * sizeof(Element_t), cudaMemcpyDeviceToHost);
+
+        // Invalidate GPU pointers, or else they will be deleted on the CPU, where they point to random stuff
+        for (int i = 0; i < N_elements_; ++i) {
+            host_elements[i].phi_ = nullptr;
+            host_elements[i].phi_prime_ = nullptr;
+            host_elements[i].intermediate_ = nullptr;
+        }
 
         std::cout << std::endl << "Phi: " << std::endl;
         for (int i = 0; i < N_elements_; ++i) {
@@ -836,6 +848,67 @@ public:
             std::cout << std::endl;
         }
 
+        std::cout << std::endl << "Phi interpolated: " << std::endl;
+        for (int i = 0; i < N_elements_; ++i) {
+            std::cout << '\t' << "Element " << i << ": ";
+            std::cout << '\t' << '\t';
+            std::cout << host_elements[i].phi_L_ << " ";
+            std::cout << host_elements[i].phi_R_;
+            std::cout << std::endl;
+        }
+
+        std::cout << std::endl << "x: " << std::endl;
+        for (int i = 0; i < N_elements_; ++i) {
+            std::cout << '\t' << "Element " << i << ": ";
+            std::cout << '\t' << '\t';
+            std::cout << host_elements[i].x_[0] << " ";
+            std::cout << host_elements[i].x_[1];
+            std::cout << std::endl;
+        }
+
+        std::cout << std::endl << "x: " << std::endl;
+        for (int i = 0; i < N_elements_; ++i) {
+            std::cout << '\t' << "Element " << i << ": ";
+            std::cout << '\t' << '\t';
+            std::cout << host_elements[i].x_[0] << " ";
+            std::cout << host_elements[i].x_[1];
+            std::cout << std::endl;
+        }
+
+        std::cout << std::endl << "Neighbouring elements: " << std::endl;
+        for (int i = 0; i < N_elements_; ++i) {
+            std::cout << '\t' << "Element " << i << ": ";
+            std::cout << '\t' << '\t';
+            std::cout << host_elements[i].neighbours_[0] << " ";
+            std::cout << host_elements[i].neighbours_[1];
+            std::cout << std::endl;
+        }
+
+        std::cout << std::endl << "Neighbouring faces: " << std::endl;
+        for (int i = 0; i < N_elements_; ++i) {
+            std::cout << '\t' << "Element " << i << ": ";
+            std::cout << '\t' << '\t';
+            std::cout << host_elements[i].faces_[0] << " ";
+            std::cout << host_elements[i].faces_[1];
+            std::cout << std::endl;
+        }
+
+        std::cout << std::endl << "N: " << std::endl;
+        for (int i = 0; i < N_elements_; ++i) {
+            std::cout << '\t' << "Element " << i << ": ";
+            std::cout << '\t' << '\t';
+            std::cout << host_elements[i].N_;
+            std::cout << std::endl;
+        }
+
+        std::cout << std::endl << "delta x: " << std::endl;
+        for (int i = 0; i < N_elements_; ++i) {
+            std::cout << '\t' << "Element " << i << ": ";
+            std::cout << '\t' << '\t';
+            std::cout << host_elements[i].delta_x_;
+            std::cout << std::endl;
+        }
+
         std::cout << std::endl << "Fluxes: " << std::endl;
         for (int i = 0; i < N_faces_; ++i) {
             std::cout << '\t' << "Face " << i << ": ";
@@ -846,6 +919,7 @@ public:
         delete[] host_phi;
         delete[] host_phi_prime;
         delete[] host_faces;
+        delete[] host_elements;
 
         cudaFree(phi);
         cudaFree(phi_prime);
