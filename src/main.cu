@@ -431,14 +431,14 @@ public:
         float* u_prime = new float[N + 1];
 
         for (int i = 0; i <= N; ++i) {
-            u[i] = 5.0; // * host_nodes[offset + i]; //-sin(pi * host_nodes[offset + i]);
+            u[i] = 5.0 * host_nodes[offset + i]; //-sin(pi * host_nodes[offset + i]);
         }
 
         const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
         for (int i = 0; i <= N; ++i) {
             u_prime[i] = 0.0f;
             for (int j = 0; j <= N; ++j) {
-                u_prime[i] += host_derivative_matrices_hat[offset_2D + i * (N + 1) + j] * u[j];
+                u_prime[i] += host_derivative_matrices[offset_2D + i * (N + 1) + j] * u[j];
             }
         }
         
