@@ -430,6 +430,8 @@ public:
         float* u = new float[N + 1];
         float* u_prime = new float[N + 1];
         float* u_prime_expected = new float[N + 1];
+        float u_L = 0.0f;
+        float u_R = 0.0f;
 
         for (int i = 0; i <= N; ++i) {
             u[i] = -sin(pi * host_nodes[offset + i]);
@@ -447,6 +449,14 @@ public:
             u_prime_expected[i] = -pi * cos(pi * host_nodes[offset + i]);
         }
         
+        for (int i = 0; i <= N; ++i) {
+            u_L += host_lagrange_interpolant_left[offset + i] * u[i];
+        }
+
+        for (int i = 0; i <= N; ++i) {
+            u_R += host_lagrange_interpolant_right[offset + i] * u[i];
+        }
+
         std::cout << "x:" << std::endl;
         std::cout << '\t';
         for (int i = 0; i <= N; ++i) {
@@ -468,12 +478,19 @@ public:
         }
         std::cout << std::endl;
 
-        std::cout << "expected u prime:" << std::endl;
+        std::cout << "Expected u prime:" << std::endl;
         std::cout << '\t';
         for (int i = 0; i <= N; ++i) {
             std::cout << std::setw(12) << u_prime_expected[i] << "    ";
         }
         std::cout << std::endl;
+
+        std::cout << "Interpolated u:" << std::endl;
+        std::cout << '\t';
+        std::cout << std::setw(12) << u_L << "    ";
+        std::cout << std::setw(12) << u_R;
+        std::cout << std::endl;
+        
 
         delete[] u;
         delete[] u_prime;
@@ -987,7 +1004,7 @@ int main(void) {
             << "s." << std::endl;
 
     NDG.print();
-    Mesh.print();
+    //Mesh.print();
     
     return 0;
 }
