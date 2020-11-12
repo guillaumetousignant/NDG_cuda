@@ -187,14 +187,14 @@ void create_interpolation_matrices(int N, int N_interpolation_points, const floa
 
 // Algorithm 19
 __device__
-void matrix_vector_derivative(int N, const float* derivative_matrices, const float* phi, float* phi_prime) {
+void matrix_vector_derivative(int N, const float* derivative_matrices_hat, const float* phi, float* phi_prime) {
     // s = 0, e = N (p.55 says N - 1)
     const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
 
     for (int i = 0; i <= N; ++i) {
         phi_prime[i] = 0.0f;
         for (int j = 0; j <= N; ++j) {
-            phi_prime[i] += derivative_matrices[offset_2D + i * (N + 1) + j] * phi[j] * phi[j] * 0.5f; // phi not squared in textbook, squared for Burger's
+            phi_prime[i] += derivative_matrices_hat[offset_2D + i * (N + 1) + j] * phi[j] * phi[j] * 0.5f; // phi not squared in textbook, squared for Burger's
         }
     }
 }
@@ -710,14 +710,14 @@ void calculate_fluxes(int N_faces, Face_t* faces, const Element_t* elements) {
 
 // Algorithm 60 (not really anymore)
 __global__
-void compute_dg_derivative(int N_elements, Element_t* elements, const Face_t* faces, const float* weights, const float* derivative_matrices, const float* lagrange_interpolant_left, const float* lagrange_interpolant_right) {
+void compute_dg_derivative(int N_elements, Element_t* elements, const Face_t* faces, const float* weights, const float* derivative_matrices_hat, const float* lagrange_interpolant_left, const float* lagrange_interpolant_right) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
     for (int i = index; i < N_elements; i += stride) {
         const int offset_1D = elements[i].N_ * (elements[i].N_ + 1) /2; // CHECK cache?
 
-        matrix_vector_derivative(elements[i].N_, derivative_matrices, elements[i].phi_, elements[i].phi_prime_);
+        matrix_vector_derivative(elements[i].N_, derivative_matrices_hat, elements[i].phi_, elements[i].phi_prime_);
 
         for (int j = 0; j <= elements[i].N_; ++j) {
             elements[i].phi_prime_[j] += (faces[elements[i].faces_[0]].flux_ * lagrange_interpolant_left[offset_1D + j] - faces[elements[i].faces_[1]].flux_ * lagrange_interpolant_right[offset_1D + j]) / weights[offset_1D + j];
@@ -761,7 +761,7 @@ public:
     }
 
     void solve(const NDG_t &NDG) {
-        const int N_steps = 1;
+        const int N_steps = 400;
         const float delta_t = 0.0001f;
         const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
         const int faces_numBlocks = (N_faces_ + faces_blockSize - 1) / faces_blockSize;
@@ -772,6 +772,7 @@ public:
         for (int step = 0; step < N_steps; ++step) {
             time += delta_t;
 
+            // Kinda algorithm 62
             interpolate_to_boundaries<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
             calculate_fluxes<<<faces_numBlocks, faces_blockSize>>>(N_faces_, faces_, elements_);
             compute_dg_derivative<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
