@@ -411,7 +411,7 @@ public:
             }
         }
 
-        std::cout << std::endl << "Interpolation matrices hat: " << std::endl;
+        std::cout << std::endl << "Interpolation matrices: " << std::endl;
         for (int N = 0; N <= N_max_; ++N) {
             const int offset_interp = N * (N + 1) * N_interpolation_points_/2;
 
