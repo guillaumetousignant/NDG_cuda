@@ -429,9 +429,10 @@ public:
         const int offset = N * (N + 1) /2;
         float* u = new float[N + 1];
         float* u_prime = new float[N + 1];
+        float* u_prime_expected = new float[N + 1];
 
         for (int i = 0; i <= N; ++i) {
-            u[i] = 5.0 * host_nodes[offset + i]; //-sin(pi * host_nodes[offset + i]);
+            u[i] = -sin(pi * host_nodes[offset + i]);
         }
 
         const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
@@ -440,6 +441,10 @@ public:
             for (int j = 0; j <= N; ++j) {
                 u_prime[i] += host_derivative_matrices[offset_2D + i * (N + 1) + j] * u[j];
             }
+        }
+
+        for (int i = 0; i <= N; ++i) {
+            u_prime_expected[i] = -pi * cos(pi * host_nodes[offset + i]);
         }
         
         std::cout << "x:" << std::endl;
@@ -463,8 +468,16 @@ public:
         }
         std::cout << std::endl;
 
+        std::cout << "expected u prime:" << std::endl;
+        std::cout << '\t';
+        for (int i = 0; i <= N; ++i) {
+            std::cout << std::setw(12) << u_prime_expected[i] << "    ";
+        }
+        std::cout << std::endl;
+
         delete[] u;
         delete[] u_prime;
+        delete[] u_prime_expected;
 
         delete[] host_nodes;
         delete[] host_weights;
