@@ -866,15 +866,6 @@ public:
             std::cout << std::endl;
         }
 
-        std::cout << std::endl << "x: " << std::endl;
-        for (int i = 0; i < N_elements_; ++i) {
-            std::cout << '\t' << "Element " << i << ": ";
-            std::cout << '\t' << '\t';
-            std::cout << host_elements[i].x_[0] << " ";
-            std::cout << host_elements[i].x_[1];
-            std::cout << std::endl;
-        }
-
         std::cout << std::endl << "Neighbouring elements: " << std::endl;
         for (int i = 0; i < N_elements_; ++i) {
             std::cout << '\t' << "Element " << i << ": ";
