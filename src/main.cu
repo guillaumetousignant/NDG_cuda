@@ -70,13 +70,13 @@ bool almost_equal(float x, float y) {
 // This will not work if we are on a node, or at least be pretty inefficient
 // Algorithm 34
 __global__
-void lagrange_integrating_polynomials(float x, int N, const float* nodes, const float* weights, float* lagrange_interpolant) {
+void lagrange_integrating_polynomials(float x, int N, const float* nodes, const float* barycentric_weights, float* lagrange_interpolant) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     const int offset = N * (N + 1) /2;
 
     for (int i = index; i <= N; i += stride) {
-        lagrange_interpolant[offset + i] = weights[offset + i] / (x - nodes[offset + i]);
+        lagrange_interpolant[offset + i] = barycentric_weights[offset + i] / (x - nodes[offset + i]);
     }
 }
 
@@ -964,8 +964,8 @@ public:
 
 int main(void) {
     const int N_elements = 4;
-    const int initial_N = 8;
-    const int N_max = 8;
+    const int N_max = 4;
+    const int initial_N = N_max;
     const int N_interpolation_points = 100;
     
     NDG_t NDG(N_max, N_interpolation_points);
