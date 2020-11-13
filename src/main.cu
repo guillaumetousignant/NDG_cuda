@@ -11,6 +11,7 @@
 namespace fs = std::filesystem;
 
 constexpr float pi = 3.14159265358979323846f;
+constexpr float c = 5.0f;
 constexpr int poly_blockSize = 16; // Small number of threads per block because N will never be huge
 constexpr int elements_blockSize = 32; // For when we'll have multiple elements
 constexpr int faces_blockSize = 32; // Same number of faces as elements for periodic BC
@@ -194,7 +195,7 @@ void matrix_vector_derivative(int N, const float* derivative_matrices_hat, const
     for (int i = 0; i <= N; ++i) {
         phi_prime[i] = 0.0f;
         for (int j = 0; j <= N; ++j) {
-            phi_prime[i] += derivative_matrices_hat[offset_2D + i * (N + 1) + j] * phi[j] * phi[j] * 0.5f; // phi not squared in textbook, squared for Burger's
+            phi_prime[i] += derivative_matrices_hat[offset_2D + i * (N + 1) + j] * phi[j]; // phi not squared in textbook, squared for Burger's
         }
     }
 }
@@ -411,7 +412,7 @@ public:
             }
         }
 
-        std::cout << std::endl << "Interpolation matrices: " << std::endl;
+        /*std::cout << std::endl << "Interpolation matrices: " << std::endl;
         for (int N = 0; N <= N_max_; ++N) {
             const int offset_interp = N * (N + 1) * N_interpolation_points_/2;
 
@@ -423,7 +424,7 @@ public:
                 }
                 std::cout << std::endl;
             }
-        }
+        }*/
 
         const int N = 8;
         const int offset = N * (N + 1) /2;
@@ -724,7 +725,7 @@ void calculate_fluxes(int N_faces, Face_t* faces, const Element_t* elements) {
             }
         }
 
-        faces[i].flux_ = 0.5f * u * u;
+        faces[i].flux_ = c * u_left;
     }
 }
 
@@ -781,7 +782,7 @@ public:
     }
 
     void solve(const NDG_t &NDG) {
-        const int N_steps = 1;
+        const int N_steps = 400;
         const float delta_t = 0.0001f;
         const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
         const int faces_numBlocks = (N_faces_ + faces_blockSize - 1) / faces_blockSize;
