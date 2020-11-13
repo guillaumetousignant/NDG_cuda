@@ -111,6 +111,16 @@ function [nodes, weights] = LegendreGaussNodesAndWeights(N)
     end
 end
 
+function [nodes, weights] = ChebyshevGaussNodesAndWeights(N)
+    nodes = zeros(N + 1, 1);
+    weights = zeros(N + 1, 1);
+
+    for j = 0:N
+        nodes(j+1) = -cos(pi * (2 * j + 1)/(2 * N + 2));
+        weights(j+1) = pi/(N + 1);
+    end
+end
+
 function barycentric_weights = BarycentricWeights(nodes)
     barycentric_weights = zeros(length(nodes), 1);
     N = length(nodes) - 1;
