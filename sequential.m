@@ -17,14 +17,13 @@ for j = 0:N
     end
 end
 
-sigma = 0.2;
 delta_t = 0.00015;
 save_times = [0.01, 0.05, 0.1];
 t = 0;
 t_end = save_times(end);
 phi = zeros(N+1, 1);
 for j = 0:N
-    phi(j+1) = exp(-log(2) * (nodes(j+1) + 0)^2 /(sigma^2));
+    phi(j+1) = g(0, nodes(j+1), c);
 end
 
 figure()
@@ -33,9 +32,8 @@ plot(nodes, phi);
 legends = {'t = 0'};
 
 while t < (t_end + delta_t)
+    phi = DGStepByRK3(t, delta_t, c, phi, D_hat, weights, lagrange_integrating_polynomial_left, lagrange_integrating_polynomial_right);
     t = t + delta_t;
-
-    phi = DGStepByRK3(delta_t, c, phi, D_hat, weights, lagrange_integrating_polynomial_left, lagrange_integrating_polynomial_right);
 
     if (any((t >= save_times) & (t < save_times + delta_t)))
         plot(nodes, phi);
@@ -43,6 +41,11 @@ while t < (t_end + delta_t)
     end
 end
 legend(legends);
+
+function y = g(t, x, c)
+    sigma = 0.2;
+    y = exp(-log(2) * (x - t * c)^2 /(sigma^2));
+end
 
 
 function [L_N, L_N_prime] = LegendrePolynomialAndDerivative(N, x)
@@ -202,26 +205,28 @@ function interpolatedValue = InterpolateToBoundary(phi, lagrange_integrating_pol
     end
 end
 
-function phi_dot = DGTimeDerivative(c, phi, D_hat, weights, lagrange_integrating_polynomial_left, lagrange_integrating_polynomial_right)
+function phi_dot = DGTimeDerivative(t, c, phi, D_hat, weights, lagrange_integrating_polynomial_left, lagrange_integrating_polynomial_right)
     if c > 0
-        phi_L = InterpolateToBoundary(phi, lagrange_integrating_polynomial_right);
-        phi_R = phi_L;
+        phi_L = g(t, -1, c);
+        phi_R = InterpolateToBoundary(phi, lagrange_integrating_polynomial_right);
     else
-        phi_R = InterpolateToBoundary(phi, lagrange_integrating_polynomial_left);
-        phi_L = phi_R;
+        phi_L = InterpolateToBoundary(phi, lagrange_integrating_polynomial_left);
+        phi_R =  g(t, 1, c);
     end
 
     phi_dot = -c * ComputeDGDerivative(phi_L, phi_R, phi, D_hat, weights, lagrange_integrating_polynomial_left, lagrange_integrating_polynomial_right);
 end
 
-function phi = DGStepByRK3(delta_t, c, phi, D_hat, weights, lagrange_integrating_polynomial_left, lagrange_integrating_polynomial_right)
+function phi = DGStepByRK3(t_start, delta_t, c, phi, D_hat, weights, lagrange_integrating_polynomial_left, lagrange_integrating_polynomial_right)
     N = length(phi) - 1;
     G = zeros(length(phi), 1);
     a = [0, -5/9, -153/128];
+    b = [0, 1/3, 3/4];
     g = [1/3, 15/16, 8/15];
 
     for m = 1:3
-        phi_dot = DGTimeDerivative(c, phi, D_hat, weights, lagrange_integrating_polynomial_left, lagrange_integrating_polynomial_right);
+        t = t_start + b(m) * delta_t;
+        phi_dot = DGTimeDerivative(t, c, phi, D_hat, weights, lagrange_integrating_polynomial_left, lagrange_integrating_polynomial_right);
         for j = 0:N
             G(j+1) = a(m) * G(j+1) + phi_dot(j+1);
             phi(j+1) = phi(j+1) + g(m) * delta_t * G(j+1);
