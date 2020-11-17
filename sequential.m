@@ -5,10 +5,10 @@ close all
 N = 36;
 c = 1;
 
-[nodes, weights] = LegendreGaussNodesAndWeights(N);
-barycentric_weights = BarycentricWeights(nodes);
-lagrange_interpolating_polynomial_left = LagrangeInterpolatingPolynomials(-1, nodes, barycentric_weights);
-lagrange_interpolating_polynomial_right = LagrangeInterpolatingPolynomials(1, nodes, barycentric_weights);
+[nodes, weights] = LegendreGaussNodesAndWeights(N); % OK
+barycentric_weights = BarycentricWeights(nodes); % OK
+lagrange_interpolating_polynomial_left = LagrangeInterpolatingPolynomials(-1, nodes, barycentric_weights); % OK
+lagrange_interpolating_polynomial_right = LagrangeInterpolatingPolynomials(1, nodes, barycentric_weights); % OK
 D = PolynomialDerivativeMatrix(nodes);
 D_hat = zeros(size(D));
 for j = 0:N
