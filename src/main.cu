@@ -71,7 +71,7 @@ bool almost_equal(float x, float y) {
 // This will not work if we are on a node, or at least be pretty inefficient
 // Algorithm 34
 __global__
-void lagrange_integrating_polynomials(float x, int N, const float* nodes, const float* barycentric_weights, float* lagrange_interpolant) {
+void lagrange_interpolating_polynomials(float x, int N, const float* nodes, const float* barycentric_weights, float* lagrange_interpolant) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     const int offset = N * (N + 1) /2;
@@ -83,7 +83,7 @@ void lagrange_integrating_polynomials(float x, int N, const float* nodes, const 
 
 // Algorithm 34
 __global__
-void normalize_lagrange_integrating_polynomials(int N_max, float* lagrange_interpolant) {
+void normalize_lagrange_interpolating_polynomials(int N_max, float* lagrange_interpolant) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -238,15 +238,15 @@ public:
             const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
             polynomial_derivative_matrices<<<matrix_numBlocks, matrix_blockSize>>>(N, nodes_, barycentric_weights_, derivative_matrices_);
             create_interpolation_matrices<<<interpolation_numBlocks, interpolation_blockSize>>>(N, N_interpolation_points_, nodes_, barycentric_weights_, interpolation_matrices_);
-            lagrange_integrating_polynomials<<<vector_numBlocks, poly_blockSize>>>(-1.0f, N, nodes_, barycentric_weights_, lagrange_interpolant_left_);
-            lagrange_integrating_polynomials<<<vector_numBlocks, poly_blockSize>>>(1.0f, N, nodes_, barycentric_weights_, lagrange_interpolant_right_);
+            lagrange_interpolating_polynomials<<<vector_numBlocks, poly_blockSize>>>(-1.0f, N, nodes_, barycentric_weights_, lagrange_interpolant_left_);
+            lagrange_interpolating_polynomials<<<vector_numBlocks, poly_blockSize>>>(1.0f, N, nodes_, barycentric_weights_, lagrange_interpolant_right_);
         }
 
         // Then we calculate the derivative matrix diagonal and normalize the Lagrange interpolants
         cudaDeviceSynchronize();
         const int poly_numBlocks = (N_max_ + poly_blockSize) / poly_blockSize;
-        normalize_lagrange_integrating_polynomials<<<poly_numBlocks, poly_blockSize>>>(N_max_, lagrange_interpolant_left_);
-        normalize_lagrange_integrating_polynomials<<<poly_numBlocks, poly_blockSize>>>(N_max_, lagrange_interpolant_right_);
+        normalize_lagrange_interpolating_polynomials<<<poly_numBlocks, poly_blockSize>>>(N_max_, lagrange_interpolant_left_);
+        normalize_lagrange_interpolating_polynomials<<<poly_numBlocks, poly_blockSize>>>(N_max_, lagrange_interpolant_right_);
         for (int N = 0; N <= N_max_; ++N) {
             const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
             polynomial_derivative_matrices_diagonal<<<vector_numBlocks, poly_blockSize>>>(N, derivative_matrices_);
