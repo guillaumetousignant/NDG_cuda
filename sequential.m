@@ -232,14 +232,14 @@ function phi = DGStepByRK3(t_start, delta_t, c, phi, D_hat, weights, lagrange_in
     G = zeros(length(phi), 1);
     a = [0, -5/9, -153/128];
     b = [0, 1/3, 3/4];
-    g = [1/3, 15/16, 8/15];
+    g_rk = [1/3, 15/16, 8/15];
 
     for m = 1:3
         t = t_start + b(m) * delta_t;
         phi_dot = DGTimeDerivative(t, c, phi, D_hat, weights, lagrange_integrating_polynomial_left, lagrange_integrating_polynomial_right);
         for j = 0:N
             G(j+1) = a(m) * G(j+1) + phi_dot(j+1);
-            phi(j+1) = phi(j+1) + g(m) * delta_t * G(j+1);
+            phi(j+1) = phi(j+1) + g_rk(m) * delta_t * G(j+1);
         end
     end
 end
