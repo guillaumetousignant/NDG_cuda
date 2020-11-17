@@ -7,8 +7,8 @@ c = 1;
 
 [nodes, weights] = LegendreGaussNodesAndWeights(N);
 barycentric_weights = BarycentricWeights(nodes);
-lagrange_integrating_polynomial_left = LagrangeIntegratingPolynomials(-1, nodes, barycentric_weights);
-lagrange_integrating_polynomial_right = LagrangeIntegratingPolynomials(1, nodes, barycentric_weights);
+lagrange_interpolating_polynomial_left = LagrangeInterpolatingPolynomials(-1, nodes, barycentric_weights);
+lagrange_interpolating_polynomial_right = LagrangeInterpolatingPolynomials(1, nodes, barycentric_weights);
 D = PolynomialDerivativeMatrix(nodes);
 D_hat = zeros(size(D));
 for j = 0:N
@@ -32,7 +32,7 @@ plot(nodes, phi);
 legends = {'t = 0'};
 
 while t < (t_end + delta_t)
-    phi = DGStepByRK3(t, delta_t, c, phi, D_hat, weights, lagrange_integrating_polynomial_left, lagrange_integrating_polynomial_right);
+    phi = DGStepByRK3(t, delta_t, c, phi, D_hat, weights, lagrange_interpolating_polynomial_left, lagrange_interpolating_polynomial_right);
     t = t + delta_t;
 
     if (any((t >= save_times) & (t < save_times + delta_t)))
@@ -140,15 +140,15 @@ function barycentric_weights = BarycentricWeights(nodes)
     end
 end
 
-function lagrange_integrating_polynomial = LagrangeIntegratingPolynomials(x, nodes, barycentric_weights)
-    lagrange_integrating_polynomial = zeros(length(nodes), 1);
+function lagrange_interpolating_polynomial = LagrangeInterpolatingPolynomials(x, nodes, barycentric_weights)
+    lagrange_interpolating_polynomial = zeros(length(nodes), 1);
     N = length(nodes) - 1;
 
     xMatchNode = false;
     for j = 0:N
-        lagrange_integrating_polynomial(j + 1) = 0;
+        lagrange_interpolating_polynomial(j + 1) = 0;
         if abs(x - nodes(j + 1))<=0.0000001
-            lagrange_integrating_polynomial(j + 1) = 1;
+            lagrange_interpolating_polynomial(j + 1) = 1;
             xMatchNode = true;
         end
     end
@@ -160,12 +160,12 @@ function lagrange_integrating_polynomial = LagrangeIntegratingPolynomials(x, nod
     s = 0;
     for j = 0:N
         t = barycentric_weights(j + 1)/(x - nodes(j + 1));
-        lagrange_integrating_polynomial(j + 1) = t;
+        lagrange_interpolating_polynomial(j + 1) = t;
         s = s + t;
     end
 
     for j = 0:N
-        lagrange_integrating_polynomial(j + 1) = lagrange_integrating_polynomial(j + 1)/s;
+        lagrange_interpolating_polynomial(j + 1) = lagrange_interpolating_polynomial(j + 1)/s;
     end
 end
 
@@ -198,36 +198,36 @@ function derivative = MxVDerivative(D, f)
     end
 end
 
-function phi_prime = ComputeDGDerivative(phi_L, phi_R, phi, D_hat, weights, lagrange_integrating_polynomial_left, lagrange_integrating_polynomial_right)
+function phi_prime = ComputeDGDerivative(phi_L, phi_R, phi, D_hat, weights, lagrange_interpolating_polynomial_left, lagrange_interpolating_polynomial_right)
     N = length(phi) - 1;
     phi_prime = MxVDerivative(D_hat, phi);
 
     for j = 0:N
-        phi_prime(j+1) = phi_prime(j+1) + (phi_R * lagrange_integrating_polynomial_right(j+1) - phi_L * lagrange_integrating_polynomial_left(j+1))/weights(j+1);
+        phi_prime(j+1) = phi_prime(j+1) + (phi_R * lagrange_interpolating_polynomial_right(j+1) - phi_L * lagrange_interpolating_polynomial_left(j+1))/weights(j+1);
     end
 end
 
-function interpolatedValue = InterpolateToBoundary(phi, lagrange_integrating_polynomial)
+function interpolatedValue = InterpolateToBoundary(phi, lagrange_interpolating_polynomial)
     interpolatedValue = 0;
     N = length(phi) - 1;
     for j = 0:N
-        interpolatedValue = interpolatedValue + lagrange_integrating_polynomial(j+1) * phi(j+1);
+        interpolatedValue = interpolatedValue + lagrange_interpolating_polynomial(j+1) * phi(j+1);
     end
 end
 
-function phi_dot = DGTimeDerivative(t, c, phi, D_hat, weights, lagrange_integrating_polynomial_left, lagrange_integrating_polynomial_right)
+function phi_dot = DGTimeDerivative(t, c, phi, D_hat, weights, lagrange_interpolating_polynomial_left, lagrange_interpolating_polynomial_right)
     if c > 0
         phi_L = g(t, -1, c);
-        phi_R = InterpolateToBoundary(phi, lagrange_integrating_polynomial_right);
+        phi_R = InterpolateToBoundary(phi, lagrange_interpolating_polynomial_right);
     else
-        phi_L = InterpolateToBoundary(phi, lagrange_integrating_polynomial_left);
+        phi_L = InterpolateToBoundary(phi, lagrange_interpolating_polynomial_left);
         phi_R =  g(t, 1, c);
     end
 
-    phi_dot = -c * ComputeDGDerivative(phi_L, phi_R, phi, D_hat, weights, lagrange_integrating_polynomial_left, lagrange_integrating_polynomial_right);
+    phi_dot = -c * ComputeDGDerivative(phi_L, phi_R, phi, D_hat, weights, lagrange_interpolating_polynomial_left, lagrange_interpolating_polynomial_right);
 end
 
-function phi = DGStepByRK3(t_start, delta_t, c, phi, D_hat, weights, lagrange_integrating_polynomial_left, lagrange_integrating_polynomial_right)
+function phi = DGStepByRK3(t_start, delta_t, c, phi, D_hat, weights, lagrange_interpolating_polynomial_left, lagrange_interpolating_polynomial_right)
     N = length(phi) - 1;
     G = zeros(length(phi), 1);
     a = [0, -5/9, -153/128];
@@ -236,7 +236,7 @@ function phi = DGStepByRK3(t_start, delta_t, c, phi, D_hat, weights, lagrange_in
 
     for m = 1:3
         t = t_start + b(m) * delta_t;
-        phi_dot = DGTimeDerivative(t, c, phi, D_hat, weights, lagrange_integrating_polynomial_left, lagrange_integrating_polynomial_right);
+        phi_dot = DGTimeDerivative(t, c, phi, D_hat, weights, lagrange_interpolating_polynomial_left, lagrange_interpolating_polynomial_right);
         for j = 0:N
             G(j+1) = a(m) * G(j+1) + phi_dot(j+1);
             phi(j+1) = phi(j+1) + g_rk(m) * delta_t * G(j+1);
