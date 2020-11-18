@@ -9,7 +9,7 @@ c = 1;
 barycentric_weights = BarycentricWeights(nodes); % OK
 lagrange_interpolating_polynomial_left = LagrangeInterpolatingPolynomials(-1, nodes, barycentric_weights); % OK
 lagrange_interpolating_polynomial_right = LagrangeInterpolatingPolynomials(1, nodes, barycentric_weights); % OK
-D = PolynomialDerivativeMatrix(nodes); % 
+D = PolynomialDerivativeMatrix(nodes); % OK
 D_hat = zeros(size(D));
 for j = 0:N
     for i = 0:N
@@ -41,6 +41,12 @@ while t < (t_end + delta_t)
     end
 end
 legend(legends);
+
+
+y_test = sin(nodes);
+y_deriv = MxVDerivative(D, y_test);
+y_expected = cos(nodes);
+
 
 function y = g(t, x, c)
     sigma = 0.2;
@@ -185,7 +191,7 @@ function D = PolynomialDerivativeMatrix(nodes)
     end
 end
 
-function derivative = MxVDerivative(D, f)
+function derivative = MxVDerivative(D, f) % NOT OK
     derivative = zeros(length(f), 1);
     N = length(f) - 1;
 
