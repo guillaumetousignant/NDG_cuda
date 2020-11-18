@@ -18,7 +18,7 @@ for j = 0:N
 end
 
 delta_t = 0.00015;
-save_times = [0.01, 0.05, 0.1];
+save_times = [0.5, 1, 1.5];
 t = 0;
 t_end = save_times(end);
 phi = zeros(N+1, 1);
