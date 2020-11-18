@@ -42,12 +42,6 @@ while t < (t_end + delta_t)
 end
 legend(legends);
 
-
-y_test = sin(nodes);
-y_deriv = MxVDerivative(D, y_test);
-y_expected = cos(nodes);
-
-
 function y = g(t, x, c)
     sigma = 0.2;
     y = exp(-log(2) * (x - t * c)^2 /(sigma^2));
@@ -191,14 +185,14 @@ function D = PolynomialDerivativeMatrix(nodes)
     end
 end
 
-function derivative = MxVDerivative(D, f) % NOT OK
+function derivative = MxVDerivative(D, f) % OK
     derivative = zeros(length(f), 1);
     N = length(f) - 1;
 
     for i = 0:N
         t = 0;
         for j = 0:N
-            t = t + D(i+1, j+1) * f(i+1);
+            t = t + D(i+1, j+1) * f(j+1);
         end
         derivative(i+1) = t;
     end
