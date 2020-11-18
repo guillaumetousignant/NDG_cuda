@@ -9,7 +9,7 @@ c = 1;
 barycentric_weights = BarycentricWeights(nodes); % OK
 lagrange_interpolating_polynomial_left = LagrangeInterpolatingPolynomials(-1, nodes, barycentric_weights); % OK
 lagrange_interpolating_polynomial_right = LagrangeInterpolatingPolynomials(1, nodes, barycentric_weights); % OK
-D = PolynomialDerivativeMatrix(nodes); % OK (?)
+D = PolynomialDerivativeMatrix(nodes); % 
 D_hat = zeros(size(D));
 for j = 0:N
     for i = 0:N
@@ -177,8 +177,8 @@ function D = PolynomialDerivativeMatrix(nodes)
     for i = 0:N
         D(i+1, i+1) = 0;
         for j = 0:N
-            if ~(i == j)
-                D(i+1, j+1) = barycentric_weights(j + 1)/barycentric_weights(i + 1) * 1/(nodes(i+1) - nodes(j+1));
+            if i ~= j
+                D(i+1, j+1) = barycentric_weights(j + 1)/(barycentric_weights(i + 1) * (nodes(i+1) - nodes(j+1)));
                 D(i+1, i+1) = D(i+1, i+1) - D(i+1, j+1);
             end
         end
