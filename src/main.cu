@@ -31,6 +31,84 @@ void chebyshev_gauss_nodes_and_weights(int N, float* nodes, float* weights) {
     }
 }
 
+// Algorithm 22
+__device__
+std::tuple<float, float> legendre_polynomial_and_derivative(int N, float x, float &L_N, float &L_N_prime) {
+    if (N == 0) {
+        L_N = 1.0f;
+        L_N_prime = 0.0f;
+    }
+    else if (N == 1) {
+        L_N = x;
+        L_N_prime = 1.0f;
+    }
+    else {
+        float L_N_2 = 1.0f;
+        float L_N_1 = x;
+        float L_N_2_prime = 0.0f;
+        float L_N_1_prime = 1.0f;
+
+        for (int k = 2; k <= N; ++k) {
+            L_N = (2 * k - 1) * x * L_N_1/k - (k - 1) * L_N_2/k; // L_N_1(x) ??
+            L_N_prime = L_N_2_prime + (2 * k - 1) * L_N_1;
+            L_N_2 = L_N_1;
+            L_N_1 = L_N;
+            L_N_2_prime = L_N_1_prime;
+            L_N_1_prime = L_N_prime;
+        }
+    }
+}
+
+// Algorithm 23
+__global__
+void legendre_gauss_nodes_and_weights(int N, float* nodes, float* weights) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+    const int offset = N * (N + 1) /2;
+
+    if (index == 0) {
+        if (N == 0) {
+            nodes[offset] = 0.0f;
+            weights[offset] = 2.0f;
+        }
+        else if (N == 1) {
+            nodes[offset] = -std::sqrt(1.0f/3.0f);
+            weights[offset] = 1.0f;
+            nodes[offset + 1] = -nodes[offset];
+            weights[offset + 1] = weights[offset];
+        }
+        else {
+            for (int j = 0; j < (N + 1)/2; ++j) {
+                nodes[offset + j] = -std::cos(pi * (2 * j + 1)/(2 * N + 2));
+                
+                for (int k = 0; k < 1000; ++k) {
+                    float L_N_plus1, L_N_plus1_prime;
+                    legendre_polynomial_and_derivative(N + 1, nodes[offset + j], L_N_plus1, L_N_plus1_prime);
+                    float delta = -L_N_plus1/L_N_plus1_prime;
+                    nodes[offset + j] += delta;
+                    if (std::abs(delta) <= 0.00000001f * std::abs(nodes[offset + j])) {
+                        break;
+                    }
+
+                }
+
+                float dummy, L_N_plus1_prime_final;
+                legendre_polynomial_and_derivative(N + 1, nodes[offset + j], dummy, L_N_plus1_prime_final);
+                nodes[offset + N - j] = -nodes[offset + j];
+                weights[offset + j] = 2.0f/((1.0f - std::pow(nodes[offset + j], 2)) * std::pow(L_N_plus1_prime_final, 2));
+                weights[offset + N - j] = weights[offset + j];
+            }
+        }
+    }
+
+    if (N % 2 == 0) {
+        float dummy, L_N_plus1_prime_final;
+        legendre_polynomial_and_derivative(N + 1, 0.0f, dummy, L_N_plus1_prime_final);
+        nodes[offset + N/2] = 0.0f;
+        weights[offset + N/2] = 2/std::pow(L_N_plus1_prime_final, 2);
+    }
+}
+
 // Algorithm 30
 __global__
 void calculate_barycentric_weights(int N, const float* nodes, float* barycentric_weights) {
@@ -220,7 +298,7 @@ public:
 
         for (int N = 0; N <= N_max_; ++N) {
             const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
-            chebyshev_gauss_nodes_and_weights<<<vector_numBlocks, poly_blockSize>>>(N, nodes_, weights_);
+            legendre_gauss_nodes_and_weights<<<vector_numBlocks, poly_blockSize>>>(N, nodes_, weights_);
         }
 
         // Nodes are needed to compute barycentric weights
@@ -781,42 +859,6 @@ public:
         initial_conditions<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, nodes);
     }
 
-    void solve(const NDG_t &NDG) {
-        const int N_steps = 400;
-        const float delta_t = 0.0001f;
-        const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
-        const int faces_numBlocks = (N_faces_ + faces_blockSize - 1) / faces_blockSize;
-        float time = 0.0;
-
-        write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
-
-        for (int step = 0; step < N_steps; ++step) {
-            time += delta_t;
-
-            // Kinda algorithm 62
-            interpolate_to_boundaries<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
-            calculate_fluxes<<<faces_numBlocks, faces_blockSize>>>(N_faces_, faces_, elements_);
-            compute_dg_derivative<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
-            rk3_step<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, delta_t, 0.0f, 1.0f/3.0f);
-
-            interpolate_to_boundaries<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
-            calculate_fluxes<<<faces_numBlocks, faces_blockSize>>>(N_faces_, faces_, elements_);
-            compute_dg_derivative<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
-            rk3_step<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, delta_t, -5.0f/9.0f, 15.0f/16.0f);
-
-            interpolate_to_boundaries<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
-            calculate_fluxes<<<faces_numBlocks, faces_blockSize>>>(N_faces_, faces_, elements_);
-            compute_dg_derivative<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
-            rk3_step<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, delta_t, -153.0f/128.0f, 8.0f/15.0f);
-                  
-            if (step % 100 == 0) {
-                write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
-            }
-        }
-
-        write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
-    }
-
     void print() {
         // CHECK find better solution for multiple elements. This only works if all elements have the same N.
         float* phi;
@@ -986,6 +1028,42 @@ public:
         cudaFree(phi);
         cudaFree(x);
     }
+
+    void solve(const NDG_t &NDG) {
+        const int N_steps = 400;
+        const float delta_t = 0.0001f;
+        const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
+        const int faces_numBlocks = (N_faces_ + faces_blockSize - 1) / faces_blockSize;
+        float time = 0.0;
+
+        write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
+
+        for (int step = 0; step < N_steps; ++step) {
+            time += delta_t;
+
+            // Kinda algorithm 62
+            interpolate_to_boundaries<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+            calculate_fluxes<<<faces_numBlocks, faces_blockSize>>>(N_faces_, faces_, elements_);
+            compute_dg_derivative<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+            rk3_step<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, delta_t, 0.0f, 1.0f/3.0f);
+
+            interpolate_to_boundaries<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+            calculate_fluxes<<<faces_numBlocks, faces_blockSize>>>(N_faces_, faces_, elements_);
+            compute_dg_derivative<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+            rk3_step<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, delta_t, -5.0f/9.0f, 15.0f/16.0f);
+
+            interpolate_to_boundaries<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+            calculate_fluxes<<<faces_numBlocks, faces_blockSize>>>(N_faces_, faces_, elements_);
+            compute_dg_derivative<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+            rk3_step<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, delta_t, -153.0f/128.0f, 8.0f/15.0f);
+                  
+            if (step % 100 == 0) {
+                write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
+            }
+        }
+
+        write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
+    }
 };
 
 int main(void) {
@@ -997,8 +1075,6 @@ int main(void) {
     NDG_t NDG(N_max, N_interpolation_points);
     Mesh_t Mesh(N_elements, initial_N, -1.0f, 1.0f);
     Mesh.set_initial_conditions(NDG.nodes_);
-
-    
 
     // Starting actual computation
     cudaDeviceSynchronize();
