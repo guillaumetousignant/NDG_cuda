@@ -33,7 +33,7 @@ void chebyshev_gauss_nodes_and_weights(int N, float* nodes, float* weights) {
 
 // Algorithm 22
 __device__
-std::tuple<float, float> legendre_polynomial_and_derivative(int N, float x, float &L_N, float &L_N_prime) {
+legendre_polynomial_and_derivative(int N, float x, float &L_N, float &L_N_prime) {
     if (N == 0) {
         L_N = 1.0f;
         L_N_prime = 0.0f;
