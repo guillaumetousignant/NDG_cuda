@@ -12,7 +12,7 @@
 namespace fs = std::filesystem;
 
 constexpr float pi = 3.14159265358979323846f;
-constexpr float c = 5.0f;
+constexpr float c = 1.0f;
 constexpr int poly_blockSize = 16; // Small number of threads per block because N will never be huge
 constexpr int elements_blockSize = 32; // For when we'll have multiple elements
 constexpr int faces_blockSize = 32; // Same number of faces as elements for periodic BC
@@ -1037,7 +1037,7 @@ public:
         const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
         const int faces_numBlocks = (N_faces_ + faces_blockSize - 1) / faces_blockSize;
         float time = 0.0;
-        std::vector<float> output_times{0.5f, 1.0f, 1.5f};
+        std::vector<float> output_times{0.05f, 0.1f, 0.15f};
         const float t_end = output_times.back();
 
         write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
