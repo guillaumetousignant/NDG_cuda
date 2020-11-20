@@ -811,7 +811,12 @@ void calculate_fluxes(int N_faces, Face_t* faces, const Element_t* elements) {
             }
         }
 
-        faces[i].flux_ = u_left;
+        if (c >= 0.0f) {
+            faces[i].flux_ = u_left;
+        }
+        else  {
+            faces[i].flux_ = u_right;
+        }
     }
 }
 
