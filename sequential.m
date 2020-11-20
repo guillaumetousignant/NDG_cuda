@@ -45,6 +45,13 @@ while t < t_end
         legends = [legends, sprintf('t = %0.5g', t)];
     end
 end
+
+if (~any((t >= save_times) & (t < save_times + delta_t)))
+    phi_interpolated = InterpolateToNewPoints(interpolation_matrix, phi);
+    plot(ksi, phi_interpolated, 'LineWidth', 2);
+    legends = [legends, sprintf('t = %0.5g', t)];
+end
+
 legend(legends, 'Location', 'best');
 xlabel('x');
 ylabel('u');
