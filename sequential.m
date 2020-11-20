@@ -48,6 +48,7 @@ end
 legend(legends, 'Location', 'best');
 xlabel('x');
 ylabel('u');
+grid ON
 title('Solution at different times');
 
 %% Verification
