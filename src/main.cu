@@ -64,7 +64,6 @@ void legendre_polynomial_and_derivative(int N, float x, float &L_N, float &L_N_p
 __global__
 void legendre_gauss_nodes_and_weights(int N, float* nodes, float* weights) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
-    const int stride = blockDim.x * gridDim.x;
     const int offset = N * (N + 1) /2;
 
     if (index == 0) {
