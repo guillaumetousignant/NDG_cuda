@@ -99,13 +99,13 @@ void legendre_gauss_nodes_and_weights(int N, float* nodes, float* weights) {
                 weights[offset + N - j] = weights[offset + j];
             }
         }
-    }
 
-    if (N % 2 == 0) {
-        float dummy, L_N_plus1_prime_final;
-        legendre_polynomial_and_derivative(N + 1, 0.0f, dummy, L_N_plus1_prime_final);
-        nodes[offset + N/2] = 0.0f;
-        weights[offset + N/2] = 2/std::pow(L_N_plus1_prime_final, 2);
+        if (N % 2 == 0) {
+            float dummy, L_N_plus1_prime_final;
+            legendre_polynomial_and_derivative(N + 1, 0.0f, dummy, L_N_plus1_prime_final);
+            nodes[offset + N/2] = 0.0f;
+            weights[offset + N/2] = 2/std::pow(L_N_plus1_prime_final, 2);
+        }
     }
 }
 
