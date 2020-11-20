@@ -1037,9 +1037,9 @@ public:
         const float delta_t = 0.00015f;
         const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
         const int faces_numBlocks = (N_faces_ + faces_blockSize - 1) / faces_blockSize;
-        const float t_end = 1.5f;
         float time = 0.0;
         std::vector<float> output_times{0.5f, 1.0f, 1.5f};
+        const float t_end = output_times.back();
 
         write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
 
