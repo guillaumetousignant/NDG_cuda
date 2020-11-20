@@ -301,7 +301,7 @@ end
 function phi_interpolated = InterpolateToNewPoints(interpolation_matrix, phi)
     N_interpolation_points = size(interpolation_matrix, 1);
     N = length(phi) - 1;
-    phi_interpolated = zeros(N_interpolation_points);
+    phi_interpolated = zeros(N_interpolation_points, 1);
     for i = 0:N_interpolation_points-1
         t = 0;
         for j = 0:N
