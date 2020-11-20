@@ -1087,9 +1087,9 @@ public:
 
 int main(void) {
     const int N_elements = 1;
-    const int N_max = 8;
+    const int N_max = 36;
     const int initial_N = N_max;
-    const int N_interpolation_points = 100;
+    const int N_interpolation_points = 1000;
     
     NDG_t NDG(N_max, N_interpolation_points);
     Mesh_t Mesh(N_elements, initial_N, -1.0f, 1.0f);
