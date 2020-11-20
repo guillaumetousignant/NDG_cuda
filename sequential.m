@@ -5,7 +5,7 @@ close all
 N = 36;
 c = 1;
 
-[nodes, weights] = LegendreGaussNodesAndWeights(N); % OK
+[nodes, weights] = ChebyshevGaussNodesAndWeights(N); % OK
 barycentric_weights = BarycentricWeights(nodes); % OK
 lagrange_interpolating_polynomial_left = LagrangeInterpolatingPolynomials(-1, nodes, barycentric_weights); % OK
 lagrange_interpolating_polynomial_right = LagrangeInterpolatingPolynomials(1, nodes, barycentric_weights); % OK
@@ -18,7 +18,7 @@ for j = 0:N
 end
 
 delta_t = 0.00015;
-save_times = [0.5, 1, 1.5];
+save_times = [0.05, 0.1, 0.15];
 t = 0;
 t_end = save_times(end);
 phi = zeros(N+1, 1);
