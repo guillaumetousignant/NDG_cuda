@@ -42,6 +42,13 @@ while t < (t_end + delta_t)
 end
 legend(legends);
 
+%% Verification
+y_test = -sin(pi * nodes);
+u_L = InterpolateToBoundary(y_test, lagrange_interpolating_polynomial_left);
+u_R = InterpolateToBoundary(y_test, lagrange_interpolating_polynomial_right);
+y_prime = MxVDerivative(D, y_test);
+y_prime_expected = -pi * cos(pi * nodes);
+
 function y = g(t, x, c)
     sigma = 0.2;
     y = exp(-log(2) * (x - t * c)^2 /(sigma^2));
