@@ -787,29 +787,8 @@ void calculate_fluxes(int N_faces, Face_t* faces, const Element_t* elements) {
     const int stride = blockDim.x * gridDim.x;
 
     for (int i = index; i < N_faces; i += stride) {
-        float u;
         const float u_left = elements[faces[i].elements_[0]].phi_R_;
         const float u_right = elements[faces[i].elements_[1]].phi_L_;
-
-        if (u_left < 0.0f && u_right > 0.0f) { // In expansion fan
-            u = 0.5f * (u_left + u_right);
-        }
-        else if (u_left > u_right) { // Shock
-            if (u_left > 0.0f) {
-                u = u_left;
-            }
-            else {
-                u = u_right;
-            }
-        }
-        else { // Expansion fan
-            if (u_left > 0.0f) {
-                u = u_left;
-            }
-            else {
-                u = u_right;
-            }
-        }
 
         if (c >= 0.0f) {
             faces[i].flux_ = u_left;
