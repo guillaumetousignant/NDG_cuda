@@ -33,7 +33,7 @@ void chebyshev_gauss_nodes_and_weights(int N, float* nodes, float* weights) {
 
 // Algorithm 22
 __device__
-legendre_polynomial_and_derivative(int N, float x, float &L_N, float &L_N_prime) {
+void legendre_polynomial_and_derivative(int N, float x, float &L_N, float &L_N_prime) {
     if (N == 0) {
         L_N = 1.0f;
         L_N_prime = 0.0f;
@@ -651,7 +651,7 @@ void build_elements(int N_elements, int N, Element_t* elements, float x_min, flo
 __device__
 float g(float t, float x) {
     constexpr float sigma = 0.2;
-    return std::exp(-std::log(2) * std::pow(x - t * c, 2) / std::pow(sigma, 2));
+    return std::exp(-std::log(2.0f) * std::pow(x - t * c, 2) / std::pow(sigma, 2));
 }
 
 
