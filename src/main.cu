@@ -1038,29 +1038,31 @@ public:
         const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
         const int faces_numBlocks = (N_faces_ + faces_blockSize - 1) / faces_blockSize;
         float time = 0.0;
+        float t;
 
         write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
 
         for (int step = 0; step < N_steps; ++step) {
             // Kinda algorithm 62
-            time += 0.0f * delta_t;
+            t = time;
             interpolate_to_boundaries<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
             calculate_fluxes<<<faces_numBlocks, faces_blockSize>>>(N_faces_, faces_, elements_);
-            compute_dg_derivative<<<elements_numBlocks, elements_blockSize>>>(time, N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+            compute_dg_derivative<<<elements_numBlocks, elements_blockSize>>>(t, N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
             rk3_step<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, delta_t, 0.0f, 1.0f/3.0f);
 
-            time += 0.33333333333f * delta_t;
+            t = time + 0.33333333333f * delta_t;
             interpolate_to_boundaries<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
             calculate_fluxes<<<faces_numBlocks, faces_blockSize>>>(N_faces_, faces_, elements_);
-            compute_dg_derivative<<<elements_numBlocks, elements_blockSize>>>(time, N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+            compute_dg_derivative<<<elements_numBlocks, elements_blockSize>>>(t, N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
             rk3_step<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, delta_t, -5.0f/9.0f, 15.0f/16.0f);
 
-            time += 0.75f * delta_t;
+            t = time + 0.75f * delta_t;
             interpolate_to_boundaries<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
             calculate_fluxes<<<faces_numBlocks, faces_blockSize>>>(N_faces_, faces_, elements_);
-            compute_dg_derivative<<<elements_numBlocks, elements_blockSize>>>(time, N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+            compute_dg_derivative<<<elements_numBlocks, elements_blockSize>>>(t, N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
             rk3_step<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, delta_t, -153.0f/128.0f, 8.0f/15.0f);
                   
+            time += delta_t;
             if (step % 100 == 0) {
                 write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
             }
