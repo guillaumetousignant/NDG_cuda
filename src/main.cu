@@ -1042,7 +1042,7 @@ public:
 
         write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
 
-        while (time < (t_end + delta_t)) {
+        while (time < t_end) {
             // Kinda algorithm 62
             float t = time;
             interpolate_to_boundaries<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);

@@ -35,7 +35,7 @@ phi_interpolated = InterpolateToNewPoints(interpolation_matrix, phi);
 plot(ksi, phi_interpolated, 'LineWidth', 2);
 legends = {'t = 0'};
 
-while t < (t_end + delta_t)
+while t < t_end
     phi = DGStepByRK3(t, delta_t, c, phi, D_hat, weights, lagrange_interpolating_polynomial_left, lagrange_interpolating_polynomial_right);
     t = t + delta_t;
 
