@@ -7,6 +7,7 @@
 #include <chrono>
 #include <cfloat>
 #include <filesystem>
+#include <vector>
 
 namespace fs = std::filesystem;
 
@@ -1033,18 +1034,18 @@ public:
     }
 
     void solve(const NDG_t &NDG) {
-        const int N_steps = 400;
-        const float delta_t = 0.0001f;
+        const float delta_t = 0.00015f;
         const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
         const int faces_numBlocks = (N_faces_ + faces_blockSize - 1) / faces_blockSize;
+        const float t_end = 1.5f;
         float time = 0.0;
-        float t;
+        std::vector<float> output_times{0.5f, 1.0f, 1.5f};
 
         write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
 
-        for (int step = 0; step < N_steps; ++step) {
+        while (time < (t_end + delta_t)) {
             // Kinda algorithm 62
-            t = time;
+            float t = time;
             interpolate_to_boundaries<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
             calculate_fluxes<<<faces_numBlocks, faces_blockSize>>>(N_faces_, faces_, elements_);
             compute_dg_derivative<<<elements_numBlocks, elements_blockSize>>>(t, N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
@@ -1063,12 +1064,25 @@ public:
             rk3_step<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, delta_t, -153.0f/128.0f, 8.0f/15.0f);
                   
             time += delta_t;
-            if (step % 100 == 0) {
-                write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
+            for (auto const& e : std::as_const(output_times)) {
+                if ((time >= e) && (time < e + delta_t)) {
+                    write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
+                    break;
+                }
             }
         }
 
-        write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
+        bool did_write = false;
+        for (auto const& e : std::as_const(output_times)) {
+            if ((time >= e) && (time < e + delta_t)) {
+                did_write = true;
+                break;
+            }
+        }
+
+        if (!did_write) {
+            write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
+        }
     }
 };
 
