@@ -579,8 +579,7 @@ void build_elements(int N_elements, int N, Element_t* elements, float x_min, flo
 
 __device__
 float g(float t, float x) {
-    constexpr float sigma = 0.2;
-    return std::exp(-std::log(2.0f) * std::pow(x - t * c, 2) / std::pow(sigma, 2));
+    return -std::sin(pi * (x - c * t));
 }
 
 
