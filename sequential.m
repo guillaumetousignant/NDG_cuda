@@ -21,7 +21,7 @@ ksi = InterpolationPoints(N_points);
 interpolation_matrix = PolynomialInterpolationMatrix(ksi, nodes, barycentric_weights);
 
 delta_t = 0.00015;
-save_times = [0.05, 0.1, 0.15];
+save_times = [0.5, 1, 1.5];
 t = 0;
 t_end = save_times(end);
 phi = zeros(N+1, 1);
