@@ -811,14 +811,6 @@ void compute_dg_derivative(float t, int N_elements, Element_t* elements, const F
         float flux_L = faces[elements[i].faces_[0]].flux_;
         float flux_R = faces[elements[i].faces_[1]].flux_;
 
-        if (c > 0.0f) {
-            flux_L = g(t, -1.0f);
-            flux_R = elements[i].phi_R_;
-        } else {
-            flux_L = elements[i].phi_L_;
-            flux_R =  g(t, 1.0f);
-        }
-
         matrix_vector_derivative(elements[i].N_, derivative_matrices_hat, elements[i].phi_, elements[i].phi_prime_);
 
         for (int j = 0; j <= elements[i].N_; ++j) {
@@ -1086,8 +1078,8 @@ public:
 };
 
 int main(void) {
-    const int N_elements = 1;
-    const int N_max = 36;
+    const int N_elements = 4;
+    const int N_max = 8;
     const int initial_N = N_max;
     const int N_interpolation_points = 1000;
     
@@ -1107,7 +1099,7 @@ int main(void) {
             << std::chrono::duration<double, std::milli>(t_end-t_start).count()/1000.0 
             << "s." << std::endl;
 
-    NDG.print();
+    //NDG.print();
     Mesh.print();
     
     return 0;
