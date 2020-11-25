@@ -12,7 +12,6 @@
 namespace fs = std::filesystem;
 
 constexpr float pi = 3.14159265358979323846f;
-constexpr float c = 1.0f;
 constexpr int poly_blockSize = 16; // Small number of threads per block because N will never be huge
 constexpr int elements_blockSize = 32; // For when we'll have multiple elements
 constexpr int faces_blockSize = 32; // Same number of faces as elements for periodic BC
@@ -578,8 +577,8 @@ void build_elements(int N_elements, int N, Element_t* elements, float x_min, flo
 }
 
 __device__
-float g(float t, float x) {
-    return -std::sin(pi * (x - c * t));
+float g(float x) {
+    return -std::sin(pi x);
 }
 
 
@@ -592,7 +591,7 @@ void initial_conditions(int N_elements, Element_t* elements, const float* nodes)
         const int offset = elements[i].N_ * (elements[i].N_ + 1) /2;
         for (int j = 0; j <= elements[i].N_; ++j) {
             const float x = (0.5 + nodes[offset + j]/2.0f) * (elements[i].x_[1] - elements[i].x_[0]) + elements[i].x_[0];
-            elements[i].phi_[j] = g(0.0f, x);
+            elements[i].phi_[j] = g(x);
         }
     }
 }
