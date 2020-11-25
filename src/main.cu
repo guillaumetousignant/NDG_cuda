@@ -713,9 +713,6 @@ void calculate_fluxes(int N_faces, Face_t* faces, const Element_t* elements) {
     const int stride = blockDim.x * gridDim.x;
 
     for (int i = index; i < N_faces; i += stride) {
-        const float u_left = elements[faces[i].elements_[0]].phi_R_;
-        const float u_right = elements[faces[i].elements_[1]].phi_L_;
-
         float u;
         const float u_left = elements[faces[i].elements_[0]].phi_R_;
         const float u_right = elements[faces[i].elements_[1]].phi_L_;
