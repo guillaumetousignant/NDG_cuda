@@ -1023,7 +1023,7 @@ int main(void) {
     const int initial_N = N_max;
     const int N_interpolation_points = 1000;
     const float delta_t = 0.00015f;
-    std::vector<float> output_times{0.05f, 0.1f, 0.15f};
+    std::vector<float> output_times{0.1f, 0.2f, 0.3f, 0.4f, 0.5f};
     
     NDG_t NDG(N_max, N_interpolation_points);
     Mesh_t Mesh(N_elements, initial_N, -1.0f, 1.0f);
