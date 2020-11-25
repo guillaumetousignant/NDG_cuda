@@ -743,7 +743,7 @@ void calculate_fluxes(int N_faces, Face_t* faces, const Element_t* elements) {
 
 // Algorithm 60 (not really anymore)
 __global__
-void compute_dg_derivative(float t, int N_elements, Element_t* elements, const Face_t* faces, const float* weights, const float* derivative_matrices_hat, const float* lagrange_interpolant_left, const float* lagrange_interpolant_right) {
+void compute_dg_derivative(int N_elements, Element_t* elements, const Face_t* faces, const float* weights, const float* derivative_matrices_hat, const float* lagrange_interpolant_left, const float* lagrange_interpolant_right) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -966,12 +966,10 @@ public:
         cudaFree(x);
     }
 
-    void solve(const NDG_t &NDG) {
-        const float delta_t = 0.00015f;
+    void solve(const float delta_t, const std::vector<float> output_times, const NDG_t &NDG) {
         const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
         const int faces_numBlocks = (N_faces_ + faces_blockSize - 1) / faces_blockSize;
         float time = 0.0;
-        std::vector<float> output_times{0.5f, 1.0f, 1.5f};
         const float t_end = output_times.back();
 
         write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
@@ -981,19 +979,19 @@ public:
             float t = time;
             interpolate_to_boundaries<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
             calculate_fluxes<<<faces_numBlocks, faces_blockSize>>>(N_faces_, faces_, elements_);
-            compute_dg_derivative<<<elements_numBlocks, elements_blockSize>>>(t, N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+            compute_dg_derivative<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
             rk3_step<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, delta_t, 0.0f, 1.0f/3.0f);
 
             t = time + 0.33333333333f * delta_t;
             interpolate_to_boundaries<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
             calculate_fluxes<<<faces_numBlocks, faces_blockSize>>>(N_faces_, faces_, elements_);
-            compute_dg_derivative<<<elements_numBlocks, elements_blockSize>>>(t, N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+            compute_dg_derivative<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
             rk3_step<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, delta_t, -5.0f/9.0f, 15.0f/16.0f);
 
             t = time + 0.75f * delta_t;
             interpolate_to_boundaries<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
             calculate_fluxes<<<faces_numBlocks, faces_blockSize>>>(N_faces_, faces_, elements_);
-            compute_dg_derivative<<<elements_numBlocks, elements_blockSize>>>(t, N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+            compute_dg_derivative<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
             rk3_step<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, delta_t, -153.0f/128.0f, 8.0f/15.0f);
                   
             time += delta_t;
@@ -1024,6 +1022,8 @@ int main(void) {
     const int N_max = 8;
     const int initial_N = N_max;
     const int N_interpolation_points = 1000;
+    const float delta_t = 0.00015f;
+    std::vector<float> output_times{0.05f, 0.1f, 0.15f};
     
     NDG_t NDG(N_max, N_interpolation_points);
     Mesh_t Mesh(N_elements, initial_N, -1.0f, 1.0f);
@@ -1032,7 +1032,7 @@ int main(void) {
     // Starting actual computation
     cudaDeviceSynchronize();
     auto t_start = std::chrono::high_resolution_clock::now();
-    Mesh.solve(NDG);
+    Mesh.solve(delta_t, output_times, NDG);
     // Wait for GPU to finish before copying to host
     cudaDeviceSynchronize();
     auto t_end = std::chrono::high_resolution_clock::now();
