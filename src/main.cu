@@ -578,7 +578,7 @@ void build_elements(int N_elements, int N, Element_t* elements, float x_min, flo
 
 __device__
 float g(float x) {
-    return -std::sin(pi x);
+    return -std::sin(pi * x);
 }
 
 
