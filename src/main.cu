@@ -226,7 +226,7 @@ void polynomial_derivative_matrices_hat(int N, const float* weights, const float
 
     for (int i = index_x; i <= N; i += stride_x) {
         for (int j = index_y; j <= N; j += stride_y) {
-            derivative_matrices_hat[offset_2D + i * (N + 1) + j] = -derivative_matrices[offset_2D + j * (N + 1) + i] * weights[offset_1D + j] / weights[offset_1D + i];
+            derivative_matrices_hat[offset_2D + i * (N + 1) + j] = derivative_matrices[offset_2D + j * (N + 1) + i] * weights[offset_1D + j] / weights[offset_1D + i];
         }
     }
 }
@@ -273,7 +273,7 @@ void matrix_vector_derivative(int N, const float* derivative_matrices_hat, const
     for (int i = 0; i <= N; ++i) {
         phi_prime[i] = 0.0f;
         for (int j = 0; j <= N; ++j) {
-            phi_prime[i] += derivative_matrices_hat[offset_2D + i * (N + 1) + j] * phi[j]; // phi not squared in textbook, squared for Burger's
+            phi_prime[i] += derivative_matrices_hat[offset_2D + i * (N + 1) + j] * phi[j] * phi[j] * 0.5f; // phi not squared in textbook, squared for Burger's
         }
     }
 }
@@ -592,7 +592,6 @@ void initial_conditions(int N_elements, Element_t* elements, const float* nodes)
         const int offset = elements[i].N_ * (elements[i].N_ + 1) /2;
         for (int j = 0; j <= elements[i].N_; ++j) {
             const float x = (0.5 + nodes[offset + j]/2.0f) * (elements[i].x_[1] - elements[i].x_[0]) + elements[i].x_[0];
-            //elements[i].phi_[j] = -sin(pi * x);
             elements[i].phi_[j] = g(0.0f, x);
         }
     }
@@ -718,12 +717,31 @@ void calculate_fluxes(int N_faces, Face_t* faces, const Element_t* elements) {
         const float u_left = elements[faces[i].elements_[0]].phi_R_;
         const float u_right = elements[faces[i].elements_[1]].phi_L_;
 
-        if (c >= 0.0f) {
-            faces[i].flux_ = u_left;
+        float u;
+        const float u_left = elements[faces[i].elements_[0]].phi_R_;
+        const float u_right = elements[faces[i].elements_[1]].phi_L_;
+
+        if (u_left < 0.0f && u_right > 0.0f) { // In expansion fan
+            u = 0.5f * (u_left + u_right);
         }
-        else  {
-            faces[i].flux_ = u_right;
+        else if (u_left > u_right) { // Shock
+            if (u_left > 0.0f) {
+                u = u_left;
+            }
+            else {
+                u = u_right;
+            }
         }
+        else { // Expansion fan
+            if (u_left > 0.0f) {
+                u = u_left;
+            }
+            else {
+                u = u_right;
+            }
+        }
+
+        faces[i].flux_ = 0.5f * u * u;
     }
 }
 
@@ -742,8 +760,8 @@ void compute_dg_derivative(float t, int N_elements, Element_t* elements, const F
         matrix_vector_derivative(elements[i].N_, derivative_matrices_hat, elements[i].phi_, elements[i].phi_prime_);
 
         for (int j = 0; j <= elements[i].N_; ++j) {
-            elements[i].phi_prime_[j] += (flux_R * lagrange_interpolant_right[offset_1D + j] - flux_L * lagrange_interpolant_left[offset_1D + j]) / weights[offset_1D + j];
-            elements[i].phi_prime_[j] *= -c * 2.0f/elements[i].delta_x_;
+            elements[i].phi_prime_[j] += (flux_L * lagrange_interpolant_left[offset_1D + j] - flux_R * lagrange_interpolant_right[offset_1D + j]) / weights[offset_1D + j];
+            elements[i].phi_prime_[j] *= 2.0f/elements[i].delta_x_;
         }
     }
 }
