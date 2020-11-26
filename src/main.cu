@@ -1022,7 +1022,7 @@ int main(void) {
     const int N_elements = 4;
     const int N_max = 8;
     const float x[2] = {-1.0f, 1.0f};
-    const float CFL = 0.5f;
+    const float CFL = 0.1f;
     const float u_max = 1.0f;
 
     const int initial_N = N_max;
@@ -1032,7 +1032,7 @@ int main(void) {
     std::vector<float> output_times{0.1f, 0.2f, 0.3f, 0.4f, 0.5f};
 
     std::cout << "CFL is: " << CFL << std::endl;
-    std::cout << "Delta t is: " << delta_t << std::endl;
+    std::cout << "Delta t is: " << delta_t << std::endl << std::endl;
 
     // Initialisation
     auto t_start_init = std::chrono::high_resolution_clock::now();
@@ -1045,7 +1045,7 @@ int main(void) {
     auto t_end_init = std::chrono::high_resolution_clock::now();
     std::cout << "GPU initialisation time: " 
             << std::chrono::duration<double, std::milli>(t_end_init - t_start_init).count()/1000.0 
-            << "s." << std::endl;
+            << "s." << std::endl << std::endl;
 
     // Computation
     auto t_start = std::chrono::high_resolution_clock::now();
