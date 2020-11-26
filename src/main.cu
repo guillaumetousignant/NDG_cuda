@@ -1045,7 +1045,7 @@ int main(void) {
     auto t_end_init = std::chrono::high_resolution_clock::now();
     std::cout << "GPU initialisation time: " 
             << std::chrono::duration<double, std::milli>(t_end_init - t_start_init).count()/1000.0 
-            << "s." << std::endl << std::endl;
+            << "s." << std::endl;
 
     // Computation
     auto t_start = std::chrono::high_resolution_clock::now();
