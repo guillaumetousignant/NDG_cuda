@@ -1022,7 +1022,7 @@ int main(void) {
     const int N_elements = 4;
     const int N_max = 8;
     const float x[2] = {-1.0f, 1.0f};
-    const float CFL = 0.1f;
+    const float CFL = 0.5f;
     const float u_max = 1.0f;
     std::vector<float> output_times{0.1f, 0.2f, 0.3f, 0.4f, 0.5f};
 
