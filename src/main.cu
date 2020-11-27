@@ -1029,7 +1029,7 @@ int main(void) {
     const int initial_N = N_max;
     const int N_interpolation_points = N_max * 8;
     const float delta_x = (x[1] - x[0])/N_elements;
-    const float delta_t = CFL * delta_x/u_max;
+    const float delta_t = CFL * delta_x/(u_max * N_max * N_max);
 
     std::cout << "CFL is: " << CFL << std::endl;
     std::cout << "Delta t is: " << delta_t << std::endl << std::endl;
