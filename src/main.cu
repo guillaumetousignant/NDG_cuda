@@ -1024,12 +1024,12 @@ int main(void) {
     const float x[2] = {-1.0f, 1.0f};
     const float CFL = 0.1f;
     const float u_max = 1.0f;
+    std::vector<float> output_times{0.1f, 0.2f, 0.3f, 0.4f, 0.5f};
 
     const int initial_N = N_max;
     const int N_interpolation_points = N_max * 8;
     const float delta_x = (x[1] - x[0])/N_elements;
     const float delta_t = CFL * delta_x/u_max;
-    std::vector<float> output_times{0.1f, 0.2f, 0.3f, 0.4f, 0.5f};
 
     std::cout << "CFL is: " << CFL << std::endl;
     std::cout << "Delta t is: " << delta_t << std::endl << std::endl;
