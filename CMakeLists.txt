@@ -34,7 +34,6 @@ option(BUILD_TESTING "Build all tests." OFF)
 
 if (BUILD_TESTING)
     include(CTest)
-    enable_testing()
     find_package(Catch2 REQUIRED)
     include(Catch)
 
@@ -42,7 +41,7 @@ if (BUILD_TESTING)
         tests/unit_tests.cpp)
     target_compile_features(unit_tests PRIVATE cxx_std_17)
     target_link_libraries(unit_tests Catch2::Catch2)
-    
+
     catch_discover_tests(unit_tests)
 endif()
 
