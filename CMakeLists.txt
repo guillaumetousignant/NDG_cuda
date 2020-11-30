@@ -30,16 +30,19 @@ target_include_directories(NDG_cuda
 
 target_compile_features(NDG_cuda PRIVATE cxx_std_17)
 
-option(BUILD_TESTS "Build all tests." OFF)
+option(BUILD_TESTING "Build all tests." OFF)
+include(CTest)
 
-if (BUILD_TESTS)
+if (BUILD_TESTING)
     enable_testing()
-    add_executable(unit_tests 
-        tests/main_test.cpp
-        tests/catch.hpp)
-    target_compile_features(unit_tests PRIVATE cxx_std_17)
+    find_package(Catch2 REQUIRED)
+    include(Catch)
 
-    add_test(unit_tests unit_tests)
+    add_executable(unit_tests 
+        tests/unit_tests.cpp)
+    target_compile_features(unit_tests PRIVATE cxx_std_17)
+    target_link_libraries(unit_tests Catch2::Catch2)
+    catch_discover_tests(unit_tests)
 endif()
 
 install(TARGETS NDG_cuda DESTINATION bin)
