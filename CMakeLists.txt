@@ -31,9 +31,9 @@ target_include_directories(NDG_cuda
 target_compile_features(NDG_cuda PRIVATE cxx_std_17)
 
 option(BUILD_TESTING "Build all tests." OFF)
-include(CTest)
 
 if (BUILD_TESTING)
+    include(CTest)
     enable_testing()
     find_package(Catch2 REQUIRED)
     include(Catch)
