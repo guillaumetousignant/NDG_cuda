@@ -48,7 +48,8 @@ if (BUILD_TESTING)
     add_executable(unit_tests 
         tests/test_main.cpp
         tests/example_test.cpp)
-    target_link_libraries(unit_tests Catch2::Catch2)
+    target_link_libraries(unit_tests PRIVATE 
+        Catch2::Catch2)
     target_compile_features(unit_tests PRIVATE cxx_std_17)
 
     catch_discover_tests(unit_tests)
