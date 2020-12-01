@@ -16,25 +16,10 @@ if(NOT DEFINED CMAKE_CUDA_STANDARD)
     set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 endif()
 
-add_executable(NDG_cuda 
-    src/main.cu)
-
-set_target_properties(NDG_cuda PROPERTIES
-                            CUDA_SEPERABLE_COMPILATION ON)
-set_property(TARGET NDG_cuda PROPERTY CUDA_ARCHITECTURES 61) # sm_61 is GTX 10X0
-
-target_include_directories(NDG_cuda 
-    PRIVATE
-        include/
-)
-
-target_compile_features(NDG_cuda PRIVATE cxx_std_17)
+add_subdirectory(src)
 
 option(BUILD_TESTING "Build all tests." OFF)
-
 if (BUILD_TESTING)
     enable_testing()
     add_subdirectory(tests)
 endif()
-
-install(TARGETS NDG_cuda DESTINATION bin)
