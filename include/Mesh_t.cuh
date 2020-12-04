@@ -1,6 +1,10 @@
 #ifndef MESH_T_H
 #define MESH_T_H
 
+#include "Element_t.h"
+#include "Face_t.h"
+#include <vector>
+
 namespace SEM {
     __global__
     void rk3_step(int N_elements, Element_t* elements, float delta_t, float a, float g);

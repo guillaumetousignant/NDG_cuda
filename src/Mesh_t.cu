@@ -1,6 +1,4 @@
 #include "Mesh_t.cuh"
-#include "Element_t.cuh"
-#include "Face_t.cuh"
 #include <iostream>
 #include <fstream>
 #include <sstream> 
