@@ -50,6 +50,10 @@ namespace SEM {
     // Algorithm 19
     __device__
     void matrix_vector_derivative(int N, const float* derivative_matrices_hat, const float* phi, float* phi_prime);
+    
+    // Algorithm 61
+    __device__
+    float interpolate_to_boundary(int N, const float* phi, const float* lagrange_interpolant);
 }
 
 class NDG_t { 

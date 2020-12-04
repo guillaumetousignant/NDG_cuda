@@ -270,6 +270,19 @@ void SEM::matrix_vector_derivative(int N, const float* derivative_matrices_hat, 
     }
 }
 
+// Algorithm 61
+__device__
+float SEM::interpolate_to_boundary(int N, const float* phi, const float* lagrange_interpolant) {
+    const int offset_1D = N * (N + 1) /2;
+    float result = 0.0f;
+
+    for (int j = 0; j <= N; ++j) {
+        result += lagrange_interpolant[offset_1D + j] * phi[j];
+    }
+
+    return result;
+}
+
 
 NDG_t::NDG_t(int N_max, int N_interpolation_points) : 
         N_max_(N_max), 

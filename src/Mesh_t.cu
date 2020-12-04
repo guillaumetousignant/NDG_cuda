@@ -12,6 +12,75 @@ namespace fs = std::filesystem;
 constexpr int elements_blockSize = 32; // For when we'll have multiple elements
 constexpr int faces_blockSize = 32; // Same number of faces as elements for periodic BC
 
+__global__
+void SEM::rk3_step(int N_elements, Element_t* elements, float delta_t, float a, float g) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (int i = index; i < N_elements; i += stride) {
+        for (int j = 0; j <= elements[i].N_; ++j){
+            elements[i].intermediate_[j] = a * elements[i].intermediate_[j] + elements[i].phi_prime_[j];
+            elements[i].phi_[j] += g * delta_t * elements[i].intermediate_[j];
+        }
+    }
+}
+
+__global__
+void SEM::calculate_fluxes(int N_faces, Face_t* faces, const Element_t* elements) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (int i = index; i < N_faces; i += stride) {
+        float u;
+        const float u_left = elements[faces[i].elements_[0]].phi_R_;
+        const float u_right = elements[faces[i].elements_[1]].phi_L_;
+
+        if (u_left < 0.0f && u_right > 0.0f) { // In expansion fan
+            u = 0.5f * (u_left + u_right);
+        }
+        else if (u_left > u_right) { // Shock
+            if (u_left > 0.0f) {
+                u = u_left;
+            }
+            else {
+                u = u_right;
+            }
+        }
+        else { // Expansion fan
+            if (u_left > 0.0f) {
+                u = u_left;
+            }
+            else {
+                u = u_right;
+            }
+        }
+
+        faces[i].flux_ = 0.5f * u * u;
+    }
+}
+
+// Algorithm 60 (not really anymore)
+__global__
+void SEM::compute_dg_derivative(int N_elements, Element_t* elements, const Face_t* faces, const float* weights, const float* derivative_matrices_hat, const float* lagrange_interpolant_left, const float* lagrange_interpolant_right) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (int i = index; i < N_elements; i += stride) {
+        const int offset_1D = elements[i].N_ * (elements[i].N_ + 1) /2; // CHECK cache?
+
+        float flux_L = faces[elements[i].faces_[0]].flux_;
+        float flux_R = faces[elements[i].faces_[1]].flux_;
+
+        matrix_vector_derivative(elements[i].N_, derivative_matrices_hat, elements[i].phi_, elements[i].phi_prime_);
+
+        for (int j = 0; j <= elements[i].N_; ++j) {
+            elements[i].phi_prime_[j] += (flux_L * lagrange_interpolant_left[offset_1D + j] - flux_R * lagrange_interpolant_right[offset_1D + j]) / weights[offset_1D + j];
+            elements[i].phi_prime_[j] *= 2.0f/elements[i].delta_x_;
+        }
+    }
+}
+
+
 Mesh_t::Mesh_t(int N_elements, int initial_N, float x_min, float x_max) : N_elements_(N_elements), N_faces_(N_elements), initial_N_(initial_N) {
     // CHECK N_faces = N_elements only for periodic BC.
     cudaMalloc(&elements_, N_elements_ * sizeof(Element_t));
