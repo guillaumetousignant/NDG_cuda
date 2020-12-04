@@ -2,6 +2,37 @@
 
 constexpr float pi = 3.14159265358979323846f;
 
+__device__ 
+Element_t::Element_t(int N, int neighbour_L, int neighbour_R, int face_L, int face_R, float x_L, float x_R) : 
+        N_(N),
+        neighbours_{neighbour_L, neighbour_R},
+        faces_{face_L, face_R},
+        x_{x_L, x_R},
+        delta_x_(x_R - x_L) {
+    phi_ = new float[N_ + 1];
+    phi_prime_ = new float[N_ + 1];
+    intermediate_ = new float[N_ + 1];
+    for (int i = 0; i <= N_; ++i) {
+        intermediate_[i] = 0.0f;
+    }
+}
+
+__host__ 
+Element_t::Element_t() {};
+
+__host__ __device__
+Element_t::~Element_t() {
+    if (phi_ != nullptr){
+        delete[] phi_;
+    }
+    if (phi_prime_ != nullptr) {
+        delete[] phi_prime_;
+    }
+    if (intermediate_ != nullptr) {
+        delete[] intermediate_;
+    }
+}
+
 __global__
 void SEM::build_elements(int N_elements, int N, Element_t* elements, float x_min, float x_max) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
@@ -95,36 +126,5 @@ void SEM::interpolate_to_boundaries(int N_elements, Element_t* elements, const f
     for (int i = index; i < N_elements; i += stride) {
         elements[i].phi_L_ = interpolate_to_boundary(elements[i].N_, elements[i].phi_, lagrange_interpolant_left);
         elements[i].phi_R_ = interpolate_to_boundary(elements[i].N_, elements[i].phi_, lagrange_interpolant_right);
-    }
-}
-
-__device__ 
-Element_t::Element_t(int N, int neighbour_L, int neighbour_R, int face_L, int face_R, float x_L, float x_R) : 
-        N_(N),
-        neighbours_{neighbour_L, neighbour_R},
-        faces_{face_L, face_R},
-        x_{x_L, x_R},
-        delta_x_(x_R - x_L) {
-    phi_ = new float[N_ + 1];
-    phi_prime_ = new float[N_ + 1];
-    intermediate_ = new float[N_ + 1];
-    for (int i = 0; i <= N_; ++i) {
-        intermediate_[i] = 0.0f;
-    }
-}
-
-__host__ 
-Element_t::Element_t() {};
-
-__host__ __device__
-Element_t::~Element_t() {
-    if (phi_ != nullptr){
-        delete[] phi_;
-    }
-    if (phi_prime_ != nullptr) {
-        delete[] phi_prime_;
-    }
-    if (intermediate_ != nullptr) {
-        delete[] intermediate_;
     }
 }

@@ -11,6 +11,228 @@ constexpr int poly_blockSize = 16; // Small number of threads per block because 
 constexpr int interpolation_blockSize = 32;
 const dim3 matrix_blockSize(16, 16); // Small number of threads per block because N will never be huge
 
+NDG_t::NDG_t(int N_max, int N_interpolation_points) : 
+        N_max_(N_max), 
+        N_interpolation_points_(N_interpolation_points),
+        vector_length_((N_max_ + 1) * (N_max_ + 2)/2), 
+        matrix_length_((N_max_ + 1) * (N_max_ + 2) * (2 * N_max_ + 3)/6),
+        interpolation_length_((N_max_ + 1) * (N_max_ + 2) * N_interpolation_points_/2) {
+
+    cudaMalloc(&nodes_, vector_length_ * sizeof(float));
+    cudaMalloc(&weights_, vector_length_ * sizeof(float));
+    cudaMalloc(&barycentric_weights_, vector_length_ * sizeof(float));
+    cudaMalloc(&lagrange_interpolant_left_, vector_length_ * sizeof(float));
+    cudaMalloc(&lagrange_interpolant_right_, vector_length_ * sizeof(float));
+    cudaMalloc(&derivative_matrices_, matrix_length_ * sizeof(float));
+    cudaMalloc(&derivative_matrices_hat_, matrix_length_ * sizeof(float));
+    cudaMalloc(&interpolation_matrices_, interpolation_length_ * sizeof(float));
+
+    for (int N = 0; N <= N_max_; ++N) {
+        const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
+        legendre_gauss_nodes_and_weights<<<vector_numBlocks, poly_blockSize>>>(N, nodes_, weights_);
+    }
+
+    // Nodes are needed to compute barycentric weights
+    cudaDeviceSynchronize();
+    for (int N = 0; N <= N_max_; ++N) {
+        const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
+        calculate_barycentric_weights<<<vector_numBlocks, poly_blockSize>>>(N, nodes_, barycentric_weights_);
+    }
+
+    // We need the barycentric weights for derivative matrix, interpolation matrices and Lagrange interpolants
+    cudaDeviceSynchronize();
+    const int interpolation_numBlocks = (N_interpolation_points_ + interpolation_blockSize) / interpolation_blockSize;
+    for (int N = 0; N <= N_max_; ++N) {
+        const dim3 matrix_numBlocks((N +  matrix_blockSize.x) / matrix_blockSize.x, (N +  matrix_blockSize.y) / matrix_blockSize.y); // Should be (N + poly_blockSize - 1) if N is not inclusive
+        const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
+        polynomial_derivative_matrices<<<matrix_numBlocks, matrix_blockSize>>>(N, nodes_, barycentric_weights_, derivative_matrices_);
+        create_interpolation_matrices<<<interpolation_numBlocks, interpolation_blockSize>>>(N, N_interpolation_points_, nodes_, barycentric_weights_, interpolation_matrices_);
+        lagrange_interpolating_polynomials<<<vector_numBlocks, poly_blockSize>>>(-1.0f, N, nodes_, barycentric_weights_, lagrange_interpolant_left_);
+        lagrange_interpolating_polynomials<<<vector_numBlocks, poly_blockSize>>>(1.0f, N, nodes_, barycentric_weights_, lagrange_interpolant_right_);
+    }
+
+    // Then we calculate the derivative matrix diagonal and normalize the Lagrange interpolants
+    cudaDeviceSynchronize();
+    const int poly_numBlocks = (N_max_ + poly_blockSize) / poly_blockSize;
+    normalize_lagrange_interpolating_polynomials<<<poly_numBlocks, poly_blockSize>>>(N_max_, lagrange_interpolant_left_);
+    normalize_lagrange_interpolating_polynomials<<<poly_numBlocks, poly_blockSize>>>(N_max_, lagrange_interpolant_right_);
+    for (int N = 0; N <= N_max_; ++N) {
+        const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
+        polynomial_derivative_matrices_diagonal<<<vector_numBlocks, poly_blockSize>>>(N, derivative_matrices_);
+    }
+
+    // All the derivative matrix has to be computed before D^
+    cudaDeviceSynchronize();
+    for (int N = 0; N <= N_max_; ++N) {
+        const dim3 matrix_numBlocks((N +  matrix_blockSize.x) / matrix_blockSize.x, (N +  matrix_blockSize.y) / matrix_blockSize.y); // Should be (N + poly_blockSize - 1) if N is not inclusive
+        polynomial_derivative_matrices_hat<<<matrix_numBlocks, matrix_blockSize>>>(N, weights_, derivative_matrices_, derivative_matrices_hat_);
+    }
+}
+
+NDG_t::~NDG_t() {
+    // Not sure if null checks are needed
+    if (nodes_ != nullptr){
+        cudaFree(nodes_);
+    }
+    if (weights_ != nullptr){
+        cudaFree(weights_);
+    }
+    if (barycentric_weights_ != nullptr){
+        cudaFree(barycentric_weights_);
+    }
+    if (lagrange_interpolant_left_ != nullptr){
+        cudaFree(lagrange_interpolant_left_);
+    }
+    if (lagrange_interpolant_right_ != nullptr){
+        cudaFree(lagrange_interpolant_right_);
+    }
+    if (derivative_matrices_ != nullptr){
+        cudaFree(derivative_matrices_);
+    }
+    if (derivative_matrices_hat_ != nullptr){
+        cudaFree(derivative_matrices_hat_);
+    }
+    if (interpolation_matrices_ != nullptr){
+        cudaFree(interpolation_matrices_);
+    }
+}
+
+   
+
+void NDG_t::print() {
+    // Copy vectors from device memory to host memory
+    float* host_nodes = new float[vector_length_];
+    float* host_weights = new float[vector_length_];
+    float* host_barycentric_weights = new float[vector_length_];
+    float* host_lagrange_interpolant_left = new float[vector_length_];
+    float* host_lagrange_interpolant_right = new float[vector_length_];
+    float* host_derivative_matrices = new float[matrix_length_];
+    float* host_derivative_matrices_hat = new float[matrix_length_];
+    float* host_interpolation_matrices = new float[interpolation_length_];
+
+    cudaDeviceSynchronize();
+
+    cudaMemcpy(host_nodes, nodes_, vector_length_ * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_weights, weights_, vector_length_ * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_barycentric_weights, barycentric_weights_, vector_length_ * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_lagrange_interpolant_left, lagrange_interpolant_left_, vector_length_ * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_lagrange_interpolant_right, lagrange_interpolant_right_, vector_length_ * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_derivative_matrices, derivative_matrices_, matrix_length_ * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_derivative_matrices_hat, derivative_matrices_hat_, matrix_length_ * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_interpolation_matrices, interpolation_matrices_, interpolation_length_ * sizeof(float), cudaMemcpyDeviceToHost);
+
+    std::cout << "Nodes: " << std::endl;
+    for (int N = 0; N <= N_max_; ++N) {
+        const int offset = N * (N + 1) /2;
+
+        std::cout << '\t' << "N = " << N << ": ";
+        std::cout << '\t' << '\t';
+        for (int i = 0; i <= N; ++i) {
+            std::cout << host_nodes[offset + i] << " ";
+        }
+        std::cout << std::endl;
+    }
+
+    std::cout << std::endl << "Weights: " << std::endl;
+    for (int N = 0; N <= N_max_; ++N) {
+        const int offset = N * (N + 1) /2;
+
+        std::cout << '\t' << "N = " << N << ": ";
+        std::cout << '\t' << '\t';
+        for (int i = 0; i <= N; ++i) {
+            std::cout << host_weights[offset + i] << " ";
+        }
+        std::cout << std::endl;
+    }
+    
+    std::cout << std::endl << "Barycentric weights: " << std::endl;
+    for (int N = 0; N <= N_max_; ++N) {
+        const int offset = N * (N + 1) /2;
+
+        std::cout << '\t' << "N = " << N << ": ";
+        std::cout << '\t' << '\t';
+        for (int i = 0; i <= N; ++i) {
+            std::cout << host_barycentric_weights[offset + i] << " ";
+        }
+        std::cout << std::endl;
+    }
+
+    std::cout << std::endl << "Lagrange interpolants -1: " << std::endl;
+    for (int N = 0; N <= N_max_; ++N) {
+        const int offset = N * (N + 1) /2;
+
+        std::cout << '\t' << "N = " << N << ": ";
+        std::cout << '\t' << '\t';
+        for (int i = 0; i <= N; ++i) {
+            std::cout << host_lagrange_interpolant_left[offset + i] << " ";
+        }
+        std::cout << std::endl;
+    }
+
+    std::cout << std::endl << "Lagrange interpolants +1: " << std::endl;
+    for (int N = 0; N <= N_max_; ++N) {
+        const int offset = N * (N + 1) /2;
+
+        std::cout << '\t' << "N = " << N << ": ";
+        std::cout << '\t' << '\t';
+        for (int i = 0; i <= N; ++i) {
+            std::cout << host_lagrange_interpolant_right[offset + i] << " ";
+        }
+        std::cout << std::endl;
+    }
+
+    std::cout << std::endl << "Derivative matrices: " << std::endl;
+    for (int N = 0; N <= N_max_; ++N) {
+        const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
+
+        std::cout << '\t' << "N = " << N << ": " << std::endl;
+        for (int i = 0; i <= N; ++i) {
+            std::cout << '\t' << '\t';
+            for (int j = 0; j <= N; ++j) {
+                std::cout << host_derivative_matrices[offset_2D + i * (N + 1) + j] << " ";
+            }
+            std::cout << std::endl;
+        }
+    }
+
+    std::cout << std::endl << "Derivative matrices hat: " << std::endl;
+    for (int N = 0; N <= N_max_; ++N) {
+        const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
+
+        std::cout << '\t' << "N = " << N << ": " << std::endl;
+        for (int i = 0; i <= N; ++i) {
+            std::cout << '\t' << '\t';
+            for (int j = 0; j <= N; ++j) {
+                std::cout << host_derivative_matrices_hat[offset_2D + i * (N + 1) + j] << " ";
+            }
+            std::cout << std::endl;
+        }
+    }
+
+    std::cout << std::endl << "Interpolation matrices: " << std::endl;
+    for (int N = 0; N <= N_max_; ++N) {
+        const int offset_interp = N * (N + 1) * N_interpolation_points_/2;
+
+        std::cout << '\t' << "N = " << N << ": " << std::endl;
+        for (int i = 0; i < N_interpolation_points_; ++i) {
+            std::cout << '\t' << '\t';
+            for (int j = 0; j <= N; ++j) {
+                std::cout << host_interpolation_matrices[offset_interp + i * (N + 1) + j] << " ";
+            }
+            std::cout << std::endl;
+        }
+    }
+
+    delete[] host_nodes;
+    delete[] host_weights;
+    delete[] host_barycentric_weights;
+    delete[] host_lagrange_interpolant_left;
+    delete[] host_lagrange_interpolant_right;
+    delete[] host_derivative_matrices;
+    delete[] host_derivative_matrices_hat;
+    delete[] host_interpolation_matrices;
+}
+
 // Algorithm 26
 __global__
 void SEM::chebyshev_gauss_nodes_and_weights(int N, float* nodes, float* weights) {
@@ -281,227 +503,4 @@ float SEM::interpolate_to_boundary(int N, const float* phi, const float* lagrang
     }
 
     return result;
-}
-
-
-NDG_t::NDG_t(int N_max, int N_interpolation_points) : 
-        N_max_(N_max), 
-        N_interpolation_points_(N_interpolation_points),
-        vector_length_((N_max_ + 1) * (N_max_ + 2)/2), 
-        matrix_length_((N_max_ + 1) * (N_max_ + 2) * (2 * N_max_ + 3)/6),
-        interpolation_length_((N_max_ + 1) * (N_max_ + 2) * N_interpolation_points_/2) {
-
-    cudaMalloc(&nodes_, vector_length_ * sizeof(float));
-    cudaMalloc(&weights_, vector_length_ * sizeof(float));
-    cudaMalloc(&barycentric_weights_, vector_length_ * sizeof(float));
-    cudaMalloc(&lagrange_interpolant_left_, vector_length_ * sizeof(float));
-    cudaMalloc(&lagrange_interpolant_right_, vector_length_ * sizeof(float));
-    cudaMalloc(&derivative_matrices_, matrix_length_ * sizeof(float));
-    cudaMalloc(&derivative_matrices_hat_, matrix_length_ * sizeof(float));
-    cudaMalloc(&interpolation_matrices_, interpolation_length_ * sizeof(float));
-
-    for (int N = 0; N <= N_max_; ++N) {
-        const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
-        legendre_gauss_nodes_and_weights<<<vector_numBlocks, poly_blockSize>>>(N, nodes_, weights_);
-    }
-
-    // Nodes are needed to compute barycentric weights
-    cudaDeviceSynchronize();
-    for (int N = 0; N <= N_max_; ++N) {
-        const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
-        calculate_barycentric_weights<<<vector_numBlocks, poly_blockSize>>>(N, nodes_, barycentric_weights_);
-    }
-
-    // We need the barycentric weights for derivative matrix, interpolation matrices and Lagrange interpolants
-    cudaDeviceSynchronize();
-    const int interpolation_numBlocks = (N_interpolation_points_ + interpolation_blockSize) / interpolation_blockSize;
-    for (int N = 0; N <= N_max_; ++N) {
-        const dim3 matrix_numBlocks((N +  matrix_blockSize.x) / matrix_blockSize.x, (N +  matrix_blockSize.y) / matrix_blockSize.y); // Should be (N + poly_blockSize - 1) if N is not inclusive
-        const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
-        polynomial_derivative_matrices<<<matrix_numBlocks, matrix_blockSize>>>(N, nodes_, barycentric_weights_, derivative_matrices_);
-        create_interpolation_matrices<<<interpolation_numBlocks, interpolation_blockSize>>>(N, N_interpolation_points_, nodes_, barycentric_weights_, interpolation_matrices_);
-        lagrange_interpolating_polynomials<<<vector_numBlocks, poly_blockSize>>>(-1.0f, N, nodes_, barycentric_weights_, lagrange_interpolant_left_);
-        lagrange_interpolating_polynomials<<<vector_numBlocks, poly_blockSize>>>(1.0f, N, nodes_, barycentric_weights_, lagrange_interpolant_right_);
-    }
-
-    // Then we calculate the derivative matrix diagonal and normalize the Lagrange interpolants
-    cudaDeviceSynchronize();
-    const int poly_numBlocks = (N_max_ + poly_blockSize) / poly_blockSize;
-    normalize_lagrange_interpolating_polynomials<<<poly_numBlocks, poly_blockSize>>>(N_max_, lagrange_interpolant_left_);
-    normalize_lagrange_interpolating_polynomials<<<poly_numBlocks, poly_blockSize>>>(N_max_, lagrange_interpolant_right_);
-    for (int N = 0; N <= N_max_; ++N) {
-        const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
-        polynomial_derivative_matrices_diagonal<<<vector_numBlocks, poly_blockSize>>>(N, derivative_matrices_);
-    }
-
-    // All the derivative matrix has to be computed before D^
-    cudaDeviceSynchronize();
-    for (int N = 0; N <= N_max_; ++N) {
-        const dim3 matrix_numBlocks((N +  matrix_blockSize.x) / matrix_blockSize.x, (N +  matrix_blockSize.y) / matrix_blockSize.y); // Should be (N + poly_blockSize - 1) if N is not inclusive
-        polynomial_derivative_matrices_hat<<<matrix_numBlocks, matrix_blockSize>>>(N, weights_, derivative_matrices_, derivative_matrices_hat_);
-    }
-}
-
-NDG_t::~NDG_t() {
-    // Not sure if null checks are needed
-    if (nodes_ != nullptr){
-        cudaFree(nodes_);
-    }
-    if (weights_ != nullptr){
-        cudaFree(weights_);
-    }
-    if (barycentric_weights_ != nullptr){
-        cudaFree(barycentric_weights_);
-    }
-    if (lagrange_interpolant_left_ != nullptr){
-        cudaFree(lagrange_interpolant_left_);
-    }
-    if (lagrange_interpolant_right_ != nullptr){
-        cudaFree(lagrange_interpolant_right_);
-    }
-    if (derivative_matrices_ != nullptr){
-        cudaFree(derivative_matrices_);
-    }
-    if (derivative_matrices_hat_ != nullptr){
-        cudaFree(derivative_matrices_hat_);
-    }
-    if (interpolation_matrices_ != nullptr){
-        cudaFree(interpolation_matrices_);
-    }
-}
-
-   
-
-void NDG_t::print() {
-    // Copy vectors from device memory to host memory
-    float* host_nodes = new float[vector_length_];
-    float* host_weights = new float[vector_length_];
-    float* host_barycentric_weights = new float[vector_length_];
-    float* host_lagrange_interpolant_left = new float[vector_length_];
-    float* host_lagrange_interpolant_right = new float[vector_length_];
-    float* host_derivative_matrices = new float[matrix_length_];
-    float* host_derivative_matrices_hat = new float[matrix_length_];
-    float* host_interpolation_matrices = new float[interpolation_length_];
-
-    cudaDeviceSynchronize();
-
-    cudaMemcpy(host_nodes, nodes_, vector_length_ * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_weights, weights_, vector_length_ * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_barycentric_weights, barycentric_weights_, vector_length_ * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_lagrange_interpolant_left, lagrange_interpolant_left_, vector_length_ * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_lagrange_interpolant_right, lagrange_interpolant_right_, vector_length_ * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_derivative_matrices, derivative_matrices_, matrix_length_ * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_derivative_matrices_hat, derivative_matrices_hat_, matrix_length_ * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_interpolation_matrices, interpolation_matrices_, interpolation_length_ * sizeof(float), cudaMemcpyDeviceToHost);
-
-    std::cout << "Nodes: " << std::endl;
-    for (int N = 0; N <= N_max_; ++N) {
-        const int offset = N * (N + 1) /2;
-
-        std::cout << '\t' << "N = " << N << ": ";
-        std::cout << '\t' << '\t';
-        for (int i = 0; i <= N; ++i) {
-            std::cout << host_nodes[offset + i] << " ";
-        }
-        std::cout << std::endl;
-    }
-
-    std::cout << std::endl << "Weights: " << std::endl;
-    for (int N = 0; N <= N_max_; ++N) {
-        const int offset = N * (N + 1) /2;
-
-        std::cout << '\t' << "N = " << N << ": ";
-        std::cout << '\t' << '\t';
-        for (int i = 0; i <= N; ++i) {
-            std::cout << host_weights[offset + i] << " ";
-        }
-        std::cout << std::endl;
-    }
-    
-    std::cout << std::endl << "Barycentric weights: " << std::endl;
-    for (int N = 0; N <= N_max_; ++N) {
-        const int offset = N * (N + 1) /2;
-
-        std::cout << '\t' << "N = " << N << ": ";
-        std::cout << '\t' << '\t';
-        for (int i = 0; i <= N; ++i) {
-            std::cout << host_barycentric_weights[offset + i] << " ";
-        }
-        std::cout << std::endl;
-    }
-
-    std::cout << std::endl << "Lagrange interpolants -1: " << std::endl;
-    for (int N = 0; N <= N_max_; ++N) {
-        const int offset = N * (N + 1) /2;
-
-        std::cout << '\t' << "N = " << N << ": ";
-        std::cout << '\t' << '\t';
-        for (int i = 0; i <= N; ++i) {
-            std::cout << host_lagrange_interpolant_left[offset + i] << " ";
-        }
-        std::cout << std::endl;
-    }
-
-    std::cout << std::endl << "Lagrange interpolants +1: " << std::endl;
-    for (int N = 0; N <= N_max_; ++N) {
-        const int offset = N * (N + 1) /2;
-
-        std::cout << '\t' << "N = " << N << ": ";
-        std::cout << '\t' << '\t';
-        for (int i = 0; i <= N; ++i) {
-            std::cout << host_lagrange_interpolant_right[offset + i] << " ";
-        }
-        std::cout << std::endl;
-    }
-
-    std::cout << std::endl << "Derivative matrices: " << std::endl;
-    for (int N = 0; N <= N_max_; ++N) {
-        const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
-
-        std::cout << '\t' << "N = " << N << ": " << std::endl;
-        for (int i = 0; i <= N; ++i) {
-            std::cout << '\t' << '\t';
-            for (int j = 0; j <= N; ++j) {
-                std::cout << host_derivative_matrices[offset_2D + i * (N + 1) + j] << " ";
-            }
-            std::cout << std::endl;
-        }
-    }
-
-    std::cout << std::endl << "Derivative matrices hat: " << std::endl;
-    for (int N = 0; N <= N_max_; ++N) {
-        const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
-
-        std::cout << '\t' << "N = " << N << ": " << std::endl;
-        for (int i = 0; i <= N; ++i) {
-            std::cout << '\t' << '\t';
-            for (int j = 0; j <= N; ++j) {
-                std::cout << host_derivative_matrices_hat[offset_2D + i * (N + 1) + j] << " ";
-            }
-            std::cout << std::endl;
-        }
-    }
-
-    /*std::cout << std::endl << "Interpolation matrices: " << std::endl;
-    for (int N = 0; N <= N_max_; ++N) {
-        const int offset_interp = N * (N + 1) * N_interpolation_points_/2;
-
-        std::cout << '\t' << "N = " << N << ": " << std::endl;
-        for (int i = 0; i < N_interpolation_points_; ++i) {
-            std::cout << '\t' << '\t';
-            for (int j = 0; j <= N; ++j) {
-                std::cout << host_interpolation_matrices[offset_interp + i * (N + 1) + j] << " ";
-            }
-            std::cout << std::endl;
-        }
-    }*/
-
-    delete[] host_nodes;
-    delete[] host_weights;
-    delete[] host_barycentric_weights;
-    delete[] host_lagrange_interpolant_left;
-    delete[] host_lagrange_interpolant_right;
-    delete[] host_derivative_matrices;
-    delete[] host_derivative_matrices_hat;
-    delete[] host_interpolation_matrices;
 }

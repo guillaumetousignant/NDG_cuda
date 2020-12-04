@@ -1,6 +1,28 @@
 #ifndef NDG_T_H
 #define NDG_T_H
 
+class NDG_t { 
+public: 
+    NDG_t(int N_max, int N_interpolation_points);
+    ~NDG_t();
+
+    int N_max_;
+    int N_interpolation_points_;
+    int vector_length_; // Flattened length of all N one after the other
+    int matrix_length_; // Flattened length of all N² one after the other
+    int interpolation_length_;
+    float* nodes_;
+    float* weights_;
+    float* barycentric_weights_;
+    float* lagrange_interpolant_left_;
+    float* lagrange_interpolant_right_;
+    float* derivative_matrices_;
+    float* derivative_matrices_hat_;
+    float* interpolation_matrices_;
+
+    void print();
+};
+
 namespace SEM {
     // Algorithm 26
     __global__
@@ -55,27 +77,5 @@ namespace SEM {
     __device__
     float interpolate_to_boundary(int N, const float* phi, const float* lagrange_interpolant);
 }
-
-class NDG_t { 
-public: 
-    NDG_t(int N_max, int N_interpolation_points);
-    ~NDG_t();
-
-    int N_max_;
-    int N_interpolation_points_;
-    int vector_length_; // Flattened length of all N one after the other
-    int matrix_length_; // Flattened length of all N² one after the other
-    int interpolation_length_;
-    float* nodes_;
-    float* weights_;
-    float* barycentric_weights_;
-    float* lagrange_interpolant_left_;
-    float* lagrange_interpolant_right_;
-    float* derivative_matrices_;
-    float* derivative_matrices_hat_;
-    float* interpolation_matrices_;
-
-    void print();
-};
 
 #endif

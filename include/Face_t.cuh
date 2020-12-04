@@ -1,11 +1,6 @@
 #ifndef FACE_T_H
 #define FACE_T_H
 
-namespace SEM {
-    __global__
-    void build_faces(int N_faces, Face_t* faces);
-}
-
 class Face_t {
 public:
     __device__ 
@@ -20,5 +15,10 @@ public:
     int elements_[2]; // left, right
     float flux_;
 };
+
+namespace SEM {
+    __global__
+    void build_faces(int N_faces, Face_t* faces);
+}
 
 #endif
