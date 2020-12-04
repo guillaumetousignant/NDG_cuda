@@ -1,4 +1,4 @@
-add_library(NDG_cuda PRIVATE
+add_library(NDG_cuda
     NDG_t.cu
     Element_t.cu
     Face_t.cu
