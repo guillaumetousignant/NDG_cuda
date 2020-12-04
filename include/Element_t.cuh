@@ -45,6 +45,10 @@ namespace SEM {
     __global__
     void get_solution(int N_elements, int N_interpolation_points, const Element_t* elements, const float* interpolation_matrices, float* phi, float* x);
 
+    // Algorithm 61
+    __device__
+    float interpolate_to_boundary(int N, const float* phi, const float* lagrange_interpolant);
+    
     __global__
     void interpolate_to_boundaries(int N_elements, Element_t* elements, const float* lagrange_interpolant_left, const float* lagrange_interpolant_right);
 }

@@ -4,7 +4,7 @@
 class Face_t {
 public:
     __device__ 
-    Face_t(int element_L, int element_R) : elements_{element_L, element_R};
+    Face_t(int element_L, int element_R);
 
     __host__
     Face_t();

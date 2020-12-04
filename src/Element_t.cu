@@ -66,7 +66,7 @@ void SEM::initial_conditions(int N_elements, Element_t* elements, const float* n
         const int offset = elements[i].N_ * (elements[i].N_ + 1) /2;
         for (int j = 0; j <= elements[i].N_; ++j) {
             const float x = (0.5 + nodes[offset + j]/2.0f) * (elements[i].x_[1] - elements[i].x_[0]) + elements[i].x_[0];
-            elements[i].phi_[j] = g(x);
+            elements[i].phi_[j] = SEM::g(x);
         }
     }
 }
@@ -118,13 +118,26 @@ void SEM::get_solution(int N_elements, int N_interpolation_points, const Element
     }
 }
 
+// Algorithm 61
+__device__
+float SEM::interpolate_to_boundary(int N, const float* phi, const float* lagrange_interpolant) {
+    const int offset_1D = N * (N + 1) /2;
+    float result = 0.0f;
+
+    for (int j = 0; j <= N; ++j) {
+        result += lagrange_interpolant[offset_1D + j] * phi[j];
+    }
+
+    return result;
+}
+
 __global__
 void SEM::interpolate_to_boundaries(int N_elements, Element_t* elements, const float* lagrange_interpolant_left, const float* lagrange_interpolant_right) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
     for (int i = index; i < N_elements; i += stride) {
-        elements[i].phi_L_ = interpolate_to_boundary(elements[i].N_, elements[i].phi_, lagrange_interpolant_left);
-        elements[i].phi_R_ = interpolate_to_boundary(elements[i].N_, elements[i].phi_, lagrange_interpolant_right);
+        elements[i].phi_L_ = SEM::interpolate_to_boundary(elements[i].N_, elements[i].phi_, lagrange_interpolant_left);
+        elements[i].phi_R_ = SEM::interpolate_to_boundary(elements[i].N_, elements[i].phi_, lagrange_interpolant_right);
     }
 }

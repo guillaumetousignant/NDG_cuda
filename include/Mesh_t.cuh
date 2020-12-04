@@ -3,11 +3,12 @@
 
 #include "Element_t.cuh"
 #include "Face_t.cuh"
+#include "NDG_t.cuh"
 #include <vector>
 
 class Mesh_t {
 public:
-    Mesh_t(int N_elements, int initial_N, float x_min, float x_max) : N_elements_(N_elements), N_faces_(N_elements), initial_N_(initial_N);
+    Mesh_t(int N_elements, int initial_N, float x_min, float x_max);
     ~Mesh_t();
 
     int N_elements_;

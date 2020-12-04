@@ -29,14 +29,14 @@ NDG_t::NDG_t(int N_max, int N_interpolation_points) :
 
     for (int N = 0; N <= N_max_; ++N) {
         const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
-        legendre_gauss_nodes_and_weights<<<vector_numBlocks, poly_blockSize>>>(N, nodes_, weights_);
+        SEM::legendre_gauss_nodes_and_weights<<<vector_numBlocks, poly_blockSize>>>(N, nodes_, weights_);
     }
 
     // Nodes are needed to compute barycentric weights
     cudaDeviceSynchronize();
     for (int N = 0; N <= N_max_; ++N) {
         const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
-        calculate_barycentric_weights<<<vector_numBlocks, poly_blockSize>>>(N, nodes_, barycentric_weights_);
+        SEM::calculate_barycentric_weights<<<vector_numBlocks, poly_blockSize>>>(N, nodes_, barycentric_weights_);
     }
 
     // We need the barycentric weights for derivative matrix, interpolation matrices and Lagrange interpolants
@@ -45,27 +45,27 @@ NDG_t::NDG_t(int N_max, int N_interpolation_points) :
     for (int N = 0; N <= N_max_; ++N) {
         const dim3 matrix_numBlocks((N +  matrix_blockSize.x) / matrix_blockSize.x, (N +  matrix_blockSize.y) / matrix_blockSize.y); // Should be (N + poly_blockSize - 1) if N is not inclusive
         const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
-        polynomial_derivative_matrices<<<matrix_numBlocks, matrix_blockSize>>>(N, nodes_, barycentric_weights_, derivative_matrices_);
-        create_interpolation_matrices<<<interpolation_numBlocks, interpolation_blockSize>>>(N, N_interpolation_points_, nodes_, barycentric_weights_, interpolation_matrices_);
-        lagrange_interpolating_polynomials<<<vector_numBlocks, poly_blockSize>>>(-1.0f, N, nodes_, barycentric_weights_, lagrange_interpolant_left_);
-        lagrange_interpolating_polynomials<<<vector_numBlocks, poly_blockSize>>>(1.0f, N, nodes_, barycentric_weights_, lagrange_interpolant_right_);
+        SEM::polynomial_derivative_matrices<<<matrix_numBlocks, matrix_blockSize>>>(N, nodes_, barycentric_weights_, derivative_matrices_);
+        SEM::create_interpolation_matrices<<<interpolation_numBlocks, interpolation_blockSize>>>(N, N_interpolation_points_, nodes_, barycentric_weights_, interpolation_matrices_);
+        SEM::lagrange_interpolating_polynomials<<<vector_numBlocks, poly_blockSize>>>(-1.0f, N, nodes_, barycentric_weights_, lagrange_interpolant_left_);
+        SEM::lagrange_interpolating_polynomials<<<vector_numBlocks, poly_blockSize>>>(1.0f, N, nodes_, barycentric_weights_, lagrange_interpolant_right_);
     }
 
     // Then we calculate the derivative matrix diagonal and normalize the Lagrange interpolants
     cudaDeviceSynchronize();
     const int poly_numBlocks = (N_max_ + poly_blockSize) / poly_blockSize;
-    normalize_lagrange_interpolating_polynomials<<<poly_numBlocks, poly_blockSize>>>(N_max_, lagrange_interpolant_left_);
-    normalize_lagrange_interpolating_polynomials<<<poly_numBlocks, poly_blockSize>>>(N_max_, lagrange_interpolant_right_);
+    SEM::normalize_lagrange_interpolating_polynomials<<<poly_numBlocks, poly_blockSize>>>(N_max_, lagrange_interpolant_left_);
+    SEM::normalize_lagrange_interpolating_polynomials<<<poly_numBlocks, poly_blockSize>>>(N_max_, lagrange_interpolant_right_);
     for (int N = 0; N <= N_max_; ++N) {
         const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
-        polynomial_derivative_matrices_diagonal<<<vector_numBlocks, poly_blockSize>>>(N, derivative_matrices_);
+        SEM::polynomial_derivative_matrices_diagonal<<<vector_numBlocks, poly_blockSize>>>(N, derivative_matrices_);
     }
 
     // All the derivative matrix has to be computed before D^
     cudaDeviceSynchronize();
     for (int N = 0; N <= N_max_; ++N) {
         const dim3 matrix_numBlocks((N +  matrix_blockSize.x) / matrix_blockSize.x, (N +  matrix_blockSize.y) / matrix_blockSize.y); // Should be (N + poly_blockSize - 1) if N is not inclusive
-        polynomial_derivative_matrices_hat<<<matrix_numBlocks, matrix_blockSize>>>(N, weights_, derivative_matrices_, derivative_matrices_hat_);
+        SEM::polynomial_derivative_matrices_hat<<<matrix_numBlocks, matrix_blockSize>>>(N, weights_, derivative_matrices_, derivative_matrices_hat_);
     }
 }
 
@@ -297,7 +297,7 @@ void SEM::legendre_gauss_nodes_and_weights(int N, float* nodes, float* weights) 
                 
                 for (int k = 0; k < 1000; ++k) {
                     float L_N_plus1, L_N_plus1_prime;
-                    legendre_polynomial_and_derivative(N + 1, nodes[offset + j], L_N_plus1, L_N_plus1_prime);
+                    SEM::legendre_polynomial_and_derivative(N + 1, nodes[offset + j], L_N_plus1, L_N_plus1_prime);
                     float delta = -L_N_plus1/L_N_plus1_prime;
                     nodes[offset + j] += delta;
                     if (std::abs(delta) <= 0.00000001f * std::abs(nodes[offset + j])) {
@@ -307,7 +307,7 @@ void SEM::legendre_gauss_nodes_and_weights(int N, float* nodes, float* weights) 
                 }
 
                 float dummy, L_N_plus1_prime_final;
-                legendre_polynomial_and_derivative(N + 1, nodes[offset + j], dummy, L_N_plus1_prime_final);
+                SEM::legendre_polynomial_and_derivative(N + 1, nodes[offset + j], dummy, L_N_plus1_prime_final);
                 nodes[offset + N - j] = -nodes[offset + j];
                 weights[offset + j] = 2.0f/((1.0f - std::pow(nodes[offset + j], 2)) * std::pow(L_N_plus1_prime_final, 2));
                 weights[offset + N - j] = weights[offset + j];
@@ -316,7 +316,7 @@ void SEM::legendre_gauss_nodes_and_weights(int N, float* nodes, float* weights) 
 
         if (N % 2 == 0) {
             float dummy, L_N_plus1_prime_final;
-            legendre_polynomial_and_derivative(N + 1, 0.0f, dummy, L_N_plus1_prime_final);
+            SEM::legendre_polynomial_and_derivative(N + 1, 0.0f, dummy, L_N_plus1_prime_final);
             nodes[offset + N/2] = 0.0f;
             weights[offset + N/2] = 2/std::pow(L_N_plus1_prime_final, 2);
         }
@@ -459,7 +459,7 @@ void SEM::create_interpolation_matrices(int N, int N_interpolation_points, const
 
         for (int k = 0; k <= N; ++k) {
             interpolation_matrices[offset_interp + j * (N + 1) + k] = 0.0f;
-            if (almost_equal(x_coord, nodes[offset_1D + k])) {
+            if (SEM::almost_equal(x_coord, nodes[offset_1D + k])) {
                 interpolation_matrices[offset_interp + j * (N + 1) + k] = 1.0f;
                 row_has_match = true;
             }
@@ -490,17 +490,4 @@ void SEM::matrix_vector_derivative(int N, const float* derivative_matrices_hat, 
             phi_prime[i] += derivative_matrices_hat[offset_2D + i * (N + 1) + j] * phi[j] * phi[j] * 0.5f; // phi not squared in textbook, squared for Burger's
         }
     }
-}
-
-// Algorithm 61
-__device__
-float SEM::interpolate_to_boundary(int N, const float* phi, const float* lagrange_interpolant) {
-    const int offset_1D = N * (N + 1) /2;
-    float result = 0.0f;
-
-    for (int j = 0; j <= N; ++j) {
-        result += lagrange_interpolant[offset_1D + j] * phi[j];
-    }
-
-    return result;
 }
