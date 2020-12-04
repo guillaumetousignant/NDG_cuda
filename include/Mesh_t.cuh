@@ -1,8 +1,8 @@
 #ifndef MESH_T_H
 #define MESH_T_H
 
-#include "Element_t.h"
-#include "Face_t.h"
+#include "Element_t.cuh"
+#include "Face_t.cuh"
 #include <vector>
 
 namespace SEM {

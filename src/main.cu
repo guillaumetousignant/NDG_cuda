@@ -1,5 +1,5 @@
 #include "NDG_t.cuh"
-#include "Mesh_t.cu"
+#include "Mesh_t.cuh"
 #include <iostream>
 #include <chrono>
 #include <vector>

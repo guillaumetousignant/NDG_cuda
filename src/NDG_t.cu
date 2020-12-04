@@ -1,4 +1,4 @@
-#include "NDG_t.h"
+#include "NDG_t.cuh"
 #include <cmath>
 #include <cfloat>
 #include <iostream>
