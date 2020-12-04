@@ -1,5 +1,9 @@
 add_executable(NDG_cuda 
-    main.cu)
+    main.cu
+    NDG_t.cu
+    Element_t.cu
+    Face_t.cu
+    Mesh_t.cu)
 
 set_target_properties(NDG_cuda PROPERTIES
                             CUDA_SEPERABLE_COMPILATION ON)
