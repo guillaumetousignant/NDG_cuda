@@ -68,10 +68,6 @@ namespace SEM {
     // Will interpolate N_interpolation_points between -1 and 1
     __global__
     void create_interpolation_matrices(int N, int N_interpolation_points, const float* nodes, const float* barycentric_weights, float* interpolation_matrices);
-
-    // Algorithm 19
-    __device__
-    void matrix_vector_derivative(int N, const float* derivative_matrices_hat, const float* phi, float* phi_prime);
 }
 
 #endif

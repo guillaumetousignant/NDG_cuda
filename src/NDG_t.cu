@@ -477,17 +477,3 @@ void SEM::create_interpolation_matrices(int N, int N_interpolation_points, const
         }
     }
 }
-
-// Algorithm 19
-__device__
-void SEM::matrix_vector_derivative(int N, const float* derivative_matrices_hat, const float* phi, float* phi_prime) {
-    // s = 0, e = N (p.55 says N - 1)
-    const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
-
-    for (int i = 0; i <= N; ++i) {
-        phi_prime[i] = 0.0f;
-        for (int j = 0; j <= N; ++j) {
-            phi_prime[i] += derivative_matrices_hat[offset_2D + i * (N + 1) + j] * phi[j] * phi[j] * 0.5f; // phi not squared in textbook, squared for Burger's
-        }
-    }
-}

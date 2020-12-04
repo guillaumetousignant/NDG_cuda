@@ -31,6 +31,10 @@ namespace SEM {
     __global__
     void calculate_fluxes(int N_faces, Face_t* faces, const Element_t* elements);
 
+    // Algorithm 19
+    __device__
+    void matrix_vector_derivative(int N, const float* derivative_matrices_hat, const float* phi, float* phi_prime);
+
     // Algorithm 60 (not really anymore)
     __global__
     void compute_dg_derivative(int N_elements, Element_t* elements, const Face_t* faces, const float* weights, const float* derivative_matrices_hat, const float* lagrange_interpolant_left, const float* lagrange_interpolant_right);

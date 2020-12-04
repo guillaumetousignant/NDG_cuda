@@ -303,6 +303,20 @@ void SEM::calculate_fluxes(int N_faces, Face_t* faces, const Element_t* elements
     }
 }
 
+// Algorithm 19
+__device__
+void SEM::matrix_vector_derivative(int N, const float* derivative_matrices_hat, const float* phi, float* phi_prime) {
+    // s = 0, e = N (p.55 says N - 1)
+    const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
+
+    for (int i = 0; i <= N; ++i) {
+        phi_prime[i] = 0.0f;
+        for (int j = 0; j <= N; ++j) {
+            phi_prime[i] += derivative_matrices_hat[offset_2D + i * (N + 1) + j] * phi[j] * phi[j] * 0.5f; // phi not squared in textbook, squared for Burger's
+        }
+    }
+}
+
 // Algorithm 60 (not really anymore)
 __global__
 void SEM::compute_dg_derivative(int N_elements, Element_t* elements, const Face_t* faces, const float* weights, const float* derivative_matrices_hat, const float* lagrange_interpolant_left, const float* lagrange_interpolant_right) {
