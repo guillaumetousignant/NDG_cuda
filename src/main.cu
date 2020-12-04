@@ -1,5 +1,7 @@
 #include "NDG_t.cuh"
 #include "Mesh_t.cuh"
+#include "ChebyshevPolynomial_t.cuh"
+#include "LegendrePolynomial_t.cuh"
 #include <iostream>
 #include <chrono>
 #include <vector>
@@ -23,7 +25,7 @@ int main(void) {
     // Initialisation
     auto t_start_init = std::chrono::high_resolution_clock::now();
 
-    NDG_t NDG(N_max, N_interpolation_points);
+    NDG_t<LegendrePolynomial_t> NDG(N_max, N_interpolation_points);
     Mesh_t Mesh(N_elements, initial_N, x[0], x[1]);
     Mesh.set_initial_conditions(NDG.nodes_);
     cudaDeviceSynchronize();

@@ -2,7 +2,9 @@ add_library(NDG_cuda
     NDG_t.cu
     Element_t.cu
     Face_t.cu
-    Mesh_t.cu)
+    Mesh_t.cu
+    ChebyshevPolynomial_t.cu
+    LegendrePolynomial_t.cu)
 
 target_include_directories(NDG_cuda PUBLIC 
     $<INSTALL_INTERFACE:include/NDG_cuda/>    

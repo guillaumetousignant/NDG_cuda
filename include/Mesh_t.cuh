@@ -21,7 +21,9 @@ public:
     void print();
     void write_file_data(int N_points, float time, const float* velocity, const float* coordinates);
     void write_data(float time, int N_interpolation_points, const float* interpolation_matrices);
-    void solve(const float delta_t, const std::vector<float> output_times, const NDG_t &NDG);
+    
+    template<typename Polynomial>
+    void solve(const float delta_t, const std::vector<float> output_times, const NDG_t<Polynomial> &NDG);
 };
 
 namespace SEM {

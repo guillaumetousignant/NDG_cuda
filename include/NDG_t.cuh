@@ -1,6 +1,7 @@
 #ifndef NDG_T_H
 #define NDG_T_H
 
+template<typename Polynomial>
 class NDG_t { 
 public: 
     NDG_t(int N_max, int N_interpolation_points);
@@ -24,18 +25,6 @@ public:
 };
 
 namespace SEM {
-    // Algorithm 26
-    __global__
-    void chebyshev_gauss_nodes_and_weights(int N, float* nodes, float* weights);
-
-    // Algorithm 22
-    __device__
-    void legendre_polynomial_and_derivative(int N, float x, float &L_N, float &L_N_prime);
-
-    // Algorithm 23
-    __global__
-    void legendre_gauss_nodes_and_weights(int N, float* nodes, float* weights);
-
     // Algorithm 30
     __global__
     void calculate_barycentric_weights(int N, const float* nodes, float* barycentric_weights) ;

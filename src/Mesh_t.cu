@@ -1,4 +1,6 @@
 #include "Mesh_t.cuh"
+#include "ChebyshevPolynomial_t.cuh"
+#include "LegendrePolynomial_t.cuh"
 #include <iostream>
 #include <fstream>
 #include <sstream> 
@@ -206,7 +208,11 @@ void Mesh_t::write_data(float time, int N_interpolation_points, const float* int
     cudaFree(x);
 }
 
-void Mesh_t::solve(const float delta_t, const std::vector<float> output_times, const NDG_t &NDG) {
+template void Mesh_t::solve(const float delta_t, const std::vector<float> output_times, const NDG_t<ChebyshevPolynomial_t> &NDG); // Get with the time c++, it's crazy I have to do this
+template void Mesh_t::solve(const float delta_t, const std::vector<float> output_times, const NDG_t<LegendrePolynomial_t> &NDG);
+
+template<typename Polynomial>
+void Mesh_t::solve(const float delta_t, const std::vector<float> output_times, const NDG_t<Polynomial> &NDG) {
     const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
     const int faces_numBlocks = (N_faces_ + faces_blockSize - 1) / faces_blockSize;
     float time = 0.0;

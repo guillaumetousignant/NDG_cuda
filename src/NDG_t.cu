@@ -1,4 +1,6 @@
 #include "NDG_t.cuh"
+#include "ChebyshevPolynomial_t.cuh"
+#include "LegendrePolynomial_t.cuh"
 #include <cmath>
 #include <cfloat>
 #include <iostream>
@@ -6,12 +8,15 @@
 #include <sstream> 
 #include <iomanip>
 
-constexpr float pi = 3.14159265358979323846f;
 constexpr int poly_blockSize = 16; // Small number of threads per block because N will never be huge
 constexpr int interpolation_blockSize = 32;
 const dim3 matrix_blockSize(16, 16); // Small number of threads per block because N will never be huge
 
-NDG_t::NDG_t(int N_max, int N_interpolation_points) : 
+template class NDG_t<ChebyshevPolynomial_t>; // Like, I understand why I need this, but man is it crap.
+template class NDG_t<LegendrePolynomial_t>;
+
+template<typename Polynomial>
+NDG_t<Polynomial>::NDG_t(int N_max, int N_interpolation_points) : 
         N_max_(N_max), 
         N_interpolation_points_(N_interpolation_points),
         vector_length_((N_max_ + 1) * (N_max_ + 2)/2), 
@@ -27,10 +32,7 @@ NDG_t::NDG_t(int N_max, int N_interpolation_points) :
     cudaMalloc(&derivative_matrices_hat_, matrix_length_ * sizeof(float));
     cudaMalloc(&interpolation_matrices_, interpolation_length_ * sizeof(float));
 
-    for (int N = 0; N <= N_max_; ++N) {
-        const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
-        SEM::legendre_gauss_nodes_and_weights<<<vector_numBlocks, poly_blockSize>>>(N, nodes_, weights_);
-    }
+    Polynomial::nodes_and_weights(N_max_, poly_blockSize, nodes_, weights_);
 
     // Nodes are needed to compute barycentric weights
     cudaDeviceSynchronize();
@@ -69,7 +71,8 @@ NDG_t::NDG_t(int N_max, int N_interpolation_points) :
     }
 }
 
-NDG_t::~NDG_t() {
+template<typename Polynomial>
+NDG_t<Polynomial>::~NDG_t() {
     // Not sure if null checks are needed
     if (nodes_ != nullptr){
         cudaFree(nodes_);
@@ -96,10 +99,9 @@ NDG_t::~NDG_t() {
         cudaFree(interpolation_matrices_);
     }
 }
-
    
-
-void NDG_t::print() {
+template<typename Polynomial>
+void NDG_t<Polynomial>::print() {
     // Copy vectors from device memory to host memory
     float* host_nodes = new float[vector_length_];
     float* host_weights = new float[vector_length_];
@@ -231,96 +233,6 @@ void NDG_t::print() {
     delete[] host_derivative_matrices;
     delete[] host_derivative_matrices_hat;
     delete[] host_interpolation_matrices;
-}
-
-// Algorithm 26
-__global__
-void SEM::chebyshev_gauss_nodes_and_weights(int N, float* nodes, float* weights) {
-    const int index = blockIdx.x * blockDim.x + threadIdx.x;
-    const int stride = blockDim.x * gridDim.x;
-    const int offset = N * (N + 1) /2;
-
-    for (int i = index; i <= N; i += stride) {
-        nodes[offset + i] = -std::cos(pi * (2 * i + 1) / (2 * N + 2));
-        weights[offset + i] = pi / (N + 1);
-    }
-}
-
-// Algorithm 22
-__device__
-void SEM::legendre_polynomial_and_derivative(int N, float x, float &L_N, float &L_N_prime) {
-    if (N == 0) {
-        L_N = 1.0f;
-        L_N_prime = 0.0f;
-    }
-    else if (N == 1) {
-        L_N = x;
-        L_N_prime = 1.0f;
-    }
-    else {
-        float L_N_2 = 1.0f;
-        float L_N_1 = x;
-        float L_N_2_prime = 0.0f;
-        float L_N_1_prime = 1.0f;
-
-        for (int k = 2; k <= N; ++k) {
-            L_N = (2 * k - 1) * x * L_N_1/k - (k - 1) * L_N_2/k; // L_N_1(x) ??
-            L_N_prime = L_N_2_prime + (2 * k - 1) * L_N_1;
-            L_N_2 = L_N_1;
-            L_N_1 = L_N;
-            L_N_2_prime = L_N_1_prime;
-            L_N_1_prime = L_N_prime;
-        }
-    }
-}
-
-// Algorithm 23
-__global__
-void SEM::legendre_gauss_nodes_and_weights(int N, float* nodes, float* weights) {
-    const int index = blockIdx.x * blockDim.x + threadIdx.x;
-    const int offset = N * (N + 1) /2;
-
-    if (index == 0) {
-        if (N == 0) {
-            nodes[offset] = 0.0f;
-            weights[offset] = 2.0f;
-        }
-        else if (N == 1) {
-            nodes[offset] = -std::sqrt(1.0f/3.0f);
-            weights[offset] = 1.0f;
-            nodes[offset + 1] = -nodes[offset];
-            weights[offset + 1] = weights[offset];
-        }
-        else {
-            for (int j = 0; j < (N + 1)/2; ++j) {
-                nodes[offset + j] = -std::cos(pi * (2 * j + 1)/(2 * N + 2));
-                
-                for (int k = 0; k < 1000; ++k) {
-                    float L_N_plus1, L_N_plus1_prime;
-                    SEM::legendre_polynomial_and_derivative(N + 1, nodes[offset + j], L_N_plus1, L_N_plus1_prime);
-                    float delta = -L_N_plus1/L_N_plus1_prime;
-                    nodes[offset + j] += delta;
-                    if (std::abs(delta) <= 0.00000001f * std::abs(nodes[offset + j])) {
-                        break;
-                    }
-
-                }
-
-                float dummy, L_N_plus1_prime_final;
-                SEM::legendre_polynomial_and_derivative(N + 1, nodes[offset + j], dummy, L_N_plus1_prime_final);
-                nodes[offset + N - j] = -nodes[offset + j];
-                weights[offset + j] = 2.0f/((1.0f - std::pow(nodes[offset + j], 2)) * std::pow(L_N_plus1_prime_final, 2));
-                weights[offset + N - j] = weights[offset + j];
-            }
-        }
-
-        if (N % 2 == 0) {
-            float dummy, L_N_plus1_prime_final;
-            SEM::legendre_polynomial_and_derivative(N + 1, 0.0f, dummy, L_N_plus1_prime_final);
-            nodes[offset + N/2] = 0.0f;
-            weights[offset + N/2] = 2/std::pow(L_N_plus1_prime_final, 2);
-        }
-    }
 }
 
 // Algorithm 30
