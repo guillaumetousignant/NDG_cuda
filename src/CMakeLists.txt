@@ -1,18 +1,50 @@
-add_executable(NDG_cuda 
-    main.cu
+add_library(NDG_cuda PRIVATE
     NDG_t.cu
     Element_t.cu
     Face_t.cu
     Mesh_t.cu)
 
+target_include_directories(NDG_cuda PUBLIC 
+    $<INSTALL_INTERFACE:include/NDG_cuda/>    
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/>)
+
 set_target_properties(NDG_cuda PROPERTIES
                             CUDA_SEPERABLE_COMPILATION ON)
 set_property(TARGET NDG_cuda PROPERTY CUDA_ARCHITECTURES 61) # sm_61 is GTX 10X0
+target_compile_features(NDG_cuda PRIVATE cxx_std_17)
+if(NOT ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug"))
+    set_property(TARGET NDG_cuda PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
+endif()
 
-target_include_directories(NDG_cuda PRIVATE
-    ${PROJECT_SOURCE_DIR}/include/
+install(TARGETS NDG_cuda 
+    EXPORT NDG_cuda-export
+    DESTINATION lib)
+
+if(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_INSTALL_PREFIX)
+    install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ 
+        DESTINATION include/NDG_cuda
+        FILES_MATCHING PATTERN "*.cuh")
+endif()
+
+install(EXPORT NDG_cuda-export
+  FILE
+    NDG_cudaConfig.cmake
+  NAMESPACE
+    NDG_cuda::
+  DESTINATION
+    lib/cmake/NDG_cuda
 )
 
-target_compile_features(NDG_cuda PRIVATE cxx_std_17)
+add_executable(NDG 
+    main.cu)
 
-install(TARGETS NDG_cuda DESTINATION bin)
+target_link_libraries(NDG PRIVATE NDG_cuda)
+set_target_properties(NDG PROPERTIES
+                            CUDA_SEPERABLE_COMPILATION ON)
+set_property(TARGET NDG PROPERTY CUDA_ARCHITECTURES 61) # sm_61 is GTX 10X0
+target_compile_features(NDG PRIVATE cxx_std_17)
+if(NOT ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug"))
+    set_property(TARGET NDG PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
+endif()
+
+install(TARGETS NDG DESTINATION bin)
