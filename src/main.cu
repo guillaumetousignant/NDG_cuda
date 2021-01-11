@@ -1006,10 +1006,10 @@ public:
 };
 
 int main(void) {
-    const int N_elements = 4;
+    const int N_elements = 64;
     const int N_max = 8;
     const int initial_N = N_max;
-    const int N_interpolation_points = 1000;
+    const int N_interpolation_points = 100;
     
     NDG_t NDG(N_max, N_interpolation_points);
     Mesh_t Mesh(N_elements, initial_N, -1.0f, 1.0f);
@@ -1028,7 +1028,7 @@ int main(void) {
             << "s." << std::endl;
 
     //NDG.print();
-    Mesh.print();
+    //Mesh.print();
     
     return 0;
 }
