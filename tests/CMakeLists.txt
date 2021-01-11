@@ -13,7 +13,7 @@ include(Catch)
 add_executable(unit_tests 
     test_main.cpp
     example_test.cpp
-    polynomials.cu)
+    polynomials_test.cu)
 target_link_libraries(unit_tests PRIVATE 
     Catch2::Catch2
     NDG_cuda)
