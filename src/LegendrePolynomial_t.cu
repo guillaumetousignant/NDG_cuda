@@ -35,40 +35,42 @@ void SEM::legendre_polynomial_and_derivative(int N, float x, float &L_N, float &
 __global__
 void SEM::legendre_gauss_nodes_and_weights(int N, float* nodes, float* weights) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
     const int offset = N * (N + 1) /2;
 
-    if (index == 0) {
-        if (N == 0) {
-            nodes[offset] = 0.0f;
-            weights[offset] = 2.0f;
-        }
-        else if (N == 1) {
+    for (int i = index; i < (N + 1)/2; i += stride) {
+        if (N == 1) { // CHECK will enter loop above
             nodes[offset] = -std::sqrt(1.0f/3.0f);
             weights[offset] = 1.0f;
             nodes[offset + 1] = -nodes[offset];
             weights[offset + 1] = weights[offset];
         }
         else {
-            for (int j = 0; j < (N + 1)/2; ++j) {
-                nodes[offset + j] = -std::cos(pi * (2 * j + 1)/(2 * N + 2));
-                
-                for (int k = 0; k < 1000; ++k) {
-                    float L_N_plus1, L_N_plus1_prime;
-                    SEM::legendre_polynomial_and_derivative(N + 1, nodes[offset + j], L_N_plus1, L_N_plus1_prime);
-                    float delta = -L_N_plus1/L_N_plus1_prime;
-                    nodes[offset + j] += delta;
-                    if (std::abs(delta) <= 0.00000001f * std::abs(nodes[offset + j])) {
-                        break;
-                    }
-
+            nodes[offset + i] = -std::cos(pi * (2 * i + 1)/(2 * N + 2));
+                    
+            for (int k = 0; k < 1000; ++k) {
+                float L_N_plus1, L_N_plus1_prime;
+                SEM::legendre_polynomial_and_derivative(N + 1, nodes[offset + i], L_N_plus1, L_N_plus1_prime);
+                float delta = -L_N_plus1/L_N_plus1_prime;
+                nodes[offset + i] += delta;
+                if (std::abs(delta) <= 0.00000001f * std::abs(nodes[offset + i])) {
+                    break;
                 }
 
-                float dummy, L_N_plus1_prime_final;
-                SEM::legendre_polynomial_and_derivative(N + 1, nodes[offset + j], dummy, L_N_plus1_prime_final);
-                nodes[offset + N - j] = -nodes[offset + j];
-                weights[offset + j] = 2.0f/((1.0f - std::pow(nodes[offset + j], 2)) * std::pow(L_N_plus1_prime_final, 2));
-                weights[offset + N - j] = weights[offset + j];
             }
+
+            float dummy, L_N_plus1_prime_final;
+            SEM::legendre_polynomial_and_derivative(N + 1, nodes[offset + i], dummy, L_N_plus1_prime_final);
+            nodes[offset + N - i] = -nodes[offset + i];
+            weights[offset + i] = 2.0f/((1.0f - std::pow(nodes[offset + i], 2)) * std::pow(L_N_plus1_prime_final, 2));
+            weights[offset + N - i] = weights[offset + i];
+        }
+    }
+
+    if (index == 0) {
+        if (N == 0) {
+            nodes[offset] = 0.0f;
+            weights[offset] = 2.0f;
         }
 
         if (N % 2 == 0) {
@@ -82,7 +84,7 @@ void SEM::legendre_gauss_nodes_and_weights(int N, float* nodes, float* weights) 
 
 void LegendrePolynomial_t::nodes_and_weights(int N_max, int blockSize, float* nodes, float* weights) {
     for (int N = 0; N <= N_max; ++N) {
-        const int numBlocks = (N + blockSize) / blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
+        const int numBlocks = ((N + 1)/2 + blockSize) / blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
         SEM::legendre_gauss_nodes_and_weights<<<numBlocks, blockSize>>>(N, nodes, weights);
     }
 }
