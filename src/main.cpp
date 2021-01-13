@@ -31,7 +31,7 @@ int main(void) {
     mesh.set_initial_conditions(NDG.nodes_);
 
     auto t_end_init = std::chrono::high_resolution_clock::now();
-    std::cout << "GPU initialisation time: " 
+    std::cout << "CPU initialisation time: " 
             << std::chrono::duration<double, std::milli>(t_end_init - t_start_init).count()/1000.0 
             << "s." << std::endl;
 
@@ -41,7 +41,7 @@ int main(void) {
     mesh.solve(delta_t, output_times, NDG);
 
     auto t_end = std::chrono::high_resolution_clock::now();
-    std::cout << "GPU computation time: " 
+    std::cout << "CPU computation time: " 
             << std::chrono::duration<double, std::milli>(t_end - t_start).count()/1000.0 
             << "s." << std::endl;
 
