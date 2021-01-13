@@ -1,5 +1,5 @@
-#ifndef MESH_T_H
-#define MESH_T_H
+#ifndef NDG_MESH_T_H
+#define NDG_MESH_T_H
 
 #include "Element_t.cuh"
 #include "Face_t.cuh"

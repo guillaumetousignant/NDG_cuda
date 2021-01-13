@@ -1,5 +1,5 @@
-#ifndef LEGENDREPOLYNOMIAL_T_H
-#define LEGENDREPOLYNOMIAL_T_H
+#ifndef NDG_LEGENDREPOLYNOMIAL_T_H
+#define NDG_LEGENDREPOLYNOMIAL_T_H
 
 namespace SEM {
     // Algorithm 22

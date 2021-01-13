@@ -1,5 +1,5 @@
-#ifndef FACE_T_H
-#define FACE_T_H
+#ifndef NDG_FACE_T_H
+#define NDG_FACE_T_H
 
 class Face_t {
 public:

@@ -1,5 +1,5 @@
-#ifndef ELEMENT_T_H
-#define ELEMENT_T_H
+#ifndef NDG_ELEMENT_T_H
+#define NDG_ELEMENT_T_H
 
 class Element_t { // Turn this into separate vectors, because cache exists
 public:
