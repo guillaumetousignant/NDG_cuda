@@ -26,8 +26,8 @@ int main(void) {
     auto t_start_init = std::chrono::high_resolution_clock::now();
 
     NDG_t<LegendrePolynomial_t> NDG(N_max, N_interpolation_points);
-    Mesh_t Mesh(N_elements, initial_N, x[0], x[1]);
-    Mesh.set_initial_conditions(NDG.nodes_);
+    Mesh_t mesh(N_elements, initial_N, x[0], x[1]);
+    mesh.set_initial_conditions(NDG.nodes_);
     cudaDeviceSynchronize();
 
     auto t_end_init = std::chrono::high_resolution_clock::now();
@@ -38,7 +38,7 @@ int main(void) {
     // Computation
     auto t_start = std::chrono::high_resolution_clock::now();
 
-    Mesh.solve(delta_t, output_times, NDG);
+    mesh.solve(delta_t, output_times, NDG);
     // Wait for GPU to finish before copying to host
     cudaDeviceSynchronize();
 
@@ -49,7 +49,7 @@ int main(void) {
 
     // Printing debug values
     //NDG.print();
-    //Mesh.print();
+    //mesh.print();
     
     return 0;
 }
