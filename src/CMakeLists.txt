@@ -4,7 +4,13 @@ add_library(NDG_cuda
     Face_t.cu
     Mesh_t.cu
     ChebyshevPolynomial_t.cu
-    LegendrePolynomial_t.cu)
+    LegendrePolynomial_t.cu
+    ChebyshevPolynomial_host_t.cpp
+    LegendrePolynomial_host_t.cpp
+    NDG_host_t.cpp
+    Mesh_host_t.cpp
+    Element_host_t.cpp
+    Face_host_t.cpp)
 
 target_include_directories(NDG_cuda PUBLIC 
     $<INSTALL_INTERFACE:include/NDG_cuda/>    
@@ -50,3 +56,17 @@ if(NOT ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug"))
 endif()
 
 install(TARGETS NDG DESTINATION bin)
+
+add_executable(NDG_host 
+    main.cu)
+
+target_link_libraries(NDG_host PRIVATE NDG_cuda)
+set_target_properties(NDG_host PROPERTIES
+                            CUDA_SEPERABLE_COMPILATION ON)
+set_property(TARGET NDG_host PROPERTY CUDA_ARCHITECTURES 61) # sm_61 is GTX 10X0
+target_compile_features(NDG_host PRIVATE cxx_std_17)
+if(NOT ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug"))
+    set_property(TARGET NDG_host PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
+endif()
+
+install(TARGETS NDG_host DESTINATION bin)
