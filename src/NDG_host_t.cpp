@@ -37,166 +37,80 @@ NDG_host_t<Polynomial>::NDG_host_t(int N_max, int N_interpolation_points) :
 
     for(int N = 0; N < N_max; ++N) {
         Polynomial::nodes_and_weights(N, nodes_[N], weights_[N]);
-    }
-
-    // Nodes are needed to compute barycentric weights
-    cudaDeviceSynchronize();
-    for (int N = 0; N <= N_max_; ++N) {
-        const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
-        SEM::calculate_barycentric_weights<<<vector_numBlocks, poly_blockSize>>>(N, nodes_, barycentric_weights_);
-    }
-
-    // We need the barycentric weights for derivative matrix, interpolation matrices and Lagrange interpolants
-    cudaDeviceSynchronize();
-    const int interpolation_numBlocks = (N_interpolation_points_ + interpolation_blockSize) / interpolation_blockSize;
-    for (int N = 0; N <= N_max_; ++N) {
-        const dim3 matrix_numBlocks((N +  matrix_blockSize.x) / matrix_blockSize.x, (N +  matrix_blockSize.y) / matrix_blockSize.y); // Should be (N + poly_blockSize - 1) if N is not inclusive
-        const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
-        SEM::polynomial_derivative_matrices<<<matrix_numBlocks, matrix_blockSize>>>(N, nodes_, barycentric_weights_, derivative_matrices_);
-        SEM::create_interpolation_matrices<<<interpolation_numBlocks, interpolation_blockSize>>>(N, N_interpolation_points_, nodes_, barycentric_weights_, interpolation_matrices_);
-        SEM::lagrange_interpolating_polynomials<<<vector_numBlocks, poly_blockSize>>>(-1.0f, N, nodes_, barycentric_weights_, lagrange_interpolant_left_);
-        SEM::lagrange_interpolating_polynomials<<<vector_numBlocks, poly_blockSize>>>(1.0f, N, nodes_, barycentric_weights_, lagrange_interpolant_right_);
-    }
-
-    // Then we calculate the derivative matrix diagonal and normalize the Lagrange interpolants
-    cudaDeviceSynchronize();
-    const int poly_numBlocks = (N_max_ + poly_blockSize) / poly_blockSize;
-    SEM::normalize_lagrange_interpolating_polynomials<<<poly_numBlocks, poly_blockSize>>>(N_max_, lagrange_interpolant_left_);
-    SEM::normalize_lagrange_interpolating_polynomials<<<poly_numBlocks, poly_blockSize>>>(N_max_, lagrange_interpolant_right_);
-    for (int N = 0; N <= N_max_; ++N) {
-        const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
-        SEM::polynomial_derivative_matrices_diagonal<<<vector_numBlocks, poly_blockSize>>>(N, derivative_matrices_);
-    }
-
-    // All the derivative matrix has to be computed before D^
-    cudaDeviceSynchronize();
-    for (int N = 0; N <= N_max_; ++N) {
-        const dim3 matrix_numBlocks((N +  matrix_blockSize.x) / matrix_blockSize.x, (N +  matrix_blockSize.y) / matrix_blockSize.y); // Should be (N + poly_blockSize - 1) if N is not inclusive
-        SEM::polynomial_derivative_matrices_hat<<<matrix_numBlocks, matrix_blockSize>>>(N, weights_, derivative_matrices_, derivative_matrices_hat_);
+        calculate_barycentric_weights(N, nodes_[N], weights_[N]);
+        polynomial_derivative_matrices(N, nodes_[N], barycentric_weights_[N], derivative_matrices_[N]);
+        create_interpolation_matrices(N, N_interpolation_points_, nodes_[N], barycentric_weights_[N], interpolation_matrices_[N]);
+        lagrange_interpolating_polynomials(-1.0, N, nodes_[N], barycentric_weights_[N], lagrange_interpolant_left_[N]);
+        lagrange_interpolating_polynomials(1.0, N, nodes_[N], barycentric_weights_[N], lagrange_interpolant_right_[N]);
+        normalize_lagrange_interpolating_polynomials(N, lagrange_interpolant_left_[N]);
+        normalize_lagrange_interpolating_polynomials(N, lagrange_interpolant_right_[N]);
+        polynomial_derivative_matrices_diagonal(N, derivative_matrices_[N]);
+        polynomial_derivative_matrices_hat(N, weights_[N], derivative_matrices_[N], derivative_matrices_hat_[N]);
     }
 }
 
 template<typename Polynomial>
-NDG_host_t<Polynomial>::~NDG_host_t() {
-    // Not sure if null checks are needed
-    if (nodes_ != nullptr){
-        cudaFree(nodes_);
-    }
-    if (weights_ != nullptr){
-        cudaFree(weights_);
-    }
-    if (barycentric_weights_ != nullptr){
-        cudaFree(barycentric_weights_);
-    }
-    if (lagrange_interpolant_left_ != nullptr){
-        cudaFree(lagrange_interpolant_left_);
-    }
-    if (lagrange_interpolant_right_ != nullptr){
-        cudaFree(lagrange_interpolant_right_);
-    }
-    if (derivative_matrices_ != nullptr){
-        cudaFree(derivative_matrices_);
-    }
-    if (derivative_matrices_hat_ != nullptr){
-        cudaFree(derivative_matrices_hat_);
-    }
-    if (interpolation_matrices_ != nullptr){
-        cudaFree(interpolation_matrices_);
-    }
-}
+NDG_host_t<Polynomial>::~NDG_host_t() {}
    
 template<typename Polynomial>
 void NDG_host_t<Polynomial>::print() {
-    // Copy vectors from device memory to host memory
-    float* host_nodes = new float[vector_length_];
-    float* host_weights = new float[vector_length_];
-    float* host_barycentric_weights = new float[vector_length_];
-    float* host_lagrange_interpolant_left = new float[vector_length_];
-    float* host_lagrange_interpolant_right = new float[vector_length_];
-    float* host_derivative_matrices = new float[matrix_length_];
-    float* host_derivative_matrices_hat = new float[matrix_length_];
-    float* host_interpolation_matrices = new float[interpolation_length_];
-
-    cudaDeviceSynchronize();
-
-    cudaMemcpy(host_nodes, nodes_, vector_length_ * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_weights, weights_, vector_length_ * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_barycentric_weights, barycentric_weights_, vector_length_ * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_lagrange_interpolant_left, lagrange_interpolant_left_, vector_length_ * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_lagrange_interpolant_right, lagrange_interpolant_right_, vector_length_ * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_derivative_matrices, derivative_matrices_, matrix_length_ * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_derivative_matrices_hat, derivative_matrices_hat_, matrix_length_ * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_interpolation_matrices, interpolation_matrices_, interpolation_length_ * sizeof(float), cudaMemcpyDeviceToHost);
-
-    std::cout << "Nodes: " << std::endl;
+        std::cout << "Nodes: " << std::endl;
     for (int N = 0; N <= N_max_; ++N) {
-        const int offset = N * (N + 1) /2;
-
         std::cout << '\t' << "N = " << N << ": ";
         std::cout << '\t' << '\t';
         for (int i = 0; i <= N; ++i) {
-            std::cout << host_nodes[offset + i] << " ";
+            std::cout << host_nodes[N][i] << " ";
         }
         std::cout << std::endl;
     }
 
     std::cout << std::endl << "Weights: " << std::endl;
     for (int N = 0; N <= N_max_; ++N) {
-        const int offset = N * (N + 1) /2;
-
         std::cout << '\t' << "N = " << N << ": ";
         std::cout << '\t' << '\t';
         for (int i = 0; i <= N; ++i) {
-            std::cout << host_weights[offset + i] << " ";
+            std::cout << host_weights[N][i] << " ";
         }
         std::cout << std::endl;
     }
     
     std::cout << std::endl << "Barycentric weights: " << std::endl;
     for (int N = 0; N <= N_max_; ++N) {
-        const int offset = N * (N + 1) /2;
-
         std::cout << '\t' << "N = " << N << ": ";
         std::cout << '\t' << '\t';
         for (int i = 0; i <= N; ++i) {
-            std::cout << host_barycentric_weights[offset + i] << " ";
+            std::cout << host_barycentric_weights[N][i] << " ";
         }
         std::cout << std::endl;
     }
 
     std::cout << std::endl << "Lagrange interpolants -1: " << std::endl;
     for (int N = 0; N <= N_max_; ++N) {
-        const int offset = N * (N + 1) /2;
-
         std::cout << '\t' << "N = " << N << ": ";
         std::cout << '\t' << '\t';
         for (int i = 0; i <= N; ++i) {
-            std::cout << host_lagrange_interpolant_left[offset + i] << " ";
+            std::cout << host_lagrange_interpolant_left[N][i] << " ";
         }
         std::cout << std::endl;
     }
 
     std::cout << std::endl << "Lagrange interpolants +1: " << std::endl;
     for (int N = 0; N <= N_max_; ++N) {
-        const int offset = N * (N + 1) /2;
-
         std::cout << '\t' << "N = " << N << ": ";
         std::cout << '\t' << '\t';
         for (int i = 0; i <= N; ++i) {
-            std::cout << host_lagrange_interpolant_right[offset + i] << " ";
+            std::cout << host_lagrange_interpolant_right[N][i] << " ";
         }
         std::cout << std::endl;
     }
 
     std::cout << std::endl << "Derivative matrices: " << std::endl;
     for (int N = 0; N <= N_max_; ++N) {
-        const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
-
         std::cout << '\t' << "N = " << N << ": " << std::endl;
         for (int i = 0; i <= N; ++i) {
             std::cout << '\t' << '\t';
             for (int j = 0; j <= N; ++j) {
-                std::cout << host_derivative_matrices[offset_2D + i * (N + 1) + j] << " ";
+                std::cout << host_derivative_matrices[N][i * (N + 1) + j] << " ";
             }
             std::cout << std::endl;
         }
@@ -204,13 +118,11 @@ void NDG_host_t<Polynomial>::print() {
 
     std::cout << std::endl << "Derivative matrices hat: " << std::endl;
     for (int N = 0; N <= N_max_; ++N) {
-        const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
-
         std::cout << '\t' << "N = " << N << ": " << std::endl;
         for (int i = 0; i <= N; ++i) {
             std::cout << '\t' << '\t';
             for (int j = 0; j <= N; ++j) {
-                std::cout << host_derivative_matrices_hat[offset_2D + i * (N + 1) + j] << " ";
+                std::cout << host_derivative_matrices_hat[N][i * (N + 1) + j] << " ";
             }
             std::cout << std::endl;
         }
@@ -218,45 +130,30 @@ void NDG_host_t<Polynomial>::print() {
 
     std::cout << std::endl << "Interpolation matrices: " << std::endl;
     for (int N = 0; N <= N_max_; ++N) {
-        const int offset_interp = N * (N + 1) * N_interpolation_points_/2;
-
         std::cout << '\t' << "N = " << N << ": " << std::endl;
         for (int i = 0; i < N_interpolation_points_; ++i) {
             std::cout << '\t' << '\t';
             for (int j = 0; j <= N; ++j) {
-                std::cout << host_interpolation_matrices[offset_interp + i * (N + 1) + j] << " ";
+                std::cout << host_interpolation_matrices[N][i * (N + 1) + j] << " ";
             }
             std::cout << std::endl;
         }
     }
-
-    delete[] host_nodes;
-    delete[] host_weights;
-    delete[] host_barycentric_weights;
-    delete[] host_lagrange_interpolant_left;
-    delete[] host_lagrange_interpolant_right;
-    delete[] host_derivative_matrices;
-    delete[] host_derivative_matrices_hat;
-    delete[] host_interpolation_matrices;
 }
 
 // Algorithm 30
-__global__
-void SEM::calculate_barycentric_weights(int N, const float* nodes, float* barycentric_weights) {
-    const int index = blockIdx.x * blockDim.x + threadIdx.x;
-    const int stride = blockDim.x * gridDim.x;
-    const int offset = N * (N + 1) /2;
-
-    for (int j = index; j <= N; j += stride) {
-        float xjxi = 1.0f;
+template<typename Polynomial>
+void NDG_host_t<Polynomial>::calculate_barycentric_weights(int N, const std::vector<hostFloat>& nodes, std::vector<hostFloat>& barycentric_weights) {
+    for (int j = 0; j <= N; ++j) {
+        hostFloat xjxi = 1.0;
         for (int i = 0; i < j; ++i) {
-            xjxi *= nodes[offset + j] - nodes[offset + i];
+            xjxi *= nodes[j] - nodes[i];
         }
         for (int i = j + 1; i <= N; ++i) {
-            xjxi *= nodes[offset + j] - nodes[offset + i];
+            xjxi *= nodes[j] - nodes[i];
         }
 
-        barycentric_weights[offset + j] = 1.0f/xjxi;
+        barycentric_weights[j] = 1.0/xjxi;
     }
 }
 
@@ -267,8 +164,8 @@ bool almost_equal(float a, float b) {
 }*/
 
 // From cppreference.com
-__device__
-bool SEM::almost_equal(float x, float y) {
+template<typename Polynomial>
+void NDG_host_t<Polynomial>::almost_equal(float x, float y) {
     constexpr int ulp = 2; // ULP
     // the machine epsilon has to be scaled to the magnitude of the values used
     // and multiplied by the desired precision in ULPs (units in the last place)
@@ -279,117 +176,84 @@ bool SEM::almost_equal(float x, float y) {
 
 // This will not work if we are on a node, or at least be pretty inefficient
 // Algorithm 34
-__global__
-void SEM::lagrange_interpolating_polynomials(float x, int N, const float* nodes, const float* barycentric_weights, float* lagrange_interpolant) {
-    const int index = blockIdx.x * blockDim.x + threadIdx.x;
-    const int stride = blockDim.x * gridDim.x;
-    const int offset = N * (N + 1) /2;
-
-    for (int i = index; i <= N; i += stride) {
-        lagrange_interpolant[offset + i] = barycentric_weights[offset + i] / (x - nodes[offset + i]);
+template<typename Polynomial>
+void NDG_host_t<Polynomial>::lagrange_interpolating_polynomials(hostFloat x, int N, const std::vector<hostFloat>& nodes, const std::vector<hostFloat>& barycentric_weights, std::vector<hostFloat>& lagrange_interpolant) {
+    for (int i = 0; i <= N; ++i) {
+        lagrange_interpolant[i] = barycentric_weights[i] / (x - nodes[i]);
     }
 }
 
 // Algorithm 34
-__global__
-void SEM::normalize_lagrange_interpolating_polynomials(int N_max, float* lagrange_interpolant) {
-    const int index = blockIdx.x * blockDim.x + threadIdx.x;
-    const int stride = blockDim.x * gridDim.x;
-
-    for (int N = index; N <= N_max; N += stride) {
-        const int offset = N * (N + 1) /2;
-        float sum = 0.0f;
-        for (int i = 0; i <= N; ++i) {
-            sum += lagrange_interpolant[offset + i];
-        }
-        for (int i = 0; i <= N; ++i) {
-            lagrange_interpolant[offset + i] /= sum;
-        }
+template<typename Polynomial>
+void NDG_host_t<Polynomial>::normalize_lagrange_interpolating_polynomials(int N, std::vector<hostFloat>& lagrange_interpolant) {
+    hostFloat sum = 0.0;
+    for (int i = 0; i <= N; ++i) {
+        sum += lagrange_interpolant[i];
+    }
+    for (int i = 0; i <= N; ++i) {
+        lagrange_interpolant[i] /= sum;
     }
 }
 
 // Be sure to compute the diagonal afterwards
 // Algorithm 37
-__global__
-void SEM::polynomial_derivative_matrices(int N, const float* nodes, const float* barycentric_weights, float* derivative_matrices) {
-    const int index_x = blockIdx.x * blockDim.x + threadIdx.x;
-    const int index_y = blockIdx.y * blockDim.y + threadIdx.y;
-    const int stride_x = blockDim.x * gridDim.x;
-    const int stride_y = blockDim.y * gridDim.y;
-    const int offset_1D = N * (N + 1) /2;
-    const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
-
-    for (int i = index_x; i <= N; i += stride_x) {
-        for (int j = index_y; j <= N; j += stride_y) {
+template<typename Polynomial>
+void NDG_host_t<Polynomial>::polynomial_derivative_matrices(int N, const std::vector<hostFloat>& nodes, const std::vector<hostFloat>& barycentric_weights, std::vector<hostFloat>& derivative_matrices) {
+    for (int i = 0; i <= N; ++i) {
+        for (int j = 0; j <= N; ++j) {
             if (i != j) { // CHECK remove for branchless, i == j will be overwritten anyway
-                derivative_matrices[offset_2D + i * (N + 1) + j] = barycentric_weights[offset_1D + j] / (barycentric_weights[offset_1D + i] * (nodes[offset_1D + i] - nodes[offset_1D + j]));
+                derivative_matrices[i * (N + 1) + j] = barycentric_weights[j] / (barycentric_weights[i] * (nodes[i] - nodes[j]));
             }
         }
     }
 }
 
 // Algorithm 37
-__global__
-void SEM::polynomial_derivative_matrices_diagonal(int N, float* derivative_matrices) {
-    const int index = blockIdx.x * blockDim.x + threadIdx.x;
-    const int stride = blockDim.x * gridDim.x;
-    const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
-
-    for (int i = index; i <= N; i += stride) {
-        derivative_matrices[offset_2D + i * (N + 2)] = 0.0f;
+template<typename Polynomial>
+void NDG_host_t<Polynomial>::polynomial_derivative_matrices_diagonal(int N, std::vector<hostFloat>& derivative_matrices) {
+    for (int i = 0; i <= N; ++i) {
+        derivative_matrices[i * (N + 2)] = 0.0;
         for (int j = 0; j < i; ++j) {
-            derivative_matrices[offset_2D + i * (N + 2)] -= derivative_matrices[offset_2D + i * (N + 1) + j];
+            derivative_matrices[i * (N + 2)] -= derivative_matrices[i * (N + 1) + j];
         }
         for (int j = i + 1; j <= N; ++j) {
-            derivative_matrices[offset_2D + i * (N + 2)] -= derivative_matrices[offset_2D + i * (N + 1) + j];
+            derivative_matrices[i * (N + 2)] -= derivative_matrices[i * (N + 1) + j];
         }
     }
 }
 
-__global__
-void SEM::polynomial_derivative_matrices_hat(int N, const float* weights, const float* derivative_matrices, float* derivative_matrices_hat) {
-    const int index_x = blockIdx.x * blockDim.x + threadIdx.x;
-    const int index_y = blockIdx.y * blockDim.y + threadIdx.y;
-    const int stride_x = blockDim.x * gridDim.x;
-    const int stride_y = blockDim.y * gridDim.y;
-    const int offset_1D = N * (N + 1) /2;
-    const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
-
-    for (int i = index_x; i <= N; i += stride_x) {
-        for (int j = index_y; j <= N; j += stride_y) {
-            derivative_matrices_hat[offset_2D + i * (N + 1) + j] = derivative_matrices[offset_2D + j * (N + 1) + i] * weights[offset_1D + j] / weights[offset_1D + i];
+template<typename Polynomial>
+void NDG_host_t<Polynomial>::polynomial_derivative_matrices_hat(int N, const std::vector<hostFloat>& weights, const std::vector<hostFloat>& derivative_matrices, std::vector<hostFloat>& derivative_matrices_hat) {
+    for (int i = 0; i <= N; ++i) {
+        for (int j = 0; j <= N; ++j) {
+            derivative_matrices_hat[i * (N + 1) + j] = derivative_matrices[j * (N + 1) + i] * weights[j] / weights[i];
         }
     }
 }
 
 // Will interpolate N_interpolation_points between -1 and 1
-__global__
-void SEM::create_interpolation_matrices(int N, int N_interpolation_points, const float* nodes, const float* barycentric_weights, float* interpolation_matrices) {
-    const int index = blockIdx.x * blockDim.x + threadIdx.x;
-    const int stride = blockDim.x * gridDim.x;
-    const int offset_1D = N * (N + 1) /2;
-    const int offset_interp = N * (N + 1) * N_interpolation_points/2;
-
-    for (int j = index; j < N_interpolation_points; j += stride) {
+template<typename Polynomial>
+void NDG_host_t<Polynomial>::create_interpolation_matrices(int N, int N_interpolation_points, const std::vector<hostFloat>& nodes, const std::vector<hostFloat>& barycentric_weights, std::vector<hostFloat>& interpolation_matrices) {
+    for (int j = 0; j < N_interpolation_points; ++j) {
         bool row_has_match = false;
-        const float x_coord = 2.0f * j / (N_interpolation_points - 1) - 1.0f;
+        const hostFloat x_coord = 2.0 * j / (N_interpolation_points - 1) - 1.0;
 
         for (int k = 0; k <= N; ++k) {
-            interpolation_matrices[offset_interp + j * (N + 1) + k] = 0.0f;
-            if (SEM::almost_equal(x_coord, nodes[offset_1D + k])) {
-                interpolation_matrices[offset_interp + j * (N + 1) + k] = 1.0f;
+            interpolation_matrices[j * (N + 1) + k] = 0.0;
+            if (:almost_equal(x_coord, nodes[k])) {
+                interpolation_matrices[j * (N + 1) + k] = 1.0;
                 row_has_match = true;
             }
         }
 
         if (!row_has_match) {
-            float total = 0.0f;
+            hostFloat total = 0.0;
             for (int k = 0; k <= N; ++k) {
-                interpolation_matrices[offset_interp + j * (N + 1) + k] = barycentric_weights[offset_1D + k] / (x_coord - nodes[offset_1D + k]);
-                total += interpolation_matrices[offset_interp + j * (N + 1) + k];
+                interpolation_matrices[j * (N + 1) + k] = barycentric_weights[k] / (x_coord - nodes[k]);
+                total += interpolation_matrices[j * (N + 1) + k];
             }
             for (int k = 0; k <= N; ++k) {
-                interpolation_matrices[offset_interp + j * (N + 1) + k] /= total;
+                interpolation_matrices[j * (N + 1) + k] /= total;
             }
         }
     }
