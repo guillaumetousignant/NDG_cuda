@@ -240,7 +240,7 @@ void NDG_host_t<Polynomial>::create_interpolation_matrices(int N, int N_interpol
 
         for (int k = 0; k <= N; ++k) {
             interpolation_matrices[j * (N + 1) + k] = 0.0;
-            if (:almost_equal(x_coord, nodes[k])) {
+            if (almost_equal(x_coord, nodes[k])) {
                 interpolation_matrices[j * (N + 1) + k] = 1.0;
                 row_has_match = true;
             }
