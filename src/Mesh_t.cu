@@ -208,7 +208,7 @@ void Mesh_t::write_data(float time, int N_interpolation_points, const float* int
     cudaFree(x);
 }
 
-template void Mesh_t::solve(const float delta_t, const std::vector<float> output_times, const NDG_t<ChebyshevPolynomial_t> &NDG); // Get with the time c++, it's crazy I have to do this
+template void Mesh_t::solve(const float delta_t, const std::vector<float> output_times, const NDG_t<ChebyshevPolynomial_t> &NDG); // Get with the times c++, it's crazy I have to do this
 template void Mesh_t::solve(const float delta_t, const std::vector<float> output_times, const NDG_t<LegendrePolynomial_t> &NDG);
 
 template<typename Polynomial>
