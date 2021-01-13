@@ -44,7 +44,7 @@ void LegendrePolynomial_host_t::nodes_and_weights(int N, std::vector<hostFloat>&
                     
             for (int k = 0; k < 1000; ++k) {
                 float L_N_plus1, L_N_plus1_prime;
-                SEM::legendre_polynomial_and_derivative(N + 1, nodes[i], L_N_plus1, L_N_plus1_prime);
+                legendre_polynomial_and_derivative(N + 1, nodes[i], L_N_plus1, L_N_plus1_prime);
                 float delta = -L_N_plus1/L_N_plus1_prime;
                 nodes[i] += delta;
                 if (std::abs(delta) <= 0.00000001 * std::abs(nodes[i])) {
@@ -54,24 +54,22 @@ void LegendrePolynomial_host_t::nodes_and_weights(int N, std::vector<hostFloat>&
             }
 
             float dummy, L_N_plus1_prime_final;
-            SEM::legendre_polynomial_and_derivative(N + 1, nodes[i], dummy, L_N_plus1_prime_final);
+            legendre_polynomial_and_derivative(N + 1, nodes[i], dummy, L_N_plus1_prime_final);
             nodes[N - i] = -nodes[i];
             weights[i] = 2.0/((1.0 - std::pow(nodes[i], 2)) * std::pow(L_N_plus1_prime_final, 2));
             weights[N - i] = weights[i];
         }
     }
 
-    if (index == 0) {
-        if (N == 0) {
-            nodes[0] = 0.0;
-            weights[0] = 2.0;
-        }
+    if (N == 0) {
+        nodes[0] = 0.0;
+        weights[0] = 2.0;
+    }
 
-        if (N % 2 == 0) {
-            float dummy, L_N_plus1_prime_final;
-            SEM::legendre_polynomial_and_derivative(N + 1, 0.0, dummy, L_N_plus1_prime_final);
-            nodes[N/2] = 0.0;
-            weights[N/2] = 2/std::pow(L_N_plus1_prime_final, 2);
-        }
+    if (N % 2 == 0) {
+        float dummy, L_N_plus1_prime_final;
+        legendre_polynomial_and_derivative(N + 1, 0.0, dummy, L_N_plus1_prime_final);
+        nodes[N/2] = 0.0;
+        weights[N/2] = 2/std::pow(L_N_plus1_prime_final, 2);
     }
 }

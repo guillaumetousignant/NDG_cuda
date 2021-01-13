@@ -1,6 +1,6 @@
-#include "Mesh_host_t.cuh"
-#include "ChebyshevPolynomial_host_t.cuh"
-#include "LegendrePolynomial_host_t.cuh"
+#include "Mesh_host_t.h"
+#include "ChebyshevPolynomial_host_t.h"
+#include "LegendrePolynomial_host_t.h"
 #include <iostream>
 #include <fstream>
 #include <sstream> 

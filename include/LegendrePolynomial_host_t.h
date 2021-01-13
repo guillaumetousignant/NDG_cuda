@@ -4,7 +4,7 @@
 #include "float_types.h"
 #include <vector>
 
-class LegendrePolynomial_t { 
+class LegendrePolynomial_host_t { 
     public: 
         // Algorithm 23
         static void nodes_and_weights(int N, std::vector<hostFloat>& nodes, std::vector<hostFloat>& weights);

@@ -59,7 +59,7 @@ void NDG_host_t<Polynomial>::print() {
         std::cout << '\t' << "N = " << N << ": ";
         std::cout << '\t' << '\t';
         for (int i = 0; i <= N; ++i) {
-            std::cout << host_nodes[N][i] << " ";
+            std::cout << nodes_[N][i] << " ";
         }
         std::cout << std::endl;
     }
@@ -69,7 +69,7 @@ void NDG_host_t<Polynomial>::print() {
         std::cout << '\t' << "N = " << N << ": ";
         std::cout << '\t' << '\t';
         for (int i = 0; i <= N; ++i) {
-            std::cout << host_weights[N][i] << " ";
+            std::cout << weights_[N][i] << " ";
         }
         std::cout << std::endl;
     }
@@ -79,7 +79,7 @@ void NDG_host_t<Polynomial>::print() {
         std::cout << '\t' << "N = " << N << ": ";
         std::cout << '\t' << '\t';
         for (int i = 0; i <= N; ++i) {
-            std::cout << host_barycentric_weights[N][i] << " ";
+            std::cout << barycentric_weights_[N][i] << " ";
         }
         std::cout << std::endl;
     }
@@ -89,7 +89,7 @@ void NDG_host_t<Polynomial>::print() {
         std::cout << '\t' << "N = " << N << ": ";
         std::cout << '\t' << '\t';
         for (int i = 0; i <= N; ++i) {
-            std::cout << host_lagrange_interpolant_left[N][i] << " ";
+            std::cout << lagrange_interpolant_left_[N][i] << " ";
         }
         std::cout << std::endl;
     }
@@ -99,7 +99,7 @@ void NDG_host_t<Polynomial>::print() {
         std::cout << '\t' << "N = " << N << ": ";
         std::cout << '\t' << '\t';
         for (int i = 0; i <= N; ++i) {
-            std::cout << host_lagrange_interpolant_right[N][i] << " ";
+            std::cout << lagrange_interpolant_right_[N][i] << " ";
         }
         std::cout << std::endl;
     }
@@ -110,7 +110,7 @@ void NDG_host_t<Polynomial>::print() {
         for (int i = 0; i <= N; ++i) {
             std::cout << '\t' << '\t';
             for (int j = 0; j <= N; ++j) {
-                std::cout << host_derivative_matrices[N][i * (N + 1) + j] << " ";
+                std::cout << derivative_matrices_[N][i * (N + 1) + j] << " ";
             }
             std::cout << std::endl;
         }
@@ -122,7 +122,7 @@ void NDG_host_t<Polynomial>::print() {
         for (int i = 0; i <= N; ++i) {
             std::cout << '\t' << '\t';
             for (int j = 0; j <= N; ++j) {
-                std::cout << host_derivative_matrices_hat[N][i * (N + 1) + j] << " ";
+                std::cout << derivative_matrices_hat_[N][i * (N + 1) + j] << " ";
             }
             std::cout << std::endl;
         }
@@ -134,7 +134,7 @@ void NDG_host_t<Polynomial>::print() {
         for (int i = 0; i < N_interpolation_points_; ++i) {
             std::cout << '\t' << '\t';
             for (int j = 0; j <= N; ++j) {
-                std::cout << host_interpolation_matrices[N][i * (N + 1) + j] << " ";
+                std::cout << interpolation_matrices_[N][i * (N + 1) + j] << " ";
             }
             std::cout << std::endl;
         }
@@ -165,7 +165,7 @@ bool almost_equal(float a, float b) {
 
 // From cppreference.com
 template<typename Polynomial>
-void NDG_host_t<Polynomial>::almost_equal(float x, float y) {
+bool NDG_host_t<Polynomial>::almost_equal(hostFloat x, hostFloat y) {
     constexpr int ulp = 2; // ULP
     // the machine epsilon has to be scaled to the magnitude of the values used
     // and multiplied by the desired precision in ULPs (units in the last place)
