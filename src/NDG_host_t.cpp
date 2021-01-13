@@ -15,16 +15,16 @@ template<typename Polynomial>
 NDG_host_t<Polynomial>::NDG_host_t(int N_max, int N_interpolation_points) : 
         N_max_(N_max), 
         N_interpolation_points_(N_interpolation_points),
-        nodes_(N_max),
-        weights_(N_max),
-        barycentric_weights_(N_max),
-        lagrange_interpolant_left_(N_max),
-        lagrange_interpolant_right_(N_max),
-        derivative_matrices_(N_max),
-        derivative_matrices_hat_(N_max),
-        interpolation_matrices_(N_max) {
+        nodes_(N_max + 1),
+        weights_(N_max + 1),
+        barycentric_weights_(N_max + 1),
+        lagrange_interpolant_left_(N_max + 1),
+        lagrange_interpolant_right_(N_max + 1),
+        derivative_matrices_(N_max + 1),
+        derivative_matrices_hat_(N_max + 1),
+        interpolation_matrices_(N_max + 1) {
 
-    for(int N = 0; N < N_max; ++N) {
+    for(int N = 0; N <= N_max; ++N) {
         nodes_[N] = std::vector<hostFloat>(N + 1);
         weights_[N] = std::vector<hostFloat>(N + 1);
         barycentric_weights_[N] = std::vector<hostFloat>(N + 1);
@@ -35,7 +35,7 @@ NDG_host_t<Polynomial>::NDG_host_t(int N_max, int N_interpolation_points) :
         interpolation_matrices_[N] = std::vector<hostFloat>((N + 1) * N_interpolation_points_);
     }
 
-    for(int N = 0; N < N_max; ++N) {
+    for(int N = 0; N <= N_max; ++N) {
         Polynomial::nodes_and_weights(N, nodes_[N], weights_[N]);
         calculate_barycentric_weights(N, nodes_[N], weights_[N]);
         polynomial_derivative_matrices(N, nodes_[N], barycentric_weights_[N], derivative_matrices_[N]);
