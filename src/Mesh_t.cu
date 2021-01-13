@@ -341,8 +341,8 @@ void SEM::compute_dg_derivative(int N_elements, Element_t* elements, const Face_
     for (int i = index; i < N_elements; i += stride) {
         const int offset_1D = elements[i].N_ * (elements[i].N_ + 1) /2; // CHECK cache?
 
-        float flux_L = faces[elements[i].faces_[0]].flux_;
-        float flux_R = faces[elements[i].faces_[1]].flux_;
+        const float flux_L = faces[elements[i].faces_[0]].flux_;
+        const float flux_R = faces[elements[i].faces_[1]].flux_;
 
         SEM::matrix_vector_derivative(elements[i].N_, derivative_matrices_hat, elements[i].phi_, elements[i].phi_prime_);
 

@@ -21,7 +21,7 @@ class Mesh_host_t {
         void write_data(hostFloat time, int N_interpolation_points, const std::vector<std::vector<hostFloat>>& interpolation_matrices);
         
         template<typename Polynomial>
-        void solve(const float delta_t, const std::vector<float> output_times, const NDG_t<Polynomial> &NDG);
+        void solve(hostFloat delta_t, const std::vector<hostFloat> output_times, const NDG_t<Polynomial> &NDG);
 
         void build_elements(hostFloat x_min, hostFloat x_max);
         void build_faces();
@@ -31,18 +31,18 @@ class Mesh_host_t {
         static hostFloat g(hostFloat x);
         void interpolate_to_boundaries(const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right);
         static void write_file_data(hostFloat time, const std::vector<hostFloat>& velocity, const std::vector<hostFloat>& coordinates);
+
+        void calculate_fluxes();
+
+        // Algorithm 60 (not really anymore)
+        void compute_dg_derivative(const std::vector<std::vector<hostFloat>>& weights, const std::vector<std::vector<hostFloat>>& derivative_matrices_hat, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right);
+
+        void rk3_step(hostFloat delta_t, hostFloat a, hostFloat g);
 };
 
 namespace SEM {
-    void rk3_step(int N_elements, Element_t* elements, float delta_t, float a, float g);
-
-    void calculate_fluxes(int N_faces, Face_t* faces, const Element_t* elements);
-
     // Algorithm 19
-    void matrix_vector_derivative(int N, const float* derivative_matrices_hat, const float* phi, float* phi_prime);
-
-    // Algorithm 60 (not really anymore)
-    void compute_dg_derivative(int N_elements, Element_t* elements, const Face_t* faces, const float* weights, const float* derivative_matrices_hat, const float* lagrange_interpolant_left, const float* lagrange_interpolant_right);
+    void matrix_vector_derivative(const std::vector<hostFloat>& derivative_matrices_hat, const std::vector<hostFloat>& phi, std::vector<hostFloat>& phi_prime);
 }
 
 #endif

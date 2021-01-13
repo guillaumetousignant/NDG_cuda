@@ -154,33 +154,31 @@ template void Mesh_host_t::solve(const float delta_t, const std::vector<float> o
 template void Mesh_host_t::solve(const float delta_t, const std::vector<float> output_times, const NDG_t<LegendrePolynomial_t> &NDG);
 
 template<typename Polynomial>
-void Mesh_host_t::solve(const float delta_t, const std::vector<float> output_times, const NDG_t<Polynomial> &NDG) {
-    const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
-    const int faces_numBlocks = (N_faces_ + faces_blockSize - 1) / faces_blockSize;
-    float time = 0.0;
-    const float t_end = output_times.back();
+void Mesh_host_t::solve(hostFloat delta_t, const std::vector<hostFloat> output_times, const NDG_t<Polynomial> &NDG) {
+    hostFloat time = 0.0;
+    hostFloat t_end = output_times.back();
 
     write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
 
     while (time < t_end) {
         // Kinda algorithm 62
-        float t = time;
+        hostFloat t = time;
         interpolate_to_boundaries(NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
-        SEM::calculate_fluxes<<<faces_numBlocks, faces_blockSize>>>(N_faces_, faces_, elements_);
-        SEM::compute_dg_derivative<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
-        SEM::rk3_step<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, delta_t, 0.0f, 1.0f/3.0f);
+        calculate_fluxes();
+        compute_dg_derivative(NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        rk3_step(delta_t, 0.0, 1.0/3.0);
 
         t = time + 0.33333333333 * delta_t;
         interpolate_to_boundaries(NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
-        SEM::calculate_fluxes<<<faces_numBlocks, faces_blockSize>>>(N_faces_, faces_, elements_);
-        SEM::compute_dg_derivative<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
-        SEM::rk3_step<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, delta_t, -5.0f/9.0f, 15.0f/16.0f);
+        calculate_fluxes();
+        compute_dg_derivative(NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        rk3_step(delta_t, -5.0/9.0, 15.0/16.0);
 
         t = time + 0.75 * delta_t;
         interpolate_to_boundaries(NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
-        SEM::calculate_fluxes<<<faces_numBlocks, faces_blockSize>>>(N_faces_, faces_, elements_);
-        SEM::compute_dg_derivative<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
-        SEM::rk3_step<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, delta_t, -153.0f/128.0f, 8.0f/15.0f);
+        calculate_fluxes();
+        compute_dg_derivative(NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        rk3_step(delta_t, -153.0/128.0, 8.0f/15.0);
               
         time += delta_t;
         for (auto const& e : std::as_const(output_times)) {
@@ -244,93 +242,77 @@ void Mesh_host_t::get_solution(size_t N_interpolation_points, const std::vector<
     }
 }
 
-__global__
-void SEM::rk3_step(int N_elements, Element_t* elements, float delta_t, float a, float g) {
-    const int index = blockIdx.x * blockDim.x + threadIdx.x;
-    const int stride = blockDim.x * gridDim.x;
-
-    for (int i = index; i < N_elements; i += stride) {
-        for (int j = 0; j <= elements[i].N_; ++j){
-            elements[i].intermediate_[j] = a * elements[i].intermediate_[j] + elements[i].phi_prime_[j];
-            elements[i].phi_[j] += g * delta_t * elements[i].intermediate_[j];
+void Mesh_host_t::rk3_step(hostFloat delta_t, hostFloat a, hostFloat g) {
+    for (auto& element: elements) {
+        for (int j = 0; j <= element.N_; ++j){
+            element.intermediate_[j] = a * element.intermediate_[j] + element.phi_prime_[j];
+            element.phi_[j] += g * delta_t * element.intermediate_[j];
         }
     }
 }
 
-__global__
-void SEM::calculate_fluxes(int N_faces, Face_t* faces, const Element_t* elements) {
-    const int index = blockIdx.x * blockDim.x + threadIdx.x;
-    const int stride = blockDim.x * gridDim.x;
+void Mesh_host_t::calculate_fluxes() {
+    for (auto& face: faces_) {
+        hostFloat u;
+        const hostFloat u_left = elements_[face.elements_[0]].phi_R_;
+        const hostFloat u_right = elements_[face.elements_[1]].phi_L_;
 
-    for (int i = index; i < N_faces; i += stride) {
-        float u;
-        const float u_left = elements[faces[i].elements_[0]].phi_R_;
-        const float u_right = elements[faces[i].elements_[1]].phi_L_;
-
-        if (u_left < 0.0f && u_right > 0.0f) { // In expansion fan
-            u = 0.5f * (u_left + u_right);
+        if (u_left < 0.0 && u_right > 0.0) { // In expansion fan
+            u = 0.5 * (u_left + u_right);
         }
         else if (u_left > u_right) { // Shock
-            if (u_left > 0.0f) {
+            if (u_left > 0.0) {
                 u = u_left;
             }
             else if (u_left < u_right) {
                 u = u_right;
             }
             else { // ADDED
-                u = 0.5f * (u_left + u_right);
+                u = 0.5 * (u_left + u_right);
             }
         }
         else if (u_left < u_right) { // Expansion fan
-            if (u_left > 0.0f) {
+            if (u_left > 0.0) {
                 u = u_left;
             }
-            else if (u_left < 0.0f) {
+            else if (u_left < 0.0) {
                 u = u_right;
             }
             else { // ADDED
-                u = 0.5f * (u_left + u_right);
+                u = 0.5 * (u_left + u_right);
             }
         }
         else { // ADDED
-            u = 0.5f * (u_left + u_right);
+            u = 0.5 * (u_left + u_right);
         }
 
-        faces[i].flux_ = 0.5f * u * u;
+        face.flux_ = 0.5 * u * u;
     }
 }
 
 // Algorithm 19
-__device__
-void SEM::matrix_vector_derivative(int N, const float* derivative_matrices_hat, const float* phi, float* phi_prime) {
+void SEM::matrix_vector_derivative(const std::vector<hostFloat>& derivative_matrices_hat, const std::vector<hostFloat>& phi, std::vector<hostFloat>& phi_prime) {
     // s = 0, e = N (p.55 says N - 1)
-    const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
-
-    for (int i = 0; i <= N; ++i) {
+    
+    for (int i = 0; i < phi.size(); ++i) {
         phi_prime[i] = 0.0f;
-        for (int j = 0; j <= N; ++j) {
-            phi_prime[i] += derivative_matrices_hat[offset_2D + i * (N + 1) + j] * phi[j] * phi[j] * 0.5f; // phi not squared in textbook, squared for Burger's
+        for (int j = 0; j < phi.size(); ++j) {
+            phi_prime[i] += derivative_matrices_hat[i * phi.size() + j] * phi[j] * phi[j] * 0.5; // phi not squared in textbook, squared for Burger's
         }
     }
 }
 
 // Algorithm 60 (not really anymore)
-__global__
-void SEM::compute_dg_derivative(int N_elements, Element_t* elements, const Face_t* faces, const float* weights, const float* derivative_matrices_hat, const float* lagrange_interpolant_left, const float* lagrange_interpolant_right) {
-    const int index = blockIdx.x * blockDim.x + threadIdx.x;
-    const int stride = blockDim.x * gridDim.x;
+void Mesh_host_t::compute_dg_derivative(const std::vector<std::vector<hostFloat>>& weights, const std::vector<std::vector<hostFloat>>& derivative_matrices_hat, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right) {
+    for (auto& element: elements_) {
+        const hostFloat flux_L = faces_[element.faces_[0]].flux_;
+        const hostFloat flux_R = faces_[element.faces_[1]].flux_;
 
-    for (int i = index; i < N_elements; i += stride) {
-        const int offset_1D = elements[i].N_ * (elements[i].N_ + 1) /2; // CHECK cache?
+        SEM::matrix_vector_derivative(derivative_matrices_hat[element.N_], element.phi_, element.phi_prime_);
 
-        float flux_L = faces[elements[i].faces_[0]].flux_;
-        float flux_R = faces[elements[i].faces_[1]].flux_;
-
-        SEM::matrix_vector_derivative(elements[i].N_, derivative_matrices_hat, elements[i].phi_, elements[i].phi_prime_);
-
-        for (int j = 0; j <= elements[i].N_; ++j) {
-            elements[i].phi_prime_[j] += (flux_L * lagrange_interpolant_left[offset_1D + j] - flux_R * lagrange_interpolant_right[offset_1D + j]) / weights[offset_1D + j];
-            elements[i].phi_prime_[j] *= 2.0f/elements[i].delta_x_;
+        for (int j = 0; j <= element.N_; ++j) {
+            element.phi_prime_[j] += (flux_L * lagrange_interpolant_left[element.N_][j] - flux_R * lagrange_interpolant_right[element.N_][j]) / weights[element.N_][j];
+            element.phi_prime_[j] *= 2.0f/element.delta_x_;
         }
     }
 }
