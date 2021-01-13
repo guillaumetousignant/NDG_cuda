@@ -204,11 +204,11 @@ void Mesh_host_t::solve(hostFloat delta_t, const std::vector<hostFloat> output_t
 
 void Mesh_host_t::build_elements(hostFloat x_min, hostFloat x_max) {
     for (size_t i = 0; i < elements_.size(); ++i) {
-        const size_t neighbour_L = (i > 0) ? i - 1 : elements.size() - 1; // First cell has last cell as left neighbour
-        const size_t neighbour_R = (i < elements.size() - 1) ? i + 1 : 0; // Last cell has first cell as right neighbour
-        const size_t face_L = (i > 0) ? i - 1 : elements.size() - 1;
+        const size_t neighbour_L = (i > 0) ? i - 1 : elements_.size() - 1; // First cell has last cell as left neighbour
+        const size_t neighbour_R = (i < elements_.size() - 1) ? i + 1 : 0; // Last cell has first cell as right neighbour
+        const size_t face_L = (i > 0) ? i - 1 : elements_.size() - 1;
         const size_t face_R = i;
-        const hostFloat delta_x = (x_max - x_min)/elements.size();
+        const hostFloat delta_x = (x_max - x_min)/elements_.size();
         const hostFloat element_x_min = x_min + i * delta_x;
         const hostFloat element_y_min = x_min + (i + 1) * delta_x;
         elements_[i] = Element_host_t(initial_N_, neighbour_L, neighbour_R, face_L, face_R, element_x_min, element_y_min);
@@ -234,16 +234,16 @@ void Mesh_host_t::get_solution(size_t N_interpolation_points, const std::vector<
 
         for (int j = 0; j < N_interpolation_points; ++j) {
             phi[offset_interp_1D + j] = 0.0f;
-            for (int k = 0; k <= elements[i].N_; ++k) {
-                phi[offset_interp_1D + j] += interpolation_matrices[elements[i].N_][j * (elements[i].N_ + 1) + k] * elements[i].phi_[k];
+            for (int k = 0; k <= elements_[i].N_; ++k) {
+                phi[offset_interp_1D + j] += interpolation_matrices[elements_[i].N_][j * (elements_[i].N_ + 1) + k] * elements_[i].phi_[k];
             }
-            x[offset_interp_1D + j] = j * (elements[i].x_[1] - elements[i].x_[0]) / (N_interpolation_points - 1) + elements[i].x_[0];
+            x[offset_interp_1D + j] = j * (elements_[i].x_[1] - elements_[i].x_[0]) / (N_interpolation_points - 1) + elements_[i].x_[0];
         }
     }
 }
 
 void Mesh_host_t::rk3_step(hostFloat delta_t, hostFloat a, hostFloat g) {
-    for (auto& element: elements) {
+    for (auto& element: elements_) {
         for (int j = 0; j <= element.N_; ++j){
             element.intermediate_[j] = a * element.intermediate_[j] + element.phi_prime_[j];
             element.phi_[j] += g * delta_t * element.intermediate_[j];
@@ -318,7 +318,7 @@ void Mesh_host_t::compute_dg_derivative(const std::vector<std::vector<hostFloat>
 }
 
 void Mesh_host_t::interpolate_to_boundaries(const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right) {
-    for (auto& element: elements) {
+    for (auto& element: elements_) {
         element.interpolate_to_boundaries(lagrange_interpolant_left, lagrange_interpolant_right);
     }
 }
