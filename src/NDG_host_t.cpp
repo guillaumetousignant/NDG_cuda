@@ -37,7 +37,7 @@ NDG_host_t<Polynomial>::NDG_host_t(int N_max, int N_interpolation_points) :
 
     for(int N = 0; N <= N_max; ++N) {
         Polynomial::nodes_and_weights(N, nodes_[N], weights_[N]);
-        calculate_barycentric_weights(N, nodes_[N], weights_[N]);
+        calculate_barycentric_weights(N, nodes_[N], barycentric_weights_[N]);
         polynomial_derivative_matrices(N, nodes_[N], barycentric_weights_[N], derivative_matrices_[N]);
         create_interpolation_matrices(N, N_interpolation_points_, nodes_[N], barycentric_weights_[N], interpolation_matrices_[N]);
         lagrange_interpolating_polynomials(-1.0, N, nodes_[N], barycentric_weights_[N], lagrange_interpolant_left_[N]);
