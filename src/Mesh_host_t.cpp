@@ -17,17 +17,17 @@ Mesh_host_t::Mesh_host_t(int N_elements, int initial_N, hostFloat x_min, hostFlo
         faces_(N_elements) {
     // CHECK N_faces = N_elements only for periodic BC.
     
-    build_elements(initial_N_, elements_, x_min, x_max);
-    build_faces(faces_); // CHECK
+    build_elements(x_min, x_max);
+    build_faces(); // CHECK
 }
 
 Mesh_host_t::~Mesh_host_t() {}
 
-void Mesh_host_t::set_initial_conditions(const std::vector<hostFloat>& nodes) {
+void Mesh_host_t::set_initial_conditions(const std::vector<std::vector<hostFloat>>& nodes) {
     for (auto& element: elements_) {
         for (int j = 0; j <= element.N_; ++j) {
             const hostFloat x = (0.5 + nodes[element.N_][j]/2.0f) * (element.x_[1] - element.x_[0]) + element.x_[0];
-            element.phi_[j] = Element_host_t::g(x);
+            element.phi_[j] = g(x);
         }
     }
 }
@@ -48,7 +48,7 @@ void Mesh_host_t::print() {
         std::cout << '\t' << "Element " << i << ": ";
         std::cout << '\t' << '\t';
         for (auto phi_prime: elements_[i].phi_prime_) {
-            std::cout << phi << " ";
+            std::cout << phi_prime << " ";
         }
         std::cout << std::endl;
     }
@@ -143,18 +143,18 @@ void Mesh_host_t::write_file_data(hostFloat time, const std::vector<hostFloat>& 
 }
 
 void Mesh_host_t::write_data(hostFloat time, int N_interpolation_points, const std::vector<std::vector<hostFloat>>& interpolation_matrices) {
-    std::vector<hostFloat> phi(N_elements_ * N_interpolation_points);
-    std::vector<hostFloat> x(N_elements_ * N_interpolation_points);
+    std::vector<hostFloat> phi(elements_.size() * N_interpolation_points);
+    std::vector<hostFloat> x(elements_.size() * N_interpolation_points);
     get_solution(N_interpolation_points, interpolation_matrices, phi, x);
     
     write_file_data(time, phi, x);
 }
 
-template void Mesh_host_t::solve(const float delta_t, const std::vector<float> output_times, const NDG_t<ChebyshevPolynomial_t> &NDG); // Get with the times c++, it's crazy I have to do this
-template void Mesh_host_t::solve(const float delta_t, const std::vector<float> output_times, const NDG_t<LegendrePolynomial_t> &NDG);
+template void Mesh_host_t::solve(const float delta_t, const std::vector<float> output_times, const NDG_host_t<ChebyshevPolynomial_host_t> &NDG); // Get with the times c++, it's crazy I have to do this
+template void Mesh_host_t::solve(const float delta_t, const std::vector<float> output_times, const NDG_host_t<LegendrePolynomial_host_t> &NDG);
 
 template<typename Polynomial>
-void Mesh_host_t::solve(hostFloat delta_t, const std::vector<hostFloat> output_times, const NDG_t<Polynomial> &NDG) {
+void Mesh_host_t::solve(hostFloat delta_t, const std::vector<hostFloat> output_times, const NDG_host_t<Polynomial> &NDG) {
     hostFloat time = 0.0;
     hostFloat t_end = output_times.back();
 

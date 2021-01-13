@@ -2,9 +2,9 @@
 #define NDG_MESH_HOST_T_H
 
 #include "float_types.h"
-#include "Element_t.cuh"
-#include "Face_t.cuh"
-#include "NDG_t.cuh"
+#include "Element_host_t.h"
+#include "Face_host_t.h"
+#include "NDG_host_t.h"
 #include <vector>
 
 class Mesh_host_t {
@@ -13,15 +13,15 @@ class Mesh_host_t {
         ~Mesh_host_t();
 
         int initial_N_;
-        std::vector<Element_t> elements_;
-        std::vector<Face_t> faces_;
+        std::vector<Element_host_t> elements_;
+        std::vector<Face_host_t> faces_;
 
-        void set_initial_conditions(const std::vector<hostFloat>& nodes);
+        void set_initial_conditions(const std::vector<std::vector<hostFloat>>& nodes);
         void print();
         void write_data(hostFloat time, int N_interpolation_points, const std::vector<std::vector<hostFloat>>& interpolation_matrices);
         
         template<typename Polynomial>
-        void solve(hostFloat delta_t, const std::vector<hostFloat> output_times, const NDG_t<Polynomial> &NDG);
+        void solve(hostFloat delta_t, const std::vector<hostFloat> output_times, const NDG_host_t<Polynomial> &NDG);
 
         void build_elements(hostFloat x_min, hostFloat x_max);
         void build_faces();
