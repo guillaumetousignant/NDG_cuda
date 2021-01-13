@@ -292,17 +292,26 @@ void SEM::calculate_fluxes(int N_faces, Face_t* faces, const Element_t* elements
             if (u_left > 0.0f) {
                 u = u_left;
             }
-            else {
+            else if (u_left < u_right) {
                 u = u_right;
             }
+            else { // ADDED
+                u = 0.5f * (u_left + u_right);
+            }
         }
-        else { // Expansion fan
+        else if (u_left < u_right) { // Expansion fan
             if (u_left > 0.0f) {
                 u = u_left;
             }
-            else {
+            else if (u_left < 0.0f) {
                 u = u_right;
             }
+            else { // ADDED
+                u = 0.5f * (u_left + u_right);
+            }
+        }
+        else { // ADDED
+            u = 0.5f * (u_left + u_right);
         }
 
         faces[i].flux_ = 0.5f * u * u;
