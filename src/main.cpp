@@ -12,7 +12,7 @@ int main(void) {
     const int N_elements = 128;
     const int N_max = 8;
     const std::array<hostFloat, 2> x {-1.0, 1.0};
-    const hostFloat CFL = 0.2;
+    const hostFloat CFL = 0.5;
     const hostFloat u_max = 1.0;
     std::vector<hostFloat> output_times{0.1, 0.2, 0.3, 0.4, 0.5};
 
