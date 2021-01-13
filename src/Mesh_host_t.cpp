@@ -136,7 +136,7 @@ void Mesh_host_t::write_file_data(hostFloat time, const std::vector<hostFloat>& 
     file << "ZONE T= \"Zone     1\",  I= " << coordinates.size() << ",  J= 1,  DATAPACKING = POINT, SOLUTIONTIME = " << time << std::endl;
 
     for (int i = 0; i < coordinates.size(); ++i) {
-        file << std::setw(12) << coordinates[i] << " " << std::setw(12) << velocity[i] << std::endl;
+        file << std::setw(12) << coordinates[i] << " " << std::setw(12) << (isnan(velocity[i]) ? NAN : velocity[i]) << std::endl;
     }
 
     file.close();
