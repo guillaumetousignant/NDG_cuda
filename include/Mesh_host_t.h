@@ -18,20 +18,19 @@ class Mesh_host_t {
 
         void set_initial_conditions(const std::vector<hostFloat>& nodes);
         void print();
-        void write_file_data(int N_points, float time, const float* velocity, const float* coordinates);
-        void write_data(float time, int N_interpolation_points, const float* interpolation_matrices);
+        void write_data(hostFloat time, int N_interpolation_points, const std::vector<std::vector<hostFloat>>& interpolation_matrices);
         
         template<typename Polynomial>
         void solve(const float delta_t, const std::vector<float> output_times, const NDG_t<Polynomial> &NDG);
 
         void build_elements(hostFloat x_min, hostFloat x_max);
         void build_faces();
-        void initial_conditions(const std::vector<hostFloat>& nodes);
         void get_solution(size_t N_interpolation_points, const std::vector<std::vector<hostFloat>>& interpolation_matrices, std::vector<hostFloat>& phi, std::vector<hostFloat>& x);
 
     private:
         static hostFloat g(hostFloat x);
         void interpolate_to_boundaries(const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right);
+        static void write_file_data(hostFloat time, const std::vector<hostFloat>& velocity, const std::vector<hostFloat>& coordinates);
 };
 
 namespace SEM {
