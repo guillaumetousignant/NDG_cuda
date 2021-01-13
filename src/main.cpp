@@ -1,8 +1,8 @@
 #include "float_types.h"
-#include "NDG_host_t.cuh"
-#include "Mesh_host_t.cuh"
-#include "ChebyshevPolynomial_host_t.cuh"
-#include "LegendrePolynomial_host_t.cuh"
+#include "NDG_host_t.h"
+#include "Mesh_host_t.h"
+#include "ChebyshevPolynomial_host_t.h"
+#include "LegendrePolynomial_host_t.h"
 #include <iostream>
 #include <chrono>
 #include <vector>
@@ -26,7 +26,7 @@ int main(void) {
     // Initialisation
     auto t_start_init = std::chrono::high_resolution_clock::now();
 
-    NDG_host_t<LegendrePolynomial_host_t> NDG_host(N_max, N_interpolation_points);
+    NDG_host_t<LegendrePolynomial_host_t> NDG(N_max, N_interpolation_points);
     Mesh_host_t mesh(N_elements, initial_N, x[0], x[1]);
     mesh.set_initial_conditions(NDG.nodes_);
 

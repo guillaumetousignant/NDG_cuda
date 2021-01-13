@@ -58,7 +58,7 @@ endif()
 install(TARGETS NDG DESTINATION bin)
 
 add_executable(NDG_host 
-    main.cu)
+    main.cpp)
 
 target_link_libraries(NDG_host PRIVATE NDG_cuda)
 set_target_properties(NDG_host PROPERTIES
