@@ -6,7 +6,7 @@
 class Face_t {
 public:
     __device__ 
-    Face_t(int element_L, int element_R);
+    Face_t(size_t element_L, size_t element_R);
 
     __host__
     Face_t();
@@ -14,13 +14,13 @@ public:
     __host__ __device__
     ~Face_t();
 
-    int elements_[2]; // left, right
+    size_t elements_[2]; // left, right
     deviceFloat flux_;
 };
 
 namespace SEM {
     __global__
-    void build_faces(int N_faces, Face_t* faces);
+    void build_faces(size_t N_faces, Face_t* faces);
 }
 
 #endif

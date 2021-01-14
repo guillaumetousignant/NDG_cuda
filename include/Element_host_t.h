@@ -27,12 +27,10 @@ class Element_host_t { // Turn this into separate vectors, because cache exists
 
     private: 
         // Basically useless, find better solution when multiple elements.
-        static void get_elements_data(int N_elements, const Element_host_t* elements, hostFloat* phi, hostFloat* phi_prime);
+        static void get_elements_data(size_t N_elements, const Element_host_t* elements, hostFloat* phi, hostFloat* phi_prime);
 
         // Basically useless, find better solution when multiple elements.
-        static void get_phi(int N_elements, const Element_host_t* elements, hostFloat* phi);
-
-        static void interpolate_to_boundaries(int N_elements, Element_host_t* elements, const hostFloat* lagrange_interpolant_left, const hostFloat* lagrange_interpolant_right);
+        static void get_phi(size_t N_elements, const Element_host_t* elements, hostFloat* phi);
 };
 
 #endif

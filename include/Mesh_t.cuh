@@ -9,19 +9,19 @@
 
 class Mesh_t {
 public:
-    Mesh_t(int N_elements, int initial_N, deviceFloat x_min, deviceFloat x_max);
+    Mesh_t(size_t N_elements, int initial_N, deviceFloat x_min, deviceFloat x_max);
     ~Mesh_t();
 
-    int N_elements_;
-    int N_faces_;
+    size_t N_elements_;
+    size_t N_faces_;
     int initial_N_;
     Element_t* elements_;
     Face_t* faces_;
 
     void set_initial_conditions(const deviceFloat* nodes);
     void print();
-    void write_file_data(int N_points, deviceFloat time, const deviceFloat* velocity, const deviceFloat* coordinates);
-    void write_data(deviceFloat time, int N_interpolation_points, const deviceFloat* interpolation_matrices);
+    void write_file_data(size_t N_points, deviceFloat time, const deviceFloat* velocity, const deviceFloat* coordinates);
+    void write_data(deviceFloat time, size_t N_interpolation_points, const deviceFloat* interpolation_matrices);
     
     template<typename Polynomial>
     void solve(const deviceFloat delta_t, const std::vector<deviceFloat> output_times, const NDG_t<Polynomial> &NDG);
@@ -29,10 +29,10 @@ public:
 
 namespace SEM {
     __global__
-    void rk3_step(int N_elements, Element_t* elements, deviceFloat delta_t, deviceFloat a, deviceFloat g);
+    void rk3_step(size_t N_elements, Element_t* elements, deviceFloat delta_t, deviceFloat a, deviceFloat g);
 
     __global__
-    void calculate_fluxes(int N_faces, Face_t* faces, const Element_t* elements);
+    void calculate_fluxes(size_t N_faces, Face_t* faces, const Element_t* elements);
 
     // Algorithm 19
     __device__
@@ -40,7 +40,7 @@ namespace SEM {
 
     // Algorithm 60 (not really anymore)
     __global__
-    void compute_dg_derivative(int N_elements, Element_t* elements, const Face_t* faces, const deviceFloat* weights, const deviceFloat* derivative_matrices_hat, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right);
+    void compute_dg_derivative(size_t N_elements, Element_t* elements, const Face_t* faces, const deviceFloat* weights, const deviceFloat* derivative_matrices_hat, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right);
 }
 
 #endif

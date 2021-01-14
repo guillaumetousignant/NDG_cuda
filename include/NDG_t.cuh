@@ -6,14 +6,14 @@
 template<typename Polynomial>
 class NDG_t { 
 public: 
-    NDG_t(int N_max, int N_interpolation_points);
+    NDG_t(int N_max, size_t N_interpolation_points);
     ~NDG_t();
 
     int N_max_;
-    int N_interpolation_points_;
-    int vector_length_; // Flattened length of all N one after the other
-    int matrix_length_; // Flattened length of all N² one after the other
-    int interpolation_length_;
+    size_t N_interpolation_points_;
+    size_t vector_length_; // Flattened length of all N one after the other
+    size_t matrix_length_; // Flattened length of all N² one after the other
+    size_t interpolation_length_;
     deviceFloat* nodes_;
     deviceFloat* weights_;
     deviceFloat* barycentric_weights_;
@@ -58,7 +58,7 @@ namespace SEM {
 
     // Will interpolate N_interpolation_points between -1 and 1
     __global__
-    void create_interpolation_matrices(int N, int N_interpolation_points, const deviceFloat* nodes, const deviceFloat* barycentric_weights, deviceFloat* interpolation_matrices);
+    void create_interpolation_matrices(int N, size_t N_interpolation_points, const deviceFloat* nodes, const deviceFloat* barycentric_weights, deviceFloat* interpolation_matrices);
 }
 
 #endif

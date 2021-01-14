@@ -12,7 +12,7 @@ namespace fs = std::filesystem;
 constexpr int elements_blockSize = 32; // For when we'll have multiple elements
 constexpr int faces_blockSize = 32; // Same number of faces as elements for periodic BC
 
-Mesh_t::Mesh_t(int N_elements, int initial_N, deviceFloat x_min, deviceFloat x_max) : N_elements_(N_elements), N_faces_(N_elements), initial_N_(initial_N) {
+Mesh_t::Mesh_t(size_t N_elements, int initial_N, deviceFloat x_min, deviceFloat x_max) : N_elements_(N_elements), N_faces_(N_elements), initial_N_(initial_N) {
     // CHECK N_faces = N_elements only for periodic BC.
     cudaMalloc(&elements_, N_elements_ * sizeof(Element_t));
     cudaMalloc(&faces_, N_faces_ * sizeof(Face_t));
@@ -59,15 +59,15 @@ void Mesh_t::print() {
     cudaMemcpy(host_elements, elements_, N_elements_ * sizeof(Element_t), cudaMemcpyDeviceToHost);
 
     // Invalidate GPU pointers, or else they will be deleted on the CPU, where they point to random stuff
-    for (int i = 0; i < N_elements_; ++i) {
+    for (size_t i = 0; i < N_elements_; ++i) {
         host_elements[i].phi_ = nullptr;
         host_elements[i].phi_prime_ = nullptr;
         host_elements[i].intermediate_ = nullptr;
     }
 
     std::cout << std::endl << "Phi: " << std::endl;
-    for (int i = 0; i < N_elements_; ++i) {
-        const int element_offset = i * (initial_N_ + 1);
+    for (size_t i = 0; i < N_elements_; ++i) {
+        const size_t element_offset = i * (initial_N_ + 1);
         std::cout << '\t' << "Element " << i << ": ";
         std::cout << '\t' << '\t';
         for (int j = 0; j <= initial_N_; ++j) {
@@ -77,8 +77,8 @@ void Mesh_t::print() {
     }
 
     std::cout << std::endl << "Phi prime: " << std::endl;
-    for (int i = 0; i < N_elements_; ++i) {
-        const int element_offset = i * (initial_N_ + 1);
+    for (size_t i = 0; i < N_elements_; ++i) {
+        const size_t element_offset = i * (initial_N_ + 1);
         std::cout << '\t' << "Element " << i << ": ";
         std::cout << '\t' << '\t';
         for (int j = 0; j <= initial_N_; ++j) {
@@ -88,7 +88,7 @@ void Mesh_t::print() {
     }
 
     std::cout << std::endl << "Phi interpolated: " << std::endl;
-    for (int i = 0; i < N_elements_; ++i) {
+    for (size_t i = 0; i < N_elements_; ++i) {
         std::cout << '\t' << "Element " << i << ": ";
         std::cout << '\t' << '\t';
         std::cout << host_elements[i].phi_L_ << " ";
@@ -97,7 +97,7 @@ void Mesh_t::print() {
     }
 
     std::cout << std::endl << "x: " << std::endl;
-    for (int i = 0; i < N_elements_; ++i) {
+    for (size_t i = 0; i < N_elements_; ++i) {
         std::cout << '\t' << "Element " << i << ": ";
         std::cout << '\t' << '\t';
         std::cout << host_elements[i].x_[0] << " ";
@@ -106,7 +106,7 @@ void Mesh_t::print() {
     }
 
     std::cout << std::endl << "Neighbouring elements: " << std::endl;
-    for (int i = 0; i < N_elements_; ++i) {
+    for (size_t i = 0; i < N_elements_; ++i) {
         std::cout << '\t' << "Element " << i << ": ";
         std::cout << '\t' << '\t';
         std::cout << host_elements[i].neighbours_[0] << " ";
@@ -115,7 +115,7 @@ void Mesh_t::print() {
     }
 
     std::cout << std::endl << "Neighbouring faces: " << std::endl;
-    for (int i = 0; i < N_elements_; ++i) {
+    for (size_t i = 0; i < N_elements_; ++i) {
         std::cout << '\t' << "Element " << i << ": ";
         std::cout << '\t' << '\t';
         std::cout << host_elements[i].faces_[0] << " ";
@@ -124,7 +124,7 @@ void Mesh_t::print() {
     }
 
     std::cout << std::endl << "N: " << std::endl;
-    for (int i = 0; i < N_elements_; ++i) {
+    for (size_t i = 0; i < N_elements_; ++i) {
         std::cout << '\t' << "Element " << i << ": ";
         std::cout << '\t' << '\t';
         std::cout << host_elements[i].N_;
@@ -132,7 +132,7 @@ void Mesh_t::print() {
     }
 
     std::cout << std::endl << "delta x: " << std::endl;
-    for (int i = 0; i < N_elements_; ++i) {
+    for (size_t i = 0; i < N_elements_; ++i) {
         std::cout << '\t' << "Element " << i << ": ";
         std::cout << '\t' << '\t';
         std::cout << host_elements[i].delta_x_;
@@ -140,14 +140,14 @@ void Mesh_t::print() {
     }
 
     std::cout << std::endl << "Fluxes: " << std::endl;
-    for (int i = 0; i < N_faces_; ++i) {
+    for (size_t i = 0; i < N_faces_; ++i) {
         std::cout << '\t' << "Face " << i << ": ";
         std::cout << '\t' << '\t';
         std::cout << host_faces[i].flux_ << std::endl;
     }
 
     std::cout << std::endl << "Elements: " << std::endl;
-    for (int i = 0; i < N_faces_; ++i) {
+    for (size_t i = 0; i < N_faces_; ++i) {
         std::cout << '\t' << "Face " << i << ": ";
         std::cout << '\t' << '\t';
         std::cout << host_faces[i].elements_[0] << " ";
@@ -163,7 +163,7 @@ void Mesh_t::print() {
     cudaFree(phi_prime);
 }
 
-void Mesh_t::write_file_data(int N_points, deviceFloat time, const deviceFloat* velocity, const deviceFloat* coordinates) {
+void Mesh_t::write_file_data(size_t N_points, deviceFloat time, const deviceFloat* velocity, const deviceFloat* coordinates) {
     std::stringstream ss;
     std::ofstream file;
 
@@ -177,14 +177,14 @@ void Mesh_t::write_file_data(int N_points, deviceFloat time, const deviceFloat* 
     file << "VARIABLES = \"X\", \"U_x\"" << std::endl;
     file << "ZONE T= \"Zone     1\",  I= " << N_points << ",  J= 1,  DATAPACKING = POINT, SOLUTIONTIME = " << time << std::endl;
 
-    for (int i = 0; i < N_points; ++i) {
+    for (size_t i = 0; i < N_points; ++i) {
         file << std::setw(12) << coordinates[i] << " " << std::setw(12) << velocity[i] << std::endl;
     }
 
     file.close();
 }
 
-void Mesh_t::write_data(deviceFloat time, int N_interpolation_points, const deviceFloat* interpolation_matrices) {
+void Mesh_t::write_data(deviceFloat time, size_t N_interpolation_points, const deviceFloat* interpolation_matrices) {
     // CHECK find better solution for multiple elements
     deviceFloat* phi;
     deviceFloat* x;
@@ -263,11 +263,11 @@ void Mesh_t::solve(const deviceFloat delta_t, const std::vector<deviceFloat> out
 }
 
 __global__
-void SEM::rk3_step(int N_elements, Element_t* elements, deviceFloat delta_t, deviceFloat a, deviceFloat g) {
+void SEM::rk3_step(size_t N_elements, Element_t* elements, deviceFloat delta_t, deviceFloat a, deviceFloat g) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (int i = index; i < N_elements; i += stride) {
+    for (size_t i = index; i < N_elements; i += stride) {
         for (int j = 0; j <= elements[i].N_; ++j){
             elements[i].intermediate_[j] = a * elements[i].intermediate_[j] + elements[i].phi_prime_[j];
             elements[i].phi_[j] += g * delta_t * elements[i].intermediate_[j];
@@ -276,11 +276,11 @@ void SEM::rk3_step(int N_elements, Element_t* elements, deviceFloat delta_t, dev
 }
 
 __global__
-void SEM::calculate_fluxes(int N_faces, Face_t* faces, const Element_t* elements) {
+void SEM::calculate_fluxes(size_t N_faces, Face_t* faces, const Element_t* elements) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (int i = index; i < N_faces; i += stride) {
+    for (size_t i = index; i < N_faces; i += stride) {
         deviceFloat u;
         const deviceFloat u_left = elements[faces[i].elements_[0]].phi_R_;
         const deviceFloat u_right = elements[faces[i].elements_[1]].phi_L_;
@@ -322,7 +322,7 @@ void SEM::calculate_fluxes(int N_faces, Face_t* faces, const Element_t* elements
 __device__
 void SEM::matrix_vector_derivative(int N, const deviceFloat* derivative_matrices_hat, const deviceFloat* phi, deviceFloat* phi_prime) {
     // s = 0, e = N (p.55 says N - 1)
-    const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
+    const size_t offset_2D = N * (N + 1) * (2 * N + 1) /6;
 
     for (int i = 0; i <= N; ++i) {
         phi_prime[i] = 0.0f;
@@ -334,12 +334,12 @@ void SEM::matrix_vector_derivative(int N, const deviceFloat* derivative_matrices
 
 // Algorithm 60 (not really anymore)
 __global__
-void SEM::compute_dg_derivative(int N_elements, Element_t* elements, const Face_t* faces, const deviceFloat* weights, const deviceFloat* derivative_matrices_hat, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right) {
+void SEM::compute_dg_derivative(size_t N_elements, Element_t* elements, const Face_t* faces, const deviceFloat* weights, const deviceFloat* derivative_matrices_hat, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (int i = index; i < N_elements; i += stride) {
-        const int offset_1D = elements[i].N_ * (elements[i].N_ + 1) /2; // CHECK cache?
+    for (size_t i = index; i < N_elements; i += stride) {
+        const size_t offset_1D = elements[i].N_ * (elements[i].N_ + 1) /2; // CHECK cache?
 
         const deviceFloat flux_L = faces[elements[i].faces_[0]].flux_;
         const deviceFloat flux_R = faces[elements[i].faces_[1]].flux_;

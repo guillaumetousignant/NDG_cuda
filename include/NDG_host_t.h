@@ -7,11 +7,11 @@
 template<typename Polynomial>
 class NDG_host_t { 
     public: 
-        NDG_host_t(int N_max, int N_interpolation_points);
+        NDG_host_t(int N_max, size_t N_interpolation_points);
         ~NDG_host_t();
 
         int N_max_;
-        int N_interpolation_points_;
+        size_t N_interpolation_points_;
         std::vector<std::vector<hostFloat>> nodes_;
         std::vector<std::vector<hostFloat>> weights_;
         std::vector<std::vector<hostFloat>> barycentric_weights_;
@@ -47,7 +47,7 @@ class NDG_host_t {
         static void polynomial_derivative_matrices_hat(int N, const std::vector<hostFloat>& weights, const std::vector<hostFloat>& derivative_matrices, std::vector<hostFloat>& derivative_matrices_hat);
 
         // Will interpolate N_interpolation_points between -1 and 1
-        static void create_interpolation_matrices(int N, int N_interpolation_points, const std::vector<hostFloat>& nodes, const std::vector<hostFloat>& barycentric_weights, std::vector<hostFloat>& interpolation_matrices);
+        static void create_interpolation_matrices(int N, size_t N_interpolation_points, const std::vector<hostFloat>& nodes, const std::vector<hostFloat>& barycentric_weights, std::vector<hostFloat>& interpolation_matrices);
 };
 
 #endif

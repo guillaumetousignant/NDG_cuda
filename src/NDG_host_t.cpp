@@ -12,7 +12,7 @@ template class NDG_host_t<ChebyshevPolynomial_host_t>; // Like, I understand why
 template class NDG_host_t<LegendrePolynomial_host_t>;
 
 template<typename Polynomial>
-NDG_host_t<Polynomial>::NDG_host_t(int N_max, int N_interpolation_points) : 
+NDG_host_t<Polynomial>::NDG_host_t(int N_max, size_t N_interpolation_points) : 
         N_max_(N_max), 
         N_interpolation_points_(N_interpolation_points),
         nodes_(N_max + 1),
@@ -131,9 +131,9 @@ void NDG_host_t<Polynomial>::print() {
     std::cout << std::endl << "Interpolation matrices: " << std::endl;
     for (int N = 0; N <= N_max_; ++N) {
         std::cout << '\t' << "N = " << N << ": " << std::endl;
-        for (int i = 0; i < N_interpolation_points_; ++i) {
+        for (size_t i = 0; i < N_interpolation_points_; ++i) {
             std::cout << '\t' << '\t';
-            for (int j = 0; j <= N; ++j) {
+            for (size_t j = 0; j <= N; ++j) {
                 std::cout << interpolation_matrices_[N][i * (N + 1) + j] << " ";
             }
             std::cout << std::endl;
@@ -233,8 +233,8 @@ void NDG_host_t<Polynomial>::polynomial_derivative_matrices_hat(int N, const std
 
 // Will interpolate N_interpolation_points between -1 and 1
 template<typename Polynomial>
-void NDG_host_t<Polynomial>::create_interpolation_matrices(int N, int N_interpolation_points, const std::vector<hostFloat>& nodes, const std::vector<hostFloat>& barycentric_weights, std::vector<hostFloat>& interpolation_matrices) {
-    for (int j = 0; j < N_interpolation_points; ++j) {
+void NDG_host_t<Polynomial>::create_interpolation_matrices(int N, size_t N_interpolation_points, const std::vector<hostFloat>& nodes, const std::vector<hostFloat>& barycentric_weights, std::vector<hostFloat>& interpolation_matrices) {
+    for (size_t j = 0; j < N_interpolation_points; ++j) {
         bool row_has_match = false;
         const hostFloat x_coord = 2.0 * j / (N_interpolation_points - 1) - 1.0;
 

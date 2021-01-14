@@ -15,9 +15,9 @@ Element_host_t::Element_host_t() {};
 Element_host_t::~Element_host_t() {}
 
 // Basically useless, find better solution when multiple elements.
-void Element_host_t::get_elements_data(int N_elements, const Element_host_t* elements, hostFloat* phi, hostFloat* phi_prime) {
-    for (int i = 0; i < N_elements; ++i) {
-        const int element_offset = i * (elements[i].N_ + 1);
+void Element_host_t::get_elements_data(size_t N_elements, const Element_host_t* elements, hostFloat* phi, hostFloat* phi_prime) {
+    for (size_t i = 0; i < N_elements; ++i) {
+        const size_t element_offset = i * (elements[i].N_ + 1);
         for (int j = 0; j <= elements[i].N_; ++j) {
             phi[element_offset + j] = elements[i].phi_[j];
             phi_prime[element_offset + j] = elements[i].phi_prime_[j];
@@ -26,8 +26,8 @@ void Element_host_t::get_elements_data(int N_elements, const Element_host_t* ele
 }
 
 // Basically useless, find better solution when multiple elements.
-void Element_host_t::get_phi(int N_elements, const Element_host_t* elements, hostFloat* phi) {
-    for (int i = 0; i < N_elements; ++i) {
+void Element_host_t::get_phi(size_t N_elements, const Element_host_t* elements, hostFloat* phi) {
+    for (size_t i = 0; i < N_elements; ++i) {
         for (int j = 0; j <= elements[i].N_; ++j) {
             phi[j] = elements[i].phi_[j];
         }

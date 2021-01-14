@@ -16,7 +16,7 @@ template class NDG_t<ChebyshevPolynomial_t>; // Like, I understand why I need th
 template class NDG_t<LegendrePolynomial_t>;
 
 template<typename Polynomial>
-NDG_t<Polynomial>::NDG_t(int N_max, int N_interpolation_points) : 
+NDG_t<Polynomial>::NDG_t(int N_max, size_t N_interpolation_points) : 
         N_max_(N_max), 
         N_interpolation_points_(N_interpolation_points),
         vector_length_((N_max_ + 1) * (N_max_ + 2)/2), 
@@ -125,7 +125,7 @@ void NDG_t<Polynomial>::print() {
 
     std::cout << "Nodes: " << std::endl;
     for (int N = 0; N <= N_max_; ++N) {
-        const int offset = N * (N + 1) /2;
+        const size_t offset = N * (N + 1) /2;
 
         std::cout << '\t' << "N = " << N << ": ";
         std::cout << '\t' << '\t';
@@ -137,7 +137,7 @@ void NDG_t<Polynomial>::print() {
 
     std::cout << std::endl << "Weights: " << std::endl;
     for (int N = 0; N <= N_max_; ++N) {
-        const int offset = N * (N + 1) /2;
+        const size_t offset = N * (N + 1) /2;
 
         std::cout << '\t' << "N = " << N << ": ";
         std::cout << '\t' << '\t';
@@ -149,7 +149,7 @@ void NDG_t<Polynomial>::print() {
     
     std::cout << std::endl << "Barycentric weights: " << std::endl;
     for (int N = 0; N <= N_max_; ++N) {
-        const int offset = N * (N + 1) /2;
+        const size_t offset = N * (N + 1) /2;
 
         std::cout << '\t' << "N = " << N << ": ";
         std::cout << '\t' << '\t';
@@ -161,7 +161,7 @@ void NDG_t<Polynomial>::print() {
 
     std::cout << std::endl << "Lagrange interpolants -1: " << std::endl;
     for (int N = 0; N <= N_max_; ++N) {
-        const int offset = N * (N + 1) /2;
+        const size_t offset = N * (N + 1) /2;
 
         std::cout << '\t' << "N = " << N << ": ";
         std::cout << '\t' << '\t';
@@ -173,7 +173,7 @@ void NDG_t<Polynomial>::print() {
 
     std::cout << std::endl << "Lagrange interpolants +1: " << std::endl;
     for (int N = 0; N <= N_max_; ++N) {
-        const int offset = N * (N + 1) /2;
+        const size_t offset = N * (N + 1) /2;
 
         std::cout << '\t' << "N = " << N << ": ";
         std::cout << '\t' << '\t';
@@ -185,7 +185,7 @@ void NDG_t<Polynomial>::print() {
 
     std::cout << std::endl << "Derivative matrices: " << std::endl;
     for (int N = 0; N <= N_max_; ++N) {
-        const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
+        const size_t offset_2D = N * (N + 1) * (2 * N + 1) /6;
 
         std::cout << '\t' << "N = " << N << ": " << std::endl;
         for (int i = 0; i <= N; ++i) {
@@ -199,7 +199,7 @@ void NDG_t<Polynomial>::print() {
 
     std::cout << std::endl << "Derivative matrices hat: " << std::endl;
     for (int N = 0; N <= N_max_; ++N) {
-        const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
+        const size_t offset_2D = N * (N + 1) * (2 * N + 1) /6;
 
         std::cout << '\t' << "N = " << N << ": " << std::endl;
         for (int i = 0; i <= N; ++i) {
@@ -213,7 +213,7 @@ void NDG_t<Polynomial>::print() {
 
     std::cout << std::endl << "Interpolation matrices: " << std::endl;
     for (int N = 0; N <= N_max_; ++N) {
-        const int offset_interp = N * (N + 1) * N_interpolation_points_/2;
+        const size_t offset_interp = N * (N + 1) * N_interpolation_points_/2;
 
         std::cout << '\t' << "N = " << N << ": " << std::endl;
         for (int i = 0; i < N_interpolation_points_; ++i) {
@@ -240,7 +240,7 @@ __global__
 void SEM::calculate_barycentric_weights(int N, const deviceFloat* nodes, deviceFloat* barycentric_weights) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
-    const int offset = N * (N + 1) /2;
+    const size_t offset = N * (N + 1) /2;
 
     for (int j = index; j <= N; j += stride) {
         deviceFloat xjxi = 1.0;
@@ -278,7 +278,7 @@ __global__
 void SEM::lagrange_interpolating_polynomials(deviceFloat x, int N, const deviceFloat* nodes, const deviceFloat* barycentric_weights, deviceFloat* lagrange_interpolant) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
-    const int offset = N * (N + 1) /2;
+    const size_t offset = N * (N + 1) /2;
 
     for (int i = index; i <= N; i += stride) {
         lagrange_interpolant[offset + i] = barycentric_weights[offset + i] / (x - nodes[offset + i]);
@@ -292,7 +292,7 @@ void SEM::normalize_lagrange_interpolating_polynomials(int N_max, deviceFloat* l
     const int stride = blockDim.x * gridDim.x;
 
     for (int N = index; N <= N_max; N += stride) {
-        const int offset = N * (N + 1) /2;
+        const size_t offset = N * (N + 1) /2;
         deviceFloat sum = 0.0;
         for (int i = 0; i <= N; ++i) {
             sum += lagrange_interpolant[offset + i];
@@ -311,8 +311,8 @@ void SEM::polynomial_derivative_matrices(int N, const deviceFloat* nodes, const 
     const int index_y = blockIdx.y * blockDim.y + threadIdx.y;
     const int stride_x = blockDim.x * gridDim.x;
     const int stride_y = blockDim.y * gridDim.y;
-    const int offset_1D = N * (N + 1) /2;
-    const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
+    const size_t offset_1D = N * (N + 1) /2;
+    const size_t offset_2D = N * (N + 1) * (2 * N + 1) /6;
 
     for (int i = index_x; i <= N; i += stride_x) {
         for (int j = index_y; j <= N; j += stride_y) {
@@ -328,7 +328,7 @@ __global__
 void SEM::polynomial_derivative_matrices_diagonal(int N, deviceFloat* derivative_matrices) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
-    const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
+    const size_t offset_2D = N * (N + 1) * (2 * N + 1) /6;
 
     for (int i = index; i <= N; i += stride) {
         derivative_matrices[offset_2D + i * (N + 2)] = 0.0f;
@@ -347,8 +347,8 @@ void SEM::polynomial_derivative_matrices_hat(int N, const deviceFloat* weights, 
     const int index_y = blockIdx.y * blockDim.y + threadIdx.y;
     const int stride_x = blockDim.x * gridDim.x;
     const int stride_y = blockDim.y * gridDim.y;
-    const int offset_1D = N * (N + 1) /2;
-    const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
+    const size_t offset_1D = N * (N + 1) /2;
+    const size_t offset_2D = N * (N + 1) * (2 * N + 1) /6;
 
     for (int i = index_x; i <= N; i += stride_x) {
         for (int j = index_y; j <= N; j += stride_y) {
@@ -359,13 +359,13 @@ void SEM::polynomial_derivative_matrices_hat(int N, const deviceFloat* weights, 
 
 // Will interpolate N_interpolation_points between -1 and 1
 __global__
-void SEM::create_interpolation_matrices(int N, int N_interpolation_points, const deviceFloat* nodes, const deviceFloat* barycentric_weights, deviceFloat* interpolation_matrices) {
+void SEM::create_interpolation_matrices(int N, size_t N_interpolation_points, const deviceFloat* nodes, const deviceFloat* barycentric_weights, deviceFloat* interpolation_matrices) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
-    const int offset_1D = N * (N + 1) /2;
-    const int offset_interp = N * (N + 1) * N_interpolation_points/2;
+    const size_t offset_1D = N * (N + 1) /2;
+    const size_t offset_interp = N * (N + 1) * N_interpolation_points/2;
 
-    for (int j = index; j < N_interpolation_points; j += stride) {
+    for (size_t j = index; j < N_interpolation_points; j += stride) {
         bool row_has_match = false;
         const deviceFloat x_coord = 2.0f * j / (N_interpolation_points - 1) - 1.0f;
 

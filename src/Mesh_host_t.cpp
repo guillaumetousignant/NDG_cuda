@@ -11,7 +11,7 @@ namespace fs = std::filesystem;
 
 constexpr hostFloat pi = 3.14159265358979323846;
 
-Mesh_host_t::Mesh_host_t(int N_elements, int initial_N, hostFloat x_min, hostFloat x_max) : 
+Mesh_host_t::Mesh_host_t(size_t N_elements, int initial_N, hostFloat x_min, hostFloat x_max) : 
         initial_N_(initial_N),
         elements_(N_elements),
         faces_(N_elements) {
@@ -106,14 +106,14 @@ void Mesh_host_t::print() {
     }
 
     std::cout << std::endl << "Fluxes: " << std::endl;
-    for (int i = 0; i < faces_.size(); ++i) {
+    for (size_t i = 0; i < faces_.size(); ++i) {
         std::cout << '\t' << "Face " << i << ": ";
         std::cout << '\t' << '\t';
         std::cout << faces_[i].flux_ << std::endl;
     }
 
     std::cout << std::endl << "Elements: " << std::endl;
-    for (int i = 0; i < faces_.size(); ++i) {
+    for (size_t i = 0; i < faces_.size(); ++i) {
         std::cout << '\t' << "Face " << i << ": ";
         std::cout << '\t' << '\t';
         std::cout << faces_[i].elements_[0] << " ";
@@ -135,14 +135,14 @@ void Mesh_host_t::write_file_data(hostFloat time, const std::vector<hostFloat>& 
     file << "VARIABLES = \"X\", \"U_x\"" << std::endl;
     file << "ZONE T= \"Zone     1\",  I= " << coordinates.size() << ",  J= 1,  DATAPACKING = POINT, SOLUTIONTIME = " << time << std::endl;
 
-    for (int i = 0; i < coordinates.size(); ++i) {
+    for (size_t i = 0; i < coordinates.size(); ++i) {
         file << std::setw(12) << coordinates[i] << " " << std::setw(12) << (isnan(velocity[i]) ? 0.0 : velocity[i]) << std::endl;
     }
 
     file.close();
 }
 
-void Mesh_host_t::write_data(hostFloat time, int N_interpolation_points, const std::vector<std::vector<hostFloat>>& interpolation_matrices) {
+void Mesh_host_t::write_data(hostFloat time, size_t N_interpolation_points, const std::vector<std::vector<hostFloat>>& interpolation_matrices) {
     std::vector<hostFloat> phi(elements_.size() * N_interpolation_points);
     std::vector<hostFloat> x(elements_.size() * N_interpolation_points);
     get_solution(N_interpolation_points, interpolation_matrices, phi, x);
@@ -229,10 +229,10 @@ hostFloat Mesh_host_t::g(hostFloat x) {
 }
 
 void Mesh_host_t::get_solution(size_t N_interpolation_points, const std::vector<std::vector<hostFloat>>& interpolation_matrices, std::vector<hostFloat>& phi, std::vector<hostFloat>& x) {
-    for (int i = 0; i < elements_.size(); ++i) {
-        const int offset_interp_1D = i * N_interpolation_points;
+    for (size_t i = 0; i < elements_.size(); ++i) {
+        const size_t offset_interp_1D = i * N_interpolation_points;
 
-        for (int j = 0; j < N_interpolation_points; ++j) {
+        for (size_t j = 0; j < N_interpolation_points; ++j) {
             phi[offset_interp_1D + j] = 0.0f;
             for (int k = 0; k <= elements_[i].N_; ++k) {
                 phi[offset_interp_1D + j] += interpolation_matrices[elements_[i].N_][j * (elements_[i].N_ + 1) + k] * elements_[i].phi_[k];
@@ -294,9 +294,9 @@ void Mesh_host_t::calculate_fluxes() {
 void SEM::matrix_vector_derivative(const std::vector<hostFloat>& derivative_matrices_hat, const std::vector<hostFloat>& phi, std::vector<hostFloat>& phi_prime) {
     // s = 0, e = N (p.55 says N - 1)
     
-    for (int i = 0; i < phi.size(); ++i) {
+    for (size_t i = 0; i < phi.size(); ++i) {
         phi_prime[i] = 0.0f;
-        for (int j = 0; j < phi.size(); ++j) {
+        for (size_t j = 0; j < phi.size(); ++j) {
             phi_prime[i] += derivative_matrices_hat[i * phi.size() + j] * phi[j] * phi[j] * 0.5; // phi not squared in textbook, squared for Burger's
         }
     }

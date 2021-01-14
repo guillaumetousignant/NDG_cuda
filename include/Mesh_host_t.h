@@ -9,7 +9,7 @@
 
 class Mesh_host_t {
     public:
-        Mesh_host_t(int N_elements, int initial_N, hostFloat x_min, hostFloat x_max);
+        Mesh_host_t(size_t N_elements, int initial_N, hostFloat x_min, hostFloat x_max);
         ~Mesh_host_t();
 
         int initial_N_;
@@ -18,7 +18,7 @@ class Mesh_host_t {
 
         void set_initial_conditions(const std::vector<std::vector<hostFloat>>& nodes);
         void print();
-        void write_data(hostFloat time, int N_interpolation_points, const std::vector<std::vector<hostFloat>>& interpolation_matrices);
+        void write_data(hostFloat time, size_t N_interpolation_points, const std::vector<std::vector<hostFloat>>& interpolation_matrices);
         
         template<typename Polynomial>
         void solve(hostFloat delta_t, const std::vector<hostFloat> output_times, const NDG_host_t<Polynomial> &NDG);

@@ -3,7 +3,7 @@
 constexpr deviceFloat pi = 3.14159265358979323846;
 
 __device__ 
-Element_t::Element_t(int N, int neighbour_L, int neighbour_R, int face_L, int face_R, deviceFloat x_L, deviceFloat x_R) : 
+Element_t::Element_t(int N, size_t neighbour_L, size_t neighbour_R, size_t face_L, size_t face_R, deviceFloat x_L, deviceFloat x_R) : 
         N_(N),
         neighbours_{neighbour_L, neighbour_R},
         faces_{face_L, face_R},
@@ -34,15 +34,15 @@ Element_t::~Element_t() {
 }
 
 __global__
-void SEM::build_elements(int N_elements, int N, Element_t* elements, deviceFloat x_min, deviceFloat x_max) {
+void SEM::build_elements(size_t N_elements, int N, Element_t* elements, deviceFloat x_min, deviceFloat x_max) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
     for (int i = index; i < N_elements; i += stride) {
-        const int neighbour_L = (i > 0) ? i - 1 : N_elements - 1; // First cell has last cell as left neighbour
-        const int neighbour_R = (i < N_elements - 1) ? i + 1 : 0; // Last cell has first cell as right neighbour
-        const int face_L = (i > 0) ? i - 1 : N_elements - 1;
-        const int face_R = i;
+        const size_t neighbour_L = (i > 0) ? i - 1 : N_elements - 1; // First cell has last cell as left neighbour
+        const size_t neighbour_R = (i < N_elements - 1) ? i + 1 : 0; // Last cell has first cell as right neighbour
+        const size_t face_L = (i > 0) ? i - 1 : N_elements - 1;
+        const size_t face_R = i;
         const deviceFloat delta_x = (x_max - x_min)/N_elements;
         const deviceFloat element_x_min = x_min + i * delta_x;
         const deviceFloat element_y_min = x_min + (i + 1) * delta_x;
@@ -58,12 +58,12 @@ deviceFloat SEM::g(deviceFloat x) {
 
 
 __global__
-void SEM::initial_conditions(int N_elements, Element_t* elements, const deviceFloat* nodes) {
+void SEM::initial_conditions(size_t N_elements, Element_t* elements, const deviceFloat* nodes) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (int i = index; i < N_elements; i += stride) {
-        const int offset = elements[i].N_ * (elements[i].N_ + 1) /2;
+    for (size_t i = index; i < N_elements; i += stride) {
+        const size_t offset = elements[i].N_ * (elements[i].N_ + 1) /2;
         for (int j = 0; j <= elements[i].N_; ++j) {
             const deviceFloat x = (0.5 + nodes[offset + j]/2.0f) * (elements[i].x_[1] - elements[i].x_[0]) + elements[i].x_[0];
             elements[i].phi_[j] = SEM::g(x);
@@ -73,12 +73,12 @@ void SEM::initial_conditions(int N_elements, Element_t* elements, const deviceFl
 
 // Basically useless, find better solution when multiple elements.
 __global__
-void SEM::get_elements_data(int N_elements, const Element_t* elements, deviceFloat* phi, deviceFloat* phi_prime) {
+void SEM::get_elements_data(size_t N_elements, const Element_t* elements, deviceFloat* phi, deviceFloat* phi_prime) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (int i = index; i < N_elements; i += stride) {
-        const int element_offset = i * (elements[i].N_ + 1);
+    for (size_t i = index; i < N_elements; i += stride) {
+        const size_t element_offset = i * (elements[i].N_ + 1);
         for (int j = 0; j <= elements[i].N_; ++j) {
             phi[element_offset + j] = elements[i].phi_[j];
             phi_prime[element_offset + j] = elements[i].phi_prime_[j];
@@ -88,11 +88,11 @@ void SEM::get_elements_data(int N_elements, const Element_t* elements, deviceFlo
 
 // Basically useless, find better solution when multiple elements.
 __global__
-void SEM::get_phi(int N_elements, const Element_t* elements, deviceFloat* phi) {
+void SEM::get_phi(size_t N_elements, const Element_t* elements, deviceFloat* phi) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (int i = index; i < N_elements; i += stride) {
+    for (size_t i = index; i < N_elements; i += stride) {
         for (int j = 0; j <= elements[i].N_; ++j) {
             phi[j] = elements[i].phi_[j];
         }
@@ -100,15 +100,15 @@ void SEM::get_phi(int N_elements, const Element_t* elements, deviceFloat* phi) {
 }
 
 __global__
-void SEM::get_solution(int N_elements, int N_interpolation_points, const Element_t* elements, const deviceFloat* interpolation_matrices, deviceFloat* phi, deviceFloat* x) {
+void SEM::get_solution(size_t N_elements, size_t N_interpolation_points, const Element_t* elements, const deviceFloat* interpolation_matrices, deviceFloat* phi, deviceFloat* x) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (int i = index; i < N_elements; i += stride) {
-        const int offset_interp_1D = i * N_interpolation_points;
-        const int offset_interp = elements[i].N_ * (elements[i].N_ + 1) * N_interpolation_points/2;
+    for (size_t i = index; i < N_elements; i += stride) {
+        const size_t offset_interp_1D = i * N_interpolation_points;
+        const size_t offset_interp = elements[i].N_ * (elements[i].N_ + 1) * N_interpolation_points/2;
 
-        for (int j = 0; j < N_interpolation_points; ++j) {
+        for (size_t j = 0; j < N_interpolation_points; ++j) {
             phi[offset_interp_1D + j] = 0.0f;
             for (int k = 0; k <= elements[i].N_; ++k) {
                 phi[offset_interp_1D + j] += interpolation_matrices[offset_interp + j * (elements[i].N_ + 1) + k] * elements[i].phi_[k];
@@ -132,11 +132,11 @@ deviceFloat SEM::interpolate_to_boundary(int N, const deviceFloat* phi, const de
 }
 
 __global__
-void SEM::interpolate_to_boundaries(int N_elements, Element_t* elements, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right) {
+void SEM::interpolate_to_boundaries(size_t N_elements, Element_t* elements, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (int i = index; i < N_elements; i += stride) {
+    for (size_t i = index; i < N_elements; i += stride) {
         elements[i].phi_L_ = SEM::interpolate_to_boundary(elements[i].N_, elements[i].phi_, lagrange_interpolant_left);
         elements[i].phi_R_ = SEM::interpolate_to_boundary(elements[i].N_, elements[i].phi_, lagrange_interpolant_right);
     }

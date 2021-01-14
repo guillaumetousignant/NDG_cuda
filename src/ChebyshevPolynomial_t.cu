@@ -8,7 +8,7 @@ __global__
 void SEM::chebyshev_gauss_nodes_and_weights(int N, deviceFloat* nodes, deviceFloat* weights) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
-    const int offset = N * (N + 1) /2;
+    const size_t offset = N * (N + 1) /2;
 
     for (int i = index; i <= N; i += stride) {
         nodes[offset + i] = -std::cos(pi * (2 * i + 1) / (2 * N + 2));

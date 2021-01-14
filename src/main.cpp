@@ -9,7 +9,7 @@
 #include <array>
 
 int main(void) {
-    const int N_elements = 128;
+    const size_t N_elements = 128;
     const int N_max = 8;
     const std::array<hostFloat, 2> x {-1.0, 1.0};
     const hostFloat CFL = 0.5;
@@ -17,7 +17,7 @@ int main(void) {
     std::vector<hostFloat> output_times{0.1, 0.2, 0.3, 0.4, 0.5};
 
     const int initial_N = N_max;
-    const int N_interpolation_points = N_max * 8;
+    const size_t N_interpolation_points = N_max * 8;
     const hostFloat delta_x = (x[1] - x[0])/N_elements;
     const hostFloat delta_t = CFL * delta_x/(u_max * N_max * N_max);
 
