@@ -13,7 +13,7 @@ Element_t::Element_t(int N, size_t neighbour_L, size_t neighbour_R, size_t face_
     phi_prime_ = new deviceFloat[N_ + 1];
     intermediate_ = new deviceFloat[N_ + 1];
     for (int i = 0; i <= N_; ++i) {
-        intermediate_[i] = 0.0f;
+        intermediate_[i] = 0.0;
     }
 }
 
@@ -65,7 +65,7 @@ void SEM::initial_conditions(size_t N_elements, Element_t* elements, const devic
     for (size_t i = index; i < N_elements; i += stride) {
         const size_t offset = elements[i].N_ * (elements[i].N_ + 1) /2;
         for (int j = 0; j <= elements[i].N_; ++j) {
-            const deviceFloat x = (0.5 + nodes[offset + j]/2.0f) * (elements[i].x_[1] - elements[i].x_[0]) + elements[i].x_[0];
+            const deviceFloat x = (0.5f + nodes[offset + j] * 0.5f) * (elements[i].x_[1] - elements[i].x_[0]) + elements[i].x_[0];
             elements[i].phi_[j] = SEM::g(x);
         }
     }
@@ -109,7 +109,7 @@ void SEM::get_solution(size_t N_elements, size_t N_interpolation_points, const E
         const size_t offset_interp = elements[i].N_ * (elements[i].N_ + 1) * N_interpolation_points/2;
 
         for (size_t j = 0; j < N_interpolation_points; ++j) {
-            phi[offset_interp_1D + j] = 0.0f;
+            phi[offset_interp_1D + j] = 0.0;
             for (int k = 0; k <= elements[i].N_; ++k) {
                 phi[offset_interp_1D + j] += interpolation_matrices[offset_interp + j * (elements[i].N_ + 1) + k] * elements[i].phi_[k];
             }

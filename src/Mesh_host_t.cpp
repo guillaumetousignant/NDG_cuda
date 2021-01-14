@@ -26,7 +26,7 @@ Mesh_host_t::~Mesh_host_t() {}
 void Mesh_host_t::set_initial_conditions(const std::vector<std::vector<hostFloat>>& nodes) {
     for (auto& element: elements_) {
         for (int j = 0; j <= element.N_; ++j) {
-            const hostFloat x = (0.5 + nodes[element.N_][j]/2.0f) * (element.x_[1] - element.x_[0]) + element.x_[0];
+            const hostFloat x = (0.5 + nodes[element.N_][j] * 0.5) * (element.x_[1] - element.x_[0]) + element.x_[0];
             element.phi_[j] = g(x);
         }
     }
@@ -178,7 +178,7 @@ void Mesh_host_t::solve(hostFloat delta_t, const std::vector<hostFloat> output_t
         interpolate_to_boundaries(NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
         calculate_fluxes();
         compute_dg_derivative(NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
-        rk3_step(delta_t, -153.0/128.0, 8.0f/15.0);
+        rk3_step(delta_t, -153.0/128.0, 8.0/15.0);
               
         time += delta_t;
         for (auto const& e : std::as_const(output_times)) {
@@ -233,7 +233,7 @@ void Mesh_host_t::get_solution(size_t N_interpolation_points, const std::vector<
         const size_t offset_interp_1D = i * N_interpolation_points;
 
         for (size_t j = 0; j < N_interpolation_points; ++j) {
-            phi[offset_interp_1D + j] = 0.0f;
+            phi[offset_interp_1D + j] = 0.0;
             for (int k = 0; k <= elements_[i].N_; ++k) {
                 phi[offset_interp_1D + j] += interpolation_matrices[elements_[i].N_][j * (elements_[i].N_ + 1) + k] * elements_[i].phi_[k];
             }
@@ -295,7 +295,7 @@ void SEM::matrix_vector_derivative(const std::vector<hostFloat>& derivative_matr
     // s = 0, e = N (p.55 says N - 1)
     
     for (size_t i = 0; i < phi.size(); ++i) {
-        phi_prime[i] = 0.0f;
+        phi_prime[i] = 0.0;
         for (size_t j = 0; j < phi.size(); ++j) {
             phi_prime[i] += derivative_matrices_hat[i * phi.size() + j] * phi[j] * phi[j] * 0.5; // phi not squared in textbook, squared for Burger's
         }

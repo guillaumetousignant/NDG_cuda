@@ -8,12 +8,12 @@
 #include <vector>
 
 int main(void) {
-    const size_t N_elements = 256;
+    const size_t N_elements = 512;
     const int N_max = 8;
-    const deviceFloat x[2] = {-1.0f, 1.0f};
-    const deviceFloat CFL = 0.2f;
-    const deviceFloat u_max = 1.0f;
-    std::vector<deviceFloat> output_times{0.1f, 0.2f, 0.3f, 0.4f, 0.5f};
+    const deviceFloat x[2] = {-1.0, 1.0};
+    const deviceFloat CFL = 0.5;
+    const deviceFloat u_max = 1.0;
+    std::vector<deviceFloat> output_times{0.1, 0.2, 0.3, 0.4, 0.5};
 
     const int initial_N = N_max;
     const size_t N_interpolation_points = N_max * 8;
