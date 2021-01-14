@@ -47,8 +47,8 @@ NDG_t<Polynomial>::NDG_t(int N_max, size_t N_interpolation_points) :
         const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
         SEM::polynomial_derivative_matrices<<<matrix_numBlocks, matrix_blockSize>>>(N, nodes_, barycentric_weights_, derivative_matrices_);
         SEM::create_interpolation_matrices<<<interpolation_numBlocks, interpolation_blockSize>>>(N, N_interpolation_points_, nodes_, barycentric_weights_, interpolation_matrices_);
-        SEM::lagrange_interpolating_polynomials<<<vector_numBlocks, poly_blockSize>>>(-1.0f, N, nodes_, barycentric_weights_, lagrange_interpolant_left_);
-        SEM::lagrange_interpolating_polynomials<<<vector_numBlocks, poly_blockSize>>>(1.0f, N, nodes_, barycentric_weights_, lagrange_interpolant_right_);
+        SEM::lagrange_interpolating_polynomials<<<vector_numBlocks, poly_blockSize>>>(-1.0, N, nodes_, barycentric_weights_, lagrange_interpolant_left_);
+        SEM::lagrange_interpolating_polynomials<<<vector_numBlocks, poly_blockSize>>>(1.0, N, nodes_, barycentric_weights_, lagrange_interpolant_right_);
     }
 
     // Then we calculate the derivative matrix diagonal and normalize the Lagrange interpolants
@@ -325,7 +325,7 @@ void SEM::polynomial_derivative_matrices_diagonal(int N, deviceFloat* derivative
     const size_t offset_2D = N * (N + 1) * (2 * N + 1) /6;
 
     for (int i = index; i <= N; i += stride) {
-        derivative_matrices[offset_2D + i * (N + 2)] = 0.0f;
+        derivative_matrices[offset_2D + i * (N + 2)] = 0.0;
         for (int j = 0; j < i; ++j) {
             derivative_matrices[offset_2D + i * (N + 2)] -= derivative_matrices[offset_2D + i * (N + 1) + j];
         }
@@ -364,15 +364,15 @@ void SEM::create_interpolation_matrices(int N, size_t N_interpolation_points, co
         const deviceFloat x_coord = 2.0f * j / (N_interpolation_points - 1) - 1.0f;
 
         for (int k = 0; k <= N; ++k) {
-            interpolation_matrices[offset_interp + j * (N + 1) + k] = 0.0f;
+            interpolation_matrices[offset_interp + j * (N + 1) + k] = 0.0;
             if (SEM::almost_equal(x_coord, nodes[offset_1D + k])) {
-                interpolation_matrices[offset_interp + j * (N + 1) + k] = 1.0f;
+                interpolation_matrices[offset_interp + j * (N + 1) + k] = 1.0;
                 row_has_match = true;
             }
         }
 
         if (!row_has_match) {
-            deviceFloat total = 0.0f;
+            deviceFloat total = 0.0;
             for (int k = 0; k <= N; ++k) {
                 interpolation_matrices[offset_interp + j * (N + 1) + k] = barycentric_weights[offset_1D + k] / (x_coord - nodes[offset_1D + k]);
                 total += interpolation_matrices[offset_interp + j * (N + 1) + k];
