@@ -224,9 +224,9 @@ void Mesh_t::solve(const deviceFloat delta_t, const std::vector<deviceFloat> out
         SEM::interpolate_to_boundaries<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
         SEM::calculate_fluxes<<<faces_numBlocks, faces_blockSize>>>(N_faces_, faces_, elements_);
         SEM::compute_dg_derivative<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
-        SEM::rk3_step<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, delta_t, 0.0f, 1.0f/3.0f);
+        SEM::rk3_first_step<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, delta_t, 1.0f);
 
-        t = time + 0.33333333333f * delta_t;
+        /*t = time + 0.33333333333f * delta_t;
         SEM::interpolate_to_boundaries<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
         SEM::calculate_fluxes<<<faces_numBlocks, faces_blockSize>>>(N_faces_, faces_, elements_);
         SEM::compute_dg_derivative<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
@@ -236,7 +236,7 @@ void Mesh_t::solve(const deviceFloat delta_t, const std::vector<deviceFloat> out
         SEM::interpolate_to_boundaries<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
         SEM::calculate_fluxes<<<faces_numBlocks, faces_blockSize>>>(N_faces_, faces_, elements_);
         SEM::compute_dg_derivative<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
-        SEM::rk3_step<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, delta_t, -153.0f/128.0f, 8.0f/15.0f);
+        SEM::rk3_step<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, delta_t, -153.0f/128.0f, 8.0f/15.0f);*/
               
         time += delta_t;
         for (auto const& e : std::as_const(output_times)) {
@@ -257,6 +257,19 @@ void Mesh_t::solve(const deviceFloat delta_t, const std::vector<deviceFloat> out
 
     if (!did_write) {
         write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
+    }
+}
+
+__global__
+void SEM::rk3_first_step(size_t N_elements, Element_t* elements, deviceFloat delta_t, deviceFloat g) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t i = index; i < N_elements; i += stride) {
+        for (int j = 0; j <= elements[i].N_; ++j){
+            elements[i].intermediate_[j] = elements[i].phi_prime_[j];
+            elements[i].phi_[j] += g * delta_t * elements[i].intermediate_[j];
+        }
     }
 }
 

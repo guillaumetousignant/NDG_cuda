@@ -29,6 +29,9 @@ public:
 
 namespace SEM {
     __global__
+    void rk3_first_step(size_t N_elements, Element_t* elements, deviceFloat delta_t, deviceFloat g);
+
+    __global__
     void rk3_step(size_t N_elements, Element_t* elements, deviceFloat delta_t, deviceFloat a, deviceFloat g);
 
     __global__
