@@ -61,8 +61,6 @@ add_executable(NDG_host
     main.cpp)
 
 target_link_libraries(NDG_host PRIVATE NDG_cuda)
-set_target_properties(NDG_host PROPERTIES
-                            CUDA_SEPERABLE_COMPILATION ON)
 set_property(TARGET NDG_host PROPERTY CUDA_ARCHITECTURES 61) # sm_61 is GTX 10X0
 target_compile_features(NDG_host PRIVATE cxx_std_17)
 if(NOT ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug"))
