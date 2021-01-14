@@ -14,10 +14,10 @@ void LegendrePolynomial_host_t::legendre_polynomial_and_derivative(int N, hostFl
         L_N_prime = 1.0;
     }
     else {
-        float L_N_2 = 1.0;
-        float L_N_1 = x;
-        float L_N_2_prime = 0.0;
-        float L_N_1_prime = 1.0;
+        hostFloat L_N_2 = 1.0;
+        hostFloat L_N_1 = x;
+        hostFloat L_N_2_prime = 0.0;
+        hostFloat L_N_1_prime = 1.0;
 
         for (int k = 2; k <= N; ++k) {
             L_N = (2 * k - 1) * x * L_N_1/k - (k - 1) * L_N_2/k; // L_N_1(x) ??
@@ -43,9 +43,9 @@ void LegendrePolynomial_host_t::nodes_and_weights(int N, std::vector<hostFloat>&
             nodes[i] = -std::cos(pi * (2 * i + 1)/(2 * N + 2));
                     
             for (int k = 0; k < 1000; ++k) {
-                float L_N_plus1, L_N_plus1_prime;
+                hostFloat L_N_plus1, L_N_plus1_prime;
                 legendre_polynomial_and_derivative(N + 1, nodes[i], L_N_plus1, L_N_plus1_prime);
-                float delta = -L_N_plus1/L_N_plus1_prime;
+                hostFloat delta = -L_N_plus1/L_N_plus1_prime;
                 nodes[i] += delta;
                 if (std::abs(delta) <= 0.00000001 * std::abs(nodes[i])) {
                     break;
@@ -53,7 +53,7 @@ void LegendrePolynomial_host_t::nodes_and_weights(int N, std::vector<hostFloat>&
 
             }
 
-            float dummy, L_N_plus1_prime_final;
+            hostFloat dummy, L_N_plus1_prime_final;
             legendre_polynomial_and_derivative(N + 1, nodes[i], dummy, L_N_plus1_prime_final);
             nodes[N - i] = -nodes[i];
             weights[i] = 2.0/((1.0 - std::pow(nodes[i], 2)) * std::pow(L_N_plus1_prime_final, 2));
@@ -67,7 +67,7 @@ void LegendrePolynomial_host_t::nodes_and_weights(int N, std::vector<hostFloat>&
     }
 
     if (N % 2 == 0) {
-        float dummy, L_N_plus1_prime_final;
+        hostFloat dummy, L_N_plus1_prime_final;
         legendre_polynomial_and_derivative(N + 1, 0.0, dummy, L_N_plus1_prime_final);
         nodes[N/2] = 0.0;
         weights[N/2] = 2/std::pow(L_N_plus1_prime_final, 2);

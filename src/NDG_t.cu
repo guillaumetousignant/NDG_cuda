@@ -23,14 +23,14 @@ NDG_t<Polynomial>::NDG_t(int N_max, int N_interpolation_points) :
         matrix_length_((N_max_ + 1) * (N_max_ + 2) * (2 * N_max_ + 3)/6),
         interpolation_length_((N_max_ + 1) * (N_max_ + 2) * N_interpolation_points_/2) {
 
-    cudaMalloc(&nodes_, vector_length_ * sizeof(float));
-    cudaMalloc(&weights_, vector_length_ * sizeof(float));
-    cudaMalloc(&barycentric_weights_, vector_length_ * sizeof(float));
-    cudaMalloc(&lagrange_interpolant_left_, vector_length_ * sizeof(float));
-    cudaMalloc(&lagrange_interpolant_right_, vector_length_ * sizeof(float));
-    cudaMalloc(&derivative_matrices_, matrix_length_ * sizeof(float));
-    cudaMalloc(&derivative_matrices_hat_, matrix_length_ * sizeof(float));
-    cudaMalloc(&interpolation_matrices_, interpolation_length_ * sizeof(float));
+    cudaMalloc(&nodes_, vector_length_ * sizeof(deviceFloat));
+    cudaMalloc(&weights_, vector_length_ * sizeof(deviceFloat));
+    cudaMalloc(&barycentric_weights_, vector_length_ * sizeof(deviceFloat));
+    cudaMalloc(&lagrange_interpolant_left_, vector_length_ * sizeof(deviceFloat));
+    cudaMalloc(&lagrange_interpolant_right_, vector_length_ * sizeof(deviceFloat));
+    cudaMalloc(&derivative_matrices_, matrix_length_ * sizeof(deviceFloat));
+    cudaMalloc(&derivative_matrices_hat_, matrix_length_ * sizeof(deviceFloat));
+    cudaMalloc(&interpolation_matrices_, interpolation_length_ * sizeof(deviceFloat));
 
     Polynomial::nodes_and_weights(N_max_, poly_blockSize, nodes_, weights_);
 
@@ -103,25 +103,25 @@ NDG_t<Polynomial>::~NDG_t() {
 template<typename Polynomial>
 void NDG_t<Polynomial>::print() {
     // Copy vectors from device memory to host memory
-    float* host_nodes = new float[vector_length_];
-    float* host_weights = new float[vector_length_];
-    float* host_barycentric_weights = new float[vector_length_];
-    float* host_lagrange_interpolant_left = new float[vector_length_];
-    float* host_lagrange_interpolant_right = new float[vector_length_];
-    float* host_derivative_matrices = new float[matrix_length_];
-    float* host_derivative_matrices_hat = new float[matrix_length_];
-    float* host_interpolation_matrices = new float[interpolation_length_];
+    deviceFloat* host_nodes = new deviceFloat[vector_length_];
+    deviceFloat* host_weights = new deviceFloat[vector_length_];
+    deviceFloat* host_barycentric_weights = new deviceFloat[vector_length_];
+    deviceFloat* host_lagrange_interpolant_left = new deviceFloat[vector_length_];
+    deviceFloat* host_lagrange_interpolant_right = new deviceFloat[vector_length_];
+    deviceFloat* host_derivative_matrices = new deviceFloat[matrix_length_];
+    deviceFloat* host_derivative_matrices_hat = new deviceFloat[matrix_length_];
+    deviceFloat* host_interpolation_matrices = new deviceFloat[interpolation_length_];
 
     cudaDeviceSynchronize();
 
-    cudaMemcpy(host_nodes, nodes_, vector_length_ * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_weights, weights_, vector_length_ * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_barycentric_weights, barycentric_weights_, vector_length_ * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_lagrange_interpolant_left, lagrange_interpolant_left_, vector_length_ * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_lagrange_interpolant_right, lagrange_interpolant_right_, vector_length_ * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_derivative_matrices, derivative_matrices_, matrix_length_ * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_derivative_matrices_hat, derivative_matrices_hat_, matrix_length_ * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_interpolation_matrices, interpolation_matrices_, interpolation_length_ * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_nodes, nodes_, vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_weights, weights_, vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_barycentric_weights, barycentric_weights_, vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_lagrange_interpolant_left, lagrange_interpolant_left_, vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_lagrange_interpolant_right, lagrange_interpolant_right_, vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_derivative_matrices, derivative_matrices_, matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_derivative_matrices_hat, derivative_matrices_hat_, matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_interpolation_matrices, interpolation_matrices_, interpolation_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
 
     std::cout << "Nodes: " << std::endl;
     for (int N = 0; N <= N_max_; ++N) {
@@ -237,13 +237,13 @@ void NDG_t<Polynomial>::print() {
 
 // Algorithm 30
 __global__
-void SEM::calculate_barycentric_weights(int N, const float* nodes, float* barycentric_weights) {
+void SEM::calculate_barycentric_weights(int N, const deviceFloat* nodes, deviceFloat* barycentric_weights) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     const int offset = N * (N + 1) /2;
 
     for (int j = index; j <= N; j += stride) {
-        float xjxi = 1.0f;
+        deviceFloat xjxi = 1.0;
         for (int i = 0; i < j; ++i) {
             xjxi *= nodes[offset + j] - nodes[offset + i];
         }
@@ -263,7 +263,7 @@ bool almost_equal(float a, float b) {
 
 // From cppreference.com
 __device__
-bool SEM::almost_equal(float x, float y) {
+bool SEM::almost_equal(deviceFloat x, deviceFloat y) {
     constexpr int ulp = 2; // ULP
     // the machine epsilon has to be scaled to the magnitude of the values used
     // and multiplied by the desired precision in ULPs (units in the last place)
@@ -275,7 +275,7 @@ bool SEM::almost_equal(float x, float y) {
 // This will not work if we are on a node, or at least be pretty inefficient
 // Algorithm 34
 __global__
-void SEM::lagrange_interpolating_polynomials(float x, int N, const float* nodes, const float* barycentric_weights, float* lagrange_interpolant) {
+void SEM::lagrange_interpolating_polynomials(deviceFloat x, int N, const deviceFloat* nodes, const deviceFloat* barycentric_weights, deviceFloat* lagrange_interpolant) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     const int offset = N * (N + 1) /2;
@@ -287,13 +287,13 @@ void SEM::lagrange_interpolating_polynomials(float x, int N, const float* nodes,
 
 // Algorithm 34
 __global__
-void SEM::normalize_lagrange_interpolating_polynomials(int N_max, float* lagrange_interpolant) {
+void SEM::normalize_lagrange_interpolating_polynomials(int N_max, deviceFloat* lagrange_interpolant) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
     for (int N = index; N <= N_max; N += stride) {
         const int offset = N * (N + 1) /2;
-        float sum = 0.0f;
+        deviceFloat sum = 0.0;
         for (int i = 0; i <= N; ++i) {
             sum += lagrange_interpolant[offset + i];
         }
@@ -306,7 +306,7 @@ void SEM::normalize_lagrange_interpolating_polynomials(int N_max, float* lagrang
 // Be sure to compute the diagonal afterwards
 // Algorithm 37
 __global__
-void SEM::polynomial_derivative_matrices(int N, const float* nodes, const float* barycentric_weights, float* derivative_matrices) {
+void SEM::polynomial_derivative_matrices(int N, const deviceFloat* nodes, const deviceFloat* barycentric_weights, deviceFloat* derivative_matrices) {
     const int index_x = blockIdx.x * blockDim.x + threadIdx.x;
     const int index_y = blockIdx.y * blockDim.y + threadIdx.y;
     const int stride_x = blockDim.x * gridDim.x;
@@ -325,7 +325,7 @@ void SEM::polynomial_derivative_matrices(int N, const float* nodes, const float*
 
 // Algorithm 37
 __global__
-void SEM::polynomial_derivative_matrices_diagonal(int N, float* derivative_matrices) {
+void SEM::polynomial_derivative_matrices_diagonal(int N, deviceFloat* derivative_matrices) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
@@ -342,7 +342,7 @@ void SEM::polynomial_derivative_matrices_diagonal(int N, float* derivative_matri
 }
 
 __global__
-void SEM::polynomial_derivative_matrices_hat(int N, const float* weights, const float* derivative_matrices, float* derivative_matrices_hat) {
+void SEM::polynomial_derivative_matrices_hat(int N, const deviceFloat* weights, const deviceFloat* derivative_matrices, deviceFloat* derivative_matrices_hat) {
     const int index_x = blockIdx.x * blockDim.x + threadIdx.x;
     const int index_y = blockIdx.y * blockDim.y + threadIdx.y;
     const int stride_x = blockDim.x * gridDim.x;
@@ -359,7 +359,7 @@ void SEM::polynomial_derivative_matrices_hat(int N, const float* weights, const 
 
 // Will interpolate N_interpolation_points between -1 and 1
 __global__
-void SEM::create_interpolation_matrices(int N, int N_interpolation_points, const float* nodes, const float* barycentric_weights, float* interpolation_matrices) {
+void SEM::create_interpolation_matrices(int N, int N_interpolation_points, const deviceFloat* nodes, const deviceFloat* barycentric_weights, deviceFloat* interpolation_matrices) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     const int offset_1D = N * (N + 1) /2;
@@ -367,7 +367,7 @@ void SEM::create_interpolation_matrices(int N, int N_interpolation_points, const
 
     for (int j = index; j < N_interpolation_points; j += stride) {
         bool row_has_match = false;
-        const float x_coord = 2.0f * j / (N_interpolation_points - 1) - 1.0f;
+        const deviceFloat x_coord = 2.0f * j / (N_interpolation_points - 1) - 1.0f;
 
         for (int k = 0; k <= N; ++k) {
             interpolation_matrices[offset_interp + j * (N + 1) + k] = 0.0f;
@@ -378,7 +378,7 @@ void SEM::create_interpolation_matrices(int N, int N_interpolation_points, const
         }
 
         if (!row_has_match) {
-            float total = 0.0f;
+            deviceFloat total = 0.0f;
             for (int k = 0; k <= N; ++k) {
                 interpolation_matrices[offset_interp + j * (N + 1) + k] = barycentric_weights[offset_1D + k] / (x_coord - nodes[offset_1D + k]);
                 total += interpolation_matrices[offset_interp + j * (N + 1) + k];

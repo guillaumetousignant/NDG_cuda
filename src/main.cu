@@ -1,3 +1,4 @@
+#include "float_types.h"
 #include "NDG_t.cuh"
 #include "Mesh_t.cuh"
 #include "ChebyshevPolynomial_t.cuh"
@@ -9,15 +10,15 @@
 int main(void) {
     const int N_elements = 128;
     const int N_max = 8;
-    const float x[2] = {-1.0f, 1.0f};
-    const float CFL = 0.2f;
-    const float u_max = 1.0f;
-    std::vector<float> output_times{0.1f, 0.2f, 0.3f, 0.4f, 0.5f};
+    const deviceFloat x[2] = {-1.0f, 1.0f};
+    const deviceFloat CFL = 0.2f;
+    const deviceFloat u_max = 1.0f;
+    std::vector<deviceFloat> output_times{0.1f, 0.2f, 0.3f, 0.4f, 0.5f};
 
     const int initial_N = N_max;
     const int N_interpolation_points = N_max * 8;
-    const float delta_x = (x[1] - x[0])/N_elements;
-    const float delta_t = CFL * delta_x/(u_max * N_max * N_max);
+    const deviceFloat delta_x = (x[1] - x[0])/N_elements;
+    const deviceFloat delta_t = CFL * delta_x/(u_max * N_max * N_max);
 
     std::cout << "CFL is: " << CFL << std::endl;
     std::cout << "Delta t is: " << delta_t << std::endl << std::endl;

@@ -12,7 +12,7 @@ namespace fs = std::filesystem;
 constexpr int elements_blockSize = 32; // For when we'll have multiple elements
 constexpr int faces_blockSize = 32; // Same number of faces as elements for periodic BC
 
-Mesh_t::Mesh_t(int N_elements, int initial_N, float x_min, float x_max) : N_elements_(N_elements), N_faces_(N_elements), initial_N_(initial_N) {
+Mesh_t::Mesh_t(int N_elements, int initial_N, deviceFloat x_min, deviceFloat x_max) : N_elements_(N_elements), N_faces_(N_elements), initial_N_(initial_N) {
     // CHECK N_faces = N_elements only for periodic BC.
     cudaMalloc(&elements_, N_elements_ * sizeof(Element_t));
     cudaMalloc(&faces_, N_faces_ * sizeof(Face_t));
@@ -33,28 +33,28 @@ Mesh_t::~Mesh_t() {
     }
 }
 
-void Mesh_t::set_initial_conditions(const float* nodes) {
+void Mesh_t::set_initial_conditions(const deviceFloat* nodes) {
     const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
     SEM::initial_conditions<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, nodes);
 }
 
 void Mesh_t::print() {
     // CHECK find better solution for multiple elements. This only works if all elements have the same N.
-    float* phi;
-    float* phi_prime;
-    float* host_phi = new float[(initial_N_ + 1) * N_elements_];
-    float* host_phi_prime = new float[(initial_N_ + 1) * N_elements_];
+    deviceFloat* phi;
+    deviceFloat* phi_prime;
+    deviceFloat* host_phi = new deviceFloat[(initial_N_ + 1) * N_elements_];
+    deviceFloat* host_phi_prime = new deviceFloat[(initial_N_ + 1) * N_elements_];
     Face_t* host_faces = new Face_t[N_faces_];
     Element_t* host_elements = new Element_t[N_elements_];
-    cudaMalloc(&phi, (initial_N_ + 1) * N_elements_ * sizeof(float));
-    cudaMalloc(&phi_prime, (initial_N_ + 1) * N_elements_ * sizeof(float));
+    cudaMalloc(&phi, (initial_N_ + 1) * N_elements_ * sizeof(deviceFloat));
+    cudaMalloc(&phi_prime, (initial_N_ + 1) * N_elements_ * sizeof(deviceFloat));
 
     const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
     SEM::get_elements_data<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, phi, phi_prime);
     
     cudaDeviceSynchronize();
-    cudaMemcpy(host_phi, phi, (initial_N_ + 1) * N_elements_ * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_phi_prime, phi_prime, (initial_N_ + 1) * N_elements_ * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_phi, phi, (initial_N_ + 1) * N_elements_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_phi_prime, phi_prime, (initial_N_ + 1) * N_elements_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_faces, faces_, N_faces_ * sizeof(Face_t), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_elements, elements_, N_elements_ * sizeof(Element_t), cudaMemcpyDeviceToHost);
 
@@ -163,7 +163,7 @@ void Mesh_t::print() {
     cudaFree(phi_prime);
 }
 
-void Mesh_t::write_file_data(int N_points, float time, const float* velocity, const float* coordinates) {
+void Mesh_t::write_file_data(int N_points, deviceFloat time, const deviceFloat* velocity, const deviceFloat* coordinates) {
     std::stringstream ss;
     std::ofstream file;
 
@@ -184,21 +184,21 @@ void Mesh_t::write_file_data(int N_points, float time, const float* velocity, co
     file.close();
 }
 
-void Mesh_t::write_data(float time, int N_interpolation_points, const float* interpolation_matrices) {
+void Mesh_t::write_data(deviceFloat time, int N_interpolation_points, const deviceFloat* interpolation_matrices) {
     // CHECK find better solution for multiple elements
-    float* phi;
-    float* x;
-    float* host_phi = new float[N_elements_ * N_interpolation_points];
-    float* host_x = new float[N_elements_ * N_interpolation_points];
-    cudaMalloc(&phi, N_elements_ * N_interpolation_points * sizeof(float));
-    cudaMalloc(&x, N_elements_ * N_interpolation_points * sizeof(float));
+    deviceFloat* phi;
+    deviceFloat* x;
+    deviceFloat* host_phi = new deviceFloat[N_elements_ * N_interpolation_points];
+    deviceFloat* host_x = new deviceFloat[N_elements_ * N_interpolation_points];
+    cudaMalloc(&phi, N_elements_ * N_interpolation_points * sizeof(deviceFloat));
+    cudaMalloc(&x, N_elements_ * N_interpolation_points * sizeof(deviceFloat));
 
     const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
     SEM::get_solution<<<elements_numBlocks, elements_blockSize>>>(N_elements_, N_interpolation_points, elements_, interpolation_matrices, phi, x);
     
     cudaDeviceSynchronize();
-    cudaMemcpy(host_phi, phi, N_elements_ * N_interpolation_points * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_x, x , N_elements_ * N_interpolation_points * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_phi, phi, N_elements_ * N_interpolation_points * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_x, x , N_elements_ * N_interpolation_points * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
 
     write_file_data(N_elements_ * N_interpolation_points, time, host_phi, host_x);
 
@@ -208,21 +208,21 @@ void Mesh_t::write_data(float time, int N_interpolation_points, const float* int
     cudaFree(x);
 }
 
-template void Mesh_t::solve(const float delta_t, const std::vector<float> output_times, const NDG_t<ChebyshevPolynomial_t> &NDG); // Get with the times c++, it's crazy I have to do this
-template void Mesh_t::solve(const float delta_t, const std::vector<float> output_times, const NDG_t<LegendrePolynomial_t> &NDG);
+template void Mesh_t::solve(const deviceFloat delta_t, const std::vector<deviceFloat> output_times, const NDG_t<ChebyshevPolynomial_t> &NDG); // Get with the times c++, it's crazy I have to do this
+template void Mesh_t::solve(const deviceFloat delta_t, const std::vector<deviceFloat> output_times, const NDG_t<LegendrePolynomial_t> &NDG);
 
 template<typename Polynomial>
-void Mesh_t::solve(const float delta_t, const std::vector<float> output_times, const NDG_t<Polynomial> &NDG) {
+void Mesh_t::solve(const deviceFloat delta_t, const std::vector<deviceFloat> output_times, const NDG_t<Polynomial> &NDG) {
     const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
     const int faces_numBlocks = (N_faces_ + faces_blockSize - 1) / faces_blockSize;
-    float time = 0.0;
-    const float t_end = output_times.back();
+    deviceFloat time = 0.0;
+    const deviceFloat t_end = output_times.back();
 
     write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
 
     while (time < t_end) {
         // Kinda algorithm 62
-        float t = time;
+        deviceFloat t = time;
         SEM::interpolate_to_boundaries<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
         SEM::calculate_fluxes<<<faces_numBlocks, faces_blockSize>>>(N_faces_, faces_, elements_);
         SEM::compute_dg_derivative<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
@@ -263,7 +263,7 @@ void Mesh_t::solve(const float delta_t, const std::vector<float> output_times, c
 }
 
 __global__
-void SEM::rk3_step(int N_elements, Element_t* elements, float delta_t, float a, float g) {
+void SEM::rk3_step(int N_elements, Element_t* elements, deviceFloat delta_t, deviceFloat a, deviceFloat g) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -281,9 +281,9 @@ void SEM::calculate_fluxes(int N_faces, Face_t* faces, const Element_t* elements
     const int stride = blockDim.x * gridDim.x;
 
     for (int i = index; i < N_faces; i += stride) {
-        float u;
-        const float u_left = elements[faces[i].elements_[0]].phi_R_;
-        const float u_right = elements[faces[i].elements_[1]].phi_L_;
+        deviceFloat u;
+        const deviceFloat u_left = elements[faces[i].elements_[0]].phi_R_;
+        const deviceFloat u_right = elements[faces[i].elements_[1]].phi_L_;
 
         if (u_left < 0.0f && u_right > 0.0f) { // In expansion fan
             u = 0.5f * (u_left + u_right);
@@ -320,7 +320,7 @@ void SEM::calculate_fluxes(int N_faces, Face_t* faces, const Element_t* elements
 
 // Algorithm 19
 __device__
-void SEM::matrix_vector_derivative(int N, const float* derivative_matrices_hat, const float* phi, float* phi_prime) {
+void SEM::matrix_vector_derivative(int N, const deviceFloat* derivative_matrices_hat, const deviceFloat* phi, deviceFloat* phi_prime) {
     // s = 0, e = N (p.55 says N - 1)
     const int offset_2D = N * (N + 1) * (2 * N + 1) /6;
 
@@ -334,15 +334,15 @@ void SEM::matrix_vector_derivative(int N, const float* derivative_matrices_hat, 
 
 // Algorithm 60 (not really anymore)
 __global__
-void SEM::compute_dg_derivative(int N_elements, Element_t* elements, const Face_t* faces, const float* weights, const float* derivative_matrices_hat, const float* lagrange_interpolant_left, const float* lagrange_interpolant_right) {
+void SEM::compute_dg_derivative(int N_elements, Element_t* elements, const Face_t* faces, const deviceFloat* weights, const deviceFloat* derivative_matrices_hat, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
     for (int i = index; i < N_elements; i += stride) {
         const int offset_1D = elements[i].N_ * (elements[i].N_ + 1) /2; // CHECK cache?
 
-        const float flux_L = faces[elements[i].faces_[0]].flux_;
-        const float flux_R = faces[elements[i].faces_[1]].flux_;
+        const deviceFloat flux_L = faces[elements[i].faces_[0]].flux_;
+        const deviceFloat flux_R = faces[elements[i].faces_[1]].flux_;
 
         SEM::matrix_vector_derivative(elements[i].N_, derivative_matrices_hat, elements[i].phi_, elements[i].phi_prime_);
 

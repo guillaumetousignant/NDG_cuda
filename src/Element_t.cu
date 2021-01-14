@@ -1,17 +1,17 @@
 #include "Element_t.cuh"
 
-constexpr float pi = 3.14159265358979323846f;
+constexpr deviceFloat pi = 3.14159265358979323846;
 
 __device__ 
-Element_t::Element_t(int N, int neighbour_L, int neighbour_R, int face_L, int face_R, float x_L, float x_R) : 
+Element_t::Element_t(int N, int neighbour_L, int neighbour_R, int face_L, int face_R, deviceFloat x_L, deviceFloat x_R) : 
         N_(N),
         neighbours_{neighbour_L, neighbour_R},
         faces_{face_L, face_R},
         x_{x_L, x_R},
         delta_x_(x_R - x_L) {
-    phi_ = new float[N_ + 1];
-    phi_prime_ = new float[N_ + 1];
-    intermediate_ = new float[N_ + 1];
+    phi_ = new deviceFloat[N_ + 1];
+    phi_prime_ = new deviceFloat[N_ + 1];
+    intermediate_ = new deviceFloat[N_ + 1];
     for (int i = 0; i <= N_; ++i) {
         intermediate_[i] = 0.0f;
     }
@@ -34,7 +34,7 @@ Element_t::~Element_t() {
 }
 
 __global__
-void SEM::build_elements(int N_elements, int N, Element_t* elements, float x_min, float x_max) {
+void SEM::build_elements(int N_elements, int N, Element_t* elements, deviceFloat x_min, deviceFloat x_max) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -43,29 +43,29 @@ void SEM::build_elements(int N_elements, int N, Element_t* elements, float x_min
         const int neighbour_R = (i < N_elements - 1) ? i + 1 : 0; // Last cell has first cell as right neighbour
         const int face_L = (i > 0) ? i - 1 : N_elements - 1;
         const int face_R = i;
-        const float delta_x = (x_max - x_min)/N_elements;
-        const float element_x_min = x_min + i * delta_x;
-        const float element_y_min = x_min + (i + 1) * delta_x;
+        const deviceFloat delta_x = (x_max - x_min)/N_elements;
+        const deviceFloat element_x_min = x_min + i * delta_x;
+        const deviceFloat element_y_min = x_min + (i + 1) * delta_x;
         elements[i] = Element_t(N, neighbour_L, neighbour_R, face_L, face_R, element_x_min, element_y_min);
     }
 }
 
 __device__
-float SEM::g(float x) {
+deviceFloat SEM::g(deviceFloat x) {
     //return (x < -0.2f || x > 0.2f) ? 0.2f : 0.8f;
     return -std::sin(pi * x);
 }
 
 
 __global__
-void SEM::initial_conditions(int N_elements, Element_t* elements, const float* nodes) {
+void SEM::initial_conditions(int N_elements, Element_t* elements, const deviceFloat* nodes) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
     for (int i = index; i < N_elements; i += stride) {
         const int offset = elements[i].N_ * (elements[i].N_ + 1) /2;
         for (int j = 0; j <= elements[i].N_; ++j) {
-            const float x = (0.5 + nodes[offset + j]/2.0f) * (elements[i].x_[1] - elements[i].x_[0]) + elements[i].x_[0];
+            const deviceFloat x = (0.5 + nodes[offset + j]/2.0f) * (elements[i].x_[1] - elements[i].x_[0]) + elements[i].x_[0];
             elements[i].phi_[j] = SEM::g(x);
         }
     }
@@ -73,7 +73,7 @@ void SEM::initial_conditions(int N_elements, Element_t* elements, const float* n
 
 // Basically useless, find better solution when multiple elements.
 __global__
-void SEM::get_elements_data(int N_elements, const Element_t* elements, float* phi, float* phi_prime) {
+void SEM::get_elements_data(int N_elements, const Element_t* elements, deviceFloat* phi, deviceFloat* phi_prime) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -88,7 +88,7 @@ void SEM::get_elements_data(int N_elements, const Element_t* elements, float* ph
 
 // Basically useless, find better solution when multiple elements.
 __global__
-void SEM::get_phi(int N_elements, const Element_t* elements, float* phi) {
+void SEM::get_phi(int N_elements, const Element_t* elements, deviceFloat* phi) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -100,7 +100,7 @@ void SEM::get_phi(int N_elements, const Element_t* elements, float* phi) {
 }
 
 __global__
-void SEM::get_solution(int N_elements, int N_interpolation_points, const Element_t* elements, const float* interpolation_matrices, float* phi, float* x) {
+void SEM::get_solution(int N_elements, int N_interpolation_points, const Element_t* elements, const deviceFloat* interpolation_matrices, deviceFloat* phi, deviceFloat* x) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -120,9 +120,9 @@ void SEM::get_solution(int N_elements, int N_interpolation_points, const Element
 
 // Algorithm 61
 __device__
-float SEM::interpolate_to_boundary(int N, const float* phi, const float* lagrange_interpolant) {
+deviceFloat SEM::interpolate_to_boundary(int N, const deviceFloat* phi, const deviceFloat* lagrange_interpolant) {
     const int offset_1D = N * (N + 1) /2;
-    float result = 0.0f;
+    deviceFloat result = 0.0;
 
     for (int j = 0; j <= N; ++j) {
         result += lagrange_interpolant[offset_1D + j] * phi[j];
@@ -132,7 +132,7 @@ float SEM::interpolate_to_boundary(int N, const float* phi, const float* lagrang
 }
 
 __global__
-void SEM::interpolate_to_boundaries(int N_elements, Element_t* elements, const float* lagrange_interpolant_left, const float* lagrange_interpolant_right) {
+void SEM::interpolate_to_boundaries(int N_elements, Element_t* elements, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 

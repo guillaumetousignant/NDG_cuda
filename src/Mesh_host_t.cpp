@@ -150,8 +150,8 @@ void Mesh_host_t::write_data(hostFloat time, int N_interpolation_points, const s
     write_file_data(time, phi, x);
 }
 
-template void Mesh_host_t::solve(const float delta_t, const std::vector<float> output_times, const NDG_host_t<ChebyshevPolynomial_host_t> &NDG); // Get with the times c++, it's crazy I have to do this
-template void Mesh_host_t::solve(const float delta_t, const std::vector<float> output_times, const NDG_host_t<LegendrePolynomial_host_t> &NDG);
+template void Mesh_host_t::solve(const hostFloat delta_t, const std::vector<hostFloat> output_times, const NDG_host_t<ChebyshevPolynomial_host_t> &NDG); // Get with the times c++, it's crazy I have to do this
+template void Mesh_host_t::solve(const hostFloat delta_t, const std::vector<hostFloat> output_times, const NDG_host_t<LegendrePolynomial_host_t> &NDG);
 
 template<typename Polynomial>
 void Mesh_host_t::solve(hostFloat delta_t, const std::vector<hostFloat> output_times, const NDG_host_t<Polynomial> &NDG) {

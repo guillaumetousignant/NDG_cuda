@@ -1,6 +1,8 @@
 #ifndef NDG_FACE_T_H
 #define NDG_FACE_T_H
 
+#include "float_types.h"
+
 class Face_t {
 public:
     __device__ 
@@ -13,7 +15,7 @@ public:
     ~Face_t();
 
     int elements_[2]; // left, right
-    float flux_;
+    deviceFloat flux_;
 };
 
 namespace SEM {
