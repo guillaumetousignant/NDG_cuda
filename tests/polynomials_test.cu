@@ -26,8 +26,6 @@ TEST_CASE("ChebyshevPolynomials", "Checks the Chebyshev polynomials"){
     deviceFloat* host_derivative_matrices_hat = new deviceFloat[NDG.matrix_length_];
     deviceFloat* host_interpolation_matrices = new deviceFloat[NDG.interpolation_length_];
 
-    cudaDeviceSynchronize();
-
     cudaMemcpy(host_nodes, NDG.nodes_, NDG.vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_weights, NDG.weights_, NDG.vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_barycentric_weights, NDG.barycentric_weights_, NDG.vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
@@ -116,8 +114,6 @@ TEST_CASE("LegendrePolynomials", "Checks the Legendre polynomials"){
     deviceFloat* host_derivative_matrices = new deviceFloat[NDG.matrix_length_];
     deviceFloat* host_derivative_matrices_hat = new deviceFloat[NDG.matrix_length_];
     deviceFloat* host_interpolation_matrices = new deviceFloat[NDG.interpolation_length_];
-
-    cudaDeviceSynchronize();
 
     cudaMemcpy(host_nodes, NDG.nodes_, NDG.vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_weights, NDG.weights_, NDG.vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);

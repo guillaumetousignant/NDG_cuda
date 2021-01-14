@@ -35,14 +35,12 @@ NDG_t<Polynomial>::NDG_t(int N_max, size_t N_interpolation_points) :
     Polynomial::nodes_and_weights(N_max_, poly_blockSize, nodes_, weights_);
 
     // Nodes are needed to compute barycentric weights
-    cudaDeviceSynchronize();
     for (int N = 0; N <= N_max_; ++N) {
         const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
         SEM::calculate_barycentric_weights<<<vector_numBlocks, poly_blockSize>>>(N, nodes_, barycentric_weights_);
     }
 
     // We need the barycentric weights for derivative matrix, interpolation matrices and Lagrange interpolants
-    cudaDeviceSynchronize();
     const int interpolation_numBlocks = (N_interpolation_points_ + interpolation_blockSize) / interpolation_blockSize;
     for (int N = 0; N <= N_max_; ++N) {
         const dim3 matrix_numBlocks((N +  matrix_blockSize.x) / matrix_blockSize.x, (N +  matrix_blockSize.y) / matrix_blockSize.y); // Should be (N + poly_blockSize - 1) if N is not inclusive
@@ -54,7 +52,6 @@ NDG_t<Polynomial>::NDG_t(int N_max, size_t N_interpolation_points) :
     }
 
     // Then we calculate the derivative matrix diagonal and normalize the Lagrange interpolants
-    cudaDeviceSynchronize();
     const int poly_numBlocks = (N_max_ + poly_blockSize) / poly_blockSize;
     SEM::normalize_lagrange_interpolating_polynomials<<<poly_numBlocks, poly_blockSize>>>(N_max_, lagrange_interpolant_left_);
     SEM::normalize_lagrange_interpolating_polynomials<<<poly_numBlocks, poly_blockSize>>>(N_max_, lagrange_interpolant_right_);
@@ -64,7 +61,6 @@ NDG_t<Polynomial>::NDG_t(int N_max, size_t N_interpolation_points) :
     }
 
     // All the derivative matrix has to be computed before D^
-    cudaDeviceSynchronize();
     for (int N = 0; N <= N_max_; ++N) {
         const dim3 matrix_numBlocks((N +  matrix_blockSize.x) / matrix_blockSize.x, (N +  matrix_blockSize.y) / matrix_blockSize.y); // Should be (N + poly_blockSize - 1) if N is not inclusive
         SEM::polynomial_derivative_matrices_hat<<<matrix_numBlocks, matrix_blockSize>>>(N, weights_, derivative_matrices_, derivative_matrices_hat_);
@@ -111,8 +107,6 @@ void NDG_t<Polynomial>::print() {
     deviceFloat* host_derivative_matrices = new deviceFloat[matrix_length_];
     deviceFloat* host_derivative_matrices_hat = new deviceFloat[matrix_length_];
     deviceFloat* host_interpolation_matrices = new deviceFloat[interpolation_length_];
-
-    cudaDeviceSynchronize();
 
     cudaMemcpy(host_nodes, nodes_, vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_weights, weights_, vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
