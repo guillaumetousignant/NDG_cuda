@@ -177,7 +177,7 @@ void Mesh_t::write_file_data(size_t N_points, deviceFloat time, const deviceFloa
     file << "ZONE T= \"Zone     1\",  I= " << N_points << ",  J= 1,  DATAPACKING = POINT, SOLUTIONTIME = " << time << std::endl;
 
     for (size_t i = 0; i < N_points; ++i) {
-        file << std::setw(12) << coordinates[i] << " " << std::setw(12) << velocity[i] << std::endl;
+        file << std::setw(12) << coordinates[i] << " " << std::setw(12) << (isnan(velocity[i]) ? 0.0 : velocity[i]) << std::endl;
     }
 
     file.close();
