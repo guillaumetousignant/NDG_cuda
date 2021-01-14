@@ -3,38 +3,24 @@
 constexpr deviceFloat pi = 3.14159265358979323846;
 
 __device__ 
-Element_t::Element_t(int N, size_t neighbour_L, size_t neighbour_R, size_t face_L, size_t face_R, deviceFloat x_L, deviceFloat x_R) : 
+Element_t::Element_t(int N, size_t neighbour_L, size_t neighbour_R, size_t face_L, size_t face_R, deviceFloat x_L, deviceFloat x_R, deviceFloat* phi_array, deviceFloat* phi_prime_array, deviceFloat* intermediate_array) : 
         N_(N),
         neighbours_{neighbour_L, neighbour_R},
         faces_{face_L, face_R},
         x_{x_L, x_R},
-        delta_x_(x_R - x_L) {
-    phi_ = new deviceFloat[N_ + 1];
-    phi_prime_ = new deviceFloat[N_ + 1];
-    intermediate_ = new deviceFloat[N_ + 1];
-    for (int i = 0; i <= N_; ++i) {
-        intermediate_[i] = 0.0f;
-    }
-}
+        delta_x_(x_R - x_L),
+        phi_(phi_array),
+        phi_prime_(phi_prime_array),
+        intermediate_(intermediate_array) {}
 
 __host__ 
 Element_t::Element_t() {};
 
 __host__ __device__
-Element_t::~Element_t() {
-    if (phi_ != nullptr){
-        delete[] phi_;
-    }
-    if (phi_prime_ != nullptr) {
-        delete[] phi_prime_;
-    }
-    if (intermediate_ != nullptr) {
-        delete[] intermediate_;
-    }
-}
+Element_t::~Element_t() {}
 
 __global__
-void SEM::build_elements(size_t N_elements, int N, Element_t* elements, deviceFloat x_min, deviceFloat x_max) {
+void SEM::build_elements(size_t N_elements, int N, Element_t* elements, deviceFloat x_min, deviceFloat x_max, deviceFloat** phi_arrays, deviceFloat** phi_prime_arrays, deviceFloat** intermediate_arrays) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -46,7 +32,7 @@ void SEM::build_elements(size_t N_elements, int N, Element_t* elements, deviceFl
         const deviceFloat delta_x = (x_max - x_min)/N_elements;
         const deviceFloat element_x_min = x_min + i * delta_x;
         const deviceFloat element_y_min = x_min + (i + 1) * delta_x;
-        elements[i] = Element_t(N, neighbour_L, neighbour_R, face_L, face_R, element_x_min, element_y_min);
+        elements[i] = Element_t(N, neighbour_L, neighbour_R, face_L, face_R, element_x_min, element_y_min, phi_arrays[i], phi_prime_arrays[i], intermediate_arrays[i]);
     }
 }
 

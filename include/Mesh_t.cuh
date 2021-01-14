@@ -18,6 +18,10 @@ public:
     Element_t* elements_;
     Face_t* faces_;
 
+    deviceFloat** phi_arrays_;
+    deviceFloat** phi_prime_arrays_;
+    deviceFloat** intermediate_arrays_;
+
     void set_initial_conditions(const deviceFloat* nodes);
     void print();
     void write_file_data(size_t N_points, deviceFloat time, const deviceFloat* velocity, const deviceFloat* coordinates);

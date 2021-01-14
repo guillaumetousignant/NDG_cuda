@@ -6,7 +6,7 @@
 class Element_t { // Turn this into separate vectors, because cache exists
 public:
     __device__ 
-    Element_t(int N, size_t neighbour_L, size_t neighbour_R, size_t face_L, size_t face_R, deviceFloat x_L, deviceFloat x_R);
+    Element_t(int N, size_t neighbour_L, size_t neighbour_R, size_t face_L, size_t face_R, deviceFloat x_L, deviceFloat x_R, deviceFloat* phi_array, deviceFloat* phi_prime_array, deviceFloat* intermediate_array);
 
     __host__ 
     Element_t();
@@ -28,7 +28,7 @@ public:
 
 namespace SEM {
     __global__
-    void build_elements(size_t N_elements, int N, Element_t* elements, deviceFloat x_min, deviceFloat x_max);
+    void build_elements(size_t N_elements, int N, Element_t* elements, deviceFloat x_min, deviceFloat x_max, deviceFloat** phi_arrays, deviceFloat** phi_prime_arrays, deviceFloat** intermediate_arrays);
 
     __device__
     deviceFloat g(deviceFloat x);
