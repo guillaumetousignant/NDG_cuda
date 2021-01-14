@@ -7,18 +7,18 @@ constexpr deviceFloat pi = 3.14159265358979323846;
 __device__
 void SEM::legendre_polynomial_and_derivative(int N, deviceFloat x, deviceFloat &L_N, deviceFloat &L_N_prime) {
     if (N == 0) {
-        L_N = 1.0;
-        L_N_prime = 0.0;
+        L_N = 1.0f;
+        L_N_prime = 0.0f;
     }
     else if (N == 1) {
         L_N = x;
-        L_N_prime = 1.0;
+        L_N_prime = 1.0f;
     }
     else {
-        deviceFloat L_N_2 = 1.0;
+        deviceFloat L_N_2 = 1.0f;
         deviceFloat L_N_1 = x;
-        deviceFloat L_N_2_prime = 0.0;
-        deviceFloat L_N_1_prime = 1.0;
+        deviceFloat L_N_2_prime = 0.0f;
+        deviceFloat L_N_1_prime = 1.0f;
 
         for (int k = 2; k <= N; ++k) {
             L_N = (2 * k - 1) * x * L_N_1/k - (k - 1) * L_N_2/k; // L_N_1(x) ??
@@ -40,8 +40,8 @@ void SEM::legendre_gauss_nodes_and_weights(int N, deviceFloat* nodes, deviceFloa
 
     for (int i = index; i < (N + 1)/2; i += stride) {
         if (N == 1) { // CHECK will enter loop above
-            nodes[offset] = -0.577350269189626; //-std::sqrt(1.0f/3.0f);
-            weights[offset] = 1.0;
+            nodes[offset] = -std::sqrt(1.0f/3.0f);
+            weights[offset] = 1.0f;
             nodes[offset + 1] = -nodes[offset];
             weights[offset + 1] = weights[offset];
         }
@@ -69,14 +69,14 @@ void SEM::legendre_gauss_nodes_and_weights(int N, deviceFloat* nodes, deviceFloa
 
     if (index == 0) {
         if (N == 0) {
-            nodes[offset] = 0.0;
-            weights[offset] = 2.0;
+            nodes[offset] = 0.0f;
+            weights[offset] = 2.0f;
         }
 
         if (N % 2 == 0) {
             deviceFloat dummy, L_N_plus1_prime_final;
-            SEM::legendre_polynomial_and_derivative(N + 1, 0.0, dummy, L_N_plus1_prime_final);
-            nodes[offset + N/2] = 0.0;
+            SEM::legendre_polynomial_and_derivative(N + 1, 0.0f, dummy, L_N_plus1_prime_final);
+            nodes[offset + N/2] = 0.0f;
             weights[offset + N/2] = 2/std::pow(L_N_plus1_prime_final, 2);
         }
     }
