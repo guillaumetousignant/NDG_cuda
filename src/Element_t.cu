@@ -1,4 +1,5 @@
 #include "Element_t.cuh"
+#include <cmath>
 
 constexpr deviceFloat pi = 3.14159265358979323846;
 

@@ -6,6 +6,7 @@
 #include <sstream> 
 #include <iomanip>
 #include <filesystem>
+#include <cmath>
 
 namespace fs = std::filesystem;
 
@@ -136,7 +137,7 @@ void Mesh_host_t::write_file_data(hostFloat time, const std::vector<hostFloat>& 
     file << "ZONE T= \"Zone     1\",  I= " << coordinates.size() << ",  J= 1,  DATAPACKING = POINT, SOLUTIONTIME = " << time << std::endl;
 
     for (size_t i = 0; i < coordinates.size(); ++i) {
-        file << std::setw(12) << coordinates[i] << " " << std::setw(12) << (isnan(velocity[i]) ? 0.0 : velocity[i]) << std::endl;
+        file << std::setw(12) << coordinates[i] << " " << std::setw(12) << (std::isnan(velocity[i]) ? 0.0 : velocity[i]) << std::endl;
     }
 
     file.close();
