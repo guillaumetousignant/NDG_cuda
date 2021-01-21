@@ -303,6 +303,8 @@ void Mesh_t::solve(const deviceFloat delta_t, const std::vector<deviceFloat> out
         }
     }
 
+    SEM::estimate_error<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, NDG.nodes_, NDG.weights_);
+
     bool did_write = false;
     for (auto const& e : std::as_const(output_times)) {
         if ((time >= e) && (time < e + delta_t)) {
@@ -417,5 +419,15 @@ void SEM::compute_dg_derivative(size_t N_elements, Element_t* elements, const Fa
             elements[i].phi_prime_[j] += (flux_L * lagrange_interpolant_left[offset_1D + j] - flux_R * lagrange_interpolant_right[offset_1D + j]) / weights[offset_1D + j];
             elements[i].phi_prime_[j] *= 2.0f/elements[i].delta_x_;
         }
+    }
+}
+
+__global__
+void SEM::estimate_error(size_t N_elements, Element_t* elements, const deviceFloat* nodes, const deviceFloat* weights) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t i = index; i < N_elements; i += stride) {
+        elements[i].estimate_error(nodes, weights);
     }
 }

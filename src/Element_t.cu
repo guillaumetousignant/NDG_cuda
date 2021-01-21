@@ -12,13 +12,116 @@ Element_t::Element_t(int N, size_t neighbour_L, size_t neighbour_R, size_t face_
         delta_x_(x_R - x_L),
         phi_(phi_array),
         phi_prime_(phi_prime_array),
-        intermediate_(intermediate_array) {}
+        intermediate_(intermediate_array),
+        sigma_(0),
+        refine_(false),
+        coarsen_(false) {}
 
 __host__ 
 Element_t::Element_t() {};
 
 __host__ __device__
 Element_t::~Element_t() {}
+
+// Algorithm 61
+__device__
+void Element_t::interpolate_to_boundaries(const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right) {
+    const int offset_1D = N_ * (N_ + 1) /2;
+    phi_L_ = 0.0;
+    phi_R_ = 0.0;
+
+    for (int j = 0; j <= N_; ++j) {
+        phi_L_ += lagrange_interpolant_left[offset_1D + j] * phi_[j];
+        phi_R_ += lagrange_interpolant_right[offset_1D + j] * phi_[j];
+    }
+}
+
+__device__
+void Element_t::estimate_error(const deviceFloat* nodes, const deviceFloat* weights) {
+    const int offset_1D = N_ * (N_ + 1) /2;
+    /*deviceFloat p = N_;
+    
+    for (int node = N_; node >= 0; --node) {
+        intermediate_[node] = 0.0;
+
+        for (int i = 0; i <= p; ++i) {
+            deficeFloat ap = 0.0;
+
+            for (int j = 0; j <= N_; ++j) {
+                deviceFloat L_N, dummy;
+                SEM::legendre_polynomial_and_derivative(i, nodes[offset_1D + j], L_N, dummy);
+                
+                ap += (2.0 * i + 1.0) * (2.0 * p + 1.0) * 0.25 * phi_[j] * L_N * weights[offset_1D + j];
+            }
+
+            intermediate_[node] += std::abs(ap);
+        }
+
+        --p;
+    }*/
+
+    for (int k = 0; k <= N_; ++k) {
+        intermediate_[k] = 0.0;
+        for (int i = 0; i <= N_; ++i) {
+            deviceFloat L_N, dummy;
+            SEM::legendre_polynomial_and_derivative(k, nodes[offset_1D + i], L_N, dummy);
+
+            intermediate_[k] += (2 * k + 1) * 0.5 * phi_[i] * weights[offset_1D + i];
+        }
+    }
+
+    constexpr deviceFloat tolerance_min = 1e-6;     // Refine above this
+    constexpr deviceFloat tolerance_max = 1e-14;    // Coarsen below this
+
+    const deviceFloat C = exponential_decay();
+
+    // sum of error
+    const deviceFloat error = std::sqrt(std::pow(N_, 2) 
+        + std::pow(C, 2) / (2 * sigma_) * std::exp(-2 * sigma_ * (N_ + 1)));
+
+    if(error > tolerance_min){	// need refine
+        refine_ = true;
+        coarsen_ = false;
+    }
+    else if(error <= tolerance_max ){	// need coarsen
+        refine_ = false;
+        coarsen_ = true;
+    }
+    else{	// if error in between then do nothing
+        refine_ = false;
+        coarsen_ = false;
+    }
+}
+
+__device__
+deviceFloat Element_t::exponential_decay() {
+    constexpr int n_points_least_squares = 4; // Number of points to use for thew least squares reduction
+
+    deviceFloat x_avg = 0.0;
+    deviceFloat y_avg = 0.0;
+
+    for (int i = 0; i < n_points_least_squares; ++i) {
+        x_avg += N_ - i;
+        y_avg += std::log(intermediate_[N_ - i]);
+    }
+
+    x_avg /= n_points_least_squares;
+    y_avg /= n_points_least_squares;
+
+    deviceFloat numerator = 0.0;
+    deviceFloat denominator = 0.0;
+
+    for (int i = 0; i < n_points_least_squares; ++i) {
+        numerator += (N_ - i - x_avg) * (std::log(intermediate_[N_ - i]) - y_avg);
+        denominator += std::pow((N_ - i - x_avg), 2);
+    }
+
+    sigma_ = numerator/denominator;
+
+    const deviceFloat C = std::exp(y_avg - sigma_ * x_avg);
+    sigma_ = std::abs(sigma_);
+    return C;
+}
 
 __global__
 void SEM::build_elements(size_t N_elements, int N, Element_t* elements, deviceFloat x_min, deviceFloat x_max, deviceFloat** phi_arrays, deviceFloat** phi_prime_arrays, deviceFloat** intermediate_arrays) {
@@ -105,26 +208,12 @@ void SEM::get_solution(size_t N_elements, size_t N_interpolation_points, const E
     }
 }
 
-// Algorithm 61
-__device__
-deviceFloat SEM::interpolate_to_boundary(int N, const deviceFloat* phi, const deviceFloat* lagrange_interpolant) {
-    const int offset_1D = N * (N + 1) /2;
-    deviceFloat result = 0.0;
-
-    for (int j = 0; j <= N; ++j) {
-        result += lagrange_interpolant[offset_1D + j] * phi[j];
-    }
-
-    return result;
-}
-
 __global__
 void SEM::interpolate_to_boundaries(size_t N_elements, Element_t* elements, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
     for (size_t i = index; i < N_elements; i += stride) {
-        elements[i].phi_L_ = SEM::interpolate_to_boundary(elements[i].N_, elements[i].phi_, lagrange_interpolant_left);
-        elements[i].phi_R_ = SEM::interpolate_to_boundary(elements[i].N_, elements[i].phi_, lagrange_interpolant_right);
+        elements[i].interpolate_to_boundaries(lagrange_interpolant_left, lagrange_interpolant_right);
     }
 }

@@ -48,6 +48,9 @@ namespace SEM {
     // Algorithm 60 (not really anymore)
     __global__
     void compute_dg_derivative(size_t N_elements, Element_t* elements, const Face_t* faces, const deviceFloat* weights, const deviceFloat* derivative_matrices_hat, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right);
+
+    __global__
+    void estimate_error(size_t N_elements, Element_t* elements, const deviceFloat* nodes, const deviceFloat* weights);
 }
 
 #endif
