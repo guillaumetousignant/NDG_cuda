@@ -115,12 +115,12 @@ coarsen_ax.legend(legend_list, loc='upper right')
 
 error_fig, error_ax = plt.subplots(1, 1)
 for i in range(len(filenames)):
-    error_ax.plot(x_arrays[i], error_arrays[i])
+    error_ax.semilogy(x_arrays[i], error_arrays[i])
 
 error_ax.grid()
-error_ax.set_ylabel('Error [bool]')
+error_ax.set_ylabel('Error estimation [?]')
 error_ax.set_xlabel('x [m]')
-error_ax.set_title("Error along x")
+error_ax.set_title("Error estimation along x")
 error_ax.legend(legend_list, loc='upper right')
 
 plt.show()

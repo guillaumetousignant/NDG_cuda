@@ -85,8 +85,7 @@ void Element_t::estimate_error(const deviceFloat* nodes, const deviceFloat* weig
     const deviceFloat C = exponential_decay();
 
     // sum of error
-    error_ = std::sqrt(N_ * N_
-        + C * C / (2.0 * sigma_) * std::exp(-2.0 * sigma_ * (N_ + 1)));
+    error_ = std::sqrt(std::pow(C, 2) * 0.5/sigma_) * std::exp(-sigma_ * (N_ + 1));
 
     if(error_ > tolerance_min){	// need refine
         refine_ = true;
