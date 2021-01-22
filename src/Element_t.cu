@@ -36,6 +36,34 @@ void Element_t::interpolate_to_boundaries(const deviceFloat* lagrange_interpolan
     }
 }
 
+// Algorithm 22
+__device__
+void SEM::polynomial_and_derivative(int N, deviceFloat x, deviceFloat &L_N, deviceFloat &L_N_prime) {
+    if (N == 0) {
+        L_N = 1.0f;
+        L_N_prime = 0.0f;
+    }
+    else if (N == 1) {
+        L_N = x;
+        L_N_prime = 1.0f;
+    }
+    else {
+        deviceFloat L_N_2 = 1.0f;
+        deviceFloat L_N_1 = x;
+        deviceFloat L_N_2_prime = 0.0f;
+        deviceFloat L_N_1_prime = 1.0f;
+
+        for (int k = 2; k <= N; ++k) {
+            L_N = (2 * k - 1) * x * L_N_1/k - (k - 1) * L_N_2/k; // L_N_1(x) ??
+            L_N_prime = L_N_2_prime + (2 * k - 1) * L_N_1;
+            L_N_2 = L_N_1;
+            L_N_1 = L_N;
+            L_N_2_prime = L_N_1_prime;
+            L_N_1_prime = L_N_prime;
+        }
+    }
+}
+
 __device__
 void Element_t::estimate_error(const deviceFloat* nodes, const deviceFloat* weights) {
     const int offset_1D = N_ * (N_ + 1) /2;
@@ -64,7 +92,7 @@ void Element_t::estimate_error(const deviceFloat* nodes, const deviceFloat* weig
         intermediate_[k] = 0.0;
         for (int i = 0; i <= N_; ++i) {
             deviceFloat L_N, dummy;
-            SEM::legendre_polynomial_and_derivative(k, nodes[offset_1D + i], L_N, dummy);
+            SEM::polynomial_and_derivative(k, nodes[offset_1D + i], L_N, dummy);
 
             intermediate_[k] += (2 * k + 1) * 0.5 * phi_[i] * weights[offset_1D + i];
         }
@@ -76,8 +104,8 @@ void Element_t::estimate_error(const deviceFloat* nodes, const deviceFloat* weig
     const deviceFloat C = exponential_decay();
 
     // sum of error
-    const deviceFloat error = std::sqrt(std::pow(N_, 2) 
-        + std::pow(C, 2) / (2 * sigma_) * std::exp(-2 * sigma_ * (N_ + 1)));
+    const deviceFloat error = std::sqrt(N_ * N_
+        + C * C / (2 * sigma_) * std::exp(-2 * sigma_ * (N_ + 1)));
 
     if(error > tolerance_min){	// need refine
         refine_ = true;
@@ -140,6 +168,16 @@ void SEM::build_elements(size_t N_elements, int N, Element_t* elements, deviceFl
     }
 }
 
+__global__
+void SEM::estimate_error(size_t N_elements, Element_t* elements, const deviceFloat* nodes, const deviceFloat* weights) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t i = index; i < N_elements; i += stride) {
+        elements[i].estimate_error(nodes, weights);
+    }
+}
+
 __device__
 deviceFloat SEM::g(deviceFloat x) {
     //return (x < -0.2f || x > 0.2f) ? 0.2f : 0.8f;
@@ -190,7 +228,7 @@ void SEM::get_phi(size_t N_elements, const Element_t* elements, deviceFloat* phi
 }
 
 __global__
-void SEM::get_solution(size_t N_elements, size_t N_interpolation_points, const Element_t* elements, const deviceFloat* interpolation_matrices, deviceFloat* phi, deviceFloat* x) {
+void SEM::get_solution(size_t N_elements, size_t N_interpolation_points, const Element_t* elements, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* phi, deviceFloat* phi_prime, deviceFloat* intermediate, deviceFloat* sigma, deviceFloat* refine, deviceFloat* coarsen) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -200,10 +238,17 @@ void SEM::get_solution(size_t N_elements, size_t N_interpolation_points, const E
 
         for (size_t j = 0; j < N_interpolation_points; ++j) {
             phi[offset_interp_1D + j] = 0.0f;
+            phi_prime[offset_interp_1D + j] = 0.0f;
+            intermediate[offset_interp_1D + j] = 0.0f;
             for (int k = 0; k <= elements[i].N_; ++k) {
                 phi[offset_interp_1D + j] += interpolation_matrices[offset_interp + j * (elements[i].N_ + 1) + k] * elements[i].phi_[k];
+                phi_prime[offset_interp_1D + j] += interpolation_matrices[offset_interp + j * (elements[i].N_ + 1) + k] * elements[i].phi_prime_[k];
+                intermediate[offset_interp_1D + j] += interpolation_matrices[offset_interp + j * (elements[i].N_ + 1) + k] * elements[i].intermediate_[k];
             }
             x[offset_interp_1D + j] = j * (elements[i].x_[1] - elements[i].x_[0]) / (N_interpolation_points - 1) + elements[i].x_[0];
+            sigma[offset_interp_1D + j] = elements[i].sigma_;
+            refine[offset_interp_1D + j] = elements[i].refine_;
+            coarsen[offset_interp_1D + j] = elements[i].coarsen_;
         }
     }
 }

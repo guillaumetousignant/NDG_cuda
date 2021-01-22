@@ -45,6 +45,9 @@ namespace SEM {
     __global__
     void build_elements(size_t N_elements, int N, Element_t* elements, deviceFloat x_min, deviceFloat x_max, deviceFloat** phi_arrays, deviceFloat** phi_prime_arrays, deviceFloat** intermediate_arrays);
 
+    __global__
+    void estimate_error(size_t N_elements, Element_t* elements, const deviceFloat* nodes, const deviceFloat* weights);
+
     __device__
     deviceFloat g(deviceFloat x);
 
@@ -60,10 +63,14 @@ namespace SEM {
     void get_phi(size_t N_elements, const Element_t* elements, deviceFloat* phi);
 
     __global__
-    void get_solution(size_t N_elements, size_t N_interpolation_points, const Element_t* elements, const deviceFloat* interpolation_matrices, deviceFloat* phi, deviceFloat* x);
+    void get_solution(size_t N_elements, size_t N_interpolation_points, const Element_t* elements, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* phi, deviceFloat* phi_prime, deviceFloat* intermediate, deviceFloat* sigma, deviceFloat* refine, deviceFloat* coarsen);
     
     __global__
     void interpolate_to_boundaries(size_t N_elements, Element_t* elements, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right);
+
+    // Algorithm 22
+    __device__
+    void polynomial_and_derivative(int N, deviceFloat x, deviceFloat &L_N, deviceFloat &L_N_prime);
 }
 
 #endif

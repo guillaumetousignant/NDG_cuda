@@ -88,31 +88,3 @@ void LegendrePolynomial_t::nodes_and_weights(int N_max, int blockSize, deviceFlo
         SEM::legendre_gauss_nodes_and_weights<<<numBlocks, blockSize>>>(N, nodes, weights);
     }
 }
-
-// Algorithm 22
-__device__
-void LegendrePolynomial_t::polynomial_and_derivative(int N, deviceFloat x, deviceFloat &L_N, deviceFloat &L_N_prime) {
-    if (N == 0) {
-        L_N = 1.0f;
-        L_N_prime = 0.0f;
-    }
-    else if (N == 1) {
-        L_N = x;
-        L_N_prime = 1.0f;
-    }
-    else {
-        deviceFloat L_N_2 = 1.0f;
-        deviceFloat L_N_1 = x;
-        deviceFloat L_N_2_prime = 0.0f;
-        deviceFloat L_N_1_prime = 1.0f;
-
-        for (int k = 2; k <= N; ++k) {
-            L_N = (2 * k - 1) * x * L_N_1/k - (k - 1) * L_N_2/k; // L_N_1(x) ??
-            L_N_prime = L_N_2_prime + (2 * k - 1) * L_N_1;
-            L_N_2 = L_N_1;
-            L_N_1 = L_N;
-            L_N_2_prime = L_N_1_prime;
-            L_N_1_prime = L_N_prime;
-        }
-    }
-}

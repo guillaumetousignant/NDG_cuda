@@ -218,7 +218,7 @@ void Mesh_t::print() {
     cudaFree(phi_prime);
 }
 
-void Mesh_t::write_file_data(size_t N_points, deviceFloat time, const deviceFloat* velocity, const deviceFloat* coordinates) {
+void Mesh_t::write_file_data(size_t N_points, deviceFloat time, const deviceFloat* coordinates, const deviceFloat* velocity, const deviceFloat* du_dx, const deviceFloat* intermediate, const deviceFloat* sigma, const deviceFloat* refine, const deviceFloat* coarsen) {
     std::stringstream ss;
     std::ofstream file;
 
@@ -229,11 +229,17 @@ void Mesh_t::write_file_data(size_t N_points, deviceFloat time, const deviceFloa
     file.open(save_dir / ss.str());
 
     file << "TITLE = \"Velocity  at t= " << time << "\"" << std::endl;
-    file << "VARIABLES = \"X\", \"U_x\"" << std::endl;
+    file << "VARIABLES = \"X\", \"U_x\", \"U_x_prime\", \"intermediate\", \"sigma\", \"refine\", \"coarsen\"" << std::endl;
     file << "ZONE T= \"Zone     1\",  I= " << N_points << ",  J= 1,  DATAPACKING = POINT, SOLUTIONTIME = " << time << std::endl;
 
     for (size_t i = 0; i < N_points; ++i) {
-        file << std::setw(12) << coordinates[i] << " " << std::setw(12) << (std::isnan(velocity[i]) ? 0.0 : velocity[i]) << std::endl;
+        file << std::setw(12) << coordinates[i] 
+            << " " << std::setw(12) << (std::isnan(velocity[i]) ? 0.0 : velocity[i]) 
+            << " " << std::setw(12) << (std::isnan(du_dx[i]) ? 0.0 : du_dx[i])
+            << " " << std::setw(12) << (std::isnan(intermediate[i]) ? 0.0 : intermediate[i])
+            << " " << std::setw(12) << (std::isnan(sigma[i]) ? 0.0 : sigma[i])
+            << " " << std::setw(12) << (std::isnan(refine[i]) ? 0.0 : refine[i])
+            << " " << std::setw(12) << (std::isnan(coarsen[i]) ? 0.0 : coarsen[i]) << std::endl;
     }
 
     file.close();
@@ -241,25 +247,56 @@ void Mesh_t::write_file_data(size_t N_points, deviceFloat time, const deviceFloa
 
 void Mesh_t::write_data(deviceFloat time, size_t N_interpolation_points, const deviceFloat* interpolation_matrices) {
     // CHECK find better solution for multiple elements
-    deviceFloat* phi;
     deviceFloat* x;
-    deviceFloat* host_phi = new deviceFloat[N_elements_ * N_interpolation_points];
+    deviceFloat* phi;
+    deviceFloat* phi_prime;
+    deviceFloat* intermediate;
+    deviceFloat* sigma;
+    deviceFloat* refine;
+    deviceFloat* coarsen;
     deviceFloat* host_x = new deviceFloat[N_elements_ * N_interpolation_points];
-    cudaMalloc(&phi, N_elements_ * N_interpolation_points * sizeof(deviceFloat));
+    deviceFloat* host_phi = new deviceFloat[N_elements_ * N_interpolation_points];
+    deviceFloat* host_phi_prime = new deviceFloat[N_elements_ * N_interpolation_points];
+    deviceFloat* host_intermediate = new deviceFloat[N_elements_ * N_interpolation_points];
+    deviceFloat* host_sigma = new deviceFloat[N_elements_ * N_interpolation_points];
+    deviceFloat* host_refine = new deviceFloat[N_elements_ * N_interpolation_points];
+    deviceFloat* host_coarsen = new deviceFloat[N_elements_ * N_interpolation_points];
     cudaMalloc(&x, N_elements_ * N_interpolation_points * sizeof(deviceFloat));
+    cudaMalloc(&phi, N_elements_ * N_interpolation_points * sizeof(deviceFloat));
+    cudaMalloc(&phi_prime, N_elements_ * N_interpolation_points * sizeof(deviceFloat));
+    cudaMalloc(&intermediate, N_elements_ * N_interpolation_points * sizeof(deviceFloat));
+    cudaMalloc(&sigma, N_elements_ * N_interpolation_points * sizeof(deviceFloat));
+    cudaMalloc(&refine, N_elements_ * N_interpolation_points * sizeof(deviceFloat));
+    cudaMalloc(&coarsen, N_elements_ * N_interpolation_points * sizeof(deviceFloat));
+    
 
     const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
-    SEM::get_solution<<<elements_numBlocks, elements_blockSize>>>(N_elements_, N_interpolation_points, elements_, interpolation_matrices, phi, x);
+    SEM::get_solution<<<elements_numBlocks, elements_blockSize>>>(N_elements_, N_interpolation_points, elements_, interpolation_matrices, x, phi, phi_prime, intermediate, sigma, refine, coarsen);
     
-    cudaMemcpy(host_phi, phi, N_elements_ * N_interpolation_points * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_x, x , N_elements_ * N_interpolation_points * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_phi, phi, N_elements_ * N_interpolation_points * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_phi_prime, phi_prime, N_elements_ * N_interpolation_points * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_intermediate, intermediate, N_elements_ * N_interpolation_points * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_sigma, sigma, N_elements_ * N_interpolation_points * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_refine, refine, N_elements_ * N_interpolation_points * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_coarsen, coarsen, N_elements_ * N_interpolation_points * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    
+    write_file_data(N_elements_ * N_interpolation_points, time, host_x, host_phi, host_phi_prime, host_intermediate, host_sigma, host_refine, host_coarsen);
 
-    write_file_data(N_elements_ * N_interpolation_points, time, host_phi, host_x);
-
-    delete[] host_phi;
     delete[] host_x;
-    cudaFree(phi);
+    delete[] host_phi;
+    delete[] host_phi_prime;
+    delete[] host_intermediate;
+    delete[] host_sigma;
+    delete[] host_refine;
+    delete[] host_coarsen;
     cudaFree(x);
+    cudaFree(phi);
+    cudaFree(phi_prime);
+    cudaFree(intermediate);
+    cudaFree(sigma);
+    cudaFree(refine);
+    cudaFree(coarsen);
 }
 
 template void Mesh_t::solve(const deviceFloat delta_t, const std::vector<deviceFloat> output_times, const NDG_t<ChebyshevPolynomial_t> &NDG); // Get with the times c++, it's crazy I have to do this
@@ -419,15 +456,5 @@ void SEM::compute_dg_derivative(size_t N_elements, Element_t* elements, const Fa
             elements[i].phi_prime_[j] += (flux_L * lagrange_interpolant_left[offset_1D + j] - flux_R * lagrange_interpolant_right[offset_1D + j]) / weights[offset_1D + j];
             elements[i].phi_prime_[j] *= 2.0f/elements[i].delta_x_;
         }
-    }
-}
-
-__global__
-void SEM::estimate_error(size_t N_elements, Element_t* elements, const deviceFloat* nodes, const deviceFloat* weights) {
-    const int index = blockIdx.x * blockDim.x + threadIdx.x;
-    const int stride = blockDim.x * gridDim.x;
-
-    for (size_t i = index; i < N_elements; i += stride) {
-        elements[i].estimate_error(nodes, weights);
     }
 }
