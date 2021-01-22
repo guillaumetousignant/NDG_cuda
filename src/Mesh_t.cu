@@ -25,9 +25,9 @@ Mesh_t::Mesh_t(size_t N_elements, int initial_N, deviceFloat x_min, deviceFloat 
     intermediate_arrays_ = new deviceFloat*[N_elements_];
 
     for (size_t i = 0; i < N_elements_; ++i) {
-        cudaMalloc(&(phi_arrays_[i]), initial_N_ * sizeof(deviceFloat));
-        cudaMalloc(&(phi_prime_arrays_[i]), initial_N_ * sizeof(deviceFloat));
-        cudaMalloc(&(intermediate_arrays_[i]), initial_N_ * sizeof(deviceFloat));
+        cudaMalloc(&(phi_arrays_[i]), (initial_N_ + 1) * sizeof(deviceFloat));
+        cudaMalloc(&(phi_prime_arrays_[i]), (initial_N_ + 1) * sizeof(deviceFloat));
+        cudaMalloc(&(intermediate_arrays_[i]), (initial_N_ + 1) * sizeof(deviceFloat));
     }
 
     deviceFloat** phi_arrays_device;
@@ -36,9 +36,9 @@ Mesh_t::Mesh_t(size_t N_elements, int initial_N, deviceFloat x_min, deviceFloat 
     cudaMalloc(&phi_arrays_device, N_elements_ * sizeof(deviceFloat*));
     cudaMalloc(&phi_prime_arrays_device, N_elements_ * sizeof(deviceFloat*));
     cudaMalloc(&intermediate_arrays_device, N_elements_ * sizeof(deviceFloat*));
-    cudaMemcpy(phi_arrays_device ,phi_arrays_, N_elements_ * sizeof(deviceFloat*), cudaMemcpyHostToDevice);
-    cudaMemcpy(phi_prime_arrays_device ,phi_prime_arrays_, N_elements_ * sizeof(deviceFloat*), cudaMemcpyHostToDevice);
-    cudaMemcpy(intermediate_arrays_device ,intermediate_arrays_, N_elements_ * sizeof(deviceFloat*), cudaMemcpyHostToDevice);
+    cudaMemcpy(phi_arrays_device, phi_arrays_, N_elements_ * sizeof(deviceFloat*), cudaMemcpyHostToDevice);
+    cudaMemcpy(phi_prime_arrays_device, phi_prime_arrays_, N_elements_ * sizeof(deviceFloat*), cudaMemcpyHostToDevice);
+    cudaMemcpy(intermediate_arrays_device, intermediate_arrays_, N_elements_ * sizeof(deviceFloat*), cudaMemcpyHostToDevice);
 
 
 
