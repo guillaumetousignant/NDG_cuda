@@ -23,6 +23,7 @@ target_compile_features(NDG_cuda PRIVATE cxx_std_17)
 if(NOT ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug"))
     set_property(TARGET NDG_cuda PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
 endif()
+target_compile_options(NDG_cuda PUBLIC "$<$<CONFIG:DEBUG>:-lineinfo>")
 
 install(TARGETS NDG_cuda 
     EXPORT NDG_cuda-export
