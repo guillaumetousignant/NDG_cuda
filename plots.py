@@ -75,7 +75,7 @@ ux_prime_ax.legend(legend_list, loc='upper right')
 
 intermediate_fig, intermediate_ax = plt.subplots(1, 1)
 for i in range(len(filenames)):
-    intermediate_ax.plot(x_arrays[i], intermediate_arrays[i])
+    intermediate_ax.semilogy(x_arrays[i], intermediate_arrays[i])
 
 intermediate_ax.grid()
 intermediate_ax.set_ylabel('Intermediate [?]')
