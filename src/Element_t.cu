@@ -130,7 +130,7 @@ deviceFloat Element_t::exponential_decay() {
 
     for (int i = 0; i < n_points_least_squares; ++i) {
         x_avg += N_ - i;
-        y_avg += std::log(intermediate_[N_ - i]);
+        y_avg += std::log(std::abs(intermediate_[N_ - i]));
     }
 
     x_avg /= n_points_least_squares;
@@ -140,7 +140,7 @@ deviceFloat Element_t::exponential_decay() {
     deviceFloat denominator = 0.0;
 
     for (int i = 0; i < n_points_least_squares; ++i) {
-        numerator += (N_ - i - x_avg) * (std::log(intermediate_[N_ - i]) - y_avg);
+        numerator += (N_ - i - x_avg) * (std::log(std::abs(intermediate_[N_ - i])) - y_avg);
         denominator += std::pow((N_ - i - x_avg), 2);
     }
 
