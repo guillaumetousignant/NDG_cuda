@@ -8,7 +8,7 @@
 #include <vector>
 
 int main(void) {
-    const size_t N_elements = 256;
+    const size_t N_elements = 64;
     const int N_max = 8;
     const deviceFloat x[2] = {-1.0f, 1.0f};
     const deviceFloat CFL = 0.5f;

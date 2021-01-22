@@ -24,7 +24,7 @@ public:
 
     void set_initial_conditions(const deviceFloat* nodes);
     void print();
-    void write_file_data(size_t N_points, deviceFloat time, const deviceFloat* coordinates, const deviceFloat* velocity, const deviceFloat* du_dx, const deviceFloat* intermediate, const deviceFloat* sigma, const deviceFloat* refine, const deviceFloat* coarsen);
+    void write_file_data(size_t N_points, deviceFloat time, const deviceFloat* coordinates, const deviceFloat* velocity, const deviceFloat* du_dx, const deviceFloat* intermediate, const deviceFloat* sigma, const deviceFloat* refine, const deviceFloat* coarsen, const deviceFloat* error);
     void write_data(deviceFloat time, size_t N_interpolation_points, const deviceFloat* interpolation_matrices);
     
     template<typename Polynomial>

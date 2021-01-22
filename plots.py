@@ -16,6 +16,7 @@ intermediate_arrays = []
 sigma_arrays = []
 refine_arrays = []
 coarsen_arrays = []
+error_arrays = []
 
 t_finder = re.compile(r"SOLUTIONTIME = [-+]?\d*\.?\d+")
 I_finder = re.compile(r"I= \d*")
@@ -36,6 +37,7 @@ for filename in filenames:
         sigma_arrays.append(np.zeros(N))
         refine_arrays.append(np.zeros(N))
         coarsen_arrays.append(np.zeros(N))
+        error_arrays.append(np.zeros(N))
 
         for i in range(N):
             numbers = lines[i+3].split()
@@ -46,6 +48,7 @@ for filename in filenames:
             sigma_arrays[-1][i] = float(numbers[4])
             refine_arrays[-1][i] = float(numbers[5])
             coarsen_arrays[-1][i] = float(numbers[6])
+            error_arrays[-1][i] = float(numbers[7])
 
 # Plotting ux
 legend_list = []
@@ -109,5 +112,15 @@ coarsen_ax.set_ylabel('Coarsen flag [bool]')
 coarsen_ax.set_xlabel('x [m]')
 coarsen_ax.set_title("Coarsen flag along x")
 coarsen_ax.legend(legend_list, loc='upper right')
+
+error_fig, error_ax = plt.subplots(1, 1)
+for i in range(len(filenames)):
+    error_ax.plot(x_arrays[i], error_arrays[i])
+
+error_ax.grid()
+error_ax.set_ylabel('Error [bool]')
+error_ax.set_xlabel('x [m]')
+error_ax.set_title("Error along x")
+error_ax.legend(legend_list, loc='upper right')
 
 plt.show()

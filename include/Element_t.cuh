@@ -28,6 +28,7 @@ class Element_t { // Turn this into separate vectors, because cache exists
         deviceFloat sigma_;
         bool refine_;
         bool coarsen_;
+        deviceFloat error_;
 
         // Algorithm 61
         __device__
@@ -63,7 +64,7 @@ namespace SEM {
     void get_phi(size_t N_elements, const Element_t* elements, deviceFloat* phi);
 
     __global__
-    void get_solution(size_t N_elements, size_t N_interpolation_points, const Element_t* elements, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* phi, deviceFloat* phi_prime, deviceFloat* intermediate, deviceFloat* sigma, deviceFloat* refine, deviceFloat* coarsen);
+    void get_solution(size_t N_elements, size_t N_interpolation_points, const Element_t* elements, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* phi, deviceFloat* phi_prime, deviceFloat* intermediate, deviceFloat* sigma, deviceFloat* refine, deviceFloat* coarsen, deviceFloat* error);
     
     __global__
     void interpolate_to_boundaries(size_t N_elements, Element_t* elements, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right);

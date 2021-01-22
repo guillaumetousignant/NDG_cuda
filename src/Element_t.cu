@@ -13,9 +13,10 @@ Element_t::Element_t(int N, size_t neighbour_L, size_t neighbour_R, size_t face_
         phi_(phi_array),
         phi_prime_(phi_prime_array),
         intermediate_(intermediate_array),
-        sigma_(0),
+        sigma_(0.0),
         refine_(false),
-        coarsen_(false) {}
+        coarsen_(false),
+        error_(0.0) {}
 
 __host__ 
 Element_t::Element_t() {};
@@ -67,26 +68,6 @@ void SEM::polynomial_and_derivative(int N, deviceFloat x, deviceFloat &L_N, devi
 __device__
 void Element_t::estimate_error(const deviceFloat* nodes, const deviceFloat* weights) {
     const int offset_1D = N_ * (N_ + 1) /2;
-    /*deviceFloat p = N_;
-    
-    for (int node = N_; node >= 0; --node) {
-        intermediate_[node] = 0.0;
-
-        for (int i = 0; i <= p; ++i) {
-            deficeFloat ap = 0.0;
-
-            for (int j = 0; j <= N_; ++j) {
-                deviceFloat L_N, dummy;
-                SEM::legendre_polynomial_and_derivative(i, nodes[offset_1D + j], L_N, dummy);
-                
-                ap += (2.0 * i + 1.0) * (2.0 * p + 1.0) * 0.25 * phi_[j] * L_N * weights[offset_1D + j];
-            }
-
-            intermediate_[node] += std::abs(ap);
-        }
-
-        --p;
-    }*/
 
     for (int k = 0; k <= N_; ++k) {
         intermediate_[k] = 0.0;
@@ -94,7 +75,7 @@ void Element_t::estimate_error(const deviceFloat* nodes, const deviceFloat* weig
             deviceFloat L_N, dummy;
             SEM::polynomial_and_derivative(k, nodes[offset_1D + i], L_N, dummy);
 
-            intermediate_[k] += (2 * k + 1) * 0.5 * phi_[i] * weights[offset_1D + i];
+            intermediate_[k] += (2 * k + 1) * 0.5 * phi_[i] * L_N * weights[offset_1D + i];
         }
     }
 
@@ -104,14 +85,14 @@ void Element_t::estimate_error(const deviceFloat* nodes, const deviceFloat* weig
     const deviceFloat C = exponential_decay();
 
     // sum of error
-    const deviceFloat error = std::sqrt(N_ * N_
-        + C * C / (2 * sigma_) * std::exp(-2 * sigma_ * (N_ + 1)));
+    error_ = std::sqrt(N_ * N_
+        + C * C / (2.0 * sigma_) * std::exp(-2.0 * sigma_ * (N_ + 1)));
 
-    if(error > tolerance_min){	// need refine
+    if(error_ > tolerance_min){	// need refine
         refine_ = true;
         coarsen_ = false;
     }
-    else if(error <= tolerance_max ){	// need coarsen
+    else if(error_ <= tolerance_max ){	// need coarsen
         refine_ = false;
         coarsen_ = true;
     }
@@ -123,7 +104,7 @@ void Element_t::estimate_error(const deviceFloat* nodes, const deviceFloat* weig
 
 __device__
 deviceFloat Element_t::exponential_decay() {
-    constexpr int n_points_least_squares = 4; // Number of points to use for thew least squares reduction
+    const int n_points_least_squares = min(N_, 4); // Number of points to use for thew least squares reduction, but don't go above N.
 
     deviceFloat x_avg = 0.0;
     deviceFloat y_avg = 0.0;
@@ -228,7 +209,7 @@ void SEM::get_phi(size_t N_elements, const Element_t* elements, deviceFloat* phi
 }
 
 __global__
-void SEM::get_solution(size_t N_elements, size_t N_interpolation_points, const Element_t* elements, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* phi, deviceFloat* phi_prime, deviceFloat* intermediate, deviceFloat* sigma, deviceFloat* refine, deviceFloat* coarsen) {
+void SEM::get_solution(size_t N_elements, size_t N_interpolation_points, const Element_t* elements, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* phi, deviceFloat* phi_prime, deviceFloat* intermediate, deviceFloat* sigma, deviceFloat* refine, deviceFloat* coarsen, deviceFloat* error) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -249,6 +230,7 @@ void SEM::get_solution(size_t N_elements, size_t N_interpolation_points, const E
             sigma[offset_interp_1D + j] = elements[i].sigma_;
             refine[offset_interp_1D + j] = elements[i].refine_;
             coarsen[offset_interp_1D + j] = elements[i].coarsen_;
+            error[offset_interp_1D + j] = elements[i].error_;
         }
     }
 }

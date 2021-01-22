@@ -218,7 +218,7 @@ void Mesh_t::print() {
     cudaFree(phi_prime);
 }
 
-void Mesh_t::write_file_data(size_t N_points, deviceFloat time, const deviceFloat* coordinates, const deviceFloat* velocity, const deviceFloat* du_dx, const deviceFloat* intermediate, const deviceFloat* sigma, const deviceFloat* refine, const deviceFloat* coarsen) {
+void Mesh_t::write_file_data(size_t N_points, deviceFloat time, const deviceFloat* coordinates, const deviceFloat* velocity, const deviceFloat* du_dx, const deviceFloat* intermediate, const deviceFloat* sigma, const deviceFloat* refine, const deviceFloat* coarsen, const deviceFloat* error) {
     std::stringstream ss;
     std::ofstream file;
 
@@ -234,12 +234,13 @@ void Mesh_t::write_file_data(size_t N_points, deviceFloat time, const deviceFloa
 
     for (size_t i = 0; i < N_points; ++i) {
         file << std::setw(12) << coordinates[i] 
-            << " " << std::setw(12) << (std::isnan(velocity[i]) ? 0.0 : velocity[i]) 
-            << " " << std::setw(12) << (std::isnan(du_dx[i]) ? 0.0 : du_dx[i])
-            << " " << std::setw(12) << (std::isnan(intermediate[i]) ? 0.0 : intermediate[i])
-            << " " << std::setw(12) << (std::isnan(sigma[i]) ? 0.0 : sigma[i])
-            << " " << std::setw(12) << (std::isnan(refine[i]) ? 0.0 : refine[i])
-            << " " << std::setw(12) << (std::isnan(coarsen[i]) ? 0.0 : coarsen[i]) << std::endl;
+            << " " << std::setw(12) << (std::isnan(velocity[i]) ? velocity[i] : velocity[i]) 
+            << " " << std::setw(12) << (std::isnan(du_dx[i]) ? du_dx[i] : du_dx[i])
+            << " " << std::setw(12) << (std::isnan(intermediate[i]) ? intermediate[i] : intermediate[i])
+            << " " << std::setw(12) << (std::isnan(sigma[i]) ? sigma[i] : sigma[i])
+            << " " << std::setw(12) << (std::isnan(refine[i]) ? refine[i] : refine[i])
+            << " " << std::setw(12) << (std::isnan(coarsen[i]) ? coarsen[i] : coarsen[i])
+            << " " << std::setw(12) << (std::isnan(error[i]) ? error[i] : error[i]) << std::endl;
     }
 
     file.close();
@@ -254,6 +255,7 @@ void Mesh_t::write_data(deviceFloat time, size_t N_interpolation_points, const d
     deviceFloat* sigma;
     deviceFloat* refine;
     deviceFloat* coarsen;
+    deviceFloat* error;
     deviceFloat* host_x = new deviceFloat[N_elements_ * N_interpolation_points];
     deviceFloat* host_phi = new deviceFloat[N_elements_ * N_interpolation_points];
     deviceFloat* host_phi_prime = new deviceFloat[N_elements_ * N_interpolation_points];
@@ -261,6 +263,7 @@ void Mesh_t::write_data(deviceFloat time, size_t N_interpolation_points, const d
     deviceFloat* host_sigma = new deviceFloat[N_elements_ * N_interpolation_points];
     deviceFloat* host_refine = new deviceFloat[N_elements_ * N_interpolation_points];
     deviceFloat* host_coarsen = new deviceFloat[N_elements_ * N_interpolation_points];
+    deviceFloat* host_error = new deviceFloat[N_elements_ * N_interpolation_points];
     cudaMalloc(&x, N_elements_ * N_interpolation_points * sizeof(deviceFloat));
     cudaMalloc(&phi, N_elements_ * N_interpolation_points * sizeof(deviceFloat));
     cudaMalloc(&phi_prime, N_elements_ * N_interpolation_points * sizeof(deviceFloat));
@@ -268,10 +271,11 @@ void Mesh_t::write_data(deviceFloat time, size_t N_interpolation_points, const d
     cudaMalloc(&sigma, N_elements_ * N_interpolation_points * sizeof(deviceFloat));
     cudaMalloc(&refine, N_elements_ * N_interpolation_points * sizeof(deviceFloat));
     cudaMalloc(&coarsen, N_elements_ * N_interpolation_points * sizeof(deviceFloat));
+    cudaMalloc(&error, N_elements_ * N_interpolation_points * sizeof(deviceFloat));
     
 
     const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
-    SEM::get_solution<<<elements_numBlocks, elements_blockSize>>>(N_elements_, N_interpolation_points, elements_, interpolation_matrices, x, phi, phi_prime, intermediate, sigma, refine, coarsen);
+    SEM::get_solution<<<elements_numBlocks, elements_blockSize>>>(N_elements_, N_interpolation_points, elements_, interpolation_matrices, x, phi, phi_prime, intermediate, sigma, refine, coarsen, error);
     
     cudaMemcpy(host_x, x , N_elements_ * N_interpolation_points * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_phi, phi, N_elements_ * N_interpolation_points * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
@@ -280,8 +284,9 @@ void Mesh_t::write_data(deviceFloat time, size_t N_interpolation_points, const d
     cudaMemcpy(host_sigma, sigma, N_elements_ * N_interpolation_points * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_refine, refine, N_elements_ * N_interpolation_points * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_coarsen, coarsen, N_elements_ * N_interpolation_points * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_error, error, N_elements_ * N_interpolation_points * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     
-    write_file_data(N_elements_ * N_interpolation_points, time, host_x, host_phi, host_phi_prime, host_intermediate, host_sigma, host_refine, host_coarsen);
+    write_file_data(N_elements_ * N_interpolation_points, time, host_x, host_phi, host_phi_prime, host_intermediate, host_sigma, host_refine, host_coarsen, host_error);
 
     delete[] host_x;
     delete[] host_phi;
@@ -290,6 +295,7 @@ void Mesh_t::write_data(deviceFloat time, size_t N_interpolation_points, const d
     delete[] host_sigma;
     delete[] host_refine;
     delete[] host_coarsen;
+    delete[] host_error;
     cudaFree(x);
     cudaFree(phi);
     cudaFree(phi_prime);
@@ -297,6 +303,7 @@ void Mesh_t::write_data(deviceFloat time, size_t N_interpolation_points, const d
     cudaFree(sigma);
     cudaFree(refine);
     cudaFree(coarsen);
+    cudaFree(error);
 }
 
 template void Mesh_t::solve(const deviceFloat delta_t, const std::vector<deviceFloat> output_times, const NDG_t<ChebyshevPolynomial_t> &NDG); // Get with the times c++, it's crazy I have to do this
@@ -398,26 +405,17 @@ void SEM::calculate_fluxes(size_t N_faces, Face_t* faces, const Element_t* eleme
             if (u_left > 0.0f) {
                 u = u_left;
             }
-            else if (u_left < u_right) {
+            else {
                 u = u_right;
             }
-            else { // ADDED
-                u = 0.5f * (u_left + u_right);
-            }
         }
-        else if (u_left < u_right) { // Expansion fan
+        else { // Expansion fan
             if (u_left > 0.0f) {
                 u = u_left;
             }
-            else if (u_left < 0.0f) {
+            else  {
                 u = u_right;
             }
-            else { // ADDED
-                u = 0.5f * (u_left + u_right);
-            }
-        }
-        else { // ADDED
-            u = 0.5f * (u_left + u_right);
         }
 
         faces[i].flux_ = 0.5f * u * u;
