@@ -334,13 +334,12 @@ void Mesh_t::solve(const deviceFloat delta_t, const std::vector<deviceFloat> out
         time += delta_t;
         for (auto const& e : std::as_const(output_times)) {
             if ((time >= e) && (time < e + delta_t)) {
+                SEM::estimate_error<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, NDG.nodes_, NDG.weights_);
                 write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
                 break;
             }
         }
     }
-
-    SEM::estimate_error<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, NDG.nodes_, NDG.weights_);
 
     bool did_write = false;
     for (auto const& e : std::as_const(output_times)) {
@@ -351,6 +350,7 @@ void Mesh_t::solve(const deviceFloat delta_t, const std::vector<deviceFloat> out
     }
 
     if (!did_write) {
+        SEM::estimate_error<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, NDG.nodes_, NDG.weights_);
         write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
     }
 }
