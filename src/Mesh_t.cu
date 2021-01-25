@@ -31,33 +31,6 @@ Mesh_t::~Mesh_t() {
     if (faces_ != nullptr){
         cudaFree(faces_);
     }
-
-    if (phi_arrays_ != nullptr) {
-        for (size_t i = 0; i < N_elements_; ++i) {
-            if (phi_arrays_[i] != nullptr) {
-                cudaFree(phi_arrays_[i]);
-            }
-        }
-        delete [] phi_arrays_;
-    }
-
-    if (phi_prime_arrays_ != nullptr) {
-        for (size_t i = 0; i < N_elements_; ++i) {
-            if (phi_prime_arrays_[i] != nullptr) {
-                cudaFree(phi_prime_arrays_[i]);
-            }
-        }
-        delete [] phi_prime_arrays_;
-    }
-
-    if (intermediate_arrays_ != nullptr) {
-        for (size_t i = 0; i < N_elements_; ++i) {
-            if (intermediate_arrays_[i] != nullptr) {
-                cudaFree(intermediate_arrays_[i]);
-            }
-        }
-        delete [] intermediate_arrays_;
-    }
 }
 
 void Mesh_t::set_initial_conditions(const deviceFloat* nodes) {
