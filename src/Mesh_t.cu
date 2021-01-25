@@ -24,13 +24,8 @@ Mesh_t::Mesh_t(size_t N_elements, int initial_N, deviceFloat x_min, deviceFloat 
 }
 
 Mesh_t::~Mesh_t() {
-    if (elements_ != nullptr){
-        cudaFree(elements_);
-    }
-
-    if (faces_ != nullptr){
-        cudaFree(faces_);
-    }
+    cudaFree(elements_);
+    cudaFree(faces_);
 }
 
 void Mesh_t::set_initial_conditions(const deviceFloat* nodes) {
