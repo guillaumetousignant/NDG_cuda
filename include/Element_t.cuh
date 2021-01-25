@@ -83,7 +83,7 @@ namespace SEM {
 
     // Algorithm 22
     __device__
-    void polynomial_and_derivative(int N, deviceFloat x, deviceFloat &L_N, deviceFloat &L_N_prime);
+    void polynomial(int N, deviceFloat x, deviceFloat &L_N);
 }
 
 #endif

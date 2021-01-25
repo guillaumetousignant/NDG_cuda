@@ -154,14 +154,12 @@ void Element_t::interpolate_to_boundaries(const deviceFloat* lagrange_interpolan
 
 // Algorithm 22
 __device__
-void SEM::polynomial_and_derivative(int N, deviceFloat x, deviceFloat &L_N, deviceFloat &L_N_prime) {
+void SEM::polynomial(int N, deviceFloat x, deviceFloat &L_N) {
     if (N == 0) {
         L_N = 1.0f;
-        L_N_prime = 0.0f;
     }
     else if (N == 1) {
         L_N = x;
-        L_N_prime = 1.0f;
     }
     else {
         deviceFloat L_N_2 = 1.0f;
@@ -171,7 +169,7 @@ void SEM::polynomial_and_derivative(int N, deviceFloat x, deviceFloat &L_N, devi
 
         for (int k = 2; k <= N; ++k) {
             L_N = (2 * k - 1) * x * L_N_1/k - (k - 1) * L_N_2/k; // L_N_1(x) ??
-            L_N_prime = L_N_2_prime + (2 * k - 1) * L_N_1;
+            const deviceFloat L_N_prime = L_N_2_prime + (2 * k - 1) * L_N_1;
             L_N_2 = L_N_1;
             L_N_1 = L_N;
             L_N_2_prime = L_N_1_prime;
@@ -187,8 +185,8 @@ void Element_t::estimate_error(const deviceFloat* nodes, const deviceFloat* weig
     for (int k = 0; k <= N_; ++k) {
         intermediate_[k] = 0.0;
         for (int i = 0; i <= N_; ++i) {
-            deviceFloat L_N, dummy;
-            SEM::polynomial_and_derivative(k, nodes[offset_1D + i], L_N, dummy);
+            deviceFloat L_N;
+            SEM::polynomial(k, nodes[offset_1D + i], L_N);
 
             intermediate_[k] += (2 * k + 1) * 0.5 * phi_[i] * L_N * weights[offset_1D + i];
         }
