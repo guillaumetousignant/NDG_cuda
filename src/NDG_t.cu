@@ -69,31 +69,14 @@ NDG_t<Polynomial>::NDG_t(int N_max, size_t N_interpolation_points) :
 
 template<typename Polynomial>
 NDG_t<Polynomial>::~NDG_t() {
-    // Not sure if null checks are needed
-    if (nodes_ != nullptr){
-        cudaFree(nodes_);
-    }
-    if (weights_ != nullptr){
-        cudaFree(weights_);
-    }
-    if (barycentric_weights_ != nullptr){
-        cudaFree(barycentric_weights_);
-    }
-    if (lagrange_interpolant_left_ != nullptr){
-        cudaFree(lagrange_interpolant_left_);
-    }
-    if (lagrange_interpolant_right_ != nullptr){
-        cudaFree(lagrange_interpolant_right_);
-    }
-    if (derivative_matrices_ != nullptr){
-        cudaFree(derivative_matrices_);
-    }
-    if (derivative_matrices_hat_ != nullptr){
-        cudaFree(derivative_matrices_hat_);
-    }
-    if (interpolation_matrices_ != nullptr){
-        cudaFree(interpolation_matrices_);
-    }
+    cudaFree(nodes_);
+    cudaFree(weights_);
+    cudaFree(barycentric_weights_);
+    cudaFree(lagrange_interpolant_left_);
+    cudaFree(lagrange_interpolant_right_);
+    cudaFree(derivative_matrices_);
+    cudaFree(derivative_matrices_hat_);
+    cudaFree(interpolation_matrices_);
 }
    
 template<typename Polynomial>
