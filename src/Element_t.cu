@@ -1,28 +1,143 @@
 #include "Element_t.cuh"
 #include <cmath>
+#include <thrust/swap.h>
 
 constexpr deviceFloat pi = 3.14159265358979323846;
 
 __device__ 
-Element_t::Element_t(int N, size_t neighbour_L, size_t neighbour_R, size_t face_L, size_t face_R, deviceFloat x_L, deviceFloat x_R, deviceFloat* phi_array, deviceFloat* phi_prime_array, deviceFloat* intermediate_array) : 
+Element_t::Element_t(int N, size_t neighbour_L, size_t neighbour_R, size_t face_L, size_t face_R, deviceFloat x_L, deviceFloat x_R) : 
         N_(N),
         neighbours_{neighbour_L, neighbour_R},
         faces_{face_L, face_R},
         x_{x_L, x_R},
-        delta_x_(x_R - x_L),
-        phi_(phi_array),
-        phi_prime_(phi_prime_array),
-        intermediate_(intermediate_array),
+        delta_x_(x_[1] - x_[0]),
+        phi_(new deviceFloat[N_ + 1]),
+        phi_prime_(new deviceFloat[N_ + 1]),
+        intermediate_(new deviceFloat[N_ + 1]),
         sigma_(0.0),
         refine_(false),
         coarsen_(false),
         error_(0.0) {}
 
-__host__ 
-Element_t::Element_t() {};
+__device__
+Element_t::Element_t(const Element_t& other) :
+        N_(other.N_),
+        neighbours_{other.neighbours_[0], other.neighbours_[1]},
+        faces_{other.faces_[0], other.faces_[1]},
+        x_{other.x_[0], other.x_[1]},
+        delta_x_(other.delta_x_),
+        phi_(new deviceFloat[N_ + 1]),
+        phi_prime_(new deviceFloat[N_ + 1]),
+        intermediate_(new deviceFloat[N_ + 1]),
+        sigma_(other.sigma_),
+        refine_(other.refine_),
+        coarsen_(other.coarsen_),
+        error_(other.error_) {
+
+    for (int i = 0; i <= N_; ++i) {
+        phi_[i] = other.phi_[i];
+        phi_prime_[i] = other.phi_prime_[i];
+        intermediate_[i] = other.intermediate_[i];
+    }
+}
+
+__device__
+Element_t::Element_t(Element_t&& other) :
+        N_(other.N_),
+        neighbours_{other.neighbours_[0], other.neighbours_[1]},
+        faces_{other.faces_[0], other.faces_[1]},
+        x_{other.x_[0], other.x_[1]},
+        delta_x_(other.delta_x_),
+        phi_(other.phi_),
+        phi_prime_(other.phi_prime_),
+        intermediate_(other.intermediate_),
+        sigma_(other.sigma_),
+        refine_(other.refine_),
+        coarsen_(other.coarsen_),
+        error_(other.error_) {
+    
+    other.phi_ = nullptr;
+    other.phi_prime_ = nullptr;
+    other.intermediate_ = nullptr;
+}
+
+__device__
+Element_t& Element_t::operator=(const Element_t& other) {
+    if (N_ != other.N_) {
+        delete [] phi_;
+        delete [] phi_prime_;
+        delete [] intermediate_;
+
+        phi_ = new deviceFloat[other.N_];
+        phi_prime_ = new deviceFloat[other.N_];
+        intermediate_ = new deviceFloat[other.N_];
+    }
+
+    N_ = other.N_;
+    neighbours_[0] = other.neighbours_[0];
+    neighbours_[1] = other.neighbours_[1];
+    faces_[0] = other.faces_[0];
+    faces_[1] = other.faces_[1];
+    x_[0] = other.x_[0];
+    x_[1] = other.x_[1];
+    delta_x_ = other.delta_x_;
+    sigma_ = other.sigma_;
+    refine_ = other.refine_;
+    coarsen_ = other.coarsen_;
+    error_ = other.error_;
+
+    for (int i = 0; i <= N_; ++i) {
+        phi_[i] = other.phi_[i];
+        phi_prime_[i] = other.phi_prime_[i];
+        intermediate_[i] = other.intermediate_[i];
+    }
+
+    return *this;
+}
+
+__device__
+Element_t& Element_t::operator=(Element_t&& other) {
+    N_ = other.N_;
+    neighbours_[0] = other.neighbours_[0];
+    neighbours_[1] = other.neighbours_[1];
+    faces_[0] = other.faces_[0];
+    faces_[1] = other.faces_[1];
+    x_[0] = other.x_[0];
+    x_[1] = other.x_[1];
+    delta_x_ = other.delta_x_;
+    sigma_ = other.sigma_;
+    refine_ = other.refine_;
+    coarsen_ = other.coarsen_;
+    error_ = other.error_;
+
+    thrust::swap(phi_, other.phi_);
+    thrust::swap(phi_prime_, other.phi_prime_);
+    thrust::swap(intermediate_, other.intermediate_);
+
+    return *this;
+}
 
 __host__ __device__
-Element_t::~Element_t() {}
+Element_t::Element_t() :
+        N_(0),
+        neighbours_{0, 0},
+        faces_{0, 0},
+        x_{0.0, 0.0},
+        delta_x_(0.0),
+        phi_(nullptr),
+        phi_prime_(nullptr),
+        intermediate_(nullptr),
+        sigma_(0.0),
+        refine_(false),
+        coarsen_(false),
+        error_(0.0) {};
+
+__host__ __device__
+Element_t::~Element_t() {
+    delete [] phi_;
+    delete [] phi_prime_;
+    delete [] intermediate_;
+}
 
 // Algorithm 61
 __device__
@@ -132,7 +247,7 @@ deviceFloat Element_t::exponential_decay() {
 }
 
 __global__
-void SEM::build_elements(size_t N_elements, int N, Element_t* elements, deviceFloat x_min, deviceFloat x_max, deviceFloat** phi_arrays, deviceFloat** phi_prime_arrays, deviceFloat** intermediate_arrays) {
+void SEM::build_elements(size_t N_elements, int N, Element_t* elements, deviceFloat x_min, deviceFloat x_max) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -144,7 +259,7 @@ void SEM::build_elements(size_t N_elements, int N, Element_t* elements, deviceFl
         const deviceFloat delta_x = (x_max - x_min)/N_elements;
         const deviceFloat element_x_min = x_min + i * delta_x;
         const deviceFloat element_y_min = x_min + (i + 1) * delta_x;
-        elements[i] = Element_t(N, neighbour_L, neighbour_R, face_L, face_R, element_x_min, element_y_min, phi_arrays[i], phi_prime_arrays[i], intermediate_arrays[i]);
+        elements[i] = Element_t(N, neighbour_L, neighbour_R, face_L, face_R, element_x_min, element_y_min);
     }
 }
 

@@ -17,39 +17,10 @@ Mesh_t::Mesh_t(size_t N_elements, int initial_N, deviceFloat x_min, deviceFloat 
     cudaMalloc(&elements_, N_elements_ * sizeof(Element_t));
     cudaMalloc(&faces_, N_faces_ * sizeof(Face_t));
 
-    cudaMalloc(&phi_arrays_, N_elements_ * sizeof(deviceFloat*));
-    cudaMalloc(&phi_prime_arrays_, N_elements_ * sizeof(deviceFloat*));
-    cudaMalloc(&intermediate_arrays_, N_elements_ * sizeof(deviceFloat*));
-    phi_arrays_ = new deviceFloat*[N_elements_];
-    phi_prime_arrays_ = new deviceFloat*[N_elements_];
-    intermediate_arrays_ = new deviceFloat*[N_elements_];
-
-    for (size_t i = 0; i < N_elements_; ++i) {
-        cudaMalloc(&(phi_arrays_[i]), (initial_N_ + 1) * sizeof(deviceFloat));
-        cudaMalloc(&(phi_prime_arrays_[i]), (initial_N_ + 1) * sizeof(deviceFloat));
-        cudaMalloc(&(intermediate_arrays_[i]), (initial_N_ + 1) * sizeof(deviceFloat));
-    }
-
-    deviceFloat** phi_arrays_device;
-    deviceFloat** phi_prime_arrays_device;
-    deviceFloat** intermediate_arrays_device;
-    cudaMalloc(&phi_arrays_device, N_elements_ * sizeof(deviceFloat*));
-    cudaMalloc(&phi_prime_arrays_device, N_elements_ * sizeof(deviceFloat*));
-    cudaMalloc(&intermediate_arrays_device, N_elements_ * sizeof(deviceFloat*));
-    cudaMemcpy(phi_arrays_device, phi_arrays_, N_elements_ * sizeof(deviceFloat*), cudaMemcpyHostToDevice);
-    cudaMemcpy(phi_prime_arrays_device, phi_prime_arrays_, N_elements_ * sizeof(deviceFloat*), cudaMemcpyHostToDevice);
-    cudaMemcpy(intermediate_arrays_device, intermediate_arrays_, N_elements_ * sizeof(deviceFloat*), cudaMemcpyHostToDevice);
-
-
-
     const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
     const int faces_numBlocks = (N_faces_ + faces_blockSize - 1) / faces_blockSize;
-    SEM::build_elements<<<elements_numBlocks, elements_blockSize>>>(N_elements_, initial_N_, elements_, x_min, x_max, phi_arrays_device, phi_prime_arrays_device, intermediate_arrays_device);
+    SEM::build_elements<<<elements_numBlocks, elements_blockSize>>>(N_elements_, initial_N_, elements_, x_min, x_max);
     SEM::build_faces<<<faces_numBlocks, faces_blockSize>>>(N_faces_, faces_); // CHECK
-
-    cudaFree(phi_arrays_device);
-    cudaFree(phi_prime_arrays_device);
-    cudaFree(intermediate_arrays_device);
 }
 
 Mesh_t::~Mesh_t() {
