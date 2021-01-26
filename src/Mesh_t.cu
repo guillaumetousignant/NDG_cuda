@@ -9,7 +9,7 @@
 
 namespace fs = std::filesystem;
 
-constexpr int elements_blockSize = 32; // For when we'll have multiple elements
+constexpr int elements_blockSize = 32;
 constexpr int faces_blockSize = 32; // Same number of faces as elements for periodic BC
 
 Mesh_t::Mesh_t(size_t N_elements, int initial_N, deviceFloat x_min, deviceFloat x_max) : N_elements_(N_elements), N_faces_(N_elements), initial_N_(initial_N) {

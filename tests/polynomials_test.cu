@@ -11,8 +11,6 @@ TEST_CASE("ChebyshevPolynomials", "Checks the Chebyshev polynomials"){
     const int N_test = 16;
     const size_t N_interpolation_points = N_max * 8;
     const size_t offset_1D = N_test * (N_test + 1) /2;
-    const size_t offset_2D = N_test * (N_test + 1) * (2 * N_test + 1) /6;
-    const size_t offset_interp = N_test * (N_test + 1) * N_interpolation_points /2;
     const double error = 1e-6;
     
     NDG_t<ChebyshevPolynomial_t> NDG(N_max, N_interpolation_points);
@@ -100,8 +98,6 @@ TEST_CASE("LegendrePolynomials", "Checks the Legendre polynomials"){
     const int N_test = 16;
     const size_t N_interpolation_points = N_max * 8;
     const size_t offset_1D = N_test * (N_test + 1) /2;
-    const size_t offset_2D = N_test * (N_test + 1) * (2 * N_test + 1) /6;
-    const size_t offset_interp = N_test * (N_test + 1) * N_interpolation_points /2;
     const double error = 1e-6;
     
     NDG_t<LegendrePolynomial_t> NDG(N_max, N_interpolation_points);

@@ -6,11 +6,12 @@
 #include <iostream>
 #include <chrono>
 #include <vector>
+#include <array>
 
 int main(void) {
     const size_t N_elements = 8;
     const int N_max = 4;
-    const deviceFloat x[2] = {-1.0f, 1.0f};
+    const std::array<deviceFloat, 2> x {-1.0, 1.0};
     const deviceFloat CFL = 0.5f;
     const deviceFloat u_max = 1.0f;
     std::vector<deviceFloat> output_times{0.1f, 0.2f, 0.3f, 0.4f, 0.5f};
