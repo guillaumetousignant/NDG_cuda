@@ -209,7 +209,7 @@ void Element_t::estimate_error<Polynomial>(const deviceFloat* nodes, const devic
     const deviceFloat C = exponential_decay();
 
     // sum of error
-    error_ = std::sqrt(std::pow(C, 2) * 0.5/sigma_) * std::exp(-sigma_ * (N_ + 1));
+    error_ = std::sqrt(C * C * 0.5/sigma_) * std::exp(-sigma_ * (N_ + 1));
 
     if(error_ > tolerance_min){	// need refine
         refine_ = true;
@@ -245,7 +245,7 @@ deviceFloat Element_t::exponential_decay() {
 
     for (int i = 0; i < n_points_least_squares; ++i) {
         numerator += (N_ - i - x_avg) * (std::log(std::abs(intermediate_[N_ - i])) - y_avg);
-        denominator += std::pow((N_ - i - x_avg), 2);
+        denominator += (N_ - i - x_avg) * (N_ - i - x_avg);
     }
 
     sigma_ = numerator/denominator;

@@ -34,7 +34,7 @@ void SEM::legendre_gauss_nodes_and_weights(int N, deviceFloat* nodes, deviceFloa
             deviceFloat dummy, L_N_plus1_prime_final;
             LegendrePolynomial_t::polynomial_and_derivative(N + 1, nodes[offset + i], dummy, L_N_plus1_prime_final);
             nodes[offset + N - i] = -nodes[offset + i];
-            weights[offset + i] = 2.0f/((1.0f - std::pow(nodes[offset + i], 2)) * std::pow(L_N_plus1_prime_final, 2));
+            weights[offset + i] = 2.0f/((1.0f - nodes[offset + i] * nodes[offset + i]) * L_N_plus1_prime_final * L_N_plus1_prime_final);
             weights[offset + N - i] = weights[offset + i];
         }
     }
@@ -49,7 +49,7 @@ void SEM::legendre_gauss_nodes_and_weights(int N, deviceFloat* nodes, deviceFloa
             deviceFloat dummy, L_N_plus1_prime_final;
             LegendrePolynomial_t::polynomial_and_derivative(N + 1, 0.0f, dummy, L_N_plus1_prime_final);
             nodes[offset + N/2] = 0.0f;
-            weights[offset + N/2] = 2/std::pow(L_N_plus1_prime_final, 2);
+            weights[offset + N/2] = 2/(L_N_plus1_prime_final * L_N_plus1_prime_final);
         }
     }
 }
