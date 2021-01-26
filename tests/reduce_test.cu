@@ -14,7 +14,7 @@ TEST_CASE("Reduction", "Checks the reduction returns the right result."){
     REQUIRE(N_test <= N_max);
     const size_t N_interpolation_points = N_max * 8;
     const std::array<deviceFloat, 2> x {-1.0, 1.0};
-    const double error = 1e-6;
+    const double error = 1e-4;
     
     NDG_t<LegendrePolynomial_t> NDG(N_max, N_interpolation_points);
     Mesh_t mesh(N_elements, N_test, x[0], x[1]);
