@@ -24,10 +24,10 @@ TEST_CASE("Reduction", "Checks the reduction returns the right result."){
     const int elements_numBlocks = (mesh.N_elements_ + elements_blockSize - 1) / elements_blockSize;
     deviceFloat* g_odata;
     deviceFloat* host_g_odata = new deviceFloat[elements_numBlocks];
-    cudaMalloc(&g_odata, mesh.N_elements_ * sizeof(deviceFloat));
+    cudaMalloc(&g_odata, elements_numBlocks * sizeof(deviceFloat));
 
-    SEM::reduce_velocity<elements_blockSize><<<elements_numBlocks, elements_blockSize>>>(mesh.N_elements_, mesh.elements_, g_odata);
-    cudaMemcpy(host_g_odata, g_odata, mesh.N_elements_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    SEM::reduce_velocity<<<elements_numBlocks, elements_blockSize>>>(mesh.N_elements_, mesh.elements_, g_odata);
+    cudaMemcpy(host_g_odata, g_odata, elements_numBlocks * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
 
     deviceFloat phi_max = 0.0;
     for (int i = 0; i < elements_numBlocks; ++i) {
