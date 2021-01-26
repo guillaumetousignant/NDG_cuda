@@ -1,5 +1,4 @@
-#define CATCH_CONFIG_MAIN
-#include "catch.hpp"
+#include <catch2/catch.hpp>
 #include <iostream>
 
 TEST_CASE( "stupid/1=1", "Prove that one equals 1" ){
