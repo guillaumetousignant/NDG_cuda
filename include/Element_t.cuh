@@ -46,6 +46,7 @@ class Element_t { // Turn this into separate vectors, because cache exists
         __device__
         void interpolate_to_boundaries(const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right);
 
+        template<typename Polynomial>
         __device__
         void estimate_error(const deviceFloat* nodes, const deviceFloat* weights);
 
@@ -58,6 +59,7 @@ namespace SEM {
     __global__
     void build_elements(size_t N_elements, int N, Element_t* elements, deviceFloat x_min, deviceFloat x_max);
 
+    template<typename Polynomial>
     __global__
     void estimate_error(size_t N_elements, Element_t* elements, const deviceFloat* nodes, const deviceFloat* weights);
 
@@ -80,10 +82,6 @@ namespace SEM {
     
     __global__
     void interpolate_to_boundaries(size_t N_elements, Element_t* elements, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right);
-
-    // Algorithm 22
-    __device__
-    void polynomial(int N, deviceFloat x, deviceFloat &L_N);
 }
 
 #endif

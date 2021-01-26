@@ -1,4 +1,6 @@
 #include "Element_t.cuh"
+#include "ChebyshevPolynomial_t.cuh"
+#include "LegendrePolynomial_t.cuh"
 #include <cmath>
 #include <thrust/swap.h>
 
@@ -152,9 +154,14 @@ void Element_t::interpolate_to_boundaries(const deviceFloat* lagrange_interpolan
     }
 }
 
-// Algorithm 22
+// This should be illegal, but is needed because I can't for the life of me get separable compilation to work correctly.
 __device__
-void SEM::polynomial(int N, deviceFloat x, deviceFloat &L_N) {
+void ChebyshevPolynomial_t::polynomial(int N, deviceFloat x, deviceFloat &T_N) {
+    T_N = cos(N * acos(x));
+}
+
+__device__
+void LegendrePolynomial_t::polynomial(int N, deviceFloat x, deviceFloat &L_N) {
     if (N == 0) {
         L_N = 1.0f;
     }
@@ -178,15 +185,19 @@ void SEM::polynomial(int N, deviceFloat x, deviceFloat &L_N) {
     }
 }
 
+template __device__ void Element_t::estimate_error<ChebyshevPolynomial_t>(const deviceFloat* nodes, const deviceFloat* weights);
+template __device__ void Element_t::estimate_error<LegendrePolynomial_t>(const deviceFloat* nodes, const deviceFloat* weights);
+
+template<typename Polynomial>
 __device__
-void Element_t::estimate_error(const deviceFloat* nodes, const deviceFloat* weights) {
+void Element_t::estimate_error<Polynomial>(const deviceFloat* nodes, const deviceFloat* weights) {
     const int offset_1D = N_ * (N_ + 1) /2;
 
     for (int k = 0; k <= N_; ++k) {
         intermediate_[k] = 0.0;
         for (int i = 0; i <= N_; ++i) {
             deviceFloat L_N;
-            SEM::polynomial(k, nodes[offset_1D + i], L_N);
+            Polynomial::polynomial(k, nodes[offset_1D + i], L_N);
 
             intermediate_[k] += (2 * k + 1) * 0.5 * phi_[i] * L_N * weights[offset_1D + i];
         }
@@ -261,13 +272,17 @@ void SEM::build_elements(size_t N_elements, int N, Element_t* elements, deviceFl
     }
 }
 
+template __global__ void SEM::estimate_error<ChebyshevPolynomial_t>(size_t N_elements, Element_t* elements, const deviceFloat* nodes, const deviceFloat* weights);
+template __global__ void SEM::estimate_error<LegendrePolynomial_t>(size_t N_elements, Element_t* elements, const deviceFloat* nodes, const deviceFloat* weights);
+
+template<typename Polynomial>
 __global__
-void SEM::estimate_error(size_t N_elements, Element_t* elements, const deviceFloat* nodes, const deviceFloat* weights) {
+void SEM::estimate_error<Polynomial>(size_t N_elements, Element_t* elements, const deviceFloat* nodes, const deviceFloat* weights) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
     for (size_t i = index; i < N_elements; i += stride) {
-        elements[i].estimate_error(nodes, weights);
+        elements[i].estimate_error<Polynomial>(nodes, weights);
     }
 }
 

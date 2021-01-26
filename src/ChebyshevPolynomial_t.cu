@@ -23,7 +23,3 @@ void ChebyshevPolynomial_t::nodes_and_weights(int N_max, int blockSize, deviceFl
     }
 }
 
-__device__
-void ChebyshevPolynomial_t::polynomial(int N, deviceFloat x, deviceFloat &T_N) {
-    T_N = cos(N * acos(x));
-}

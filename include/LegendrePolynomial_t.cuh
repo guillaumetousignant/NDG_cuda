@@ -17,6 +17,7 @@ class LegendrePolynomial_t {
         __device__
         static void polynomial_and_derivative(int N, deviceFloat x, deviceFloat &L_N, deviceFloat &L_N_prime);
 
+        // This function is defined in Element_t.cu, because I can't get seperable compilation to work.
         __device__
         static void polynomial(int N, deviceFloat x, deviceFloat &L_N);
 };
