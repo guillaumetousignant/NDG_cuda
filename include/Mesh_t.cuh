@@ -95,7 +95,7 @@ namespace SEM {
                 delta_t = min(delta_t, CFL * elements[i+blockSize].delta_x_/(phi_max * elements[i+blockSize].N_ * elements[i+blockSize].N_));
             }
 
-            sdata[tid] = min(sdata[tid], phi_max); 
+            sdata[tid] = min(sdata[tid], delta_t); 
             i += gridSize; 
         }
         __syncthreads();
