@@ -395,3 +395,47 @@ void SEM::compute_dg_derivative(size_t N_elements, Element_t* elements, const Fa
         }
     }
 }
+
+/*__device__ 
+void SEM::warp_reduce_velocity(volatile deviceFloat* sdata, unsigned int tid) {
+    sdata[tid] = max(sdata[tid], sdata[tid + 32]);
+    sdata[tid] = max(sdata[tid], sdata[tid + 16]);
+    sdata[tid] = max(sdata[tid], sdata[tid + 8]);
+    sdata[tid] = max(sdata[tid], sdata[tid + 4]);
+    sdata[tid] = max(sdata[tid], sdata[tid + 2]);
+    sdata[tid] = max(sdata[tid], sdata[tid + 1]);
+}
+
+__global__ 
+void SEM::reduce_velocity(size_t N_elements, const Element_t* elements, deviceFloat *g_odata) {
+    extern __shared__ deviceFloat sdata[];
+
+    // each thread loads one element from global to shared mem
+    unsigned int tid = threadIdx.x;
+    unsigned int i = blockIdx.x*(blockDim.x*2) + threadIdx.x;
+    deviceFloat phi_max = 0.0;
+    if (i < N_elements) {
+        for (int j = 0; j <= elements[i].N_; ++j) {
+            phi_max = max(phi_max, elements[i].phi_[j]);
+        }
+    }
+    if (i+blockDim.x < N_elements) {
+        for (int j = 0; j <= elements[i+blockDim.x].N_; ++j) {
+            phi_max = max(phi_max, elements[i+blockDim.x].phi_[j]);
+        }
+    }
+    sdata[tid] = phi_max;
+    __syncthreads();
+
+    // do reduction in shared mem
+    for (unsigned int s=blockDim.x/2; s>32; s>>=1) {
+        if (tid < s) {
+            sdata[tid] = max(sdata[tid], sdata[tid + s]);
+        }
+        __syncthreads();
+    }   
+    if (tid < 32) warp_reduce_velocity(sdata, tid);
+
+    // write result for this block to global mem
+    if (tid == 0) g_odata[blockIdx.x] = sdata[0];
+}*/

@@ -8,7 +8,7 @@
 #include "LegendrePolynomial_t.cuh"
 
 TEST_CASE("Reduction", "Checks the reduction returns the right result."){
-    const size_t N_elements = 128; // N needs to be big enough for a value to be close to the max.
+    const size_t N_elements = 1024; // N needs to be big enough for a value to be close to the max.
     const int N_max = 4;
     const int N_test = N_max;
     REQUIRE(N_test <= N_max);
@@ -20,14 +20,18 @@ TEST_CASE("Reduction", "Checks the reduction returns the right result."){
     Mesh_t mesh(N_elements, N_test, x[0], x[1]);
     mesh.set_initial_conditions(NDG.nodes_);
 
-    constexpr int elements_blockSize = 32;
-    const int elements_numBlocks = (mesh.N_elements_ + elements_blockSize - 1) / elements_blockSize;
+    constexpr int elements_blockSize = 2048;
+    const int elements_numBlocks = (mesh.N_elements_/2 + elements_blockSize - 1) / elements_blockSize;
     deviceFloat* g_odata;
     deviceFloat* host_g_odata = new deviceFloat[elements_numBlocks];
     cudaMalloc(&g_odata, elements_numBlocks * sizeof(deviceFloat));
 
-    SEM::reduce_velocity<<<elements_numBlocks, elements_blockSize>>>(mesh.N_elements_, mesh.elements_, g_odata);
+    SEM::reduce_velocity<elements_blockSize><<<elements_numBlocks, elements_blockSize>>>(mesh.N_elements_, mesh.elements_, g_odata);
     cudaMemcpy(host_g_odata, g_odata, elements_numBlocks * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+
+    for (int i = 0; i < elements_numBlocks; ++i) {
+        std::cout << host_g_odata[i] << std::endl;
+    }
 
     deviceFloat phi_max = 0.0;
     for (int i = 0; i < elements_numBlocks; ++i) {
@@ -36,6 +40,7 @@ TEST_CASE("Reduction", "Checks the reduction returns the right result."){
 
     constexpr deviceFloat target = 1.0;
     REQUIRE(std::abs(phi_max - target) < error);
+    REQUIRE(1 == 0);
 
     delete[] host_g_odata;
     cudaFree(g_odata);

@@ -50,6 +50,14 @@ namespace SEM {
     void compute_dg_derivative(size_t N_elements, Element_t* elements, const Face_t* faces, const deviceFloat* weights, const deviceFloat* derivative_matrices_hat, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right);
 
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
+    /*__device__ 
+    void warp_reduce_velocity(volatile deviceFloat* sdata, unsigned int tid);
+
+    // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
+    __global__ 
+    void reduce_velocity(size_t N_elements, const Element_t* elements, deviceFloat *g_odata);*/
+
+    // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>
     __device__ 
     void warp_reduce_velocity(volatile deviceFloat *sdata, unsigned int tid) {
@@ -65,7 +73,7 @@ namespace SEM {
     template <unsigned int blockSize>
     __global__ 
     void reduce_velocity(size_t N_elements, const Element_t* elements, deviceFloat *g_odata) {
-        extern __shared__ deviceFloat sdata[];
+        __shared__ deviceFloat sdata[blockSize];
         unsigned int tid = threadIdx.x;
         size_t i = blockIdx.x*(blockSize*2) + tid;
         unsigned int gridSize = blockSize*2*gridDim.x;
@@ -76,14 +84,21 @@ namespace SEM {
             for (int j = 0; j <= elements[i].N_; ++j) {
                 phi_max = max(phi_max, abs(elements[i].phi_[j]));
             }
-            for (int j = 0; j <= elements[i+blockSize].N_; ++j) {
-                phi_max = max(phi_max, abs(elements[i+blockSize].phi_[j]));
+            if (i+blockSize < N_elements) {
+                for (int j = 0; j <= elements[i+blockSize].N_; ++j) {
+                    phi_max = max(phi_max, abs(elements[i+blockSize].phi_[j]));
+                }
             }
 
-            sdata[tid] = max(sdata[tid], phi_max); i += gridSize; 
+            sdata[tid] = max(sdata[tid], phi_max); 
+            i += gridSize; 
         }
         __syncthreads();
 
+        if (blockSize >= 8192) { if (tid < 4096) { sdata[tid] = max(sdata[tid], sdata[tid + 4096]); } __syncthreads(); }
+        if (blockSize >= 4096) { if (tid < 2048) { sdata[tid] = max(sdata[tid], sdata[tid + 2048]); } __syncthreads(); }
+        if (blockSize >= 2048) { if (tid < 1024) { sdata[tid] = max(sdata[tid], sdata[tid + 1024]); } __syncthreads(); }
+        if (blockSize >= 1024) { if (tid < 512) { sdata[tid] = max(sdata[tid], sdata[tid + 512]); } __syncthreads(); }
         if (blockSize >= 512) { if (tid < 256) { sdata[tid] = max(sdata[tid], sdata[tid + 256]); } __syncthreads(); }
         if (blockSize >= 256) { if (tid < 128) { sdata[tid] = max(sdata[tid], sdata[tid + 128]); } __syncthreads(); }
         if (blockSize >= 128) { if (tid < 64) { sdata[tid] = max(sdata[tid], sdata[tid + 64]); } __syncthreads(); }
