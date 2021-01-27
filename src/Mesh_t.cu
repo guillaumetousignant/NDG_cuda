@@ -6,31 +6,40 @@
 #include <sstream> 
 #include <iomanip>
 #include <filesystem>
+#include <limits>
 
 namespace fs = std::filesystem;
 
 constexpr int elements_blockSize = 32;
 constexpr int faces_blockSize = 32; // Same number of faces as elements for periodic BC
 
-Mesh_t::Mesh_t(size_t N_elements, int initial_N, deviceFloat x_min, deviceFloat x_max) : N_elements_(N_elements), N_faces_(N_elements), initial_N_(initial_N) {
+Mesh_t::Mesh_t(size_t N_elements, int initial_N, deviceFloat x_min, deviceFloat x_max) : 
+        N_elements_(N_elements), 
+        N_faces_(N_elements), 
+        initial_N_(initial_N),
+        elements_numBlocks_((N_elements_ + elements_blockSize - 1) / elements_blockSize),
+        faces_numBlocks_((N_faces_ + faces_blockSize - 1) / faces_blockSize),
+        host_delta_t_array_(new deviceFloat[elements_numBlocks_]) {
+
     // CHECK N_faces = N_elements only for periodic BC.
     cudaMalloc(&elements_, N_elements_ * sizeof(Element_t));
     cudaMalloc(&faces_, N_faces_ * sizeof(Face_t));
+    cudaMalloc(&device_delta_t_array_, elements_numBlocks_ * sizeof(deviceFloat));
 
-    const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
-    const int faces_numBlocks = (N_faces_ + faces_blockSize - 1) / faces_blockSize;
-    SEM::build_elements<<<elements_numBlocks, elements_blockSize>>>(N_elements_, initial_N_, elements_, x_min, x_max);
-    SEM::build_faces<<<faces_numBlocks, faces_blockSize>>>(N_faces_, faces_); // CHECK
+    SEM::build_elements<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, initial_N_, elements_, x_min, x_max);
+    SEM::build_faces<<<faces_numBlocks_, faces_blockSize>>>(N_faces_, faces_); // CHECK
 }
 
 Mesh_t::~Mesh_t() {
     cudaFree(elements_);
     cudaFree(faces_);
+    cudaFree(device_delta_t_array_);
+    
+    delete[] host_delta_t_array_;
 }
 
 void Mesh_t::set_initial_conditions(const deviceFloat* nodes) {
-    const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
-    SEM::initial_conditions<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, nodes);
+    SEM::initial_conditions<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, nodes);
 }
 
 void Mesh_t::print() {
@@ -44,8 +53,7 @@ void Mesh_t::print() {
     cudaMalloc(&phi, (initial_N_ + 1) * N_elements_ * sizeof(deviceFloat));
     cudaMalloc(&phi_prime, (initial_N_ + 1) * N_elements_ * sizeof(deviceFloat));
 
-    const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
-    SEM::get_elements_data<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, phi, phi_prime);
+    SEM::get_elements_data<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, phi, phi_prime);
     
     cudaMemcpy(host_phi, phi, (initial_N_ + 1) * N_elements_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_phi_prime, phi_prime, (initial_N_ + 1) * N_elements_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
@@ -213,8 +221,7 @@ void Mesh_t::write_data(deviceFloat time, size_t N_interpolation_points, const d
     cudaMalloc(&error, N_elements_ * N_interpolation_points * sizeof(deviceFloat));
     
 
-    const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
-    SEM::get_solution<<<elements_numBlocks, elements_blockSize>>>(N_elements_, N_interpolation_points, elements_, interpolation_matrices, x, phi, phi_prime, intermediate, sigma, refine, coarsen, error);
+    SEM::get_solution<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, N_interpolation_points, elements_, interpolation_matrices, x, phi, phi_prime, intermediate, sigma, refine, coarsen, error);
     
     cudaMemcpy(host_x, x , N_elements_ * N_interpolation_points * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_phi, phi, N_elements_ * N_interpolation_points * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
@@ -249,39 +256,40 @@ template void Mesh_t::solve(const deviceFloat delta_t, const std::vector<deviceF
 template void Mesh_t::solve(const deviceFloat delta_t, const std::vector<deviceFloat> output_times, const NDG_t<LegendrePolynomial_t> &NDG);
 
 template<typename Polynomial>
-void Mesh_t::solve(const deviceFloat delta_t, const std::vector<deviceFloat> output_times, const NDG_t<Polynomial> &NDG) {
-    const int elements_numBlocks = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
-    const int faces_numBlocks = (N_faces_ + faces_blockSize - 1) / faces_blockSize;
+void Mesh_t::solve(const deviceFloat CFL, const std::vector<deviceFloat> output_times, const NDG_t<Polynomial> &NDG) {
     deviceFloat time = 0.0;
     const deviceFloat t_end = output_times.back();
 
+    deviceFloat delta_t = get_delta_t(CFL);
     write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
 
     while (time < t_end) {
         // Kinda algorithm 62
         deviceFloat t = time;
-        SEM::interpolate_to_boundaries<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
-        SEM::calculate_fluxes<<<faces_numBlocks, faces_blockSize>>>(N_faces_, faces_, elements_);
-        SEM::compute_dg_derivative<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
-        SEM::rk3_first_step<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, delta_t, 1.0f/3.0f);
+        SEM::interpolate_to_boundaries<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        SEM::calculate_fluxes<<<faces_numBlocks_, faces_blockSize>>>(N_faces_, faces_, elements_);
+        SEM::compute_dg_derivative<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        SEM::rk3_first_step<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, delta_t, 1.0f/3.0f);
 
         t = time + 0.33333333333f * delta_t;
-        SEM::interpolate_to_boundaries<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
-        SEM::calculate_fluxes<<<faces_numBlocks, faces_blockSize>>>(N_faces_, faces_, elements_);
-        SEM::compute_dg_derivative<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
-        SEM::rk3_step<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, delta_t, -5.0f/9.0f, 15.0f/16.0f);
+        SEM::interpolate_to_boundaries<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        SEM::calculate_fluxes<<<faces_numBlocks_, faces_blockSize>>>(N_faces_, faces_, elements_);
+        SEM::compute_dg_derivative<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        SEM::rk3_step<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, delta_t, -5.0f/9.0f, 15.0f/16.0f);
 
         t = time + 0.75f * delta_t;
-        SEM::interpolate_to_boundaries<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
-        SEM::calculate_fluxes<<<faces_numBlocks, faces_blockSize>>>(N_faces_, faces_, elements_);
-        SEM::compute_dg_derivative<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
-        SEM::rk3_step<<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, delta_t, -153.0f/128.0f, 8.0f/15.0f);
+        SEM::interpolate_to_boundaries<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        SEM::calculate_fluxes<<<faces_numBlocks_, faces_blockSize>>>(N_faces_, faces_, elements_);
+        SEM::compute_dg_derivative<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        SEM::rk3_step<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, delta_t, -153.0f/128.0f, 8.0f/15.0f);
               
         time += delta_t;
         for (auto const& e : std::as_const(output_times)) {
             if ((time >= e) && (time < e + delta_t)) {
-                SEM::estimate_error<Polynomial><<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, NDG.nodes_, NDG.weights_);
+                SEM::estimate_error<Polynomial><<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, NDG.nodes_, NDG.weights_);
                 write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
+                adapt();
+                delta_t = get_delta_t(CFL);
                 break;
             }
         }
@@ -296,9 +304,25 @@ void Mesh_t::solve(const deviceFloat delta_t, const std::vector<deviceFloat> out
     }
 
     if (!did_write) {
-        SEM::estimate_error<Polynomial><<<elements_numBlocks, elements_blockSize>>>(N_elements_, elements_, NDG.nodes_, NDG.weights_);
+        SEM::estimate_error<Polynomial><<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, NDG.nodes_, NDG.weights_);
         write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
     }
+}
+
+deviceFloat Mesh_t::get_delta_t(const deviceFloat CFL) {   
+    SEM::reduce_delta_t<elements_blockSize><<<elements_numBlocks_, elements_blockSize>>>(CFL, N_elements_, elements_, device_delta_t_array_);
+    cudaMemcpy(host_delta_t_array_, device_delta_t_array_, elements_numBlocks_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+
+    deviceFloat delta_t_min = std::numeric_limits<deviceFloat>::infinity();
+    for (int i = 0; i < elements_numBlocks_; ++i) {
+        delta_t_min = min(delta_t_min, host_delta_t_array_[i]);
+    }
+    
+    return delta_t_min;
+}
+
+void Mesh_t::adapt() {
+    // Update elements_numBlocks_ and faces_numBlocks_
 }
 
 __global__
@@ -395,47 +419,3 @@ void SEM::compute_dg_derivative(size_t N_elements, Element_t* elements, const Fa
         }
     }
 }
-
-/*__device__ 
-void SEM::warp_reduce_velocity(volatile deviceFloat* sdata, unsigned int tid) {
-    sdata[tid] = max(sdata[tid], sdata[tid + 32]);
-    sdata[tid] = max(sdata[tid], sdata[tid + 16]);
-    sdata[tid] = max(sdata[tid], sdata[tid + 8]);
-    sdata[tid] = max(sdata[tid], sdata[tid + 4]);
-    sdata[tid] = max(sdata[tid], sdata[tid + 2]);
-    sdata[tid] = max(sdata[tid], sdata[tid + 1]);
-}
-
-__global__ 
-void SEM::reduce_velocity(size_t N_elements, const Element_t* elements, deviceFloat *g_odata) {
-    extern __shared__ deviceFloat sdata[];
-
-    // each thread loads one element from global to shared mem
-    unsigned int tid = threadIdx.x;
-    unsigned int i = blockIdx.x*(blockDim.x*2) + threadIdx.x;
-    deviceFloat phi_max = 0.0;
-    if (i < N_elements) {
-        for (int j = 0; j <= elements[i].N_; ++j) {
-            phi_max = max(phi_max, elements[i].phi_[j]);
-        }
-    }
-    if (i+blockDim.x < N_elements) {
-        for (int j = 0; j <= elements[i+blockDim.x].N_; ++j) {
-            phi_max = max(phi_max, elements[i+blockDim.x].phi_[j]);
-        }
-    }
-    sdata[tid] = phi_max;
-    __syncthreads();
-
-    // do reduction in shared mem
-    for (unsigned int s=blockDim.x/2; s>32; s>>=1) {
-        if (tid < s) {
-            sdata[tid] = max(sdata[tid], sdata[tid + s]);
-        }
-        __syncthreads();
-    }   
-    if (tid < 32) warp_reduce_velocity(sdata, tid);
-
-    // write result for this block to global mem
-    if (tid == 0) g_odata[blockIdx.x] = sdata[0];
-}*/

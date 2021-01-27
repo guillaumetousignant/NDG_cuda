@@ -9,27 +9,32 @@
 #include <limits>
 
 class Mesh_t {
-public:
-    Mesh_t(size_t N_elements, int initial_N, deviceFloat x_min, deviceFloat x_max);
-    ~Mesh_t();
+    public:
+        Mesh_t(size_t N_elements, int initial_N, deviceFloat x_min, deviceFloat x_max);
+        ~Mesh_t();
 
-    size_t N_elements_;
-    size_t N_faces_;
-    int initial_N_;
-    Element_t* elements_;
-    Face_t* faces_;
+        size_t N_elements_;
+        size_t N_faces_;
+        int initial_N_;
+        Element_t* elements_;
+        Face_t* faces_;
 
-    deviceFloat** phi_arrays_;
-    deviceFloat** phi_prime_arrays_;
-    deviceFloat** intermediate_arrays_;
+        void set_initial_conditions(const deviceFloat* nodes);
+        void print();
+        void write_data(deviceFloat time, size_t N_interpolation_points, const deviceFloat* interpolation_matrices);
+        
+        template<typename Polynomial>
+        void solve(const deviceFloat CFL, const std::vector<deviceFloat> output_times, const NDG_t<Polynomial> &NDG);
 
-    void set_initial_conditions(const deviceFloat* nodes);
-    void print();
-    void write_file_data(size_t N_points, deviceFloat time, const deviceFloat* coordinates, const deviceFloat* velocity, const deviceFloat* du_dx, const deviceFloat* intermediate, const deviceFloat* sigma, const deviceFloat* refine, const deviceFloat* coarsen, const deviceFloat* error);
-    void write_data(deviceFloat time, size_t N_interpolation_points, const deviceFloat* interpolation_matrices);
-    
-    template<typename Polynomial>
-    void solve(const deviceFloat delta_t, const std::vector<deviceFloat> output_times, const NDG_t<Polynomial> &NDG);
+    private:
+        int elements_numBlocks_;
+        int faces_numBlocks_;
+        deviceFloat* device_delta_t_array_;
+        deviceFloat* host_delta_t_array_;
+
+        void write_file_data(size_t N_points, deviceFloat time, const deviceFloat* coordinates, const deviceFloat* velocity, const deviceFloat* du_dx, const deviceFloat* intermediate, const deviceFloat* sigma, const deviceFloat* refine, const deviceFloat* coarsen, const deviceFloat* error);
+        deviceFloat get_delta_t(const deviceFloat CFL);
+        void adapt();
 };
 
 namespace SEM {
