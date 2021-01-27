@@ -165,32 +165,48 @@ void Mesh_t::print() {
     cudaFree(phi_prime);
 }
 
-void Mesh_t::write_file_data(size_t N_points, deviceFloat time, const deviceFloat* coordinates, const deviceFloat* velocity, const deviceFloat* du_dx, const deviceFloat* intermediate, const deviceFloat* sigma, const deviceFloat* refine, const deviceFloat* coarsen, const deviceFloat* error) {
-    std::stringstream ss;
-    std::ofstream file;
-
+void Mesh_t::write_file_data(size_t N_points, size_t N_elements, deviceFloat time, const deviceFloat* coordinates, const deviceFloat* velocity, const deviceFloat* du_dx, const deviceFloat* intermediate, const deviceFloat* x_L, const deviceFloat* x_R, const deviceFloat* sigma, const deviceFloat* refine, const deviceFloat* coarsen, const deviceFloat* error) {
     fs::path save_dir = fs::current_path() / "data";
     fs::create_directory(save_dir);
 
+    std::stringstream ss;
+    std::ofstream file;
     ss << "output_t" << std::setprecision(4) << std::fixed << time << ".dat";
     file.open(save_dir / ss.str());
 
-    file << "TITLE = \"Velocity  at t= " << time << "\"" << std::endl;
-    file << "VARIABLES = \"X\", \"U_x\", \"U_x_prime\", \"intermediate\", \"sigma\", \"refine\", \"coarsen\"" << std::endl;
+    file << "TITLE = \"Velocity at t= " << time << "\"" << std::endl;
+    file << "VARIABLES = \"X\", \"U_x\", \"U_x_prime\", \"intermediate\"" << std::endl;
     file << "ZONE T= \"Zone     1\",  I= " << N_points << ",  J= 1,  DATAPACKING = POINT, SOLUTIONTIME = " << time << std::endl;
 
     for (size_t i = 0; i < N_points; ++i) {
-        file << std::setw(12) << coordinates[i] 
-            << " " << std::setw(12) << (std::isnan(velocity[i]) ? velocity[i] : velocity[i]) 
-            << " " << std::setw(12) << (std::isnan(du_dx[i]) ? du_dx[i] : du_dx[i])
-            << " " << std::setw(12) << (std::isnan(intermediate[i]) ? intermediate[i] : intermediate[i])
-            << " " << std::setw(12) << (std::isnan(sigma[i]) ? sigma[i] : sigma[i])
-            << " " << std::setw(12) << (std::isnan(refine[i]) ? refine[i] : refine[i])
-            << " " << std::setw(12) << (std::isnan(coarsen[i]) ? coarsen[i] : coarsen[i])
-            << " " << std::setw(12) << (std::isnan(error[i]) ? error[i] : error[i]) << std::endl;
+        file       << std::setw(12) << coordinates[i] 
+            << " " << std::setw(12) << velocity[i]
+            << " " << std::setw(12) << du_dx[i]
+            << " " << std::setw(12) << intermediate[i] << std::endl;
     }
 
     file.close();
+
+    std::stringstream ss_element;
+    std::ofstream file_element;
+    ss_element << "output_element_t" << std::setprecision(4) << std::fixed << time << ".dat";
+    file_element.open(save_dir / ss_element.str());
+
+    file_element << "TITLE = \"Element values at t= " << time << "\"" << std::endl
+                 << "VARIABLES = \"X\", \"X_L\", \"X_R\", \"sigma\", \"refine\", \"coarsen\", \"error\"" << std::endl
+                 << "ZONE T= \"Zone     1\",  I= " << N_elements << ",  J= 1,  DATAPACKING = POINT, SOLUTIONTIME = " << time << std::endl;
+
+    for (size_t j = 0; j < N_elements; ++j) {
+        file_element << std::setw(12) << (x_L[j] + x_R[j]) * 0.5
+              << " " << std::setw(12) << x_L[j]
+              << " " << std::setw(12) << x_R[j]
+              << " " << std::setw(12) << sigma[j]
+              << " " << std::setw(12) << refine[j]
+              << " " << std::setw(12) << coarsen[j]
+              << " " << std::setw(12) << error[j] << std::endl;
+    }
+
+    file_element.close();
 }
 
 void Mesh_t::write_data(deviceFloat time, size_t N_interpolation_points, const deviceFloat* interpolation_matrices) {
@@ -199,6 +215,8 @@ void Mesh_t::write_data(deviceFloat time, size_t N_interpolation_points, const d
     deviceFloat* phi;
     deviceFloat* phi_prime;
     deviceFloat* intermediate;
+    deviceFloat* x_L;
+    deviceFloat* x_R;
     deviceFloat* sigma;
     deviceFloat* refine;
     deviceFloat* coarsen;
@@ -207,37 +225,45 @@ void Mesh_t::write_data(deviceFloat time, size_t N_interpolation_points, const d
     deviceFloat* host_phi = new deviceFloat[N_elements_ * N_interpolation_points];
     deviceFloat* host_phi_prime = new deviceFloat[N_elements_ * N_interpolation_points];
     deviceFloat* host_intermediate = new deviceFloat[N_elements_ * N_interpolation_points];
-    deviceFloat* host_sigma = new deviceFloat[N_elements_ * N_interpolation_points];
-    deviceFloat* host_refine = new deviceFloat[N_elements_ * N_interpolation_points];
-    deviceFloat* host_coarsen = new deviceFloat[N_elements_ * N_interpolation_points];
-    deviceFloat* host_error = new deviceFloat[N_elements_ * N_interpolation_points];
+    deviceFloat* host_x_L = new deviceFloat[N_elements_];
+    deviceFloat* host_x_R = new deviceFloat[N_elements_];
+    deviceFloat* host_sigma = new deviceFloat[N_elements_];
+    deviceFloat* host_refine = new deviceFloat[N_elements_];
+    deviceFloat* host_coarsen = new deviceFloat[N_elements_];
+    deviceFloat* host_error = new deviceFloat[N_elements_ ];
     cudaMalloc(&x, N_elements_ * N_interpolation_points * sizeof(deviceFloat));
     cudaMalloc(&phi, N_elements_ * N_interpolation_points * sizeof(deviceFloat));
     cudaMalloc(&phi_prime, N_elements_ * N_interpolation_points * sizeof(deviceFloat));
     cudaMalloc(&intermediate, N_elements_ * N_interpolation_points * sizeof(deviceFloat));
-    cudaMalloc(&sigma, N_elements_ * N_interpolation_points * sizeof(deviceFloat));
-    cudaMalloc(&refine, N_elements_ * N_interpolation_points * sizeof(deviceFloat));
-    cudaMalloc(&coarsen, N_elements_ * N_interpolation_points * sizeof(deviceFloat));
-    cudaMalloc(&error, N_elements_ * N_interpolation_points * sizeof(deviceFloat));
+    cudaMalloc(&x_L, N_elements_ * sizeof(deviceFloat));
+    cudaMalloc(&x_R, N_elements_ * sizeof(deviceFloat));
+    cudaMalloc(&sigma, N_elements_ * sizeof(deviceFloat));
+    cudaMalloc(&refine, N_elements_ * sizeof(deviceFloat));
+    cudaMalloc(&coarsen, N_elements_ * sizeof(deviceFloat));
+    cudaMalloc(&error, N_elements_ * sizeof(deviceFloat));
     
 
-    SEM::get_solution<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, N_interpolation_points, elements_, interpolation_matrices, x, phi, phi_prime, intermediate, sigma, refine, coarsen, error);
+    SEM::get_solution<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, N_interpolation_points, elements_, interpolation_matrices, x, phi, phi_prime, intermediate, x_L, x_R, sigma, refine, coarsen, error);
     
     cudaMemcpy(host_x, x , N_elements_ * N_interpolation_points * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_phi, phi, N_elements_ * N_interpolation_points * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_phi_prime, phi_prime, N_elements_ * N_interpolation_points * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_intermediate, intermediate, N_elements_ * N_interpolation_points * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_sigma, sigma, N_elements_ * N_interpolation_points * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_refine, refine, N_elements_ * N_interpolation_points * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_coarsen, coarsen, N_elements_ * N_interpolation_points * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_error, error, N_elements_ * N_interpolation_points * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_x_L, x_L, N_elements_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_x_R, x_R, N_elements_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_sigma, sigma, N_elements_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_refine, refine, N_elements_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_coarsen, coarsen, N_elements_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_error, error, N_elements_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     
-    write_file_data(N_elements_ * N_interpolation_points, time, host_x, host_phi, host_phi_prime, host_intermediate, host_sigma, host_refine, host_coarsen, host_error);
+    write_file_data(N_elements_ * N_interpolation_points, N_elements_, time, host_x, host_phi, host_phi_prime, host_intermediate, host_x_L, host_x_R, host_sigma, host_refine, host_coarsen, host_error);
 
     delete[] host_x;
     delete[] host_phi;
     delete[] host_phi_prime;
     delete[] host_intermediate;
+    delete[] host_x_L;
+    delete[] host_x_R;
     delete[] host_sigma;
     delete[] host_refine;
     delete[] host_coarsen;
@@ -246,6 +272,8 @@ void Mesh_t::write_data(deviceFloat time, size_t N_interpolation_points, const d
     cudaFree(phi);
     cudaFree(phi_prime);
     cudaFree(intermediate);
+    cudaFree(x_L);
+    cudaFree(x_R);
     cudaFree(sigma);
     cudaFree(refine);
     cudaFree(coarsen);

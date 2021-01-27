@@ -32,7 +32,7 @@ class Mesh_t {
         deviceFloat* device_delta_t_array_;
         deviceFloat* host_delta_t_array_;
 
-        void write_file_data(size_t N_points, deviceFloat time, const deviceFloat* coordinates, const deviceFloat* velocity, const deviceFloat* du_dx, const deviceFloat* intermediate, const deviceFloat* sigma, const deviceFloat* refine, const deviceFloat* coarsen, const deviceFloat* error);
+        void write_file_data(size_t N_points, size_t N_elements, deviceFloat time, const deviceFloat* coordinates, const deviceFloat* velocity, const deviceFloat* du_dx, const deviceFloat* intermediate, const deviceFloat* x_L, const deviceFloat* x_R, const deviceFloat* sigma, const deviceFloat* refine, const deviceFloat* coarsen, const deviceFloat* error);
         deviceFloat get_delta_t(const deviceFloat CFL);
         void adapt();
 };

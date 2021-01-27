@@ -336,7 +336,7 @@ void SEM::get_phi(size_t N_elements, const Element_t* elements, deviceFloat* phi
 }
 
 __global__
-void SEM::get_solution(size_t N_elements, size_t N_interpolation_points, const Element_t* elements, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* phi, deviceFloat* phi_prime, deviceFloat* intermediate, deviceFloat* sigma, deviceFloat* refine, deviceFloat* coarsen, deviceFloat* error) {
+void SEM::get_solution(size_t N_elements, size_t N_interpolation_points, const Element_t* elements, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* phi, deviceFloat* phi_prime, deviceFloat* intermediate, deviceFloat* x_L, deviceFloat* x_R, deviceFloat* sigma, deviceFloat* refine, deviceFloat* coarsen, deviceFloat* error) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -354,11 +354,14 @@ void SEM::get_solution(size_t N_elements, size_t N_interpolation_points, const E
             }
             intermediate[offset_interp_1D + j] = elements[i].intermediate_[min(static_cast<int>(j/step), elements[i].N_)];
             x[offset_interp_1D + j] = j * (elements[i].x_[1] - elements[i].x_[0]) / (N_interpolation_points - 1) + elements[i].x_[0];
-            sigma[offset_interp_1D + j] = elements[i].sigma_;
-            refine[offset_interp_1D + j] = elements[i].refine_;
-            coarsen[offset_interp_1D + j] = elements[i].coarsen_;
-            error[offset_interp_1D + j] = elements[i].error_;
         }
+
+        x_L[i] = elements[i].x_[0];
+        x_R[i] = elements[i].x_[1];
+        sigma[i] = elements[i].sigma_;
+        refine[i] = elements[i].refine_;
+        coarsen[i] = elements[i].coarsen_;
+        error[i] = elements[i].error_;
     }
 }
 
