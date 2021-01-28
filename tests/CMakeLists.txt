@@ -19,8 +19,7 @@ target_link_libraries(unit_tests PRIVATE
     Catch2::Catch2
     NDG_cuda)
 
-set_target_properties(unit_tests PROPERTIES
-    CUDA_SEPERABLE_COMPILATION ON)
+set_target_properties(unit_tests PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 set_property(TARGET unit_tests PROPERTY CUDA_ARCHITECTURES 61) # sm_61 is GTX 10X0
 target_compile_features(unit_tests PRIVATE cxx_std_17)
 if(NOT ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug"))
