@@ -7,9 +7,8 @@
 constexpr deviceFloat pi = 3.14159265358979323846;
 
 __device__ 
-Element_t::Element_t(int N, size_t neighbour_L, size_t neighbour_R, size_t face_L, size_t face_R, deviceFloat x_L, deviceFloat x_R) : 
+Element_t::Element_t(int N, size_t face_L, size_t face_R, deviceFloat x_L, deviceFloat x_R) : 
         N_(N),
-        neighbours_{neighbour_L, neighbour_R},
         faces_{face_L, face_R},
         x_{x_L, x_R},
         delta_x_(x_[1] - x_[0]),
@@ -24,7 +23,6 @@ Element_t::Element_t(int N, size_t neighbour_L, size_t neighbour_R, size_t face_
 __device__
 Element_t::Element_t(const Element_t& other) :
         N_(other.N_),
-        neighbours_{other.neighbours_[0], other.neighbours_[1]},
         faces_{other.faces_[0], other.faces_[1]},
         x_{other.x_[0], other.x_[1]},
         delta_x_(other.delta_x_),
@@ -46,7 +44,6 @@ Element_t::Element_t(const Element_t& other) :
 __device__
 Element_t::Element_t(Element_t&& other) :
         N_(other.N_),
-        neighbours_{other.neighbours_[0], other.neighbours_[1]},
         faces_{other.faces_[0], other.faces_[1]},
         x_{other.x_[0], other.x_[1]},
         delta_x_(other.delta_x_),
@@ -76,8 +73,6 @@ Element_t& Element_t::operator=(const Element_t& other) {
     }
 
     N_ = other.N_;
-    neighbours_[0] = other.neighbours_[0];
-    neighbours_[1] = other.neighbours_[1];
     faces_[0] = other.faces_[0];
     faces_[1] = other.faces_[1];
     x_[0] = other.x_[0];
@@ -100,8 +95,6 @@ Element_t& Element_t::operator=(const Element_t& other) {
 __device__
 Element_t& Element_t::operator=(Element_t&& other) {
     N_ = other.N_;
-    neighbours_[0] = other.neighbours_[0];
-    neighbours_[1] = other.neighbours_[1];
     faces_[0] = other.faces_[0];
     faces_[1] = other.faces_[1];
     x_[0] = other.x_[0];
@@ -122,7 +115,6 @@ Element_t& Element_t::operator=(Element_t&& other) {
 __host__ __device__
 Element_t::Element_t() :
         N_(0),
-        neighbours_{0, 0},
         faces_{0, 0},
         x_{0.0, 0.0},
         delta_x_(0.0),
@@ -255,20 +247,41 @@ deviceFloat Element_t::exponential_decay() {
     return C;
 }
 
+__device__
+void Element_t::interpolate_from(const Element_t& other, const deviceFloat* nodes, const deviceFloat* barycentric_weights) {
+    const int offset = N_ * (N_ + 1) /2;
+    const int offset_other = other.N_ * (other.N_ + 1) /2;
+
+    for (int i = 0; i <= N_; ++i) {
+        const deviceFloat x = (2 * nodes[offset + i] - other.x_[0] - other.x_[1])/(other.x_[1] - other.x_[0]);
+        deviceFloat numerator = 0.0;
+        deviceFloat denominator = 0.0;
+        for (int j = 0; j <= other.N_; ++j) {
+            if (SEM::almost_equal2(x, nodes[offset_other + j])) {
+                numerator = other.phi_[j];
+                denominator = 1.0;
+                break;
+            }
+            const deviceFloat t = barycentric_weights[offset_other + j]/(x - nodes[offset_other + j]);
+            numerator += t * other.phi_[j];
+            denominator += t;
+        }
+        phi_[i] = numerator/denominator;
+    }
+}
+
 __global__
 void SEM::build_elements(size_t N_elements, int N, Element_t* elements, deviceFloat x_min, deviceFloat x_max) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
     for (int i = index; i < N_elements; i += stride) {
-        const size_t neighbour_L = (i > 0) ? i - 1 : N_elements - 1; // First cell has last cell as left neighbour
-        const size_t neighbour_R = (i < N_elements - 1) ? i + 1 : 0; // Last cell has first cell as right neighbour
         const size_t face_L = (i > 0) ? i - 1 : N_elements - 1;
         const size_t face_R = i;
         const deviceFloat delta_x = (x_max - x_min)/N_elements;
         const deviceFloat element_x_min = x_min + i * delta_x;
         const deviceFloat element_y_min = x_min + (i + 1) * delta_x;
-        elements[i] = Element_t(N, neighbour_L, neighbour_R, face_L, face_R, element_x_min, element_y_min);
+        elements[i] = Element_t(N, face_L, face_R, element_x_min, element_y_min);
     }
 }
 
@@ -373,4 +386,43 @@ void SEM::interpolate_to_boundaries(size_t N_elements, Element_t* elements, cons
     for (size_t i = index; i < N_elements; i += stride) {
         elements[i].interpolate_to_boundaries(lagrange_interpolant_left, lagrange_interpolant_right);
     }
+}
+
+__global__
+void SEM::adapt(size_t N_elements, size_t additional_elements, Element_t* elements, Element_t* new_elements, Face_t* new_faces, const size_t* block_offsets, const deviceFloat* nodes, const deviceFloat* barycentric_weights) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+    const int thread_id = threadIdx.x;
+    const int block_id = blockIdx.x;
+
+    for (size_t i = index; i < N_elements; i += stride) {
+        if (elements[i].refine_) {
+            size_t offset = 0;
+            for (size_t j = i - thread_id; j < i; ++j) {
+                offset += elements[j].refine_;
+            }
+            size_t new_index = N_elements + block_offsets[block_id] + offset;
+            new_elements[i] = Element_t(elements[i].N_, elements[i].faces_[0], new_index, elements[i].x_[0], (elements[i].x_[0] + elements[i].x_[1]) * 0.5);
+            new_elements[new_index] = Element_t(elements[i].N_, i, elements[i].faces_[1], (elements[i].x_[0] + elements[i].x_[1]) * 0.5, elements[i].x_[1]);
+            new_elements[i].interpolate_from(elements[i], nodes, barycentric_weights);
+            new_elements[new_index].interpolate_from(elements[i], nodes, barycentric_weights);
+            
+            new_faces[new_index] = Face_t(i, new_index);
+            new_faces[elements[i].faces_[1]].elements_[0] = new_index;
+        }
+        else {
+            new_elements[i] = std::move(elements[i]);
+        }
+    }
+}
+
+// From cppreference.com
+__device__
+bool SEM::almost_equal2(deviceFloat x, deviceFloat y) {
+    constexpr int ulp = 2; // ULP
+    // the machine epsilon has to be scaled to the magnitude of the values used
+    // and multiplied by the desired precision in ULPs (units in the last place)
+    return std::abs(x-y) <= FLT_EPSILON * std::abs(x+y) * ulp // CHECK change this to double equivalent if using double instead of float
+        // unless the result is subnormal
+        || std::abs(x-y) < FLT_MIN; // CHECK change this to 64F if using double instead of float
 }

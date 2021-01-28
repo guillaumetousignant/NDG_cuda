@@ -7,12 +7,11 @@
 
 class Element_host_t { // Turn this into separate vectors, because cache exists
     public:
-        Element_host_t(int N, size_t neighbour_L, size_t neighbour_R, size_t face_L, size_t face_R, hostFloat x_L, hostFloat x_R);
+        Element_host_t(int N, size_t face_L, size_t face_R, hostFloat x_L, hostFloat x_R);
         Element_host_t();
         ~Element_host_t();
 
         int N_;
-        std::array<size_t, 2> neighbours_; // Could also be pointers
         std::array<size_t, 2> faces_; // Could also be pointers. left, right
         std::array<hostFloat, 2> x_;
         hostFloat delta_x_;

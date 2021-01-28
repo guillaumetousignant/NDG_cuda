@@ -1,8 +1,7 @@
 #include "Element_host_t.h"
 
-Element_host_t::Element_host_t(int N, size_t neighbour_L, size_t neighbour_R, size_t face_L, size_t face_R, hostFloat x_L, hostFloat x_R) : 
+Element_host_t::Element_host_t(int N, size_t face_L, size_t face_R, hostFloat x_L, hostFloat x_R) : 
         N_(N),
-        neighbours_{neighbour_L, neighbour_R},
         faces_{face_L, face_R},
         x_{x_L, x_R},
         delta_x_(x_R - x_L),

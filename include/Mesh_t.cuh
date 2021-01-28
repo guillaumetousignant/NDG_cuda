@@ -31,10 +31,12 @@ class Mesh_t {
         int faces_numBlocks_;
         deviceFloat* device_delta_t_array_;
         deviceFloat* host_delta_t_array_;
+        size_t* device_refine_array_;
+        size_t* host_refine_array_;
 
         void write_file_data(size_t N_points, size_t N_elements, deviceFloat time, const deviceFloat* coordinates, const deviceFloat* velocity, const deviceFloat* du_dx, const deviceFloat* intermediate, const deviceFloat* x_L, const deviceFloat* x_R, const deviceFloat* sigma, const deviceFloat* refine, const deviceFloat* coarsen, const deviceFloat* error);
         deviceFloat get_delta_t(const deviceFloat CFL);
-        void adapt();
+        void adapt(const deviceFloat* nodes, const deviceFloat* barycentric_weights);
 };
 
 namespace SEM {
@@ -54,14 +56,6 @@ namespace SEM {
     // Algorithm 60 (not really anymore)
     __global__
     void compute_dg_derivative(size_t N_elements, Element_t* elements, const Face_t* faces, const deviceFloat* weights, const deviceFloat* derivative_matrices_hat, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right);
-
-    // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
-    /*__device__ 
-    void warp_reduce_velocity(volatile deviceFloat* sdata, unsigned int tid);
-
-    // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
-    __global__ 
-    void reduce_velocity(size_t N_elements, const Element_t* elements, deviceFloat *g_odata);*/
 
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>
@@ -114,6 +108,49 @@ namespace SEM {
         if (blockSize >= 128) { if (tid < 64) { sdata[tid] = min(sdata[tid], sdata[tid + 64]); } __syncthreads(); }
 
         if (tid < 32) warp_reduce_delta_t<blockSize>(sdata, tid);
+        if (tid == 0) g_odata[blockIdx.x] = sdata[0];
+    }
+
+    // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
+    template <unsigned int blockSize>
+    __device__ 
+    void warp_reduce_refine(volatile size_t *sdata, unsigned int tid) {
+        if (blockSize >= 64) sdata[tid] += sdata[tid + 32];
+        if (blockSize >= 32) sdata[tid] += sdata[tid + 16];
+        if (blockSize >= 16) sdata[tid] += sdata[tid + 8];
+        if (blockSize >= 8) sdata[tid] += sdata[tid + 4];
+        if (blockSize >= 4) sdata[tid] += sdata[tid + 2];
+        if (blockSize >= 2) sdata[tid] += sdata[tid + 1];
+    }
+
+    // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
+    template <unsigned int blockSize>
+    __global__ 
+    void reduce_refine(size_t N_elements, const Element_t* elements, size_t *g_odata) {
+        __shared__ size_t sdata[blockSize];
+        unsigned int tid = threadIdx.x;
+        size_t i = blockIdx.x*(blockSize*2) + tid;
+        unsigned int gridSize = blockSize*2*gridDim.x;
+        sdata[tid] = 0;
+
+        while (i < N_elements) { 
+            sdata[tid] += elements[i].refine_;
+            if (i+blockSize < N_elements) {
+                sdata[tid] += elements[i+blockSize].refine_;
+            }
+            i += gridSize; 
+        }
+        __syncthreads();
+
+        if (blockSize >= 8192) { if (tid < 4096) { sdata[tid] += sdata[tid + 4096]; } __syncthreads(); }
+        if (blockSize >= 4096) { if (tid < 2048) { sdata[tid] += sdata[tid + 2048]; } __syncthreads(); }
+        if (blockSize >= 2048) { if (tid < 1024) { sdata[tid] += sdata[tid + 1024]; } __syncthreads(); }
+        if (blockSize >= 1024) { if (tid < 512) { sdata[tid] += sdata[tid + 512]; } __syncthreads(); }
+        if (blockSize >= 512) { if (tid < 256) { sdata[tid] += sdata[tid + 256]; } __syncthreads(); }
+        if (blockSize >= 256) { if (tid < 128) { sdata[tid] += sdata[tid + 128]; } __syncthreads(); }
+        if (blockSize >= 128) { if (tid < 64) { sdata[tid] += sdata[tid + 64]; } __syncthreads(); }
+
+        if (tid < 32) warp_reduce_refine<blockSize>(sdata, tid);
         if (tid == 0) g_odata[blockIdx.x] = sdata[0];
     }
 }

@@ -2,11 +2,12 @@
 #define NDG_ELEMENT_T_H
 
 #include "float_types.h"
+#include "Face_t.cuh"
 
 class Element_t { // Turn this into separate vectors, because cache exists
     public:
         __device__ 
-        Element_t(int N, size_t neighbour_L, size_t neighbour_R, size_t face_L, size_t face_R, deviceFloat x_L, deviceFloat x_R);
+        Element_t(int N, size_t face_L, size_t face_R, deviceFloat x_L, deviceFloat x_R);
 
         __device__
         Element_t(const Element_t& other);
@@ -27,7 +28,6 @@ class Element_t { // Turn this into separate vectors, because cache exists
         ~Element_t();
 
         int N_;
-        size_t neighbours_[2]; // Could also be pointers
         size_t faces_[2]; // Could also be pointers. left, right
         deviceFloat x_[2];
         deviceFloat delta_x_;
@@ -49,6 +49,9 @@ class Element_t { // Turn this into separate vectors, because cache exists
         template<typename Polynomial>
         __device__
         void estimate_error(const deviceFloat* nodes, const deviceFloat* weights);
+
+        __device__
+        void interpolate_from(const Element_t& other, const deviceFloat* nodes, const deviceFloat* barycentric_weights);
 
     private:
         __device__
@@ -82,6 +85,13 @@ namespace SEM {
     
     __global__
     void interpolate_to_boundaries(size_t N_elements, Element_t* elements, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right);
+
+    __global__
+    void adapt(size_t N_elements, size_t additional_elements, Element_t* elements, Element_t* new_elements, Face_t* new_faces, const size_t* block_offsets, const deviceFloat* nodes, const deviceFloat* barycentric_weights);
+
+    // From cppreference.com
+    __device__
+    bool almost_equal2(deviceFloat x, deviceFloat y);
 }
 
 #endif

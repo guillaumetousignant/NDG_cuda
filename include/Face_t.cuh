@@ -8,7 +8,19 @@ public:
     __device__ 
     Face_t(size_t element_L, size_t element_R);
 
-    __host__
+    __device__
+    Face_t(const Face_t& other);
+
+    __device__
+    Face_t(Face_t&& other);	
+
+    __device__
+    Face_t& operator=(const Face_t& other);
+
+    __device__
+    Face_t& operator=(Face_t&& other);
+
+    __host__ __device__
     Face_t();
 
     __host__ __device__
@@ -21,6 +33,9 @@ public:
 namespace SEM {
     __global__
     void build_faces(size_t N_faces, Face_t* faces);
+
+    __global__
+    void copy_faces(size_t N_faces, const Face_t* faces, Face_t* new_faces);
 }
 
 #endif

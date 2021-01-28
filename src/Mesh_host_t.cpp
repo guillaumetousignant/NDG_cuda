@@ -72,15 +72,6 @@ void Mesh_host_t::print() {
         std::cout << std::endl;
     }
 
-    std::cout << std::endl << "Neighbouring elements: " << std::endl;
-    for (size_t i = 0; i < elements_.size(); ++i) {
-        std::cout << '\t' << "Element " << i << ": ";
-        std::cout << '\t' << '\t';
-        std::cout << elements_[i].neighbours_[0] << " ";
-        std::cout << elements_[i].neighbours_[1];
-        std::cout << std::endl;
-    }
-
     std::cout << std::endl << "Neighbouring faces: " << std::endl;
     for (size_t i = 0; i < elements_.size(); ++i) {
         std::cout << '\t' << "Element " << i << ": ";
@@ -205,14 +196,12 @@ void Mesh_host_t::solve(hostFloat delta_t, const std::vector<hostFloat> output_t
 
 void Mesh_host_t::build_elements(hostFloat x_min, hostFloat x_max) {
     for (size_t i = 0; i < elements_.size(); ++i) {
-        const size_t neighbour_L = (i > 0) ? i - 1 : elements_.size() - 1; // First cell has last cell as left neighbour
-        const size_t neighbour_R = (i < elements_.size() - 1) ? i + 1 : 0; // Last cell has first cell as right neighbour
         const size_t face_L = (i > 0) ? i - 1 : elements_.size() - 1;
         const size_t face_R = i;
         const hostFloat delta_x = (x_max - x_min)/elements_.size();
         const hostFloat element_x_min = x_min + i * delta_x;
         const hostFloat element_y_min = x_min + (i + 1) * delta_x;
-        elements_[i] = Element_host_t(initial_N_, neighbour_L, neighbour_R, face_L, face_R, element_x_min, element_y_min);
+        elements_[i] = Element_host_t(initial_N_, face_L, face_R, element_x_min, element_y_min);
     }
 }
 
