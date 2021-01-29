@@ -87,7 +87,7 @@ namespace SEM {
     void interpolate_to_boundaries(size_t N_elements, Element_t* elements, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right);
 
     __global__
-    void adapt(size_t N_elements, size_t additional_elements, Element_t* elements, Element_t* new_elements, Face_t* new_faces, const unsigned int* block_offsets, const deviceFloat* nodes, const deviceFloat* barycentric_weights);
+    void adapt(size_t N_elements, Element_t* elements, Element_t* new_elements, Face_t* new_faces, const unsigned int* block_offsets, const deviceFloat* nodes, const deviceFloat* barycentric_weights);
 
     // From cppreference.com
     __device__
