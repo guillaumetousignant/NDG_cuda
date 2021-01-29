@@ -34,7 +34,7 @@ Element_t::Element_t(const Element_t& other) :
         coarsen_(other.coarsen_),
         error_(other.error_) {
     
-    printf("Noot");
+    printf("Noot\n");
 
     for (int i = 0; i <= N_; ++i) {
         phi_[i] = other.phi_[i];
@@ -57,7 +57,7 @@ Element_t::Element_t(Element_t&& other) :
         coarsen_(other.coarsen_),
         error_(other.error_) {
 
-        printf("Noot noot noot noot");
+        printf("Noot noot noot noot\n");
     
     other.phi_ = nullptr;
     other.phi_prime_ = nullptr;
@@ -76,7 +76,7 @@ Element_t& Element_t::operator=(const Element_t& other) {
         intermediate_ = new deviceFloat[other.N_];
     }
 
-    printf("Noot noot");
+    printf("Noot noot\n");
 
     N_ = other.N_;
     faces_[0] = other.faces_[0];
@@ -115,7 +115,7 @@ Element_t& Element_t::operator=(Element_t&& other) {
     thrust::swap(phi_prime_, other.phi_prime_);
     thrust::swap(intermediate_, other.intermediate_);
 
-    printf("Noot noot noot");
+    printf("Noot noot noot\n");
 
     return *this;
 }
@@ -402,9 +402,12 @@ void SEM::adapt(size_t N_elements, size_t additional_elements, Element_t* elemen
     const int stride = blockDim.x * gridDim.x;
     const int thread_id = threadIdx.x;
     const int block_id = blockIdx.x;
+    printf("Hello there\n");
+    printf("%i", index);
+    printf("%i", N_elements);
 
     for (size_t i = index; i < N_elements; i += stride) {
-        if (elements[i].refine_) {
+        //if (elements[i].refine_) {
             /*size_t offset = 0;
             for (size_t j = i - thread_id; j < i; ++j) {
                 offset += elements[j].refine_;
@@ -417,11 +420,11 @@ void SEM::adapt(size_t N_elements, size_t additional_elements, Element_t* elemen
             
             new_faces[new_index] = Face_t(i, new_index);
             new_faces[elements[i].faces_[1]].elements_[0] = new_index;*/
-        }
-        else {
+        //}
+        //else {
             new_elements[i] = elements[i];
-            printf("Hello");
-        }
+            printf("Hello\n");
+        //}
     }
 }
 
