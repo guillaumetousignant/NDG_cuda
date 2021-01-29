@@ -33,6 +33,8 @@ Element_t::Element_t(const Element_t& other) :
         refine_(other.refine_),
         coarsen_(other.coarsen_),
         error_(other.error_) {
+    
+    printf("Noot");
 
     for (int i = 0; i <= N_; ++i) {
         phi_[i] = other.phi_[i];
@@ -54,6 +56,8 @@ Element_t::Element_t(Element_t&& other) :
         refine_(other.refine_),
         coarsen_(other.coarsen_),
         error_(other.error_) {
+
+        printf("Noot noot noot noot");
     
     other.phi_ = nullptr;
     other.phi_prime_ = nullptr;
@@ -71,6 +75,8 @@ Element_t& Element_t::operator=(const Element_t& other) {
         phi_prime_ = new deviceFloat[other.N_];
         intermediate_ = new deviceFloat[other.N_];
     }
+
+    printf("Noot noot");
 
     N_ = other.N_;
     faces_[0] = other.faces_[0];
@@ -108,6 +114,8 @@ Element_t& Element_t::operator=(Element_t&& other) {
     thrust::swap(phi_, other.phi_);
     thrust::swap(phi_prime_, other.phi_prime_);
     thrust::swap(intermediate_, other.intermediate_);
+
+    printf("Noot noot noot");
 
     return *this;
 }
@@ -397,21 +405,22 @@ void SEM::adapt(size_t N_elements, size_t additional_elements, Element_t* elemen
 
     for (size_t i = index; i < N_elements; i += stride) {
         if (elements[i].refine_) {
-            size_t offset = 0;
+            /*size_t offset = 0;
             for (size_t j = i - thread_id; j < i; ++j) {
                 offset += elements[j].refine_;
             }
             size_t new_index = N_elements + block_offsets[block_id] + offset;
             new_elements[i] = Element_t(elements[i].N_, elements[i].faces_[0], new_index, elements[i].x_[0], (elements[i].x_[0] + elements[i].x_[1]) * 0.5);
             new_elements[new_index] = Element_t(elements[i].N_, i, elements[i].faces_[1], (elements[i].x_[0] + elements[i].x_[1]) * 0.5, elements[i].x_[1]);
-            new_elements[i].interpolate_from(elements[i], nodes, barycentric_weights);
-            new_elements[new_index].interpolate_from(elements[i], nodes, barycentric_weights);
+            //new_elements[i].interpolate_from(elements[i], nodes, barycentric_weights);
+            //new_elements[new_index].interpolate_from(elements[i], nodes, barycentric_weights);
             
             new_faces[new_index] = Face_t(i, new_index);
-            new_faces[elements[i].faces_[1]].elements_[0] = new_index;
+            new_faces[elements[i].faces_[1]].elements_[0] = new_index;*/
         }
         else {
-            new_elements[i] = std::move(elements[i]);
+            new_elements[i] = elements[i];
+            printf("Hello");
         }
     }
 }

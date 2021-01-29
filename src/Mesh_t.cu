@@ -368,8 +368,9 @@ void Mesh_t::adapt(const deviceFloat* nodes, const deviceFloat* barycentric_weig
     cudaMalloc(&new_faces, (N_faces_ + additional_elements) * sizeof(Face_t));
 
     SEM::copy_faces<<<faces_numBlocks_, faces_blockSize>>>(N_faces_, faces_, new_faces);
+    print();
     SEM::adapt<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, additional_elements, elements_, new_elements, new_faces, device_refine_array_, nodes, barycentric_weights);
-
+    print();
     cudaFree(elements_);
     cudaFree(faces_);
 
@@ -389,6 +390,8 @@ void Mesh_t::adapt(const deviceFloat* nodes, const deviceFloat* barycentric_weig
     cudaFree(device_refine_array_);
     cudaMalloc(&device_delta_t_array_, elements_numBlocks_ * sizeof(deviceFloat));
     cudaMalloc(&device_refine_array_, elements_numBlocks_ * sizeof(unsigned int));
+
+    print();
 }
 
 __global__
