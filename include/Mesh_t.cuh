@@ -31,8 +31,8 @@ class Mesh_t {
         int faces_numBlocks_;
         deviceFloat* device_delta_t_array_;
         deviceFloat* host_delta_t_array_;
-        unsigned int* device_refine_array_;
-        unsigned int* host_refine_array_;
+        unsigned long* device_refine_array_;
+        unsigned long* host_refine_array_;
 
         void write_file_data(size_t N_points, size_t N_elements, deviceFloat time, const deviceFloat* coordinates, const deviceFloat* velocity, const deviceFloat* du_dx, const deviceFloat* intermediate, const deviceFloat* x_L, const deviceFloat* x_R, const deviceFloat* sigma, const deviceFloat* refine, const deviceFloat* coarsen, const deviceFloat* error);
         deviceFloat get_delta_t(const deviceFloat CFL);
@@ -114,7 +114,7 @@ namespace SEM {
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>
     __device__ 
-    void warp_reduce_refine(volatile unsigned int *sdata, unsigned int tid) {
+    void warp_reduce_refine(volatile unsigned long *sdata, unsigned int tid) {
         if (blockSize >= 64) sdata[tid] += sdata[tid + 32];
         if (blockSize >= 32) sdata[tid] += sdata[tid + 16];
         if (blockSize >= 16) sdata[tid] += sdata[tid + 8];
@@ -126,8 +126,8 @@ namespace SEM {
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>
     __global__ 
-    void reduce_refine(size_t N_elements, const Element_t* elements, unsigned int *g_odata) {
-        __shared__ unsigned int sdata[blockSize];
+    void reduce_refine(size_t N_elements, const Element_t* elements, unsigned long *g_odata) {
+        __shared__ unsigned long sdata[blockSize];
         unsigned int tid = threadIdx.x;
         size_t i = blockIdx.x*(blockSize*2) + tid;
         unsigned int gridSize = blockSize*2*gridDim.x;
