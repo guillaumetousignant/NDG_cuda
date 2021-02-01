@@ -120,7 +120,7 @@ intermediate_ax.legend(loc='best')
 
 sigma_fig, sigma_ax = plt.subplots(1, 1)
 for i in range(N_timesteps):
-    sigma_ax.plot(x_element_arrays[i], sigma_arrays[i], color=color_map(i/N_timesteps), marker='+', markeredgewidth=2, markersize=16, label=f"t = {times[i]} s")
+    sigma_ax.plot(x_element_arrays[i], sigma_arrays[i], color=color_map(i/N_timesteps), marker='+', markeredgewidth=2, markersize=16, label=f"t = {times[i]} s", linestyle='')
     for x_L in x_L_arrays[i]:
         sigma_ax.axvline(x=x_L, color=color_map(i/N_timesteps), alpha=vline_alpha, linestyle=vline_linestyle)
     sigma_ax.axvline(x=x_R_arrays[i][-1], color=color_map(i/N_timesteps), alpha=vline_alpha, linestyle=vline_linestyle)
@@ -133,7 +133,7 @@ sigma_ax.legend(loc='best')
 
 refine_fig, refine_ax = plt.subplots(1, 1)
 for i in range(N_timesteps):
-    refine_ax.plot(x_element_arrays[i], refine_arrays[i], color=color_map(i/N_timesteps), marker='+', markeredgewidth=2, markersize=16, label=f"t = {times[i]} s")
+    refine_ax.plot(x_element_arrays[i], refine_arrays[i], color=color_map(i/N_timesteps), marker='+', markeredgewidth=2, markersize=16, label=f"t = {times[i]} s", linestyle='')
     for x_L in x_L_arrays[i]:
         refine_ax.axvline(x=x_L, color=color_map(i/N_timesteps), alpha=vline_alpha, linestyle=vline_linestyle)
     refine_ax.axvline(x=x_R_arrays[i][-1], color=color_map(i/N_timesteps), alpha=vline_alpha, linestyle=vline_linestyle)
@@ -146,7 +146,7 @@ refine_ax.legend(loc='best')
 
 coarsen_fig, coarsen_ax = plt.subplots(1, 1)
 for i in range(N_timesteps):
-    coarsen_ax.plot(x_element_arrays[i], coarsen_arrays[i], color=color_map(i/N_timesteps), marker='+', markeredgewidth=2, markersize=16, label=f"t = {times[i]} s")
+    coarsen_ax.plot(x_element_arrays[i], coarsen_arrays[i], color=color_map(i/N_timesteps), marker='+', markeredgewidth=2, markersize=16, label=f"t = {times[i]} s", linestyle='')
     for x_L in x_L_arrays[i]:
         coarsen_ax.axvline(x=x_L, color=color_map(i/N_timesteps), alpha=vline_alpha, linestyle=vline_linestyle)
     coarsen_ax.axvline(x=x_R_arrays[i][-1], color=color_map(i/N_timesteps), alpha=vline_alpha, linestyle=vline_linestyle)
@@ -159,7 +159,7 @@ coarsen_ax.legend(loc='best')
 
 error_fig, error_ax = plt.subplots(1, 1)
 for i in range(N_timesteps):
-    error_ax.semilogy(x_element_arrays[i], error_arrays[i], color=color_map(i/N_timesteps), marker='+', markeredgewidth=2, markersize=16, label=f"t = {times[i]} s")
+    error_ax.semilogy(x_element_arrays[i], error_arrays[i], color=color_map(i/N_timesteps), marker='+', markeredgewidth=2, markersize=16, label=f"t = {times[i]} s", linestyle='')
     for x_L in x_L_arrays[i]:
         error_ax.axvline(x=x_L, color=color_map(i/N_timesteps), alpha=vline_alpha, linestyle=vline_linestyle)
     error_ax.axvline(x=x_R_arrays[i][-1], color=color_map(i/N_timesteps), alpha=vline_alpha, linestyle=vline_linestyle)
