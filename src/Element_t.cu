@@ -253,16 +253,17 @@ void Element_t::interpolate_from(const Element_t& other, const deviceFloat* node
     const int offset_other = other.N_ * (other.N_ + 1) /2;
 
     for (int i = 0; i <= N_; ++i) {
-        const deviceFloat x = (2 * nodes[offset + i] - other.x_[0] - other.x_[1])/(other.x_[1] - other.x_[0]);
+        const deviceFloat x = (x_[1] - x_[0]) * (nodes[offset + i] + 1) * 0.5 + x_[0];
+        const deviceFloat node = (2 * x - other.x_[0] - other.x_[1])/(other.x_[1] - other.x_[0]);
         deviceFloat numerator = 0.0;
         deviceFloat denominator = 0.0;
         for (int j = 0; j <= other.N_; ++j) {
-            if (SEM::almost_equal2(x, nodes[offset_other + j])) {
+            if (SEM::almost_equal2(node, nodes[offset_other + j])) {
                 numerator = other.phi_[j];
                 denominator = 1.0;
                 break;
             }
-            const deviceFloat t = barycentric_weights[offset_other + j]/(x - nodes[offset_other + j]);
+            const deviceFloat t = barycentric_weights[offset_other + j]/(node - nodes[offset_other + j]);
             numerator += t * other.phi_[j];
             denominator += t;
         }
