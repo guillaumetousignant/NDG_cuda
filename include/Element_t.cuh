@@ -62,6 +62,9 @@ namespace SEM {
     __global__
     void build_elements(size_t N_elements, int N, Element_t* elements, deviceFloat x_min, deviceFloat x_max);
 
+    __global__
+    void free_elements(size_t N_elements, Element_t* elements);
+
     template<typename Polynomial>
     __global__
     void estimate_error(size_t N_elements, Element_t* elements, const deviceFloat* nodes, const deviceFloat* weights);

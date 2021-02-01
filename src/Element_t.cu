@@ -33,8 +33,6 @@ Element_t::Element_t(const Element_t& other) :
         refine_(other.refine_),
         coarsen_(other.coarsen_),
         error_(other.error_) {
-    
-    printf("Noot\n");
 
     for (int i = 0; i <= N_; ++i) {
         phi_[i] = other.phi_[i];
@@ -56,8 +54,6 @@ Element_t::Element_t(Element_t&& other) :
         refine_(other.refine_),
         coarsen_(other.coarsen_),
         error_(other.error_) {
-
-        printf("Noot noot noot noot\n");
     
     other.phi_ = nullptr;
     other.phi_prime_ = nullptr;
@@ -67,16 +63,14 @@ Element_t::Element_t(Element_t&& other) :
 __device__
 Element_t& Element_t::operator=(const Element_t& other) {
     if (N_ != other.N_) {
-        delete [] phi_;
-        delete [] phi_prime_;
-        delete [] intermediate_;
+        delete[] phi_;
+        delete[] phi_prime_;
+        delete[] intermediate_;
 
         phi_ = new deviceFloat[other.N_];
         phi_prime_ = new deviceFloat[other.N_];
         intermediate_ = new deviceFloat[other.N_];
     }
-
-    printf("Noot noot\n");
 
     N_ = other.N_;
     faces_[0] = other.faces_[0];
@@ -94,7 +88,7 @@ Element_t& Element_t::operator=(const Element_t& other) {
         phi_prime_[i] = other.phi_prime_[i];
         intermediate_[i] = other.intermediate_[i];
     }
-
+    
     return *this;
 }
 
@@ -114,9 +108,7 @@ Element_t& Element_t::operator=(Element_t&& other) {
     thrust::swap(phi_, other.phi_);
     thrust::swap(phi_prime_, other.phi_prime_);
     thrust::swap(intermediate_, other.intermediate_);
-
-    printf("Noot noot noot\n");
-
+    
     return *this;
 }
 
@@ -211,15 +203,15 @@ void Element_t::estimate_error<Polynomial>(const deviceFloat* nodes, const devic
     // sum of error
     error_ = std::sqrt(C * C * 0.5/sigma_) * std::exp(-sigma_ * (N_ + 1));
 
-    if(error_ > tolerance_min){	// need refine
+    if(error_ > tolerance_min) {	// need refine
         refine_ = true;
         coarsen_ = false;
     }
-    else if(error_ <= tolerance_max ){	// need coarsen
+    else if(error_ <= tolerance_max ) {	// need coarsen
         refine_ = false;
         coarsen_ = true;
     }
-    else{	// if error in between then do nothing
+    else {	// if error in between then do nothing
         refine_ = false;
         coarsen_ = false;
     }
@@ -288,8 +280,29 @@ void SEM::build_elements(size_t N_elements, int N, Element_t* elements, deviceFl
         const size_t face_R = i;
         const deviceFloat delta_x = (x_max - x_min)/N_elements;
         const deviceFloat element_x_min = x_min + i * delta_x;
-        const deviceFloat element_y_min = x_min + (i + 1) * delta_x;
-        elements[i] = Element_t(N, face_L, face_R, element_x_min, element_y_min);
+        const deviceFloat element_x_max = x_min + (i + 1) * delta_x;
+
+        // Those are uninitialised because they are created via cudaMalloc, so they need to be set if we don't want the move constructor to delete random memory.
+        elements[i].phi_ = nullptr;
+        elements[i].phi_prime_ = nullptr;
+        elements[i].intermediate_ = nullptr;
+
+        elements[i] = Element_t(N, face_L, face_R, element_x_min, element_x_max);
+    }
+}
+
+__global__
+void SEM::free_elements(size_t N_elements, Element_t* elements) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (int i = index; i < N_elements; i += stride) {
+        delete[] elements[i].phi_;
+        delete[] elements[i].phi_prime_;
+        delete[] elements[i].intermediate_;
+        elements[i].phi_ = nullptr;
+        elements[i].phi_prime_ = nullptr;
+        elements[i].intermediate_ = nullptr;
     }
 }
 
@@ -398,33 +411,43 @@ void SEM::interpolate_to_boundaries(size_t N_elements, Element_t* elements, cons
 
 __global__
 void SEM::adapt(unsigned long N_elements, Element_t* elements, Element_t* new_elements, Face_t* new_faces, const unsigned long* block_offsets, const deviceFloat* nodes, const deviceFloat* barycentric_weights) {
-    const int index = blockIdx.x * blockDim.x + threadIdx.x;
-    const int stride = blockDim.x * gridDim.x;
+    const unsigned long index = blockIdx.x * blockDim.x + threadIdx.x;
+    const unsigned long stride = blockDim.x * gridDim.x;
     const int thread_id = threadIdx.x;
     const int block_id = blockIdx.x;
-    printf("Hello there\n");
-    printf("%i", index);
-    printf("%i", N_elements);
-
-    for (size_t i = index; i < N_elements; i += stride) {
-        //if (elements[i].refine_) {
-            /*size_t offset = 0;
+    
+    for (unsigned long i = index; i < N_elements; i += stride) {
+        if (elements[i].refine_) {
+            size_t offset = 0;
             for (size_t j = i - thread_id; j < i; ++j) {
                 offset += elements[j].refine_;
             }
             size_t new_index = N_elements + block_offsets[block_id] + offset;
+
+            // Those are uninitialised because they are created via cudaMalloc, so they need to be set if we don't want the move constructor to delete random memory.
+            new_elements[i].phi_ = nullptr;
+            new_elements[i].phi_prime_ = nullptr;
+            new_elements[i].intermediate_ = nullptr;
+            new_elements[new_index].phi_ = nullptr;
+            new_elements[new_index].phi_prime_ = nullptr;
+            new_elements[new_index].intermediate_ = nullptr;
+
             new_elements[i] = Element_t(elements[i].N_, elements[i].faces_[0], new_index, elements[i].x_[0], (elements[i].x_[0] + elements[i].x_[1]) * 0.5);
-            new_elements[new_index] = Element_t(elements[i].N_, i, elements[i].faces_[1], (elements[i].x_[0] + elements[i].x_[1]) * 0.5, elements[i].x_[1]);
-            //new_elements[i].interpolate_from(elements[i], nodes, barycentric_weights);
-            //new_elements[new_index].interpolate_from(elements[i], nodes, barycentric_weights);
+            new_elements[new_index] = Element_t(elements[i].N_, new_index, elements[i].faces_[1], (elements[i].x_[0] + elements[i].x_[1]) * 0.5, elements[i].x_[1]);
+            new_elements[i].interpolate_from(elements[i], nodes, barycentric_weights);
+            new_elements[new_index].interpolate_from(elements[i], nodes, barycentric_weights);
             
             new_faces[new_index] = Face_t(i, new_index);
-            new_faces[elements[i].faces_[1]].elements_[0] = new_index;*/
-        //}
-        //else {
-            new_elements[i] = elements[i];
-            printf("Hello\n");
-        //}
+            new_faces[elements[i].faces_[1]].elements_[0] = new_index;
+        }
+        else {
+            // Those are uninitialised because they are created via cudaMalloc, so they need to be set if we don't want the move constructor to delete random memory.
+            new_elements[i].phi_ = nullptr;
+            new_elements[i].phi_prime_ = nullptr;
+            new_elements[i].intermediate_ = nullptr;
+            
+            new_elements[i] = std::move(elements[i]);
+        }
     }
 }
 
