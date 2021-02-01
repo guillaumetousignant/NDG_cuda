@@ -35,17 +35,29 @@ for filename in filenames:
         times.append(float(t_match.group(0)[15:]))
         N_match = I_finder.search(lines[2])
         N = int(N_match.group(0)[3:])
-        x_arrays.append(np.zeros(N))
-        ux_arrays.append(np.zeros(N))
-        ux_prime_arrays.append(np.zeros(N))
-        intermediate_arrays.append(np.zeros(N))
+        x_arrays.append([])
+        ux_arrays.append([])
+        ux_prime_arrays.append([])
+        intermediate_arrays.append([])
 
-        for i in range(N):
-            numbers = lines[i+3].split()
-            x_arrays[-1][i] = float(numbers[0])
-            ux_arrays[-1][i] = float(numbers[1])
-            ux_prime_arrays[-1][i] = float(numbers[2])
-            intermediate_arrays[-1][i] = float(numbers[3])
+        index = 2
+        while index < len(lines):
+            N_match = I_finder.search(lines[index])
+            N = int(N_match.group(0)[3:])
+
+            x_arrays[-1].append(np.zeros(N))
+            ux_arrays[-1].append(np.zeros(N))
+            ux_prime_arrays[-1].append(np.zeros(N))
+            intermediate_arrays[-1].append(np.zeros(N))
+
+            for i in range(N):
+                numbers = lines[i + index + 1].split()
+                x_arrays[-1][-1][i] = float(numbers[0])
+                ux_arrays[-1][-1][i] = float(numbers[1])
+                ux_prime_arrays[-1][-1][i] = float(numbers[2])
+                intermediate_arrays[-1][-1][i] = float(numbers[3])
+            
+            index = index + N + 1
 
 # Input from all the output_element_tX.dat files
 filenames_element = [f for f in os.listdir(os.path.join(os.getcwd(), 'data')) if os.path.isfile(os.path.join(os.getcwd(), 'data', f)) and "output_element_t" in f and f.endswith(".dat")]
@@ -84,7 +96,9 @@ color_map = plt.get_cmap("rainbow")
 
 ux_fig, ux_ax = plt.subplots(1, 1)
 for i in range(N_timesteps):
-    ux_ax.plot(x_arrays[i], ux_arrays[i], color=color_map(i/N_timesteps), label=f"t = {times[i]} s")
+    ux_ax.plot(x_arrays[i][0], ux_arrays[i][0], color=color_map(i/N_timesteps), label=f"t = {times[i]} s")
+    for j in range(len(x_arrays[i]) - 1):
+        ux_ax.plot(x_arrays[i][j+1], ux_arrays[i][j+1], color=color_map(i/N_timesteps))
     for x_L in x_L_arrays[i]:
         ux_ax.axvline(x=x_L, color=color_map(i/N_timesteps), alpha=vline_alpha, linestyle=vline_linestyle)
     ux_ax.axvline(x=x_R_arrays[i][-1], color=color_map(i/N_timesteps), alpha=vline_alpha, linestyle=vline_linestyle)
@@ -97,7 +111,9 @@ ux_ax.legend(loc='best')
 
 ux_prime_fig, ux_prime_ax = plt.subplots(1, 1)
 for i in range(N_timesteps):
-    ux_prime_ax.plot(x_arrays[i], ux_prime_arrays[i], color=color_map(i/N_timesteps), label=f"t = {times[i]} s")
+    ux_prime_ax.plot(x_arrays[i][0], ux_prime_arrays[i][0], color=color_map(i/N_timesteps), label=f"t = {times[i]} s")
+    for j in range(len(x_arrays[i]) - 1):
+        ux_prime_ax.plot(x_arrays[i][j+1], ux_prime_arrays[i][j+1], color=color_map(i/N_timesteps))
     for x_L in x_L_arrays[i]:
         ux_prime_ax.axvline(x=x_L, color=color_map(i/N_timesteps), alpha=vline_alpha, linestyle=vline_linestyle)
     ux_prime_ax.axvline(x=x_R_arrays[i][-1], color=color_map(i/N_timesteps), alpha=vline_alpha, linestyle=vline_linestyle)
@@ -110,7 +126,9 @@ ux_prime_ax.legend(loc='best')
 
 intermediate_fig, intermediate_ax = plt.subplots(1, 1)
 for i in range(N_timesteps):
-    intermediate_ax.semilogy(x_arrays[i], intermediate_arrays[i], color=color_map(i/N_timesteps), label=f"t = {times[i]} s")
+    intermediate_ax.semilogy(x_arrays[i][0], intermediate_arrays[i][0], color=color_map(i/N_timesteps), label=f"t = {times[i]} s")
+    for j in range(len(x_arrays[i]) - 1):
+        intermediate_ax.semilogy(x_arrays[i][j+1], intermediate_arrays[i][j+1], color=color_map(i/N_timesteps))
     for x_L in x_L_arrays[i]:
         intermediate_ax.axvline(x=x_L, color=color_map(i/N_timesteps), alpha=vline_alpha, linestyle=vline_linestyle)
     intermediate_ax.axvline(x=x_R_arrays[i][-1], color=color_map(i/N_timesteps), alpha=vline_alpha, linestyle=vline_linestyle)

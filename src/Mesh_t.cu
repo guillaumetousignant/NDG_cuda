@@ -123,7 +123,7 @@ void Mesh_t::print() {
     delete[] host_elements;
 }
 
-void Mesh_t::write_file_data(size_t N_points, size_t N_elements, deviceFloat time, const deviceFloat* coordinates, const deviceFloat* velocity, const deviceFloat* du_dx, const deviceFloat* intermediate, const deviceFloat* x_L, const deviceFloat* x_R, const int* N, const deviceFloat* sigma, const bool* refine, const bool* coarsen, const deviceFloat* error) {
+void Mesh_t::write_file_data(size_t N_interpolation_points, size_t N_elements, deviceFloat time, const deviceFloat* coordinates, const deviceFloat* velocity, const deviceFloat* du_dx, const deviceFloat* intermediate, const deviceFloat* x_L, const deviceFloat* x_R, const int* N, const deviceFloat* sigma, const bool* refine, const bool* coarsen, const deviceFloat* error) {
     fs::path save_dir = fs::current_path() / "data";
     fs::create_directory(save_dir);
 
@@ -134,13 +134,16 @@ void Mesh_t::write_file_data(size_t N_points, size_t N_elements, deviceFloat tim
 
     file << "TITLE = \"Velocity at t= " << time << "\"" << std::endl;
     file << "VARIABLES = \"X\", \"U_x\", \"U_x_prime\", \"intermediate\"" << std::endl;
-    file << "ZONE T= \"Zone     1\",  I= " << N_points << ",  J= 1,  DATAPACKING = POINT, SOLUTIONTIME = " << time << std::endl;
 
-    for (size_t i = 0; i < N_points; ++i) {
-        file       << std::setw(12) << coordinates[i] 
-            << " " << std::setw(12) << velocity[i]
-            << " " << std::setw(12) << du_dx[i]
-            << " " << std::setw(12) << intermediate[i] << std::endl;
+    for (size_t i = 0; i < N_elements; ++i) {
+        file << "ZONE T= \"Zone " << i + 1 << "\",  I= " << N_interpolation_points << ",  J= 1,  DATAPACKING = POINT, SOLUTIONTIME = " << time << std::endl;
+
+        for (size_t j = 0; j < N_interpolation_points; ++j) {
+            file       << std::setw(12) << coordinates[i*N_interpolation_points + j] 
+                << " " << std::setw(12) << velocity[i*N_interpolation_points + j]
+                << " " << std::setw(12) << du_dx[i*N_interpolation_points + j]
+                << " " << std::setw(12) << intermediate[i*N_interpolation_points + j] << std::endl;
+        }
     }
 
     file.close();
@@ -219,7 +222,7 @@ void Mesh_t::write_data(deviceFloat time, size_t N_interpolation_points, const d
     cudaMemcpy(host_coarsen, coarsen, N_elements_ * sizeof(bool), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_error, error, N_elements_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     
-    write_file_data(N_elements_ * N_interpolation_points, N_elements_, time, host_x, host_phi, host_phi_prime, host_intermediate, host_x_L, host_x_R, host_N, host_sigma, host_refine, host_coarsen, host_error);
+    write_file_data(N_interpolation_points, N_elements_, time, host_x, host_phi, host_phi_prime, host_intermediate, host_x_L, host_x_R, host_N, host_sigma, host_refine, host_coarsen, host_error);
 
     delete[] host_x;
     delete[] host_phi;
