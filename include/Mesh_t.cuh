@@ -134,9 +134,9 @@ namespace SEM {
         sdata[tid] = 0;
 
         while (i < N_elements) { 
-            sdata[tid] += elements[i].refine_;
+            sdata[tid] += elements[i].refine_ * (elements[i].sigma_ < 1.0);
             if (i+blockSize < N_elements) {
-                sdata[tid] += elements[i+blockSize].refine_;
+                sdata[tid] += elements[i+blockSize].refine_ * (elements[i+blockSize].sigma_ < 1.0);
             }
             i += gridSize; 
         }

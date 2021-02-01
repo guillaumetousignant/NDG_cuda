@@ -343,12 +343,11 @@ void Mesh_t::adapt(const deviceFloat* nodes, const deviceFloat* barycentric_weig
     SEM::copy_faces<<<faces_numBlocks_, faces_blockSize>>>(N_faces_, faces_, new_faces);
     SEM::adapt<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, new_elements, new_faces, device_refine_array_, nodes, barycentric_weights);
 
-    std::swap(new_elements, elements_);
-    std::swap(new_faces, faces_);
-    cudaFree(new_elements);
-    cudaFree(new_faces);
-    new_elements = nullptr;
-    new_faces = nullptr;
+    SEM::free_elements<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_);
+    cudaFree(elements_);
+    cudaFree(faces_);
+    elements_ = new_elements;
+    faces_ = new_faces;
     
     N_elements_ += additional_elements;
     N_faces_ += additional_elements;
