@@ -33,6 +33,7 @@ Mesh_t::Mesh_t(size_t N_elements, int initial_N, deviceFloat x_min, deviceFloat 
 }
 
 Mesh_t::~Mesh_t() {
+    SEM::free_elements<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_);
     cudaFree(elements_);
     cudaFree(faces_);
     cudaFree(device_delta_t_array_);
@@ -47,20 +48,9 @@ void Mesh_t::set_initial_conditions(const deviceFloat* nodes) {
 }
 
 void Mesh_t::print() {
-    // CHECK find better solution for multiple elements. This only works if all elements have the same N.
-    deviceFloat* phi;
-    deviceFloat* phi_prime;
-    deviceFloat* host_phi = new deviceFloat[(initial_N_ + 1) * N_elements_];
-    deviceFloat* host_phi_prime = new deviceFloat[(initial_N_ + 1) * N_elements_];
     Face_t* host_faces = new Face_t[N_faces_];
     Element_t* host_elements = new Element_t[N_elements_];
-    cudaMalloc(&phi, (initial_N_ + 1) * N_elements_ * sizeof(deviceFloat));
-    cudaMalloc(&phi_prime, (initial_N_ + 1) * N_elements_ * sizeof(deviceFloat));
 
-    SEM::get_elements_data<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, phi, phi_prime);
-    
-    cudaMemcpy(host_phi, phi, (initial_N_ + 1) * N_elements_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_phi_prime, phi_prime, (initial_N_ + 1) * N_elements_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_faces, faces_, N_faces_ * sizeof(Face_t), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_elements, elements_, N_elements_ * sizeof(Element_t), cudaMemcpyDeviceToHost);
 
@@ -69,28 +59,6 @@ void Mesh_t::print() {
         host_elements[i].phi_ = nullptr;
         host_elements[i].phi_prime_ = nullptr;
         host_elements[i].intermediate_ = nullptr;
-    }
-
-    std::cout << std::endl << "Phi: " << std::endl;
-    for (size_t i = 0; i < N_elements_; ++i) {
-        const size_t element_offset = i * (initial_N_ + 1);
-        std::cout << '\t' << "Element " << i << ": ";
-        std::cout << '\t' << '\t';
-        for (int j = 0; j <= initial_N_; ++j) {
-            std::cout << host_phi[element_offset + j] << " ";
-        }
-        std::cout << std::endl;
-    }
-
-    std::cout << std::endl << "Phi prime: " << std::endl;
-    for (size_t i = 0; i < N_elements_; ++i) {
-        const size_t element_offset = i * (initial_N_ + 1);
-        std::cout << '\t' << "Element " << i << ": ";
-        std::cout << '\t' << '\t';
-        for (int j = 0; j <= initial_N_; ++j) {
-            std::cout << host_phi_prime[element_offset + j] << " ";
-        }
-        std::cout << std::endl;
     }
 
     std::cout << std::endl << "Phi interpolated: " << std::endl;
@@ -151,13 +119,8 @@ void Mesh_t::print() {
         std::cout << host_faces[i].elements_[1] << std::endl;
     }
 
-    delete[] host_phi;
-    delete[] host_phi_prime;
     delete[] host_faces;
     delete[] host_elements;
-
-    cudaFree(phi);
-    cudaFree(phi_prime);
 }
 
 void Mesh_t::write_file_data(size_t N_points, size_t N_elements, deviceFloat time, const deviceFloat* coordinates, const deviceFloat* velocity, const deviceFloat* du_dx, const deviceFloat* intermediate, const deviceFloat* x_L, const deviceFloat* x_R, const deviceFloat* sigma, const deviceFloat* refine, const deviceFloat* coarsen, const deviceFloat* error) {
@@ -368,14 +331,15 @@ void Mesh_t::adapt(const deviceFloat* nodes, const deviceFloat* barycentric_weig
     cudaMalloc(&new_faces, (N_faces_ + additional_elements) * sizeof(Face_t));
 
     SEM::copy_faces<<<faces_numBlocks_, faces_blockSize>>>(N_faces_, faces_, new_faces);
-    print();
     SEM::adapt<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, new_elements, new_faces, device_refine_array_, nodes, barycentric_weights);
-    print();
-    cudaFree(elements_);
-    cudaFree(faces_);
 
-    elements_ = new_elements;
-    faces_ = new_faces;
+    std::swap(new_elements, elements_);
+    std::swap(new_faces, faces_);
+    cudaFree(new_elements);
+    cudaFree(new_faces);
+    new_elements = nullptr;
+    new_faces = nullptr;
+    
     N_elements_ += additional_elements;
     N_faces_ += additional_elements;
     elements_numBlocks_ = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
@@ -390,8 +354,6 @@ void Mesh_t::adapt(const deviceFloat* nodes, const deviceFloat* barycentric_weig
     cudaFree(device_refine_array_);
     cudaMalloc(&device_delta_t_array_, elements_numBlocks_ * sizeof(deviceFloat));
     cudaMalloc(&device_refine_array_, elements_numBlocks_ * sizeof(unsigned long));
-
-    print();
 }
 
 __global__
