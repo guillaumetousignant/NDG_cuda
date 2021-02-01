@@ -17,6 +17,7 @@ intermediate_arrays = []
 x_element_arrays = []
 x_L_arrays = []
 x_R_arrays = []
+N_arrays = []
 sigma_arrays = []
 refine_arrays = []
 coarsen_arrays = []
@@ -58,6 +59,7 @@ for filename in filenames_element:
         x_element_arrays.append(np.zeros(N))
         x_L_arrays.append(np.zeros(N))
         x_R_arrays.append(np.zeros(N))
+        N_arrays.append(np.zeros(N))
         sigma_arrays.append(np.zeros(N))
         refine_arrays.append(np.zeros(N))
         coarsen_arrays.append(np.zeros(N))
@@ -68,10 +70,11 @@ for filename in filenames_element:
             x_element_arrays[-1][i] = float(numbers[0])
             x_L_arrays[-1][i] = float(numbers[1])
             x_R_arrays[-1][i] = float(numbers[2])
-            sigma_arrays[-1][i] = float(numbers[3])
-            refine_arrays[-1][i] = float(numbers[4])
-            coarsen_arrays[-1][i] = float(numbers[5])
-            error_arrays[-1][i] = float(numbers[6])
+            N_arrays[-1][i] = float(numbers[3])
+            sigma_arrays[-1][i] = float(numbers[4])
+            refine_arrays[-1][i] = float(numbers[5])
+            coarsen_arrays[-1][i] = float(numbers[6])
+            error_arrays[-1][i] = float(numbers[7])
 
 # Plotting 
 N_timesteps = len(filenames)
@@ -117,6 +120,19 @@ intermediate_ax.set_ylabel('Intermediate [?]')
 intermediate_ax.set_xlabel('x [m]')
 intermediate_ax.set_title("Intermediate along x")
 intermediate_ax.legend(loc='best')
+
+sigma_fig, sigma_ax = plt.subplots(1, 1)
+for i in range(N_timesteps):
+    sigma_ax.plot(x_element_arrays[i], N_arrays[i], color=color_map(i/N_timesteps), marker='+', markeredgewidth=2, markersize=16, label=f"t = {times[i]} s", linestyle='')
+    for x_L in x_L_arrays[i]:
+        sigma_ax.axvline(x=x_L, color=color_map(i/N_timesteps), alpha=vline_alpha, linestyle=vline_linestyle)
+    sigma_ax.axvline(x=x_R_arrays[i][-1], color=color_map(i/N_timesteps), alpha=vline_alpha, linestyle=vline_linestyle)
+
+sigma_ax.grid()
+sigma_ax.set_ylabel('N [-]')
+sigma_ax.set_xlabel('x [m]')
+sigma_ax.set_title("N along x")
+sigma_ax.legend(loc='best')
 
 sigma_fig, sigma_ax = plt.subplots(1, 1)
 for i in range(N_timesteps):

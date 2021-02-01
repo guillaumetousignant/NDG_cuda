@@ -371,7 +371,7 @@ void SEM::get_phi(size_t N_elements, const Element_t* elements, deviceFloat* phi
 }
 
 __global__
-void SEM::get_solution(size_t N_elements, size_t N_interpolation_points, const Element_t* elements, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* phi, deviceFloat* phi_prime, deviceFloat* intermediate, deviceFloat* x_L, deviceFloat* x_R, deviceFloat* sigma, deviceFloat* refine, deviceFloat* coarsen, deviceFloat* error) {
+void SEM::get_solution(size_t N_elements, size_t N_interpolation_points, const Element_t* elements, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* phi, deviceFloat* phi_prime, deviceFloat* intermediate, deviceFloat* x_L, deviceFloat* x_R, int* N, deviceFloat* sigma, bool* refine, bool* coarsen, deviceFloat* error) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -393,6 +393,7 @@ void SEM::get_solution(size_t N_elements, size_t N_interpolation_points, const E
 
         x_L[i] = elements[i].x_[0];
         x_R[i] = elements[i].x_[1];
+        N[i] = elements[i].N_;
         sigma[i] = elements[i].sigma_;
         refine[i] = elements[i].refine_;
         coarsen[i] = elements[i].coarsen_;
