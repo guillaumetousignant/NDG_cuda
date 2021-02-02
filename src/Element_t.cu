@@ -447,7 +447,7 @@ void SEM::adapt(unsigned long N_elements, Element_t* elements, Element_t* new_el
             new_elements[i].phi_prime_ = nullptr;
             new_elements[i].intermediate_ = nullptr;
 
-            new_elements[i] = Element_t(max(elements[i].N_ + 2, N_max), elements[i].faces_[0], elements[i].faces_[1], elements[i].x_[0], elements[i].x_[1]);
+            new_elements[i] = Element_t(min(elements[i].N_ + 2, N_max), elements[i].faces_[0], elements[i].faces_[1], elements[i].x_[0], elements[i].x_[1]);
             new_elements[i].interpolate_from(elements[i], nodes, barycentric_weights);
         }
         else {
