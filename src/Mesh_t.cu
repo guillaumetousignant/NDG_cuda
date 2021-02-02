@@ -321,13 +321,14 @@ void Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* baryc
     SEM::reduce_refine<elements_blockSize><<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, device_refine_array_);
     cudaMemcpy(host_refine_array_, device_refine_array_, elements_numBlocks_ * sizeof(unsigned long), cudaMemcpyDeviceToHost);
 
-    unsigned int additional_elements = 0;
+    unsigned long additional_elements = 0;
     for (int i = 0; i < elements_numBlocks_; ++i) {
         additional_elements += host_refine_array_[i];
         host_refine_array_[i] = additional_elements - host_refine_array_[i]; // Current block offset
     }
 
     if (additional_elements == 0) {
+        SEM::p_adapt<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, N_max, nodes, barycentric_weights);
         return;
     }
 

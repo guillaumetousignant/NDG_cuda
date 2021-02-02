@@ -92,6 +92,9 @@ namespace SEM {
     __global__
     void adapt(unsigned long N_elements, Element_t* elements, Element_t* new_elements, Face_t* new_faces, const unsigned long* block_offsets, int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights);
 
+    __global__
+    void p_adapt(unsigned long N_elements, Element_t* elements, int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights);
+
     // From cppreference.com
     __device__
     bool almost_equal2(deviceFloat x, deviceFloat y);

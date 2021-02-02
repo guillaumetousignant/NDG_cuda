@@ -461,6 +461,22 @@ void SEM::adapt(unsigned long N_elements, Element_t* elements, Element_t* new_el
     }
 }
 
+__global__
+void SEM::p_adapt(unsigned long N_elements, Element_t* elements, int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights) {
+    const unsigned long index = blockIdx.x * blockDim.x + threadIdx.x;
+    const unsigned long stride = blockDim.x * gridDim.x;
+    const int thread_id = threadIdx.x;
+    const int block_id = blockIdx.x;
+    
+    for (unsigned long i = index; i < N_elements; i += stride) {
+        if (elements[i].refine_ && elements[i].sigma_ >= 1.0 && elements[i].N_ < N_max) {
+            Element_t new_element(min(elements[i].N_ + 2, N_max), elements[i].faces_[0], elements[i].faces_[1], elements[i].x_[0], elements[i].x_[1]);
+            new_element.interpolate_from(elements[i], nodes, barycentric_weights);
+            elements[i] = std::move(new_element);
+        }
+    }
+}
+
 // From cppreference.com
 __device__
 bool SEM::almost_equal2(deviceFloat x, deviceFloat y) {
