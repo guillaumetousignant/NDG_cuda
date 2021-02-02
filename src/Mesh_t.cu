@@ -284,7 +284,7 @@ void Mesh_t::solve(const deviceFloat CFL, const std::vector<deviceFloat> output_
             if ((time >= e) && (time < e + delta_t)) {
                 SEM::estimate_error<Polynomial><<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, NDG.nodes_, NDG.weights_);
                 write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
-                adapt(NDG.nodes_, NDG.barycentric_weights_);
+                adapt(NDG.N_max_, NDG.nodes_, NDG.barycentric_weights_);
                 delta_t = get_delta_t(CFL);
                 break;
             }
@@ -317,7 +317,7 @@ deviceFloat Mesh_t::get_delta_t(const deviceFloat CFL) {
     return delta_t_min;
 }
 
-void Mesh_t::adapt(const deviceFloat* nodes, const deviceFloat* barycentric_weights) {
+void Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights) {
     SEM::reduce_refine<elements_blockSize><<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, device_refine_array_);
     cudaMemcpy(host_refine_array_, device_refine_array_, elements_numBlocks_ * sizeof(unsigned long), cudaMemcpyDeviceToHost);
 
@@ -341,7 +341,7 @@ void Mesh_t::adapt(const deviceFloat* nodes, const deviceFloat* barycentric_weig
     cudaMalloc(&new_faces, (N_faces_ + additional_elements) * sizeof(Face_t));
 
     SEM::copy_faces<<<faces_numBlocks_, faces_blockSize>>>(N_faces_, faces_, new_faces);
-    SEM::adapt<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, new_elements, new_faces, device_refine_array_, nodes, barycentric_weights);
+    SEM::adapt<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, new_elements, new_faces, device_refine_array_, N_max, nodes, barycentric_weights);
 
     SEM::free_elements<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_);
     cudaFree(elements_);

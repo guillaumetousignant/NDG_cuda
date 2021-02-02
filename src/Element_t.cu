@@ -412,45 +412,43 @@ void SEM::interpolate_to_boundaries(size_t N_elements, Element_t* elements, cons
 }
 
 __global__
-void SEM::adapt(unsigned long N_elements, Element_t* elements, Element_t* new_elements, Face_t* new_faces, const unsigned long* block_offsets, const deviceFloat* nodes, const deviceFloat* barycentric_weights) {
+void SEM::adapt(unsigned long N_elements, Element_t* elements, Element_t* new_elements, Face_t* new_faces, const unsigned long* block_offsets, int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights) {
     const unsigned long index = blockIdx.x * blockDim.x + threadIdx.x;
     const unsigned long stride = blockDim.x * gridDim.x;
     const int thread_id = threadIdx.x;
     const int block_id = blockIdx.x;
     
     for (unsigned long i = index; i < N_elements; i += stride) {
-        if (elements[i].refine_) {
-            if (elements[i].sigma_ >= 1.0) {
-                new_elements[i].phi_ = nullptr;
-                new_elements[i].phi_prime_ = nullptr;
-                new_elements[i].intermediate_ = nullptr;
-
-                new_elements[i] = Element_t(elements[i].N_ + 2, elements[i].faces_[0], elements[i].faces_[1], elements[i].x_[0], elements[i].x_[1]);
-                new_elements[i].interpolate_from(elements[i], nodes, barycentric_weights);
+        if (elements[i].refine_ && elements[i].sigma_ < 1.0) {
+            size_t offset = 0;
+            for (size_t j = i - thread_id; j < i; ++j) {
+                offset += elements[j].refine_ * (elements[j].sigma_ < 1.0);
             }
-            else {
-                size_t offset = 0;
-                for (size_t j = i - thread_id; j < i; ++j) {
-                    offset += elements[j].refine_ * (elements[j].sigma_ < 1.0);
-                }
-                size_t new_index = N_elements + block_offsets[block_id] + offset;
+            size_t new_index = N_elements + block_offsets[block_id] + offset;
 
-                // Those are uninitialised because they are created via cudaMalloc, so they need to be set if we don't want the move constructor to delete random memory.
-                new_elements[i].phi_ = nullptr;
-                new_elements[i].phi_prime_ = nullptr;
-                new_elements[i].intermediate_ = nullptr;
-                new_elements[new_index].phi_ = nullptr;
-                new_elements[new_index].phi_prime_ = nullptr;
-                new_elements[new_index].intermediate_ = nullptr;
+            // Those are uninitialised because they are created via cudaMalloc, so they need to be set if we don't want the move constructor to delete random memory.
+            new_elements[i].phi_ = nullptr;
+            new_elements[i].phi_prime_ = nullptr;
+            new_elements[i].intermediate_ = nullptr;
+            new_elements[new_index].phi_ = nullptr;
+            new_elements[new_index].phi_prime_ = nullptr;
+            new_elements[new_index].intermediate_ = nullptr;
 
-                new_elements[i] = Element_t(elements[i].N_, elements[i].faces_[0], new_index, elements[i].x_[0], (elements[i].x_[0] + elements[i].x_[1]) * 0.5);
-                new_elements[new_index] = Element_t(elements[i].N_, new_index, elements[i].faces_[1], (elements[i].x_[0] + elements[i].x_[1]) * 0.5, elements[i].x_[1]);
-                new_elements[i].interpolate_from(elements[i], nodes, barycentric_weights);
-                new_elements[new_index].interpolate_from(elements[i], nodes, barycentric_weights);
-                
-                new_faces[new_index] = Face_t(i, new_index);
-                new_faces[elements[i].faces_[1]].elements_[0] = new_index;
-            }
+            new_elements[i] = Element_t(elements[i].N_, elements[i].faces_[0], new_index, elements[i].x_[0], (elements[i].x_[0] + elements[i].x_[1]) * 0.5);
+            new_elements[new_index] = Element_t(elements[i].N_, new_index, elements[i].faces_[1], (elements[i].x_[0] + elements[i].x_[1]) * 0.5, elements[i].x_[1]);
+            new_elements[i].interpolate_from(elements[i], nodes, barycentric_weights);
+            new_elements[new_index].interpolate_from(elements[i], nodes, barycentric_weights);
+            
+            new_faces[new_index] = Face_t(i, new_index);
+            new_faces[elements[i].faces_[1]].elements_[0] = new_index;
+        }
+        else if (elements[i].refine_ && elements[i].N_ < N_max) {
+            new_elements[i].phi_ = nullptr;
+            new_elements[i].phi_prime_ = nullptr;
+            new_elements[i].intermediate_ = nullptr;
+
+            new_elements[i] = Element_t(max(elements[i].N_ + 2, N_max), elements[i].faces_[0], elements[i].faces_[1], elements[i].x_[0], elements[i].x_[1]);
+            new_elements[i].interpolate_from(elements[i], nodes, barycentric_weights);
         }
         else {
             // Those are uninitialised because they are created via cudaMalloc, so they need to be set if we don't want the move constructor to delete random memory.
