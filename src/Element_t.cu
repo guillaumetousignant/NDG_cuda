@@ -67,12 +67,12 @@ Element_t& Element_t::operator=(const Element_t& other) {
         delete[] phi_prime_;
         delete[] intermediate_;
 
-        phi_ = new deviceFloat[other.N_];
-        phi_prime_ = new deviceFloat[other.N_];
-        intermediate_ = new deviceFloat[other.N_];
+        N_ = other.N_;
+        phi_ = new deviceFloat[N_];
+        phi_prime_ = new deviceFloat[N_];
+        intermediate_ = new deviceFloat[N_];
     }
 
-    N_ = other.N_;
     faces_[0] = other.faces_[0];
     faces_[1] = other.faces_[1];
     x_[0] = other.x_[0];
