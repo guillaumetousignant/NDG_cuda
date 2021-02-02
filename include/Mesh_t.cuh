@@ -73,7 +73,7 @@ namespace SEM {
     template <unsigned int blockSize>
     __global__ 
     void reduce_delta_t(deviceFloat CFL, size_t N_elements, const Element_t* elements, deviceFloat *g_odata) {
-        __shared__ deviceFloat sdata[blockSize];
+        __shared__ deviceFloat sdata[(blockSize >= 64) ? blockSize : blockSize + blockSize/2]; // Because within a warp there is no branching and this is read up until blockSize + blockSize/2
         unsigned int tid = threadIdx.x;
         size_t i = blockIdx.x*(blockSize*2) + tid;
         unsigned int gridSize = blockSize*2*gridDim.x;
@@ -127,7 +127,7 @@ namespace SEM {
     template <unsigned int blockSize>
     __global__ 
     void reduce_refine(size_t N_elements, const Element_t* elements, unsigned long *g_odata) {
-        __shared__ unsigned long sdata[blockSize];
+        __shared__ unsigned long sdata[(blockSize >= 64) ? blockSize : blockSize + blockSize/2]; // Because within a warp there is no branching and this is read up until blockSize + blockSize/2
         unsigned int tid = threadIdx.x;
         size_t i = blockIdx.x*(blockSize*2) + tid;
         unsigned int gridSize = blockSize*2*gridDim.x;
