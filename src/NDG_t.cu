@@ -29,6 +29,7 @@ NDG_t<Polynomial>::NDG_t(int N_max, size_t N_interpolation_points) :
     cudaMalloc(&lagrange_interpolant_left_, vector_length_ * sizeof(deviceFloat));
     cudaMalloc(&lagrange_interpolant_right_, vector_length_ * sizeof(deviceFloat));
     cudaMalloc(&derivative_matrices_, matrix_length_ * sizeof(deviceFloat));
+    cudaMalloc(&g_hat_derivative_matrices_, matrix_length_ * sizeof(deviceFloat));
     cudaMalloc(&derivative_matrices_hat_, matrix_length_ * sizeof(deviceFloat));
     cudaMalloc(&interpolation_matrices_, interpolation_length_ * sizeof(deviceFloat));
 
@@ -63,6 +64,7 @@ NDG_t<Polynomial>::NDG_t(int N_max, size_t N_interpolation_points) :
     // All the derivative matrix has to be computed before D^
     for (int N = 0; N <= N_max_; ++N) {
         const dim3 matrix_numBlocks((N +  matrix_blockSize.x) / matrix_blockSize.x, (N +  matrix_blockSize.y) / matrix_blockSize.y); // Should be (N + poly_blockSize - 1) if N is not inclusive
+        SEM::polynomial_cg_derivative_matrices<<<matrix_numBlocks, matrix_blockSize>>>(N, weights_, derivative_matrices_, g_hat_derivative_matrices_);
         SEM::polynomial_derivative_matrices_hat<<<matrix_numBlocks, matrix_blockSize>>>(N, weights_, derivative_matrices_, derivative_matrices_hat_);
     }
 }
@@ -75,6 +77,7 @@ NDG_t<Polynomial>::~NDG_t() {
     cudaFree(lagrange_interpolant_left_);
     cudaFree(lagrange_interpolant_right_);
     cudaFree(derivative_matrices_);
+    cudaFree(g_hat_derivative_matrices_);
     cudaFree(derivative_matrices_hat_);
     cudaFree(interpolation_matrices_);
 }
@@ -88,6 +91,7 @@ void NDG_t<Polynomial>::print() {
     deviceFloat* host_lagrange_interpolant_left = new deviceFloat[vector_length_];
     deviceFloat* host_lagrange_interpolant_right = new deviceFloat[vector_length_];
     deviceFloat* host_derivative_matrices = new deviceFloat[matrix_length_];
+    deviceFloat* host_g_hat_derivative_matrices = new deviceFloat[matrix_length_];
     deviceFloat* host_derivative_matrices_hat = new deviceFloat[matrix_length_];
     deviceFloat* host_interpolation_matrices = new deviceFloat[interpolation_length_];
 
@@ -97,6 +101,7 @@ void NDG_t<Polynomial>::print() {
     cudaMemcpy(host_lagrange_interpolant_left, lagrange_interpolant_left_, vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_lagrange_interpolant_right, lagrange_interpolant_right_, vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_derivative_matrices, derivative_matrices_, matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_g_hat_derivative_matrices, g_hat_derivative_matrices_, matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_derivative_matrices_hat, derivative_matrices_hat_, matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_interpolation_matrices, interpolation_matrices_, interpolation_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
 
@@ -174,6 +179,20 @@ void NDG_t<Polynomial>::print() {
         }
     }
 
+    std::cout << std::endl << "CG derivative matrices: " << std::endl;
+    for (int N = 0; N <= N_max_; ++N) {
+        const size_t offset_2D = N * (N + 1) * (2 * N + 1) /6;
+
+        std::cout << '\t' << "N = " << N << ": " << std::endl;
+        for (int i = 0; i <= N; ++i) {
+            std::cout << '\t' << '\t';
+            for (int j = 0; j <= N; ++j) {
+                std::cout << host_g_hat_derivative_matrices[offset_2D + i * (N + 1) + j] << " ";
+            }
+            std::cout << std::endl;
+        }
+    }
+
     std::cout << std::endl << "Derivative matrices hat: " << std::endl;
     for (int N = 0; N <= N_max_; ++N) {
         const size_t offset_2D = N * (N + 1) * (2 * N + 1) /6;
@@ -208,6 +227,7 @@ void NDG_t<Polynomial>::print() {
     delete[] host_lagrange_interpolant_left;
     delete[] host_lagrange_interpolant_right;
     delete[] host_derivative_matrices;
+    delete[] host_g_hat_derivative_matrices;
     delete[] host_derivative_matrices_hat;
     delete[] host_interpolation_matrices;
 }
@@ -314,6 +334,27 @@ void SEM::polynomial_derivative_matrices_diagonal(int N, deviceFloat* derivative
         }
         for (int j = i + 1; j <= N; ++j) {
             derivative_matrices[offset_2D + i * (N + 2)] -= derivative_matrices[offset_2D + i * (N + 1) + j];
+        }
+    }
+}
+
+// Algorithm 57
+__global__
+void SEM::polynomial_cg_derivative_matrices(int N, const deviceFloat* weights, const deviceFloat* derivative_matrices, deviceFloat* g_hat_derivative_matrices) {
+    const int index_x = blockIdx.x * blockDim.x + threadIdx.x;
+    const int index_y = blockIdx.y * blockDim.y + threadIdx.y;
+    const int stride_x = blockDim.x * gridDim.x;
+    const int stride_y = blockDim.y * gridDim.y;
+    const size_t offset_1D = N * (N + 1) /2;
+    const size_t offset_2D = N * (N + 1) * (2 * N + 1) /6;
+
+    for (int j = index_x; j <= N; j += stride_x) {
+        for (int n = index_y; n <= N; n += stride_y) {
+            deviceFloat s = 0.0;
+            for (int k = 0; k <= N; ++k) {
+                s += derivative_matrices[offset_2D + k * (N + 1) + n] * derivative_matrices[offset_2D + k * (N + 1) + j] * weights[offset_1D + k];
+            }
+            g_hat_derivative_matrices[offset_2D + j * (N + 1) + n] = s/weights[offset_1D + j];
         }
     }
 }

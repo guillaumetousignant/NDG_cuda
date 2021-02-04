@@ -20,6 +20,7 @@ public:
     deviceFloat* lagrange_interpolant_left_;
     deviceFloat* lagrange_interpolant_right_;
     deviceFloat* derivative_matrices_;
+    deviceFloat* g_hat_derivative_matrices_;
     deviceFloat* derivative_matrices_hat_;
     deviceFloat* interpolation_matrices_;
 
@@ -52,6 +53,10 @@ namespace SEM {
     // Algorithm 37
     __global__
     void polynomial_derivative_matrices_diagonal(int N, deviceFloat* derivative_matrices);
+
+    // Algorithm 57
+    __global__
+    void polynomial_cg_derivative_matrices(int N, const deviceFloat* weights, const deviceFloat* derivative_matrices, deviceFloat* g_hat_derivative_matrices);
 
     __global__
     void polynomial_derivative_matrices_hat(int N, const deviceFloat* weights, const deviceFloat* derivative_matrices, deviceFloat* derivative_matrices_hat);
