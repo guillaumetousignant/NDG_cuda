@@ -70,6 +70,15 @@ void Mesh_t::print() {
         std::cout << std::endl;
     }
 
+    std::cout << std::endl << "Phi prime interpolated: " << std::endl;
+    for (size_t i = 0; i < N_elements_; ++i) {
+        std::cout << '\t' << "Element " << i << ": ";
+        std::cout << '\t' << '\t';
+        std::cout << host_elements[i].phi_prime_L_ << " ";
+        std::cout << host_elements[i].phi_prime_R_;
+        std::cout << std::endl;
+    }
+
     std::cout << std::endl << "x: " << std::endl;
     for (size_t i = 0; i < N_elements_; ++i) {
         std::cout << '\t' << "Element " << i << ": ";

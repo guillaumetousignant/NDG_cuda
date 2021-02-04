@@ -19,6 +19,8 @@ public:
     deviceFloat* barycentric_weights_;
     deviceFloat* lagrange_interpolant_left_;
     deviceFloat* lagrange_interpolant_right_;
+    deviceFloat* lagrange_interpolant_derivative_left_;
+    deviceFloat* lagrange_interpolant_derivative_right_;
     deviceFloat* derivative_matrices_;
     deviceFloat* g_hat_derivative_matrices_;
     deviceFloat* derivative_matrices_hat_;
@@ -44,6 +46,15 @@ namespace SEM {
     // Algorithm 34
     __global__
     void normalize_lagrange_interpolating_polynomials(int N_max, deviceFloat* lagrange_interpolant);
+
+    // This will not work if we are on a node, or at least be pretty inefficient
+    // Algorithm 36
+    __global__
+    void lagrange_interpolating_derivative_polynomials(deviceFloat x, int N, const deviceFloat* nodes, const deviceFloat* barycentric_weights, deviceFloat* lagrange_derivative_interpolant);
+
+    // Algorithm 36
+    __global__
+    void normalize_lagrange_interpolating_derivative_polynomials(deviceFloat x, int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights, deviceFloat* lagrange_derivative_interpolant);
 
     // Be sure to compute the diagonal afterwards
     // Algorithm 37

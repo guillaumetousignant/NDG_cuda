@@ -135,14 +135,21 @@ Element_t::~Element_t() {
 
 // Algorithm 61
 __device__
-void Element_t::interpolate_to_boundaries(const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right) {
+void Element_t::interpolate_to_boundaries(size_t N_elements, Element_t* elements, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right, const deviceFloat* lagrange_interpolant_derivative_left, const deviceFloat* lagrange_interpolant_derivative_right) {
     const int offset_1D = N_ * (N_ + 1) /2;
     phi_L_ = 0.0;
     phi_R_ = 0.0;
+    phi_prime_L_ = 0.0;
+    phi_prime_R_ = 0.0;
 
     for (int j = 0; j <= N_; ++j) {
         phi_L_ += lagrange_interpolant_left[offset_1D + j] * phi_[j];
         phi_R_ += lagrange_interpolant_right[offset_1D + j] * phi_[j];
+    }
+
+    for (int j = 0; j <= N_; ++j) {
+        phi_prime_L_ += lagrange_interpolant_derivative_left[offset_1D + j] * (phi_L_ - phi_[j]);
+        phi_prime_R_ += lagrange_interpolant_derivative_right[offset_1D + j] * (phi_R_ - phi_[j]);
     }
 }
 

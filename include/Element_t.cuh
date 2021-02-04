@@ -33,6 +33,8 @@ class Element_t { // Turn this into separate vectors, because cache exists
         deviceFloat delta_x_;
         deviceFloat phi_L_;
         deviceFloat phi_R_;
+        deviceFloat phi_prime_L_;
+        deviceFloat phi_prime_R_;
         deviceFloat* phi_; // Solution
         deviceFloat* phi_prime_;
         deviceFloat* intermediate_; // This is used for RK3, and also for adaptivity. So don't try to adapt between rk steps.
@@ -87,7 +89,7 @@ namespace SEM {
     void get_solution(size_t N_elements, size_t N_interpolation_points, const Element_t* elements, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* phi, deviceFloat* phi_prime, deviceFloat* intermediate, deviceFloat* x_L, deviceFloat* x_R, int* N, deviceFloat* sigma, bool* refine, bool* coarsen, deviceFloat* error);
     
     __global__
-    void interpolate_to_boundaries(size_t N_elements, Element_t* elements, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right);
+    void interpolate_to_boundaries(size_t N_elements, Element_t* elements, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right, const deviceFloat* lagrange_interpolant_derivative_left, const deviceFloat* lagrange_interpolant_derivative_right);
 
     __global__
     void adapt(unsigned long N_elements, Element_t* elements, Element_t* new_elements, Face_t* new_faces, const unsigned long* block_offsets, int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights);

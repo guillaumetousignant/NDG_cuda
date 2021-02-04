@@ -28,6 +28,8 @@ NDG_t<Polynomial>::NDG_t(int N_max, size_t N_interpolation_points) :
     cudaMalloc(&barycentric_weights_, vector_length_ * sizeof(deviceFloat));
     cudaMalloc(&lagrange_interpolant_left_, vector_length_ * sizeof(deviceFloat));
     cudaMalloc(&lagrange_interpolant_right_, vector_length_ * sizeof(deviceFloat));
+    cudaMalloc(&lagrange_interpolant_derivative_left_, vector_length_ * sizeof(deviceFloat));
+    cudaMalloc(&lagrange_interpolant_derivative_right_, vector_length_ * sizeof(deviceFloat));
     cudaMalloc(&derivative_matrices_, matrix_length_ * sizeof(deviceFloat));
     cudaMalloc(&g_hat_derivative_matrices_, matrix_length_ * sizeof(deviceFloat));
     cudaMalloc(&derivative_matrices_hat_, matrix_length_ * sizeof(deviceFloat));
@@ -50,12 +52,16 @@ NDG_t<Polynomial>::NDG_t(int N_max, size_t N_interpolation_points) :
         SEM::create_interpolation_matrices<<<interpolation_numBlocks, interpolation_blockSize>>>(N, N_interpolation_points_, nodes_, barycentric_weights_, interpolation_matrices_);
         SEM::lagrange_interpolating_polynomials<<<vector_numBlocks, poly_blockSize>>>(-1.0f, N, nodes_, barycentric_weights_, lagrange_interpolant_left_);
         SEM::lagrange_interpolating_polynomials<<<vector_numBlocks, poly_blockSize>>>(1.0f, N, nodes_, barycentric_weights_, lagrange_interpolant_right_);
+        SEM::lagrange_interpolating_derivative_polynomials<<<vector_numBlocks, poly_blockSize>>>(-1.0f, N, nodes_, barycentric_weights_, lagrange_interpolant_derivative_left_);
+        SEM::lagrange_interpolating_derivative_polynomials<<<vector_numBlocks, poly_blockSize>>>(1.0f, N, nodes_, barycentric_weights_, lagrange_interpolant_derivative_right_);
     }
 
     // Then we calculate the derivative matrix diagonal and normalize the Lagrange interpolants
     const int poly_numBlocks = (N_max_ + poly_blockSize) / poly_blockSize;
     SEM::normalize_lagrange_interpolating_polynomials<<<poly_numBlocks, poly_blockSize>>>(N_max_, lagrange_interpolant_left_);
     SEM::normalize_lagrange_interpolating_polynomials<<<poly_numBlocks, poly_blockSize>>>(N_max_, lagrange_interpolant_right_);
+    SEM::normalize_lagrange_interpolating_derivative_polynomials<<<poly_numBlocks, poly_blockSize>>>(-1.0f, N_max_, nodes_, barycentric_weights_, lagrange_interpolant_derivative_left_);
+    SEM::normalize_lagrange_interpolating_derivative_polynomials<<<poly_numBlocks, poly_blockSize>>>(1.0f, N_max_, nodes_, barycentric_weights_, lagrange_interpolant_derivative_right_);
     for (int N = 0; N <= N_max_; ++N) {
         const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
         SEM::polynomial_derivative_matrices_diagonal<<<vector_numBlocks, poly_blockSize>>>(N, derivative_matrices_);
@@ -76,6 +82,8 @@ NDG_t<Polynomial>::~NDG_t() {
     cudaFree(barycentric_weights_);
     cudaFree(lagrange_interpolant_left_);
     cudaFree(lagrange_interpolant_right_);
+    cudaFree(lagrange_interpolant_derivative_left_);
+    cudaFree(lagrange_interpolant_derivative_right_);
     cudaFree(derivative_matrices_);
     cudaFree(g_hat_derivative_matrices_);
     cudaFree(derivative_matrices_hat_);
@@ -90,6 +98,8 @@ void NDG_t<Polynomial>::print() {
     deviceFloat* host_barycentric_weights = new deviceFloat[vector_length_];
     deviceFloat* host_lagrange_interpolant_left = new deviceFloat[vector_length_];
     deviceFloat* host_lagrange_interpolant_right = new deviceFloat[vector_length_];
+    deviceFloat* host_lagrange_interpolant_derivative_left = new deviceFloat[vector_length_];
+    deviceFloat* host_lagrange_interpolant_derivative_right = new deviceFloat[vector_length_];
     deviceFloat* host_derivative_matrices = new deviceFloat[matrix_length_];
     deviceFloat* host_g_hat_derivative_matrices = new deviceFloat[matrix_length_];
     deviceFloat* host_derivative_matrices_hat = new deviceFloat[matrix_length_];
@@ -100,6 +110,8 @@ void NDG_t<Polynomial>::print() {
     cudaMemcpy(host_barycentric_weights, barycentric_weights_, vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_lagrange_interpolant_left, lagrange_interpolant_left_, vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_lagrange_interpolant_right, lagrange_interpolant_right_, vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_lagrange_interpolant_derivative_left, lagrange_interpolant_derivative_left_, vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_lagrange_interpolant_derivative_right, lagrange_interpolant_derivative_right_, vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_derivative_matrices, derivative_matrices_, matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_g_hat_derivative_matrices, g_hat_derivative_matrices_, matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_derivative_matrices_hat, derivative_matrices_hat_, matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
@@ -165,6 +177,30 @@ void NDG_t<Polynomial>::print() {
         std::cout << std::endl;
     }
 
+    std::cout << std::endl << "Lagrange interpolants derivatives -1: " << std::endl;
+    for (int N = 0; N <= N_max_; ++N) {
+        const size_t offset = N * (N + 1) /2;
+
+        std::cout << '\t' << "N = " << N << ": ";
+        std::cout << '\t' << '\t';
+        for (int i = 0; i <= N; ++i) {
+            std::cout << host_lagrange_interpolant_derivative_left[offset + i] << " ";
+        }
+        std::cout << std::endl;
+    }
+
+    std::cout << std::endl << "Lagrange interpolants derivatives +1: " << std::endl;
+    for (int N = 0; N <= N_max_; ++N) {
+        const size_t offset = N * (N + 1) /2;
+
+        std::cout << '\t' << "N = " << N << ": ";
+        std::cout << '\t' << '\t';
+        for (int i = 0; i <= N; ++i) {
+            std::cout << host_lagrange_interpolant_derivative_right[offset + i] << " ";
+        }
+        std::cout << std::endl;
+    }
+
     std::cout << std::endl << "Derivative matrices: " << std::endl;
     for (int N = 0; N <= N_max_; ++N) {
         const size_t offset_2D = N * (N + 1) * (2 * N + 1) /6;
@@ -226,6 +262,8 @@ void NDG_t<Polynomial>::print() {
     delete[] host_barycentric_weights;
     delete[] host_lagrange_interpolant_left;
     delete[] host_lagrange_interpolant_right;
+    delete[] host_lagrange_interpolant_derivative_left;
+    delete[] host_lagrange_interpolant_derivative_right;
     delete[] host_derivative_matrices;
     delete[] host_g_hat_derivative_matrices;
     delete[] host_derivative_matrices_hat;
@@ -296,6 +334,37 @@ void SEM::normalize_lagrange_interpolating_polynomials(int N_max, deviceFloat* l
         }
         for (int i = 0; i <= N; ++i) {
             lagrange_interpolant[offset + i] /= sum;
+        }
+    }
+}
+
+// This will not work if we are on a node, or at least be pretty inefficient
+// Algorithm 36
+__global__
+void SEM::lagrange_interpolating_derivative_polynomials(deviceFloat x, int N, const deviceFloat* nodes, const deviceFloat* barycentric_weights, deviceFloat* lagrange_derivative_interpolant) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+    const size_t offset = N * (N + 1) /2;
+
+    for (int i = index; i <= N; i += stride) {
+        lagrange_derivative_interpolant[offset + i] = barycentric_weights[offset + i] / pow(x - nodes[offset + i], 2);
+    }
+}
+
+// Algorithm 36
+__global__
+void SEM::normalize_lagrange_interpolating_derivative_polynomials(deviceFloat x, int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights, deviceFloat* lagrange_derivative_interpolant) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (int N = index; N <= N_max; N += stride) {
+        const size_t offset = N * (N + 1) /2;
+        deviceFloat sum = 0.0;
+        for (int i = 0; i <= N; ++i) {
+            sum += barycentric_weights[offset + i]/(x - nodes[offset + i]);
+        }
+        for (int i = 0; i <= N; ++i) {
+            lagrange_derivative_interpolant[offset + i] /= sum;
         }
     }
 }
