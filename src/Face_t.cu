@@ -7,20 +7,21 @@ Face_t::Face_t(size_t element_L, size_t element_R) : elements_{element_L, elemen
 __device__
 Face_t::Face_t(const Face_t& other) :
         elements_{other.elements_[0], other.elements_[1]},
-        flux_{other.flux_} {
-}
+        flux_{other.flux_},
+        derivative_flux_{other.derivative_flux_} {}
 
 __device__
 Face_t::Face_t(Face_t&& other) :
         elements_{other.elements_[0], other.elements_[1]},
-        flux_{other.flux_} {
-}
+        flux_{other.flux_},
+        derivative_flux_{other.derivative_flux_} {}
 
 __device__
 Face_t& Face_t::operator=(const Face_t& other) {
     elements_[0] = other.elements_[0];
     elements_[1] = other.elements_[1];
     flux_ = other.flux_;
+    derivative_flux_ = other.derivative_flux_;
 
     return *this;
 }
@@ -30,6 +31,7 @@ Face_t& Face_t::operator=(Face_t&& other) {
     elements_[0] = other.elements_[0];
     elements_[1] = other.elements_[1];
     flux_ = other.flux_;
+    derivative_flux_ = other.derivative_flux_;
 
     return *this;
 }

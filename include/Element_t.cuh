@@ -46,7 +46,7 @@ class Element_t { // Turn this into separate vectors, because cache exists
 
         // Algorithm 61
         __device__
-        void interpolate_to_boundaries(const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right);
+        void interpolate_to_boundaries(const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right, const deviceFloat* lagrange_interpolant_derivative_left, const deviceFloat* lagrange_interpolant_derivative_right);
 
         template<typename Polynomial>
         __device__

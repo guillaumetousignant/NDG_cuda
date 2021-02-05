@@ -257,11 +257,11 @@ void Mesh_t::write_data(deviceFloat time, size_t N_interpolation_points, const d
     cudaFree(error);
 }
 
-template void Mesh_t::solve(const deviceFloat delta_t, const std::vector<deviceFloat> output_times, const NDG_t<ChebyshevPolynomial_t> &NDG); // Get with the times c++, it's crazy I have to do this
-template void Mesh_t::solve(const deviceFloat delta_t, const std::vector<deviceFloat> output_times, const NDG_t<LegendrePolynomial_t> &NDG);
+template void Mesh_t::solve(const deviceFloat delta_t, const std::vector<deviceFloat> output_times, const NDG_t<ChebyshevPolynomial_t> &NDG, deviceFloat viscosity); // Get with the times c++, it's crazy I have to do this
+template void Mesh_t::solve(const deviceFloat delta_t, const std::vector<deviceFloat> output_times, const NDG_t<LegendrePolynomial_t> &NDG, deviceFloat viscosity);
 
 template<typename Polynomial>
-void Mesh_t::solve(const deviceFloat CFL, const std::vector<deviceFloat> output_times, const NDG_t<Polynomial> &NDG) {
+void Mesh_t::solve(const deviceFloat CFL, const std::vector<deviceFloat> output_times, const NDG_t<Polynomial> &NDG, deviceFloat viscosity) {
     deviceFloat time = 0.0;
     const deviceFloat t_end = output_times.back();
 
@@ -271,21 +271,21 @@ void Mesh_t::solve(const deviceFloat CFL, const std::vector<deviceFloat> output_
     while (time < t_end) {
         // Kinda algorithm 62
         deviceFloat t = time;
-        SEM::interpolate_to_boundaries<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        SEM::interpolate_to_boundaries<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_, NDG.lagrange_interpolant_derivative_left_, NDG.lagrange_interpolant_derivative_right_);
         SEM::calculate_fluxes<<<faces_numBlocks_, faces_blockSize>>>(N_faces_, faces_, elements_);
-        SEM::compute_dg_derivative<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        SEM::compute_dg_derivative<<<elements_numBlocks_, elements_blockSize>>>(viscosity, N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.g_hat_derivative_matrices_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
         SEM::rk3_first_step<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, delta_t, 1.0f/3.0f);
 
         t = time + 0.33333333333f * delta_t;
-        SEM::interpolate_to_boundaries<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        SEM::interpolate_to_boundaries<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_, NDG.lagrange_interpolant_derivative_left_, NDG.lagrange_interpolant_derivative_right_);
         SEM::calculate_fluxes<<<faces_numBlocks_, faces_blockSize>>>(N_faces_, faces_, elements_);
-        SEM::compute_dg_derivative<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        SEM::compute_dg_derivative<<<elements_numBlocks_, elements_blockSize>>>(viscosity, N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.g_hat_derivative_matrices_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
         SEM::rk3_step<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, delta_t, -5.0f/9.0f, 15.0f/16.0f);
 
         t = time + 0.75f * delta_t;
-        SEM::interpolate_to_boundaries<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        SEM::interpolate_to_boundaries<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_, NDG.lagrange_interpolant_derivative_left_, NDG.lagrange_interpolant_derivative_right_);
         SEM::calculate_fluxes<<<faces_numBlocks_, faces_blockSize>>>(N_faces_, faces_, elements_);
-        SEM::compute_dg_derivative<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        SEM::compute_dg_derivative<<<elements_numBlocks_, elements_blockSize>>>(viscosity, N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.g_hat_derivative_matrices_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
         SEM::rk3_step<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, delta_t, -153.0f/128.0f, 8.0f/15.0f);
               
         time += delta_t;
@@ -408,50 +408,59 @@ void SEM::calculate_fluxes(size_t N_faces, Face_t* faces, const Element_t* eleme
 
     for (size_t i = index; i < N_faces; i += stride) {
         deviceFloat u;
+        deviceFloat u_prime;
         const deviceFloat u_left = elements[faces[i].elements_[0]].phi_R_;
         const deviceFloat u_right = elements[faces[i].elements_[1]].phi_L_;
+        const deviceFloat u_prime_left = elements[faces[i].elements_[0]].phi_prime_R_;
+        const deviceFloat u_prime_right = elements[faces[i].elements_[1]].phi_prime_L_;
 
         if (u_left < 0.0f && u_right > 0.0f) { // In expansion fan
             u = 0.5f * (u_left + u_right);
+            u_prime = 0.5f * (u_prime_left + u_prime_right);
         }
         else if (u_left > u_right) { // Shock
             if (u_left > 0.0f) {
                 u = u_left;
+                u_prime = u_prime_left;
             }
             else {
                 u = u_right;
+                u_prime = u_prime_right;
             }
         }
         else { // Expansion fan
             if (u_left > 0.0f) {
                 u = u_left;
+                u_prime = u_prime_left;
             }
             else  {
                 u = u_right;
+                u_prime = u_prime_right;
             }
         }
 
         faces[i].flux_ = 0.5f * u * u;
+        faces[i].derivative_flux_ = u_prime;
     }
 }
 
 // Algorithm 19
 __device__
-void SEM::matrix_vector_derivative(int N, const deviceFloat* derivative_matrices_hat, const deviceFloat* phi, deviceFloat* phi_prime) {
+void SEM::matrix_vector_derivative(deviceFloat viscosity, int N, const deviceFloat* derivative_matrices_hat, const deviceFloat* g_hat_derivative_matrices, const deviceFloat* phi, deviceFloat* phi_prime) {
     // s = 0, e = N (p.55 says N - 1)
     const size_t offset_2D = N * (N + 1) * (2 * N + 1) /6;
 
     for (int i = 0; i <= N; ++i) {
         phi_prime[i] = 0.0f;
         for (int j = 0; j <= N; ++j) {
-            phi_prime[i] += derivative_matrices_hat[offset_2D + i * (N + 1) + j] * phi[j] * phi[j] * 0.5f; // phi not squared in textbook, squared for Burger's
+            phi_prime[i] += derivative_matrices_hat[offset_2D + i * (N + 1) + j] * phi[j] * phi[j] * 0.5f - viscosity * g_hat_derivative_matrices[offset_2D + i * (N + 1) + j] * phi[j]; // phi not squared in textbook, squared for Burger's
         }
     }
 }
 
 // Algorithm 60 (not really anymore)
 __global__
-void SEM::compute_dg_derivative(size_t N_elements, Element_t* elements, const Face_t* faces, const deviceFloat* weights, const deviceFloat* derivative_matrices_hat, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right) {
+void SEM::compute_dg_derivative(deviceFloat viscosity, size_t N_elements, Element_t* elements, const Face_t* faces, const deviceFloat* weights, const deviceFloat* derivative_matrices_hat, const deviceFloat* g_hat_derivative_matrices, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -460,11 +469,16 @@ void SEM::compute_dg_derivative(size_t N_elements, Element_t* elements, const Fa
 
         const deviceFloat flux_L = faces[elements[i].faces_[0]].flux_;
         const deviceFloat flux_R = faces[elements[i].faces_[1]].flux_;
+        const deviceFloat derivative_flux_L = faces[elements[i].faces_[0]].derivative_flux_;
+        const deviceFloat derivative_flux_R = faces[elements[i].faces_[1]].derivative_flux_;
 
-        SEM::matrix_vector_derivative(elements[i].N_, derivative_matrices_hat, elements[i].phi_, elements[i].phi_prime_);
+        SEM::matrix_vector_derivative(viscosity, elements[i].N_, derivative_matrices_hat, g_hat_derivative_matrices, elements[i].phi_, elements[i].phi_prime_);
 
         for (int j = 0; j <= elements[i].N_; ++j) {
-            elements[i].phi_prime_[j] += (flux_L * lagrange_interpolant_left[offset_1D + j] - flux_R * lagrange_interpolant_right[offset_1D + j]) / weights[offset_1D + j];
+            elements[i].phi_prime_[j] += (flux_L * lagrange_interpolant_left[offset_1D + j] 
+                                        - flux_R * lagrange_interpolant_right[offset_1D + j] 
+                                        + viscosity * derivative_flux_R * lagrange_interpolant_right[offset_1D + j]
+                                        - viscosity * derivative_flux_L * lagrange_interpolant_left[offset_1D + j]) / weights[offset_1D + j];
             elements[i].phi_prime_[j] *= 2.0f/elements[i].delta_x_;
         }
     }

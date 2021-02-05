@@ -13,6 +13,7 @@ int main(void) {
     const int N_max = 16;
     const std::array<deviceFloat, 2> x {-1.0, 1.0};
     const deviceFloat CFL = 0.5f;
+    const deviceFloat viscosity = 0.1;
     std::vector<deviceFloat> output_times{0.1f, 0.2f, 0.3f, 0.4f, 0.5f};
 
     const int initial_N = 4;
@@ -36,7 +37,7 @@ int main(void) {
     // Computation
     auto t_start = std::chrono::high_resolution_clock::now();
 
-    mesh.solve(CFL, output_times, NDG);
+    mesh.solve(CFL, output_times, NDG, viscosity);
     // Wait for GPU to finish before copying to host
     cudaDeviceSynchronize();
 

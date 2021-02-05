@@ -28,6 +28,7 @@ public:
 
     size_t elements_[2]; // left, right
     deviceFloat flux_;
+    deviceFloat derivative_flux_;
 };
 
 namespace SEM {
