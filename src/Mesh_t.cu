@@ -315,7 +315,7 @@ void Mesh_t::solve(const deviceFloat CFL, const std::vector<deviceFloat> output_
 }
 
 deviceFloat Mesh_t::get_delta_t(const deviceFloat CFL) {   
-    SEM::reduce_delta_t<elements_blockSize><<<elements_numBlocks_, elements_blockSize>>>(CFL, N_elements_, elements_, device_delta_t_array_);
+    SEM::reduce_delta_t<elements_blockSize/2><<<elements_numBlocks_, elements_blockSize/2>>>(CFL, N_elements_, elements_, device_delta_t_array_);
     cudaMemcpy(host_delta_t_array_, device_delta_t_array_, elements_numBlocks_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
 
     deviceFloat delta_t_min = std::numeric_limits<deviceFloat>::infinity();
@@ -327,7 +327,7 @@ deviceFloat Mesh_t::get_delta_t(const deviceFloat CFL) {
 }
 
 void Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights) {
-    SEM::reduce_refine<elements_blockSize><<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, device_refine_array_);
+    SEM::reduce_refine<elements_blockSize/2><<<elements_numBlocks_, elements_blockSize/2>>>(N_elements_, elements_, device_refine_array_);
     cudaMemcpy(host_refine_array_, device_refine_array_, elements_numBlocks_ * sizeof(unsigned long), cudaMemcpyDeviceToHost);
 
     unsigned long additional_elements = 0;
