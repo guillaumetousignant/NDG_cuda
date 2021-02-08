@@ -427,12 +427,12 @@ void SEM::adapt(unsigned long N_elements, Element_t* elements, Element_t* new_el
     
     for (unsigned long i = index; i < N_elements; i += stride) {
         if (elements[i].refine_ && elements[i].sigma_ < 1.0) {
-            size_t offset = 0;
-            for (size_t j = i - thread_id; j < i; ++j) {
+            unsigned long offset = 0;
+            for (unsigned long j = i - thread_id; j < i; ++j) {
                 offset += elements[j].refine_ * (elements[j].sigma_ < 1.0);
             }
-            size_t new_index = N_elements + block_offsets[block_id] + offset;
-
+            unsigned long new_index = N_elements + block_offsets[block_id] + offset;
+            
             // Those are uninitialised because they are created via cudaMalloc, so they need to be set if we don't want the move constructor to delete random memory.
             new_elements[i].phi_ = nullptr;
             new_elements[i].phi_prime_ = nullptr;
