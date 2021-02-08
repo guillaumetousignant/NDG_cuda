@@ -22,8 +22,8 @@ target_compile_features(NDG_cuda PRIVATE cxx_std_17)
 if(NOT ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug"))
     set_property(TARGET NDG_cuda PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
 endif()
-target_compile_options(NDG_cuda PUBLIC "$<$<CONFIG:DEBUG>:-lineinfo>")
-target_compile_options(NDG_cuda PUBLIC "--expt-relaxed-constexpr")
+target_compile_options(NDG_cuda PUBLIC "$<$<AND:$<COMPILE_LANGUAGE:CUDA>,$<CONFIG:DEBUG>>:-lineinfo>")
+target_compile_options(NDG_cuda PUBLIC "$<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>")
 
 install(TARGETS NDG_cuda 
     EXPORT NDG_cuda-export
