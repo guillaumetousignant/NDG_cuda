@@ -272,10 +272,6 @@ TEST_CASE("LegendrePolynomials", "Checks the Legendre polynomials"){
         for (int i = 0; i <= N_test; ++i) {
             REQUIRE(std::abs(phi_prime_prime[i] - phi_prime_prime_expected[i]) < error*100);
         }
-
-        for (int i = 0; i <= N_test; ++i) {
-            std::cout << phi_prime_prime[i] << "    " << phi_prime_prime_expected[i] << std::endl;;
-        }
     }
 
     delete[] host_nodes;
