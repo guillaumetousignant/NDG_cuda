@@ -70,8 +70,14 @@ NDG_t<Polynomial>::NDG_t(int N_max, size_t N_interpolation_points) :
     // All the derivative matrix has to be computed before D^
     for (int N = 0; N <= N_max_; ++N) {
         const dim3 matrix_numBlocks((N +  matrix_blockSize.x) / matrix_blockSize.x, (N +  matrix_blockSize.y) / matrix_blockSize.y); // Should be (N + poly_blockSize - 1) if N is not inclusive
-        SEM::polynomial_cg_derivative_matrices<<<matrix_numBlocks, matrix_blockSize>>>(N, weights_, derivative_matrices_, g_hat_derivative_matrices_);
+        //SEM::polynomial_cg_derivative_matrices<<<matrix_numBlocks, matrix_blockSize>>>(N, weights_, derivative_matrices_, g_hat_derivative_matrices_);
+        SEM::polynomial_second_order_derivative_matrices<<<matrix_numBlocks, matrix_blockSize>>>(N, barycentric_weights_, nodes_, derivative_matrices_, g_hat_derivative_matrices_);
         SEM::polynomial_derivative_matrices_hat<<<matrix_numBlocks, matrix_blockSize>>>(N, weights_, derivative_matrices_, derivative_matrices_hat_);
+    }
+
+    for (int N = 0; N <= N_max_; ++N) {
+        const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
+        SEM::polynomial_second_order_derivative_matrices_diagonal<<<vector_numBlocks, poly_blockSize>>>(N, g_hat_derivative_matrices_);
     }
 }
 
@@ -424,6 +430,42 @@ void SEM::polynomial_cg_derivative_matrices(int N, const deviceFloat* weights, c
                 s += derivative_matrices[offset_2D + k * (N + 1) + n] * derivative_matrices[offset_2D + k * (N + 1) + j] * weights[offset_1D + k];
             }
             g_hat_derivative_matrices[offset_2D + j * (N + 1) + n] = s/weights[offset_1D + j];
+        }
+    }
+}
+
+// Be sure to compute the diagonal afterwards
+// Algorithm 38
+__global__
+void SEM::polynomial_second_order_derivative_matrices(int N, const deviceFloat* barycentric_weights, const deviceFloat* nodes, const deviceFloat* derivative_matrices, deviceFloat* second_order_derivative_matrices) {
+    const int index_x = blockIdx.x * blockDim.x + threadIdx.x;
+    const int index_y = blockIdx.y * blockDim.y + threadIdx.y;
+    const int stride_x = blockDim.x * gridDim.x;
+    const int stride_y = blockDim.y * gridDim.y;
+    const size_t offset_1D = N * (N + 1) /2;
+    const size_t offset_2D = N * (N + 1) * (2 * N + 1) /6;
+
+    for (int i = index_x; i <= N; i += stride_x) {
+        for (int j = index_y; j <= N; j += stride_y) {
+            second_order_derivative_matrices[offset_2D + i * (N + 1) + j] = 2/(nodes[offset_1D + i] - nodes[offset_1D + j]) * (barycentric_weights[offset_1D + j]/barycentric_weights[offset_1D + i] * derivative_matrices[offset_2D + i * (N + 1) + i] - derivative_matrices[offset_2D + i * (N + 1) + j]);
+        }
+    }
+}
+
+// Algorithm 38
+__global__
+void SEM::polynomial_second_order_derivative_matrices_diagonal(int N, deviceFloat* second_order_derivative_matrices) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+    const size_t offset_2D = N * (N + 1) * (2 * N + 1) /6;
+
+    for (int i = index; i <= N; i += stride) {
+        second_order_derivative_matrices[offset_2D + i * (N + 2)] = 0.0f;
+        for (int j = 0; j < i; ++j) {
+            second_order_derivative_matrices[offset_2D + i * (N + 2)] -= second_order_derivative_matrices[offset_2D + i * (N + 1) + j];
+        }
+        for (int j = i + 1; j <= N; ++j) {
+            second_order_derivative_matrices[offset_2D + i * (N + 2)] -= second_order_derivative_matrices[offset_2D + i * (N + 1) + j];
         }
     }
 }
