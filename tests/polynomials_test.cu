@@ -133,7 +133,7 @@ TEST_CASE("ChebyshevPolynomials", "Checks the Chebyshev polynomials"){
         for (int i = 0; i <= N_test; ++i) {
             phi_prime_prime[i] = 0.0;
             for (int j = 0; j <= N_test; ++j) {
-                phi_prime_prime[i] += host_second_order_derivative_matrices[offset_2D + i * (N_test + 1) + j] * phi[j] * host_weights[offset_1D + i];
+                phi_prime_prime[i] += host_second_order_derivative_matrices[offset_2D + i * (N_test + 1) + j] * phi[j];
             }
         }
 
@@ -336,7 +336,7 @@ TEST_CASE("LegendrePolynomials", "Checks the Legendre polynomials"){
         for (int i = 0; i <= N_test; ++i) {
             phi_prime_prime[i] = 0.0;
             for (int j = 0; j <= N_test; ++j) {
-                phi_prime_prime[i] += host_second_order_derivative_matrices[offset_2D + i * (N_test + 1) + j] * phi[j] * host_weights[offset_1D + i];
+                phi_prime_prime[i] += host_second_order_derivative_matrices[offset_2D + i * (N_test + 1) + j] * phi[j];
             }
         }
 
