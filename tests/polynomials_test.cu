@@ -108,6 +108,11 @@ TEST_CASE("ChebyshevPolynomials", "Checks the Chebyshev polynomials"){
                 phi_prime[i] += host_derivative_matrices[offset_2D + i * (N_test + 1) + j] * phi[j];
             }
         }
+
+        std::cout << std::endl << "Phi_prime    Phi_prime_expected" << std::endl;
+        for (int i = 0; i <= N_test; ++i) {
+            std::cout << phi_prime[i] << "    " << phi_prime_expected[i] << std::endl;
+        }
         
         for (int i = 0; i <= N_test; ++i) {
             REQUIRE(std::abs(phi_prime[i] - phi_prime_expected[i]) < error*100);
@@ -128,6 +133,11 @@ TEST_CASE("ChebyshevPolynomials", "Checks the Chebyshev polynomials"){
             for (int j = 0; j <= N_test; ++j) {
                 phi_prime_prime[i] += host_g_hat_derivative_matrices[offset_2D + i * (N_test + 1) + j] * phi[j] * host_weights[offset_1D + i];
             }
+        }
+
+        std::cout << std::endl << "Phi_prime_prime    Phi_prime_prime_expected" << std::endl;
+        for (int i = 0; i <= N_test; ++i) {
+            std::cout << phi_prime_prime[i] << "    " << phi_prime_prime_expected[i] << std::endl;
         }
         
         for (int i = 0; i <= N_test; ++i) {
@@ -151,6 +161,11 @@ TEST_CASE("ChebyshevPolynomials", "Checks the Chebyshev polynomials"){
             phi_L += host_lagrange_interpolant_left[offset_1D + j] * phi[j];
             phi_R += host_lagrange_interpolant_right[offset_1D + j] * phi[j];
         }
+
+        std::cout << std::endl << "Phi_L    Phi_L_expected" << std::endl;
+        std::cout << phi_L << "    " << phi_L_expected << std::endl;
+        std::cout << std::endl << "Phi_R    Phi_R_expected" << std::endl;
+        std::cout << phi_R << "    " << phi_R_expected << std::endl;
         
         REQUIRE(std::abs(phi_L - phi_L_expected) < error);
         REQUIRE(std::abs(phi_R - phi_R_expected) < error);
@@ -171,6 +186,11 @@ TEST_CASE("ChebyshevPolynomials", "Checks the Chebyshev polynomials"){
             phi_prime_L += host_lagrange_interpolant_derivative_left[offset_1D + j] * (phi_L - phi[j]);
             phi_prime_R += host_lagrange_interpolant_derivative_right[offset_1D + j] * (phi_R - phi[j]);
         }
+
+        std::cout << std::endl << "Phi_prime_L    Phi_prime_L_expected" << std::endl;
+        std::cout << phi_prime_L << "    " << phi_prime_L_expected << std::endl;
+        std::cout << std::endl << "Phi_R    Phi_R_expected" << std::endl;
+        std::cout << phi_prime_R << "    " << phi_prime_R_expected << std::endl;
         
         REQUIRE(std::abs(phi_prime_L - phi_prime_L_expected) < error);
         REQUIRE(std::abs(phi_prime_R - phi_prime_R_expected) < error);
@@ -288,6 +308,11 @@ TEST_CASE("LegendrePolynomials", "Checks the Legendre polynomials"){
                 phi_prime[i] += host_derivative_matrices[offset_2D + i * (N_test + 1) + j] * phi[j];
             }
         }
+
+        std::cout << std::endl << "Phi_prime    Phi_prime_expected" << std::endl;
+        for (int i = 0; i <= N_test; ++i) {
+            std::cout << phi_prime[i] << "    " << phi_prime_expected[i] << std::endl;
+        }
         
         for (int i = 0; i <= N_test; ++i) {
             REQUIRE(std::abs(phi_prime[i] - phi_prime_expected[i]) < error*100);
@@ -308,6 +333,11 @@ TEST_CASE("LegendrePolynomials", "Checks the Legendre polynomials"){
             for (int j = 0; j <= N_test; ++j) {
                 phi_prime_prime[i] += host_g_hat_derivative_matrices[offset_2D + i * (N_test + 1) + j] * phi[j] * host_weights[offset_1D + i];
             }
+        }
+
+        std::cout << std::endl << "Phi_prime_prime    Phi_prime_prime_expected" << std::endl;
+        for (int i = 0; i <= N_test; ++i) {
+            std::cout << phi_prime_prime[i] << "    " << phi_prime_prime_expected[i] << std::endl;
         }
         
         for (int i = 0; i <= N_test; ++i) {
@@ -331,6 +361,11 @@ TEST_CASE("LegendrePolynomials", "Checks the Legendre polynomials"){
             phi_L += host_lagrange_interpolant_left[offset_1D + j] * phi[j];
             phi_R += host_lagrange_interpolant_right[offset_1D + j] * phi[j];
         }
+
+        std::cout << std::endl << "Phi_L    Phi_L_expected" << std::endl;
+        std::cout << phi_L << "    " << phi_L_expected << std::endl;
+        std::cout << std::endl << "Phi_R    Phi_R_expected" << std::endl;
+        std::cout << phi_R << "    " << phi_R_expected << std::endl;
         
         REQUIRE(std::abs(phi_L - phi_L_expected) < error);
         REQUIRE(std::abs(phi_R - phi_R_expected) < error);
@@ -351,6 +386,11 @@ TEST_CASE("LegendrePolynomials", "Checks the Legendre polynomials"){
             phi_prime_L += host_lagrange_interpolant_derivative_left[offset_1D + j] * (phi_L - phi[j]);
             phi_prime_R += host_lagrange_interpolant_derivative_right[offset_1D + j] * (phi_R - phi[j]);
         }
+
+        std::cout << std::endl << "Phi_prime_L    Phi_prime_L_expected" << std::endl;
+        std::cout << phi_prime_L << "    " << phi_prime_L_expected << std::endl;
+        std::cout << std::endl << "Phi_R    Phi_R_expected" << std::endl;
+        std::cout << phi_prime_R << "    " << phi_prime_R_expected << std::endl;
         
         REQUIRE(std::abs(phi_prime_L - phi_prime_L_expected) < error);
         REQUIRE(std::abs(phi_prime_R - phi_prime_R_expected) < error);
