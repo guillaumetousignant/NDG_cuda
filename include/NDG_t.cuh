@@ -22,8 +22,9 @@ public:
     deviceFloat* lagrange_interpolant_derivative_left_;
     deviceFloat* lagrange_interpolant_derivative_right_;
     deviceFloat* derivative_matrices_;
-    deviceFloat* g_hat_derivative_matrices_;
     deviceFloat* derivative_matrices_hat_;
+    deviceFloat* second_order_derivative_matrices_;
+    deviceFloat* second_order_derivative_matrices_hat_;
     deviceFloat* interpolation_matrices_;
 
     void print();
@@ -65,6 +66,9 @@ namespace SEM {
     __global__
     void polynomial_derivative_matrices_diagonal(int N, deviceFloat* derivative_matrices);
 
+    __global__
+    void polynomial_derivative_matrices_hat(int N, const deviceFloat* weights, const deviceFloat* derivative_matrices, deviceFloat* derivative_matrices_hat);
+
     // Algorithm 57
     __global__
     void polynomial_cg_derivative_matrices(int N, const deviceFloat* weights, const deviceFloat* derivative_matrices, deviceFloat* g_hat_derivative_matrices);
@@ -79,7 +83,7 @@ namespace SEM {
     void polynomial_second_order_derivative_matrices_diagonal(int N, deviceFloat* second_order_derivative_matrices);
 
     __global__
-    void polynomial_derivative_matrices_hat(int N, const deviceFloat* weights, const deviceFloat* derivative_matrices, deviceFloat* derivative_matrices_hat);
+    void polynomial_second_order_derivative_matrices_hat(int N, const deviceFloat* weights, const deviceFloat* second_order_derivative_matrices, deviceFloat* second_order_derivative_matrices_hat);
 
     // Will interpolate N_interpolation_points between -1 and 1
     __global__

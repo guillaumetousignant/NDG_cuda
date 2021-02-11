@@ -273,19 +273,19 @@ void Mesh_t::solve(const deviceFloat CFL, const std::vector<deviceFloat> output_
         deviceFloat t = time;
         SEM::interpolate_to_boundaries<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_, NDG.lagrange_interpolant_derivative_left_, NDG.lagrange_interpolant_derivative_right_);
         SEM::calculate_fluxes<<<faces_numBlocks_, faces_blockSize>>>(N_faces_, faces_, elements_);
-        SEM::compute_dg_derivative<<<elements_numBlocks_, elements_blockSize>>>(viscosity, N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.g_hat_derivative_matrices_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        SEM::compute_dg_derivative<<<elements_numBlocks_, elements_blockSize>>>(viscosity, N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.second_order_derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
         SEM::rk3_first_step<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, delta_t, 1.0f/3.0f);
 
         t = time + 0.33333333333f * delta_t;
         SEM::interpolate_to_boundaries<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_, NDG.lagrange_interpolant_derivative_left_, NDG.lagrange_interpolant_derivative_right_);
         SEM::calculate_fluxes<<<faces_numBlocks_, faces_blockSize>>>(N_faces_, faces_, elements_);
-        SEM::compute_dg_derivative<<<elements_numBlocks_, elements_blockSize>>>(viscosity, N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.g_hat_derivative_matrices_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        SEM::compute_dg_derivative<<<elements_numBlocks_, elements_blockSize>>>(viscosity, N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.second_order_derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
         SEM::rk3_step<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, delta_t, -5.0f/9.0f, 15.0f/16.0f);
 
         t = time + 0.75f * delta_t;
         SEM::interpolate_to_boundaries<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_, NDG.lagrange_interpolant_derivative_left_, NDG.lagrange_interpolant_derivative_right_);
         SEM::calculate_fluxes<<<faces_numBlocks_, faces_blockSize>>>(N_faces_, faces_, elements_);
-        SEM::compute_dg_derivative<<<elements_numBlocks_, elements_blockSize>>>(viscosity, N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.g_hat_derivative_matrices_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        SEM::compute_dg_derivative<<<elements_numBlocks_, elements_blockSize>>>(viscosity, N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.second_order_derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
         SEM::rk3_step<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, delta_t, -153.0f/128.0f, 8.0f/15.0f);
               
         time += delta_t;

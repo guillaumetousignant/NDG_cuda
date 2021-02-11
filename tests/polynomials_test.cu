@@ -27,8 +27,9 @@ TEST_CASE("ChebyshevPolynomials", "Checks the Chebyshev polynomials"){
     deviceFloat* host_lagrange_interpolant_derivative_left = new deviceFloat[NDG.vector_length_];
     deviceFloat* host_lagrange_interpolant_derivative_right = new deviceFloat[NDG.vector_length_];
     deviceFloat* host_derivative_matrices = new deviceFloat[NDG.matrix_length_];
-    deviceFloat* host_g_hat_derivative_matrices = new deviceFloat[NDG.matrix_length_];
     deviceFloat* host_derivative_matrices_hat = new deviceFloat[NDG.matrix_length_];
+    deviceFloat* host_second_order_derivative_matrices = new deviceFloat[NDG.matrix_length_];
+    deviceFloat* host_second_order_derivative_matrices_hat = new deviceFloat[NDG.matrix_length_];
     deviceFloat* host_interpolation_matrices = new deviceFloat[NDG.interpolation_length_];
 
     cudaMemcpy(host_nodes, NDG.nodes_, NDG.vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
@@ -39,8 +40,9 @@ TEST_CASE("ChebyshevPolynomials", "Checks the Chebyshev polynomials"){
     cudaMemcpy(host_lagrange_interpolant_derivative_left, NDG.lagrange_interpolant_derivative_left_, NDG.vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_lagrange_interpolant_derivative_right, NDG.lagrange_interpolant_derivative_right_, NDG.vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_derivative_matrices, NDG.derivative_matrices_, NDG.matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_g_hat_derivative_matrices, NDG.g_hat_derivative_matrices_, NDG.matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_derivative_matrices_hat, NDG.derivative_matrices_hat_, NDG.matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_second_order_derivative_matrices, NDG.second_order_derivative_matrices_, NDG.matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_second_order_derivative_matrices_hat, NDG.second_order_derivative_matrices_hat_, NDG.matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_interpolation_matrices, NDG.interpolation_matrices_, NDG.interpolation_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
 
     REQUIRE(N_test <= N_max);
@@ -131,7 +133,7 @@ TEST_CASE("ChebyshevPolynomials", "Checks the Chebyshev polynomials"){
         for (int i = 0; i <= N_test; ++i) {
             phi_prime_prime[i] = 0.0;
             for (int j = 0; j <= N_test; ++j) {
-                phi_prime_prime[i] += host_g_hat_derivative_matrices[offset_2D + i * (N_test + 1) + j] * phi[j] * host_weights[offset_1D + i];
+                phi_prime_prime[i] += host_second_order_derivative_matrices[offset_2D + i * (N_test + 1) + j] * phi[j] * host_weights[offset_1D + i];
             }
         }
 
@@ -204,8 +206,9 @@ TEST_CASE("ChebyshevPolynomials", "Checks the Chebyshev polynomials"){
     delete[] host_lagrange_interpolant_derivative_left;
     delete[] host_lagrange_interpolant_derivative_right;
     delete[] host_derivative_matrices;
-    delete[] host_g_hat_derivative_matrices;
     delete[] host_derivative_matrices_hat;
+    delete[] host_second_order_derivative_matrices;
+    delete[] host_second_order_derivative_matrices_hat;
     delete[] host_interpolation_matrices;
 }
 
@@ -227,8 +230,9 @@ TEST_CASE("LegendrePolynomials", "Checks the Legendre polynomials"){
     deviceFloat* host_lagrange_interpolant_derivative_left = new deviceFloat[NDG.vector_length_];
     deviceFloat* host_lagrange_interpolant_derivative_right = new deviceFloat[NDG.vector_length_];
     deviceFloat* host_derivative_matrices = new deviceFloat[NDG.matrix_length_];
-    deviceFloat* host_g_hat_derivative_matrices = new deviceFloat[NDG.matrix_length_];
     deviceFloat* host_derivative_matrices_hat = new deviceFloat[NDG.matrix_length_];
+    deviceFloat* host_second_order_derivative_matrices = new deviceFloat[NDG.matrix_length_];
+    deviceFloat* host_second_order_derivative_matrices_hat = new deviceFloat[NDG.matrix_length_];
     deviceFloat* host_interpolation_matrices = new deviceFloat[NDG.interpolation_length_];
 
     cudaMemcpy(host_nodes, NDG.nodes_, NDG.vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
@@ -239,8 +243,9 @@ TEST_CASE("LegendrePolynomials", "Checks the Legendre polynomials"){
     cudaMemcpy(host_lagrange_interpolant_derivative_left, NDG.lagrange_interpolant_derivative_left_, NDG.vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_lagrange_interpolant_derivative_right, NDG.lagrange_interpolant_derivative_right_, NDG.vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_derivative_matrices, NDG.derivative_matrices_, NDG.matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_g_hat_derivative_matrices, NDG.g_hat_derivative_matrices_, NDG.matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_derivative_matrices_hat, NDG.derivative_matrices_hat_, NDG.matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_second_order_derivative_matrices, NDG.second_order_derivative_matrices_, NDG.matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_second_order_derivative_matrices_hat, NDG.second_order_derivative_matrices_hat_, NDG.matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_interpolation_matrices, NDG.interpolation_matrices_, NDG.interpolation_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
 
     REQUIRE(N_test <= N_max);
@@ -331,7 +336,7 @@ TEST_CASE("LegendrePolynomials", "Checks the Legendre polynomials"){
         for (int i = 0; i <= N_test; ++i) {
             phi_prime_prime[i] = 0.0;
             for (int j = 0; j <= N_test; ++j) {
-                phi_prime_prime[i] += host_g_hat_derivative_matrices[offset_2D + i * (N_test + 1) + j] * phi[j] * host_weights[offset_1D + i];
+                phi_prime_prime[i] += host_second_order_derivative_matrices[offset_2D + i * (N_test + 1) + j] * phi[j] * host_weights[offset_1D + i];
             }
         }
 
@@ -404,7 +409,8 @@ TEST_CASE("LegendrePolynomials", "Checks the Legendre polynomials"){
     delete[] host_lagrange_interpolant_derivative_left;
     delete[] host_lagrange_interpolant_derivative_right;
     delete[] host_derivative_matrices;
-    delete[] host_g_hat_derivative_matrices;
     delete[] host_derivative_matrices_hat;
+    delete[] host_second_order_derivative_matrices;
+    delete[] host_second_order_derivative_matrices_hat;
     delete[] host_interpolation_matrices;
 }
