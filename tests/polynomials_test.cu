@@ -114,27 +114,6 @@ TEST_CASE("ChebyshevPolynomials", "Checks the Chebyshev polynomials"){
         }
     }
 
-    SECTION("Polynomial second derivative") {
-        std::array<double, N_test+1> phi;
-        std::array<double, N_test+1> phi_prime_prime_expected;
-        for (int i = 0; i <= N_test; ++i) {
-            phi[i] = std::sin(pi * host_nodes[offset_1D + i]);
-            phi_prime_prime_expected[i] = -std::pow(pi, 2) * std::sin(pi * host_nodes[offset_1D + i]);
-        }
-
-        std::array<double, N_test+1> phi_prime_prime;
-        for (int i = 0; i <= N_test; ++i) {
-            phi_prime_prime[i] = 0.0;
-            for (int j = 0; j <= N_test; ++j) {
-                phi_prime_prime[i] += host_g_hat_derivative_matrices[offset_2D + i * (N_test + 1) + j] * phi[j] * host_weights[offset_1D + i];
-            }
-        }
-        
-        for (int i = 0; i <= N_test; ++i) {
-            REQUIRE(std::abs(phi_prime_prime[i] - phi_prime_prime_expected[i]) < error*100);
-        }
-    }
-
     double phi_L = 0.0;
     double phi_R = 0.0;
 
@@ -291,27 +270,6 @@ TEST_CASE("LegendrePolynomials", "Checks the Legendre polynomials"){
         
         for (int i = 0; i <= N_test; ++i) {
             REQUIRE(std::abs(phi_prime[i] - phi_prime_expected[i]) < error*100);
-        }
-    }
-
-    SECTION("Polynomial second derivative") {
-        std::array<double, N_test+1> phi;
-        std::array<double, N_test+1> phi_prime_prime_expected;
-        for (int i = 0; i <= N_test; ++i) {
-            phi[i] = std::sin(pi * host_nodes[offset_1D + i]);
-            phi_prime_prime_expected[i] = -std::pow(pi, 2) * std::sin(pi * host_nodes[offset_1D + i]);
-        }
-
-        std::array<double, N_test+1> phi_prime_prime;
-        for (int i = 0; i <= N_test; ++i) {
-            phi_prime_prime[i] = 0.0;
-            for (int j = 0; j <= N_test; ++j) {
-                phi_prime_prime[i] += host_g_hat_derivative_matrices[offset_2D + i * (N_test + 1) + j] * phi[j] * host_weights[offset_1D + i];
-            }
-        }
-        
-        for (int i = 0; i <= N_test; ++i) {
-            REQUIRE(std::abs(phi_prime_prime[i] - phi_prime_prime_expected[i]) < error*100);
         }
     }
 
