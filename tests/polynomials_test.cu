@@ -207,6 +207,20 @@ TEST_CASE("ChebyshevPolynomials", "Checks the Chebyshev polynomials"){
         }
         phi_prime_R = numerator/denominator;
 
+        double sum = 0.0;
+        for (int j = 0; j <= N_test; ++j) {
+            sum += host_barycentric_weights[offset_1D + j]/(-1.0 - host_nodes[offset_1D + j]);
+        }
+        for (int j = 0; j <= N_test; ++j) {
+            host_lagrange_interpolant_derivative_left[offset_1D + j] = host_barycentric_weights[offset_1D + j]/(std::pow(-1.0 - host_nodes[offset_1D + j], 2) * sum);
+        }
+
+        phi_prime_L = 0.0;
+
+        for (int j = 0; j <= N_test; ++j) {
+            phi_prime_L += host_lagrange_interpolant_derivative_left[offset_1D + j] * (phi_L - phi[j]);
+        }
+
         std::cout << std::endl << "Phi_prime_L    Phi_prime_L_expected" << std::endl;
         std::cout << phi_prime_L << "    " << phi_prime_L_expected << std::endl;
         std::cout << std::endl << "Phi_prime_R    Phi_prime_R_expected" << std::endl;
@@ -427,6 +441,31 @@ TEST_CASE("LegendrePolynomials", "Checks the Legendre polynomials"){
             denominator += t;
         }
         phi_prime_R = numerator/denominator;
+
+        std::cout << "Before: ";
+        for (int j = 0; j <= N_test; ++j) {
+            std::cout << host_lagrange_interpolant_derivative_left[offset_1D + j] << "    ";
+        }
+        std::cout << std::endl;
+
+        double sum = 0.0;
+        for (int j = 0; j <= N_test; ++j) {
+            sum += host_barycentric_weights[offset_1D + j]/(-1.0 - host_nodes[offset_1D + j]);
+        }
+        for (int j = 0; j <= N_test; ++j) {
+            host_lagrange_interpolant_derivative_left[offset_1D + j] = host_barycentric_weights[offset_1D + j]/(std::pow(-1.0 - host_nodes[offset_1D + j], 2) * sum);
+        }
+
+        phi_prime_L = 0.0;
+        for (int j = 0; j <= N_test; ++j) {
+            phi_prime_L += host_lagrange_interpolant_derivative_left[offset_1D + j] * (phi_L - phi[j]);
+        }
+
+        std::cout << "After: ";
+        for (int j = 0; j <= N_test; ++j) {
+            std::cout << host_lagrange_interpolant_derivative_left[offset_1D + j] << "    ";
+        }
+        std::cout << std::endl;
 
         std::cout << std::endl << "Phi_prime_L    Phi_prime_L_expected" << std::endl;
         std::cout << phi_prime_L << "    " << phi_prime_L_expected << std::endl;
