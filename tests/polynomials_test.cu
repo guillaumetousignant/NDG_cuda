@@ -191,7 +191,7 @@ TEST_CASE("ChebyshevPolynomials", "Checks the Chebyshev polynomials"){
 
         std::cout << std::endl << "Phi_prime_L    Phi_prime_L_expected" << std::endl;
         std::cout << phi_prime_L << "    " << phi_prime_L_expected << std::endl;
-        std::cout << std::endl << "Phi_R    Phi_R_expected" << std::endl;
+        std::cout << std::endl << "Phi_prime_R    Phi_prime_R_expected" << std::endl;
         std::cout << phi_prime_R << "    " << phi_prime_R_expected << std::endl;
         
         REQUIRE(std::abs(phi_prime_L - phi_prime_L_expected) < error);
@@ -412,7 +412,7 @@ TEST_CASE("LegendrePolynomials", "Checks the Legendre polynomials"){
 
         std::cout << std::endl << "Phi_prime_L    Phi_prime_L_expected" << std::endl;
         std::cout << phi_prime_L << "    " << phi_prime_L_expected << std::endl;
-        std::cout << std::endl << "Phi_R    Phi_R_expected" << std::endl;
+        std::cout << std::endl << "Phi_prime_R    Phi_prime_R_expected" << std::endl;
         std::cout << phi_prime_R << "    " << phi_prime_R_expected << std::endl;
         
         REQUIRE(std::abs(phi_prime_L - phi_prime_L_expected) < error);
