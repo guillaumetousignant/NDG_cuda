@@ -189,6 +189,24 @@ TEST_CASE("ChebyshevPolynomials", "Checks the Chebyshev polynomials"){
             phi_prime_R += host_lagrange_interpolant_derivative_right[offset_1D + j] * (phi_R - phi[j]);
         }
 
+        double numerator = 0.0;
+        double denominator = 0.0;
+        for (int j = 0; j <= N_test; ++j) {
+            const double t = host_barycentric_weights[offset_1D + j]/(-1.0 - host_nodes[offset_1D + j]);
+            numerator += t * (phi_L - phi[j])/(-1.0 - host_nodes[offset_1D + j]);
+            denominator += t;
+        }
+        phi_prime_L = numerator/denominator;
+
+        numerator = 0.0;
+        denominator = 0.0;
+        for (int j = 0; j <= N_test; ++j) {
+            const double t = host_barycentric_weights[offset_1D + j]/(1.0 - host_nodes[offset_1D + j]);
+            numerator += t * (phi_R - phi[j])/(1.0 - host_nodes[offset_1D + j]);
+            denominator += t;
+        }
+        phi_prime_R = numerator/denominator;
+
         std::cout << std::endl << "Phi_prime_L    Phi_prime_L_expected" << std::endl;
         std::cout << phi_prime_L << "    " << phi_prime_L_expected << std::endl;
         std::cout << std::endl << "Phi_prime_R    Phi_prime_R_expected" << std::endl;
