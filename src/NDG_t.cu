@@ -71,7 +71,7 @@ NDG_t<Polynomial>::NDG_t(int N_max, size_t N_interpolation_points) :
     // All the derivative matrix has to be computed before D^
     for (int N = 0; N <= N_max_; ++N) {
         const dim3 matrix_numBlocks((N +  matrix_blockSize.x) / matrix_blockSize.x, (N +  matrix_blockSize.y) / matrix_blockSize.y); // Should be (N + poly_blockSize - 1) if N is not inclusive
-        //SEM::polynomial_cg_derivative_matrices<<<matrix_numBlocks, matrix_blockSize>>>(N, weights_, derivative_matrices_, g_hat_derivative_matrices_);
+        SEM::polynomial_cg_derivative_matrices<<<matrix_numBlocks, matrix_blockSize>>>(N, weights_, derivative_matrices_, second_order_derivative_matrices_hat_);
         SEM::polynomial_second_order_derivative_matrices<<<matrix_numBlocks, matrix_blockSize>>>(N, barycentric_weights_, nodes_, derivative_matrices_, second_order_derivative_matrices_);
         SEM::polynomial_derivative_matrices_hat<<<matrix_numBlocks, matrix_blockSize>>>(N, weights_, derivative_matrices_, derivative_matrices_hat_);
     }
@@ -83,7 +83,7 @@ NDG_t<Polynomial>::NDG_t(int N_max, size_t N_interpolation_points) :
 
     for (int N = 0; N <= N_max_; ++N) {
         const dim3 matrix_numBlocks((N +  matrix_blockSize.x) / matrix_blockSize.x, (N +  matrix_blockSize.y) / matrix_blockSize.y); // Should be (N + poly_blockSize - 1) if N is not inclusive
-        SEM::polynomial_second_order_derivative_matrices_hat<<<matrix_numBlocks, matrix_blockSize>>>(N, weights_, second_order_derivative_matrices_, second_order_derivative_matrices_hat_);
+        //SEM::polynomial_second_order_derivative_matrices_hat<<<matrix_numBlocks, matrix_blockSize>>>(N, weights_, second_order_derivative_matrices_, second_order_derivative_matrices_hat_);
     }
 }
 
