@@ -347,7 +347,7 @@ void SEM::lagrange_interpolating_derivative_polynomials(deviceFloat x, int N, co
     const size_t offset = N * (N + 1) /2;
 
     for (int i = index; i <= N; i += stride) {
-        lagrange_derivative_interpolant[offset + i] = barycentric_weights[offset + i] / ((x - nodes[offset + i]) * (x - nodes[offset + i], 2));
+        lagrange_derivative_interpolant[offset + i] = barycentric_weights[offset + i] / ((x - nodes[offset + i]) * (x - nodes[offset + i]));
     }
 }
 
