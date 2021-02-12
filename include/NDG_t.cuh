@@ -69,15 +69,6 @@ namespace SEM {
     __global__
     void polynomial_cg_derivative_matrices(int N, const deviceFloat* weights, const deviceFloat* derivative_matrices, deviceFloat* g_hat_derivative_matrices);
 
-    // Be sure to compute the diagonal afterwards
-    // Algorithm 38
-    __global__
-    void polynomial_second_order_derivative_matrices(int N, const deviceFloat* barycentric_weights, const deviceFloat* nodes, const deviceFloat* derivative_matrices, deviceFloat* second_order_derivative_matrices);
-
-    // Algorithm 38
-    __global__
-    void polynomial_second_order_derivative_matrices_diagonal(int N, deviceFloat* second_order_derivative_matrices)
-
     __global__
     void polynomial_derivative_matrices_hat(int N, const deviceFloat* weights, const deviceFloat* derivative_matrices, deviceFloat* derivative_matrices_hat);
 
