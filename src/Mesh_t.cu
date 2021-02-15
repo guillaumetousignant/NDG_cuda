@@ -418,7 +418,7 @@ void SEM::calculate_fluxes(size_t N_faces, Face_t* faces, const Element_t* eleme
             u = 0.5f * (u_left + u_right);
             u_prime = 0.5f * (u_prime_left + u_prime_right);
         }
-        else if (u_left > u_right) { // Shock
+        else if (u_left >= u_right) { // Shock
             if (u_left > 0.0f) {
                 u = u_left;
                 u_prime = u_prime_left;
