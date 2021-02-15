@@ -472,8 +472,6 @@ __global__
 void SEM::p_adapt(unsigned long N_elements, Element_t* elements, int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights) {
     const unsigned long index = blockIdx.x * blockDim.x + threadIdx.x;
     const unsigned long stride = blockDim.x * gridDim.x;
-    const int thread_id = threadIdx.x;
-    const int block_id = blockIdx.x;
     
     for (unsigned long i = index; i < N_elements; i += stride) {
         if (elements[i].refine_ && elements[i].sigma_ >= 1.0 && elements[i].N_ < N_max) {
