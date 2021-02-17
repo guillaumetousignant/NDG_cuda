@@ -120,6 +120,13 @@ void Mesh_t::print() {
         std::cout << host_faces[i].flux_ << std::endl;
     }
 
+    std::cout << std::endl << "Derivative fluxes: " << std::endl;
+    for (size_t i = 0; i < N_faces_; ++i) {
+        std::cout << '\t' << "Face " << i << ": ";
+        std::cout << '\t' << '\t';
+        std::cout << host_faces[i].derivative_flux_ << std::endl;
+    }
+
     std::cout << std::endl << "Elements: " << std::endl;
     for (size_t i = 0; i < N_faces_; ++i) {
         std::cout << '\t' << "Face " << i << ": ";
