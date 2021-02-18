@@ -12,7 +12,6 @@ namespace SEM {
         public: 
             static void nodes_and_weights(int N_max, int blockSize, deviceFloat* nodes, deviceFloat* weights);
 
-            // This function is defined in Element_t.cu, because I can't get seperable compilation to work.
             __device__
             static void polynomial(int N, deviceFloat x, deviceFloat &T_N);
     };

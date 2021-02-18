@@ -153,37 +153,6 @@ void SEM::Element_t::interpolate_to_boundaries(const deviceFloat* lagrange_inter
     }
 }
 
-// This should be illegal, but is needed because I can't for the life of me get separable compilation to work correctly.
-__device__
-void SEM::ChebyshevPolynomial_t::polynomial(int N, deviceFloat x, deviceFloat &T_N) {
-    T_N = cos(N * acos(x));
-}
-
-__device__
-void SEM::LegendrePolynomial_t::polynomial(int N, deviceFloat x, deviceFloat &L_N) {
-    if (N == 0) {
-        L_N = 1.0f;
-    }
-    else if (N == 1) {
-        L_N = x;
-    }
-    else {
-        deviceFloat L_N_2 = 1.0f;
-        deviceFloat L_N_1 = x;
-        deviceFloat L_N_2_prime = 0.0f;
-        deviceFloat L_N_1_prime = 1.0f;
-
-        for (int k = 2; k <= N; ++k) {
-            L_N = (2 * k - 1) * x * L_N_1/k - (k - 1) * L_N_2/k; // L_N_1(x) ??
-            const deviceFloat L_N_prime = L_N_2_prime + (2 * k - 1) * L_N_1;
-            L_N_2 = L_N_1;
-            L_N_1 = L_N;
-            L_N_2_prime = L_N_1_prime;
-            L_N_1_prime = L_N_prime;
-        }
-    }
-}
-
 template __device__ void SEM::Element_t::estimate_error<SEM::ChebyshevPolynomial_t>(const deviceFloat* nodes, const deviceFloat* weights);
 template __device__ void SEM::Element_t::estimate_error<SEM::LegendrePolynomial_t>(const deviceFloat* nodes, const deviceFloat* weights);
 
