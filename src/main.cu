@@ -7,8 +7,11 @@
 #include <chrono>
 #include <vector>
 #include <array>
+#include "mpi.h"
 
-int main(void) {
+int main(int argc, char* argv[]) {
+    MPI_Init(&argc, &argv);
+
     const size_t N_elements = 8;
     const int N_max = 16;
     const std::array<deviceFloat, 2> x {-1.0, 1.0};
