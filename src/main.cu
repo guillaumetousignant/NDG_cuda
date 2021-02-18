@@ -49,5 +49,6 @@ int main(int argc, char* argv[]) {
             << std::chrono::duration<double, std::milli>(t_end - t_start).count()/1000.0 
             << "s." << std::endl;
 
+    MPI_Finalize();
     return 0;
 }
