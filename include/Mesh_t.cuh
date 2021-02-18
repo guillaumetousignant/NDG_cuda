@@ -8,38 +8,38 @@
 #include <vector>
 #include <limits>
 
-class Mesh_t {
-    public:
-        Mesh_t(size_t N_elements, int initial_N, deviceFloat x_min, deviceFloat x_max);
-        ~Mesh_t();
-
-        size_t N_elements_;
-        size_t N_faces_;
-        int initial_N_;
-        Element_t* elements_;
-        Face_t* faces_;
-
-        void set_initial_conditions(const deviceFloat* nodes);
-        void print();
-        void write_data(deviceFloat time, size_t N_interpolation_points, const deviceFloat* interpolation_matrices);
-        
-        template<typename Polynomial>
-        void solve(const deviceFloat CFL, const std::vector<deviceFloat> output_times, const NDG_t<Polynomial> &NDG, deviceFloat viscosity);
-
-    private:
-        int elements_numBlocks_;
-        int faces_numBlocks_;
-        deviceFloat* device_delta_t_array_;
-        deviceFloat* host_delta_t_array_;
-        unsigned long* device_refine_array_;
-        unsigned long* host_refine_array_;
-
-        void write_file_data(size_t N_interpolation_points, size_t N_elements, deviceFloat time, const deviceFloat* coordinates, const deviceFloat* velocity, const deviceFloat* du_dx, const deviceFloat* intermediate, const deviceFloat* x_L, const deviceFloat* x_R, const int* N, const deviceFloat* sigma, const bool* refine, const bool* coarsen, const deviceFloat* error);
-        deviceFloat get_delta_t(const deviceFloat CFL);
-        void adapt(int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights);
-};
-
 namespace SEM {
+    class Mesh_t {
+        public:
+            Mesh_t(size_t N_elements, int initial_N, deviceFloat x_min, deviceFloat x_max);
+            ~Mesh_t();
+
+            size_t N_elements_;
+            size_t N_faces_;
+            int initial_N_;
+            Element_t* elements_;
+            Face_t* faces_;
+
+            void set_initial_conditions(const deviceFloat* nodes);
+            void print();
+            void write_data(deviceFloat time, size_t N_interpolation_points, const deviceFloat* interpolation_matrices);
+            
+            template<typename Polynomial>
+            void solve(const deviceFloat CFL, const std::vector<deviceFloat> output_times, const NDG_t<Polynomial> &NDG, deviceFloat viscosity);
+
+        private:
+            int elements_numBlocks_;
+            int faces_numBlocks_;
+            deviceFloat* device_delta_t_array_;
+            deviceFloat* host_delta_t_array_;
+            unsigned long* device_refine_array_;
+            unsigned long* host_refine_array_;
+
+            void write_file_data(size_t N_interpolation_points, size_t N_elements, deviceFloat time, const deviceFloat* coordinates, const deviceFloat* velocity, const deviceFloat* du_dx, const deviceFloat* intermediate, const deviceFloat* x_L, const deviceFloat* x_R, const int* N, const deviceFloat* sigma, const bool* refine, const bool* coarsen, const deviceFloat* error);
+            deviceFloat get_delta_t(const deviceFloat CFL);
+            void adapt(int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights);
+    };
+
     __global__
     void rk3_first_step(size_t N_elements, Element_t* elements, deviceFloat delta_t, deviceFloat g);
 

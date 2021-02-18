@@ -17,7 +17,7 @@ TEST_CASE("ChebyshevPolynomials", "Checks the Chebyshev polynomials"){
     const size_t offset_2D = N_test * (N_test + 1) * (2 * N_test + 1) /6;
     const double error = 1e-6;
     
-    NDG_t<ChebyshevPolynomial_t> NDG(N_max, N_interpolation_points);
+    SEM::NDG_t<SEM::ChebyshevPolynomial_t> NDG(N_max, N_interpolation_points);
 
     deviceFloat* host_nodes = new deviceFloat[NDG.vector_length_];
     deviceFloat* host_weights = new deviceFloat[NDG.vector_length_];
@@ -176,7 +176,7 @@ TEST_CASE("LegendrePolynomials", "Checks the Legendre polynomials"){
     const size_t offset_2D = N_test * (N_test + 1) * (2 * N_test + 1) /6;
     const double error = 1e-6;
     
-    NDG_t<LegendrePolynomial_t> NDG(N_max, N_interpolation_points);
+    SEM::NDG_t<SEM::LegendrePolynomial_t> NDG(N_max, N_interpolation_points);
 
     deviceFloat* host_nodes = new deviceFloat[NDG.vector_length_];
     deviceFloat* host_weights = new deviceFloat[NDG.vector_length_];

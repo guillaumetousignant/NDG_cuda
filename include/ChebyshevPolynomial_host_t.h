@@ -4,10 +4,12 @@
 #include "float_types.h"
 #include <vector>
 
-class ChebyshevPolynomial_host_t { 
-    public: 
-        // Algorithm 26
-        static void nodes_and_weights(int N, std::vector<hostFloat>& nodes, std::vector<hostFloat>& weights);
-};
+namespace SEM {
+    class ChebyshevPolynomial_host_t { 
+        public: 
+            // Algorithm 26
+            static void nodes_and_weights(int N, std::vector<hostFloat>& nodes, std::vector<hostFloat>& weights);
+    };
+}
 
 #endif

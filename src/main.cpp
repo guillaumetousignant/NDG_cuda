@@ -27,8 +27,8 @@ int main(void) {
     // Initialisation
     auto t_start_init = std::chrono::high_resolution_clock::now();
 
-    NDG_host_t<LegendrePolynomial_host_t> NDG(N_max, N_interpolation_points);
-    Mesh_host_t mesh(N_elements, initial_N, x[0], x[1]);
+    SEM::NDG_host_t<SEM::LegendrePolynomial_host_t> NDG(N_max, N_interpolation_points);
+    SEM::Mesh_host_t mesh(N_elements, initial_N, x[0], x[1]);
     mesh.set_initial_conditions(NDG.nodes_);
 
     auto t_end_init = std::chrono::high_resolution_clock::now();

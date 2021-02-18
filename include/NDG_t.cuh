@@ -3,33 +3,33 @@
 
 #include "float_types.h"
 
-template<typename Polynomial>
-class NDG_t { 
-public: 
-    NDG_t(int N_max, size_t N_interpolation_points);
-    ~NDG_t();
-
-    int N_max_;
-    size_t N_interpolation_points_;
-    size_t vector_length_; // Flattened length of all N one after the other
-    size_t matrix_length_; // Flattened length of all N² one after the other
-    size_t interpolation_length_;
-    deviceFloat* nodes_;
-    deviceFloat* weights_;
-    deviceFloat* barycentric_weights_;
-    deviceFloat* lagrange_interpolant_left_;
-    deviceFloat* lagrange_interpolant_right_;
-    deviceFloat* lagrange_interpolant_derivative_left_;
-    deviceFloat* lagrange_interpolant_derivative_right_;
-    deviceFloat* derivative_matrices_;
-    deviceFloat* g_hat_derivative_matrices_;
-    deviceFloat* derivative_matrices_hat_;
-    deviceFloat* interpolation_matrices_;
-
-    void print();
-};
-
 namespace SEM {
+    template<typename Polynomial>
+    class NDG_t { 
+        public: 
+            NDG_t(int N_max, size_t N_interpolation_points);
+            ~NDG_t();
+
+            int N_max_;
+            size_t N_interpolation_points_;
+            size_t vector_length_; // Flattened length of all N one after the other
+            size_t matrix_length_; // Flattened length of all N² one after the other
+            size_t interpolation_length_;
+            deviceFloat* nodes_;
+            deviceFloat* weights_;
+            deviceFloat* barycentric_weights_;
+            deviceFloat* lagrange_interpolant_left_;
+            deviceFloat* lagrange_interpolant_right_;
+            deviceFloat* lagrange_interpolant_derivative_left_;
+            deviceFloat* lagrange_interpolant_derivative_right_;
+            deviceFloat* derivative_matrices_;
+            deviceFloat* g_hat_derivative_matrices_;
+            deviceFloat* derivative_matrices_hat_;
+            deviceFloat* interpolation_matrices_;
+
+            void print();
+    };
+
     // Algorithm 30
     __global__
     void calculate_barycentric_weights(int N, const deviceFloat* nodes, deviceFloat* barycentric_weights) ;

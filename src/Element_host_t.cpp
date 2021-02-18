@@ -1,6 +1,6 @@
 #include "Element_host_t.h"
 
-Element_host_t::Element_host_t(int N, size_t face_L, size_t face_R, hostFloat x_L, hostFloat x_R) : 
+SEM::Element_host_t::Element_host_t(int N, size_t face_L, size_t face_R, hostFloat x_L, hostFloat x_R) : 
         N_(N),
         faces_{face_L, face_R},
         x_{x_L, x_R},
@@ -9,12 +9,12 @@ Element_host_t::Element_host_t(int N, size_t face_L, size_t face_R, hostFloat x_
         phi_prime_(N_ + 1),
         intermediate_(N_ + 1, 0.0) {}
 
-Element_host_t::Element_host_t() {};
+SEM::Element_host_t::Element_host_t() {};
 
-Element_host_t::~Element_host_t() {}
+SEM::Element_host_t::~Element_host_t() {}
 
 // Basically useless, find better solution when multiple elements.
-void Element_host_t::get_elements_data(size_t N_elements, const Element_host_t* elements, hostFloat* phi, hostFloat* phi_prime) {
+void SEM::Element_host_t::get_elements_data(size_t N_elements, const Element_host_t* elements, hostFloat* phi, hostFloat* phi_prime) {
     for (size_t i = 0; i < N_elements; ++i) {
         const size_t element_offset = i * (elements[i].N_ + 1);
         for (int j = 0; j <= elements[i].N_; ++j) {
@@ -25,7 +25,7 @@ void Element_host_t::get_elements_data(size_t N_elements, const Element_host_t* 
 }
 
 // Basically useless, find better solution when multiple elements.
-void Element_host_t::get_phi(size_t N_elements, const Element_host_t* elements, hostFloat* phi) {
+void SEM::Element_host_t::get_phi(size_t N_elements, const Element_host_t* elements, hostFloat* phi) {
     for (size_t i = 0; i < N_elements; ++i) {
         for (int j = 0; j <= elements[i].N_; ++j) {
             phi[j] = elements[i].phi_[j];
@@ -34,7 +34,7 @@ void Element_host_t::get_phi(size_t N_elements, const Element_host_t* elements, 
 }
 
 // Algorithm 61
-void Element_host_t::interpolate_to_boundaries(const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right) {
+void SEM::Element_host_t::interpolate_to_boundaries(const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right) {
     phi_L_ = 0.0;
     phi_R_ = 0.0;
 

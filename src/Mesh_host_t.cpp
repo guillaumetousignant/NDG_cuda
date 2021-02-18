@@ -12,7 +12,7 @@ namespace fs = std::filesystem;
 
 constexpr hostFloat pi = 3.14159265358979323846;
 
-Mesh_host_t::Mesh_host_t(size_t N_elements, int initial_N, hostFloat x_min, hostFloat x_max) : 
+SEM::Mesh_host_t::Mesh_host_t(size_t N_elements, int initial_N, hostFloat x_min, hostFloat x_max) : 
         initial_N_(initial_N),
         elements_(N_elements),
         faces_(N_elements) {
@@ -22,9 +22,9 @@ Mesh_host_t::Mesh_host_t(size_t N_elements, int initial_N, hostFloat x_min, host
     build_faces(); // CHECK
 }
 
-Mesh_host_t::~Mesh_host_t() {}
+SEM::Mesh_host_t::~Mesh_host_t() {}
 
-void Mesh_host_t::set_initial_conditions(const std::vector<std::vector<hostFloat>>& nodes) {
+void SEM::Mesh_host_t::set_initial_conditions(const std::vector<std::vector<hostFloat>>& nodes) {
     for (auto& element: elements_) {
         for (int j = 0; j <= element.N_; ++j) {
             const hostFloat x = (0.5 + nodes[element.N_][j]/2.0f) * (element.x_[1] - element.x_[0]) + element.x_[0];
@@ -33,7 +33,7 @@ void Mesh_host_t::set_initial_conditions(const std::vector<std::vector<hostFloat
     }
 }
 
-void Mesh_host_t::print() {
+void SEM::Mesh_host_t::print() {
     std::cout << std::endl << "Phi: " << std::endl;
     for (size_t i = 0; i < elements_.size(); ++i) {
         std::cout << '\t' << "Element " << i << ": ";
@@ -113,7 +113,7 @@ void Mesh_host_t::print() {
     }
 }
 
-void Mesh_host_t::write_file_data(hostFloat time, const std::vector<hostFloat>& velocity, const std::vector<hostFloat>& coordinates) {
+void SEM::Mesh_host_t::write_file_data(hostFloat time, const std::vector<hostFloat>& velocity, const std::vector<hostFloat>& coordinates) {
     std::stringstream ss;
     std::ofstream file;
 
@@ -134,7 +134,7 @@ void Mesh_host_t::write_file_data(hostFloat time, const std::vector<hostFloat>& 
     file.close();
 }
 
-void Mesh_host_t::write_data(hostFloat time, size_t N_interpolation_points, const std::vector<std::vector<hostFloat>>& interpolation_matrices) {
+void SEM::Mesh_host_t::write_data(hostFloat time, size_t N_interpolation_points, const std::vector<std::vector<hostFloat>>& interpolation_matrices) {
     std::vector<hostFloat> phi(elements_.size() * N_interpolation_points);
     std::vector<hostFloat> x(elements_.size() * N_interpolation_points);
     get_solution(N_interpolation_points, interpolation_matrices, phi, x);
@@ -142,11 +142,11 @@ void Mesh_host_t::write_data(hostFloat time, size_t N_interpolation_points, cons
     write_file_data(time, phi, x);
 }
 
-template void Mesh_host_t::solve(const hostFloat delta_t, const std::vector<hostFloat> output_times, const NDG_host_t<ChebyshevPolynomial_host_t> &NDG); // Get with the times c++, it's crazy I have to do this
-template void Mesh_host_t::solve(const hostFloat delta_t, const std::vector<hostFloat> output_times, const NDG_host_t<LegendrePolynomial_host_t> &NDG);
+template void SEM::Mesh_host_t::solve(const hostFloat delta_t, const std::vector<hostFloat> output_times, const NDG_host_t<ChebyshevPolynomial_host_t> &NDG); // Get with the times c++, it's crazy I have to do this
+template void SEM::Mesh_host_t::solve(const hostFloat delta_t, const std::vector<hostFloat> output_times, const NDG_host_t<LegendrePolynomial_host_t> &NDG);
 
 template<typename Polynomial>
-void Mesh_host_t::solve(hostFloat delta_t, const std::vector<hostFloat> output_times, const NDG_host_t<Polynomial> &NDG) {
+void SEM::Mesh_host_t::solve(hostFloat delta_t, const std::vector<hostFloat> output_times, const NDG_host_t<Polynomial> &NDG) {
     hostFloat time = 0.0;
     hostFloat t_end = output_times.back();
 
@@ -194,7 +194,7 @@ void Mesh_host_t::solve(hostFloat delta_t, const std::vector<hostFloat> output_t
     }
 }
 
-void Mesh_host_t::build_elements(hostFloat x_min, hostFloat x_max) {
+void SEM::Mesh_host_t::build_elements(hostFloat x_min, hostFloat x_max) {
     for (size_t i = 0; i < elements_.size(); ++i) {
         const size_t face_L = (i > 0) ? i - 1 : elements_.size() - 1;
         const size_t face_R = i;
@@ -205,7 +205,7 @@ void Mesh_host_t::build_elements(hostFloat x_min, hostFloat x_max) {
     }
 }
 
-void Mesh_host_t::build_faces() {
+void SEM::Mesh_host_t::build_faces() {
     for (size_t i = 0; i < faces_.size(); ++i) {
         const size_t neighbour_L = i;
         const size_t neighbour_R = (i < faces_.size() - 1) ? i + 1 : 0; // Last face links last element to first element
@@ -213,12 +213,12 @@ void Mesh_host_t::build_faces() {
     }
 }
 
-hostFloat Mesh_host_t::g(hostFloat x) {
+hostFloat SEM::Mesh_host_t::g(hostFloat x) {
     //return (x < -0.2f || x > 0.2f) ? 0.2f : 0.8f;
     return -std::sin(pi * x);
 }
 
-void Mesh_host_t::get_solution(size_t N_interpolation_points, const std::vector<std::vector<hostFloat>>& interpolation_matrices, std::vector<hostFloat>& phi, std::vector<hostFloat>& x) {
+void SEM::Mesh_host_t::get_solution(size_t N_interpolation_points, const std::vector<std::vector<hostFloat>>& interpolation_matrices, std::vector<hostFloat>& phi, std::vector<hostFloat>& x) {
     for (size_t i = 0; i < elements_.size(); ++i) {
         const size_t offset_interp_1D = i * N_interpolation_points;
 
@@ -232,7 +232,7 @@ void Mesh_host_t::get_solution(size_t N_interpolation_points, const std::vector<
     }
 }
 
-void Mesh_host_t::rk3_step(hostFloat delta_t, hostFloat a, hostFloat g) {
+void SEM::Mesh_host_t::rk3_step(hostFloat delta_t, hostFloat a, hostFloat g) {
     for (auto& element: elements_) {
         for (int j = 0; j <= element.N_; ++j){
             element.intermediate_[j] = a * element.intermediate_[j] + element.phi_prime_[j];
@@ -241,7 +241,7 @@ void Mesh_host_t::rk3_step(hostFloat delta_t, hostFloat a, hostFloat g) {
     }
 }
 
-void Mesh_host_t::calculate_fluxes() {
+void SEM::Mesh_host_t::calculate_fluxes() {
     for (auto& face: faces_) {
         hostFloat u;
         const hostFloat u_left = elements_[face.elements_[0]].phi_R_;
@@ -293,7 +293,7 @@ void SEM::matrix_vector_derivative(const std::vector<hostFloat>& derivative_matr
 }
 
 // Algorithm 60 (not really anymore)
-void Mesh_host_t::compute_dg_derivative(const std::vector<std::vector<hostFloat>>& weights, const std::vector<std::vector<hostFloat>>& derivative_matrices_hat, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right) {
+void SEM::Mesh_host_t::compute_dg_derivative(const std::vector<std::vector<hostFloat>>& weights, const std::vector<std::vector<hostFloat>>& derivative_matrices_hat, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right) {
     for (auto& element: elements_) {
         const hostFloat flux_L = faces_[element.faces_[0]].flux_;
         const hostFloat flux_R = faces_[element.faces_[1]].flux_;
@@ -307,7 +307,7 @@ void Mesh_host_t::compute_dg_derivative(const std::vector<std::vector<hostFloat>
     }
 }
 
-void Mesh_host_t::interpolate_to_boundaries(const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right) {
+void SEM::Mesh_host_t::interpolate_to_boundaries(const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right) {
     for (auto& element: elements_) {
         element.interpolate_to_boundaries(lagrange_interpolant_left, lagrange_interpolant_right);
     }

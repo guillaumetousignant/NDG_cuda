@@ -54,7 +54,7 @@ void SEM::legendre_gauss_nodes_and_weights(int N, deviceFloat* nodes, deviceFloa
     }
 }
 
-void LegendrePolynomial_t::nodes_and_weights(int N_max, int blockSize, deviceFloat* nodes, deviceFloat* weights) {
+void SEM::LegendrePolynomial_t::nodes_and_weights(int N_max, int blockSize, deviceFloat* nodes, deviceFloat* weights) {
     for (int N = 0; N <= N_max; ++N) {
         const int numBlocks = ((N + 1)/2 + blockSize) / blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
         SEM::legendre_gauss_nodes_and_weights<<<numBlocks, blockSize>>>(N, nodes, weights);
@@ -63,7 +63,7 @@ void LegendrePolynomial_t::nodes_and_weights(int N_max, int blockSize, deviceFlo
 
 // Algorithm 22
 __device__
-void LegendrePolynomial_t::polynomial_and_derivative(int N, deviceFloat x, deviceFloat &L_N, deviceFloat &L_N_prime) {
+void SEM::LegendrePolynomial_t::polynomial_and_derivative(int N, deviceFloat x, deviceFloat &L_N, deviceFloat &L_N_prime) {
     if (N == 0) {
         L_N = 1.0f;
         L_N_prime = 0.0f;

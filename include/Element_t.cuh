@@ -4,63 +4,63 @@
 #include "float_types.h"
 #include "Face_t.cuh"
 
-class Element_t { // Turn this into separate vectors, because cache exists
-    public:
-        __device__ 
-        Element_t(int N, size_t face_L, size_t face_R, deviceFloat x_L, deviceFloat x_R);
-
-        __device__
-        Element_t(const Element_t& other);
-
-        __device__
-        Element_t(Element_t&& other);	
-
-        __device__
-        Element_t& operator=(const Element_t& other);
-
-        __device__
-        Element_t& operator=(Element_t&& other);
-
-        __host__ __device__
-        Element_t();
-
-        __host__ __device__
-        ~Element_t();
-
-        int N_;
-        size_t faces_[2]; // Could also be pointers. left, right
-        deviceFloat x_[2];
-        deviceFloat delta_x_;
-        deviceFloat phi_L_;
-        deviceFloat phi_R_;
-        deviceFloat phi_prime_L_;
-        deviceFloat phi_prime_R_;
-        deviceFloat* phi_; // Solution
-        deviceFloat* phi_prime_;
-        deviceFloat* intermediate_; // This is used for RK3, and also for adaptivity. So don't try to adapt between rk steps.
-
-        deviceFloat sigma_;
-        bool refine_;
-        bool coarsen_;
-        deviceFloat error_;
-
-        // Algorithm 61
-        __device__
-        void interpolate_to_boundaries(const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right, const deviceFloat* lagrange_interpolant_derivative_left, const deviceFloat* lagrange_interpolant_derivative_right);
-
-        template<typename Polynomial>
-        __device__
-        void estimate_error(const deviceFloat* nodes, const deviceFloat* weights);
-
-        __device__
-        void interpolate_from(const Element_t& other, const deviceFloat* nodes, const deviceFloat* barycentric_weights);
-
-    private:
-        __device__
-        deviceFloat exponential_decay();
-};
-
 namespace SEM {
+    class Element_t { // Turn this into separate vectors, because cache exists
+        public:
+            __device__ 
+            Element_t(int N, size_t face_L, size_t face_R, deviceFloat x_L, deviceFloat x_R);
+
+            __device__
+            Element_t(const Element_t& other);
+
+            __device__
+            Element_t(Element_t&& other);	
+
+            __device__
+            Element_t& operator=(const Element_t& other);
+
+            __device__
+            Element_t& operator=(Element_t&& other);
+
+            __host__ __device__
+            Element_t();
+
+            __host__ __device__
+            ~Element_t();
+
+            int N_;
+            size_t faces_[2]; // Could also be pointers. left, right
+            deviceFloat x_[2];
+            deviceFloat delta_x_;
+            deviceFloat phi_L_;
+            deviceFloat phi_R_;
+            deviceFloat phi_prime_L_;
+            deviceFloat phi_prime_R_;
+            deviceFloat* phi_; // Solution
+            deviceFloat* phi_prime_;
+            deviceFloat* intermediate_; // This is used for RK3, and also for adaptivity. So don't try to adapt between rk steps.
+
+            deviceFloat sigma_;
+            bool refine_;
+            bool coarsen_;
+            deviceFloat error_;
+
+            // Algorithm 61
+            __device__
+            void interpolate_to_boundaries(const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right, const deviceFloat* lagrange_interpolant_derivative_left, const deviceFloat* lagrange_interpolant_derivative_right);
+
+            template<typename Polynomial>
+            __device__
+            void estimate_error(const deviceFloat* nodes, const deviceFloat* weights);
+
+            __device__
+            void interpolate_from(const Element_t& other, const deviceFloat* nodes, const deviceFloat* barycentric_weights);
+
+        private:
+            __device__
+            deviceFloat exponential_decay();
+    };
+
     __global__
     void build_elements(size_t N_elements, int N, Element_t* elements, deviceFloat x_min, deviceFloat x_max);
 

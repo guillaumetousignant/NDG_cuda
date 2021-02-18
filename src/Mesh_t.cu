@@ -13,7 +13,7 @@ namespace fs = std::filesystem;
 constexpr int elements_blockSize = 32;
 constexpr int faces_blockSize = 32; // Same number of faces as elements for periodic BC
 
-Mesh_t::Mesh_t(size_t N_elements, int initial_N, deviceFloat x_min, deviceFloat x_max) : 
+SEM::Mesh_t::Mesh_t(size_t N_elements, int initial_N, deviceFloat x_min, deviceFloat x_max) : 
         N_elements_(N_elements), 
         N_faces_(N_elements), 
         initial_N_(initial_N),
@@ -32,7 +32,7 @@ Mesh_t::Mesh_t(size_t N_elements, int initial_N, deviceFloat x_min, deviceFloat 
     SEM::build_faces<<<faces_numBlocks_, faces_blockSize>>>(N_faces_, faces_); // CHECK
 }
 
-Mesh_t::~Mesh_t() {
+SEM::Mesh_t::~Mesh_t() {
     SEM::free_elements<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_);
     cudaFree(elements_);
     cudaFree(faces_);
@@ -43,11 +43,11 @@ Mesh_t::~Mesh_t() {
     delete[] host_refine_array_;
 }
 
-void Mesh_t::set_initial_conditions(const deviceFloat* nodes) {
+void SEM::Mesh_t::set_initial_conditions(const deviceFloat* nodes) {
     SEM::initial_conditions<<<elements_numBlocks_, elements_blockSize>>>(N_elements_, elements_, nodes);
 }
 
-void Mesh_t::print() {
+void SEM::Mesh_t::print() {
     Face_t* host_faces = new Face_t[N_faces_];
     Element_t* host_elements = new Element_t[N_elements_];
 
@@ -139,7 +139,7 @@ void Mesh_t::print() {
     delete[] host_elements;
 }
 
-void Mesh_t::write_file_data(size_t N_interpolation_points, size_t N_elements, deviceFloat time, const deviceFloat* coordinates, const deviceFloat* velocity, const deviceFloat* du_dx, const deviceFloat* intermediate, const deviceFloat* x_L, const deviceFloat* x_R, const int* N, const deviceFloat* sigma, const bool* refine, const bool* coarsen, const deviceFloat* error) {
+void SEM::Mesh_t::write_file_data(size_t N_interpolation_points, size_t N_elements, deviceFloat time, const deviceFloat* coordinates, const deviceFloat* velocity, const deviceFloat* du_dx, const deviceFloat* intermediate, const deviceFloat* x_L, const deviceFloat* x_R, const int* N, const deviceFloat* sigma, const bool* refine, const bool* coarsen, const deviceFloat* error) {
     fs::path save_dir = fs::current_path() / "data";
     fs::create_directory(save_dir);
 
@@ -187,7 +187,7 @@ void Mesh_t::write_file_data(size_t N_interpolation_points, size_t N_elements, d
     file_element.close();
 }
 
-void Mesh_t::write_data(deviceFloat time, size_t N_interpolation_points, const deviceFloat* interpolation_matrices) {
+void SEM::Mesh_t::write_data(deviceFloat time, size_t N_interpolation_points, const deviceFloat* interpolation_matrices) {
     // CHECK find better solution for multiple elements
     deviceFloat* x;
     deviceFloat* phi;
@@ -264,11 +264,11 @@ void Mesh_t::write_data(deviceFloat time, size_t N_interpolation_points, const d
     cudaFree(error);
 }
 
-template void Mesh_t::solve(const deviceFloat delta_t, const std::vector<deviceFloat> output_times, const NDG_t<ChebyshevPolynomial_t> &NDG, deviceFloat viscosity); // Get with the times c++, it's crazy I have to do this
-template void Mesh_t::solve(const deviceFloat delta_t, const std::vector<deviceFloat> output_times, const NDG_t<LegendrePolynomial_t> &NDG, deviceFloat viscosity);
+template void SEM::Mesh_t::solve(const deviceFloat delta_t, const std::vector<deviceFloat> output_times, const NDG_t<ChebyshevPolynomial_t> &NDG, deviceFloat viscosity); // Get with the times c++, it's crazy I have to do this
+template void SEM::Mesh_t::solve(const deviceFloat delta_t, const std::vector<deviceFloat> output_times, const NDG_t<LegendrePolynomial_t> &NDG, deviceFloat viscosity);
 
 template<typename Polynomial>
-void Mesh_t::solve(const deviceFloat CFL, const std::vector<deviceFloat> output_times, const NDG_t<Polynomial> &NDG, deviceFloat viscosity) {
+void SEM::Mesh_t::solve(const deviceFloat CFL, const std::vector<deviceFloat> output_times, const NDG_t<Polynomial> &NDG, deviceFloat viscosity) {
     deviceFloat time = 0.0;
     const deviceFloat t_end = output_times.back();
 
@@ -321,7 +321,7 @@ void Mesh_t::solve(const deviceFloat CFL, const std::vector<deviceFloat> output_
     }
 }
 
-deviceFloat Mesh_t::get_delta_t(const deviceFloat CFL) {   
+deviceFloat SEM::Mesh_t::get_delta_t(const deviceFloat CFL) {   
     SEM::reduce_delta_t<elements_blockSize/2><<<elements_numBlocks_, elements_blockSize/2>>>(CFL, N_elements_, elements_, device_delta_t_array_);
     cudaMemcpy(host_delta_t_array_, device_delta_t_array_, elements_numBlocks_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
 
@@ -333,7 +333,7 @@ deviceFloat Mesh_t::get_delta_t(const deviceFloat CFL) {
     return delta_t_min;
 }
 
-void Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights) {
+void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights) {
     SEM::reduce_refine<elements_blockSize/2><<<elements_numBlocks_, elements_blockSize/2>>>(N_elements_, elements_, device_refine_array_);
     cudaMemcpy(host_refine_array_, device_refine_array_, elements_numBlocks_ * sizeof(unsigned long), cudaMemcpyDeviceToHost);
 

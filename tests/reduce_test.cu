@@ -18,8 +18,8 @@ TEST_CASE("Reduction", "Checks the reduction returns the right result."){
     const double error = 1e-4;
     const deviceFloat CFL = 0.5f;
     
-    NDG_t<LegendrePolynomial_t> NDG(N_max, N_interpolation_points);
-    Mesh_t mesh(N_elements, N_test, x[0], x[1]);
+    SEM::NDG_t<SEM::LegendrePolynomial_t> NDG(N_max, N_interpolation_points);
+    SEM::Mesh_t mesh(N_elements, N_test, x[0], x[1]);
     mesh.set_initial_conditions(NDG.nodes_);
 
     constexpr int elements_blockSize = 32;

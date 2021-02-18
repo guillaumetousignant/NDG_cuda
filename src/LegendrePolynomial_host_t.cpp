@@ -4,7 +4,7 @@
 constexpr hostFloat pi = 3.14159265358979323846;
 
 // Algorithm 22
-void LegendrePolynomial_host_t::legendre_polynomial_and_derivative(int N, hostFloat x, hostFloat &L_N, hostFloat &L_N_prime) {
+void SEM::LegendrePolynomial_host_t::legendre_polynomial_and_derivative(int N, hostFloat x, hostFloat &L_N, hostFloat &L_N_prime) {
     if (N == 0) {
         L_N = 1.0;
         L_N_prime = 0.0;
@@ -31,7 +31,7 @@ void LegendrePolynomial_host_t::legendre_polynomial_and_derivative(int N, hostFl
 }
 
 // Algorithm 23
-void LegendrePolynomial_host_t::nodes_and_weights(int N, std::vector<hostFloat>& nodes, std::vector<hostFloat>& weights) {
+void SEM::LegendrePolynomial_host_t::nodes_and_weights(int N, std::vector<hostFloat>& nodes, std::vector<hostFloat>& weights) {
     for (int i = 0; i < (N + 1)/2; ++i) {
         if (N == 1) { // CHECK will enter loop above
             nodes[0] = -std::sqrt(1.0/3.0);

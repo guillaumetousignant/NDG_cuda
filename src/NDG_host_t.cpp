@@ -8,11 +8,11 @@
 #include <sstream> 
 #include <iomanip>
 
-template class NDG_host_t<ChebyshevPolynomial_host_t>; // Like, I understand why I need this, but man is it crap.
-template class NDG_host_t<LegendrePolynomial_host_t>;
+template class SEM::NDG_host_t<SEM::ChebyshevPolynomial_host_t>; // Like, I understand why I need this, but man is it crap.
+template class SEM::NDG_host_t<SEM::LegendrePolynomial_host_t>;
 
 template<typename Polynomial>
-NDG_host_t<Polynomial>::NDG_host_t(int N_max, size_t N_interpolation_points) : 
+SEM::NDG_host_t<Polynomial>::NDG_host_t(int N_max, size_t N_interpolation_points) : 
         N_max_(N_max), 
         N_interpolation_points_(N_interpolation_points),
         nodes_(N_max + 1),
@@ -50,10 +50,10 @@ NDG_host_t<Polynomial>::NDG_host_t(int N_max, size_t N_interpolation_points) :
 }
 
 template<typename Polynomial>
-NDG_host_t<Polynomial>::~NDG_host_t() {}
+SEM::NDG_host_t<Polynomial>::~NDG_host_t() {}
    
 template<typename Polynomial>
-void NDG_host_t<Polynomial>::print() {
+void SEM::NDG_host_t<Polynomial>::print() {
         std::cout << "Nodes: " << std::endl;
     for (int N = 0; N <= N_max_; ++N) {
         std::cout << '\t' << "N = " << N << ": ";
@@ -143,7 +143,7 @@ void NDG_host_t<Polynomial>::print() {
 
 // Algorithm 30
 template<typename Polynomial>
-void NDG_host_t<Polynomial>::calculate_barycentric_weights(int N, const std::vector<hostFloat>& nodes, std::vector<hostFloat>& barycentric_weights) {
+void SEM::NDG_host_t<Polynomial>::calculate_barycentric_weights(int N, const std::vector<hostFloat>& nodes, std::vector<hostFloat>& barycentric_weights) {
     for (int j = 0; j <= N; ++j) {
         hostFloat xjxi = 1.0;
         for (int i = 0; i < j; ++i) {
@@ -165,7 +165,7 @@ bool almost_equal(float a, float b) {
 
 // From cppreference.com
 template<typename Polynomial>
-bool NDG_host_t<Polynomial>::almost_equal(hostFloat x, hostFloat y) {
+bool SEM::NDG_host_t<Polynomial>::almost_equal(hostFloat x, hostFloat y) {
     constexpr int ulp = 2; // ULP
     // the machine epsilon has to be scaled to the magnitude of the values used
     // and multiplied by the desired precision in ULPs (units in the last place)
@@ -177,7 +177,7 @@ bool NDG_host_t<Polynomial>::almost_equal(hostFloat x, hostFloat y) {
 // This will not work if we are on a node, or at least be pretty inefficient
 // Algorithm 34
 template<typename Polynomial>
-void NDG_host_t<Polynomial>::lagrange_interpolating_polynomials(hostFloat x, int N, const std::vector<hostFloat>& nodes, const std::vector<hostFloat>& barycentric_weights, std::vector<hostFloat>& lagrange_interpolant) {
+void SEM::NDG_host_t<Polynomial>::lagrange_interpolating_polynomials(hostFloat x, int N, const std::vector<hostFloat>& nodes, const std::vector<hostFloat>& barycentric_weights, std::vector<hostFloat>& lagrange_interpolant) {
     for (int i = 0; i <= N; ++i) {
         lagrange_interpolant[i] = barycentric_weights[i] / (x - nodes[i]);
     }
@@ -185,7 +185,7 @@ void NDG_host_t<Polynomial>::lagrange_interpolating_polynomials(hostFloat x, int
 
 // Algorithm 34
 template<typename Polynomial>
-void NDG_host_t<Polynomial>::normalize_lagrange_interpolating_polynomials(int N, std::vector<hostFloat>& lagrange_interpolant) {
+void SEM::NDG_host_t<Polynomial>::normalize_lagrange_interpolating_polynomials(int N, std::vector<hostFloat>& lagrange_interpolant) {
     hostFloat sum = 0.0;
     for (int i = 0; i <= N; ++i) {
         sum += lagrange_interpolant[i];
@@ -198,7 +198,7 @@ void NDG_host_t<Polynomial>::normalize_lagrange_interpolating_polynomials(int N,
 // Be sure to compute the diagonal afterwards
 // Algorithm 37
 template<typename Polynomial>
-void NDG_host_t<Polynomial>::polynomial_derivative_matrices(int N, const std::vector<hostFloat>& nodes, const std::vector<hostFloat>& barycentric_weights, std::vector<hostFloat>& derivative_matrices) {
+void SEM::NDG_host_t<Polynomial>::polynomial_derivative_matrices(int N, const std::vector<hostFloat>& nodes, const std::vector<hostFloat>& barycentric_weights, std::vector<hostFloat>& derivative_matrices) {
     for (int i = 0; i <= N; ++i) {
         for (int j = 0; j <= N; ++j) {
             if (i != j) { // CHECK remove for branchless, i == j will be overwritten anyway
@@ -210,7 +210,7 @@ void NDG_host_t<Polynomial>::polynomial_derivative_matrices(int N, const std::ve
 
 // Algorithm 37
 template<typename Polynomial>
-void NDG_host_t<Polynomial>::polynomial_derivative_matrices_diagonal(int N, std::vector<hostFloat>& derivative_matrices) {
+void SEM::NDG_host_t<Polynomial>::polynomial_derivative_matrices_diagonal(int N, std::vector<hostFloat>& derivative_matrices) {
     for (int i = 0; i <= N; ++i) {
         derivative_matrices[i * (N + 2)] = 0.0;
         for (int j = 0; j < i; ++j) {
@@ -223,7 +223,7 @@ void NDG_host_t<Polynomial>::polynomial_derivative_matrices_diagonal(int N, std:
 }
 
 template<typename Polynomial>
-void NDG_host_t<Polynomial>::polynomial_derivative_matrices_hat(int N, const std::vector<hostFloat>& weights, const std::vector<hostFloat>& derivative_matrices, std::vector<hostFloat>& derivative_matrices_hat) {
+void SEM::NDG_host_t<Polynomial>::polynomial_derivative_matrices_hat(int N, const std::vector<hostFloat>& weights, const std::vector<hostFloat>& derivative_matrices, std::vector<hostFloat>& derivative_matrices_hat) {
     for (int i = 0; i <= N; ++i) {
         for (int j = 0; j <= N; ++j) {
             derivative_matrices_hat[i * (N + 1) + j] = derivative_matrices[j * (N + 1) + i] * weights[j] / weights[i];
@@ -233,7 +233,7 @@ void NDG_host_t<Polynomial>::polynomial_derivative_matrices_hat(int N, const std
 
 // Will interpolate N_interpolation_points between -1 and 1
 template<typename Polynomial>
-void NDG_host_t<Polynomial>::create_interpolation_matrices(int N, size_t N_interpolation_points, const std::vector<hostFloat>& nodes, const std::vector<hostFloat>& barycentric_weights, std::vector<hostFloat>& interpolation_matrices) {
+void SEM::NDG_host_t<Polynomial>::create_interpolation_matrices(int N, size_t N_interpolation_points, const std::vector<hostFloat>& nodes, const std::vector<hostFloat>& barycentric_weights, std::vector<hostFloat>& interpolation_matrices) {
     for (size_t j = 0; j < N_interpolation_points; ++j) {
         bool row_has_match = false;
         const hostFloat x_coord = 2.0 * j / (N_interpolation_points - 1) - 1.0;

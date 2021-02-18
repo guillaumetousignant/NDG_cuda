@@ -12,11 +12,11 @@ constexpr int poly_blockSize = 16; // Small number of threads per block because 
 constexpr int interpolation_blockSize = 32;
 const dim3 matrix_blockSize(16, 16); // Small number of threads per block because N will never be huge
 
-template class NDG_t<ChebyshevPolynomial_t>; // Like, I understand why I need this, but man is it crap.
-template class NDG_t<LegendrePolynomial_t>;
+template class SEM::NDG_t<SEM::ChebyshevPolynomial_t>; // Like, I understand why I need this, but man is it crap.
+template class SEM::NDG_t<SEM::LegendrePolynomial_t>;
 
 template<typename Polynomial>
-NDG_t<Polynomial>::NDG_t(int N_max, size_t N_interpolation_points) : 
+SEM::NDG_t<Polynomial>::NDG_t(int N_max, size_t N_interpolation_points) : 
         N_max_(N_max), 
         N_interpolation_points_(N_interpolation_points),
         vector_length_((N_max_ + 1) * (N_max_ + 2)/2), 
@@ -76,7 +76,7 @@ NDG_t<Polynomial>::NDG_t(int N_max, size_t N_interpolation_points) :
 }
 
 template<typename Polynomial>
-NDG_t<Polynomial>::~NDG_t() {
+SEM::NDG_t<Polynomial>::~NDG_t() {
     cudaFree(nodes_);
     cudaFree(weights_);
     cudaFree(barycentric_weights_);
@@ -91,7 +91,7 @@ NDG_t<Polynomial>::~NDG_t() {
 }
    
 template<typename Polynomial>
-void NDG_t<Polynomial>::print() {
+void SEM::NDG_t<Polynomial>::print() {
     // Copy vectors from device memory to host memory
     deviceFloat* host_nodes = new deviceFloat[vector_length_];
     deviceFloat* host_weights = new deviceFloat[vector_length_];
