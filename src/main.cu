@@ -36,8 +36,6 @@ int main(int argc, char* argv[]) {
     MPI_Comm_rank(node_communicator, &node_rank);
     int node_size;
     MPI_Comm_size(node_communicator, &node_size);
-    std::cout << "Global id: " << global_rank << "/" << global_size << std::endl;
-    std::cout << "Local id: " << node_rank << "/" << node_size << std::endl;
 
     // Device selection
     int deviceCount;
@@ -58,9 +56,12 @@ int main(int argc, char* argv[]) {
         cudaGetDeviceProperties(&deviceProp, device);
         std::cout << '\t' << "Device #" << device << " (" << deviceProp.name << ") has compute capability " << deviceProp.major << "." << deviceProp.minor << "." << std::endl;
     }
-    int device = 0;
-    std::cout << "Selected device #" << device << std::endl;
+
+    int n_proc_per_gpu = (node_size + deviceCount - 1)/deviceCount;
+    int device = node_rank/n_proc_per_gpu;
+    int device_rank = node_rank%n_proc_per_gpu;
     cudaSetDevice(device);
+    std::cout << "Process with global id " << global_rank << "/" << global_size << " and local id " << node_rank << "/" << node_size << " picked GPU " << device << "/" << deviceCount << "  with stream " << device_rank << std::endl;
 
     // Initialisation
     auto t_start_init = std::chrono::high_resolution_clock::now();
