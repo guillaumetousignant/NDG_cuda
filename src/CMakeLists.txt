@@ -16,6 +16,7 @@ target_include_directories(NDG_cuda PUBLIC
     $<INSTALL_INTERFACE:include/NDG_cuda/>    
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/>)
 
+# Cuda stuff
 set_target_properties(NDG_cuda PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 set_property(TARGET NDG_cuda PROPERTY CUDA_ARCHITECTURES 61) # sm_61 is GTX 10X0
 target_compile_features(NDG_cuda PRIVATE cxx_std_17)
@@ -24,6 +25,10 @@ if(NOT ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug"))
 endif()
 target_compile_options(NDG_cuda PUBLIC "$<$<AND:$<COMPILE_LANGUAGE:CUDA>,$<CONFIG:DEBUG>>:-lineinfo>")
 target_compile_options(NDG_cuda PUBLIC "$<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>")
+
+# MPI stuff
+find_package(MPI REQUIRED CXX)
+target_link_libraries(NDG_cuda PUBLIC MPI::MPI_CXX)
 
 install(TARGETS NDG_cuda 
     EXPORT NDG_cuda-export
