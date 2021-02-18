@@ -24,6 +24,44 @@ int main(int argc, char* argv[]) {
 
     std::cout << "CFL is: " << CFL << std::endl;
 
+    // MPI ranks
+    MPI_Comm node_communicator;
+    MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, 0,
+                        MPI_INFO_NULL, &node_communicator);
+    int global_rank;
+    MPI_Comm_rank(node_communicator, &global_rank);
+    int global_size;
+    MPI_Comm_size(node_communicator, &global_size);
+    int node_rank;
+    MPI_Comm_rank(node_communicator, &node_rank);
+    int node_size;
+    MPI_Comm_size(node_communicator, &node_size);
+    std::cout << "Global id: " << global_rank << "/" << global_size << std::endl;
+    std::cout << "Local id: " << node_rank << "/" << node_size << std::endl;
+
+    // Device selection
+    int deviceCount;
+    cudaGetDeviceCount(&deviceCount);
+    switch(deviceCount) {
+        case 0:
+            std::cout << "There are no Cuda devices." << std::endl;
+            break;
+        case 1:
+            std::cout << "There is one Cuda device:" << std::endl;
+            break;
+        default:
+            std::cout << "There are " << deviceCount << " Cuda devices:" << std::endl;
+            break;
+    }
+    for (int device = 0; device < deviceCount; ++device) {
+        cudaDeviceProp deviceProp;
+        cudaGetDeviceProperties(&deviceProp, device);
+        std::cout << '\t' << "Device #" << device << " (" << deviceProp.name << ") has compute capability " << deviceProp.major << "." << deviceProp.minor << "." << std::endl;
+    }
+    int device = 0;
+    std::cout << "Selected device #" << device << std::endl;
+    cudaSetDevice(device);
+
     // Initialisation
     auto t_start_init = std::chrono::high_resolution_clock::now();
 
