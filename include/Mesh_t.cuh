@@ -14,11 +14,16 @@ namespace SEM {
             Mesh_t(size_t N_elements, int initial_N, deviceFloat x_min, deviceFloat x_max, cudaStream_t &stream);
             ~Mesh_t();
 
+            size_t N_elements_global_;
             size_t N_elements_;
             size_t N_faces_;
+            size_t N_local_boundaries_;
+            size_t N_MPI_boundaries_;
+            size_t global_element_offset_;
             int initial_N_;
             Element_t* elements_;
             Face_t* faces_;
+            size_t* boundary_to_element_;
 
             void set_initial_conditions(const deviceFloat* nodes);
             void print();
@@ -30,6 +35,7 @@ namespace SEM {
         private:
             int elements_numBlocks_;
             int faces_numBlocks_;
+            int boundaries_numBlocks_;
             deviceFloat* device_delta_t_array_;
             deviceFloat* host_delta_t_array_;
             unsigned long* device_refine_array_;
@@ -39,6 +45,7 @@ namespace SEM {
             void write_file_data(size_t N_interpolation_points, size_t N_elements, deviceFloat time, const deviceFloat* coordinates, const deviceFloat* velocity, const deviceFloat* du_dx, const deviceFloat* intermediate, const deviceFloat* x_L, const deviceFloat* x_R, const int* N, const deviceFloat* sigma, const bool* refine, const bool* coarsen, const deviceFloat* error);
             deviceFloat get_delta_t(const deviceFloat CFL);
             void adapt(int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights);
+            void boundary_conditions();
     };
 
     __global__

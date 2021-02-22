@@ -254,8 +254,8 @@ void SEM::build_elements(size_t N_elements, int N, SEM::Element_t* elements, dev
     const int stride = blockDim.x * gridDim.x;
 
     for (int i = index; i < N_elements; i += stride) {
-        const size_t face_L = (i > 0) ? i - 1 : N_elements - 1;
-        const size_t face_R = i;
+        const size_t face_L = i;
+        const size_t face_R = i + 1;
         const deviceFloat delta_x = (x_max - x_min)/N_elements;
         const deviceFloat element_x_min = x_min + i * delta_x;
         const deviceFloat element_x_max = x_min + (i + 1) * delta_x;
@@ -266,6 +266,72 @@ void SEM::build_elements(size_t N_elements, int N, SEM::Element_t* elements, dev
         elements[i].intermediate_ = nullptr;
 
         elements[i] = SEM::Element_t(N, face_L, face_R, element_x_min, element_x_max);
+    }
+}
+
+__global__
+void SEM::build_boundaries(size_t N_elements, size_t N_local_boundaries, size_t N_MPI_boundaries, int N, Element_t* elements, deviceFloat x_min, deviceFloat x_max, size_t global_element_offset, size_t* boundary_to_element) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (int i = index; i < N_local_boundaries; i += stride) {
+        const deviceFloat delta_x = (x_max - x_min)/N_elements;
+        size_t face_L;
+        size_t face_R;
+        deviceFloat element_x_min;
+        deviceFloat element_x_max;
+
+        if (i == 0) { // CHECK this is hardcoded for 1D
+            face_L = 0;
+            face_R = 0;
+            element_x_min = x_min - delta_x;
+            element_x_max = x_min;
+            boundary_to_element[i] = N_elements - 1;
+        }
+        else if (i == 1) {
+            face_L = N_elements + N_local_boundaries + N_MPI_boundaries - 2;
+            face_R = N_elements + N_local_boundaries + N_MPI_boundaries - 2;
+            element_x_min = x_max;
+            element_x_max = x_max + delta_x;
+            boundary_to_element[i] = 0;
+        }
+
+        // Those are uninitialised because they are created via cudaMalloc, so they need to be set if we don't want the move constructor to delete random memory.
+        elements[N_elements + i].phi_ = nullptr;
+        elements[N_elements + i].phi_prime_ = nullptr;
+        elements[N_elements + i].intermediate_ = nullptr;
+
+        elements[N_elements + i] = SEM::Element_t(N, face_L, face_R, element_x_min, element_x_max);
+    }
+
+    for (int i = index; i < N_MPI_boundaries; i += stride) {
+        const deviceFloat delta_x = (x_max - x_min)/N_elements;
+        size_t face_L;
+        size_t face_R;
+        deviceFloat element_x_min;
+        deviceFloat element_x_max;
+
+        if (i == 0) { // CHECK this is hardcoded for 1D
+            face_L = 0;
+            face_R = 0;
+            element_x_min = x_min - delta_x;
+            element_x_max = x_min;
+            boundary_to_element[N_local_boundaries + i] = global_element_offset - 1;
+        }
+        else if (i == 1) {
+            face_L = N_elements + N_local_boundaries + N_MPI_boundaries - 2;
+            face_R = N_elements + N_local_boundaries + N_MPI_boundaries - 2;
+            element_x_min = x_max;
+            element_x_max = x_max + delta_x;
+            boundary_to_element[N_local_boundaries + i] = global_element_offset + N_elements;
+        }
+
+        // Those are uninitialised because they are created via cudaMalloc, so they need to be set if we don't want the move constructor to delete random memory.
+        elements[N_elements + N_local_boundaries + i].phi_ = nullptr;
+        elements[N_elements + N_local_boundaries + i].phi_prime_ = nullptr;
+        elements[N_elements + N_local_boundaries + i].intermediate_ = nullptr;
+
+        elements[N_elements + N_local_boundaries + i] = SEM::Element_t(N, face_L, face_R, element_x_min, element_x_max);
     }
 }
 
@@ -461,4 +527,15 @@ bool SEM::almost_equal2(deviceFloat x, deviceFloat y) {
     return std::abs(x-y) <= FLT_EPSILON * std::abs(x+y) * ulp // CHECK change this to double equivalent if using double instead of float
         // unless the result is subnormal
         || std::abs(x-y) < FLT_MIN; // CHECK change this to 64F if using double instead of float
+}
+
+__global__
+void SEM::local_boundaries(size_t N_elements, size_t N_local_boundaries, Element_t* elements, size_t* boundary_to_element) {
+    const unsigned long index = blockIdx.x * blockDim.x + threadIdx.x;
+    const unsigned long stride = blockDim.x * gridDim.x;
+    
+    for (unsigned long i = index; i < N_local_boundaries; i += stride) {
+        elements[N_elements + i].phi_L_ = elements[boundary_to_element[i]].phi_L_;
+        elements[N_elements + i].phi_R_ = elements[boundary_to_element[i]].phi_R_;
+    }
 }

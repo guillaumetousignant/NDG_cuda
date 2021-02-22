@@ -65,6 +65,9 @@ namespace SEM {
     void build_elements(size_t N_elements, int N, Element_t* elements, deviceFloat x_min, deviceFloat x_max);
 
     __global__
+    void build_boundaries(size_t N_elements, size_t N_local_boundaries, size_t N_MPI_boundaries, int N, Element_t* elements, deviceFloat x_min, deviceFloat x_max, size_t global_element_offset, size_t* boundary_to_element);
+
+    __global__
     void free_elements(size_t N_elements, Element_t* elements);
 
     template<typename Polynomial>
@@ -100,6 +103,10 @@ namespace SEM {
     // From cppreference.com
     __device__
     bool almost_equal2(deviceFloat x, deviceFloat y);
+
+    __global__
+    void local_boundaries(size_t N_elements, size_t N_local_boundaries, Element_t* elements, size_t* boundary_to_element);
+
 }
 
 #endif
