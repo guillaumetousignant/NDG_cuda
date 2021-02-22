@@ -78,20 +78,30 @@ void SEM::Mesh_t::set_initial_conditions(const deviceFloat* nodes) {
 
 void SEM::Mesh_t::print() {
     Face_t* host_faces = new Face_t[N_faces_];
-    Element_t* host_elements = new Element_t[N_elements_];
+    Element_t* host_elements = new Element_t[N_elements_ + N_local_boundaries_ + N_MPI_boundaries_];
+    size_t* host_boundary_to_element = new size_t[N_local_boundaries_ + N_MPI_boundaries_];
 
     cudaMemcpy(host_faces, faces_, N_faces_ * sizeof(Face_t), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_elements, elements_, N_elements_ * sizeof(Element_t), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_elements, elements_, (N_elements_ + N_local_boundaries_ + N_MPI_boundaries_) * sizeof(Element_t), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_boundary_to_element, boundary_to_element_, (N_local_boundaries_ + N_MPI_boundaries_) * sizeof(size_t), cudaMemcpyDeviceToHost);
 
     // Invalidate GPU pointers, or else they will be deleted on the CPU, where they point to random stuff
-    for (size_t i = 0; i < N_elements_; ++i) {
+    for (size_t i = 0; i < N_elements_ + N_local_boundaries_ + N_MPI_boundaries_; ++i) {
         host_elements[i].phi_ = nullptr;
         host_elements[i].phi_prime_ = nullptr;
         host_elements[i].intermediate_ = nullptr;
     }
 
+    std::cout << "N elements global: " << N_elements_global_ << std::endl;
+    std::cout << "N elements local: " << N_elements_ << std::endl;
+    std::cout << "N faces: " << N_faces_ << std::endl;
+    std::cout << "N local boundaries: " << N_local_boundaries_ << std::endl;
+    std::cout << "N MPI boundaries: " << N_MPI_boundaries_ << std::endl;
+    std::cout << "Global element offset: " << global_element_offset_ << std::endl;
+    std::cout << "Initial N: " << initial_N_ << std::endl;
+
     std::cout << std::endl << "Phi interpolated: " << std::endl;
-    for (size_t i = 0; i < N_elements_; ++i) {
+    for (size_t i = 0; i < N_elements_ + N_local_boundaries_ + N_MPI_boundaries_; ++i) {
         std::cout << '\t' << "Element " << i << ": ";
         std::cout << '\t' << '\t';
         std::cout << host_elements[i].phi_L_ << " ";
@@ -100,7 +110,7 @@ void SEM::Mesh_t::print() {
     }
 
     std::cout << std::endl << "Phi prime interpolated: " << std::endl;
-    for (size_t i = 0; i < N_elements_; ++i) {
+    for (size_t i = 0; i < N_elements_ + N_local_boundaries_ + N_MPI_boundaries_; ++i) {
         std::cout << '\t' << "Element " << i << ": ";
         std::cout << '\t' << '\t';
         std::cout << host_elements[i].phi_prime_L_ << " ";
@@ -109,7 +119,7 @@ void SEM::Mesh_t::print() {
     }
 
     std::cout << std::endl << "x: " << std::endl;
-    for (size_t i = 0; i < N_elements_; ++i) {
+    for (size_t i = 0; i < N_elements_ + N_local_boundaries_ + N_MPI_boundaries_; ++i) {
         std::cout << '\t' << "Element " << i << ": ";
         std::cout << '\t' << '\t';
         std::cout << host_elements[i].x_[0] << " ";
@@ -118,7 +128,7 @@ void SEM::Mesh_t::print() {
     }
 
     std::cout << std::endl << "Neighbouring faces: " << std::endl;
-    for (size_t i = 0; i < N_elements_; ++i) {
+    for (size_t i = 0; i < N_elements_ + N_local_boundaries_ + N_MPI_boundaries_; ++i) {
         std::cout << '\t' << "Element " << i << ": ";
         std::cout << '\t' << '\t';
         std::cout << host_elements[i].faces_[0] << " ";
@@ -127,7 +137,7 @@ void SEM::Mesh_t::print() {
     }
 
     std::cout << std::endl << "N: " << std::endl;
-    for (size_t i = 0; i < N_elements_; ++i) {
+    for (size_t i = 0; i < N_elements_ + N_local_boundaries_ + N_MPI_boundaries_; ++i) {
         std::cout << '\t' << "Element " << i << ": ";
         std::cout << '\t' << '\t';
         std::cout << host_elements[i].N_;
@@ -135,7 +145,7 @@ void SEM::Mesh_t::print() {
     }
 
     std::cout << std::endl << "delta x: " << std::endl;
-    for (size_t i = 0; i < N_elements_; ++i) {
+    for (size_t i = 0; i < N_elements_ + N_local_boundaries_ + N_MPI_boundaries_; ++i) {
         std::cout << '\t' << "Element " << i << ": ";
         std::cout << '\t' << '\t';
         std::cout << host_elements[i].delta_x_;
@@ -164,8 +174,23 @@ void SEM::Mesh_t::print() {
         std::cout << host_faces[i].elements_[1] << std::endl;
     }
 
+    std::cout << std::endl << "Local boundaries elements: " << std::endl;
+    for (size_t i = 0; i < N_local_boundaries_; ++i) {
+        std::cout << '\t' << "Local boundary " << i << ": ";
+        std::cout << '\t' << '\t';
+        std::cout << host_boundary_to_element[i] << std::endl;
+    }
+
+    std::cout << std::endl << "MPI boundaries elements: " << std::endl;
+    for (size_t i = 0; i < N_MPI_boundaries_; ++i) {
+        std::cout << '\t' << "MPI boundary " << i << ": ";
+        std::cout << '\t' << '\t';
+        std::cout << host_boundary_to_element[N_local_boundaries_ + i] << std::endl;
+    }
+
     delete[] host_faces;
     delete[] host_elements;
+    delete[] host_boundary_to_element;
 }
 
 void SEM::Mesh_t::write_file_data(size_t N_interpolation_points, size_t N_elements, deviceFloat time, const deviceFloat* coordinates, const deviceFloat* velocity, const deviceFloat* du_dx, const deviceFloat* intermediate, const deviceFloat* x_L, const deviceFloat* x_R, const int* N, const deviceFloat* sigma, const bool* refine, const bool* coarsen, const deviceFloat* error) {
