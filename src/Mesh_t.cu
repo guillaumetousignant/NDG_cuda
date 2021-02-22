@@ -177,14 +177,14 @@ void SEM::Mesh_t::print() {
     std::cout << std::endl << "Local boundaries elements: " << std::endl;
     for (size_t i = 0; i < N_local_boundaries_; ++i) {
         std::cout << '\t' << "Local boundary " << i << ": ";
-        std::cout << '\t' << '\t';
+        std::cout << '\t';
         std::cout << host_boundary_to_element[i] << std::endl;
     }
 
     std::cout << std::endl << "MPI boundaries elements: " << std::endl;
     for (size_t i = 0; i < N_MPI_boundaries_; ++i) {
         std::cout << '\t' << "MPI boundary " << i << ": ";
-        std::cout << '\t' << '\t';
+        std::cout << '\t';
         std::cout << host_boundary_to_element[N_local_boundaries_ + i] << std::endl;
     }
 

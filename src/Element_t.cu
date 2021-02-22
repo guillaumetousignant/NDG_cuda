@@ -537,5 +537,7 @@ void SEM::local_boundaries(size_t N_elements, size_t N_local_boundaries, Element
     for (unsigned long i = index; i < N_local_boundaries; i += stride) {
         elements[N_elements + i].phi_L_ = elements[boundary_to_element[i]].phi_L_;
         elements[N_elements + i].phi_R_ = elements[boundary_to_element[i]].phi_R_;
+        elements[N_elements + i].phi_prime_L_ = elements[boundary_to_element[i]].phi_prime_L_;
+        elements[N_elements + i].phi_prime_R_ = elements[boundary_to_element[i]].phi_prime_R_;
     }
 }

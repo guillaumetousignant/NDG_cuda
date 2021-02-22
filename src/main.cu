@@ -22,8 +22,6 @@ int main(int argc, char* argv[]) {
     const int initial_N = 4;
     const size_t N_interpolation_points = N_max * 8;
 
-    
-
     // MPI ranks
     MPI_Comm node_communicator;
     MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, 0,
