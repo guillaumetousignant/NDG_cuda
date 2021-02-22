@@ -22,7 +22,7 @@ int main(int argc, char* argv[]) {
     const int initial_N = 4;
     const size_t N_interpolation_points = N_max * 8;
 
-    std::cout << "CFL is: " << CFL << std::endl;
+    
 
     // MPI ranks
     MPI_Comm node_communicator;
@@ -40,21 +40,23 @@ int main(int argc, char* argv[]) {
     // Device selection
     int deviceCount;
     cudaGetDeviceCount(&deviceCount);
-    switch(deviceCount) {
-        case 0:
-            std::cout << "There are no Cuda devices." << std::endl;
-            break;
-        case 1:
-            std::cout << "There is one Cuda device:" << std::endl;
-            break;
-        default:
-            std::cout << "There are " << deviceCount << " Cuda devices:" << std::endl;
-            break;
-    }
-    for (int device = 0; device < deviceCount; ++device) {
-        cudaDeviceProp deviceProp;
-        cudaGetDeviceProperties(&deviceProp, device);
-        std::cout << '\t' << "Device #" << device << " (" << deviceProp.name << ") has compute capability " << deviceProp.major << "." << deviceProp.minor << "." << std::endl;
+    if (node_rank == 0) {
+        switch(deviceCount) {
+            case 0:
+                std::cout << "There are no Cuda devices." << std::endl;
+                break;
+            case 1:
+                std::cout << "There is one Cuda device:" << std::endl;
+                break;
+            default:
+                std::cout << "There are " << deviceCount << " Cuda devices:" << std::endl;
+                break;
+        }
+        for (int device = 0; device < deviceCount; ++device) {
+            cudaDeviceProp deviceProp;
+            cudaGetDeviceProperties(&deviceProp, device);
+            std::cout << '\t' << "Device #" << device << " (" << deviceProp.name << ") has compute capability " << deviceProp.major << "." << deviceProp.minor << "." << std::endl;
+        }
     }
 
     int n_proc_per_gpu = (node_size + deviceCount - 1)/deviceCount;
@@ -66,6 +68,10 @@ int main(int argc, char* argv[]) {
     cudaStreamCreate(&stream); 
     std::cout << "Process with global id " << global_rank << "/" << global_size << " and local id " << node_rank << "/" << node_size << " picked GPU " << device << "/" << deviceCount << " with stream " << device_rank << "/" << device_size << "." << std::endl;
 
+    if (global_rank == 0) {
+        std::cout << "CFL is: " << CFL << std::endl;
+    }
+
     // Initialisation
     auto t_start_init = std::chrono::high_resolution_clock::now();
 
@@ -75,7 +81,7 @@ int main(int argc, char* argv[]) {
     cudaDeviceSynchronize();
 
     auto t_end_init = std::chrono::high_resolution_clock::now();
-    std::cout << "GPU initialisation time: " 
+    std::cout << "Process " << global_rank << "GPU initialisation time: " 
             << std::chrono::duration<double, std::milli>(t_end_init - t_start_init).count()/1000.0 
             << "s." << std::endl;
 
@@ -87,7 +93,7 @@ int main(int argc, char* argv[]) {
     cudaDeviceSynchronize();
 
     auto t_end = std::chrono::high_resolution_clock::now();
-    std::cout << "GPU computation time: " 
+    std::cout << "Process " << global_rank << "GPU computation time: " 
             << std::chrono::duration<double, std::milli>(t_end - t_start).count()/1000.0 
             << "s." << std::endl;
 
