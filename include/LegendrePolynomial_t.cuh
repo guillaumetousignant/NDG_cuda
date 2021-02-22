@@ -10,7 +10,7 @@ namespace SEM {
 
     class LegendrePolynomial_t { 
         public: 
-            static void nodes_and_weights(int N_max, int blockSize, deviceFloat* nodes, deviceFloat* weights);
+            static void nodes_and_weights(int N_max, int blockSize, deviceFloat* nodes, deviceFloat* weights, cudaStream_t &stream);
 
             // Algorithm 22
             __device__

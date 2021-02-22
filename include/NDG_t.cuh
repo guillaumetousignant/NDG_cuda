@@ -7,7 +7,7 @@ namespace SEM {
     template<typename Polynomial>
     class NDG_t { 
         public: 
-            NDG_t(int N_max, size_t N_interpolation_points);
+            NDG_t(int N_max, size_t N_interpolation_points, cudaStream_t &stream);
             ~NDG_t();
 
             int N_max_;

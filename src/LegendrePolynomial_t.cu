@@ -54,10 +54,10 @@ void SEM::legendre_gauss_nodes_and_weights(int N, deviceFloat* nodes, deviceFloa
     }
 }
 
-void SEM::LegendrePolynomial_t::nodes_and_weights(int N_max, int blockSize, deviceFloat* nodes, deviceFloat* weights) {
+void SEM::LegendrePolynomial_t::nodes_and_weights(int N_max, int blockSize, deviceFloat* nodes, deviceFloat* weights, cudaStream_t &stream) {
     for (int N = 0; N <= N_max; ++N) {
         const int numBlocks = ((N + 1)/2 + blockSize) / blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
-        SEM::legendre_gauss_nodes_and_weights<<<numBlocks, blockSize>>>(N, nodes, weights);
+        SEM::legendre_gauss_nodes_and_weights<<<numBlocks, blockSize, 0, stream>>>(N, nodes, weights);
     }
 }
 

@@ -16,7 +16,7 @@ template class SEM::NDG_t<SEM::ChebyshevPolynomial_t>; // Like, I understand why
 template class SEM::NDG_t<SEM::LegendrePolynomial_t>;
 
 template<typename Polynomial>
-SEM::NDG_t<Polynomial>::NDG_t(int N_max, size_t N_interpolation_points) : 
+SEM::NDG_t<Polynomial>::NDG_t(int N_max, size_t N_interpolation_points, cudaStream_t &stream) : 
         N_max_(N_max), 
         N_interpolation_points_(N_interpolation_points),
         vector_length_((N_max_ + 1) * (N_max_ + 2)/2), 
@@ -35,12 +35,12 @@ SEM::NDG_t<Polynomial>::NDG_t(int N_max, size_t N_interpolation_points) :
     cudaMalloc(&derivative_matrices_hat_, matrix_length_ * sizeof(deviceFloat));
     cudaMalloc(&interpolation_matrices_, interpolation_length_ * sizeof(deviceFloat));
 
-    Polynomial::nodes_and_weights(N_max_, poly_blockSize, nodes_, weights_);
+    Polynomial::nodes_and_weights(N_max_, poly_blockSize, nodes_, weights_, stream);
 
     // Nodes are needed to compute barycentric weights
     for (int N = 0; N <= N_max_; ++N) {
         const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
-        SEM::calculate_barycentric_weights<<<vector_numBlocks, poly_blockSize>>>(N, nodes_, barycentric_weights_);
+        SEM::calculate_barycentric_weights<<<vector_numBlocks, poly_blockSize, 0, stream>>>(N, nodes_, barycentric_weights_);
     }
 
     // We need the barycentric weights for derivative matrix, interpolation matrices and Lagrange interpolants
@@ -48,30 +48,30 @@ SEM::NDG_t<Polynomial>::NDG_t(int N_max, size_t N_interpolation_points) :
     for (int N = 0; N <= N_max_; ++N) {
         const dim3 matrix_numBlocks((N +  matrix_blockSize.x) / matrix_blockSize.x, (N +  matrix_blockSize.y) / matrix_blockSize.y); // Should be (N + poly_blockSize - 1) if N is not inclusive
         const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
-        SEM::polynomial_derivative_matrices<<<matrix_numBlocks, matrix_blockSize>>>(N, nodes_, barycentric_weights_, derivative_matrices_);
-        SEM::create_interpolation_matrices<<<interpolation_numBlocks, interpolation_blockSize>>>(N, N_interpolation_points_, nodes_, barycentric_weights_, interpolation_matrices_);
-        SEM::lagrange_interpolating_polynomials<<<vector_numBlocks, poly_blockSize>>>(-1.0f, N, nodes_, barycentric_weights_, lagrange_interpolant_left_);
-        SEM::lagrange_interpolating_polynomials<<<vector_numBlocks, poly_blockSize>>>(1.0f, N, nodes_, barycentric_weights_, lagrange_interpolant_right_);
-        SEM::lagrange_interpolating_derivative_polynomials<<<vector_numBlocks, poly_blockSize>>>(-1.0f, N, nodes_, barycentric_weights_, lagrange_interpolant_derivative_left_);
-        SEM::lagrange_interpolating_derivative_polynomials<<<vector_numBlocks, poly_blockSize>>>(1.0f, N, nodes_, barycentric_weights_, lagrange_interpolant_derivative_right_);
+        SEM::polynomial_derivative_matrices<<<matrix_numBlocks, matrix_blockSize, 0, stream>>>(N, nodes_, barycentric_weights_, derivative_matrices_);
+        SEM::create_interpolation_matrices<<<interpolation_numBlocks, interpolation_blockSize, 0, stream>>>(N, N_interpolation_points_, nodes_, barycentric_weights_, interpolation_matrices_);
+        SEM::lagrange_interpolating_polynomials<<<vector_numBlocks, poly_blockSize, 0, stream>>>(-1.0f, N, nodes_, barycentric_weights_, lagrange_interpolant_left_);
+        SEM::lagrange_interpolating_polynomials<<<vector_numBlocks, poly_blockSize, 0, stream>>>(1.0f, N, nodes_, barycentric_weights_, lagrange_interpolant_right_);
+        SEM::lagrange_interpolating_derivative_polynomials<<<vector_numBlocks, poly_blockSize, 0, stream>>>(-1.0f, N, nodes_, barycentric_weights_, lagrange_interpolant_derivative_left_);
+        SEM::lagrange_interpolating_derivative_polynomials<<<vector_numBlocks, poly_blockSize, 0, stream>>>(1.0f, N, nodes_, barycentric_weights_, lagrange_interpolant_derivative_right_);
     }
 
     // Then we calculate the derivative matrix diagonal and normalize the Lagrange interpolants
     const int poly_numBlocks = (N_max_ + poly_blockSize) / poly_blockSize;
-    SEM::normalize_lagrange_interpolating_polynomials<<<poly_numBlocks, poly_blockSize>>>(N_max_, lagrange_interpolant_left_);
-    SEM::normalize_lagrange_interpolating_polynomials<<<poly_numBlocks, poly_blockSize>>>(N_max_, lagrange_interpolant_right_);
-    SEM::normalize_lagrange_interpolating_derivative_polynomials<<<poly_numBlocks, poly_blockSize>>>(-1.0f, N_max_, nodes_, barycentric_weights_, lagrange_interpolant_derivative_left_);
-    SEM::normalize_lagrange_interpolating_derivative_polynomials<<<poly_numBlocks, poly_blockSize>>>(1.0f, N_max_, nodes_, barycentric_weights_, lagrange_interpolant_derivative_right_);
+    SEM::normalize_lagrange_interpolating_polynomials<<<poly_numBlocks, poly_blockSize, 0, stream>>>(N_max_, lagrange_interpolant_left_);
+    SEM::normalize_lagrange_interpolating_polynomials<<<poly_numBlocks, poly_blockSize, 0, stream>>>(N_max_, lagrange_interpolant_right_);
+    SEM::normalize_lagrange_interpolating_derivative_polynomials<<<poly_numBlocks, poly_blockSize, 0, stream>>>(-1.0f, N_max_, nodes_, barycentric_weights_, lagrange_interpolant_derivative_left_);
+    SEM::normalize_lagrange_interpolating_derivative_polynomials<<<poly_numBlocks, poly_blockSize, 0, stream>>>(1.0f, N_max_, nodes_, barycentric_weights_, lagrange_interpolant_derivative_right_);
     for (int N = 0; N <= N_max_; ++N) {
         const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
-        SEM::polynomial_derivative_matrices_diagonal<<<vector_numBlocks, poly_blockSize>>>(N, derivative_matrices_);
+        SEM::polynomial_derivative_matrices_diagonal<<<vector_numBlocks, poly_blockSize, 0, stream>>>(N, derivative_matrices_);
     }
 
     // All the derivative matrix has to be computed before D^
     for (int N = 0; N <= N_max_; ++N) {
         const dim3 matrix_numBlocks((N +  matrix_blockSize.x) / matrix_blockSize.x, (N +  matrix_blockSize.y) / matrix_blockSize.y); // Should be (N + poly_blockSize - 1) if N is not inclusive
-        SEM::polynomial_cg_derivative_matrices<<<matrix_numBlocks, matrix_blockSize>>>(N, weights_, derivative_matrices_, g_hat_derivative_matrices_);
-        SEM::polynomial_derivative_matrices_hat<<<matrix_numBlocks, matrix_blockSize>>>(N, weights_, derivative_matrices_, derivative_matrices_hat_);
+        SEM::polynomial_cg_derivative_matrices<<<matrix_numBlocks, matrix_blockSize, 0, stream>>>(N, weights_, derivative_matrices_, g_hat_derivative_matrices_);
+        SEM::polynomial_derivative_matrices_hat<<<matrix_numBlocks, matrix_blockSize, 0, stream>>>(N, weights_, derivative_matrices_, derivative_matrices_hat_);
     }
 }
 
