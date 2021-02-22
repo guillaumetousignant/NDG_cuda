@@ -29,9 +29,9 @@ int main(int argc, char* argv[]) {
     MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, 0,
                         MPI_INFO_NULL, &node_communicator);
     int global_rank;
-    MPI_Comm_rank(node_communicator, &global_rank);
+    MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
     int global_size;
-    MPI_Comm_size(node_communicator, &global_size);
+    MPI_Comm_size(MPI_COMM_WORLD, &global_size);
     int node_rank;
     MPI_Comm_rank(node_communicator, &node_rank);
     int node_size;
