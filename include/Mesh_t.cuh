@@ -23,7 +23,8 @@ namespace SEM {
             int initial_N_;
             Element_t* elements_;
             Face_t* faces_;
-            size_t* boundary_to_element_;
+            size_t* local_boundary_to_element_;
+            size_t* MPI_boundary_to_element_;
 
             void set_initial_conditions(const deviceFloat* nodes);
             void print();
@@ -40,6 +41,15 @@ namespace SEM {
             deviceFloat* host_delta_t_array_;
             unsigned long* device_refine_array_;
             unsigned long* host_refine_array_;
+            deviceFloat* device_boundary_phi_L_;
+            deviceFloat* host_boundary_phi_L_;
+            deviceFloat* device_boundary_phi_R_;
+            deviceFloat* host_boundary_phi_R_;
+            deviceFloat* device_boundary_phi_prime_L_;
+            deviceFloat* host_boundary_phi_prime_L_;
+            deviceFloat* device_boundary_phi_prime_R_;
+            deviceFloat* host_boundary_phi_prime_R_;
+            deviceFloat* host_MPI_boundary_to_element_;
             cudaStream_t &stream_;
 
             void write_file_data(size_t N_interpolation_points, size_t N_elements, deviceFloat time, const deviceFloat* coordinates, const deviceFloat* velocity, const deviceFloat* du_dx, const deviceFloat* intermediate, const deviceFloat* x_L, const deviceFloat* x_R, const int* N, const deviceFloat* sigma, const bool* refine, const bool* coarsen, const deviceFloat* error);

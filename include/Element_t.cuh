@@ -65,7 +65,7 @@ namespace SEM {
     void build_elements(size_t N_elements, int N, Element_t* elements, deviceFloat x_min, deviceFloat x_max);
 
     __global__
-    void build_boundaries(size_t N_elements, size_t N_local_boundaries, size_t N_MPI_boundaries, int N, Element_t* elements, deviceFloat x_min, deviceFloat x_max, size_t global_element_offset, size_t* boundary_to_element);
+    void build_boundaries(size_t N_elements, size_t N_local_boundaries, size_t N_MPI_boundaries, int N, Element_t* elements, deviceFloat x_min, deviceFloat x_max, size_t global_element_offset, size_t* local_boundary_to_element, size_t* MPI_boundary_to_element);
 
     __global__
     void free_elements(size_t N_elements, Element_t* elements);
@@ -105,8 +105,10 @@ namespace SEM {
     bool almost_equal2(deviceFloat x, deviceFloat y);
 
     __global__
-    void local_boundaries(size_t N_elements, size_t N_local_boundaries, Element_t* elements, size_t* boundary_to_element);
+    void local_boundaries(size_t N_elements, size_t N_local_boundaries, Element_t* elements, const size_t* local_boundary_to_element);
 
+    __global__
+    void get_MPI_boundaries(size_t N_elements, size_t N_local_boundaries, size_t N_MPI_boundaries, const Element_t* elements, const size_t* MPI_boundary_to_element_, deviceFloat* phi_L, deviceFloat* phi_R, deviceFloat* phi_prime_L, deviceFloat* phi_prime_R);
 }
 
 #endif
