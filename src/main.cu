@@ -81,7 +81,7 @@ int main(int argc, char* argv[]) {
     cudaDeviceSynchronize();
 
     auto t_end_init = std::chrono::high_resolution_clock::now();
-    std::cout << "Process " << global_rank << "GPU initialisation time: " 
+    std::cout << "Process " << global_rank << " GPU initialisation time: " 
             << std::chrono::duration<double, std::milli>(t_end_init - t_start_init).count()/1000.0 
             << "s." << std::endl;
 
@@ -93,7 +93,7 @@ int main(int argc, char* argv[]) {
     cudaDeviceSynchronize();
 
     auto t_end = std::chrono::high_resolution_clock::now();
-    std::cout << "Process " << global_rank << "GPU computation time: " 
+    std::cout << "Process " << global_rank << " GPU computation time: " 
             << std::chrono::duration<double, std::milli>(t_end - t_start).count()/1000.0 
             << "s." << std::endl;
 

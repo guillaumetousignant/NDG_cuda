@@ -16,7 +16,7 @@ constexpr int faces_blockSize = 32; // Same number of faces as elements for peri
 constexpr int boundaries_blockSize = 32;
 
 SEM::Mesh_t::Mesh_t(size_t N_elements, int initial_N, deviceFloat x_min, deviceFloat x_max, cudaStream_t &stream) : 
-        N_elements_global_(N_elements)        
+        N_elements_global_(N_elements),        
         stream_(stream) {
 
     int global_rank;
@@ -25,7 +25,7 @@ SEM::Mesh_t::Mesh_t(size_t N_elements, int initial_N, deviceFloat x_min, deviceF
     MPI_Comm_size(MPI_COMM_WORLD, &global_size);
 
     int n_elements_per_process = (N_elements_global_ + global_size - 1)/global_size;
-    N_elements_ = (global_rank == global_size - 1) ? n_elements_per_process + N_elements_global_ - n_elements_per_process * global_size
+    N_elements_ = (global_rank == global_size - 1) ? n_elements_per_process + N_elements_global_ - n_elements_per_process * global_size : n_elements_per_process;
     if (N_elements_ == N_elements_global_) {
         N_local_boundaries_ = 2;
         N_MPI_boundaries_ = 0;
