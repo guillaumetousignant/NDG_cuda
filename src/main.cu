@@ -60,8 +60,9 @@ int main(int argc, char* argv[]) {
     int n_proc_per_gpu = (node_size + deviceCount - 1)/deviceCount;
     int device = node_rank/n_proc_per_gpu;
     int device_rank = node_rank%n_proc_per_gpu;
+    int device_size = (device == deviceCount - 1) ? n_proc_per_gpu + node_size - n_proc_per_gpu * deviceCount : n_proc_per_gpu;
     cudaSetDevice(device);
-    std::cout << "Process with global id " << global_rank << "/" << global_size << " and local id " << node_rank << "/" << node_size << " picked GPU " << device << "/" << deviceCount << " with stream " << device_rank << "." << std::endl;
+    std::cout << "Process with global id " << global_rank << "/" << global_size << " and local id " << node_rank << "/" << node_size << " picked GPU " << device << "/" << deviceCount << " with stream " << device_rank << "/" << device_size << "." << std::endl;
 
     // Initialisation
     auto t_start_init = std::chrono::high_resolution_clock::now();
