@@ -134,6 +134,7 @@ void SEM::Mesh_t::print() {
     std::cout << "N local boundaries: " << N_local_boundaries_ << std::endl;
     std::cout << "N MPI boundaries: " << N_MPI_boundaries_ << std::endl;
     std::cout << "Global element offset: " << global_element_offset_ << std::endl;
+    std::cout << "Number of elements per process: " << N_elements_per_process_ << std::endl;
     std::cout << "Initial N: " << initial_N_ << std::endl;
 
     std::cout << std::endl << "Phi interpolated: " << std::endl;
