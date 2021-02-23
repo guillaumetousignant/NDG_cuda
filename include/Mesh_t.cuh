@@ -62,7 +62,7 @@ namespace SEM {
             MPI_Request* requests_;
             MPI_Status* statuses_;
 
-            void write_file_data(size_t N_interpolation_points, size_t N_elements, deviceFloat time, const deviceFloat* coordinates, const deviceFloat* velocity, const deviceFloat* du_dx, const deviceFloat* intermediate, const deviceFloat* x_L, const deviceFloat* x_R, const int* N, const deviceFloat* sigma, const bool* refine, const bool* coarsen, const deviceFloat* error);
+            void write_file_data(size_t N_interpolation_points, size_t N_elements, deviceFloat time, int rank, const deviceFloat* coordinates, const deviceFloat* velocity, const deviceFloat* du_dx, const deviceFloat* intermediate, const deviceFloat* x_L, const deviceFloat* x_R, const int* N, const deviceFloat* sigma, const bool* refine, const bool* coarsen, const deviceFloat* error);
             deviceFloat get_delta_t(const deviceFloat CFL);
             void adapt(int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights);
             void boundary_conditions();
