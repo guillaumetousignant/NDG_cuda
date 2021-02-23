@@ -7,6 +7,8 @@
 #include "float_types.h"
 #include <vector>
 #include <limits>
+#include <mpi.h>
+#include <array>
 
 namespace SEM {
     class Mesh_t {
@@ -20,11 +22,13 @@ namespace SEM {
             size_t N_local_boundaries_;
             size_t N_MPI_boundaries_;
             size_t global_element_offset_;
+            size_t N_elements_per_process_;
             int initial_N_;
             Element_t* elements_;
             Face_t* faces_;
             size_t* local_boundary_to_element_;
             size_t* MPI_boundary_to_element_;
+            size_t* MPI_boundary_from_element_;
 
             void set_initial_conditions(const deviceFloat* nodes);
             void print();
@@ -50,7 +54,13 @@ namespace SEM {
             deviceFloat* device_boundary_phi_prime_R_;
             deviceFloat* host_boundary_phi_prime_R_;
             deviceFloat* host_MPI_boundary_to_element_;
+            deviceFloat* host_MPI_boundary_from_element_;
             cudaStream_t &stream_;
+
+            std::array<double, 4>* send_buffers_;
+            std::array<double, 4>* receive_buffers_;
+            MPI_Request* requests_;
+            MPI_Status* statuses_;
 
             void write_file_data(size_t N_interpolation_points, size_t N_elements, deviceFloat time, const deviceFloat* coordinates, const deviceFloat* velocity, const deviceFloat* du_dx, const deviceFloat* intermediate, const deviceFloat* x_L, const deviceFloat* x_R, const int* N, const deviceFloat* sigma, const bool* refine, const bool* coarsen, const deviceFloat* error);
             deviceFloat get_delta_t(const deviceFloat CFL);

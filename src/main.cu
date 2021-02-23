@@ -7,7 +7,7 @@
 #include <chrono>
 #include <vector>
 #include <array>
-#include "mpi.h"
+#include <mpi.h>
 
 int main(int argc, char* argv[]) {
     MPI_Init(&argc, &argv);
@@ -95,6 +95,7 @@ int main(int argc, char* argv[]) {
             << std::chrono::duration<double, std::milli>(t_end - t_start).count()/1000.0 
             << "s." << std::endl;
 
+    cudaStreamDestroy(stream);
     MPI_Finalize();
     return 0;
 }

@@ -7,7 +7,6 @@
 #include <iomanip>
 #include <filesystem>
 #include <limits>
-#include "mpi.h"
 
 namespace fs = std::filesystem;
 
@@ -24,8 +23,8 @@ SEM::Mesh_t::Mesh_t(size_t N_elements, int initial_N, deviceFloat x_min, deviceF
     int global_size;
     MPI_Comm_size(MPI_COMM_WORLD, &global_size);
 
-    int n_elements_per_process = (N_elements_global_ + global_size - 1)/global_size;
-    N_elements_ = (global_rank == global_size - 1) ? n_elements_per_process + N_elements_global_ - n_elements_per_process * global_size : n_elements_per_process;
+    N_elements_per_process_ = (N_elements_global_ + global_size - 1)/global_size;
+    N_elements_ = (global_rank == global_size - 1) ? N_elements_per_process_ + N_elements_global_ - N_elements_per_process_ * global_size : N_elements_per_process_;
     if (N_elements_ == N_elements_global_) {
         N_local_boundaries_ = 2;
         N_MPI_boundaries_ = 0;
@@ -36,7 +35,7 @@ SEM::Mesh_t::Mesh_t(size_t N_elements, int initial_N, deviceFloat x_min, deviceF
     }
 
     N_faces_ = N_elements_ + N_local_boundaries_ + N_MPI_boundaries_ - 1; 
-    global_element_offset_ = global_rank * n_elements_per_process;
+    global_element_offset_ = global_rank * N_elements_per_process_;
     initial_N_ = initial_N;
     elements_numBlocks_ = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
     faces_numBlocks_ = (N_faces_ + faces_blockSize - 1) / faces_blockSize;
@@ -49,11 +48,17 @@ SEM::Mesh_t::Mesh_t(size_t N_elements, int initial_N, deviceFloat x_min, deviceF
     host_boundary_phi_prime_L_ = new deviceFloat[N_MPI_boundaries_];
     host_boundary_phi_prime_R_ = new deviceFloat[N_MPI_boundaries_];
     host_MPI_boundary_to_element_ = new size_t[N_MPI_boundaries_];
+    host_MPI_boundary_from_element_ = new size_t[N_MPI_boundaries_];
+    send_buffers_ = new std::array<double, 4>[N_MPI_boundaries_];
+    receive_buffers_ = new std::array<double, 4>[N_MPI_boundaries_];
+    requests_ = new MPI_Request[N_MPI_boundaries_*2];
+    statuses_ = new MPI_Status[N_MPI_boundaries_*2];
 
     cudaMalloc(&elements_, (N_elements_ + N_local_boundaries_ + N_MPI_boundaries_) * sizeof(Element_t));
     cudaMalloc(&faces_, N_faces_ * sizeof(Face_t));
     cudaMalloc(&local_boundary_to_element_, N_local_boundaries_ * sizeof(size_t));
     cudaMalloc(&MPI_boundary_to_element_, N_MPI_boundaries_ * sizeof(size_t));
+    cudaMalloc(&MPI_boundary_from_element_, N_MPI_boundaries_ * sizeof(size_t));
     cudaMalloc(&device_delta_t_array_, elements_numBlocks_ * sizeof(deviceFloat));
     cudaMalloc(&device_refine_array_, elements_numBlocks_ * sizeof(unsigned long));
     cudaMalloc(&device_boundary_phi_L_, N_MPI_boundaries_ * sizeof(deviceFloat));
@@ -62,12 +67,15 @@ SEM::Mesh_t::Mesh_t(size_t N_elements, int initial_N, deviceFloat x_min, deviceF
     cudaMalloc(&device_boundary_phi_prime_R_, N_MPI_boundaries_ * sizeof(deviceFloat));
 
     const deviceFloat delta_x = (x_max - x_min)/N_elements_global_;
-    const deviceFloat x_min_local = x_min + delta_x * global_rank * n_elements_per_process;
+    const deviceFloat x_min_local = x_min + delta_x * global_rank * N_elements_per_process_;
     const deviceFloat x_max_local = x_min_local + N_elements_ * delta_x;
 
     SEM::build_elements<<<elements_numBlocks_, elements_blockSize, 0, stream_>>>(N_elements_, initial_N_, elements_, x_min_local, x_max_local);
-    SEM::build_boundaries<<<boundaries_numBlocks_, boundaries_blockSize, 0, stream_>>>(N_elements_, N_local_boundaries_, N_MPI_boundaries_, initial_N_, elements_, x_min_local, x_max_local, global_element_offset_, local_boundary_to_element_, MPI_boundary_to_element_);
+    SEM::build_boundaries<<<boundaries_numBlocks_, boundaries_blockSize, 0, stream_>>>(N_elements_, N_elements_global_, N_local_boundaries_, N_MPI_boundaries_, initial_N_, elements_, x_min_local, x_max_local, global_element_offset_, local_boundary_to_element_, MPI_boundary_to_element_, MPI_boundary_from_element_);
     SEM::build_faces<<<faces_numBlocks_, faces_blockSize, 0, stream_>>>(N_faces_, faces_);
+
+    cudaMemcpy(host_MPI_boundary_to_element_, MPI_boundary_to_element_, N_MPI_boundaries_ * sizeof(size_t), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_MPI_boundary_from_element_, MPI_boundary_from_element_, N_MPI_boundaries_ * sizeof(size_t), cudaMemcpyDeviceToHost);
 }
 
 SEM::Mesh_t::~Mesh_t() {
@@ -76,6 +84,7 @@ SEM::Mesh_t::~Mesh_t() {
     cudaFree(faces_);
     cudaFree(local_boundary_to_element_);
     cudaFree(MPI_boundary_to_element_);
+    cudaFree(MPI_boundary_from_element_);
     cudaFree(device_delta_t_array_);
     cudaFree(device_refine_array_);
     cudaFree(device_boundary_phi_L_);
@@ -90,6 +99,11 @@ SEM::Mesh_t::~Mesh_t() {
     delete[] host_boundary_phi_prime_L_;
     delete[] host_boundary_phi_prime_R_;
     delete[] host_MPI_boundary_to_element_;
+    delete[] host_MPI_boundary_from_element_;
+    delete[] send_buffers_;
+    delete[] receive_buffers_;
+    delete[] requests_;
+    delete[] statuses_;
 }
 
 void SEM::Mesh_t::set_initial_conditions(const deviceFloat* nodes) {
@@ -106,6 +120,7 @@ void SEM::Mesh_t::print() {
     cudaMemcpy(host_elements, elements_, (N_elements_ + N_local_boundaries_ + N_MPI_boundaries_) * sizeof(Element_t), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_local_boundary_to_element, local_boundary_to_element_, N_local_boundaries_ * sizeof(size_t), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_MPI_boundary_to_element, MPI_boundary_to_element_, N_MPI_boundaries_ * sizeof(size_t), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_MPI_boundary_from_element, MPI_boundary_from_element_, N_MPI_boundaries_ * sizeof(size_t), cudaMemcpyDeviceToHost);
 
     // Invalidate GPU pointers, or else they will be deleted on the CPU, where they point to random stuff
     for (size_t i = 0; i < N_elements_ + N_local_boundaries_ + N_MPI_boundaries_; ++i) {
@@ -452,6 +467,7 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
     elements_numBlocks_ = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
     faces_numBlocks_ = (N_faces_ + faces_blockSize - 1) / faces_blockSize;
     boundaries_numBlocks_ = (N_local_boundaries_ + N_MPI_boundaries_ + boundaries_blockSize - 1) / boundaries_blockSize;
+    N_elements_per_process_ = N_elements_per_process_; // CHECK change
 
     delete[] host_delta_t_array_;
     delete[] host_refine_array_;
@@ -460,6 +476,11 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
     delete[] host_boundary_phi_prime_L_;
     delete[] host_boundary_phi_prime_R_;
     delete[] host_MPI_boundary_to_element_;
+    delete[] host_MPI_boundary_from_element_;
+    delete[] send_buffers_;
+    delete[] receive_buffers_;
+    delete[] requests_;
+    delete[] statuses_;
     host_delta_t_array_ = new deviceFloat[elements_numBlocks_];
     host_refine_array_ = new unsigned long[elements_numBlocks_];
     host_boundary_phi_L_ = new deviceFloat[N_MPI_boundaries_];
@@ -467,9 +488,15 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
     host_boundary_phi_prime_L_ = new deviceFloat[N_MPI_boundaries_];
     host_boundary_phi_prime_R_ = new deviceFloat[N_MPI_boundaries_];
     host_MPI_boundary_to_element_ = new size_t[N_MPI_boundaries_];
+    host_MPI_boundary_from_element_ = new size_t[N_MPI_boundaries_];
+    send_buffers_ = new std::array<double, 4>[N_MPI_boundaries_];
+    receive_buffers_ = new std::array<double, 4>[N_MPI_boundaries_];
+    requests_ = new MPI_Request[N_MPI_boundaries_*2];
+    statuses_ = new MPI_Status[N_MPI_boundaries_*2];
 
     cudaFree(local_boundary_to_element_);
     cudaFree(MPI_boundary_to_element_);
+    cudaFree(MPI_boundary_from_element_);
     cudaFree(device_delta_t_array_);
     cudaFree(device_refine_array_);
     cudaFree(device_boundary_phi_L_);
@@ -478,22 +505,55 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
     cudaFree(device_boundary_phi_prime_R_);
     cudaMalloc(&local_boundary_to_element_, N_MPI_boundaries_ * sizeof(deviceFloat));
     cudaMalloc(&MPI_boundary_to_element_, N_MPI_boundaries_ * sizeof(size_t));
+    cudaMalloc(&MPI_boundary_from_element_, N_MPI_boundaries_ * sizeof(size_t));
     cudaMalloc(&device_delta_t_array_, elements_numBlocks_ * sizeof(deviceFloat));
     cudaMalloc(&device_refine_array_, elements_numBlocks_ * sizeof(unsigned long));
     cudaMalloc(&device_boundary_phi_L_, N_MPI_boundaries_ * sizeof(deviceFloat));
     cudaMalloc(&device_boundary_phi_R_, N_MPI_boundaries_ * sizeof(deviceFloat));
     cudaMalloc(&device_boundary_phi_prime_L_, N_MPI_boundaries_ * sizeof(deviceFloat));
     cudaMalloc(&device_boundary_phi_prime_R_, N_MPI_boundaries_ * sizeof(deviceFloat));
+
+    // CHECK create boundaries here.
+
+    cudaMemcpy(host_MPI_boundary_to_element_, MPI_boundary_to_element_, N_MPI_boundaries_ * sizeof(size_t), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_MPI_boundary_from_element_, MPI_boundary_from_element_, N_MPI_boundaries_ * sizeof(size_t), cudaMemcpyDeviceToHost);
 }
 
 void SEM::Mesh_t::boundary_conditions() {
     SEM::local_boundaries<<<boundaries_numBlocks_, boundaries_blockSize, 0, stream_>>>(N_elements_, N_local_boundaries_, elements_, local_boundary_to_element_);
-    SEM::get_MPI_boundaries<<<boundaries_numBlocks_, boundaries_blockSize, 0, stream_>>>(N_elements_, N_local_boundaries_, N_MPI_boundaries_, elements_, MPI_boundary_to_element_, device_boundary_phi_L_, device_boundary_phi_R_, device_boundary_phi_prime_L_, device_boundary_phi_prime_R_);
+    SEM::get_MPI_boundaries<<<boundaries_numBlocks_, boundaries_blockSize, 0, stream_>>>(N_elements_, N_local_boundaries_, N_MPI_boundaries_, elements_, device_boundary_phi_L_, device_boundary_phi_R_, device_boundary_phi_prime_L_, device_boundary_phi_prime_R_);
+    
     cudaMemcpy(host_boundary_phi_L_, device_boundary_phi_L_, N_MPI_boundaries_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_boundary_phi_R_, device_boundary_phi_R_, N_MPI_boundaries_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_boundary_phi_prime_L_, device_boundary_phi_prime_L_, N_MPI_boundaries_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_boundary_phi_prime_­R_, device_boundary_phi_prime_R_, N_MPI_boundaries_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_MPI_boundary_to_element_, MPI_boundary_to_element_, N_MPI_boundaries_ * sizeof(size_t), cudaMemcpyDeviceToHost);
+
+    for (size_t i = 0; i < N_MPI_boundaries_; ++i) {
+        send_buffers_[i] = {host_boundary_phi_L_[i],
+                            host_boundary_phi_R_[i],
+                            host_boundary_phi_prime_L_[i],
+                            host_boundary_phi_prime_­R_[i]};
+        const int destination = host_MPI_boundary_to_element_[i]/N_elements_per_process_;
+
+        MPI_Irecv(&receive_buffers_[i][0], 4, MPI_DOUBLE, destination, host_MPI_boundary_to_element_[i], MPI_COMM_WORLD, &requests_[i]);
+        MPI_Isend(&send_buffers_[i][0], 4, MPI_DOUBLE, destination, host_MPI_boundary_to_element_[i], MPI_COMM_WORLD, &requests_[i + N_MPI_boundaries_]);
+    }
+
+    MPI_Waitall(N_MPI_boundaries_, requests_, statuses_);
+
+    for (size_t i = 0; i < N_MPI_boundaries_; ++i) {
+        host_boundary_phi_L_[i] = receive_buffers_[i][0];
+        host_boundary_phi_R_[i] = receive_buffers_[i][1];
+        host_boundary_phi_prime_L_[i] = receive_buffers_[i][2];
+        host_boundary_phi_prime_R_[i] = receive_buffers_[i][3];
+    }
+
+    cudaMemcpy(device_boundary_phi_L_, host_boundary_phi_L_, N_MPI_boundaries_ * sizeof(deviceFloat), cudaMemcpyHostToDevice);
+    cudaMemcpy(device_boundary_phi_R_, host_boundary_phi_R_, N_MPI_boundaries_ * sizeof(deviceFloat), cudaMemcpyHostToDevice);
+    cudaMemcpy(device_boundary_phi_prime_L_, host_boundary_phi_prime_L_, N_MPI_boundaries_ * sizeof(deviceFloat), cudaMemcpyHostToDevice);
+    cudaMemcpy(device_boundary_phi_prime_­R_, host_boundary_phi_prime_R_, N_MPI_boundaries_ * sizeof(deviceFloat), cudaMemcpyHostToDevice);
+
+    SEM::put_MPI_boundaries<<<boundaries_numBlocks_, boundaries_blockSize, 0, stream_>>>(N_elements_, N_local_boundaries_, N_MPI_boundaries_, elements_, device_boundary_phi_L_, device_boundary_phi_R_, device_boundary_phi_prime_L_, device_boundary_phi_prime_R_);
 }
 
 __global__
