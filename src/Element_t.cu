@@ -324,7 +324,7 @@ void SEM::build_boundaries(size_t N_elements, size_t N_elements_global, size_t N
             face_R = N_elements + N_local_boundaries + N_MPI_boundaries - 2;
             element_x_min = x_max;
             element_x_max = x_max + delta_x;
-            MPI_boundary_to_element[i] = (global_element_offset + N_elements + 1 == N_elements_global) ? 0 : global_element_offset + N_elements;
+            MPI_boundary_to_element[i] = (global_element_offset + N_elements == N_elements_global) ? 0 : global_element_offset + N_elements;
             MPI_boundary_from_element[i] = global_element_offset + N_elements - 1;
         }
 
