@@ -16,8 +16,11 @@ TEST_CASE("ChebyshevPolynomials", "Checks the Chebyshev polynomials"){
     const size_t offset_1D = N_test * (N_test + 1) /2;
     const size_t offset_2D = N_test * (N_test + 1) * (2 * N_test + 1) /6;
     const double error = 1e-6;
+
+    cudaStream_t stream;
+    cudaStreamCreate(&stream); 
     
-    SEM::NDG_t<SEM::ChebyshevPolynomial_t> NDG(N_max, N_interpolation_points);
+    SEM::NDG_t<SEM::ChebyshevPolynomial_t> NDG(N_max, N_interpolation_points, stream);
 
     deviceFloat* host_nodes = new deviceFloat[NDG.vector_length_];
     deviceFloat* host_weights = new deviceFloat[NDG.vector_length_];
@@ -155,6 +158,7 @@ TEST_CASE("ChebyshevPolynomials", "Checks the Chebyshev polynomials"){
         REQUIRE(std::abs(phi_prime_R - phi_prime_R_expected) < error);
     }
 
+    cudaStreamDestroy(stream);
     delete[] host_nodes;
     delete[] host_weights;
     delete[] host_barycentric_weights;
@@ -175,8 +179,11 @@ TEST_CASE("LegendrePolynomials", "Checks the Legendre polynomials"){
     const size_t offset_1D = N_test * (N_test + 1) /2;
     const size_t offset_2D = N_test * (N_test + 1) * (2 * N_test + 1) /6;
     const double error = 1e-6;
+
+    cudaStream_t stream;
+    cudaStreamCreate(&stream); 
     
-    SEM::NDG_t<SEM::LegendrePolynomial_t> NDG(N_max, N_interpolation_points);
+    SEM::NDG_t<SEM::LegendrePolynomial_t> NDG(N_max, N_interpolation_points, stream);
 
     deviceFloat* host_nodes = new deviceFloat[NDG.vector_length_];
     deviceFloat* host_weights = new deviceFloat[NDG.vector_length_];
@@ -314,6 +321,7 @@ TEST_CASE("LegendrePolynomials", "Checks the Legendre polynomials"){
         REQUIRE(std::abs(phi_prime_R - phi_prime_R_expected) < error);
     }
 
+    cudaStreamDestroy(stream);
     delete[] host_nodes;
     delete[] host_weights;
     delete[] host_barycentric_weights;

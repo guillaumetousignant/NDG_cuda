@@ -53,8 +53,8 @@ namespace SEM {
             deviceFloat* host_boundary_phi_prime_L_;
             deviceFloat* device_boundary_phi_prime_R_;
             deviceFloat* host_boundary_phi_prime_R_;
-            deviceFloat* host_MPI_boundary_to_element_;
-            deviceFloat* host_MPI_boundary_from_element_;
+            size_t* host_MPI_boundary_to_element_;
+            size_t* host_MPI_boundary_from_element_;
             cudaStream_t &stream_;
 
             std::array<double, 4>* send_buffers_;
