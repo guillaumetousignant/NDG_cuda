@@ -545,15 +545,18 @@ void SEM::local_boundaries(size_t N_elements, size_t N_local_boundaries, Element
 }
 
 __global__
-void SEM::get_MPI_boundaries(size_t N_elements, size_t N_local_boundaries, size_t N_MPI_boundaries, const Element_t* elements, deviceFloat* phi_L, deviceFloat* phi_R, deviceFloat* phi_prime_L, deviceFloat* phi_prime_R) {
+void SEM::get_MPI_boundaries(size_t N_elements, size_t N_local_boundaries, size_t N_MPI_boundaries, const Element_t* elements, const Face_t* faces, deviceFloat* phi_L, deviceFloat* phi_R, deviceFloat* phi_prime_L, deviceFloat* phi_prime_R) {
     const unsigned long index = blockIdx.x * blockDim.x + threadIdx.x;
     const unsigned long stride = blockDim.x * gridDim.x;
     
     for (unsigned long i = index; i < N_MPI_boundaries; i += stride) {
-        phi_L[i] = elements[N_elements + N_local_boundaries + i].phi_L_;
-        phi_R[i] = elements[N_elements + N_local_boundaries + i].phi_R_;
-        phi_prime_L[i] = elements[N_elements + N_local_boundaries + i].phi_prime_L_;
-        phi_prime_R[i] = elements[N_elements + N_local_boundaries + i].phi_prime_R_;
+        const Element_t& boundary_element = elements[N_elements + N_local_boundaries + i];
+        const Face_t& boundary_face = faces[boundary_element.faces_[0]];
+        const Element_t& domain_element = elements[boundary_face.elements_[boundary_face.elements_[0] == N_elements + N_local_boundaries + i]];
+        phi_L[i] = domain_element.phi_L_;
+        phi_R[i] = domain_element.phi_R_;
+        phi_prime_L[i] = domain_element.phi_prime_L_;
+        phi_prime_R[i] = domain_element.phi_prime_R_;
     }
 }
 
