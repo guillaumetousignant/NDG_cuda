@@ -76,8 +76,6 @@ SEM::Mesh_t::Mesh_t(size_t N_elements, int initial_N, deviceFloat x_min, deviceF
 
     cudaMemcpy(host_MPI_boundary_to_element_, MPI_boundary_to_element_, N_MPI_boundaries_ * sizeof(size_t), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_MPI_boundary_from_element_, MPI_boundary_from_element_, N_MPI_boundaries_ * sizeof(size_t), cudaMemcpyDeviceToHost);
-
-    print();
 }
 
 SEM::Mesh_t::~Mesh_t() {
@@ -541,17 +539,12 @@ void SEM::Mesh_t::boundary_conditions() {
     cudaMemcpy(host_boundary_phi_prime_L_, device_boundary_phi_prime_L_, N_MPI_boundaries_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_boundary_phi_prime_R_, device_boundary_phi_prime_R_, N_MPI_boundaries_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
 
-    int global_rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
-
     for (size_t i = 0; i < N_MPI_boundaries_; ++i) {
         send_buffers_[i] = {host_boundary_phi_L_[i],
                             host_boundary_phi_R_[i],
                             host_boundary_phi_prime_L_[i],
                             host_boundary_phi_prime_R_[i]};
         const int destination = host_MPI_boundary_to_element_[i]/N_elements_per_process_;
-
-        std::cout << "Rank " << global_rank << " sending " << host_MPI_boundary_from_element_[i] << " to " << host_MPI_boundary_to_element_[i] << " on rank " << destination << ": " << send_buffers_[i][0] << " " << send_buffers_[i][1] << " " << send_buffers_[i][2] << " " << send_buffers_[i][3] << std::endl;
 
         MPI_Irecv(&receive_buffers_[i][0], 4, MPI_DOUBLE, destination, host_MPI_boundary_from_element_[i], MPI_COMM_WORLD, &requests_[i]);
         MPI_Isend(&send_buffers_[i][0], 4, MPI_DOUBLE, destination, host_MPI_boundary_to_element_[i], MPI_COMM_WORLD, &requests_[i + N_MPI_boundaries_]);
@@ -564,9 +557,6 @@ void SEM::Mesh_t::boundary_conditions() {
         host_boundary_phi_R_[i] = receive_buffers_[i][1];
         host_boundary_phi_prime_L_[i] = receive_buffers_[i][2];
         host_boundary_phi_prime_R_[i] = receive_buffers_[i][3];
-
-        const int source = host_MPI_boundary_to_element_[i]/N_elements_per_process_;
-        std::cout << "Rank " << global_rank << " receiving " << host_MPI_boundary_to_element_[i] << " from " << host_MPI_boundary_from_element_[i] << " on rank " << source << ": " << receive_buffers_[i][0] << " " << receive_buffers_[i][1] << " " << receive_buffers_[i][2] << " " << receive_buffers_[i][3] << std::endl;
     }
 
     cudaMemcpy(device_boundary_phi_L_, host_boundary_phi_L_, N_MPI_boundaries_ * sizeof(deviceFloat), cudaMemcpyHostToDevice);
