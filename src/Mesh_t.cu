@@ -76,6 +76,8 @@ SEM::Mesh_t::Mesh_t(size_t N_elements, int initial_N, deviceFloat x_min, deviceF
 
     cudaMemcpy(host_MPI_boundary_to_element_, MPI_boundary_to_element_, N_MPI_boundaries_ * sizeof(size_t), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_MPI_boundary_from_element_, MPI_boundary_from_element_, N_MPI_boundaries_ * sizeof(size_t), cudaMemcpyDeviceToHost);
+
+    print();
 }
 
 SEM::Mesh_t::~Mesh_t() {
@@ -134,6 +136,7 @@ void SEM::Mesh_t::print() {
     std::cout << "N local boundaries: " << N_local_boundaries_ << std::endl;
     std::cout << "N MPI boundaries: " << N_MPI_boundaries_ << std::endl;
     std::cout << "Global element offset: " << global_element_offset_ << std::endl;
+    std::cout << "Number of elements per process: " << N_elements_per_process_ << std::endl;
     std::cout << "Initial N: " << initial_N_ << std::endl;
 
     std::cout << std::endl << "Phi interpolated: " << std::endl;
@@ -542,7 +545,7 @@ void SEM::Mesh_t::boundary_conditions() {
 
         int global_rank;
         MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
-        std::cout << "Rank " << global_rank << "sending to " << destination << std::endl;
+        std::cout << "Rank " << global_rank << " sending to " << destination << std::endl;
 
         MPI_Irecv(&receive_buffers_[i][0], 4, MPI_DOUBLE, destination, host_MPI_boundary_from_element_[i], MPI_COMM_WORLD, &requests_[i]);
         MPI_Isend(&send_buffers_[i][0], 4, MPI_DOUBLE, destination, host_MPI_boundary_to_element_[i], MPI_COMM_WORLD, &requests_[i + N_MPI_boundaries_]);
