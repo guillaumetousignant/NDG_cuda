@@ -551,7 +551,7 @@ void SEM::Mesh_t::boundary_conditions() {
         MPI_Isend(&send_buffers_[i][0], 4, MPI_DOUBLE, destination, host_MPI_boundary_to_element_[i], MPI_COMM_WORLD, &requests_[i + N_MPI_boundaries_]);
     }
 
-    MPI_Waitall(N_MPI_boundaries_, requests_, statuses_);
+    MPI_Waitall(N_MPI_boundaries_, requests_, statuses_); // CHECK maybe MPI barrier?
 
     for (size_t i = 0; i < N_MPI_boundaries_; ++i) {
         host_boundary_phi_L_[i] = receive_buffers_[i][0];
