@@ -544,7 +544,7 @@ void SEM::Mesh_t::boundary_conditions() {
         MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
         std::cout << "Rank " << global_rank << "sending to " << destination << std::endl;
 
-        MPI_Irecv(&receive_buffers_[i][0], 4, MPI_DOUBLE, destination, host_MPI_boundary_to_element_[i], MPI_COMM_WORLD, &requests_[i]);
+        MPI_Irecv(&receive_buffers_[i][0], 4, MPI_DOUBLE, destination, host_MPI_boundary_from_element_[i], MPI_COMM_WORLD, &requests_[i]);
         MPI_Isend(&send_buffers_[i][0], 4, MPI_DOUBLE, destination, host_MPI_boundary_to_element_[i], MPI_COMM_WORLD, &requests_[i + N_MPI_boundaries_]);
     }
 
