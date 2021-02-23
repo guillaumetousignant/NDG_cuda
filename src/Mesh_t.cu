@@ -426,10 +426,13 @@ deviceFloat SEM::Mesh_t::get_delta_t(const deviceFloat CFL) {
     SEM::reduce_delta_t<elements_blockSize/2><<<elements_numBlocks_, elements_blockSize/2, 0, stream_>>>(CFL, N_elements_, elements_, device_delta_t_array_);
     cudaMemcpy(host_delta_t_array_, device_delta_t_array_, elements_numBlocks_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
 
-    deviceFloat delta_t_min = std::numeric_limits<deviceFloat>::infinity();
+    double delta_t_min_local = std::numeric_limits<double>::infinity();
     for (int i = 0; i < elements_numBlocks_; ++i) {
-        delta_t_min = min(delta_t_min, host_delta_t_array_[i]);
+        delta_t_min_local = min(delta_t_min_local, host_delta_t_array_[i]);
     }
+
+    double delta_t_min;
+    MPI_Allreduce(&delta_t_min_local, &delta_t_min, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
     
     return delta_t_min;
 }
