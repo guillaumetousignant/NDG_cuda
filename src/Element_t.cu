@@ -301,7 +301,7 @@ void SEM::build_boundaries(size_t N_elements, size_t N_elements_global, size_t N
         elements[N_elements + i].phi_prime_ = nullptr;
         elements[N_elements + i].intermediate_ = nullptr;
 
-        elements[N_elements + i] = SEM::Element_t(-1, face_L, face_R, element_x_min, element_x_max);
+        elements[N_elements + i] = SEM::Element_t(0, face_L, face_R, element_x_min, element_x_max);
     }
 
     for (int i = index; i < N_MPI_boundaries; i += stride) {
@@ -333,7 +333,7 @@ void SEM::build_boundaries(size_t N_elements, size_t N_elements_global, size_t N
         elements[N_elements + N_local_boundaries + i].phi_prime_ = nullptr;
         elements[N_elements + N_local_boundaries + i].intermediate_ = nullptr;
 
-        elements[N_elements + N_local_boundaries + i] = SEM::Element_t(-1, face_L, face_R, element_x_min, element_x_max);
+        elements[N_elements + N_local_boundaries + i] = SEM::Element_t(0, face_L, face_R, element_x_min, element_x_max);
     }
 }
 
