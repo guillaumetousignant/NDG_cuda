@@ -71,7 +71,7 @@ SEM::Mesh_t::Mesh_t(size_t N_elements, int initial_N, deviceFloat x_min, deviceF
     const deviceFloat x_max_local = x_min_local + N_elements_ * delta_x;
 
     SEM::build_elements<<<elements_numBlocks_, elements_blockSize, 0, stream_>>>(N_elements_, initial_N_, elements_, x_min_local, x_max_local);
-    SEM::build_boundaries<<<boundaries_numBlocks_, boundaries_blockSize, 0, stream_>>>(N_elements_, N_elements_global_, N_local_boundaries_, N_MPI_boundaries_, initial_N_, elements_, x_min_local, x_max_local, global_element_offset_, local_boundary_to_element_, MPI_boundary_to_element_, MPI_boundary_from_element_);
+    SEM::build_boundaries<<<boundaries_numBlocks_, boundaries_blockSize, 0, stream_>>>(N_elements_, N_elements_global_, N_local_boundaries_, N_MPI_boundaries_, elements_, x_min_local, x_max_local, global_element_offset_, local_boundary_to_element_, MPI_boundary_to_element_, MPI_boundary_from_element_);
     SEM::build_faces<<<faces_numBlocks_, faces_blockSize, 0, stream_>>>(N_faces_, faces_);
 
     cudaMemcpy(host_MPI_boundary_to_element_, MPI_boundary_to_element_, N_MPI_boundaries_ * sizeof(size_t), cudaMemcpyDeviceToHost);
