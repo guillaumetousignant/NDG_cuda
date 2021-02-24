@@ -270,7 +270,7 @@ void SEM::build_elements(size_t N_elements, int N, SEM::Element_t* elements, dev
 }
 
 __global__
-void SEM::build_boundaries(size_t N_elements, size_t N_elements_global, size_t N_local_boundaries, size_t N_MPI_boundaries, int N, Element_t* elements, deviceFloat x_min, deviceFloat x_max, size_t global_element_offset, size_t* local_boundary_to_element, size_t* MPI_boundary_to_element, size_t* MPI_boundary_from_element) {
+void SEM::build_boundaries(size_t N_elements, size_t N_elements_global, size_t N_local_boundaries, size_t N_MPI_boundaries, Element_t* elements, deviceFloat x_min, deviceFloat x_max, size_t global_element_offset, size_t* local_boundary_to_element, size_t* MPI_boundary_to_element, size_t* MPI_boundary_from_element) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -301,7 +301,7 @@ void SEM::build_boundaries(size_t N_elements, size_t N_elements_global, size_t N
         elements[N_elements + i].phi_prime_ = nullptr;
         elements[N_elements + i].intermediate_ = nullptr;
 
-        elements[N_elements + i] = SEM::Element_t(N, face_L, face_R, element_x_min, element_x_max);
+        elements[N_elements + i] = SEM::Element_t(-1, face_L, face_R, element_x_min, element_x_max);
     }
 
     for (int i = index; i < N_MPI_boundaries; i += stride) {
@@ -333,7 +333,7 @@ void SEM::build_boundaries(size_t N_elements, size_t N_elements_global, size_t N
         elements[N_elements + N_local_boundaries + i].phi_prime_ = nullptr;
         elements[N_elements + N_local_boundaries + i].intermediate_ = nullptr;
 
-        elements[N_elements + N_local_boundaries + i] = SEM::Element_t(N, face_L, face_R, element_x_min, element_x_max);
+        elements[N_elements + N_local_boundaries + i] = SEM::Element_t(-1, face_L, face_R, element_x_min, element_x_max);
     }
 }
 

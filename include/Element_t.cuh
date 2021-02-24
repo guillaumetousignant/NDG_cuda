@@ -65,7 +65,7 @@ namespace SEM {
     void build_elements(size_t N_elements, int N, Element_t* elements, deviceFloat x_min, deviceFloat x_max);
 
     __global__
-    void build_boundaries(size_t N_elements, size_t N_elements_global, size_t N_local_boundaries, size_t N_MPI_boundaries, int N, Element_t* elements, deviceFloat x_min, deviceFloat x_max, size_t global_element_offset, size_t* local_boundary_to_element, size_t* MPI_boundary_to_element, size_t* MPI_boundary_from_element);
+    void build_boundaries(size_t N_elements, size_t N_elements_global, size_t N_local_boundaries, size_t N_MPI_boundaries, Element_t* elements, deviceFloat x_min, deviceFloat x_max, size_t global_element_offset, size_t* local_boundary_to_element, size_t* MPI_boundary_to_element, size_t* MPI_boundary_from_element);
 
     __global__
     void free_elements(size_t N_elements, Element_t* elements);
