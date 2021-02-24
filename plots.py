@@ -153,6 +153,7 @@ for time in times:
         for x_L in timesteps_element[time].x_L:
             ux_ax.axvline(x=x_L, color=color_map(normalised_time), alpha=vline_alpha, linestyle=vline_linestyle)
             ux_prime_ax.axvline(x=x_L, color=color_map(normalised_time), alpha=vline_alpha, linestyle=vline_linestyle)
+            intermediate_ax.axvline(x=x_L, color=color_map(normalised_time), alpha=vline_alpha, linestyle=vline_linestyle)
         ux_ax.axvline(x=timesteps_element[time].x_R[-1], color=color_map(normalised_time), alpha=vline_alpha, linestyle=vline_linestyle)
         ux_prime_ax.axvline(x=timesteps_element[time].x_R[-1], color=color_map(normalised_time), alpha=vline_alpha, linestyle=vline_linestyle)
         intermediate_ax.axvline(x=timesteps_element[time].x_R[-1], color=color_map(normalised_time), alpha=vline_alpha, linestyle=vline_linestyle)
