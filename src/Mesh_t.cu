@@ -79,7 +79,7 @@ SEM::Mesh_t::Mesh_t(size_t N_elements, int initial_N, deviceFloat x_min, deviceF
 }
 
 SEM::Mesh_t::~Mesh_t() {
-    SEM::free_elements<<<elements_numBlocks_, elements_blockSize, 0, stream_>>>(N_elements_ + N_local_boundaries_ + N_MPI_boundaries_, elements_);
+    SEM::free_elements<<<elements_numBlocks_, elements_blockSize>>>(N_elements_ + N_local_boundaries_ + N_MPI_boundaries_, elements_);
     cudaFree(elements_);
     cudaFree(faces_);
     cudaFree(local_boundary_to_element_);
