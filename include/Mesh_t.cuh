@@ -77,9 +77,12 @@ namespace SEM {
     __global__
     void calculate_fluxes(size_t N_faces, Face_t* faces, const Element_t* elements);
 
+    __device__
+    void matrix_vector_multiply(int N, const deviceFloat* matrix, const deviceFloat* vector, deviceFloat* result);
+
     // Algorithm 19
     __device__
-    void matrix_vector_derivative(deviceFloat viscosity, int N, const deviceFloat* derivative_matrices_hat, const deviceFloat* g_hat_derivative_matrices, const deviceFloat* phi, deviceFloat* phi_prime);
+    void matrix_vector_derivative(int N, const deviceFloat* derivative_matrices_hat, const deviceFloat* phi, deviceFloat* phi_prime);
 
     // Algorithm 60 (not really anymore)
     __global__

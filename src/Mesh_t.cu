@@ -124,6 +124,8 @@ void SEM::Mesh_t::print() {
     // Invalidate GPU pointers, or else they will be deleted on the CPU, where they point to random stuff
     for (size_t i = 0; i < N_elements_ + N_local_boundaries_ + N_MPI_boundaries_; ++i) {
         host_elements[i].phi_ = nullptr;
+        host_elements[i].q_ = nullptr;
+        host_elements[i].ux_ = nullptr;
         host_elements[i].phi_prime_ = nullptr;
         host_elements[i].intermediate_ = nullptr;
     }
@@ -631,21 +633,29 @@ void SEM::calculate_fluxes(size_t N_faces, Face_t* faces, const Element_t* eleme
             }
         }
 
-        faces[i].flux_ = 0.5f * u * u;
+        faces[i].flux_ = u;
         faces[i].derivative_flux_ = u_prime;
+    }
+}
+
+__device__
+void SEM::matrix_vector_multiply(int N, const deviceFloat* matrix, const deviceFloat* vector, deviceFloat* result) {
+    for (int i = 0; i <= N; ++i) {
+        result[i] = 0.0f;
+        for (int j = 0; j <= N; ++j) {
+            result[i] +=  matrix[i * (N + 1) + j] * vector[j];
+        }
     }
 }
 
 // Algorithm 19
 __device__
-void SEM::matrix_vector_derivative(deviceFloat viscosity, int N, const deviceFloat* derivative_matrices_hat, const deviceFloat* g_hat_derivative_matrices, const deviceFloat* phi, deviceFloat* phi_prime) {
+void SEM::matrix_vector_derivative(int N, const deviceFloat* derivative_matrices_hat, const deviceFloat* phi, deviceFloat* phi_prime) {
     // s = 0, e = N (p.55 says N - 1)
-    const size_t offset_2D = N * (N + 1) * (2 * N + 1) /6;
-
     for (int i = 0; i <= N; ++i) {
         phi_prime[i] = 0.0f;
         for (int j = 0; j <= N; ++j) {
-            phi_prime[i] -=  g_hat_derivative_matrices[offset_2D + i * (N + 1) + j] * phi[j];
+            phi_prime[i] += derivative_matrices_hat[i * (N + 1) + j] * phi[j] * phi[j] * 0.5;
         }
     }
 }
@@ -658,17 +668,29 @@ void SEM::compute_dg_derivative(deviceFloat viscosity, size_t N_elements, Elemen
 
     for (size_t i = index; i < N_elements; i += stride) {
         const size_t offset_1D = elements[i].N_ * (elements[i].N_ + 1) /2; // CHECK cache?
+        const size_t offset_2D = elements[i].N_ * (elements[i].N_ + 1) * (2 * elements[i].N_ + 1) /6;
 
         const deviceFloat flux_L = faces[elements[i].faces_[0]].flux_;
         const deviceFloat flux_R = faces[elements[i].faces_[1]].flux_;
         const deviceFloat derivative_flux_L = faces[elements[i].faces_[0]].derivative_flux_;
         const deviceFloat derivative_flux_R = faces[elements[i].faces_[1]].derivative_flux_;
 
-        SEM::matrix_vector_derivative(viscosity, elements[i].N_, derivative_matrices_hat, g_hat_derivative_matrices, elements[i].phi_, elements[i].phi_prime_);
+        SEM::matrix_vector_multiply(elements[i].N_, derivative_matrices_hat + offset_2D, elements[i].phi_, elements[i].q_);
+        for (int j = 0; j <= elements[i].N_; ++j) {
+            elements[i].q_[j] = -elements[i].q_[j] - (flux_R * lagrange_interpolant_right[offset_1D + j]
+                                                   - flux_L * lagrange_interpolant_left[offset_1D + j]) / weights[offset_1D + j];
+            elements[i].q_[j] *= 2.0f/elements[i].delta_x_ * sqrt(viscosity);
+        }
+
+        SEM::matrix_vector_derivative(elements[i].N_, derivative_matrices_hat + offset_2D, elements[i].phi_, elements[i].ux_);
+        SEM::matrix_vector_multiply(elements[i].N_, derivative_matrices_hat + offset_2D, elements[i].q_, elements[i].phi_prime_);
 
         for (int j = 0; j <= elements[i].N_; ++j) {
-            elements[i].phi_prime_[j] += (derivative_flux_R * lagrange_interpolant_right[offset_1D + j]
-                                        - derivative_flux_L * lagrange_interpolant_left[offset_1D + j]) / weights[offset_1D + j];
+            elements[i].phi_prime_[j] = - elements[i].phi_prime_[j] * sqrt(viscosity) 
+                                        - (derivative_flux_R * lagrange_interpolant_right[offset_1D + j]
+                                        - derivative_flux_L * lagrange_interpolant_left[offset_1D + j])/weights[offset_1D + j]
+                                        - elements[i].ux_[j];
+
             elements[i].phi_prime_[j] *= 2.0f/elements[i].delta_x_;
         }
     }

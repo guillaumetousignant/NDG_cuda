@@ -439,7 +439,7 @@ void SEM::polynomial_derivative_matrices_hat(int N, const deviceFloat* weights, 
 
     for (int i = index_x; i <= N; i += stride_x) {
         for (int j = index_y; j <= N; j += stride_y) {
-            derivative_matrices_hat[offset_2D + i * (N + 1) + j] = derivative_matrices[offset_2D + j * (N + 1) + i] * weights[offset_1D + j] / weights[offset_1D + i];
+            derivative_matrices_hat[offset_2D + i * (N + 1) + j] = -derivative_matrices[offset_2D + j * (N + 1) + i] * weights[offset_1D + j] / weights[offset_1D + i];
         }
     }
 }
