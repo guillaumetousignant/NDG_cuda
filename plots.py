@@ -22,7 +22,7 @@ refine_arrays = []
 coarsen_arrays = []
 error_arrays = []
 
-t_finder = re.compile(r"SOLUTIONTIME = [-+]?\d*\.?\d+")
+t_finder = re.compile(r"SOLUTIONTIME = [+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?")
 I_finder = re.compile(r"I= \d*")
 
 # Input from all the output_tX.dat files
