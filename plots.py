@@ -7,7 +7,7 @@ import numpy as np
 import re
 from pathlib import Path
 
-t_finder = re.compile(r"SOLUTIONTIME = [-+]?\d*\.?\d+")
+t_finder = re.compile(r"SOLUTIONTIME = [+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?")
 I_finder = re.compile(r"I= \d*")
 
 class Solution:
