@@ -376,8 +376,8 @@ void SEM::Mesh_t::solve(const deviceFloat CFL, const std::vector<deviceFloat> ou
 
     deviceFloat delta_t = get_delta_t(CFL);
     write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
-
-    while (time < t_end) {
+    
+    //while (time < t_end) {
         // Kinda algorithm 62
         deviceFloat t = time;
         SEM::interpolate_to_boundaries<<<elements_numBlocks_, elements_blockSize, 0, stream_>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_, NDG.lagrange_interpolant_derivative_left_, NDG.lagrange_interpolant_derivative_right_);
@@ -410,7 +410,7 @@ void SEM::Mesh_t::solve(const deviceFloat CFL, const std::vector<deviceFloat> ou
                 break;
             }
         }
-    }
+    //}
 
     bool did_write = false;
     for (auto const& e : std::as_const(output_times)) {
@@ -437,7 +437,7 @@ deviceFloat SEM::Mesh_t::get_delta_t(const deviceFloat CFL) {
 
     double delta_t_min;
     MPI_Allreduce(&delta_t_min_local, &delta_t_min, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-    
+
     return delta_t_min;
 }
 
@@ -579,6 +579,7 @@ void SEM::rk3_first_step(size_t N_elements, Element_t* elements, deviceFloat del
             elements[i].intermediate_[j] = elements[i].phi_prime_[j];
             elements[i].phi_[j] += g * delta_t * elements[i].intermediate_[j];
         }
+        //printf("Element %u phi: %f, %f, %f, %f, %f, %f, %f\n", i, elements[i].phi_[0], elements[i].phi_[1], elements[i].phi_[2], elements[i].phi_[3], elements[i].phi_[4], elements[i].phi_[5], elements[i].phi_[6]);
     }
 }
 
@@ -592,6 +593,7 @@ void SEM::rk3_step(size_t N_elements, Element_t* elements, deviceFloat delta_t, 
             elements[i].intermediate_[j] = a * elements[i].intermediate_[j] + elements[i].phi_prime_[j];
             elements[i].phi_[j] += g * delta_t * elements[i].intermediate_[j];
         }
+        printf("Element %u phi: %f, %f, %f, %f, %f, %f, %f\n", i, elements[i].phi_[0], elements[i].phi_[1], elements[i].phi_[2], elements[i].phi_[3], elements[i].phi_[4], elements[i].phi_[5], elements[i].phi_[6]);
     }
 }
 
@@ -601,40 +603,13 @@ void SEM::calculate_fluxes(size_t N_faces, Face_t* faces, const Element_t* eleme
     const int stride = blockDim.x * gridDim.x;
 
     for (size_t i = index; i < N_faces; i += stride) {
-        deviceFloat u;
-        deviceFloat u_prime;
         const deviceFloat u_left = elements[faces[i].elements_[0]].phi_R_;
         const deviceFloat u_right = elements[faces[i].elements_[1]].phi_L_;
         const deviceFloat u_prime_left = elements[faces[i].elements_[0]].phi_prime_R_;
         const deviceFloat u_prime_right = elements[faces[i].elements_[1]].phi_prime_L_;
 
-        if (u_left < 0.0f && u_right > 0.0f) { // In expansion fan
-            u = 0.5f * (u_left + u_right);
-            u_prime = 0.5f * (u_prime_left + u_prime_right);
-        }
-        else if (u_left >= u_right) { // Shock
-            if (u_left > 0.0f) {
-                u = u_left;
-                u_prime = u_prime_left;
-            }
-            else {
-                u = u_right;
-                u_prime = u_prime_right;
-            }
-        }
-        else { // Expansion fan
-            if (u_left > 0.0f) {
-                u = u_left;
-                u_prime = u_prime_left;
-            }
-            else  {
-                u = u_right;
-                u_prime = u_prime_right;
-            }
-        }
-
-        faces[i].flux_ = u;
-        faces[i].derivative_flux_ = u_prime;
+        faces[i].flux_ = 0.5f * (u_left + u_right);
+        faces[i].derivative_flux_ = 0.5f * (u_prime_left + u_prime_right);
     }
 }
 
@@ -675,23 +650,31 @@ void SEM::compute_dg_derivative(deviceFloat viscosity, size_t N_elements, Elemen
         const deviceFloat derivative_flux_L = faces[elements[i].faces_[0]].derivative_flux_;
         const deviceFloat derivative_flux_R = faces[elements[i].faces_[1]].derivative_flux_;
 
+        //printf("For k=%u - Fluxes: un=%f, up=%f, qn=%f, qp=%f\n", i, flux_L, flux_R, derivative_flux_L, derivative_flux_R);
+        //printf("Element %u has phi_L %f and phi_R %f\n", i, elements[i].phi_L_, elements[i].phi_R_);
+        //printf("Element %u has phi_prime_L %f and phi_prime_R %f\n", i, elements[i].phi_prime_L_, elements[i].phi_prime_R_);
+
         SEM::matrix_vector_multiply(elements[i].N_, derivative_matrices_hat + offset_2D, elements[i].phi_, elements[i].q_);
         for (int j = 0; j <= elements[i].N_; ++j) {
             elements[i].q_[j] = -elements[i].q_[j] - (flux_R * lagrange_interpolant_right[offset_1D + j]
-                                                   - flux_L * lagrange_interpolant_left[offset_1D + j]) / weights[offset_1D + j];
+                                                     - flux_L * lagrange_interpolant_left[offset_1D + j]) / weights[offset_1D + j];
             elements[i].q_[j] *= 2.0f/elements[i].delta_x_ * sqrt(viscosity);
         }
+        //printf("Element %u q: %f, %f, %f, %f, %f, %f, %f\n", i, elements[i].q_[0], elements[i].q_[1], elements[i].q_[2], elements[i].q_[3], elements[i].q_[4], elements[i].q_[5], elements[i].q_[6]);
 
         SEM::matrix_vector_derivative(elements[i].N_, derivative_matrices_hat + offset_2D, elements[i].phi_, elements[i].ux_);
+        //printf("Element %u ux: %f, %f, %f, %f, %f, %f, %f\n", i, elements[i].ux_[0], elements[i].ux_[1], elements[i].ux_[2], elements[i].ux_[3], elements[i].ux_[4], elements[i].ux_[5], elements[i].ux_[6]);
         SEM::matrix_vector_multiply(elements[i].N_, derivative_matrices_hat + offset_2D, elements[i].q_, elements[i].phi_prime_);
+        //printf("Element %u phi_prime: %f, %f, %f, %f, %f, %f, %f\n", i, elements[i].phi_prime_[0] * sqrt(viscosity), elements[i].phi_prime_[1] * sqrt(viscosity), elements[i].phi_prime_[2] * sqrt(viscosity), elements[i].phi_prime_[3] * sqrt(viscosity), elements[i].phi_prime_[4] * sqrt(viscosity), elements[i].phi_prime_[5] * sqrt(viscosity), elements[i].phi_prime_[6] * sqrt(viscosity));
 
         for (int j = 0; j <= elements[i].N_; ++j) {
             elements[i].phi_prime_[j] = - elements[i].phi_prime_[j] * sqrt(viscosity) 
                                         - (derivative_flux_R * lagrange_interpolant_right[offset_1D + j]
-                                        - derivative_flux_L * lagrange_interpolant_left[offset_1D + j])/weights[offset_1D + j]
+                                           - derivative_flux_L * lagrange_interpolant_left[offset_1D + j])/weights[offset_1D + j]
                                         - elements[i].ux_[j];
 
             elements[i].phi_prime_[j] *= 2.0f/elements[i].delta_x_;
         }
+        //printf("Element %u phi_prime_2: %f, %f, %f, %f, %f, %f, %f\n", i, elements[i].phi_prime_[0], elements[i].phi_prime_[1], elements[i].phi_prime_[2], elements[i].phi_prime_[3], elements[i].phi_prime_[4], elements[i].phi_prime_[5], elements[i].phi_prime_[6]);
     }
 }
