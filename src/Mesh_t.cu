@@ -243,7 +243,7 @@ void SEM::Mesh_t::write_file_data(size_t N_interpolation_points, size_t N_elemen
 
     std::stringstream ss;
     std::ofstream file;
-    ss << "output_t" << std::setprecision(4) << std::fixed << time << "_proc" << std::setfill('0') << std::setw(6) << rank << ".dat";
+    ss << "output_t" << std::setprecision(9) << std::fixed << time << "_proc" << std::setfill('0') << std::setw(6) << rank << ".dat";
     file.open(save_dir / ss.str());
 
     file << "TITLE = \"Velocity at t= " << time << "\"" << std::endl;
@@ -264,7 +264,7 @@ void SEM::Mesh_t::write_file_data(size_t N_interpolation_points, size_t N_elemen
 
     std::stringstream ss_element;
     std::ofstream file_element;
-    ss_element << "output_element_t" << std::setprecision(4) << std::fixed << time << "_proc" << std::setfill('0') << std::setw(6) << rank << ".dat";
+    ss_element << "output_element_t" << std::setprecision(9) << std::fixed << time << "_proc" << std::setfill('0') << std::setw(6) << rank << ".dat";
     file_element.open(save_dir / ss_element.str());
 
     file_element << "TITLE = \"Element values at t= " << time << "\"" << std::endl
