@@ -9,15 +9,17 @@
 #include <array>
 #include <mpi.h>
 
+constexpr hostFloat pi = 3.14159265358979323846;
+
 int main(int argc, char* argv[]) {
     MPI_Init(&argc, &argv);
 
-    const size_t N_elements = 8;
+    const size_t N_elements = 16;
     const int N_max = 16;
     const std::array<deviceFloat, 2> x {-1.0, 1.0};
     const deviceFloat CFL = 0.1f;
-    const deviceFloat viscosity = 0.1;
-    std::vector<deviceFloat> output_times{0.001f, 0.01f, 0.02f};
+    const deviceFloat viscosity = 1e-2 / pi;
+    std::vector<deviceFloat> output_times{0.1f, 0.2f, 0.3f, 0.4f, 0.5f};
 
     const int initial_N = 6;
     const size_t N_interpolation_points = N_max * 8;
@@ -74,7 +76,6 @@ int main(int argc, char* argv[]) {
     auto t_start_init = std::chrono::high_resolution_clock::now();
 
     SEM::NDG_t<SEM::LegendrePolynomial_t> NDG(N_max, N_interpolation_points, stream);
-    NDG.print();
     SEM::Mesh_t mesh(N_elements, initial_N, x[0], x[1], stream);
     mesh.set_initial_conditions(NDG.nodes_);
     cudaDeviceSynchronize();
