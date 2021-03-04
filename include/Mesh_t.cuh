@@ -85,7 +85,7 @@ namespace SEM {
 
     // Algorithm 19
     __device__
-    void matrix_vector_derivative(int N, const deviceFloat* derivative_matrices_hat, const deviceFloat* phi, deviceFloat* phi_prime);
+    void matrix_vector_derivative(deviceFloat viscosity, int N, const deviceFloat* derivative_matrices_hat, const deviceFloat* g_hat_derivative_matrices, const deviceFloat* phi, deviceFloat* phi_prime);
 
     // Algorithm 60 (not really anymore)
     __global__
