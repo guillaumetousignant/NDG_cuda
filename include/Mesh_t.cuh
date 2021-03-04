@@ -16,6 +16,12 @@ namespace SEM {
             Mesh_t(size_t N_elements, int initial_N, deviceFloat x_min, deviceFloat x_max, cudaStream_t &stream);
             ~Mesh_t();
 
+            constexpr static int elements_blockSize_ = 32;
+            constexpr static int faces_blockSize_ = 32; // Same number of faces as elements for periodic BC
+            constexpr static int boundaries_blockSize_ = 32;
+            int elements_numBlocks_;
+            int faces_numBlocks_;
+            int boundaries_numBlocks_;
             size_t N_elements_global_;
             size_t N_elements_;
             size_t N_faces_;
@@ -38,9 +44,6 @@ namespace SEM {
             void solve(const deviceFloat CFL, const std::vector<deviceFloat> output_times, const NDG_t<Polynomial> &NDG, deviceFloat viscosity);
 
         private:
-            int elements_numBlocks_;
-            int faces_numBlocks_;
-            int boundaries_numBlocks_;
             deviceFloat* device_delta_t_array_;
             deviceFloat* host_delta_t_array_;
             unsigned long* device_refine_array_;
