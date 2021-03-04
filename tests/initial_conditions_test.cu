@@ -154,7 +154,6 @@ TEST_CASE("Initial conditions boundary values", "Checks the extrapolated boundar
     for (int i = 0; i < N_elements; ++i) {
         const double phi_prime_L_expected = SEM::g_prime(host_elements[i].x_[0]);
         const double phi_prime_R_expected = SEM::g_prime(host_elements[i].x_[1]);
-        std::cout << "Element " << i << " phi_prime: " << host_elements[i].phi_prime_L_ << "    " << host_elements[i].phi_prime_R_ << std::endl;
 
         REQUIRE(std::abs(phi_prime_L_expected - host_elements[i].phi_prime_L_) < max_error);
         REQUIRE(std::abs(phi_prime_R_expected - host_elements[i].phi_prime_R_) < max_error);
