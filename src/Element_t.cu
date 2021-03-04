@@ -366,12 +366,17 @@ void SEM::estimate_error<Polynomial>(size_t N_elements, SEM::Element_t* elements
     }
 }
 
-__device__
+__host__ __device__
 deviceFloat SEM::g(deviceFloat x) {
     //return (x < -0.2f || x > 0.2f) ? 0.2f : 0.8f;
     return -std::sin(pi * x);
 }
 
+__host__ __device__
+deviceFloat SEM::g_prime(deviceFloat x) {
+    //return (x < -0.2f || x > 0.2f) ? 0.2f : 0.8f;
+    return -pi * std::cos(pi * x);
+}
 
 __global__
 void SEM::initial_conditions(size_t N_elements, SEM::Element_t* elements, const deviceFloat* nodes) {
