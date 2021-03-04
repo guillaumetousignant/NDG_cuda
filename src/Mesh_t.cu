@@ -655,8 +655,8 @@ void SEM::compute_dg_derivative(deviceFloat viscosity, size_t N_elements, Elemen
 
         for (int j = 0; j <= elements[i].N_; ++j) {
             elements[i].phi_prime_[j] += (viscosity * derivative_flux_R * lagrange_interpolant_right[offset_1D + j]
-                                        - viscosity * derivative_flux_L * lagrange_interpolant_left[offset_1D + j]) / weights[offset_1D + j];
-            elements[i].phi_prime_[j] *= 2.0f/elements[i].delta_x_;
+                                        - viscosity * derivative_flux_L * lagrange_interpolant_left[offset_1D + j]) * elements[i].delta_x_ * 0.5f / weights[offset_1D + j];
+            elements[i].phi_prime_[j] *= 1.0f/(elements[i].delta_x_ * elements[i].delta_x_);
         }
         //printf("Element %u phi_prime_2: %f, %f, %f, %f, %f, %f, %f\n", i, elements[i].phi_prime_[0], elements[i].phi_prime_[1], elements[i].phi_prime_[2], elements[i].phi_prime_[3], elements[i].phi_prime_[4], elements[i].phi_prime_[5], elements[i].phi_prime_[6]);
     }
