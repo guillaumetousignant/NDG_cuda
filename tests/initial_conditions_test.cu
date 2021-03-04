@@ -84,7 +84,7 @@ TEST_CASE("Initial conditions solution value", "Checks the node and boundary val
 
     SECTION("Interpolated phi") {
         for (int i = 0; i < N_elements * N_interpolation_points; ++i) {
-            const double expected = -std::sin(pi * host_x[i]);
+            const double expected = SEM::g(host_x[i]);
             REQUIRE(std::abs(expected - host_phi[i]) < max_error);
         }
     }
@@ -104,8 +104,8 @@ TEST_CASE("Initial conditions solution value", "Checks the node and boundary val
 
     SECTION("Extrapolated phi") {
         for (int i = 0; i < N_elements; ++i) {
-            const double phi_L_expected = -std::sin(pi * host_elements[i].x_[0]);
-            const double phi_R_expected = -std::sin(pi * host_elements[i].x_[1]);
+            const double phi_L_expected = SEM::g(host_elements[i].x_[0]);
+            const double phi_R_expected = SEM::g(host_elements[i].x_[1]);
 
             REQUIRE(std::abs(phi_L_expected - host_elements[i].phi_L_) < max_error);
             REQUIRE(std::abs(phi_R_expected - host_elements[i].phi_R_) < max_error);
@@ -114,8 +114,8 @@ TEST_CASE("Initial conditions solution value", "Checks the node and boundary val
 
     SECTION("Extrapolated phi prime") {
         for (int i = 0; i < N_elements; ++i) {
-            const double phi_prime_L_expected = -pi * std::cos(pi * host_elements[i].x_[0]);
-            const double phi_prime_R_expected = -pi * std::cos(pi * host_elements[i].x_[1]);
+            const double phi_prime_L_expected = SEM::g_prime(host_elements[i].x_[0]);
+            const double phi_prime_R_expected = SEM::g_prime(host_elements[i].x_[1]);
 
             REQUIRE(std::abs(phi_prime_L_expected - host_elements[i].phi_prime_L_) < max_error);
             REQUIRE(std::abs(phi_prime_R_expected - host_elements[i].phi_prime_R_) < max_error);

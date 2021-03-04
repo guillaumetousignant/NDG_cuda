@@ -76,8 +76,11 @@ namespace SEM {
     __global__
     void estimate_error(size_t N_elements, Element_t* elements, const deviceFloat* nodes, const deviceFloat* weights);
 
-    __device__
+    __host__ __device__
     deviceFloat g(deviceFloat x);
+
+    __host__ __device__
+    deviceFloat g_prime(deviceFloat x);
 
     __global__
     void initial_conditions(size_t N_elements, Element_t* elements, const deviceFloat* nodes);
