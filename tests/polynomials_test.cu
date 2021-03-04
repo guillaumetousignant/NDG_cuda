@@ -17,6 +17,8 @@ TEST_CASE("ChebyshevPolynomials", "Checks the Chebyshev polynomials"){
     const size_t offset_2D = N_test * (N_test + 1) * (2 * N_test + 1) /6;
     const double error = 1e-6;
 
+    REQUIRE(N_test <= N_max);
+
     cudaStream_t stream;
     cudaStreamCreate(&stream); 
     
@@ -45,8 +47,6 @@ TEST_CASE("ChebyshevPolynomials", "Checks the Chebyshev polynomials"){
     cudaMemcpy(host_g_hat_derivative_matrices, NDG.g_hat_derivative_matrices_, NDG.matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_derivative_matrices_hat, NDG.derivative_matrices_hat_, NDG.matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_interpolation_matrices, NDG.interpolation_matrices_, NDG.interpolation_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-
-    REQUIRE(N_test <= N_max);
 
     SECTION("Polynomial nodes") {
         const std::array<double, N_test+1> nodes {-0.9957341762950345218712,
@@ -180,6 +180,8 @@ TEST_CASE("LegendrePolynomials", "Checks the Legendre polynomials"){
     const size_t offset_2D = N_test * (N_test + 1) * (2 * N_test + 1) /6;
     const double error = 1e-6;
 
+    REQUIRE(N_test <= N_max);
+
     cudaStream_t stream;
     cudaStreamCreate(&stream); 
     
@@ -208,8 +210,6 @@ TEST_CASE("LegendrePolynomials", "Checks the Legendre polynomials"){
     cudaMemcpy(host_g_hat_derivative_matrices, NDG.g_hat_derivative_matrices_, NDG.matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_derivative_matrices_hat, NDG.derivative_matrices_hat_, NDG.matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_interpolation_matrices, NDG.interpolation_matrices_, NDG.interpolation_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-
-    REQUIRE(N_test <= N_max);
 
     SECTION("Polynomial nodes") {
         const std::array<double, N_test+1> nodes {-0.9905754753144173356754,
