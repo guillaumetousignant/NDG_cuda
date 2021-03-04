@@ -172,6 +172,8 @@ void SEM::Element_t::interpolate_to_boundaries(const deviceFloat* lagrange_inter
         phi_prime_L_ += lagrange_interpolant_derivative_left[offset_1D + j] * (phi_L_ - phi_[j]);
         phi_prime_R_ += lagrange_interpolant_derivative_right[offset_1D + j] * (phi_R_ - phi_[j]);
     }
+    phi_prime_L_ *= 2.0f/delta_x_;
+    phi_prime_R_ *= 2.0f/delta_x_;
 }
 
 template __device__ void SEM::Element_t::estimate_error<SEM::ChebyshevPolynomial_t>(const deviceFloat* nodes, const deviceFloat* weights);
