@@ -3,12 +3,15 @@
 #include <cmath>
 #include <array>
 #include <limits>
+#include <mpi.h>
 #include "float_types.h"
 #include "NDG_t.cuh"
 #include "Mesh_t.cuh"
 #include "LegendrePolynomial_t.cuh"
 
-TEST_CASE("Reduction", "Checks the reduction returns the right result."){
+TEST_CASE("Reduction", "Checks the reduction returns the right result.") {
+    MPI_Init(0, nullptr);
+
     const size_t N_elements = 1024; // N needs to be big enough for a value to be close to the max.
     const int N_max = 4;
     const int N_test = N_max;
@@ -48,4 +51,5 @@ TEST_CASE("Reduction", "Checks the reduction returns the right result."){
     cudaStreamDestroy(stream);
     delete[] host_g_odata;
     cudaFree(g_odata);
+    MPI_Finalize();
 }

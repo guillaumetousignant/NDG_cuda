@@ -10,10 +10,6 @@
 
 namespace fs = std::filesystem;
 
-constexpr int elements_blockSize = 32;
-constexpr int faces_blockSize = 32; // Same number of faces as elements for periodic BC
-constexpr int boundaries_blockSize = 32;
-
 SEM::Mesh_t::Mesh_t(size_t N_elements, int initial_N, deviceFloat x_min, deviceFloat x_max, cudaStream_t &stream) : 
         N_elements_global_(N_elements),        
         stream_(stream) {
@@ -37,9 +33,9 @@ SEM::Mesh_t::Mesh_t(size_t N_elements, int initial_N, deviceFloat x_min, deviceF
     N_faces_ = N_elements_ + N_local_boundaries_ + N_MPI_boundaries_ - 1; 
     global_element_offset_ = global_rank * N_elements_per_process_;
     initial_N_ = initial_N;
-    elements_numBlocks_ = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
-    faces_numBlocks_ = (N_faces_ + faces_blockSize - 1) / faces_blockSize;
-    boundaries_numBlocks_ = (N_local_boundaries_ + N_MPI_boundaries_ + boundaries_blockSize - 1) / boundaries_blockSize;
+    elements_numBlocks_ = (N_elements_ + elements_blockSize_ - 1) / elements_blockSize_;
+    faces_numBlocks_ = (N_faces_ + faces_blockSize_ - 1) / faces_blockSize_;
+    boundaries_numBlocks_ = (N_local_boundaries_ + N_MPI_boundaries_ + boundaries_blockSize_ - 1) / boundaries_blockSize_;
 
     host_delta_t_array_ = new deviceFloat[elements_numBlocks_];
     host_refine_array_ = new unsigned long[elements_numBlocks_];
@@ -70,16 +66,16 @@ SEM::Mesh_t::Mesh_t(size_t N_elements, int initial_N, deviceFloat x_min, deviceF
     const deviceFloat x_min_local = x_min + delta_x * global_rank * N_elements_per_process_;
     const deviceFloat x_max_local = x_min_local + N_elements_ * delta_x;
 
-    SEM::build_elements<<<elements_numBlocks_, elements_blockSize, 0, stream_>>>(N_elements_, initial_N_, elements_, x_min_local, x_max_local);
-    SEM::build_boundaries<<<boundaries_numBlocks_, boundaries_blockSize, 0, stream_>>>(N_elements_, N_elements_global_, N_local_boundaries_, N_MPI_boundaries_, elements_, x_min_local, x_max_local, global_element_offset_, local_boundary_to_element_, MPI_boundary_to_element_, MPI_boundary_from_element_);
-    SEM::build_faces<<<faces_numBlocks_, faces_blockSize, 0, stream_>>>(N_faces_, faces_);
+    SEM::build_elements<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, initial_N_, elements_, x_min_local, x_max_local);
+    SEM::build_boundaries<<<boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(N_elements_, N_elements_global_, N_local_boundaries_, N_MPI_boundaries_, elements_, x_min_local, x_max_local, global_element_offset_, local_boundary_to_element_, MPI_boundary_to_element_, MPI_boundary_from_element_);
+    SEM::build_faces<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(N_faces_, faces_);
 
     cudaMemcpy(host_MPI_boundary_to_element_, MPI_boundary_to_element_, N_MPI_boundaries_ * sizeof(size_t), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_MPI_boundary_from_element_, MPI_boundary_from_element_, N_MPI_boundaries_ * sizeof(size_t), cudaMemcpyDeviceToHost);
 }
 
 SEM::Mesh_t::~Mesh_t() {
-    SEM::free_elements<<<elements_numBlocks_, elements_blockSize>>>(N_elements_ + N_local_boundaries_ + N_MPI_boundaries_, elements_);
+    SEM::free_elements<<<elements_numBlocks_, elements_blockSize_>>>(N_elements_ + N_local_boundaries_ + N_MPI_boundaries_, elements_);
     cudaFree(elements_);
     cudaFree(faces_);
     cudaFree(local_boundary_to_element_);
@@ -107,7 +103,7 @@ SEM::Mesh_t::~Mesh_t() {
 }
 
 void SEM::Mesh_t::set_initial_conditions(const deviceFloat* nodes) {
-    SEM::initial_conditions<<<elements_numBlocks_, elements_blockSize, 0, stream_>>>(N_elements_, elements_, nodes);
+    SEM::initial_conditions<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, nodes);
 }
 
 void SEM::Mesh_t::print() {
@@ -286,7 +282,6 @@ void SEM::Mesh_t::write_file_data(size_t N_interpolation_points, size_t N_elemen
 }
 
 void SEM::Mesh_t::write_data(deviceFloat time, size_t N_interpolation_points, const deviceFloat* interpolation_matrices) {
-    // CHECK find better solution for multiple elements
     deviceFloat* x;
     deviceFloat* phi;
     deviceFloat* phi_prime;
@@ -321,7 +316,7 @@ void SEM::Mesh_t::write_data(deviceFloat time, size_t N_interpolation_points, co
     cudaMalloc(&coarsen, N_elements_ * sizeof(bool));
     cudaMalloc(&error, N_elements_ * sizeof(deviceFloat));
 
-    SEM::get_solution<<<elements_numBlocks_, elements_blockSize, 0, stream_>>>(N_elements_, N_interpolation_points, elements_, interpolation_matrices, x, phi, phi_prime, intermediate, x_L, x_R, N, sigma, refine, coarsen, error);
+    SEM::get_solution<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, N_interpolation_points, elements_, interpolation_matrices, x, phi, phi_prime, intermediate, x_L, x_R, N, sigma, refine, coarsen, error);
     
     cudaMemcpy(host_x, x , N_elements_ * N_interpolation_points * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_phi, phi, N_elements_ * N_interpolation_points * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
@@ -378,30 +373,30 @@ void SEM::Mesh_t::solve(const deviceFloat CFL, const std::vector<deviceFloat> ou
     while (time < t_end) {
         // Kinda algorithm 62
         deviceFloat t = time;
-        SEM::interpolate_to_boundaries<<<elements_numBlocks_, elements_blockSize, 0, stream_>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_, NDG.lagrange_interpolant_derivative_left_, NDG.lagrange_interpolant_derivative_right_);
+        SEM::interpolate_to_boundaries<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_, NDG.lagrange_interpolant_derivative_left_, NDG.lagrange_interpolant_derivative_right_);
         boundary_conditions();
-        SEM::calculate_fluxes<<<faces_numBlocks_, faces_blockSize, 0, stream_>>>(N_faces_, faces_, elements_);
-        SEM::compute_dg_derivative<<<elements_numBlocks_, elements_blockSize, 0, stream_>>>(viscosity, N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.g_hat_derivative_matrices_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
-        SEM::rk3_first_step<<<elements_numBlocks_, elements_blockSize, 0, stream_>>>(N_elements_, elements_, delta_t, 1.0f/3.0f);
+        SEM::calculate_fluxes<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(N_faces_, faces_, elements_);
+        SEM::compute_dg_derivative<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(viscosity, N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.g_hat_derivative_matrices_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        SEM::rk3_first_step<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, delta_t, 1.0f/3.0f);
 
         t = time + 0.33333333333f * delta_t;
-        SEM::interpolate_to_boundaries<<<elements_numBlocks_, elements_blockSize, 0, stream_>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_, NDG.lagrange_interpolant_derivative_left_, NDG.lagrange_interpolant_derivative_right_);
+        SEM::interpolate_to_boundaries<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_, NDG.lagrange_interpolant_derivative_left_, NDG.lagrange_interpolant_derivative_right_);
         boundary_conditions();
-        SEM::calculate_fluxes<<<faces_numBlocks_, faces_blockSize, 0, stream_>>>(N_faces_, faces_, elements_);
-        SEM::compute_dg_derivative<<<elements_numBlocks_, elements_blockSize, 0, stream_>>>(viscosity, N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.g_hat_derivative_matrices_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
-        SEM::rk3_step<<<elements_numBlocks_, elements_blockSize, 0, stream_>>>(N_elements_, elements_, delta_t, -5.0f/9.0f, 15.0f/16.0f);
+        SEM::calculate_fluxes<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(N_faces_, faces_, elements_);
+        SEM::compute_dg_derivative<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(viscosity, N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.g_hat_derivative_matrices_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        SEM::rk3_step<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, delta_t, -5.0f/9.0f, 15.0f/16.0f);
 
         t = time + 0.75f * delta_t;
-        SEM::interpolate_to_boundaries<<<elements_numBlocks_, elements_blockSize, 0, stream_>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_, NDG.lagrange_interpolant_derivative_left_, NDG.lagrange_interpolant_derivative_right_);
+        SEM::interpolate_to_boundaries<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_, NDG.lagrange_interpolant_derivative_left_, NDG.lagrange_interpolant_derivative_right_);
         boundary_conditions();
-        SEM::calculate_fluxes<<<faces_numBlocks_, faces_blockSize, 0, stream_>>>(N_faces_, faces_, elements_);
-        SEM::compute_dg_derivative<<<elements_numBlocks_, elements_blockSize, 0, stream_>>>(viscosity, N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.g_hat_derivative_matrices_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
-        SEM::rk3_step<<<elements_numBlocks_, elements_blockSize, 0, stream_>>>(N_elements_, elements_, delta_t, -153.0f/128.0f, 8.0f/15.0f);
+        SEM::calculate_fluxes<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(N_faces_, faces_, elements_);
+        SEM::compute_dg_derivative<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(viscosity, N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.g_hat_derivative_matrices_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        SEM::rk3_step<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, delta_t, -153.0f/128.0f, 8.0f/15.0f);
               
         time += delta_t;
         for (auto const& e : std::as_const(output_times)) {
             if ((time >= e) && (time < e + delta_t)) {
-                SEM::estimate_error<Polynomial><<<elements_numBlocks_, elements_blockSize, 0, stream_>>>(N_elements_, elements_, NDG.nodes_, NDG.weights_);
+                SEM::estimate_error<Polynomial><<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, NDG.nodes_, NDG.weights_);
                 write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
                 adapt(NDG.N_max_, NDG.nodes_, NDG.barycentric_weights_);
                 delta_t = get_delta_t(CFL);
@@ -419,13 +414,13 @@ void SEM::Mesh_t::solve(const deviceFloat CFL, const std::vector<deviceFloat> ou
     }
 
     if (!did_write) {
-        SEM::estimate_error<Polynomial><<<elements_numBlocks_, elements_blockSize, 0, stream_>>>(N_elements_, elements_, NDG.nodes_, NDG.weights_);
+        SEM::estimate_error<Polynomial><<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, NDG.nodes_, NDG.weights_);
         write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
     }
 }
 
 deviceFloat SEM::Mesh_t::get_delta_t(const deviceFloat CFL) {   
-    SEM::reduce_delta_t<elements_blockSize/2><<<elements_numBlocks_, elements_blockSize/2, 0, stream_>>>(CFL, N_elements_, elements_, device_delta_t_array_);
+    SEM::reduce_delta_t<elements_blockSize_/2><<<elements_numBlocks_, elements_blockSize_/2, 0, stream_>>>(CFL, N_elements_, elements_, device_delta_t_array_);
     cudaMemcpy(host_delta_t_array_, device_delta_t_array_, elements_numBlocks_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
 
     double delta_t_min_local = std::numeric_limits<double>::infinity();
@@ -441,7 +436,7 @@ deviceFloat SEM::Mesh_t::get_delta_t(const deviceFloat CFL) {
 
 void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights) {
     // CHECK needs to rebuild boundaries
-    SEM::reduce_refine<elements_blockSize/2><<<elements_numBlocks_, elements_blockSize/2, 0, stream_>>>(N_elements_, elements_, device_refine_array_);
+    SEM::reduce_refine<elements_blockSize_/2><<<elements_numBlocks_, elements_blockSize_/2, 0, stream_>>>(N_elements_, elements_, device_refine_array_);
     cudaMemcpy(host_refine_array_, device_refine_array_, elements_numBlocks_ * sizeof(unsigned long), cudaMemcpyDeviceToHost);
 
     unsigned long additional_elements = 0;
@@ -451,7 +446,7 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
     }
 
     if (additional_elements == 0) {
-        SEM::p_adapt<<<elements_numBlocks_, elements_blockSize, 0, stream_>>>(N_elements_, elements_, N_max, nodes, barycentric_weights);
+        SEM::p_adapt<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, N_max, nodes, barycentric_weights);
         return;
     }
 
@@ -464,10 +459,10 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
     cudaMalloc(&new_elements, (N_elements_ + additional_elements) * sizeof(Element_t));
     cudaMalloc(&new_faces, (N_faces_ + additional_elements) * sizeof(Face_t));
 
-    SEM::copy_faces<<<faces_numBlocks_, faces_blockSize, 0, stream_>>>(N_faces_, faces_, new_faces);
-    SEM::adapt<<<elements_numBlocks_, elements_blockSize, 0, stream_>>>(N_elements_, elements_, new_elements, new_faces, device_refine_array_, N_max, nodes, barycentric_weights);
+    SEM::copy_faces<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(N_faces_, faces_, new_faces);
+    SEM::adapt<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, new_elements, new_faces, device_refine_array_, N_max, nodes, barycentric_weights);
 
-    SEM::free_elements<<<elements_numBlocks_, elements_blockSize, 0, stream_>>>(N_elements_ + N_local_boundaries_ + N_MPI_boundaries_, elements_);
+    SEM::free_elements<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_ + N_local_boundaries_ + N_MPI_boundaries_, elements_);
     cudaFree(elements_);
     cudaFree(faces_);
     elements_ = new_elements;
@@ -475,9 +470,9 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
     
     N_elements_ += additional_elements;
     N_faces_ += additional_elements;
-    elements_numBlocks_ = (N_elements_ + elements_blockSize - 1) / elements_blockSize;
-    faces_numBlocks_ = (N_faces_ + faces_blockSize - 1) / faces_blockSize;
-    boundaries_numBlocks_ = (N_local_boundaries_ + N_MPI_boundaries_ + boundaries_blockSize - 1) / boundaries_blockSize;
+    elements_numBlocks_ = (N_elements_ + elements_blockSize_ - 1) / elements_blockSize_;
+    faces_numBlocks_ = (N_faces_ + faces_blockSize_ - 1) / faces_blockSize_;
+    boundaries_numBlocks_ = (N_local_boundaries_ + N_MPI_boundaries_ + boundaries_blockSize_ - 1) / boundaries_blockSize_;
     N_elements_per_process_ = N_elements_per_process_; // CHECK change
 
     delete[] host_delta_t_array_;
@@ -531,8 +526,8 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
 }
 
 void SEM::Mesh_t::boundary_conditions() {
-    SEM::local_boundaries<<<boundaries_numBlocks_, boundaries_blockSize, 0, stream_>>>(N_elements_, N_local_boundaries_, elements_, local_boundary_to_element_);
-    SEM::get_MPI_boundaries<<<boundaries_numBlocks_, boundaries_blockSize, 0, stream_>>>(N_elements_, N_local_boundaries_, N_MPI_boundaries_, elements_, faces_, device_boundary_phi_L_, device_boundary_phi_R_, device_boundary_phi_prime_L_, device_boundary_phi_prime_R_);
+    SEM::local_boundaries<<<boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(N_elements_, N_local_boundaries_, elements_, local_boundary_to_element_);
+    SEM::get_MPI_boundaries<<<boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(N_elements_, N_local_boundaries_, N_MPI_boundaries_, elements_, faces_, device_boundary_phi_L_, device_boundary_phi_R_, device_boundary_phi_prime_L_, device_boundary_phi_prime_R_);
     
     cudaMemcpy(host_boundary_phi_L_, device_boundary_phi_L_, N_MPI_boundaries_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_boundary_phi_R_, device_boundary_phi_R_, N_MPI_boundaries_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
@@ -564,7 +559,7 @@ void SEM::Mesh_t::boundary_conditions() {
     cudaMemcpy(device_boundary_phi_prime_L_, host_boundary_phi_prime_L_, N_MPI_boundaries_ * sizeof(deviceFloat), cudaMemcpyHostToDevice);
     cudaMemcpy(device_boundary_phi_prime_R_, host_boundary_phi_prime_R_, N_MPI_boundaries_ * sizeof(deviceFloat), cudaMemcpyHostToDevice);
 
-    SEM::put_MPI_boundaries<<<boundaries_numBlocks_, boundaries_blockSize, 0, stream_>>>(N_elements_, N_local_boundaries_, N_MPI_boundaries_, elements_, device_boundary_phi_L_, device_boundary_phi_R_, device_boundary_phi_prime_L_, device_boundary_phi_prime_R_);
+    SEM::put_MPI_boundaries<<<boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(N_elements_, N_local_boundaries_, N_MPI_boundaries_, elements_, device_boundary_phi_L_, device_boundary_phi_R_, device_boundary_phi_prime_L_, device_boundary_phi_prime_R_);
 }
 
 __global__
