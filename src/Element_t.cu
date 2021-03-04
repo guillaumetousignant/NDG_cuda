@@ -63,6 +63,7 @@ SEM::Element_t::Element_t(SEM::Element_t&& other) :
         coarsen_(other.coarsen_),
         error_(other.error_) {
     
+    other.phi_ = nullptr;
     other.q_ = nullptr;
     other.ux_ = nullptr;
     other.phi_prime_ = nullptr;
