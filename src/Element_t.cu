@@ -188,8 +188,7 @@ void SEM::Element_t::estimate_error<Polynomial>(const deviceFloat* nodes, const 
     for (int k = 0; k <= N_; ++k) {
         intermediate_[k] = 0.0;
         for (int i = 0; i <= N_; ++i) {
-            deviceFloat L_N;
-            Polynomial::polynomial(k, nodes[offset_1D + i], L_N);
+            const deviceFloat L_N = Polynomial::polynomial(k, nodes[offset_1D + i]);
 
             intermediate_[k] += (2 * k + 1) * 0.5 * phi_[i] * L_N * weights[offset_1D + i];
         }
