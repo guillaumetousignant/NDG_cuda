@@ -55,7 +55,7 @@ template void SEM::Element_host_t::estimate_error<SEM::ChebyshevPolynomial_host_
 template void SEM::Element_host_t::estimate_error<SEM::LegendrePolynomial_host_t>(const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& weights);
 
 template<typename Polynomial>
-void SEM::Element_host_t::estimate_error<Polynomial>(const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& weights) {
+void SEM::Element_host_t::estimate_error(const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& weights) {
     for (int k = 0; k <= N_; ++k) {
         intermediate_[k] = 0.0;
         for (int i = 0; i <= N_; ++i) {
