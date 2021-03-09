@@ -16,6 +16,7 @@ namespace SEM {
 
             std::array<size_t, 2> elements_; // left, right
             hostFloat flux_;
+            hostFloat derivative_flux_;
     };
 }
 
