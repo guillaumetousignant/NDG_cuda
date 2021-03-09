@@ -13,8 +13,6 @@ SEM::Element_t::Element_t(int N, size_t face_L, size_t face_R, deviceFloat x_L, 
         x_{x_L, x_R},
         delta_x_(x_[1] - x_[0]),
         phi_(new deviceFloat[N_ + 1]),
-        q_(new deviceFloat[N_ + 1]),
-        ux_(new deviceFloat[N_ + 1]),
         phi_prime_(new deviceFloat[N_ + 1]),
         intermediate_(new deviceFloat[N_ + 1]),
         sigma_(0.0),
@@ -29,8 +27,6 @@ SEM::Element_t::Element_t(const SEM::Element_t& other) :
         x_{other.x_[0], other.x_[1]},
         delta_x_(other.delta_x_),
         phi_(new deviceFloat[N_ + 1]),
-        q_(new deviceFloat[N_ + 1]),
-        ux_(new deviceFloat[N_ + 1]),
         phi_prime_(new deviceFloat[N_ + 1]),
         intermediate_(new deviceFloat[N_ + 1]),
         sigma_(other.sigma_),
@@ -40,8 +36,6 @@ SEM::Element_t::Element_t(const SEM::Element_t& other) :
 
     for (int i = 0; i <= N_; ++i) {
         phi_[i] = other.phi_[i];
-        q_[i] = other.q_[i];
-        ux_[i] = other.ux_[i];
         phi_prime_[i] = other.phi_prime_[i];
         intermediate_[i] = other.intermediate_[i];
     }
@@ -54,8 +48,6 @@ SEM::Element_t::Element_t(SEM::Element_t&& other) :
         x_{other.x_[0], other.x_[1]},
         delta_x_(other.delta_x_),
         phi_(other.phi_),
-        q_(other.q_),
-        ux_(other.ux_),
         phi_prime_(other.phi_prime_),
         intermediate_(other.intermediate_),
         sigma_(other.sigma_),
@@ -64,8 +56,6 @@ SEM::Element_t::Element_t(SEM::Element_t&& other) :
         error_(other.error_) {
     
     other.phi_ = nullptr;
-    other.q_ = nullptr;
-    other.ux_ = nullptr;
     other.phi_prime_ = nullptr;
     other.intermediate_ = nullptr;
 }
@@ -74,15 +64,11 @@ __device__
 SEM::Element_t& SEM::Element_t::operator=(const SEM::Element_t& other) {
     if (N_ != other.N_) {
         delete[] phi_;
-        delete[] q_;
-        delete[] ux_;
         delete[] phi_prime_;
         delete[] intermediate_;
 
         N_ = other.N_;
         phi_ = new deviceFloat[N_];
-        q_ = new deviceFloat[N_];
-        ux_ = new deviceFloat[N_];
         phi_prime_ = new deviceFloat[N_];
         intermediate_ = new deviceFloat[N_];
     }
@@ -99,8 +85,6 @@ SEM::Element_t& SEM::Element_t::operator=(const SEM::Element_t& other) {
 
     for (int i = 0; i <= N_; ++i) {
         phi_[i] = other.phi_[i];
-        q_[i] = other.q_[i];
-        ux_[i] = other.ux_[i];
         phi_prime_[i] = other.phi_prime_[i];
         intermediate_[i] = other.intermediate_[i];
     }
@@ -122,8 +106,6 @@ SEM::Element_t& SEM::Element_t::operator=(SEM::Element_t&& other) {
     error_ = other.error_;
 
     thrust::swap(phi_, other.phi_);
-    thrust::swap(q_, other.q_);
-    thrust::swap(ux_, other.ux_);
     thrust::swap(phi_prime_, other.phi_prime_);
     thrust::swap(intermediate_, other.intermediate_);
     
@@ -137,8 +119,6 @@ SEM::Element_t::Element_t() :
         x_{0.0, 0.0},
         delta_x_(0.0),
         phi_(nullptr),
-        q_(nullptr),
-        ux_(nullptr),
         phi_prime_(nullptr),
         intermediate_(nullptr),
         sigma_(0.0),
@@ -149,8 +129,6 @@ SEM::Element_t::Element_t() :
 __host__ __device__
 SEM::Element_t::~Element_t() {
     delete [] phi_;
-    delete [] q_;
-    delete [] ux_;
     delete [] phi_prime_;
     delete [] intermediate_;
 }
@@ -285,8 +263,6 @@ void SEM::build_elements(size_t N_elements, int N, SEM::Element_t* elements, dev
 
         // Those are uninitialised because they are created via cudaMalloc, so they need to be set if we don't want the move constructor to delete random memory.
         elements[i].phi_ = nullptr;
-        elements[i].q_ = nullptr;
-        elements[i].ux_ = nullptr;
         elements[i].phi_prime_ = nullptr;
         elements[i].intermediate_ = nullptr;
 
@@ -323,8 +299,6 @@ void SEM::build_boundaries(size_t N_elements, size_t N_elements_global, size_t N
 
         // Those are uninitialised because they are created via cudaMalloc, so they need to be set if we don't want the move constructor to delete random memory.
         elements[N_elements + i].phi_ = nullptr;
-        elements[N_elements + i].q_ = nullptr;
-        elements[N_elements + i].ux_ = nullptr;
         elements[N_elements + i].phi_prime_ = nullptr;
         elements[N_elements + i].intermediate_ = nullptr;
 
@@ -357,8 +331,6 @@ void SEM::build_boundaries(size_t N_elements, size_t N_elements_global, size_t N
 
         // Those are uninitialised because they are created via cudaMalloc, so they need to be set if we don't want the move constructor to delete random memory.
         elements[N_elements + N_local_boundaries + i].phi_ = nullptr;
-        elements[N_elements + N_local_boundaries + i].q_ = nullptr;
-        elements[N_elements + N_local_boundaries + i].ux_ = nullptr;
         elements[N_elements + N_local_boundaries + i].phi_prime_ = nullptr;
         elements[N_elements + N_local_boundaries + i].intermediate_ = nullptr;
 
@@ -373,13 +345,9 @@ void SEM::free_elements(size_t N_elements, SEM::Element_t* elements) {
 
     for (int i = index; i < N_elements; i += stride) {
         delete[] elements[i].phi_;
-        delete[] elements[i].q_;
-        delete[] elements[i].ux_;
         delete[] elements[i].phi_prime_;
         delete[] elements[i].intermediate_;
         elements[i].phi_ = nullptr;
-        elements[i].q_ = nullptr;
-        elements[i].ux_ = nullptr;
         elements[i].phi_prime_ = nullptr;
         elements[i].intermediate_ = nullptr;
     }
@@ -511,13 +479,9 @@ void SEM::adapt(unsigned long N_elements, SEM::Element_t* elements, SEM::Element
             
             // Those are uninitialised because they are created via cudaMalloc, so they need to be set if we don't want the move constructor to delete random memory.
             new_elements[i].phi_ = nullptr;
-            new_elements[i].q_ = nullptr;
-            new_elements[i].ux_ = nullptr;
             new_elements[i].phi_prime_ = nullptr;
             new_elements[i].intermediate_ = nullptr;
             new_elements[new_index].phi_ = nullptr;
-            new_elements[new_index].q_ = nullptr;
-            new_elements[new_index].ux_ = nullptr;
             new_elements[new_index].phi_prime_ = nullptr;
             new_elements[new_index].intermediate_ = nullptr;
 
@@ -531,8 +495,6 @@ void SEM::adapt(unsigned long N_elements, SEM::Element_t* elements, SEM::Element
         }
         else if (elements[i].refine_ && elements[i].N_ < N_max) {
             new_elements[i].phi_ = nullptr;
-            new_elements[i].q_ = nullptr;
-            new_elements[i].ux_ = nullptr;
             new_elements[i].phi_prime_ = nullptr;
             new_elements[i].intermediate_ = nullptr;
 
@@ -542,8 +504,6 @@ void SEM::adapt(unsigned long N_elements, SEM::Element_t* elements, SEM::Element
         else {
             // Those are uninitialised because they are created via cudaMalloc, so they need to be set if we don't want the move constructor to delete random memory.
             new_elements[i].phi_ = nullptr;
-            new_elements[i].q_ = nullptr;
-            new_elements[i].ux_ = nullptr;
             new_elements[i].phi_prime_ = nullptr;
             new_elements[i].intermediate_ = nullptr;
             

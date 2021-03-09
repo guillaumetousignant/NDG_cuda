@@ -138,8 +138,6 @@ TEST_CASE("Initial conditions boundary values", "Checks the extrapolated boundar
     // Invalidate GPU pointers, or else they will be deleted on the CPU, where they point to random stuff
     for (size_t i = 0; i < mesh.N_elements_ + mesh.N_local_boundaries_ + mesh.N_MPI_boundaries_; ++i) {
         host_elements[i].phi_ = nullptr;
-        host_elements[i].q_ = nullptr;
-        host_elements[i].ux_ = nullptr;
         host_elements[i].phi_prime_ = nullptr;
         host_elements[i].intermediate_ = nullptr;
     }

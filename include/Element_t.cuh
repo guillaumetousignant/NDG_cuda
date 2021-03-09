@@ -37,8 +37,6 @@ namespace SEM {
             deviceFloat phi_prime_L_;
             deviceFloat phi_prime_R_;
             deviceFloat* phi_; // Solution
-            deviceFloat* q_;
-            deviceFloat* ux_;
             deviceFloat* phi_prime_;
             deviceFloat* intermediate_; // This is used for RK3, and also for adaptivity. So don't try to adapt between rk steps.
 

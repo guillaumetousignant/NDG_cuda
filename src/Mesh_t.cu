@@ -120,8 +120,6 @@ void SEM::Mesh_t::print() {
     // Invalidate GPU pointers, or else they will be deleted on the CPU, where they point to random stuff
     for (size_t i = 0; i < N_elements_ + N_local_boundaries_ + N_MPI_boundaries_; ++i) {
         host_elements[i].phi_ = nullptr;
-        host_elements[i].q_ = nullptr;
-        host_elements[i].ux_ = nullptr;
         host_elements[i].phi_prime_ = nullptr;
         host_elements[i].intermediate_ = nullptr;
     }

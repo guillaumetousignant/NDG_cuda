@@ -9,6 +9,8 @@ namespace SEM {
         public: 
             // Algorithm 26
             static void nodes_and_weights(int N, std::vector<hostFloat>& nodes, std::vector<hostFloat>& weights);
+
+            static hostFloat polynomial(int N, hostFloat x);
     };
 }
 

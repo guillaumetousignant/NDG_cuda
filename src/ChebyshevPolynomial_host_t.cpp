@@ -10,3 +10,7 @@ void SEM::ChebyshevPolynomial_host_t::nodes_and_weights(int N, std::vector<hostF
         weights[i] = pi / (N + 1);
     }
 }
+
+hostFloat SEM::ChebyshevPolynomial_host_t::polynomial(int N, hostFloat x) {
+    return std::cos(N * std::acos(x));
+}
