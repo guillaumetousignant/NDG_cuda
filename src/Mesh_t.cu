@@ -647,7 +647,7 @@ void SEM::compute_dg_derivative(deviceFloat viscosity, size_t N_elements, Elemen
 
         //printf("For k=%u - Fluxes: un=%f, up=%f, qn=%f, qp=%f\n", i, flux_L, flux_R, derivative_flux_L, derivative_flux_R);
         //printf("Element %u has phi_L %f and phi_R %f\n", i, elements[i].phi_L_, elements[i].phi_R_);
-        printf("Element %u has phi_prime_L %f and phi_prime_R %f\n", i, elements[i].phi_prime_L_, elements[i].phi_prime_R_);
+        //printf("Element %u has phi_prime_L %f and phi_prime_R %f\n", i, elements[i].phi_prime_L_, elements[i].phi_prime_R_);
 
         SEM::matrix_vector_multiply(elements[i].N_, derivative_matrices_hat + offset_2D, elements[i].phi_, elements[i].q_);
         for (int j = 0; j <= elements[i].N_; ++j) {
