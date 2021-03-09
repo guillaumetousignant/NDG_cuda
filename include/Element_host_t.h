@@ -35,6 +35,8 @@ namespace SEM {
             template<typename Polynomial>
             void estimate_error(const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& weights);
 
+            void interpolate_from(const Element_host_t& other, const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& barycentric_weights);
+
         private: 
             // Basically useless, find better solution when multiple elements.
             static void get_elements_data(size_t N_elements, const Element_host_t* elements, hostFloat* phi, hostFloat* phi_prime);
@@ -43,6 +45,9 @@ namespace SEM {
             static void get_phi(size_t N_elements, const Element_host_t* elements, hostFloat* phi);
 
             hostFloat exponential_decay();
+
+            // From cppreference.com
+            static bool almost_equal(hostFloat x, hostFloat y);
     };
 }
 

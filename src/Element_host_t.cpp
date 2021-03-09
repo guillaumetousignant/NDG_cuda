@@ -116,3 +116,32 @@ hostFloat SEM::Element_host_t::exponential_decay() {
     sigma_ = std::abs(sigma_);
     return C;
 }
+
+void SEM::Element_host_t::interpolate_from(const SEM::Element_host_t& other, const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& barycentric_weights) {
+    for (int i = 0; i <= N_; ++i) {
+        const hostFloat x = (x_[1] - x_[0]) * (nodes[N_][i] + 1) * 0.5 + x_[0];
+        const hostFloat node = (2 * x - other.x_[0] - other.x_[1])/(other.x_[1] - other.x_[0]);
+        hostFloat numerator = 0.0;
+        hostFloat denominator = 0.0;
+        for (int j = 0; j <= other.N_; ++j) {
+            if (almost_equal(node, nodes[N_][j])) {
+                numerator = other.phi_[j];
+                denominator = 1.0;
+                break;
+            }
+            const hostFloat t = barycentric_weights[other.N_][j]/(node - nodes[N_][j]);
+            numerator += t * other.phi_[j];
+            denominator += t;
+        }
+        phi_[i] = numerator/denominator;
+    }
+}
+
+bool SEM::Element_host_t::almost_equal(hostFloat x, hostFloat y) {
+    constexpr int ulp = 2; // ULP
+    // the machine epsilon has to be scaled to the magnitude of the values used
+    // and multiplied by the desired precision in ULPs (units in the last place)
+    return std::abs(x-y) <= FLT_EPSILON * std::abs(x+y) * ulp // CHECK change this to double equivalent if using double instead of float
+        // unless the result is subnormal
+        || std::abs(x-y) < FLT_MIN; // CHECK change this to 64F if using double instead of float
+}
