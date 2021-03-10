@@ -20,6 +20,8 @@ SEM::NDG_host_t<Polynomial>::NDG_host_t(int N_max, size_t N_interpolation_points
         barycentric_weights_(N_max + 1),
         lagrange_interpolant_left_(N_max + 1),
         lagrange_interpolant_right_(N_max + 1),
+        lagrange_interpolant_derivative_left_(N_max + 1),
+        lagrange_interpolant_derivative_right_(N_max + 1),
         derivative_matrices_(N_max + 1),
         derivative_matrices_hat_(N_max + 1),
         g_hat_derivative_matrices_(N_max + 1),
@@ -31,6 +33,8 @@ SEM::NDG_host_t<Polynomial>::NDG_host_t(int N_max, size_t N_interpolation_points
         barycentric_weights_[N] = std::vector<hostFloat>(N + 1);
         lagrange_interpolant_left_[N] = std::vector<hostFloat>(N + 1);
         lagrange_interpolant_right_[N] = std::vector<hostFloat>(N + 1);
+        lagrange_interpolant_derivative_left_[N] = std::vector<hostFloat>(N + 1);
+        lagrange_interpolant_derivative_right_[N] = std::vector<hostFloat>(N + 1);
         derivative_matrices_[N] = std::vector<hostFloat>(std::pow(N + 1, 2));
         derivative_matrices_hat_[N] = std::vector<hostFloat>(std::pow(N + 1, 2));
         g_hat_derivative_matrices_[N] = std::vector<hostFloat>(std::pow(N + 1, 2));
@@ -44,8 +48,12 @@ SEM::NDG_host_t<Polynomial>::NDG_host_t(int N_max, size_t N_interpolation_points
         create_interpolation_matrices(N, N_interpolation_points_, nodes_[N], barycentric_weights_[N], interpolation_matrices_[N]);
         lagrange_interpolating_polynomials(-1.0, N, nodes_[N], barycentric_weights_[N], lagrange_interpolant_left_[N]);
         lagrange_interpolating_polynomials(1.0, N, nodes_[N], barycentric_weights_[N], lagrange_interpolant_right_[N]);
+        lagrange_interpolating_derivative_polynomials(-1.0, N, nodes_[N], barycentric_weights_[N], lagrange_interpolant_derivative_left_[N]);
+        lagrange_interpolating_derivative_polynomials(1.0, N, nodes_[N], barycentric_weights_[N], lagrange_interpolant_derivative_right_[N]);
         normalize_lagrange_interpolating_polynomials(N, lagrange_interpolant_left_[N]);
         normalize_lagrange_interpolating_polynomials(N, lagrange_interpolant_right_[N]);
+        normalize_lagrange_interpolating_derivative_polynomials(-1.0, N, nodes_[N], barycentric_weights_[N], lagrange_interpolant_derivative_left_[N]);
+        normalize_lagrange_interpolating_derivative_polynomials(1.0, N, nodes_[N], barycentric_weights_[N], lagrange_interpolant_derivative_right_[N]);
         polynomial_derivative_matrices_diagonal(N, derivative_matrices_[N]);
         polynomial_derivative_matrices_hat(N, weights_[N], derivative_matrices_[N], derivative_matrices_hat_[N]);
         polynomial_cg_derivative_matrices(N, weights_[N], derivative_matrices_[N], g_hat_derivative_matrices_[N]);
@@ -207,6 +215,27 @@ void SEM::NDG_host_t<Polynomial>::normalize_lagrange_interpolating_polynomials(i
     }
     for (int i = 0; i <= N; ++i) {
         lagrange_interpolant[i] /= sum;
+    }
+}
+
+// This will not work if we are on a node, or at least be pretty inefficient
+// Algorithm 36
+template<typename Polynomial>
+void SEM::NDG_host_t<Polynomial>::lagrange_interpolating_derivative_polynomials(hostFloat x, int N, const std::vector<hostFloat>& nodes, const std::vector<hostFloat>& barycentric_weights, std::vector<hostFloat>& lagrange_derivative_interpolant) {
+    for (int i = 0; i <= N; ++i) {
+        lagrange_derivative_interpolant[i] = barycentric_weights[i] / ((x - nodes[i]) * (x - nodes[i]));
+    }
+}
+
+// Algorithm 36
+template<typename Polynomial>
+void SEM::NDG_host_t<Polynomial>::normalize_lagrange_interpolating_derivative_polynomials(hostFloat x, int N, const std::vector<hostFloat>& nodes, const std::vector<hostFloat>& barycentric_weights, std::vector<hostFloat>& lagrange_derivative_interpolant) {
+    deviceFloat sum = 0.0;
+    for (int i = 0; i <= N; ++i) {
+        sum += barycentric_weights[i]/(x - nodes[i]);
+    }
+    for (int i = 0; i <= N; ++i) {
+        lagrange_derivative_interpolant[i] /= sum;
     }
 }
 

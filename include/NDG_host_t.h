@@ -18,6 +18,8 @@ namespace SEM {
             std::vector<std::vector<hostFloat>> barycentric_weights_;
             std::vector<std::vector<hostFloat>> lagrange_interpolant_left_;
             std::vector<std::vector<hostFloat>> lagrange_interpolant_right_;
+            std::vector<std::vector<hostFloat>> lagrange_interpolant_derivative_left_;
+            std::vector<std::vector<hostFloat>> lagrange_interpolant_derivative_right_;
             std::vector<std::vector<hostFloat>> derivative_matrices_;
             std::vector<std::vector<hostFloat>> derivative_matrices_hat_;
             std::vector<std::vector<hostFloat>> g_hat_derivative_matrices_;
@@ -38,6 +40,13 @@ namespace SEM {
 
             // Algorithm 34
             static void normalize_lagrange_interpolating_polynomials(int N, std::vector<hostFloat>& lagrange_interpolant);
+
+            // This will not work if we are on a node, or at least be pretty inefficient
+            // Algorithm 36
+            static void lagrange_interpolating_derivative_polynomials(hostFloat x, int N, const std::vector<hostFloat>& nodes, const std::vector<hostFloat>& barycentric_weights, std::vector<hostFloat>& lagrange_derivative_interpolant);
+
+            // Algorithm 36
+            static void normalize_lagrange_interpolating_derivative_polynomials(hostFloat x, int N, const std::vector<hostFloat>& nodes, const std::vector<hostFloat>& barycentric_weights, std::vector<hostFloat>& lagrange_derivative_interpolant);
 
             // Be sure to compute the diagonal afterwards
             // Algorithm 37
