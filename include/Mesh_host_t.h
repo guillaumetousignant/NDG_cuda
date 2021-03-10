@@ -6,6 +6,8 @@
 #include "Face_host_t.h"
 #include "NDG_host_t.h"
 #include <vector>
+#include <mpi.h>
+#include <array>
 
 namespace SEM {
     class Mesh_host_t {
@@ -13,9 +15,18 @@ namespace SEM {
             Mesh_host_t(size_t N_elements, int initial_N, hostFloat x_min, hostFloat x_max);
             ~Mesh_host_t();
 
+            size_t N_elements_global_;
+            size_t N_elements_;
+            size_t N_local_boundaries_;
+            size_t N_MPI_boundaries_;
+            size_t global_element_offset_;
+            size_t N_elements_per_process_;
             int initial_N_;
             std::vector<Element_host_t> elements_;
             std::vector<Face_host_t> faces_;
+            std::vector<size_t> local_boundary_to_element_;
+            std::vector<size_t> MPI_boundary_to_element_;
+            std::vector<size_t> MPI_boundary_from_element_;
 
             void set_initial_conditions(const std::vector<std::vector<hostFloat>>& nodes);
             void print();
@@ -25,10 +36,16 @@ namespace SEM {
             void solve(hostFloat delta_t, const std::vector<hostFloat> output_times, const NDG_host_t<Polynomial> &NDG);
 
             void build_elements(hostFloat x_min, hostFloat x_max);
+            void build_boundaries(hostFloat x_min, hostFloat x_max);
             void build_faces();
             void get_solution(size_t N_interpolation_points, const std::vector<std::vector<hostFloat>>& interpolation_matrices, std::vector<hostFloat>& phi, std::vector<hostFloat>& x);
 
         private:
+            std::vector<std::array<double, 4>> send_buffers_;
+            std::vector<std::array<double, 4>> receive_buffers_;
+            std::vector<MPI_Request> requests_;
+            std::vector<MPI_Status> statuses_;
+
             static hostFloat g(hostFloat x);
             void interpolate_to_boundaries(const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right);
             static void write_file_data(hostFloat time, const std::vector<hostFloat>& velocity, const std::vector<hostFloat>& coordinates);

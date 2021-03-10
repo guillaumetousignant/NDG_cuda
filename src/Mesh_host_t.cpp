@@ -13,12 +13,41 @@ namespace fs = std::filesystem;
 constexpr hostFloat pi = 3.14159265358979323846;
 
 SEM::Mesh_host_t::Mesh_host_t(size_t N_elements, int initial_N, hostFloat x_min, hostFloat x_max) : 
-        initial_N_(initial_N),
-        elements_(N_elements),
-        faces_(N_elements) {
+        initial_N_(initial_N) {
     // CHECK N_faces = N_elements only for periodic BC.
+
+    int global_rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
+    int global_size;
+    MPI_Comm_size(MPI_COMM_WORLD, &global_size);
+
+    N_elements_per_process_ = (N_elements_global_ + global_size - 1)/global_size;
+    N_elements_ = (global_rank == global_size - 1) ? N_elements_per_process_ + N_elements_global_ - N_elements_per_process_ * global_size : N_elements_per_process_;
+    if (N_elements_ == N_elements_global_) {
+        N_local_boundaries_ = 2;
+        N_MPI_boundaries_ = 0;
+    }
+    else {
+        N_local_boundaries_ = 0;
+        N_MPI_boundaries_ = 2;
+    }
+
+    const size_t N_faces = N_elements_ + N_local_boundaries_ + N_MPI_boundaries_ - 1; 
+    global_element_offset_ = global_rank * N_elements_per_process_;
+
+    faces_ = std::vector<Face_host_t>(N_faces);
+    elements_ = std::vector<Element_host_t>(N_elements_ + N_local_boundaries_ + N_MPI_boundaries_);
+    send_buffers_ = std::vector<std::array<double, 4>>(N_MPI_boundaries_);
+    receive_buffers_ = std::vector<std::array<double, 4>>(N_MPI_boundaries_);
+    requests_ = std::vector<MPI_Request>(N_MPI_boundaries_*2);
+    statuses_ = std::vector<MPI_Status>(N_MPI_boundaries_*2);
+
+    const hostFloat delta_x = (x_max - x_min)/N_elements_global_;
+    const hostFloat x_min_local = x_min + delta_x * global_rank * N_elements_per_process_;
+    const hostFloat x_max_local = x_min_local + N_elements_ * delta_x;
     
-    build_elements(x_min, x_max);
+    build_elements(x_min_local, x_max_local);
+    build_boundaries(x_min_local, x_max_local);
     build_faces(); // CHECK
 }
 
@@ -196,12 +225,67 @@ void SEM::Mesh_host_t::solve(hostFloat delta_t, const std::vector<hostFloat> out
 
 void SEM::Mesh_host_t::build_elements(hostFloat x_min, hostFloat x_max) {
     for (size_t i = 0; i < elements_.size(); ++i) {
-        const size_t face_L = (i > 0) ? i - 1 : elements_.size() - 1;
-        const size_t face_R = i;
-        const hostFloat delta_x = (x_max - x_min)/elements_.size();
+        const size_t face_L = i;
+        const size_t face_R = i + 1;
+        const hostFloat delta_x = (x_max - x_min)/N_elements_;
         const hostFloat element_x_min = x_min + i * delta_x;
-        const hostFloat element_y_min = x_min + (i + 1) * delta_x;
-        elements_[i] = Element_host_t(initial_N_, face_L, face_R, element_x_min, element_y_min);
+        const hostFloat element_x_max = x_min + (i + 1) * delta_x;
+
+        elements_[i] = Element_host_t(initial_N_, face_L, face_R, element_x_min, element_x_max);
+    }
+}
+
+void SEM::Mesh_host_t::build_boundaries(hostFloat x_min, hostFloat x_max) {
+    for (int i = 0; i < N_local_boundaries_; ++i) {
+        const hostFloat delta_x = (x_max - x_min)/N_elements_;
+        size_t face_L;
+        size_t face_R;
+        hostFloat element_x_min;
+        hostFloat element_x_max;
+
+        if (i == 0) { // CHECK this is hardcoded for 1D
+            face_L = 0;
+            face_R = 0;
+            element_x_min = x_min - delta_x;
+            element_x_max = x_min;
+            local_boundary_to_element_[i] = N_elements_ - 1;
+        }
+        else if (i == 1) {
+            face_L = N_elements_ + N_local_boundaries_ + N_MPI_boundaries_ - 2;
+            face_R = N_elements_ + N_local_boundaries_ + N_MPI_boundaries_ - 2;
+            element_x_min = x_max;
+            element_x_max = x_max + delta_x;
+            local_boundary_to_element_[i] = 0;
+        }
+
+        elements_[N_elements_ + i] = SEM::Element_host_t(0, face_L, face_R, element_x_min, element_x_max);
+    }
+
+    for (int i = 0; i < N_MPI_boundaries_; ++i) {
+        const hostFloat delta_x = (x_max - x_min)/N_elements_;
+        size_t face_L;
+        size_t face_R;
+        hostFloat element_x_min;
+        hostFloat element_x_max;
+
+        if (i == 0) { // CHECK this is hardcoded for 1D
+            face_L = 0;
+            face_R = 0;
+            element_x_min = x_min - delta_x;
+            element_x_max = x_min;
+            MPI_boundary_to_element_[i] = (global_element_offset_ == 0) ? N_elements_global_ - 1 : global_element_offset_ - 1;
+            MPI_boundary_from_element_[i] = global_element_offset_;
+        }
+        else if (i == 1) {
+            face_L = N_elements_ + N_local_boundaries_ + N_MPI_boundaries_ - 2;
+            face_R = N_elements_ + N_local_boundaries_ + N_MPI_boundaries_ - 2;
+            element_x_min = x_max;
+            element_x_max = x_max + delta_x;
+            MPI_boundary_to_element_[i] = (global_element_offset_ + N_elements_ == N_elements_global_) ? 0 : global_element_offset_ + N_elements_;
+            MPI_boundary_from_element_[i] = global_element_offset_ + N_elements_ - 1;
+        }
+
+        elements_[N_elements_ + N_local_boundaries_ + i] = SEM::Element_host_t(0, face_L, face_R, element_x_min, element_x_max);
     }
 }
 
