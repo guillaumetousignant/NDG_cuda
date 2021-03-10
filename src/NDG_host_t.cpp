@@ -22,6 +22,7 @@ SEM::NDG_host_t<Polynomial>::NDG_host_t(int N_max, size_t N_interpolation_points
         lagrange_interpolant_right_(N_max + 1),
         derivative_matrices_(N_max + 1),
         derivative_matrices_hat_(N_max + 1),
+        g_hat_derivative_matrices_(N_max + 1),
         interpolation_matrices_(N_max + 1) {
 
     for(int N = 0; N <= N_max; ++N) {
@@ -32,6 +33,7 @@ SEM::NDG_host_t<Polynomial>::NDG_host_t(int N_max, size_t N_interpolation_points
         lagrange_interpolant_right_[N] = std::vector<hostFloat>(N + 1);
         derivative_matrices_[N] = std::vector<hostFloat>(std::pow(N + 1, 2));
         derivative_matrices_hat_[N] = std::vector<hostFloat>(std::pow(N + 1, 2));
+        g_hat_derivative_matrices_[N] = std::vector<hostFloat>(std::pow(N + 1, 2));
         interpolation_matrices_[N] = std::vector<hostFloat>((N + 1) * N_interpolation_points_);
     }
 
@@ -46,6 +48,7 @@ SEM::NDG_host_t<Polynomial>::NDG_host_t(int N_max, size_t N_interpolation_points
         normalize_lagrange_interpolating_polynomials(N, lagrange_interpolant_right_[N]);
         polynomial_derivative_matrices_diagonal(N, derivative_matrices_[N]);
         polynomial_derivative_matrices_hat(N, weights_[N], derivative_matrices_[N], derivative_matrices_hat_[N]);
+        polynomial_cg_derivative_matrices(N, weights_[N], derivative_matrices_[N], g_hat_derivative_matrices_[N]);
     }
 }
 
@@ -111,6 +114,18 @@ void SEM::NDG_host_t<Polynomial>::print() {
             std::cout << '\t' << '\t';
             for (int j = 0; j <= N; ++j) {
                 std::cout << derivative_matrices_[N][i * (N + 1) + j] << " ";
+            }
+            std::cout << std::endl;
+        }
+    }
+
+    std::cout << std::endl << "CG derivative matrices: " << std::endl;
+    for (int N = 0; N <= N_max_; ++N) {
+        std::cout << '\t' << "N = " << N << ": " << std::endl;
+        for (int i = 0; i <= N; ++i) {
+            std::cout << '\t' << '\t';
+            for (int j = 0; j <= N; ++j) {
+                std::cout << g_hat_derivative_matrices_[N][i * (N + 1) + j] << " ";
             }
             std::cout << std::endl;
         }
@@ -227,6 +242,20 @@ void SEM::NDG_host_t<Polynomial>::polynomial_derivative_matrices_hat(int N, cons
     for (int i = 0; i <= N; ++i) {
         for (int j = 0; j <= N; ++j) {
             derivative_matrices_hat[i * (N + 1) + j] = derivative_matrices[j * (N + 1) + i] * weights[j] / weights[i];
+        }
+    }
+}
+
+// Algorithm 57
+template<typename Polynomial>
+void SEM::NDG_host_t<Polynomial>::polynomial_cg_derivative_matrices(int N, const std::vector<hostFloat>& weights, const std::vector<hostFloat>& derivative_matrices, std::vector<hostFloat>& g_hat_derivative_matrices) {
+    for (int j = 0; j <= N; ++j) {
+        for (int n = 0; n <= N; ++n) {
+            hostFloat s = 0.0;
+            for (int k = 0; k <= N; ++k) {
+                s += derivative_matrices[k * (N + 1) + n] * derivative_matrices[k * (N + 1) + j] * weights[k];
+            }
+            g_hat_derivative_matrices[j * (N + 1) + n] = s/weights[j];
         }
     }
 }

@@ -20,6 +20,7 @@ namespace SEM {
             std::vector<std::vector<hostFloat>> lagrange_interpolant_right_;
             std::vector<std::vector<hostFloat>> derivative_matrices_;
             std::vector<std::vector<hostFloat>> derivative_matrices_hat_;
+            std::vector<std::vector<hostFloat>> g_hat_derivative_matrices_;
             std::vector<std::vector<hostFloat>> interpolation_matrices_;
 
             void print();
@@ -46,6 +47,9 @@ namespace SEM {
             static void polynomial_derivative_matrices_diagonal(int N, std::vector<hostFloat>& derivative_matrices);
 
             static void polynomial_derivative_matrices_hat(int N, const std::vector<hostFloat>& weights, const std::vector<hostFloat>& derivative_matrices, std::vector<hostFloat>& derivative_matrices_hat);
+
+            // Algorithm 57
+            static void polynomial_cg_derivative_matrices(int N, const std::vector<hostFloat>& weights, const std::vector<hostFloat>& derivative_matrices, std::vector<hostFloat>& g_hat_derivative_matrices);
 
             // Will interpolate N_interpolation_points between -1 and 1
             static void create_interpolation_matrices(int N, size_t N_interpolation_points, const std::vector<hostFloat>& nodes, const std::vector<hostFloat>& barycentric_weights, std::vector<hostFloat>& interpolation_matrices);
