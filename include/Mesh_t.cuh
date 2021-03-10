@@ -22,6 +22,7 @@ namespace SEM {
             int elements_numBlocks_;
             int faces_numBlocks_;
             int boundaries_numBlocks_;
+            
             size_t N_elements_global_;
             size_t N_elements_;
             size_t N_faces_;
