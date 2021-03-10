@@ -645,7 +645,7 @@ void SEM::compute_dg_derivative(deviceFloat viscosity, size_t N_elements, Elemen
         const deviceFloat derivative_flux_L = faces[elements[i].faces_[0]].derivative_flux_;
         const deviceFloat derivative_flux_R = faces[elements[i].faces_[1]].derivative_flux_;
 
-        //printf("For k=%u - Fluxes: un=%f, up=%f, qn=%f, qp=%f\n", i, flux_L, flux_R, derivative_flux_L, derivative_flux_R);
+        //printf("For k=%u - Fluxes: flux_L=%12.12f, flux_R=%12.12f, derivative_flux_L=%12.12f, derivative_flux_R=%12.12f\n", i, flux_L, flux_R, derivative_flux_L, derivative_flux_R);
         //printf("Element %u has phi_L %f and phi_R %f\n", i, elements[i].phi_L_, elements[i].phi_R_);
         //printf("Element %u has phi_prime_L %f and phi_prime_R %f\n", i, elements[i].phi_prime_L_, elements[i].phi_prime_R_);
 
