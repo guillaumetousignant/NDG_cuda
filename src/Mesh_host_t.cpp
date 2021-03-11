@@ -55,10 +55,10 @@ SEM::Mesh_host_t::Mesh_host_t(size_t N_elements, int initial_N, hostFloat x_min,
 SEM::Mesh_host_t::~Mesh_host_t() {}
 
 void SEM::Mesh_host_t::set_initial_conditions(const std::vector<std::vector<hostFloat>>& nodes) {
-    for (auto& element: elements_) {
-        for (int j = 0; j <= element.N_; ++j) {
-            const hostFloat x = (0.5 + nodes[element.N_][j]/2.0f) * (element.x_[1] - element.x_[0]) + element.x_[0];
-            element.phi_[j] = g(x);
+    for (size_t i = 0; i < N_elements_; ++i) {
+        for (int j = 0; j <= elements_[i].N_; ++j) {
+            const hostFloat x = (0.5 + nodes[elements_[i].N_][j]/2.0f) * (elements_[i].x_[1] - elements_[i].x_[0]) + elements_[i].x_[0];
+            elements_[i].phi_[j] = g(x);
         }
     }
 }
@@ -369,11 +369,20 @@ void SEM::Mesh_host_t::get_solution(size_t N_interpolation_points, const std::ve
     }
 }
 
+void SEM::Mesh_host_t::rk3_first_step(hostFloat delta_t, hostFloat g) {
+    for (size_t i = 0; i < N_elements_; ++i) {
+        for (int j = 0; j <= elements_[i].N_; ++j){
+            elements_[i].intermediate_[j] = elements_[i].phi_prime_[j];
+            elements_[i].phi_[j] += g * delta_t * elements_[i].intermediate_[j];
+        }
+    }
+}
+
 void SEM::Mesh_host_t::rk3_step(hostFloat delta_t, hostFloat a, hostFloat g) {
-    for (auto& element: elements_) {
-        for (int j = 0; j <= element.N_; ++j){
-            element.intermediate_[j] = a * element.intermediate_[j] + element.phi_prime_[j];
-            element.phi_[j] += g * delta_t * element.intermediate_[j];
+    for (size_t i = 0; i < N_elements_; ++i) {
+        for (int j = 0; j <= elements_[i].N_; ++j){
+            elements_[i].intermediate_[j] = a * elements_[i].intermediate_[j] + elements_[i].phi_prime_[j];
+            elements_[i].phi_[j] += g * delta_t * elements_[i].intermediate_[j];
         }
     }
 }
@@ -574,21 +583,21 @@ void SEM::matrix_vector_derivative(const std::vector<hostFloat>& derivative_matr
 
 // Algorithm 60 (not really anymore)
 void SEM::Mesh_host_t::compute_dg_derivative(const std::vector<std::vector<hostFloat>>& weights, const std::vector<std::vector<hostFloat>>& derivative_matrices_hat, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right) {
-    for (auto& element: elements_) {
-        const hostFloat flux_L = faces_[element.faces_[0]].flux_;
-        const hostFloat flux_R = faces_[element.faces_[1]].flux_;
+    for (size_t i = 0; i < N_elements_; ++i) {
+        const hostFloat flux_L = faces_[elements_[i].faces_[0]].flux_;
+        const hostFloat flux_R = faces_[elements_[i].faces_[1]].flux_;
 
-        SEM::matrix_vector_derivative(derivative_matrices_hat[element.N_], element.phi_, element.phi_prime_);
+        SEM::matrix_vector_derivative(derivative_matrices_hat[elements_[i].N_], elements_[i].phi_, elements_[i].phi_prime_);
 
-        for (int j = 0; j <= element.N_; ++j) {
-            element.phi_prime_[j] += (flux_L * lagrange_interpolant_left[element.N_][j] - flux_R * lagrange_interpolant_right[element.N_][j]) / weights[element.N_][j];
-            element.phi_prime_[j] *= 2.0f/element.delta_x_;
+        for (int j = 0; j <= elements_[i].N_; ++j) {
+            elements_[i].phi_prime_[j] += (flux_L * lagrange_interpolant_left[elements_[i].N_][j] - flux_R * lagrange_interpolant_right[elements_[i].N_][j]) / weights[elements_[i].N_][j];
+            elements_[i].phi_prime_[j] *= 2.0f/elements_[i].delta_x_;
         }
     }
 }
 
 void SEM::Mesh_host_t::interpolate_to_boundaries(const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right) {
-    for (auto& element: elements_) {
-        element.interpolate_to_boundaries(lagrange_interpolant_left, lagrange_interpolant_right);
+    for (size_t i = 0; i < N_elements_; ++i) {
+        elements_[i].interpolate_to_boundaries(lagrange_interpolant_left, lagrange_interpolant_right);
     }
 }

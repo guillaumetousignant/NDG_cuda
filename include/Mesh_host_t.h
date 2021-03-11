@@ -73,6 +73,8 @@ namespace SEM {
             // Algorithm 60 (not really anymore)
             void compute_dg_derivative(const std::vector<std::vector<hostFloat>>& weights, const std::vector<std::vector<hostFloat>>& derivative_matrices_hat, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right);
 
+            void rk3_first_step(hostFloat delta_t, hostFloat g);
+
             void rk3_step(hostFloat delta_t, hostFloat a, hostFloat g);
     };
 
