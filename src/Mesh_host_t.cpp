@@ -394,6 +394,53 @@ hostFloat SEM::Mesh_host_t::get_delta_t(const hostFloat CFL) {
     return delta_t_min;
 }
 
+void SEM::Mesh_host_t::boundary_conditions() {
+    local_boundaries();
+    get_MPI_boundaries();
+    
+    for (size_t i = 0; i < N_MPI_boundaries_; ++i) {
+        const int destination = MPI_boundary_to_element_[i]/N_elements_per_process_;
+
+        MPI_Irecv(&receive_buffers_[i][0], 4, MPI_DOUBLE, destination, MPI_boundary_from_element_[i], MPI_COMM_WORLD, &requests_[i]);
+        MPI_Isend(&send_buffers_[i][0], 4, MPI_DOUBLE, destination, MPI_boundary_to_element_[i], MPI_COMM_WORLD, &requests_[i + N_MPI_boundaries_]);
+    }
+
+    MPI_Waitall(N_MPI_boundaries_, requests_.data(), statuses_.data()); // CHECK maybe MPI barrier?
+
+    put_MPI_boundaries();
+}
+
+void SEM::Mesh_host_t::local_boundaries() {
+    for (size_t i = 0; i < N_local_boundaries_; ++i) {
+        elements_[N_elements_ + i].phi_L_ = elements_[local_boundary_to_element_[i]].phi_L_;
+        elements_[N_elements_ + i].phi_R_ = elements_[local_boundary_to_element_[i]].phi_R_;
+        elements_[N_elements_ + i].phi_prime_L_ = elements_[local_boundary_to_element_[i]].phi_prime_L_;
+        elements_[N_elements_ + i].phi_prime_R_ = elements_[local_boundary_to_element_[i]].phi_prime_R_;
+    }
+}
+
+void SEM::Mesh_host_t::get_MPI_boundaries() {
+    for (size_t i = 0; i < N_MPI_boundaries_; ++i) {
+        const Element_host_t& boundary_element = elements_[N_elements_ + N_local_boundaries_ + i];
+        const Face_host_t& boundary_face = faces_[boundary_element.faces_[0]];
+        const Element_host_t& domain_element = elements_[boundary_face.elements_[boundary_face.elements_[0] == N_elements_ + N_local_boundaries_ + i]];
+        
+        send_buffers_[i] = {domain_element.phi_L_,
+                            domain_element.phi_R_,
+                            domain_element.phi_prime_L_,
+                            domain_element.phi_prime_R_};
+    }
+}
+
+void SEM::Mesh_host_t::put_MPI_boundaries() {
+    for (size_t i = 0; i < N_MPI_boundaries_; ++i) {
+        elements_[N_elements_ + N_local_boundaries_ + i].phi_L_ = receive_buffers_[i][0];
+        elements_[N_elements_ + N_local_boundaries_ + i].phi_R_ = receive_buffers_[i][1];
+        elements_[N_elements_ + N_local_boundaries_ + i].phi_prime_L_ = receive_buffers_[i][2];
+        elements_[N_elements_ + N_local_boundaries_ + i].phi_prime_R_ = receive_buffers_[i][3];
+    }
+}
+
 void SEM::Mesh_host_t::calculate_fluxes() {
     for (auto& face: faces_) {
         hostFloat u;
