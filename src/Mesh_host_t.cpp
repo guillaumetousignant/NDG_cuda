@@ -231,21 +231,21 @@ void SEM::Mesh_host_t::solve(const hostFloat CFL, const std::vector<hostFloat> o
     while (time < t_end) {
         // Kinda algorithm 62
         hostFloat t = time;
-        interpolate_to_boundaries(NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        interpolate_to_boundaries(NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_, NDG.lagrange_interpolant_derivative_left_, NDG.lagrange_interpolant_derivative_right_);
         boundary_conditions();
         calculate_fluxes();
         compute_dg_derivative(viscosity, NDG.weights_, NDG.derivative_matrices_hat_, NDG.g_hat_derivative_matrices_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
         rk3_first_step(delta_t, 1.0/3.0);
 
         t = time + 0.33333333333 * delta_t;
-        interpolate_to_boundaries(NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        interpolate_to_boundaries(NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_, NDG.lagrange_interpolant_derivative_left_, NDG.lagrange_interpolant_derivative_right_);
         boundary_conditions();
         calculate_fluxes();
         compute_dg_derivative(viscosity, NDG.weights_, NDG.derivative_matrices_hat_, NDG.g_hat_derivative_matrices_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
         rk3_step(delta_t, -5.0/9.0, 15.0/16.0);
 
         t = time + 0.75 * delta_t;
-        interpolate_to_boundaries(NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        interpolate_to_boundaries(NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_, NDG.lagrange_interpolant_derivative_left_, NDG.lagrange_interpolant_derivative_right_);
         boundary_conditions();
         calculate_fluxes();
         compute_dg_derivative(viscosity, NDG.weights_, NDG.derivative_matrices_hat_, NDG.g_hat_derivative_matrices_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
@@ -617,8 +617,8 @@ void SEM::Mesh_host_t::compute_dg_derivative(hostFloat viscosity, const std::vec
     }
 }
 
-void SEM::Mesh_host_t::interpolate_to_boundaries(const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right) {
+void SEM::Mesh_host_t::interpolate_to_boundaries(const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_derivative_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_derivative_right) {
     for (size_t i = 0; i < N_elements_; ++i) {
-        elements_[i].interpolate_to_boundaries(lagrange_interpolant_left, lagrange_interpolant_right);
+        elements_[i].interpolate_to_boundaries(lagrange_interpolant_left, lagrange_interpolant_right, lagrange_interpolant_derivative_left, lagrange_interpolant_derivative_right);
     }
 }

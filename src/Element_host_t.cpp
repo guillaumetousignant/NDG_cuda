@@ -41,14 +41,23 @@ void SEM::Element_host_t::get_phi(size_t N_elements, const Element_host_t* eleme
 }
 
 // Algorithm 61
-void SEM::Element_host_t::interpolate_to_boundaries(const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right) {
+void SEM::Element_host_t::interpolate_to_boundaries(const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_derivative_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_derivative_right) {
     phi_L_ = 0.0;
     phi_R_ = 0.0;
+    phi_prime_L_ = 0.0;
+    phi_prime_R_ = 0.0;
 
     for (int j = 0; j <= N_; ++j) {
         phi_L_ += lagrange_interpolant_left[N_][j] * phi_[j];
         phi_R_ += lagrange_interpolant_right[N_][j] * phi_[j];
     }
+
+    for (int j = 0; j <= N_; ++j) {
+        phi_prime_L_ += lagrange_interpolant_derivative_left[N_][j] * (phi_L_ - phi_[j]);
+        phi_prime_R_ += lagrange_interpolant_derivative_right[N_][j] * (phi_R_ - phi_[j]);
+    }
+    phi_prime_L_ *= 2.0f/delta_x_;
+    phi_prime_R_ *= 2.0f/delta_x_;
 }
 
 template void SEM::Element_host_t::estimate_error<SEM::ChebyshevPolynomial_host_t>(const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& weights);
