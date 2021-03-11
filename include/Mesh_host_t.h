@@ -33,7 +33,7 @@ namespace SEM {
             void write_data(hostFloat time, size_t N_interpolation_points, const std::vector<std::vector<hostFloat>>& interpolation_matrices);
             
             template<typename Polynomial>
-            void solve(hostFloat delta_t, const std::vector<hostFloat> output_times, const NDG_host_t<Polynomial> &NDG);
+            void solve(const hostFloat CFL, const std::vector<hostFloat> output_times, const NDG_host_t<Polynomial> &NDG, hostFloat viscosity);
 
             void build_elements(hostFloat x_min, hostFloat x_max);
             void build_boundaries(hostFloat x_min, hostFloat x_max);
@@ -71,15 +71,18 @@ namespace SEM {
             void copy_faces(std::vector<Face_host_t>& new_faces);
 
             // Algorithm 60 (not really anymore)
-            void compute_dg_derivative(const std::vector<std::vector<hostFloat>>& weights, const std::vector<std::vector<hostFloat>>& derivative_matrices_hat, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right);
+            void compute_dg_derivative(hostFloat viscosity, const std::vector<std::vector<hostFloat>>& weights, const std::vector<std::vector<hostFloat>>& derivative_matrices_hat, const std::vector<std::vector<hostFloat>>& g_hat_derivative_matrices, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right);
 
             void rk3_first_step(hostFloat delta_t, hostFloat g);
 
             void rk3_step(hostFloat delta_t, hostFloat a, hostFloat g);
+
+            template<typename Polynomial>
+            void estimate_error(const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& weights);
     };
 
     // Algorithm 19
-    void matrix_vector_derivative(const std::vector<hostFloat>& derivative_matrices_hat, const std::vector<hostFloat>& phi, std::vector<hostFloat>& phi_prime);
+    void matrix_vector_derivative(hostFloat viscosity, int N, const std::vector<hostFloat>& derivative_matrices_hat,  const std::vector<hostFloat>& g_hat_derivative_matrices, const std::vector<hostFloat>& phi, std::vector<hostFloat>& phi_prime);
 }
 
 #endif
