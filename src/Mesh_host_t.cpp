@@ -13,6 +13,7 @@ namespace fs = std::filesystem;
 constexpr hostFloat pi = 3.14159265358979323846;
 
 SEM::Mesh_host_t::Mesh_host_t(size_t N_elements, int initial_N, hostFloat x_min, hostFloat x_max) : 
+        N_elements_global_(N_elements),
         initial_N_(initial_N) {
     // CHECK N_faces = N_elements only for periodic BC.
 
