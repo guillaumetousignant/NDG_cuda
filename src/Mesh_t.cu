@@ -216,7 +216,7 @@ void SEM::Mesh_t::print() {
     }
 }
 
-void SEM::Mesh_t::write_file_data(size_t N_interpolation_points, size_t N_elements, deviceFloat time, int rank, const deviceFloat* coordinates, const deviceFloat* velocity, const deviceFloat* du_dx, const deviceFloat* intermediate, const deviceFloat* x_L, const deviceFloat* x_R, const int* N, const deviceFloat* sigma, const bool* refine, const bool* coarsen, const deviceFloat* error) {
+void SEM::Mesh_t::write_file_data(size_t N_interpolation_points, size_t N_elements, deviceFloat time, int rank, const std::vector<deviceFloat>& coordinates, const std::vector<deviceFloat>& velocity, const std::vector<deviceFloat>& du_dx, const std::vector<deviceFloat>& intermediate, const std::vector<deviceFloat>& x_L, const std::vector<deviceFloat>& x_R, const std::vector<int>& N, const std::vector<deviceFloat>& sigma, const bool* refine, const bool* coarsen, const std::vector<deviceFloat>& error) {
     fs::path save_dir = fs::current_path() / "data";
     fs::create_directory(save_dir);
 
@@ -457,8 +457,8 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
     host_boundary_phi_prime_R_ = std::vector<deviceFloat>(N_MPI_boundaries_);
     host_MPI_boundary_to_element_ = std::vector<size_t>(N_MPI_boundaries_);
     host_MPI_boundary_from_element_ = std::vector<size_t>(N_MPI_boundaries_);
-    send_buffers_ = std::vector<new std::array<double, 4>>(N_MPI_boundaries_);
-    receive_buffers_ = std::vector<new std::array<double, 4>>(N_MPI_boundaries_);
+    send_buffers_ = std::vector<std::array<double, 4>>(N_MPI_boundaries_);
+    receive_buffers_ = std::vector<std::array<double, 4>>(N_MPI_boundaries_);
     requests_ = std::vector<MPI_Request>(N_MPI_boundaries_*2);
     statuses_ = std::vector<MPI_Status>(N_MPI_boundaries_*2);
 

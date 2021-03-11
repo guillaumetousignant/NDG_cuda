@@ -113,7 +113,7 @@ void SEM::NDG_t<Polynomial>::print() {
     cudaMemcpy(host_lagrange_interpolant_right.data(), lagrange_interpolant_right_, vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_lagrange_interpolant_derivative_left.data(), lagrange_interpolant_derivative_left_, vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_lagrange_interpolant_derivative_right.data(), lagrange_interpolant_derivative_right_, vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_derivative_matrices, derivative_matrices_.data(), matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_derivative_matrices.data(), derivative_matrices_, matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_g_hat_derivative_matrices.data(), g_hat_derivative_matrices_, matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_derivative_matrices_hat.data(), derivative_matrices_hat_, matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_interpolation_matrices.data(), interpolation_matrices_, interpolation_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
