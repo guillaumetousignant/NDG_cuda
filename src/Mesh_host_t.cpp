@@ -239,7 +239,7 @@ void SEM::Mesh_host_t::solve(hostFloat delta_t, const std::vector<hostFloat> out
         interpolate_to_boundaries(NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
         calculate_fluxes();
         compute_dg_derivative(NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
-        rk3_step(delta_t, -153.0/128.0, 8.0f/15.0);
+        rk3_step(delta_t, -153.0/128.0, 8.0/15.0);
               
         time += delta_t;
         for (auto const& e : std::as_const(output_times)) {
@@ -375,6 +375,23 @@ void SEM::Mesh_host_t::rk3_step(hostFloat delta_t, hostFloat a, hostFloat g) {
             element.phi_[j] += g * delta_t * element.intermediate_[j];
         }
     }
+}
+
+hostFloat SEM::Mesh_host_t::get_delta_t(const hostFloat CFL) {   
+    double delta_t_min_local = std::numeric_limits<double>::infinity();
+    for (int i = 0; i < N_elements_; ++i) {
+        deviceFloat phi_max = 0.0;
+        for (int j = 0; j <= elements_[i].N_; ++j) {
+            phi_max = std::max(phi_max, std::abs(elements_[i].phi_[j]));
+        }
+        const hostFloat delta_t = CFL * elements_[i].delta_x_ * elements_[i].delta_x_/(phi_max * elements_[i].N_ * elements_[i].N_);
+        delta_t_min_local = std::min(delta_t_min_local, delta_t);
+    }
+
+    double delta_t_min;
+    MPI_Allreduce(&delta_t_min_local, &delta_t_min, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+
+    return delta_t_min;
 }
 
 void SEM::Mesh_host_t::calculate_fluxes() {
