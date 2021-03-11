@@ -270,7 +270,7 @@ template<typename Polynomial>
 void SEM::NDG_host_t<Polynomial>::polynomial_derivative_matrices_hat(int N, const std::vector<hostFloat>& weights, const std::vector<hostFloat>& derivative_matrices, std::vector<hostFloat>& derivative_matrices_hat) {
     for (int i = 0; i <= N; ++i) {
         for (int j = 0; j <= N; ++j) {
-            derivative_matrices_hat[i * (N + 1) + j] = derivative_matrices[j * (N + 1) + i] * weights[j] / weights[i];
+            derivative_matrices_hat[i * (N + 1) + j] = -derivative_matrices[j * (N + 1) + i] * weights[j] / weights[i];
         }
     }
 }
