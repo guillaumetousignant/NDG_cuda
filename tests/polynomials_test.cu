@@ -24,29 +24,29 @@ TEST_CASE("ChebyshevPolynomials", "Checks the Chebyshev polynomials"){
     
     SEM::NDG_t<SEM::ChebyshevPolynomial_t> NDG(N_max, N_interpolation_points, stream);
 
-    deviceFloat* host_nodes = new deviceFloat[NDG.vector_length_];
-    deviceFloat* host_weights = new deviceFloat[NDG.vector_length_];
-    deviceFloat* host_barycentric_weights = new deviceFloat[NDG.vector_length_];
-    deviceFloat* host_lagrange_interpolant_left = new deviceFloat[NDG.vector_length_];
-    deviceFloat* host_lagrange_interpolant_right = new deviceFloat[NDG.vector_length_];
-    deviceFloat* host_lagrange_interpolant_derivative_left = new deviceFloat[NDG.vector_length_];
-    deviceFloat* host_lagrange_interpolant_derivative_right = new deviceFloat[NDG.vector_length_];
-    deviceFloat* host_derivative_matrices = new deviceFloat[NDG.matrix_length_];
-    deviceFloat* host_g_hat_derivative_matrices = new deviceFloat[NDG.matrix_length_];
-    deviceFloat* host_derivative_matrices_hat = new deviceFloat[NDG.matrix_length_];
-    deviceFloat* host_interpolation_matrices = new deviceFloat[NDG.interpolation_length_];
+    std::vector<deviceFloat> host_nodes(NDG.vector_length_);
+    std::vector<deviceFloat> host_weights(NDG.vector_length_);
+    std::vector<deviceFloat> host_barycentric_weights(NDG.vector_length_);
+    std::vector<deviceFloat> host_lagrange_interpolant_left(NDG.vector_length_);
+    std::vector<deviceFloat> host_lagrange_interpolant_right(NDG.vector_length_);
+    std::vector<deviceFloat> host_lagrange_interpolant_derivative_left(NDG.vector_length_);
+    std::vector<deviceFloat> host_lagrange_interpolant_derivative_right(NDG.vector_length_);
+    std::vector<deviceFloat> host_derivative_matrices(NDG.matrix_length_);
+    std::vector<deviceFloat> host_g_hat_derivative_matrices(NDG.matrix_length_);
+    std::vector<deviceFloat> host_derivative_matrices_hat(NDG.matrix_length_);
+    std::vector<deviceFloat> host_interpolation_matrices(NDG.interpolation_length_);
 
-    cudaMemcpy(host_nodes, NDG.nodes_, NDG.vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_weights, NDG.weights_, NDG.vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_barycentric_weights, NDG.barycentric_weights_, NDG.vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_lagrange_interpolant_left, NDG.lagrange_interpolant_left_, NDG.vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_lagrange_interpolant_right, NDG.lagrange_interpolant_right_, NDG.vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_lagrange_interpolant_derivative_left, NDG.lagrange_interpolant_derivative_left_, NDG.vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_lagrange_interpolant_derivative_right, NDG.lagrange_interpolant_derivative_right_, NDG.vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_derivative_matrices, NDG.derivative_matrices_, NDG.matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_g_hat_derivative_matrices, NDG.g_hat_derivative_matrices_, NDG.matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_derivative_matrices_hat, NDG.derivative_matrices_hat_, NDG.matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_interpolation_matrices, NDG.interpolation_matrices_, NDG.interpolation_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_nodes.data(), NDG.nodes_, NDG.vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_weights.data(), NDG.weights_, NDG.vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_barycentric_weights.data(), NDG.barycentric_weights_, NDG.vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_lagrange_interpolant_left.data(), NDG.lagrange_interpolant_left_, NDG.vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_lagrange_interpolant_right.data(), NDG.lagrange_interpolant_right_, NDG.vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_lagrange_interpolant_derivative_left.data(), NDG.lagrange_interpolant_derivative_left_, NDG.vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_lagrange_interpolant_derivative_right.data(), NDG.lagrange_interpolant_derivative_right_, NDG.vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_derivative_matrices.data(), NDG.derivative_matrices_, NDG.matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_g_hat_derivative_matrices.data(), NDG.g_hat_derivative_matrices_, NDG.matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_derivative_matrices_hat.data(), NDG.derivative_matrices_hat_, NDG.matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_interpolation_matrices.data(), NDG.interpolation_matrices_, NDG.interpolation_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
 
     const std::array<double, N_test+1> nodes {-0.9957341762950345218712,
                                                 -0.9618256431728190704088,
@@ -141,17 +141,6 @@ TEST_CASE("ChebyshevPolynomials", "Checks the Chebyshev polynomials"){
     REQUIRE(std::abs(phi_prime_R - phi_prime_R_expected) < error);
 
     cudaStreamDestroy(stream);
-    delete[] host_nodes;
-    delete[] host_weights;
-    delete[] host_barycentric_weights;
-    delete[] host_lagrange_interpolant_left;
-    delete[] host_lagrange_interpolant_right;
-    delete[] host_lagrange_interpolant_derivative_left;
-    delete[] host_lagrange_interpolant_derivative_right;
-    delete[] host_derivative_matrices;
-    delete[] host_g_hat_derivative_matrices;
-    delete[] host_derivative_matrices_hat;
-    delete[] host_interpolation_matrices;
 }
 
 TEST_CASE("LegendrePolynomials", "Checks the Legendre polynomials"){
@@ -169,29 +158,29 @@ TEST_CASE("LegendrePolynomials", "Checks the Legendre polynomials"){
     
     SEM::NDG_t<SEM::LegendrePolynomial_t> NDG(N_max, N_interpolation_points, stream);
 
-    deviceFloat* host_nodes = new deviceFloat[NDG.vector_length_];
-    deviceFloat* host_weights = new deviceFloat[NDG.vector_length_];
-    deviceFloat* host_barycentric_weights = new deviceFloat[NDG.vector_length_];
-    deviceFloat* host_lagrange_interpolant_left = new deviceFloat[NDG.vector_length_];
-    deviceFloat* host_lagrange_interpolant_right = new deviceFloat[NDG.vector_length_];
-    deviceFloat* host_lagrange_interpolant_derivative_left = new deviceFloat[NDG.vector_length_];
-    deviceFloat* host_lagrange_interpolant_derivative_right = new deviceFloat[NDG.vector_length_];
-    deviceFloat* host_derivative_matrices = new deviceFloat[NDG.matrix_length_];
-    deviceFloat* host_g_hat_derivative_matrices = new deviceFloat[NDG.matrix_length_];
-    deviceFloat* host_derivative_matrices_hat = new deviceFloat[NDG.matrix_length_];
-    deviceFloat* host_interpolation_matrices = new deviceFloat[NDG.interpolation_length_];
+    std::vector<deviceFloat> host_nodes(NDG.vector_length_);
+    std::vector<deviceFloat> host_weights(NDG.vector_length_);
+    std::vector<deviceFloat> host_barycentric_weights(NDG.vector_length_);
+    std::vector<deviceFloat> host_lagrange_interpolant_left(NDG.vector_length_);
+    std::vector<deviceFloat> host_lagrange_interpolant_right(NDG.vector_length_);
+    std::vector<deviceFloat> host_lagrange_interpolant_derivative_left(NDG.vector_length_);
+    std::vector<deviceFloat> host_lagrange_interpolant_derivative_right(NDG.vector_length_);
+    std::vector<deviceFloat> host_derivative_matrices(NDG.matrix_length_);
+    std::vector<deviceFloat> host_g_hat_derivative_matrices(NDG.matrix_length_);
+    std::vector<deviceFloat> host_derivative_matrices_hat(NDG.matrix_length_);
+    std::vector<deviceFloat> host_interpolation_matrices(NDG.interpolation_length_);
 
-    cudaMemcpy(host_nodes, NDG.nodes_, NDG.vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_weights, NDG.weights_, NDG.vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_barycentric_weights, NDG.barycentric_weights_, NDG.vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_lagrange_interpolant_left, NDG.lagrange_interpolant_left_, NDG.vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_lagrange_interpolant_right, NDG.lagrange_interpolant_right_, NDG.vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_lagrange_interpolant_derivative_left, NDG.lagrange_interpolant_derivative_left_, NDG.vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_lagrange_interpolant_derivative_right, NDG.lagrange_interpolant_derivative_right_, NDG.vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_derivative_matrices, NDG.derivative_matrices_, NDG.matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_g_hat_derivative_matrices, NDG.g_hat_derivative_matrices_, NDG.matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_derivative_matrices_hat, NDG.derivative_matrices_hat_, NDG.matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_interpolation_matrices, NDG.interpolation_matrices_, NDG.interpolation_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_nodes.data(), NDG.nodes_, NDG.vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_weights.data(), NDG.weights_, NDG.vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_barycentric_weights.data(), NDG.barycentric_weights_, NDG.vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_lagrange_interpolant_left.data(), NDG.lagrange_interpolant_left_, NDG.vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_lagrange_interpolant_right.data(), NDG.lagrange_interpolant_right_, NDG.vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_lagrange_interpolant_derivative_left.data(), NDG.lagrange_interpolant_derivative_left_, NDG.vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_lagrange_interpolant_derivative_right.data(), NDG.lagrange_interpolant_derivative_right_, NDG.vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_derivative_matrices.data(), NDG.derivative_matrices_, NDG.matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_g_hat_derivative_matrices.data(), NDG.g_hat_derivative_matrices_, NDG.matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_derivative_matrices_hat.data(), NDG.derivative_matrices_hat_, NDG.matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_interpolation_matrices.data(), NDG.interpolation_matrices_, NDG.interpolation_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
 
     const std::array<double, N_test+1> nodes {-0.9905754753144173356754,
                                                 -0.9506755217687677612227,
@@ -286,15 +275,4 @@ TEST_CASE("LegendrePolynomials", "Checks the Legendre polynomials"){
     REQUIRE(std::abs(phi_prime_R - phi_prime_R_expected) < error);
 
     cudaStreamDestroy(stream);
-    delete[] host_nodes;
-    delete[] host_weights;
-    delete[] host_barycentric_weights;
-    delete[] host_lagrange_interpolant_left;
-    delete[] host_lagrange_interpolant_right;
-    delete[] host_lagrange_interpolant_derivative_left;
-    delete[] host_lagrange_interpolant_derivative_right;
-    delete[] host_derivative_matrices;
-    delete[] host_g_hat_derivative_matrices;
-    delete[] host_derivative_matrices_hat;
-    delete[] host_interpolation_matrices;
 }
