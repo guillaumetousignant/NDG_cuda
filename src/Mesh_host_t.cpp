@@ -345,8 +345,8 @@ void SEM::Mesh_host_t::build_boundaries(hostFloat x_min, hostFloat x_max) {
 
 void SEM::Mesh_host_t::build_faces() {
     for (size_t i = 0; i < faces_.size(); ++i) {
-        const size_t neighbour_L = i;
-        const size_t neighbour_R = (i < faces_.size() - 1) ? i + 1 : 0; // Last face links last element to first element
+        const size_t neighbour_L = (i > 0) ? i - 1 : faces_.size() - 1;
+        const size_t neighbour_R = (i < faces_.size() - 1) ? i : faces_.size(); // Last face links last element to first element
         faces_[i] = Face_host_t(neighbour_L, neighbour_R);
     }
 }
