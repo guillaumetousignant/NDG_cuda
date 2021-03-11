@@ -31,6 +31,7 @@ namespace SEM {
             void set_initial_conditions(const std::vector<std::vector<hostFloat>>& nodes);
             void print();
             void write_data(hostFloat time, size_t N_interpolation_points, const std::vector<std::vector<hostFloat>>& interpolation_matrices);
+            hostFloat get_delta_t(const hostFloat CFL);
             
             template<typename Polynomial>
             void solve(const hostFloat CFL, const std::vector<hostFloat> output_times, const NDG_host_t<Polynomial> &NDG, hostFloat viscosity);
@@ -50,7 +51,6 @@ namespace SEM {
             static hostFloat g(hostFloat x);
             void interpolate_to_boundaries(const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_derivative_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_derivative_right);
             static void write_file_data(size_t N_interpolation_points, size_t N_elements, hostFloat time, int rank, const std::vector<hostFloat>& velocity, const std::vector<hostFloat>& coordinates, const std::vector<hostFloat>& du_dx, const std::vector<hostFloat>& intermediate, const std::vector<hostFloat>& x_L, const std::vector<hostFloat>& x_R, const std::vector<int>& N, const std::vector<hostFloat>& sigma, const std::vector<bool>& refine, const std::vector<bool>& coarsen, const std::vector<hostFloat>& error);
-            hostFloat get_delta_t(const hostFloat CFL);
 
             void boundary_conditions();
 

@@ -40,6 +40,7 @@ namespace SEM {
             void set_initial_conditions(const deviceFloat* nodes);
             void print();
             void write_data(deviceFloat time, size_t N_interpolation_points, const deviceFloat* interpolation_matrices);
+            deviceFloat get_delta_t(const deviceFloat CFL);
             
             template<typename Polynomial>
             void solve(const deviceFloat CFL, const std::vector<deviceFloat> output_times, const NDG_t<Polynomial> &NDG, deviceFloat viscosity);
@@ -67,7 +68,6 @@ namespace SEM {
             MPI_Status* statuses_;
 
             void write_file_data(size_t N_interpolation_points, size_t N_elements, deviceFloat time, int rank, const deviceFloat* coordinates, const deviceFloat* velocity, const deviceFloat* du_dx, const deviceFloat* intermediate, const deviceFloat* x_L, const deviceFloat* x_R, const int* N, const deviceFloat* sigma, const bool* refine, const bool* coarsen, const deviceFloat* error);
-            deviceFloat get_delta_t(const deviceFloat CFL);
             void adapt(int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights);
             void boundary_conditions();
     };
