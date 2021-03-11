@@ -460,7 +460,7 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
     cudaMalloc(&new_faces, (N_faces_ + additional_elements) * sizeof(Face_t));
 
     SEM::copy_faces<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(N_faces_, faces_, new_faces);
-    SEM::adapt<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, new_elements, new_faces, device_refine_array_, N_max, nodes, barycentric_weights);
+    SEM::hp_adapt<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, new_elements, new_faces, device_refine_array_, N_max, nodes, barycentric_weights);
 
     SEM::free_elements<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_ + N_local_boundaries_ + N_MPI_boundaries_, elements_);
     cudaFree(elements_);
@@ -596,12 +596,33 @@ void SEM::calculate_fluxes(size_t N_faces, Face_t* faces, const Element_t* eleme
     const int stride = blockDim.x * gridDim.x;
 
     for (size_t i = index; i < N_faces; i += stride) {
+        deviceFloat u;
         const deviceFloat u_left = elements[faces[i].elements_[0]].phi_R_;
         const deviceFloat u_right = elements[faces[i].elements_[1]].phi_L_;
         const deviceFloat u_prime_left = elements[faces[i].elements_[0]].phi_prime_R_;
         const deviceFloat u_prime_right = elements[faces[i].elements_[1]].phi_prime_L_;
 
-        faces[i].flux_ = 0.5f * (u_left + u_right);
+        if (u_left < 0.0f && u_right > 0.0f) { // In expansion fan
+            u = 0.5f * (u_left + u_right);
+        }
+        else if (u_left >= u_right) { // Shock
+            if (u_left > 0.0f) {
+                u = u_left;
+            }
+            else {
+                u = u_right;
+            }
+        }
+        else { // Expansion fan
+            if (u_left > 0.0f) {
+                u = u_left;
+            }
+            else  {
+                u = u_right;
+            }
+        }
+
+        faces[i].flux_ = 0.5f * u * u;
         faces[i].derivative_flux_ = 0.5f * (u_prime_left + u_prime_right);
     }
 }

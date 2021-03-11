@@ -45,6 +45,7 @@ namespace SEM {
             std::vector<std::array<double, 4>> receive_buffers_;
             std::vector<MPI_Request> requests_;
             std::vector<MPI_Status> statuses_;
+            std::vector<size_t> refine_array_;
 
             static hostFloat g(hostFloat x);
             void interpolate_to_boundaries(const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right);
@@ -60,6 +61,14 @@ namespace SEM {
             void put_MPI_boundaries();
 
             void calculate_fluxes();
+
+            void adapt(int N_max, const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& barycentric_weights);
+
+            void p_adapt(int N_max, const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& barycentric_weights);
+
+            void hp_adapt(int N_max, std::vector<Element_host_t>& new_elements, std::vector<Face_host_t>& new_faces, const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& barycentric_weights);
+
+            void copy_faces(std::vector<Face_host_t>& new_faces);
 
             // Algorithm 60 (not really anymore)
             void compute_dg_derivative(const std::vector<std::vector<hostFloat>>& weights, const std::vector<std::vector<hostFloat>>& derivative_matrices_hat, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right);

@@ -463,7 +463,7 @@ void SEM::interpolate_to_boundaries(size_t N_elements, SEM::Element_t* elements,
 }
 
 __global__
-void SEM::adapt(unsigned long N_elements, SEM::Element_t* elements, SEM::Element_t* new_elements, SEM::Face_t* new_faces, const unsigned long* block_offsets, int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights) {
+void SEM::hp_adapt(unsigned long N_elements, SEM::Element_t* elements, SEM::Element_t* new_elements, SEM::Face_t* new_faces, const unsigned long* block_offsets, int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights) {
     const unsigned long index = blockIdx.x * blockDim.x + threadIdx.x;
     const unsigned long stride = blockDim.x * gridDim.x;
     const int thread_id = threadIdx.x;

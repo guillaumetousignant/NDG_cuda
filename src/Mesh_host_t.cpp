@@ -41,6 +41,7 @@ SEM::Mesh_host_t::Mesh_host_t(size_t N_elements, int initial_N, hostFloat x_min,
     receive_buffers_ = std::vector<std::array<double, 4>>(N_MPI_boundaries_);
     requests_ = std::vector<MPI_Request>(N_MPI_boundaries_*2);
     statuses_ = std::vector<MPI_Status>(N_MPI_boundaries_*2);
+    refine_array_ = std::vector<size_t>(N_elements_);
 
     const hostFloat delta_x = (x_max - x_min)/N_elements_global_;
     const hostFloat x_min_local = x_min + delta_x * global_rank * N_elements_per_process_;
@@ -446,6 +447,8 @@ void SEM::Mesh_host_t::calculate_fluxes() {
         hostFloat u;
         const hostFloat u_left = elements_[face.elements_[0]].phi_R_;
         const hostFloat u_right = elements_[face.elements_[1]].phi_L_;
+        const hostFloat u_prime_left = elements_[face.elements_[0]].phi_prime_R_;
+        const hostFloat u_prime_right = elements_[face.elements_[1]].phi_prime_L_;
 
         if (u_left < 0.0 && u_right > 0.0) { // In expansion fan
             u = 0.5 * (u_left + u_right);
@@ -477,6 +480,83 @@ void SEM::Mesh_host_t::calculate_fluxes() {
         }
 
         face.flux_ = 0.5 * u * u;
+        face.derivative_flux_ = 0.5f * (u_prime_left + u_prime_right);
+    }
+}
+
+void SEM::Mesh_host_t::adapt(int N_max, const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& barycentric_weights) {
+    size_t additional_elements = 0;
+    for (size_t i = 0; i < N_elements_; ++i) {
+        additional_elements += elements_[i].refine_ * (elements_[i].sigma_ < 1.0);
+        refine_array_[i] = additional_elements - elements_[i].refine_ * (elements_[i].sigma_ < 1.0); // Current offset
+    }
+
+    if (additional_elements == 0) {
+        p_adapt(N_max, nodes, barycentric_weights);
+        return;
+    }
+
+    std::vector<Element_host_t> new_elements(N_elements_ + additional_elements);
+    std::vector<Face_host_t> new_faces(faces_.size() + additional_elements);
+
+    copy_faces(new_faces);
+    hp_adapt(N_max, new_elements, new_faces, nodes, barycentric_weights);
+
+    elements_ = std::move(new_elements);
+    faces_ = std::move(new_faces);
+    
+    N_elements_ += additional_elements;
+    N_elements_per_process_ = N_elements_per_process_; // CHECK change
+
+    local_boundary_to_element_ = std::vector<size_t>(N_local_boundaries_);
+    MPI_boundary_to_element_ = std::vector<size_t>(N_MPI_boundaries_);
+    MPI_boundary_from_element_ = std::vector<size_t>(N_MPI_boundaries_);
+    send_buffers_ = std::vector<std::array<double, 4>>(N_MPI_boundaries_);
+    receive_buffers_ = std::vector<std::array<double, 4>>(N_MPI_boundaries_);
+    requests_ = std::vector<MPI_Request>(N_MPI_boundaries_*2);
+    statuses_ = std::vector<MPI_Status>(N_MPI_boundaries_*2);
+    refine_array_ = std::vector<size_t>(N_elements_);
+
+    // CHECK create boundaries here.
+}
+
+void SEM::Mesh_host_t::p_adapt(int N_max, const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& barycentric_weights) {
+    for (size_t i = 0; i < N_elements_; ++i) {
+        if (elements_[i].refine_ && elements_[i].sigma_ >= 1.0 && elements_[i].N_ < N_max) {
+            SEM::Element_host_t new_element(std::min(elements_[i].N_ + 2, N_max), elements_[i].faces_[0], elements_[i].faces_[1], elements_[i].x_[0], elements_[i].x_[1]);
+            new_element.interpolate_from(elements_[i], nodes, barycentric_weights);
+            elements_[i] = std::move(new_element);
+        }
+    }
+}
+
+void SEM::Mesh_host_t::hp_adapt(int N_max, std::vector<Element_host_t>& new_elements, std::vector<Face_host_t>& new_faces, const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& barycentric_weights) {
+    for (size_t i = 0; i < N_elements_; ++i) {
+        if (elements_[i].refine_ && elements_[i].sigma_ < 1.0) {
+            size_t new_index = N_elements_ + refine_array_[i];
+
+            new_elements[i] = SEM::Element_host_t(elements_[i].N_, elements_[i].faces_[0], new_index, elements_[i].x_[0], (elements_[i].x_[0] + elements_[i].x_[1]) * 0.5);
+            new_elements[new_index] = SEM::Element_host_t(elements_[i].N_, new_index, elements_[i].faces_[1], (elements_[i].x_[0] + elements_[i].x_[1]) * 0.5, elements_[i].x_[1]);
+            new_elements[i].interpolate_from(elements_[i], nodes, barycentric_weights);
+            new_elements[new_index].interpolate_from(elements_[i], nodes, barycentric_weights);
+            
+            new_faces[new_index] = SEM::Face_host_t(i, new_index);
+            new_faces[elements_[i].faces_[1]].elements_[0] = new_index;
+        }
+        else if (elements_[i].refine_ && elements_[i].N_ < N_max) {
+            new_elements[i] = SEM::Element_host_t(std::min(elements_[i].N_ + 2, N_max), elements_[i].faces_[0], elements_[i].faces_[1], elements_[i].x_[0], elements_[i].x_[1]);
+            new_elements[i].interpolate_from(elements_[i], nodes, barycentric_weights);
+        }
+        else {
+            new_elements[i] = std::move(elements_[i]);
+        }
+    }
+}
+
+
+void SEM::Mesh_host_t::copy_faces(std::vector<Face_host_t>& new_faces) {
+    for (size_t i = 0; i < faces_.size(); ++i) {
+        new_faces[i] = std::move(faces_[i]);
     }
 }
 
