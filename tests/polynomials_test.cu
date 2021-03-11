@@ -93,9 +93,12 @@ TEST_CASE("ChebyshevPolynomials", "Checks the Chebyshev polynomials"){
     }
 
     std::array<double, N_test+1> phi;
-    std::array<double, N_test+1> phi_prime_expected;
     for (int i = 0; i <= N_test; ++i) {
         phi[i] = std::sin(pi * host_nodes[offset_1D + i]);
+    }
+
+    std::array<double, N_test+1> phi_prime_expected;
+    for (int i = 0; i <= N_test; ++i) {
         phi_prime_expected[i] = pi * std::cos(pi * host_nodes[offset_1D + i]);
     }
 
@@ -111,11 +114,6 @@ TEST_CASE("ChebyshevPolynomials", "Checks the Chebyshev polynomials"){
         REQUIRE(std::abs(phi_prime[i] - phi_prime_expected[i]) < error*100);
     }
 
-    std::array<double, N_test+1> phi;
-    for (int i = 0; i <= N_test; ++i) {
-        phi[i] = std::sin(pi * host_nodes[offset_1D + i]);
-    }
-
     double phi_L_expected = std::sin(pi * -1.0);
     double phi_R_expected = std::sin(pi * 1.0);
     double phi_L = 0.0;
@@ -128,11 +126,6 @@ TEST_CASE("ChebyshevPolynomials", "Checks the Chebyshev polynomials"){
     
     REQUIRE(std::abs(phi_L - phi_L_expected) < error);
     REQUIRE(std::abs(phi_R - phi_R_expected) < error);
-
-    std::array<double, N_test+1> phi;
-    for (int i = 0; i <= N_test; ++i) {
-        phi[i] = std::sin(pi * host_nodes[offset_1D + i]);
-    }
 
     double phi_prime_L = 0.0;
     double phi_prime_R = 0.0;
@@ -245,9 +238,12 @@ TEST_CASE("LegendrePolynomials", "Checks the Legendre polynomials"){
     }
 
     std::array<double, N_test+1> phi;
-    std::array<double, N_test+1> phi_prime_expected;
     for (int i = 0; i <= N_test; ++i) {
         phi[i] = std::sin(pi * host_nodes[offset_1D + i]);
+    }
+
+    std::array<double, N_test+1> phi_prime_expected;
+    for (int i = 0; i <= N_test; ++i) {
         phi_prime_expected[i] = pi * std::cos(pi * host_nodes[offset_1D + i]);
     }
 
@@ -263,11 +259,6 @@ TEST_CASE("LegendrePolynomials", "Checks the Legendre polynomials"){
         REQUIRE(std::abs(phi_prime[i] - phi_prime_expected[i]) < error*100);
     }
 
-    std::array<double, N_test+1> phi;
-    for (int i = 0; i <= N_test; ++i) {
-        phi[i] = std::sin(pi * host_nodes[offset_1D + i]);
-    }
-
     double phi_L_expected = std::sin(pi * -1.0);
     double phi_R_expected = std::sin(pi * 1.0);
     double phi_L = 0.0;
@@ -280,11 +271,6 @@ TEST_CASE("LegendrePolynomials", "Checks the Legendre polynomials"){
     
     REQUIRE(std::abs(phi_L - phi_L_expected) < error);
     REQUIRE(std::abs(phi_R - phi_R_expected) < error);
-
-    std::array<double, N_test+1> phi;
-    for (int i = 0; i <= N_test; ++i) {
-        phi[i] = std::sin(pi * host_nodes[offset_1D + i]);
-    }
 
     double phi_prime_L = 0.0;
     double phi_prime_R = 0.0;
