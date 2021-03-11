@@ -38,6 +38,10 @@ SEM::Mesh_host_t::Mesh_host_t(size_t N_elements, int initial_N, hostFloat x_min,
 
     faces_ = std::vector<Face_host_t>(N_faces);
     elements_ = std::vector<Element_host_t>(N_elements_ + N_local_boundaries_ + N_MPI_boundaries_);
+
+    local_boundary_to_element_ = std::vector<size_t>(N_local_boundaries_);
+    MPI_boundary_to_element_ = std::vector<size_t>(N_MPI_boundaries_);
+    MPI_boundary_from_element_ = std::vector<size_t>(N_MPI_boundaries_);
     send_buffers_ = std::vector<std::array<double, 4>>(N_MPI_boundaries_);
     receive_buffers_ = std::vector<std::array<double, 4>>(N_MPI_boundaries_);
     requests_ = std::vector<MPI_Request>(N_MPI_boundaries_*2);
