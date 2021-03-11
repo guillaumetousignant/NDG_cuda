@@ -117,9 +117,6 @@ TEST_CASE("ChebyshevPolynomials", "Checks the Chebyshev polynomials"){
         }
     }
 
-    double phi_L = 0.0;
-    double phi_R = 0.0;
-
     SECTION("Polynomial boundary interpolation") {
         std::array<double, N_test+1> phi;
         for (int i = 0; i <= N_test; ++i) {
@@ -128,6 +125,8 @@ TEST_CASE("ChebyshevPolynomials", "Checks the Chebyshev polynomials"){
 
         double phi_L_expected = std::sin(pi * -1.0);
         double phi_R_expected = std::sin(pi * 1.0);
+        double phi_L = 0.0;
+        double phi_R = 0.0;
 
         for (int j = 0; j <= N_test; ++j) {
             phi_L += host_lagrange_interpolant_left[offset_1D + j] * phi[j];
@@ -136,27 +135,27 @@ TEST_CASE("ChebyshevPolynomials", "Checks the Chebyshev polynomials"){
         
         REQUIRE(std::abs(phi_L - phi_L_expected) < error);
         REQUIRE(std::abs(phi_R - phi_R_expected) < error);
-    }
 
-    SECTION("Polynomial derivative boundary interpolation") {
-        std::array<double, N_test+1> phi;
-        for (int i = 0; i <= N_test; ++i) {
-            phi[i] = std::sin(pi * host_nodes[offset_1D + i]);
+        SECTION("Polynomial derivative boundary interpolation") {
+            std::array<double, N_test+1> phi;
+            for (int i = 0; i <= N_test; ++i) {
+                phi[i] = std::sin(pi * host_nodes[offset_1D + i]);
+            }
+
+            double phi_prime_L = 0.0;
+            double phi_prime_R = 0.0;
+            double phi_prime_L_expected = pi * std::cos(pi * -1.0);
+            double phi_prime_R_expected = pi * std::cos(pi * 1.0);
+
+            for (int j = 0; j <= N_test; ++j) {
+                phi_prime_L += host_lagrange_interpolant_derivative_left[offset_1D + j] * (phi_L - phi[j]);
+                phi_prime_R += host_lagrange_interpolant_derivative_right[offset_1D + j] * (phi_R - phi[j]);
+            }
+            
+            REQUIRE(std::abs(phi_prime_L - phi_prime_L_expected) < error);
+            REQUIRE(std::abs(phi_prime_R - phi_prime_R_expected) < error);
         }
-
-        double phi_prime_L = 0.0;
-        double phi_prime_R = 0.0;
-        double phi_prime_L_expected = pi * std::cos(pi * -1.0);
-        double phi_prime_R_expected = pi * std::cos(pi * 1.0);
-
-        for (int j = 0; j <= N_test; ++j) {
-            phi_prime_L += host_lagrange_interpolant_derivative_left[offset_1D + j] * (phi_L - phi[j]);
-            phi_prime_R += host_lagrange_interpolant_derivative_right[offset_1D + j] * (phi_R - phi[j]);
-        }
-        
-        REQUIRE(std::abs(phi_prime_L - phi_prime_L_expected) < error);
-        REQUIRE(std::abs(phi_prime_R - phi_prime_R_expected) < error);
-    }
+}
 
     cudaStreamDestroy(stream);
     delete[] host_nodes;
@@ -319,7 +318,7 @@ TEST_CASE("LegendrePolynomials", "Checks the Legendre polynomials"){
             REQUIRE(std::abs(phi_prime_L - phi_prime_L_expected) < error);
             REQUIRE(std::abs(phi_prime_R - phi_prime_R_expected) < error);
         }
-}
+    }
 
     cudaStreamDestroy(stream);
     delete[] host_nodes;
