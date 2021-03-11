@@ -7,6 +7,7 @@
 #include <fstream>
 #include <sstream> 
 #include <iomanip>
+#include <vector>
 
 constexpr int poly_blockSize = 16; // Small number of threads per block because N will never be huge
 constexpr int interpolation_blockSize = 32;
@@ -93,29 +94,29 @@ SEM::NDG_t<Polynomial>::~NDG_t() {
 template<typename Polynomial>
 void SEM::NDG_t<Polynomial>::print() {
     // Copy vectors from device memory to host memory
-    deviceFloat* host_nodes = new deviceFloat[vector_length_];
-    deviceFloat* host_weights = new deviceFloat[vector_length_];
-    deviceFloat* host_barycentric_weights = new deviceFloat[vector_length_];
-    deviceFloat* host_lagrange_interpolant_left = new deviceFloat[vector_length_];
-    deviceFloat* host_lagrange_interpolant_right = new deviceFloat[vector_length_];
-    deviceFloat* host_lagrange_interpolant_derivative_left = new deviceFloat[vector_length_];
-    deviceFloat* host_lagrange_interpolant_derivative_right = new deviceFloat[vector_length_];
-    deviceFloat* host_derivative_matrices = new deviceFloat[matrix_length_];
-    deviceFloat* host_g_hat_derivative_matrices = new deviceFloat[matrix_length_];
-    deviceFloat* host_derivative_matrices_hat = new deviceFloat[matrix_length_];
-    deviceFloat* host_interpolation_matrices = new deviceFloat[interpolation_length_];
+    std::vector<deviceFloat> host_nodes(vector_length_);
+    std::vector<deviceFloat> host_weights(vector_length_);
+    std::vector<deviceFloat> host_barycentric_weights(vector_length_);
+    std::vector<deviceFloat> host_lagrange_interpolant_left(vector_length_);
+    std::vector<deviceFloat> host_lagrange_interpolant_right(vector_length_);
+    std::vector<deviceFloat> host_lagrange_interpolant_derivative_left(vector_length_);
+    std::vector<deviceFloat> host_lagrange_interpolant_derivative_right(vector_length_);
+    std::vector<deviceFloat> host_derivative_matrices(matrix_length_);
+    std::vector<deviceFloat> host_g_hat_derivative_matrices(matrix_length_);
+    std::vector<deviceFloat> host_derivative_matrices_hat(matrix_length_);
+    std::vector<deviceFloat> host_interpolation_matrices(interpolation_length_);
 
-    cudaMemcpy(host_nodes, nodes_, vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_weights, weights_, vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_barycentric_weights, barycentric_weights_, vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_lagrange_interpolant_left, lagrange_interpolant_left_, vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_lagrange_interpolant_right, lagrange_interpolant_right_, vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_lagrange_interpolant_derivative_left, lagrange_interpolant_derivative_left_, vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_lagrange_interpolant_derivative_right, lagrange_interpolant_derivative_right_, vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_derivative_matrices, derivative_matrices_, matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_g_hat_derivative_matrices, g_hat_derivative_matrices_, matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_derivative_matrices_hat, derivative_matrices_hat_, matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_interpolation_matrices, interpolation_matrices_, interpolation_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_nodes.data(), nodes_, vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_weights.data(), weights_, vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_barycentric_weights.data(), barycentric_weights_, vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_lagrange_interpolant_left.data(), lagrange_interpolant_left_, vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_lagrange_interpolant_right.data(), lagrange_interpolant_right_, vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_lagrange_interpolant_derivative_left.data(), lagrange_interpolant_derivative_left_, vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_lagrange_interpolant_derivative_right.data(), lagrange_interpolant_derivative_right_, vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_derivative_matrices, derivative_matrices_.data(), matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_g_hat_derivative_matrices.data(), g_hat_derivative_matrices_, matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_derivative_matrices_hat.data(), derivative_matrices_hat_, matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_interpolation_matrices.data(), interpolation_matrices_, interpolation_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
 
     std::cout << "Nodes: " << std::endl;
     for (int N = 0; N <= N_max_; ++N) {
@@ -256,18 +257,6 @@ void SEM::NDG_t<Polynomial>::print() {
             std::cout << std::endl;
         }
     }
-
-    delete[] host_nodes;
-    delete[] host_weights;
-    delete[] host_barycentric_weights;
-    delete[] host_lagrange_interpolant_left;
-    delete[] host_lagrange_interpolant_right;
-    delete[] host_lagrange_interpolant_derivative_left;
-    delete[] host_lagrange_interpolant_derivative_right;
-    delete[] host_derivative_matrices;
-    delete[] host_g_hat_derivative_matrices;
-    delete[] host_derivative_matrices_hat;
-    delete[] host_interpolation_matrices;
 }
 
 // Algorithm 30

@@ -47,25 +47,25 @@ namespace SEM {
 
         private:
             deviceFloat* device_delta_t_array_;
-            deviceFloat* host_delta_t_array_;
+            std::vector<deviceFloat> host_delta_t_array_;
             unsigned long* device_refine_array_;
-            unsigned long* host_refine_array_;
+            std::vector<unsigned long> host_refine_array_;
             deviceFloat* device_boundary_phi_L_;
-            deviceFloat* host_boundary_phi_L_;
+            std::vector<deviceFloat> host_boundary_phi_L_;
             deviceFloat* device_boundary_phi_R_;
-            deviceFloat* host_boundary_phi_R_;
+            std::vector<deviceFloat> host_boundary_phi_R_;
             deviceFloat* device_boundary_phi_prime_L_;
-            deviceFloat* host_boundary_phi_prime_L_;
+            std::vector<deviceFloat> host_boundary_phi_prime_L_;
             deviceFloat* device_boundary_phi_prime_R_;
-            deviceFloat* host_boundary_phi_prime_R_;
-            size_t* host_MPI_boundary_to_element_;
-            size_t* host_MPI_boundary_from_element_;
+            std::vector<deviceFloat> host_boundary_phi_prime_R_;
+            std::vector<size_t> host_MPI_boundary_to_element_;
+            std::vector<size_t> host_MPI_boundary_from_element_;
             cudaStream_t &stream_;
 
-            std::array<double, 4>* send_buffers_;
-            std::array<double, 4>* receive_buffers_;
-            MPI_Request* requests_;
-            MPI_Status* statuses_;
+            std::vector<std::array<double, 4>> send_buffers_;
+            std::vector<std::array<double, 4>> receive_buffers_;
+            std::vector<MPI_Request> requests_;
+            std::vector<MPI_Status> statuses_;
 
             void write_file_data(size_t N_interpolation_points, size_t N_elements, deviceFloat time, int rank, const deviceFloat* coordinates, const deviceFloat* velocity, const deviceFloat* du_dx, const deviceFloat* intermediate, const deviceFloat* x_L, const deviceFloat* x_R, const int* N, const deviceFloat* sigma, const bool* refine, const bool* coarsen, const deviceFloat* error);
             void adapt(int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights);
