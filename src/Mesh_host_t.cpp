@@ -590,8 +590,7 @@ void SEM::matrix_vector_derivative(hostFloat viscosity, int N, const std::vector
     for (size_t i = 0; i < phi.size(); ++i) {
         phi_prime[i] = 0.0f;
         for (size_t j = 0; j < phi.size(); ++j) {
-            //phi_prime[i] += derivative_matrices_hat[i * phi.size() + j] * phi[j] * phi[j] * 0.5; // phi not squared in textbook, squared for Burger's
-            phi_prime[i] -= viscosity * g_hat_derivative_matrices[i * (N + 1) + j] * phi[j];
+            phi_prime[i] -= derivative_matrices_hat[i * (N + 1) + j] * phi[j] * phi[j] * 0.5f + viscosity * g_hat_derivative_matrices[i * (N + 1) + j] * phi[j];
         }
     }
 }
@@ -607,12 +606,11 @@ void SEM::Mesh_host_t::compute_dg_derivative(hostFloat viscosity, const std::vec
         SEM::matrix_vector_derivative(viscosity, elements_[i].N_, derivative_matrices_hat[elements_[i].N_], g_hat_derivative_matrices[elements_[i].N_], elements_[i].phi_, elements_[i].phi_prime_);
 
         for (int j = 0; j <= elements_[i].N_; ++j) {
-            /*elements_[i].phi_prime_[j] += (flux_L * lagrange_interpolant_left[elements_[i].N_][j] - flux_R * lagrange_interpolant_right[elements_[i].N_][j]) / weights[elements_[i].N_][j];
-            elements_[i].phi_prime_[j] *= 2.0f/elements_[i].delta_x_;*/
-
-            elements_[i].phi_prime_[j] += (viscosity * derivative_flux_R * lagrange_interpolant_right[elements_[i].N_][j]
-                                        - viscosity * derivative_flux_L * lagrange_interpolant_left[elements_[i].N_][j]) * elements_[i].delta_x_ * 0.5f / weights[elements_[i].N_][j];
-            elements_[i].phi_prime_[j] *= 0.5f/(elements_[i].delta_x_ * elements_[i].delta_x_);
+            elements_[i].phi_prime_[j] += (flux_L * lagrange_interpolant_left[elements_[i].N_][j] 
+                                        - flux_R * lagrange_interpolant_right[elements_[i].N_][j]) / weights[elements_[i].N_][j]
+                                        + (viscosity * derivative_flux_R * lagrange_interpolant_right[elements_[i].N_][j]
+                                        - viscosity * derivative_flux_L * lagrange_interpolant_left[elements_[i].N_][j]) / weights[elements_[i].N_][j];
+            elements_[i].phi_prime_[j] *= 2.0f/elements_[i].delta_x_;
         }
     }
 }

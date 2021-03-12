@@ -16,7 +16,7 @@ int main(int argc, char* argv[]) {
     const int N_max = 16;
     const std::array<hostFloat, 2> x {-1.0, 1.0};
     const hostFloat CFL = 0.1;
-    const hostFloat viscosity = 1.0f;
+    const hostFloat viscosity = 0.0f;
     std::vector<hostFloat> output_times{0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f};
 
     const int initial_N = 6;
