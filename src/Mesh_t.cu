@@ -606,7 +606,7 @@ void SEM::matrix_vector_derivative(deviceFloat viscosity, int N, const deviceFlo
     for (int i = 0; i <= N; ++i) {
         phi_prime[i] = 0.0f;
         for (int j = 0; j <= N; ++j) {
-            phi_prime[i] -= viscosity * g_hat_derivative_matrices[offset_2D + i * (N + 1) + j] * phi[j]; // phi not squared in textbook, squared for Burger's
+            phi_prime[i] -= derivative_matrices_hat[offset_2D + i * (N + 1) + j] * phi[j] * phi[j] * 0.5f + viscosity * g_hat_derivative_matrices[offset_2D + i * (N + 1) + j] * phi[j]; // phi not squared in textbook, squared for Burger's
         }
     }
 }
@@ -629,9 +629,11 @@ void SEM::compute_dg_derivative(deviceFloat viscosity, size_t N_elements, Elemen
         SEM::matrix_vector_derivative(viscosity, elements[i].N_, derivative_matrices_hat, g_hat_derivative_matrices, elements[i].phi_, elements[i].phi_prime_);
 
         for (int j = 0; j <= elements[i].N_; ++j) {
-            elements[i].phi_prime_[j] += (viscosity * derivative_flux_R * lagrange_interpolant_right[offset_1D + j]
-                                        - viscosity * derivative_flux_L * lagrange_interpolant_left[offset_1D + j]) * elements[i].delta_x_ * 0.5f / weights[offset_1D + j];
-            elements[i].phi_prime_[j] *= 0.5f/(elements[i].delta_x_ * elements[i].delta_x_);
+            elements[i].phi_prime_[j] += (flux_L * lagrange_interpolant_left[offset_1D + j] 
+                                        - flux_R * lagrange_interpolant_right[offset_1D + j]) / weights[offset_1D + j]
+                                        + (viscosity * derivative_flux_R * lagrange_interpolant_right[offset_1D + j]
+                                        - viscosity * derivative_flux_L * lagrange_interpolant_left[offset_1D + j])  * 0.125f / weights[offset_1D + j];
+            elements[i].phi_prime_[j] *= 2.0f/elements[i].delta_x_;
         }
     }
 }
