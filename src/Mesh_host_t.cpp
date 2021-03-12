@@ -250,7 +250,7 @@ void SEM::Mesh_host_t::solve(const hostFloat CFL, const std::vector<hostFloat> o
         calculate_fluxes();
         compute_dg_derivative(viscosity, NDG.weights_, NDG.derivative_matrices_hat_, NDG.g_hat_derivative_matrices_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
         rk3_step(delta_t, -153.0/128.0, 8.0/15.0);
-              
+
         time += delta_t;
         for (auto const& e : std::as_const(output_times)) {
             if ((time >= e) && (time < e + delta_t)) {
@@ -278,7 +278,7 @@ void SEM::Mesh_host_t::solve(const hostFloat CFL, const std::vector<hostFloat> o
 }
 
 void SEM::Mesh_host_t::build_elements(hostFloat x_min, hostFloat x_max) {
-    for (size_t i = 0; i < elements_.size(); ++i) {
+    for (size_t i = 0; i < N_elements_; ++i) {
         const size_t face_L = i;
         const size_t face_R = i + 1;
         const hostFloat delta_x = (x_max - x_min)/N_elements_;
