@@ -599,14 +599,14 @@ void SEM::matrix_vector_multiply(int N, const deviceFloat* matrix, const deviceF
 
 // Algorithm 19
 __device__
-void SEM::matrix_vector_derivative(deviceFloat viscosity, int N, const deviceFloat* derivative_matrices_hat, const deviceFloat* g_hat_derivative_matrices, const deviceFloat* phi, deviceFloat* phi_prime) {
+void SEM::matrix_vector_derivative(deviceFloat viscosity, int N, deviceFloat delta_x, const deviceFloat* derivative_matrices_hat, const deviceFloat* g_hat_derivative_matrices, const deviceFloat* phi, deviceFloat* phi_prime) {
     // s = 0, e = N (p.55 says N - 1)
     const size_t offset_2D = N * (N + 1) * (2 * N + 1) /6;
 
     for (int i = 0; i <= N; ++i) {
         phi_prime[i] = 0.0f;
         for (int j = 0; j <= N; ++j) {
-            phi_prime[i] -= derivative_matrices_hat[offset_2D + i * (N + 1) + j] * phi[j] * phi[j] * 0.5f + viscosity * g_hat_derivative_matrices[offset_2D + i * (N + 1) + j] * phi[j]; // phi not squared in textbook, squared for Burger's
+            phi_prime[i] -= derivative_matrices_hat[offset_2D + i * (N + 1) + j] * phi[j] * phi[j] * 0.5f + viscosity * g_hat_derivative_matrices[offset_2D + i * (N + 1) + j] * phi[j] * 2 / delta_x; // phi not squared in textbook, squared for Burger's
         }
     }
 }
@@ -626,7 +626,7 @@ void SEM::compute_dg_derivative(deviceFloat viscosity, size_t N_elements, Elemen
         const deviceFloat derivative_flux_L = faces[elements[i].faces_[0]].derivative_flux_;
         const deviceFloat derivative_flux_R = faces[elements[i].faces_[1]].derivative_flux_;
 
-        SEM::matrix_vector_derivative(viscosity, elements[i].N_, derivative_matrices_hat, g_hat_derivative_matrices, elements[i].phi_, elements[i].phi_prime_);
+        SEM::matrix_vector_derivative(viscosity, elements[i].N_, elements[i].delta_x_, derivative_matrices_hat, g_hat_derivative_matrices, elements[i].phi_, elements[i].phi_prime_);
 
         for (int j = 0; j <= elements[i].N_; ++j) {
             elements[i].phi_prime_[j] += (flux_L * lagrange_interpolant_left[offset_1D + j] 
