@@ -349,6 +349,11 @@ void SEM::Mesh_t::solve(const deviceFloat CFL, const std::vector<deviceFloat> ou
     write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
     
     while (time < t_end) {
+        delta_t = get_delta_t(CFL);
+        if (time + delta_t > t_end) {
+            delta_t = end_time_ - time;
+        }
+
         // Kinda algorithm 62
         deviceFloat t = time;
         SEM::interpolate_to_boundaries<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_, NDG.lagrange_interpolant_derivative_left_, NDG.lagrange_interpolant_derivative_right_);
@@ -392,7 +397,6 @@ void SEM::Mesh_t::solve(const deviceFloat CFL, const std::vector<deviceFloat> ou
                 }
                 write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
                 adapt(NDG.N_max_, NDG.nodes_, NDG.barycentric_weights_);
-                delta_t = get_delta_t(CFL);
                 break;
             }
         }
