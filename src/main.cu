@@ -17,9 +17,9 @@ int main(int argc, char* argv[]) {
     const size_t N_elements = 16;
     const int N_max = 16;
     const std::array<deviceFloat, 2> x {-1.0, 1.0};
-    const deviceFloat CFL = 0.1f;
-    const deviceFloat viscosity = 0.0f;
-    std::vector<deviceFloat> output_times{0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f};
+    const deviceFloat CFL = 0.2f;
+    const deviceFloat viscosity = 1e-2 / pi;
+    std::vector<deviceFloat> output_times{0.05f, 0.1f, 0.15f, 0.2f, 0.25f, 0.3f, 0.35f, 0.4f, 0.45f, 0.5f};
 
     const int initial_N = 6;
     const size_t N_interpolation_points = N_max * 8;

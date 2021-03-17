@@ -37,6 +37,8 @@ namespace SEM {
             deviceFloat phi_prime_L_;
             deviceFloat phi_prime_R_;
             deviceFloat* phi_; // Solution
+            deviceFloat* q_;
+            deviceFloat* ux_;
             deviceFloat* phi_prime_;
             deviceFloat* intermediate_; // This is used for RK3, and also for adaptivity. So don't try to adapt between rk steps.
 
@@ -48,6 +50,10 @@ namespace SEM {
             // Algorithm 61
             __device__
             void interpolate_to_boundaries(const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right, const deviceFloat* lagrange_interpolant_derivative_left, const deviceFloat* lagrange_interpolant_derivative_right);
+
+            // Algorithm 61
+            __device__
+            void interpolate_q_to_boundaries(const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right, const deviceFloat* lagrange_interpolant_derivative_left, const deviceFloat* lagrange_interpolant_derivative_right);
 
             template<typename Polynomial>
             __device__
@@ -96,6 +102,9 @@ namespace SEM {
     
     __global__
     void interpolate_to_boundaries(size_t N_elements, Element_t* elements, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right, const deviceFloat* lagrange_interpolant_derivative_left, const deviceFloat* lagrange_interpolant_derivative_right);
+
+    __global__
+    void interpolate_q_to_boundaries(size_t N_elements, Element_t* elements, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right, const deviceFloat* lagrange_interpolant_derivative_left, const deviceFloat* lagrange_interpolant_derivative_right);
 
     __global__
     void hp_adapt(unsigned long N_elements, Element_t* elements, Element_t* new_elements, Face_t* new_faces, const unsigned long* block_offsets, int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights);

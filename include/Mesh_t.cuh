@@ -81,16 +81,23 @@ namespace SEM {
     __global__
     void calculate_fluxes(size_t N_faces, Face_t* faces, const Element_t* elements);
 
+    __global__
+    void calculate_q_fluxes(size_t N_faces, Face_t* faces, const Element_t* elements);
+
     __device__
     void matrix_vector_multiply(int N, const deviceFloat* matrix, const deviceFloat* vector, deviceFloat* result);
 
     // Algorithm 19
     __device__
-    void matrix_vector_derivative(deviceFloat viscosity, int N, deviceFloat delta_x, const deviceFloat* derivative_matrices_hat, const deviceFloat* g_hat_derivative_matrices, const deviceFloat* phi, deviceFloat* phi_prime);
+    void matrix_vector_derivative(int N, const deviceFloat* derivative_matrices_hat, const deviceFloat* phi, deviceFloat* phi_prime);
 
     // Algorithm 60 (not really anymore)
     __global__
     void compute_dg_derivative(deviceFloat viscosity, size_t N_elements, Element_t* elements, const Face_t* faces, const deviceFloat* weights, const deviceFloat* derivative_matrices_hat, const deviceFloat* g_hat_derivative_matrices, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right);
+
+    // Algorithm 60 (not really anymore)
+    __global__
+    void compute_dg_derivative2(deviceFloat viscosity, size_t N_elements, Element_t* elements, const Face_t* faces, const deviceFloat* weights, const deviceFloat* derivative_matrices_hat, const deviceFloat* g_hat_derivative_matrices, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right);
 
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>
