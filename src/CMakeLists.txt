@@ -10,7 +10,8 @@ add_library(NDG_cuda
     NDG_host_t.cpp
     Mesh_host_t.cpp
     Element_host_t.cpp
-    Face_host_t.cpp)
+    Face_host_t.cpp
+    ProgressBar_t.cpp)
 
 target_include_directories(NDG_cuda PUBLIC 
     $<INSTALL_INTERFACE:include/NDG_cuda/>    

@@ -1,6 +1,7 @@
 #include "Mesh_t.cuh"
 #include "ChebyshevPolynomial_t.cuh"
 #include "LegendrePolynomial_t.cuh"
+#include "ProgressBar_t.h"
 #include <iostream>
 #include <fstream>
 #include <sstream> 
@@ -344,14 +345,18 @@ void SEM::Mesh_t::solve(const deviceFloat CFL, const std::vector<deviceFloat> ou
     MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
     deviceFloat time = 0.0;
     const deviceFloat t_end = output_times.back();
+    ProgressBar_t bar;
 
     deviceFloat delta_t = get_delta_t(CFL);
     write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
+    if (global_rank == 0) {
+        bar.update(0.0);
+    }
     
     while (time < t_end) {
         delta_t = get_delta_t(CFL);
         if (time + delta_t > t_end) {
-            delta_t = end_time_ - time;
+            delta_t = t_end - time;
         }
 
         // Kinda algorithm 62
@@ -389,17 +394,20 @@ void SEM::Mesh_t::solve(const deviceFloat CFL, const std::vector<deviceFloat> ou
         SEM::rk3_step<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, delta_t, -153.0f/128.0f, 8.0f/15.0f);
               
         time += delta_t;
+        if (global_rank == 0) {
+            bar.update(time/t_end);
+        }
         for (auto const& e : std::as_const(output_times)) {
             if ((time >= e) && (time < e + delta_t)) {
                 SEM::estimate_error<Polynomial><<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, NDG.nodes_, NDG.weights_);
-                if (global_rank == 0) {
-                    std::cout << '\t' << "t = " << time << "s/" << t_end << "s" << std::endl;
-                }
                 write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
                 adapt(NDG.N_max_, NDG.nodes_, NDG.barycentric_weights_);
                 break;
             }
         }
+    }
+    if (global_rank == 0) {
+        std::cout << std::endl;
     }
 
     bool did_write = false;
