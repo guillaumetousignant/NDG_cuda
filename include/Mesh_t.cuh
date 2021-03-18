@@ -126,16 +126,18 @@ namespace SEM {
             for (int j = 0; j <= elements[i].N_; ++j) {
                 phi_max = max(phi_max, abs(elements[i].phi_[j]));
             }
-            //deviceFloat delta_t = CFL * elements[i].delta_x_/(phi_max * elements[i].N_ * elements[i].N_);
-            deviceFloat delta_t = CFL * elements[i].delta_x_ * elements[i].delta_x_/(elements[i].N_ * elements[i].N_);
+            const deviceFloat delta_t_nl = CFL * elements[i].delta_x_/(phi_max * elements[i].N_ * elements[i].N_);
+            const deviceFloat delta_t_viscous = CFL * elements[i].delta_x_ * elements[i].delta_x_/(elements[i].N_ * elements[i].N_);
+            deviceFloat delta_t = min(delta_t_nl, delta_t_viscous);
  
             if (i+blockSize < N_elements) {
                 phi_max = 0.0;
                 for (int j = 0; j <= elements[i+blockSize].N_; ++j) {
                     phi_max = max(phi_max, abs(elements[i+blockSize].phi_[j]));
                 }
-                //delta_t = min(delta_t, CFL * elements[i+blockSize].delta_x_/(phi_max * elements[i+blockSize].N_ * elements[i+blockSize].N_));
-                delta_t = min(delta_t, CFL * elements[i+blockSize].delta_x_ * elements[i+blockSize].delta_x_/(elements[i+blockSize].N_ * elements[i+blockSize].N_));
+                const deviceFloat delta_t_nl = CFL * elements[i+blockSize].delta_x_/(phi_max * elements[i+blockSize].N_ * elements[i+blockSize].N_);
+                const deviceFloat delta_t_viscous = CFL * elements[i+blockSize].delta_x_ * elements[i+blockSize].delta_x_/(elements[i+blockSize].N_ * elements[i+blockSize].N_);
+                delta_t = min(delta_t, min(delta_t_nl, delta_t_viscous));
             }
 
             sdata[tid] = min(sdata[tid], delta_t); 
