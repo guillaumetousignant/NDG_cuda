@@ -2,45 +2,18 @@
 #include <utility>
 
 __device__ 
-SEM::Face_t::Face_t(size_t element_L, size_t element_R) : elements_{element_L, element_R} {};
-
-__device__
-SEM::Face_t::Face_t(const SEM::Face_t& other) :
-        elements_{other.elements_[0], other.elements_[1]},
-        flux_{other.flux_},
-        derivative_flux_{other.derivative_flux_} {}
-
-__device__
-SEM::Face_t::Face_t(SEM::Face_t&& other) :
-        elements_{other.elements_[0], other.elements_[1]},
-        flux_{other.flux_},
-        derivative_flux_{other.derivative_flux_} {}
-
-__device__
-SEM::Face_t& SEM::Face_t::operator=(const SEM::Face_t& other) {
-    elements_[0] = other.elements_[0];
-    elements_[1] = other.elements_[1];
-    flux_ = other.flux_;
-    derivative_flux_ = other.derivative_flux_;
-
-    return *this;
-}
-
-__device__
-SEM::Face_t& SEM::Face_t::operator=(SEM::Face_t&& other) {
-    elements_[0] = other.elements_[0];
-    elements_[1] = other.elements_[1];
-    flux_ = other.flux_;
-    derivative_flux_ = other.derivative_flux_;
-
-    return *this;
-}
-
-__host__
-SEM::Face_t::Face_t() {}
+SEM::Face_t::Face_t(size_t element_L, size_t element_R) : 
+        elements_{element_L, element_R},
+        flux_{0.0},
+        derivative_flux_{0.0},
+        nl_flux_{0.0} {};
 
 __host__ __device__
-SEM::Face_t::~Face_t() {}
+SEM::Face_t::Face_t() :
+        elements_{0, 0},
+        flux_{0.0},
+        derivative_flux_{0.0},
+        nl_flux_{0.0} {}
 
 __global__
 void SEM::build_faces(size_t N_faces, SEM::Face_t* faces) {

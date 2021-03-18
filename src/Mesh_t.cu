@@ -189,6 +189,13 @@ void SEM::Mesh_t::print() {
         std::cout << host_faces[i].derivative_flux_ << std::endl;
     }
 
+    std::cout << std::endl << "Non linear fluxes: " << std::endl;
+    for (size_t i = 0; i < N_faces_; ++i) {
+        std::cout << '\t' << "Face " << i << ": ";
+        std::cout << '\t' << '\t';
+        std::cout << host_faces[i].nl_flux_ << std::endl;
+    }
+
     std::cout << std::endl << "Elements: " << std::endl;
     for (size_t i = 0; i < N_faces_; ++i) {
         std::cout << '\t' << "Face " << i << ": ";
@@ -587,9 +594,32 @@ void SEM::calculate_fluxes(size_t N_faces, Face_t* faces, const Element_t* eleme
     const int stride = blockDim.x * gridDim.x;
 
     for (size_t i = index; i < N_faces; i += stride) {
+        deviceFloat u;
+        const deviceFloat u_left = elements[faces[i].elements_[0]].phi_R_;
         const deviceFloat u_right = elements[faces[i].elements_[1]].phi_L_;
 
+        if (u_left < 0.0f && u_right > 0.0f) { // In expansion fan
+            u = 0.5f * (u_left + u_right);
+        }
+        else if (u_left >= u_right) { // Shock
+            if (u_left > 0.0f) {
+                u = u_left;
+            }
+            else {
+                u = u_right;
+            }
+        }
+        else { // Expansion fan
+            if (u_left > 0.0f) {
+                u = u_left;
+            }
+            else  {
+                u = u_right;
+            }
+        }
+    
         faces[i].flux_ = u_right;
+        faces[i].nl_flux_ = 0.5f * u * u;
     }
 }
 
@@ -661,15 +691,19 @@ void SEM::compute_dg_derivative2(deviceFloat viscosity, size_t N_elements, Eleme
 
         const deviceFloat derivative_flux_L = faces[elements[i].faces_[0]].derivative_flux_;
         const deviceFloat derivative_flux_R = faces[elements[i].faces_[1]].derivative_flux_;
+        const deviceFloat nl_flux_L = faces[elements[i].faces_[0]].nl_flux_;
+        const deviceFloat nl_flux_R = faces[elements[i].faces_[1]].nl_flux_;
         
-        //SEM::matrix_vector_derivative(elements[i].N_, derivative_matrices_hat + offset_2D, elements[i].phi_, elements[i].ux_);
+        SEM::matrix_vector_derivative(elements[i].N_, derivative_matrices_hat + offset_2D, elements[i].phi_, elements[i].ux_);
         SEM::matrix_vector_multiply(elements[i].N_, derivative_matrices_hat + offset_2D, elements[i].q_, elements[i].phi_prime_);
         
         for (int j = 0; j <= elements[i].N_; ++j) {
             elements[i].phi_prime_[j] = -elements[i].phi_prime_[j] * viscosity
                                         - (derivative_flux_R * lagrange_interpolant_right[offset_1D + j]
-                                           - derivative_flux_L * lagrange_interpolant_left[offset_1D + j]) * viscosity /weights[offset_1D + j];
-                                        //- elements[i].ux_[j];
+                                           - derivative_flux_L * lagrange_interpolant_left[offset_1D + j]) * viscosity /weights[offset_1D + j]
+                                        - elements[i].ux_[j]
+                                        + (nl_flux_L * lagrange_interpolant_left[offset_1D + j] 
+                                            - nl_flux_R * lagrange_interpolant_right[offset_1D + j]) / weights[offset_1D + j];
 
             elements[i].phi_prime_[j] *= 2.0f/elements[i].delta_x_;
         }
