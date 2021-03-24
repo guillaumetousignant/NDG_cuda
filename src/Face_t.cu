@@ -22,7 +22,7 @@ void SEM::build_faces(size_t N_faces, SEM::Face_t* faces) {
 
     for (size_t i = index; i < N_faces; i += stride) {
         const size_t neighbour_L = (i > 0) ? i - 1 : N_faces - 1;
-        const size_t neighbour_R = (i < N_faces - 1) ? i : N_faces; // Last face links last element to first element
+        const size_t neighbour_R = (i < N_faces - 1) ? i : N_faces;
         faces[i] = SEM::Face_t(neighbour_L, neighbour_R);
     }
 }

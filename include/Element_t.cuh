@@ -3,6 +3,7 @@
 
 #include "float_types.h"
 #include "Face_t.cuh"
+#include <array>
 
 namespace SEM {
     class Element_t { // Turn this into separate vectors, because cache exists
@@ -29,8 +30,8 @@ namespace SEM {
             ~Element_t();
 
             int N_;
-            size_t faces_[2]; // Could also be pointers. left, right
-            deviceFloat x_[2];
+            std::array<size_t, 2> faces_; // Could also be pointers. left, right
+            std::array<deviceFloat, 2> x_;
             deviceFloat delta_x_;
             deviceFloat phi_L_;
             deviceFloat phi_R_;
@@ -74,6 +75,9 @@ namespace SEM {
     void build_boundaries(size_t N_elements, size_t N_elements_global, size_t N_local_boundaries, size_t N_MPI_boundaries, Element_t* elements, deviceFloat x_min, deviceFloat x_max, size_t global_element_offset, size_t* local_boundary_to_element, size_t* MPI_boundary_to_element, size_t* MPI_boundary_from_element);
 
     __global__
+    void copy_boundaries(size_t N_elements, size_t N_elements_global, size_t N_local_boundaries, size_t N_MPI_boundaries, size_t n_additional_elements, Element_t* elements, Element_t* new_elements, Face_t* new_faces, size_t global_element_offset, size_t* local_boundary_to_element, size_t* MPI_boundary_to_element, size_t* MPI_boundary_from_element);
+    
+    __global__
     void free_elements(size_t N_elements, Element_t* elements);
 
     template<typename Polynomial>
@@ -93,9 +97,14 @@ namespace SEM {
     __global__
     void get_elements_data(size_t N_elements, const Element_t* elements, deviceFloat* phi, deviceFloat* phi_prime);
 
-    // Basically useless, find better solution when multiple elements.
     __global__
-    void get_phi(size_t N_elements, const Element_t* elements, deviceFloat* phi);
+    void get_phi(size_t N_elements, const Element_t* elements, deviceFloat** phi);
+
+    __global__
+    void put_phi(size_t N_elements, Element_t* elements, const deviceFloat** phi);
+
+    __global__
+    void move_elements(size_t N_elements, Element_t* elements, Element_t* new_elements);
 
     __global__
     void get_solution(size_t N_elements, size_t N_interpolation_points, const Element_t* elements, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* phi, deviceFloat* phi_prime, deviceFloat* intermediate, deviceFloat* x_L, deviceFloat* x_R, int* N, deviceFloat* sigma, bool* refine, bool* coarsen, deviceFloat* error);
@@ -107,7 +116,7 @@ namespace SEM {
     void interpolate_q_to_boundaries(size_t N_elements, Element_t* elements, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right, const deviceFloat* lagrange_interpolant_derivative_left, const deviceFloat* lagrange_interpolant_derivative_right);
 
     __global__
-    void hp_adapt(unsigned long N_elements, Element_t* elements, Element_t* new_elements, Face_t* new_faces, const unsigned long* block_offsets, int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights);
+    void hp_adapt(unsigned long N_elements, Element_t* elements, Element_t* new_elements, const unsigned long* block_offsets, int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights);
 
     __global__
     void p_adapt(unsigned long N_elements, Element_t* elements, int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights);
