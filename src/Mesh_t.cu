@@ -495,7 +495,7 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
     Element_t* new_elements;
 
     // CHECK N_faces = N_elements only for periodic BC.
-    cudaMalloc(&new_elements, (N_elements_ + N_local_boundaries_ + N_MPI_boundaries_ + additional_elements) * sizeof(Element_t));
+    cudaMalloc(&new_elements, (N_elements_ + additional_elements) * sizeof(Element_t));
 
     //SEM::copy_faces<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(N_faces_, faces_, new_faces);
     //SEM::copy_boundaries<<boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>(N_elements_, N_elements_global_, N_local_boundaries_, N_MPI_boundaries_, additional_elements, elements_, new_elements, new_faces, global_element_offset_, local_boundary_to_element_, MPI_boundary_to_element_, MPI_boundary_from_element_);                                                                            
@@ -730,7 +730,7 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
 
     SEM::move_elements<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_ - N_elements_send_left - N_elements_send_right, new_elements + N_elements_send_left, elements_ + N_elements_recv_left);
 
-    SEM::free_elements<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_ + N_local_boundaries_ + N_MPI_boundaries_ + additional_elements, new_elements);
+    SEM::free_elements<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, new_elements);
     cudaFree(new_elements);
 
     host_delta_t_array_ = std::vector<deviceFloat>(elements_numBlocks_);
@@ -755,7 +755,7 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
     cudaFree(device_boundary_phi_R_);
     cudaFree(device_boundary_phi_prime_L_);
     cudaFree(device_boundary_phi_prime_R_);
-    cudaMalloc(&local_boundary_to_element_, N_MPI_boundaries_ * sizeof(deviceFloat));
+    cudaMalloc(&local_boundary_to_element_, N_local_boundaries_ * sizeof(deviceFloat));
     cudaMalloc(&MPI_boundary_to_element_, N_MPI_boundaries_ * sizeof(size_t));
     cudaMalloc(&MPI_boundary_from_element_, N_MPI_boundaries_ * sizeof(size_t));
     cudaMalloc(&device_delta_t_array_, elements_numBlocks_ * sizeof(deviceFloat));
