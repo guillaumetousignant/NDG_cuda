@@ -353,6 +353,7 @@ void SEM::Mesh_t::solve(const deviceFloat CFL, const std::vector<deviceFloat> ou
     deviceFloat time = 0.0;
     const deviceFloat t_end = output_times.back();
     ProgressBar_t bar;
+    size_t timestep = 0;
 
     deviceFloat delta_t = get_delta_t(CFL);
     write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
@@ -361,6 +362,7 @@ void SEM::Mesh_t::solve(const deviceFloat CFL, const std::vector<deviceFloat> ou
     }
     
     while (time < t_end) {
+        ++timestep;
         delta_t = get_delta_t(CFL);
         if (time + delta_t > t_end) {
             delta_t = t_end - time;
@@ -408,9 +410,13 @@ void SEM::Mesh_t::solve(const deviceFloat CFL, const std::vector<deviceFloat> ou
             if ((time >= e) && (time < e + delta_t)) {
                 SEM::estimate_error<Polynomial><<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, NDG.nodes_, NDG.weights_);
                 write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
-                adapt(NDG.N_max_, NDG.nodes_, NDG.barycentric_weights_);
                 break;
             }
+        }
+
+        if (timestep % 100 == 0) {
+            SEM::estimate_error<Polynomial><<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, NDG.nodes_, NDG.weights_);
+            adapt(NDG.N_max_, NDG.nodes_, NDG.barycentric_weights_);
         }
     }
     if (global_rank == 0) {
