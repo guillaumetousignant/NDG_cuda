@@ -68,7 +68,7 @@ SEM::Mesh_t::Mesh_t(size_t N_elements, int initial_N, deviceFloat x_min, deviceF
     const deviceFloat x_max_local = x_min_local + N_elements_ * delta_x;
 
     SEM::build_elements<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, initial_N_, elements_, x_min_local, x_max_local);
-    SEM::build_boundaries<<<boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(N_elements_, N_elements_global_, N_local_boundaries_, N_MPI_boundaries_, elements_, x_min_local, x_max_local, global_element_offset_, local_boundary_to_element_, MPI_boundary_to_element_, MPI_boundary_from_element_);
+    SEM::build_boundaries<<<boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(N_elements_, N_elements_global_, N_local_boundaries_, N_MPI_boundaries_, elements_, global_element_offset_, local_boundary_to_element_, MPI_boundary_to_element_, MPI_boundary_from_element_);
     SEM::build_faces<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(N_faces_, faces_);
 
     cudaMemcpy(host_MPI_boundary_to_element_.data(), MPI_boundary_to_element_, N_MPI_boundaries_ * sizeof(size_t), cudaMemcpyDeviceToHost);
@@ -466,10 +466,10 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
     MPI_Allgather(&additional_elements, 1, MPI_UNSIGNED_LONG, additional_elements_global.data(), 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
 
     size_t global_element_offset_current = global_element_offset_;
-    for (int i = 0; i < global_rank) {
+    for (int i = 0; i < global_rank; ++i) {
         global_element_offset_current += additional_elements_global[i];
     }
-    for (int i = 0; i < global_size) {
+    for (int i = 0; i < global_size; ++i) {
         N_elements_global_ += additional_elements_global[i];
     }
     const size_t global_element_offset_end_current = global_element_offset_current + N_elements_ + additional_elements - 1;
@@ -493,7 +493,7 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
 
     //SEM::copy_faces<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(N_faces_, faces_, new_faces);
     //SEM::copy_boundaries<<boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>(N_elements_, N_elements_global_, N_local_boundaries_, N_MPI_boundaries_, additional_elements, elements_, new_elements, new_faces, global_element_offset_, local_boundary_to_element_, MPI_boundary_to_element_, MPI_boundary_from_element_);                                                                            
-    SEM::hp_adapt<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, new_elements, new_faces, device_refine_array_, N_max, nodes, barycentric_weights);
+    SEM::hp_adapt<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, new_elements, device_refine_array_, N_max, nodes, barycentric_weights);
 
     SEM::free_elements<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_ + N_local_boundaries_ + N_MPI_boundaries_, elements_);
     cudaFree(elements_);
@@ -507,14 +507,14 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
 
     cudaFree(faces_);
     cudaMalloc(&faces_, N_faces_ * sizeof(Face_t));
-    SEM::build_faces<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(N_faces_, new_faces);
+    SEM::build_faces<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(N_faces_, faces_);
 
     cudaMalloc(&elements_, (N_elements_ + N_local_boundaries_ + N_MPI_boundaries_) * sizeof(Element_t));
 
-    const size_t N_elements_send_left = max(global_element_offset_ - global_element_offset_current, 0);
-    const size_t N_elements_recv_left = max(global_element_offset_current - global_element_offset_, 0);
-    const size_t N_elements_send_right = max(global_element_offset_end_current - global_element_offset_end, 0);
-    const size_t N_elements_recv_right = max(global_element_offset_end - global_element_offset_end_current, 0);
+    const size_t N_elements_send_left = std::max(global_element_offset_ - global_element_offset_current, 0ULL);
+    const size_t N_elements_recv_left = std::max(global_element_offset_current - global_element_offset_, 0ULL);
+    const size_t N_elements_send_right = std::max(global_element_offset_end_current - global_element_offset_end, 0ULL);
+    const size_t N_elements_recv_right = std::max(global_element_offset_end - global_element_offset_end_current, 0ULL);
 
     std::vector<Element_t> elements_send_left(N_elements_send_left);
     std::vector<Element_t> elements_recv_left(N_elements_recv_left);
@@ -540,43 +540,43 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
         element.intermediate_ = nullptr;
     }
 
-    std::vector<std::vector<double>> phi_arrays_send_left(N_elements_send_left);
-    std::vector<std::vector<double>> phi_arrays_recv_left(N_elements_recv_left);
-    std::vector<double*> phi_arrays_send_left_host(N_elements_send_left);
-    std::vector<double*> phi_arrays_recv_left_host(N_elements_recv_left);
+    std::vector<std::vector<deviceFloat>> phi_arrays_send_left(N_elements_send_left);
+    std::vector<std::vector<deviceFloat>> phi_arrays_recv_left(N_elements_recv_left);
+    std::vector<deviceFloat*> phi_arrays_send_left_host(N_elements_send_left);
+    std::vector<deviceFloat*> phi_arrays_recv_left_host(N_elements_recv_left);
     for (int i = 0; i < N_elements_send_left; ++i) {
-        phi_arrays_send_left[i] = std::vector<double>(elements_send_left[i].N_ + 1);
-        cudaMalloc(&phi_arrays_send_left_host[i], (elements_send_left[i].N_ + 1) * sizeof(double));
+        phi_arrays_send_left[i] = std::vector<deviceFloat>(elements_send_left[i].N_ + 1);
+        cudaMalloc(&phi_arrays_send_left_host[i], (elements_send_left[i].N_ + 1) * sizeof(deviceFloat));
     }
-    double** phi_arrays_send_left_device;
-    double** phi_arrays_recv_left_device;
-    cudaMalloc(&phi_arrays_send_left_device, N_elements_send_left * sizeof(double*)); 
-    cudaMalloc(&phi_arrays_recv_left_device, N_elements_recv_left * sizeof(double*)); 
-    cudaMemcpy(phi_arrays_send_left_device, phi_arrays_send_left_host.data(), N_elements_send_left * sizeof(double*), cudaMemcpyHostToDevice);
+    deviceFloat** phi_arrays_send_left_device;
+    deviceFloat** phi_arrays_recv_left_device;
+    cudaMalloc(&phi_arrays_send_left_device, N_elements_send_left * sizeof(deviceFloat*)); 
+    cudaMalloc(&phi_arrays_recv_left_device, N_elements_recv_left * sizeof(deviceFloat*)); 
+    cudaMemcpy(phi_arrays_send_left_device, phi_arrays_send_left_host.data(), N_elements_send_left * sizeof(deviceFloat*), cudaMemcpyHostToDevice);
 
-    std::vector<std::vector<double>> phi_arrays_send_right(N_elements_send_right);
-    std::vector<std::vector<double>> phi_arrays_recv_right(N_elements_recv_right);
-    std::vector<double*> phi_arrays_send_right_host(N_elements_send_right);
-    std::vector<double*> phi_arrays_recv_right_host(N_elements_recv_right);
+    std::vector<std::vector<deviceFloat>> phi_arrays_send_right(N_elements_send_right);
+    std::vector<std::vector<deviceFloat>> phi_arrays_recv_right(N_elements_recv_right);
+    std::vector<deviceFloat*> phi_arrays_send_right_host(N_elements_send_right);
+    std::vector<deviceFloat*> phi_arrays_recv_right_host(N_elements_recv_right);
     for (int i = 0; i < N_elements_send_right; ++i) {
-        phi_arrays_send_right[i] = std::vector<double>(elements_send_right[i].N_ + 1);
-        cudaMalloc(&phi_arrays_send_right_host[i], (elements_send_right[i].N_ + 1) * sizeof(double));
+        phi_arrays_send_right[i] = std::vector<deviceFloat>(elements_send_right[i].N_ + 1);
+        cudaMalloc(&phi_arrays_send_right_host[i], (elements_send_right[i].N_ + 1) * sizeof(deviceFloat));
     }
-    double** phi_arrays_send_right_device;
-    double** phi_arrays_recv_right_device;
-    cudaMalloc(&phi_arrays_send_right_device, N_elements_send_right * sizeof(double*)); 
-    cudaMalloc(&phi_arrays_recv_right_device, N_elements_recv_right * sizeof(double*)); 
-    cudaMemcpy(phi_arrays_send_right_device, phi_arrays_send_right_host.data(), N_elements_send_right * sizeof(double*), cudaMemcpyHostToDevice);
+    deviceFloat** phi_arrays_send_right_device;
+    deviceFloat** phi_arrays_recv_right_device;
+    cudaMalloc(&phi_arrays_send_right_device, N_elements_send_right * sizeof(deviceFloat*)); 
+    cudaMalloc(&phi_arrays_recv_right_device, N_elements_recv_right * sizeof(deviceFloat*)); 
+    cudaMemcpy(phi_arrays_send_right_device, phi_arrays_send_right_host.data(), N_elements_send_right * sizeof(deviceFloat*), cudaMemcpyHostToDevice);
 
-    SEM::get_phi<<<boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>(N_elements_send_left, new_elements, phi_arrays_send_left_device);
-    SEM::get_phi<<<boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>(N_elements_send_right, new_elements + N_elements_ - N_elements_send_right, phi_arrays_send_right_device);
+    SEM::get_phi<<<boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(N_elements_send_left, new_elements, phi_arrays_send_left_device);
+    SEM::get_phi<<<boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(N_elements_send_right, new_elements + N_elements_ - N_elements_send_right, phi_arrays_send_right_device);
 
     for (int i = 0; i < N_elements_send_left; ++i) {
-        cudaMemcpy(phi_arrays_send_left[i].data(), phi_arrays_send_left_host[i], (elements_send_left[i].N_ + 1) * sizeof(double), cudaMemcpyDeviceToHost);
+        cudaMemcpy(phi_arrays_send_left[i].data(), phi_arrays_send_left_host[i], (elements_send_left[i].N_ + 1) * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     }
 
     for (int i = 0; i < N_elements_send_right; ++i) {
-        cudaMemcpy(phi_arrays_send_right[i].data(), phi_arrays_send_right_host[i], (elements_send_right[i].N_ + 1) * sizeof(double), cudaMemcpyDeviceToHost);
+        cudaMemcpy(phi_arrays_send_right[i].data(), phi_arrays_send_right_host[i], (elements_send_right[i].N_ + 1) * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     }
 
     for (int i = 0; i < N_elements_send_left; ++i) {
@@ -589,13 +589,12 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
     }
     cudaFree(phi_arrays_send_right_device);
 
-    std::vector left_origins(N_elements_recv_left);
-    std::vector right_origins(N_elements_recv_right);
+    std::vector<int> left_origins(N_elements_recv_left);
+    std::vector<int> right_origins(N_elements_recv_right);
     for (int i = 0; i < N_elements_recv_left; ++i) {
         const int index = global_element_offset_ + i;
-        int origin = 0; // This one is tricky
         int process_end_index = -1;
-        for (int rank = 0; rank < global_rank) { 
+        for (int rank = 0; rank < global_rank; ++rank) { 
             process_end_index += N_elements_per_process_old + additional_elements_global[rank];
             if (process_end_index >= index) {
                 left_origins[i] = rank;
@@ -605,9 +604,8 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
     }
     for (int i = 0; i < N_elements_recv_right; ++i) {
         const int index = global_element_offset_end_current + i + 1;
-        int origin = 0; // This one is tricky
         int process_start_index = 0;
-        for (int rank = 1; rank < global_size) { 
+        for (int rank = 1; rank < global_size; ++rank) { 
             process_start_index += N_elements_per_process_old + additional_elements_global[rank - 1];
             if (process_start_index >= index) {
                 right_origins[i] = rank;
@@ -615,14 +613,14 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
             }
         }
     }
-
-    std::vector<MPI_REQUEST> adaptivity_requests(3 * (N_elements_send_left + N_elements_recv_left + N_elements_send_right + N_elements_recv_right));
+    
+    std::vector<MPI_Request> adaptivity_requests(3 * (N_elements_send_left + N_elements_recv_left + N_elements_send_right + N_elements_recv_right));
     std::vector<MPI_Status> adaptivity_statuses(3 * (N_elements_send_left + N_elements_recv_left));
+    constexpr MPI_Datatype data_type = (sizeof(deviceFloat) == sizeof(float)) ? MPI_FLOAT : MPI_DOUBLE;
 
     for (int i = 0; i < N_elements_send_left; ++i) {
         const int index = global_element_offset_current + i;
         const int destination = index/N_elements_per_process_;
-
 
         MPI_Isend(&elements_send_left[i].N_, 1, MPI_INT, destination, 3 * index, MPI_COMM_WORLD, &adaptivity_requests[i + 3 * N_elements_recv_left + 3 * N_elements_recv_right]);
     }
@@ -649,74 +647,69 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
     MPI_Waitall(N_elements_send_right + N_elements_recv_right, adaptivity_requests.data(), adaptivity_statuses.data());
 
     for (int i = 0; i < N_elements_recv_left; ++i) {
-        cudaMalloc(&phi_arrays_recv_left_host[i], (elements_recv_left[i].N_ + 1) * sizeof(double));
-        phi_arrays_recv_left[i] = std::vector<double>(elements_recv_left[i].N_ + 1);
+        cudaMalloc(&phi_arrays_recv_left_host[i], (elements_recv_left[i].N_ + 1) * sizeof(deviceFloat));
+        phi_arrays_recv_left[i] = std::vector<deviceFloat>(elements_recv_left[i].N_ + 1);
     }
-    cudaMemcpy(phi_arrays_recv_left_device, phi_arrays_recv_left_host.data(), N_elements_recv_left * sizeof(double*), cudaMemcpyHostToDevice);
+    cudaMemcpy(phi_arrays_recv_left_device, phi_arrays_recv_left_host.data(), N_elements_recv_left * sizeof(deviceFloat*), cudaMemcpyHostToDevice);
 
     for (int i = 0; i < N_elements_recv_right; ++i) {
-        cudaMalloc(&phi_arrays_recv_right_host[i], (elements_recv_right[i].N_ + 1) * sizeof(double));
-        phi_arrays_recv_right[i] = std::vector<double>(elements_recv_right[i].N_ + 1);
+        cudaMalloc(&phi_arrays_recv_right_host[i], (elements_recv_right[i].N_ + 1) * sizeof(deviceFloat));
+        phi_arrays_recv_right[i] = std::vector<deviceFloat>(elements_recv_right[i].N_ + 1);
     }
-    cudaMemcpy(phi_arrays_recv_right_device, phi_arrays_recv_right_host.data(), N_elements_recv_right * sizeof(double*), cudaMemcpyHostToDevice);
-
+    cudaMemcpy(phi_arrays_recv_right_device, phi_arrays_recv_right_host.data(), N_elements_recv_right * sizeof(deviceFloat*), cudaMemcpyHostToDevice);
 
     for (int i = 0; i < N_elements_send_left; ++i) {
         const int index = global_element_offset_current + i;
         const int destination = index/N_elements_per_process_;
 
-        x_send_left[i] = elements_send_left[i].x_;
-        MPI_Isend(&x_send_left[i][0], 2, MPI_DOUBLE, destination, 3 * index + 1, MPI_COMM_WORLD, &adaptivity_requests[i + 4 * N_elements_recv_left + 4 * N_elements_recv_right]);
-        MPI_Isend(phi_arrays_send_left[i].data(), elements_send_left[i].N_ + 1, MPI_DOUBLE, destination, 3 * index + 2, MPI_COMM_WORLD, &adaptivity_requests[i + 5 * N_elements_recv_left + 5 * N_elements_recv_right]);
+        MPI_Isend(&elements_send_left[i].x_[0], 2, data_type, destination, 3 * index + 1, MPI_COMM_WORLD, &adaptivity_requests[i + 4 * N_elements_recv_left + 4 * N_elements_recv_right]);
+        MPI_Isend(phi_arrays_send_left[i].data(), elements_send_left[i].N_ + 1, data_type, destination, 3 * index + 2, MPI_COMM_WORLD, &adaptivity_requests[i + 5 * N_elements_recv_left + 5 * N_elements_recv_right]);
     }
 
     for (int i = 0; i < N_elements_send_right; ++i) {
         const int index = global_element_offset_end + 1 + i;
         const int destination = index/N_elements_per_process_;
 
-        x_send_right[i] = elements_send_right[i].x_;
-        MPI_Isend(&x_send_right[i][0], 2, MPI_DOUBLE, destination, 3 * index + 1, MPI_COMM_WORLD, &adaptivity_requests[i + 5 * N_elements_recv_left + 4 * N_elements_recv_right]);
-        MPI_Isend(phi_arrays_send_right[i].data(), elements_send_right[i].N_ + 1, MPI_DOUBLE, destination, 3 * index + 2, MPI_COMM_WORLD, &adaptivity_requests[i + 6 * N_elements_recv_left + 5 * N_elements_recv_right]);
+        MPI_Isend(&elements_send_right[i].x_[0], 2, data_type, destination, 3 * index + 1, MPI_COMM_WORLD, &adaptivity_requests[i + 5 * N_elements_recv_left + 4 * N_elements_recv_right]);
+        MPI_Isend(phi_arrays_send_right[i].data(), elements_send_right[i].N_ + 1, data_type, destination, 3 * index + 2, MPI_COMM_WORLD, &adaptivity_requests[i + 6 * N_elements_recv_left + 5 * N_elements_recv_right]);
     }
 
     for (int i = 0; i < N_elements_recv_left; ++i) {
         const int index = global_element_offset_ + i;
 
-        MPI_Irecv(&x_recv_left[i][0], 2, MPI_DOUBLE, left_origins[i], 3 * index + 1, MPI_COMM_WORLD, &adaptivity_requests[i + N_elements_recv_left + N_elements_recv_right]);
-        MPI_Irecv(phi_arrays_recv_left[i].data(), N + 1, MPI_DOUBLE, left_origins[i], 3 * index + 2, MPI_COMM_WORLD, &adaptivity_requests[i + 2 * N_elements_recv_left + 2 * N_elements_recv_right]);
+        MPI_Irecv(&elements_recv_left[i].x_[0], 2, data_type, left_origins[i], 3 * index + 1, MPI_COMM_WORLD, &adaptivity_requests[i + N_elements_recv_left + N_elements_recv_right]);
+        MPI_Irecv(phi_arrays_recv_left[i].data(), elements_recv_left[i].N_ + 1, data_type, left_origins[i], 3 * index + 2, MPI_COMM_WORLD, &adaptivity_requests[i + 2 * N_elements_recv_left + 2 * N_elements_recv_right]);
     }
 
     for (int i = 0; i < N_elements_recv_right; ++i) {
         const int index = global_element_offset_end_current + i + 1;
 
-        MPI_Irecv(&x_recv_right[i][0], 2, MPI_DOUBLE, right_origins[i], 3 * index + 1, MPI_COMM_WORLD, &adaptivity_requests[i + 2 * N_elements_recv_left + N_elements_recv_right]);
-        MPI_Irecv(phi_arrays_recv_right[i].data(), N + 1, MPI_DOUBLE, right_origins[i], 3 * index + 2, MPI_COMM_WORLD, &adaptivity_requests[i + 3 * N_elements_recv_left + 2 * N_elements_recv_right]);
+        MPI_Irecv(&elements_recv_right[i].x_[0], 2, data_type, right_origins[i], 3 * index + 1, MPI_COMM_WORLD, &adaptivity_requests[i + 2 * N_elements_recv_left + N_elements_recv_right]);
+        MPI_Irecv(phi_arrays_recv_right[i].data(), elements_recv_right[i].N_ + 1, data_type, right_origins[i], 3 * index + 2, MPI_COMM_WORLD, &adaptivity_requests[i + 3 * N_elements_recv_left + 2 * N_elements_recv_right]);
     }
 
     MPI_Waitall(2 * N_elements_send_right + 2 * N_elements_recv_right, adaptivity_requests.data() + N_elements_send_right + N_elements_recv_right, adaptivity_statuses.data() + N_elements_send_left + N_elements_recv_left);
 
     for (int i = 0; i < N_elements_recv_left; ++i) {
-        elements_recv_left[i].x_ = &x_recv_left[i];
-        elements_recv_left[i].delta_x_ = elements_recv_left[i].x_[1] - elements_recv_left[i].x_[0],
+        elements_recv_left[i].delta_x_ = elements_recv_left[i].x_[1] - elements_recv_left[i].x_[0];
     }
 
     for (int i = 0; i < N_elements_recv_right; ++i) {
-        elements_recv_right[i].x_ = &x_recv_right[i];
-        elements_recv_right[i].delta_x_ = elements_recv_right[i].x_[1] - elements_recv_right[i].x_[0],
+        elements_recv_right[i].delta_x_ = elements_recv_right[i].x_[1] - elements_recv_right[i].x_[0];
     }
 
     for (int i = 0; i < N_elements_recv_left; ++i) {
-        cudaMemcpy(phi_arrays_recv_left_host[i], phi_arrays_recv_left[i].data(), (elements_recv_left[i].N_ + 1) * sizeof(double), cudaMemcpyHostToDevice);
+        cudaMemcpy(phi_arrays_recv_left_host[i], phi_arrays_recv_left[i].data(), (elements_recv_left[i].N_ + 1) * sizeof(deviceFloat), cudaMemcpyHostToDevice);
     }
 
     for (int i = 0; i < N_elements_recv_right; ++i) {
-        cudaMemcpy(phi_arrays_recv_right_host[i], phi_arrays_recv_right[i].data(), (elements_recv_right[i].N_ + 1) * sizeof(double), cudaMemcpyHostToDevice);
+        cudaMemcpy(phi_arrays_recv_right_host[i], phi_arrays_recv_right[i].data(), (elements_recv_right[i].N_ + 1) * sizeof(deviceFloat), cudaMemcpyHostToDevice);
     }
 
     cudaMemcpy(elements_, elements_recv_left.data(), N_elements_recv_left * sizeof(Element_t), cudaMemcpyHostToDevice);
     cudaMemcpy(elements_ + N_elements_ - N_elements_recv_right, elements_recv_right.data(), N_elements_recv_right * sizeof(Element_t), cudaMemcpyHostToDevice);
-    SEM::put_phi<<<boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>(N_elements_recv_left, elements_, phi_arrays_recv_left_device);
-    SEM::put_phi<<<boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>(N_elements_recv_right, elements_ + N_elements_ - N_elements_recv_right, phi_arrays_recv_right_device);
+    SEM::put_phi<<<boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(N_elements_recv_left, elements_, phi_arrays_recv_left_device);
+    SEM::put_phi<<<boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(N_elements_recv_right, elements_ + N_elements_ - N_elements_recv_right, phi_arrays_recv_right_device);
 
     SEM::move_elements<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_old - N_elements_send_left - N_elements_send_right, new_elements + N_elements_send_left, elements_);
 
@@ -765,7 +758,7 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
     cudaMalloc(&device_boundary_phi_prime_L_, N_MPI_boundaries_ * sizeof(deviceFloat));
     cudaMalloc(&device_boundary_phi_prime_R_, N_MPI_boundaries_ * sizeof(deviceFloat));
 
-    SEM::build_boundaries<<<boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(N_elements_, N_elements_global_, N_local_boundaries_, N_MPI_boundaries_, elements_, x_min_local, x_max_local, global_element_offset_, local_boundary_to_element_, MPI_boundary_to_element_, MPI_boundary_from_element_);
+    SEM::build_boundaries<<<boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(N_elements_, N_elements_global_, N_local_boundaries_, N_MPI_boundaries_, elements_, global_element_offset_, local_boundary_to_element_, MPI_boundary_to_element_, MPI_boundary_from_element_);
 
     cudaMemcpy(host_MPI_boundary_to_element_.data(), MPI_boundary_to_element_, N_MPI_boundaries_ * sizeof(size_t), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_MPI_boundary_from_element_.data(), MPI_boundary_from_element_, N_MPI_boundaries_ * sizeof(size_t), cudaMemcpyDeviceToHost);

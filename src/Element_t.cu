@@ -299,12 +299,11 @@ void SEM::build_elements(size_t N_elements, int N, SEM::Element_t* elements, dev
 }
 
 __global__
-void SEM::build_boundaries(size_t N_elements, size_t N_elements_global, size_t N_local_boundaries, size_t N_MPI_boundaries, Element_t* elements, deviceFloat x_min, deviceFloat x_max, size_t global_element_offset, size_t* local_boundary_to_element, size_t* MPI_boundary_to_element, size_t* MPI_boundary_from_element) {
+void SEM::build_boundaries(size_t N_elements, size_t N_elements_global, size_t N_local_boundaries, size_t N_MPI_boundaries, Element_t* elements, size_t global_element_offset, size_t* local_boundary_to_element, size_t* MPI_boundary_to_element, size_t* MPI_boundary_from_element) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
     for (int i = index; i < N_local_boundaries; i += stride) {
-        const deviceFloat delta_x = (x_max - x_min)/N_elements;
         size_t face_L;
         size_t face_R;
         deviceFloat element_x_min;
@@ -313,15 +312,15 @@ void SEM::build_boundaries(size_t N_elements, size_t N_elements_global, size_t N
         if (i == 0) { // CHECK this is hardcoded for 1D
             face_L = 0;
             face_R = 0;
-            element_x_min = x_min - delta_x;
-            element_x_max = x_min;
+            element_x_min = elements[0].x_[0];
+            element_x_max = elements[0].x_[0];
             local_boundary_to_element[i] = N_elements - 1;
         }
         else if (i == 1) {
             face_L = N_elements + N_local_boundaries + N_MPI_boundaries - 2;
             face_R = N_elements + N_local_boundaries + N_MPI_boundaries - 2;
-            element_x_min = x_max;
-            element_x_max = x_max + delta_x;
+            element_x_min = elements[N_elements - 1].x_[1];
+            element_x_max = elements[N_elements - 1].x_[1];
             local_boundary_to_element[i] = 0;
         }
 
@@ -336,7 +335,6 @@ void SEM::build_boundaries(size_t N_elements, size_t N_elements_global, size_t N
     }
 
     for (int i = index; i < N_MPI_boundaries; i += stride) {
-        const deviceFloat delta_x = (x_max - x_min)/N_elements;
         size_t face_L;
         size_t face_R;
         deviceFloat element_x_min;
@@ -345,16 +343,16 @@ void SEM::build_boundaries(size_t N_elements, size_t N_elements_global, size_t N
         if (i == 0) { // CHECK this is hardcoded for 1D
             face_L = 0;
             face_R = 0;
-            element_x_min = x_min - delta_x;
-            element_x_max = x_min;
+            element_x_min = elements[0].x_[0];
+            element_x_max = elements[0].x_[0];
             MPI_boundary_to_element[i] = (global_element_offset == 0) ? N_elements_global - 1 : global_element_offset - 1;
             MPI_boundary_from_element[i] = global_element_offset;
         }
         else if (i == 1) {
             face_L = N_elements + N_local_boundaries + N_MPI_boundaries - 2;
             face_R = N_elements + N_local_boundaries + N_MPI_boundaries - 2;
-            element_x_min = x_max;
-            element_x_max = x_max + delta_x;
+            element_x_min = elements[N_elements - 1].x_[1];
+            element_x_max = elements[N_elements - 1].x_[1];
             MPI_boundary_to_element[i] = (global_element_offset + N_elements == N_elements_global) ? 0 : global_element_offset + N_elements;
             MPI_boundary_from_element[i] = global_element_offset + N_elements - 1;
         }
@@ -500,11 +498,12 @@ void SEM::get_phi(size_t N_elements, const SEM::Element_t* elements, deviceFloat
 }
 
 __global__
-void SEM::put_phi(size_t N_elements, SEM::Element_t* elements, const deviceFloat** phi) {
+void SEM::put_phi(size_t N_elements, SEM::Element_t* elements, deviceFloat** phi) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
     for (size_t i = index; i < N_elements; i += stride) {
+        elements[i].phi_ = new deviceFloat[elements[i].N_ + 1];
         for (int j = 0; j <= elements[i].N_; ++j) {
             elements[i].phi_[j] = phi[i][j];
         }
