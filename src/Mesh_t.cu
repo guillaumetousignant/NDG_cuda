@@ -504,7 +504,6 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
     SEM::free_elements<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_ + N_local_boundaries_ + N_MPI_boundaries_, elements_);
     cudaFree(elements_);
     
-    const size_t N_elements_old = N_elements_;
     N_elements_ = (global_rank == global_size - 1) ? N_elements_per_process_ + N_elements_global_ - N_elements_per_process_ * global_size : N_elements_per_process_;
     N_faces_ = N_elements_ + N_local_boundaries_ + N_MPI_boundaries_ - 1; 
     elements_numBlocks_ = (N_elements_ + elements_blockSize_ - 1) / elements_blockSize_;
@@ -717,7 +716,7 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
     SEM::put_phi<<<boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(N_elements_recv_left, elements_, phi_arrays_recv_left_device);
     SEM::put_phi<<<boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(N_elements_recv_right, elements_ + N_elements_ - N_elements_recv_right, phi_arrays_recv_right_device);
 
-    SEM::move_elements<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_old - N_elements_send_left - N_elements_send_right, new_elements + N_elements_send_left, elements_);
+    SEM::move_elements<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_ - N_elements_send_left - N_elements_send_right, new_elements + N_elements_send_left, elements_);
 
     for (int i = 0; i < N_elements_recv_left; ++i) {
         cudaFree(phi_arrays_recv_left_host[i]);
@@ -729,7 +728,7 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
     }
     cudaFree(phi_arrays_recv_right_device);
 
-    SEM::free_elements<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_old + N_local_boundaries_ + N_MPI_boundaries_ + additional_elements, new_elements);
+    SEM::free_elements<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_ + N_local_boundaries_ + N_MPI_boundaries_ + additional_elements, new_elements);
     cudaFree(new_elements);
 
     host_delta_t_array_ = std::vector<deviceFloat>(elements_numBlocks_);
