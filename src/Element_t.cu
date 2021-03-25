@@ -516,6 +516,12 @@ void SEM::move_elements(size_t N_elements, Element_t* elements, Element_t* new_e
     const int stride = blockDim.x * gridDim.x;
 
     for (size_t i = index; i < N_elements; i += stride) {
+        new_elements[i].phi_ = nullptr;
+        new_elements[i].q_ = nullptr;
+        new_elements[i].ux_ = nullptr;
+        new_elements[i].phi_prime_ = nullptr;
+        new_elements[i].intermediate_ = nullptr;
+
         new_elements[i] = std::move(elements[i]);
     }
 }
@@ -598,7 +604,7 @@ void SEM::hp_adapt(unsigned long N_elements, SEM::Element_t* elements, SEM::Elem
             new_elements[element_index + 1].intermediate_ = nullptr;
 
             new_elements[element_index] = SEM::Element_t(elements[i].N_, element_index, element_index + 1, elements[i].x_[0], (elements[i].x_[0] + elements[i].x_[1]) * 0.5);
-            new_elements[element_index + 1] = SEM::Element_t(elements[i].N_, element_index + 1,  element_index + 1, (elements[i].x_[0] + elements[i].x_[1]) * 0.5, elements[i].x_[1]);
+            new_elements[element_index + 1] = SEM::Element_t(elements[i].N_, element_index + 1,  element_index + 2, (elements[i].x_[0] + elements[i].x_[1]) * 0.5, elements[i].x_[1]);
             new_elements[element_index].interpolate_from(elements[i], nodes, barycentric_weights);
             new_elements[element_index + 1].interpolate_from(elements[i], nodes, barycentric_weights);
         }
