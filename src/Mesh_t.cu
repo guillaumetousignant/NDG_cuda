@@ -483,7 +483,7 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
     const size_t N_elements_per_process_old = N_elements_per_process_;
     N_elements_per_process_ = (N_elements_global_ + global_size - 1)/global_size;
     global_element_offset_ = global_rank * N_elements_per_process_;
-    const size_t global_element_offset_end = max(global_element_offset_ + N_elements_per_process_ - 1, N_elements_global_ - 1);
+    const size_t global_element_offset_end = min(global_element_offset_ + N_elements_per_process_ - 1, N_elements_global_ - 1);
 
     if ((additional_elements == 0) && (global_element_offset_ == global_element_offset_current) && (global_element_offset_end == global_element_offset_end_current)) {
         SEM::p_adapt<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, N_max, nodes, barycentric_weights);
