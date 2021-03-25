@@ -199,8 +199,8 @@ void SEM::Element_t::estimate_error<Polynomial>(const deviceFloat* nodes, const 
         intermediate_[k] = std::abs(intermediate_[k]);
     }
 
-    constexpr deviceFloat tolerance_min = 1e25;     // Refine above this
-    constexpr deviceFloat tolerance_max = 1e-25;    // Coarsen below this
+    constexpr deviceFloat tolerance_min = 1e-6;     // Refine above this
+    constexpr deviceFloat tolerance_max = 1e-14;    // Coarsen below this
 
     const deviceFloat C = exponential_decay();
 
