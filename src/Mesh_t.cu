@@ -520,10 +520,10 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
 
     cudaMalloc(&elements_, (N_elements_ + N_local_boundaries_ + N_MPI_boundaries_) * sizeof(Element_t));
 
-    const size_t N_elements_send_left = std::max(global_element_offset_ - global_element_offset_current, 0ULL);
-    const size_t N_elements_recv_left = std::max(global_element_offset_current - global_element_offset_, 0ULL);
-    const size_t N_elements_send_right = std::max(global_element_offset_end_current - global_element_offset_end, 0ULL);
-    const size_t N_elements_recv_right = std::max(global_element_offset_end - global_element_offset_end_current, 0ULL);
+    const size_t N_elements_send_left = (global_element_offset_ > global_element_offset_current) ? global_element_offset_ - global_element_offset_current : 0;
+    const size_t N_elements_recv_left = (global_element_offset_current > global_element_offset_) ? global_element_offset_current - global_element_offset_ : 0;
+    const size_t N_elements_send_right = (global_element_offset_end_current > global_element_offset_end) ? global_element_offset_end_current - global_element_offset_end : 0;
+    const size_t N_elements_recv_right = (global_element_offset_end > global_element_offset_end_current) ? global_element_offset_end - global_element_offset_end_current : 0;
 
     if (N_elements_send_left + N_elements_recv_left + N_elements_send_right + N_elements_recv_right > 0) {
         std::vector<Element_t> elements_send_left(N_elements_send_left);
