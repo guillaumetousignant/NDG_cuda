@@ -359,6 +359,7 @@ void SEM::Mesh_t::solve(const deviceFloat CFL, const std::vector<deviceFloat> ou
     write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
     if (global_rank == 0) {
         bar.update(0.0);
+        bar.set_status_text("Iteration 0");
     }
     
     while (time < t_end) {
@@ -404,7 +405,10 @@ void SEM::Mesh_t::solve(const deviceFloat CFL, const std::vector<deviceFloat> ou
               
         time += delta_t;
         if (global_rank == 0) {
+            std::stringstream ss;
             bar.update(time/t_end);
+            ss << "Iteration " << timestep;
+            bar.set_status_text(ss.str());
         }
         for (auto const& e : std::as_const(output_times)) {
             if ((time >= e) && (time < e + delta_t)) {
