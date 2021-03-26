@@ -621,7 +621,7 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
         }
         
         std::vector<MPI_Request> adaptivity_requests(3 * (N_elements_send_left + N_elements_recv_left + N_elements_send_right + N_elements_recv_right));
-        std::vector<MPI_Status> adaptivity_statuses(3 * (N_elements_send_left + N_elements_recv_left));
+        std::vector<MPI_Status> adaptivity_statuses(3 * (N_elements_send_left + N_elements_recv_left + N_elements_send_right + N_elements_recv_right));
         constexpr MPI_Datatype data_type = (sizeof(deviceFloat) == sizeof(float)) ? MPI_FLOAT : MPI_DOUBLE;
 
         for (int i = 0; i < N_elements_send_left; ++i) {
@@ -635,7 +635,7 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
             const int index = global_element_offset_end + 1 + i;
             const int destination = index/N_elements_per_process_;
 
-            MPI_Isend(&elements_send_right[i].N_, 1, MPI_INT, destination, 3 * index, MPI_COMM_WORLD, &adaptivity_requests[i + 4 * N_elements_recv_left + 3 * N_elements_recv_right]);
+            MPI_Isend(&elements_send_right[i].N_, 1, MPI_INT, destination, 3 * index, MPI_COMM_WORLD, &adaptivity_requests[i + 3 * N_elements_recv_left + 3 * N_elements_recv_right + N_elements_send_left]);
         }
 
         for (int i = 0; i < N_elements_recv_left; ++i) {
@@ -650,7 +650,7 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
             MPI_Irecv(&elements_recv_right[i].N_, 1, MPI_INT, right_origins[i], 3 * index, MPI_COMM_WORLD, &adaptivity_requests[i + N_elements_recv_left]);
         }
 
-        MPI_Waitall(N_elements_send_right + N_elements_recv_right, adaptivity_requests.data(), adaptivity_statuses.data());
+        MPI_Waitall(N_elements_recv_left + N_elements_recv_right, adaptivity_requests.data(), adaptivity_statuses.data());
 
         for (int i = 0; i < N_elements_recv_left; ++i) {
             cudaMalloc(&phi_arrays_recv_left_host[i], (elements_recv_left[i].N_ + 1) * sizeof(deviceFloat));
@@ -668,16 +668,16 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
             const int index = global_element_offset_current + i;
             const int destination = index/N_elements_per_process_;
 
-            MPI_Isend(&elements_send_left[i].x_[0], 2, data_type, destination, 3 * index + 1, MPI_COMM_WORLD, &adaptivity_requests[i + 4 * N_elements_recv_left + 4 * N_elements_recv_right]);
-            MPI_Isend(phi_arrays_send_left[i].data(), elements_send_left[i].N_ + 1, data_type, destination, 3 * index + 2, MPI_COMM_WORLD, &adaptivity_requests[i + 5 * N_elements_recv_left + 5 * N_elements_recv_right]);
+            MPI_Isend(&elements_send_left[i].x_[0], 2, data_type, destination, 3 * index + 1, MPI_COMM_WORLD, &adaptivity_requests[i + 3 * N_elements_recv_left + 3 * N_elements_recv_right + N_elements_send_left + N_elements_send_right]);
+            MPI_Isend(phi_arrays_send_left[i].data(), elements_send_left[i].N_ + 1, data_type, destination, 3 * index + 2, MPI_COMM_WORLD, &adaptivity_requests[i + 3 * N_elements_recv_left + 3 * N_elements_recv_right + 2 * N_elements_send_left + 2 * N_elements_send_right]);
         }
 
         for (int i = 0; i < N_elements_send_right; ++i) {
             const int index = global_element_offset_end + 1 + i;
             const int destination = index/N_elements_per_process_;
 
-            MPI_Isend(&elements_send_right[i].x_[0], 2, data_type, destination, 3 * index + 1, MPI_COMM_WORLD, &adaptivity_requests[i + 5 * N_elements_recv_left + 4 * N_elements_recv_right]);
-            MPI_Isend(phi_arrays_send_right[i].data(), elements_send_right[i].N_ + 1, data_type, destination, 3 * index + 2, MPI_COMM_WORLD, &adaptivity_requests[i + 6 * N_elements_recv_left + 5 * N_elements_recv_right]);
+            MPI_Isend(&elements_send_right[i].x_[0], 2, data_type, destination, 3 * index + 1, MPI_COMM_WORLD, &adaptivity_requests[i + 3 * N_elements_recv_left + 3 * N_elements_recv_right + 2 * N_elements_send_left + N_elements_send_right]);
+            MPI_Isend(phi_arrays_send_right[i].data(), elements_send_right[i].N_ + 1, data_type, destination, 3 * index + 2, MPI_COMM_WORLD, &adaptivity_requests[i + 3 * N_elements_recv_left + 3 * N_elements_recv_right + 3 * N_elements_send_left + 2 * N_elements_send_right]);
         }
 
         for (int i = 0; i < N_elements_recv_left; ++i) {
@@ -694,7 +694,7 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
             MPI_Irecv(phi_arrays_recv_right[i].data(), elements_recv_right[i].N_ + 1, data_type, right_origins[i], 3 * index + 2, MPI_COMM_WORLD, &adaptivity_requests[i + 3 * N_elements_recv_left + 2 * N_elements_recv_right]);
         }
 
-        MPI_Waitall(2 * N_elements_send_right + 2 * N_elements_recv_right, adaptivity_requests.data() + N_elements_send_right + N_elements_recv_right, adaptivity_statuses.data() + N_elements_send_left + N_elements_recv_left);
+        MPI_Waitall(2 * N_elements_recv_right + 2 * N_elements_recv_right, adaptivity_requests.data() + N_elements_recv_right + N_elements_recv_right, adaptivity_statuses.data() + N_elements_recv_left + N_elements_recv_left);
 
         for (int i = 0; i < N_elements_recv_left; ++i) {
             elements_recv_left[i].delta_x_ = elements_recv_left[i].x_[1] - elements_recv_left[i].x_[0];
@@ -726,6 +726,9 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
             cudaFree(phi_arrays_recv_right_host[i]);
         }
         cudaFree(phi_arrays_recv_right_device);
+
+        // We also wait for the send requests
+        MPI_Waitall(3 * N_elements_send_right + 3 * N_elements_send_right, adaptivity_requests.data() + 3 * N_elements_recv_left + 3 * N_elements_recv_right, adaptivity_statuses.data() + 3 * N_elements_recv_left + 3 * N_elements_recv_right);
     }
 
     SEM::move_elements<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_ - N_elements_send_left - N_elements_send_right, new_elements + N_elements_send_left, elements_ + N_elements_recv_left);
@@ -806,6 +809,9 @@ void SEM::Mesh_t::boundary_conditions() {
     cudaMemcpy(device_boundary_phi_prime_R_, host_boundary_phi_prime_R_.data(), N_MPI_boundaries_ * sizeof(deviceFloat), cudaMemcpyHostToDevice);
 
     SEM::put_MPI_boundaries<<<boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(N_elements_, N_local_boundaries_, N_MPI_boundaries_, elements_, device_boundary_phi_L_, device_boundary_phi_R_, device_boundary_phi_prime_L_, device_boundary_phi_prime_R_);
+    
+    // We also wait for the send requests
+    MPI_Waitall(N_MPI_boundaries_, requests_.data() + N_MPI_boundaries_, statuses_.data() + N_MPI_boundaries_);
 }
 
 __global__
