@@ -402,7 +402,7 @@ void SEM::Mesh_t::solve(const deviceFloat CFL, const std::vector<deviceFloat> ou
         SEM::calculate_q_fluxes<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(N_faces_, faces_, elements_);
         SEM::compute_dg_derivative2<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(viscosity, N_elements_, elements_, faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.g_hat_derivative_matrices_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
         SEM::rk3_step<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, delta_t, -153.0f/128.0f, 8.0f/15.0f);
-              
+
         time += delta_t;
         if (global_rank == 0) {
             std::stringstream ss;
@@ -702,17 +702,11 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
 
         for (int i = 0; i < N_elements_recv_left; ++i) {
             elements_recv_left[i].delta_x_ = elements_recv_left[i].x_[1] - elements_recv_left[i].x_[0];
-        }
-
-        for (int i = 0; i < N_elements_recv_right; ++i) {
-            elements_recv_right[i].delta_x_ = elements_recv_right[i].x_[1] - elements_recv_right[i].x_[0];
-        }
-
-        for (int i = 0; i < N_elements_recv_left; ++i) {
             cudaMemcpy(phi_arrays_recv_left_host[i], phi_arrays_recv_left[i].data(), (elements_recv_left[i].N_ + 1) * sizeof(deviceFloat), cudaMemcpyHostToDevice);
         }
 
         for (int i = 0; i < N_elements_recv_right; ++i) {
+            elements_recv_right[i].delta_x_ = elements_recv_right[i].x_[1] - elements_recv_right[i].x_[0]; // CHECK also set faces here?
             cudaMemcpy(phi_arrays_recv_right_host[i], phi_arrays_recv_right[i].data(), (elements_recv_right[i].N_ + 1) * sizeof(deviceFloat), cudaMemcpyHostToDevice);
         }
 
@@ -735,7 +729,7 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
         MPI_Waitall(3 * N_elements_send_right + 3 * N_elements_send_right, adaptivity_requests.data() + 3 * N_elements_recv_left + 3 * N_elements_recv_right, adaptivity_statuses.data() + 3 * N_elements_recv_left + 3 * N_elements_recv_right);
     }
 
-    SEM::move_elements<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_ - N_elements_send_left - N_elements_send_right, new_elements + N_elements_send_left, elements_ + N_elements_recv_left);
+    SEM::move_elements<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_ - N_elements_recv_left - N_elements_recv_right, new_elements + N_elements_send_left, elements_ + N_elements_recv_left);
 
     SEM::free_elements<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, new_elements);
     cudaFree(new_elements);
