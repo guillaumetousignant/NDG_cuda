@@ -698,7 +698,7 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
             MPI_Irecv(phi_arrays_recv_right[i].data(), elements_recv_right[i].N_ + 1, data_type, right_origins[i], 3 * index + 2, MPI_COMM_WORLD, &adaptivity_requests[i + 3 * N_elements_recv_left + 2 * N_elements_recv_right]);
         }
 
-        MPI_Waitall(2 * N_elements_recv_right + 2 * N_elements_recv_right, adaptivity_requests.data() + N_elements_recv_right + N_elements_recv_right, adaptivity_statuses.data() + N_elements_recv_left + N_elements_recv_left);
+        MPI_Waitall(2 * N_elements_recv_left + 2 * N_elements_recv_right, adaptivity_requests.data() + N_elements_recv_left + N_elements_recv_right, adaptivity_statuses.data() + N_elements_recv_left + N_elements_recv_right);
 
         for (int i = 0; i < N_elements_recv_left; ++i) {
             elements_recv_left[i].delta_x_ = elements_recv_left[i].x_[1] - elements_recv_left[i].x_[0];
@@ -726,7 +726,7 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
         cudaFree(phi_arrays_recv_right_device);
 
         // We also wait for the send requests
-        MPI_Waitall(3 * N_elements_send_right + 3 * N_elements_send_right, adaptivity_requests.data() + 3 * N_elements_recv_left + 3 * N_elements_recv_right, adaptivity_statuses.data() + 3 * N_elements_recv_left + 3 * N_elements_recv_right);
+        MPI_Waitall(3 * N_elements_send_left + 3 * N_elements_send_right, adaptivity_requests.data() + 3 * N_elements_recv_left + 3 * N_elements_recv_right, adaptivity_statuses.data() + 3 * N_elements_recv_left + 3 * N_elements_recv_right);
     }
 
     SEM::move_elements<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_ - N_elements_recv_left - N_elements_recv_right, new_elements + N_elements_send_left, elements_ + N_elements_recv_left);
