@@ -224,6 +224,7 @@ void SEM::Mesh_t::print() {
         std::cout << '\t';
         std::cout << host_MPI_boundary_from_element_[N_local_boundaries_ + i] << std::endl;
     }
+    std::cout << std::endl;
 }
 
 void SEM::Mesh_t::write_file_data(size_t N_interpolation_points, size_t N_elements, deviceFloat time, int rank, const std::vector<deviceFloat>& coordinates, const std::vector<deviceFloat>& velocity, const std::vector<deviceFloat>& du_dx, const std::vector<deviceFloat>& intermediate, const std::vector<deviceFloat>& x_L, const std::vector<deviceFloat>& x_R, const std::vector<int>& N, const std::vector<deviceFloat>& sigma, const bool* refine, const bool* coarsen, const std::vector<deviceFloat>& error) {
@@ -508,6 +509,7 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
     SEM::free_elements<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_ + N_local_boundaries_ + N_MPI_boundaries_, elements_);
     cudaFree(elements_);
     
+    const size_t N_elements_old = N_elements_;
     N_elements_ = (global_rank == global_size - 1) ? N_elements_per_process_ + N_elements_global_ - N_elements_per_process_ * global_size : N_elements_per_process_;
     N_faces_ = N_elements_ + N_local_boundaries_ + N_MPI_boundaries_ - 1; 
     elements_numBlocks_ = (N_elements_ + elements_blockSize_ - 1) / elements_blockSize_;
@@ -699,14 +701,16 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
         }
 
         MPI_Waitall(2 * N_elements_recv_left + 2 * N_elements_recv_right, adaptivity_requests.data() + N_elements_recv_left + N_elements_recv_right, adaptivity_statuses.data() + N_elements_recv_left + N_elements_recv_right);
-
+        
         for (int i = 0; i < N_elements_recv_left; ++i) {
             elements_recv_left[i].delta_x_ = elements_recv_left[i].x_[1] - elements_recv_left[i].x_[0];
+            elements_recv_left[i].faces_ = {static_cast<size_t>(i), static_cast<size_t>(i) + 1};
             cudaMemcpy(phi_arrays_recv_left_host[i], phi_arrays_recv_left[i].data(), (elements_recv_left[i].N_ + 1) * sizeof(deviceFloat), cudaMemcpyHostToDevice);
         }
 
         for (int i = 0; i < N_elements_recv_right; ++i) {
-            elements_recv_right[i].delta_x_ = elements_recv_right[i].x_[1] - elements_recv_right[i].x_[0]; // CHECK also set faces here?
+            elements_recv_right[i].delta_x_ = elements_recv_right[i].x_[1] - elements_recv_right[i].x_[0];
+            elements_recv_right[i].faces_ = {N_elements_ - N_elements_recv_right + static_cast<size_t>(i), N_elements_ - N_elements_recv_right + static_cast<size_t>(i) + 1};
             cudaMemcpy(phi_arrays_recv_right_host[i], phi_arrays_recv_right[i].data(), (elements_recv_right[i].N_ + 1) * sizeof(deviceFloat), cudaMemcpyHostToDevice);
         }
 
@@ -729,9 +733,9 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
         MPI_Waitall(3 * N_elements_send_left + 3 * N_elements_send_right, adaptivity_requests.data() + 3 * N_elements_recv_left + 3 * N_elements_recv_right, adaptivity_statuses.data() + 3 * N_elements_recv_left + 3 * N_elements_recv_right);
     }
 
-    SEM::move_elements<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_ - N_elements_recv_left - N_elements_recv_right, new_elements + N_elements_send_left, elements_ + N_elements_recv_left);
+    SEM::move_elements<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_ - N_elements_recv_left - N_elements_recv_right, new_elements, elements_, N_elements_send_left, N_elements_recv_left);
 
-    SEM::free_elements<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, new_elements);
+    SEM::free_elements<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_old + additional_elements, new_elements);
     cudaFree(new_elements);
 
     host_delta_t_array_ = std::vector<deviceFloat>(elements_numBlocks_);
