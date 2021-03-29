@@ -104,7 +104,7 @@ namespace SEM {
     void put_phi(size_t N_elements, Element_t* elements, deviceFloat** phi);
 
     __global__
-    void move_elements(size_t N_elements, Element_t* elements, Element_t* new_elements);
+    void move_elements(size_t N_elements, Element_t* elements, Element_t* new_elements, size_t source_start_index, size_t destination_start_index);
 
     __global__
     void get_solution(size_t N_elements, size_t N_interpolation_points, const Element_t* elements, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* phi, deviceFloat* phi_prime, deviceFloat* intermediate, deviceFloat* x_L, deviceFloat* x_R, int* N, deviceFloat* sigma, bool* refine, bool* coarsen, deviceFloat* error);

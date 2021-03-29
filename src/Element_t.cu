@@ -511,18 +511,21 @@ void SEM::put_phi(size_t N_elements, SEM::Element_t* elements, deviceFloat** phi
 }
 
 __global__
-void SEM::move_elements(size_t N_elements, Element_t* elements, Element_t* new_elements) {
+void SEM::move_elements(size_t N_elements, Element_t* elements, Element_t* new_elements, size_t source_start_index, size_t destination_start_index) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
     for (size_t i = index; i < N_elements; i += stride) {
-        new_elements[i].phi_ = nullptr;
-        new_elements[i].q_ = nullptr;
-        new_elements[i].ux_ = nullptr;
-        new_elements[i].phi_prime_ = nullptr;
-        new_elements[i].intermediate_ = nullptr;
+        new_elements[i + destination_start_index].phi_ = nullptr;
+        new_elements[i + destination_start_index].q_ = nullptr;
+        new_elements[i + destination_start_index].ux_ = nullptr;
+        new_elements[i + destination_start_index].phi_prime_ = nullptr;
+        new_elements[i + destination_start_index].intermediate_ = nullptr;
 
-        new_elements[i] = std::move(elements[i]);
+        new_elements[i + destination_start_index] = std::move(elements[i + source_start_index]);
+
+        new_elements[i + destination_start_index].faces_[0] = new_elements[i + destination_start_index].faces_[0] + destination_start_index - source_start_index;
+        new_elements[i + destination_start_index].faces_[1] = new_elements[i + destination_start_index].faces_[1] + destination_start_index - source_start_index;
     }
 }
 
