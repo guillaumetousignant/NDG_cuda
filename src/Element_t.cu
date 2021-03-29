@@ -504,6 +504,11 @@ void SEM::put_phi(size_t N_elements, SEM::Element_t* elements, deviceFloat** phi
 
     for (size_t i = index; i < N_elements; i += stride) {
         elements[i].phi_ = new deviceFloat[elements[i].N_ + 1];
+        elements[i].q_ = new deviceFloat[elements[i].N_ + 1];
+        elements[i].ux_ = new deviceFloat[elements[i].N_ + 1];
+        elements[i].phi_prime_ = new deviceFloat[elements[i].N_ + 1];
+        elements[i].intermediate_ = new deviceFloat[elements[i].N_ + 1];
+
         for (int j = 0; j <= elements[i].N_; ++j) {
             elements[i].phi_[j] = phi[i][j];
         }
