@@ -19,6 +19,8 @@ TEST_CASE("Initial conditions solution value", "Checks the node values are corre
     const int N_test = 16;
     const size_t N_interpolation_points = N_max * 8;
     const std::array<deviceFloat, 2> x_span {-1.0, 1.0};
+    const deviceFloat max_splits = 3;
+    const deviceFloat delta_x_min = (x_span[1] - x_span[0])/(N_elements * std::pow(2, max_splits));
     const double max_error = 1e-6;
 
     REQUIRE(N_test <= N_max);
@@ -27,7 +29,7 @@ TEST_CASE("Initial conditions solution value", "Checks the node values are corre
     cudaStreamCreate(&stream); 
     
     SEM::NDG_t<SEM::LegendrePolynomial_t> NDG(N_max, N_interpolation_points, stream);
-    SEM::Mesh_t mesh(N_elements, N_test, x_span[0], x_span[1], stream);
+    SEM::Mesh_t mesh(N_elements, N_test, delta_x_min, x_span[0], x_span[1], stream);
     mesh.set_initial_conditions(NDG.nodes_);
     cudaDeviceSynchronize();
     
@@ -108,6 +110,8 @@ TEST_CASE("Initial conditions boundary values", "Checks the extrapolated boundar
     const int N_test = 16;
     const size_t N_interpolation_points = N_max * 8;
     const std::array<deviceFloat, 2> x_span {-1.0, 1.0};
+    const deviceFloat max_splits = 3;
+    const deviceFloat delta_x_min = (x_span[1] - x_span[0])/(N_elements * std::pow(2, max_splits));
     const double max_error = 1e-6;
 
     REQUIRE(N_test <= N_max);
@@ -116,7 +120,7 @@ TEST_CASE("Initial conditions boundary values", "Checks the extrapolated boundar
     cudaStreamCreate(&stream); 
     
     SEM::NDG_t<SEM::LegendrePolynomial_t> NDG(N_max, N_interpolation_points, stream);
-    SEM::Mesh_t mesh(N_elements, N_test, x_span[0], x_span[1], stream);
+    SEM::Mesh_t mesh(N_elements, N_test, delta_x_min, x_span[0], x_span[1], stream);
     mesh.set_initial_conditions(NDG.nodes_);
     cudaDeviceSynchronize();
     SEM::interpolate_to_boundaries<<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, stream>>>(mesh.N_elements_, mesh.elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_, NDG.lagrange_interpolant_derivative_left_, NDG.lagrange_interpolant_derivative_right_);

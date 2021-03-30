@@ -13,7 +13,7 @@
 namespace SEM {
     class Mesh_t {
         public:
-            Mesh_t(size_t N_elements, int initial_N, deviceFloat x_min, deviceFloat x_max, cudaStream_t &stream);
+            Mesh_t(size_t N_elements, int initial_N, deviceFloat delta_x_min, deviceFloat x_min, deviceFloat x_max, cudaStream_t &stream);
             ~Mesh_t();
 
             constexpr static int elements_blockSize_ = 32;
@@ -31,6 +31,7 @@ namespace SEM {
             size_t global_element_offset_;
             size_t N_elements_per_process_;
             int initial_N_;
+            deviceFloat delta_x_min_;
             Element_t* elements_;
             Face_t* faces_;
             size_t* local_boundary_to_element_;
@@ -172,7 +173,7 @@ namespace SEM {
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>
     __global__ 
-    void reduce_refine(size_t N_elements, const Element_t* elements, unsigned long *g_odata) {
+    void reduce_refine(size_t N_elements, deviceFloat delta_x_min, const Element_t* elements, unsigned long *g_odata) {
         __shared__ unsigned long sdata[(blockSize >= 64) ? blockSize : blockSize + blockSize/2]; // Because within a warp there is no branching and this is read up until blockSize + blockSize/2
         unsigned int tid = threadIdx.x;
         size_t i = blockIdx.x*(blockSize*2) + tid;
@@ -180,9 +181,9 @@ namespace SEM {
         sdata[tid] = 0;
 
         while (i < N_elements) { 
-            sdata[tid] += elements[i].refine_ * (elements[i].sigma_ < 1.0);
+            sdata[tid] += elements[i].refine_ * (elements[i].sigma_ < 1.0) * (elements[i].delta_x_/2 >= delta_x_min);
             if (i+blockSize < N_elements) {
-                sdata[tid] += elements[i+blockSize].refine_ * (elements[i+blockSize].sigma_ < 1.0);
+                sdata[tid] += elements[i+blockSize].refine_ * (elements[i+blockSize].sigma_ < 1.0) * (elements[i+blockSize].delta_x_/2 >= delta_x_min);
             }
             i += gridSize; 
         }

@@ -116,7 +116,7 @@ namespace SEM {
     void interpolate_q_to_boundaries(size_t N_elements, Element_t* elements, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right, const deviceFloat* lagrange_interpolant_derivative_left, const deviceFloat* lagrange_interpolant_derivative_right);
 
     __global__
-    void hp_adapt(unsigned long N_elements, Element_t* elements, Element_t* new_elements, const unsigned long* block_offsets, int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights);
+    void hp_adapt(unsigned long N_elements, Element_t* elements, Element_t* new_elements, const unsigned long* block_offsets, deviceFloat delta_x_min, int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights);
 
     __global__
     void p_adapt(unsigned long N_elements, Element_t* elements, int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights);

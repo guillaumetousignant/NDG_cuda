@@ -586,7 +586,7 @@ void SEM::interpolate_q_to_boundaries(size_t N_elements, SEM::Element_t* element
 }
 
 __global__
-void SEM::hp_adapt(unsigned long N_elements, SEM::Element_t* elements, SEM::Element_t* new_elements, const unsigned long* block_offsets, int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights) {
+void SEM::hp_adapt(unsigned long N_elements, SEM::Element_t* elements, SEM::Element_t* new_elements, const unsigned long* block_offsets, deviceFloat delta_x_min, int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights) {
     const unsigned long index = blockIdx.x * blockDim.x + threadIdx.x;
     const unsigned long stride = blockDim.x * gridDim.x;
     const int thread_id = threadIdx.x;
@@ -595,10 +595,10 @@ void SEM::hp_adapt(unsigned long N_elements, SEM::Element_t* elements, SEM::Elem
     for (unsigned long i = index; i < N_elements; i += stride) {
         unsigned long element_index = i + block_offsets[block_id];
         for (unsigned long j = i - thread_id; j < i; ++j) {
-            element_index += elements[j].refine_ * (elements[j].sigma_ < 1.0);
+            element_index += elements[j].refine_ * (elements[j].sigma_ < 1.0) * (elements[i].delta_x_/2 >= delta_x_min);
         }
 
-        if (elements[i].refine_ && elements[i].sigma_ < 1.0) {            
+        if (elements[i].refine_ && elements[i].sigma_ < 1.0 && elements[i].delta_x_/2 >= delta_x_min) {            
             // Those are uninitialised because they are created via cudaMalloc, so they need to be set if we don't want the move constructor to delete random memory.
             new_elements[element_index].phi_ = nullptr;
             new_elements[element_index].q_ = nullptr;
@@ -616,7 +616,7 @@ void SEM::hp_adapt(unsigned long N_elements, SEM::Element_t* elements, SEM::Elem
             new_elements[element_index].interpolate_from(elements[i], nodes, barycentric_weights);
             new_elements[element_index + 1].interpolate_from(elements[i], nodes, barycentric_weights);
         }
-        else if (elements[i].refine_ && elements[i].N_ < N_max) {
+        else if (elements[i].refine_ && elements[i].sigma_ >= 1.0 && elements[i].N_ < N_max) {
             new_elements[element_index].phi_ = nullptr;
             new_elements[element_index].q_ = nullptr;
             new_elements[element_index].ux_ = nullptr;

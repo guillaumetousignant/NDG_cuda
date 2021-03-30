@@ -17,9 +17,11 @@ int main(int argc, char* argv[]) {
     const size_t N_elements = 16;
     const int N_max = 16;
     const std::array<deviceFloat, 2> x {-1.0, 1.0};
+    const deviceFloat max_splits = 3;
+    const deviceFloat delta_x_min = (x[1] - x[0])/(N_elements * std::pow(2, max_splits));
     const deviceFloat CFL = 0.2f;
-    const deviceFloat viscosity = 0.1;
-    std::vector<deviceFloat> output_times{0.02f, 0.04f, 0.06f, 0.08f, 0.10f, 0.12f, 0.14f, 0.16f, 0.18f, 0.20f, 0.22f, 0.24f, 0.26f, 0.28f, 0.30f, 0.32f, 0.34f, 0.36f, 0.38f, 0.40f, 0.42f, 0.44f, 0.46f, 0.48f, 0.50f};
+    const deviceFloat viscosity = 0.1/pi;
+    std::vector<deviceFloat> output_times{0.0f, 0.05f, 0.10f, 0.15f, 0.20f, 0.25f, 0.30f, 0.35f, 0.40f, 0.45f, 0.50f, 0.55f, 0.60f, 0.65f, 0.70f, 0.75f, 0.80f, 0.85f, 0.90f, 0.95f, 1.00f};
 
     const int initial_N = 6;
     const size_t N_interpolation_points = N_max * 8;
@@ -76,7 +78,7 @@ int main(int argc, char* argv[]) {
     auto t_start_init = std::chrono::high_resolution_clock::now();
 
     SEM::NDG_t<SEM::LegendrePolynomial_t> NDG(N_max, N_interpolation_points, stream);
-    SEM::Mesh_t mesh(N_elements, initial_N, x[0], x[1], stream);
+    SEM::Mesh_t mesh(N_elements, initial_N, delta_x_min, x[0], x[1], stream);
     mesh.set_initial_conditions(NDG.nodes_);
     cudaDeviceSynchronize();
 

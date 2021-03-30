@@ -11,8 +11,9 @@
 
 namespace fs = std::filesystem;
 
-SEM::Mesh_t::Mesh_t(size_t N_elements, int initial_N, deviceFloat x_min, deviceFloat x_max, cudaStream_t &stream) : 
-        N_elements_global_(N_elements),        
+SEM::Mesh_t::Mesh_t(size_t N_elements, int initial_N, deviceFloat delta_x_min, deviceFloat x_min, deviceFloat x_max, cudaStream_t &stream) : 
+        N_elements_global_(N_elements), 
+        delta_x_min_(delta_x_min),       
         stream_(stream) {
 
     int global_rank;
@@ -459,7 +460,7 @@ deviceFloat SEM::Mesh_t::get_delta_t(const deviceFloat CFL) {
 
 void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights) {
     // CHECK needs to rebuild boundaries
-    SEM::reduce_refine<elements_blockSize_/2><<<elements_numBlocks_, elements_blockSize_/2, 0, stream_>>>(N_elements_, elements_, device_refine_array_);
+    SEM::reduce_refine<elements_blockSize_/2><<<elements_numBlocks_, elements_blockSize_/2, 0, stream_>>>(N_elements_, delta_x_min_, elements_, device_refine_array_);
     cudaMemcpy(host_refine_array_.data(), device_refine_array_, elements_numBlocks_ * sizeof(unsigned long), cudaMemcpyDeviceToHost);
 
     unsigned long additional_elements = 0;
@@ -504,7 +505,7 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
 
     //SEM::copy_faces<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(N_faces_, faces_, new_faces);
     //SEM::copy_boundaries<<boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>(N_elements_, N_elements_global_, N_local_boundaries_, N_MPI_boundaries_, additional_elements, elements_, new_elements, new_faces, global_element_offset_, local_boundary_to_element_, MPI_boundary_to_element_, MPI_boundary_from_element_);                                                                            
-    SEM::hp_adapt<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, new_elements, device_refine_array_, N_max, nodes, barycentric_weights);
+    SEM::hp_adapt<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, new_elements, device_refine_array_, delta_x_min_, N_max, nodes, barycentric_weights);
 
     SEM::free_elements<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_ + N_local_boundaries_ + N_MPI_boundaries_, elements_);
     cudaFree(elements_);

@@ -18,6 +18,8 @@ TEST_CASE("Reduction", "Checks the reduction returns the right result.") {
     REQUIRE(N_test <= N_max);
     const size_t N_interpolation_points = N_max * 8;
     const std::array<deviceFloat, 2> x {-1.0, 1.0};
+    const deviceFloat max_splits = 3;
+    const deviceFloat delta_x_min = (x[1] - x[0])/(N_elements * std::pow(2, max_splits));
     const double error = 1e-4;
     const deviceFloat CFL = 0.5f;
     
@@ -25,7 +27,7 @@ TEST_CASE("Reduction", "Checks the reduction returns the right result.") {
     cudaStreamCreate(&stream); 
 
     SEM::NDG_t<SEM::LegendrePolynomial_t> NDG(N_max, N_interpolation_points, stream);
-    SEM::Mesh_t mesh(N_elements, N_test, x[0], x[1], stream);
+    SEM::Mesh_t mesh(N_elements, N_test, delta_x_min, x[0], x[1], stream);
     mesh.set_initial_conditions(NDG.nodes_);
 
     const deviceFloat delta_t_min = mesh.get_delta_t(CFL);
