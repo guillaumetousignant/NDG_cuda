@@ -477,13 +477,16 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
     std::vector<unsigned long> additional_elements_global(global_size);
     MPI_Allgather(&additional_elements, 1, MPI_UNSIGNED_LONG, additional_elements_global.data(), 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
 
-    size_t global_element_offset_current = global_element_offset_;
+    size_t N_additional_elements_previous = 0;
     for (int i = 0; i < global_rank; ++i) {
-        global_element_offset_current += additional_elements_global[i];
+        N_additional_elements_previous += additional_elements_global[i];
     }
+    const size_t global_element_offset_current = global_element_offset_ + N_additional_elements_previous;
+    size_t N_additional_elements_global = 0;
     for (int i = 0; i < global_size; ++i) {
-        N_elements_global_ += additional_elements_global[i];
+        N_additional_elements_global += additional_elements_global[i];
     }
+    N_elements_global_ += N_additional_elements_global;
     const size_t global_element_offset_end_current = global_element_offset_current + N_elements_ + additional_elements - 1;
 
     const size_t N_elements_per_process_old = N_elements_per_process_;
@@ -493,6 +496,13 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
 
     if ((additional_elements == 0) && (global_element_offset_ == global_element_offset_current) && (global_element_offset_end == global_element_offset_end_current)) {
         SEM::p_adapt<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, N_max, nodes, barycentric_weights);
+
+        if (N_additional_elements_previous > 0 || ((global_element_offset_ == 0) && (N_additional_elements_global > 0))) {
+            SEM::adjust_boundaries<<<boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(N_elements_, N_elements_global_, N_MPI_boundaries_, global_element_offset_, MPI_boundary_to_element_, MPI_boundary_from_element_);
+            cudaMemcpy(host_MPI_boundary_to_element_.data(), MPI_boundary_to_element_, N_MPI_boundaries_ * sizeof(size_t), cudaMemcpyDeviceToHost);
+            cudaMemcpy(host_MPI_boundary_from_element_.data(), MPI_boundary_from_element_, N_MPI_boundaries_ * sizeof(size_t), cudaMemcpyDeviceToHost);
+        }
+
         return;
     }
 
@@ -500,11 +510,8 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
 
     Element_t* new_elements;
 
-    // CHECK N_faces = N_elements only for periodic BC.
     cudaMalloc(&new_elements, (N_elements_ + additional_elements) * sizeof(Element_t));
 
-    //SEM::copy_faces<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(N_faces_, faces_, new_faces);
-    //SEM::copy_boundaries<<boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>(N_elements_, N_elements_global_, N_local_boundaries_, N_MPI_boundaries_, additional_elements, elements_, new_elements, new_faces, global_element_offset_, local_boundary_to_element_, MPI_boundary_to_element_, MPI_boundary_from_element_);                                                                            
     SEM::hp_adapt<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, new_elements, device_refine_array_, delta_x_min_, N_max, nodes, barycentric_weights);
 
     SEM::free_elements<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_ + N_local_boundaries_ + N_MPI_boundaries_, elements_);

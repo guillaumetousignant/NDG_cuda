@@ -369,44 +369,18 @@ void SEM::build_boundaries(size_t N_elements, size_t N_elements_global, size_t N
 }
 
 __global__
-void SEM::copy_boundaries(size_t N_elements, size_t N_elements_global, size_t N_local_boundaries, size_t N_MPI_boundaries, size_t n_additional_elements, Element_t* elements, Element_t* new_elements, Face_t* new_faces, size_t global_element_offset, size_t* local_boundary_to_element, size_t* MPI_boundary_to_element, size_t* MPI_boundary_from_element) {
+void SEM::adjust_boundaries(size_t N_elements, size_t N_elements_global, size_t N_MPI_boundaries, size_t global_element_offset, size_t* MPI_boundary_to_element, size_t* MPI_boundary_from_element) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (int i = index; i < N_local_boundaries; i += stride) {
-        new_elements[N_elements + n_additional_elements + i].phi_ = nullptr;
-        new_elements[N_elements + n_additional_elements + i].q_ = nullptr;
-        new_elements[N_elements + n_additional_elements + i].ux_ = nullptr;
-        new_elements[N_elements + n_additional_elements + i].phi_prime_ = nullptr;
-        new_elements[N_elements + n_additional_elements + i].intermediate_ = nullptr;
-
-        new_elements[N_elements + n_additional_elements + i] = std::move(elements[N_elements + i]);
-        const size_t right_element = new_faces[new_elements[N_elements + n_additional_elements + i].faces_[0]].elements_[1];
-        new_faces[new_elements[N_elements + n_additional_elements + i].faces_[0]].elements_[right_element == N_elements + i] = N_elements + n_additional_elements + i;
-
-        if (i == 0) { // CHECK this is hardcoded for 1D
-            local_boundary_to_element[i] = N_elements + n_additional_elements - 1;
-        }
-    }
-
     for (int i = index; i < N_MPI_boundaries; i += stride) {
-        new_elements[N_elements + n_additional_elements + N_local_boundaries + i].phi_ = nullptr;
-        new_elements[N_elements + n_additional_elements + N_local_boundaries + i].q_ = nullptr;
-        new_elements[N_elements + n_additional_elements + N_local_boundaries + i].ux_ = nullptr;
-        new_elements[N_elements + n_additional_elements + N_local_boundaries + i].phi_prime_ = nullptr;
-        new_elements[N_elements + n_additional_elements + N_local_boundaries + i].intermediate_ = nullptr;
-
-        new_elements[N_elements + n_additional_elements + N_local_boundaries + i] = std::move(elements[N_elements + N_local_boundaries + i]);
-        const size_t right_element = new_faces[new_elements[N_elements + n_additional_elements + N_local_boundaries + i].faces_[0]].elements_[1];
-        new_faces[new_elements[N_elements + n_additional_elements + N_local_boundaries + i].faces_[0]].elements_[right_element == N_elements + N_local_boundaries + i] = N_elements + n_additional_elements + N_local_boundaries + i;
-        
         if (i == 0) { // CHECK this is hardcoded for 1D
             MPI_boundary_to_element[i] = (global_element_offset == 0) ? N_elements_global - 1 : global_element_offset - 1;
             MPI_boundary_from_element[i] = global_element_offset;
         }
         else if (i == 1) {
-            MPI_boundary_to_element[i] = (global_element_offset + N_elements + n_additional_elements == N_elements_global) ? 0 : global_element_offset + N_elements + n_additional_elements;
-            MPI_boundary_from_element[i] = global_element_offset + N_elements + n_additional_elements - 1;
+            MPI_boundary_to_element[i] = (global_element_offset + N_elements == N_elements_global) ? 0 : global_element_offset + N_elements;
+            MPI_boundary_from_element[i] = global_element_offset + N_elements - 1;
         }
     }
 }
@@ -595,7 +569,7 @@ void SEM::hp_adapt(unsigned long N_elements, SEM::Element_t* elements, SEM::Elem
     for (unsigned long i = index; i < N_elements; i += stride) {
         unsigned long element_index = i + block_offsets[block_id];
         for (unsigned long j = i - thread_id; j < i; ++j) {
-            element_index += elements[j].refine_ * (elements[j].sigma_ < 1.0) * (elements[i].delta_x_/2 >= delta_x_min);
+            element_index += elements[j].refine_ * (elements[j].sigma_ < 1.0) * (elements[j].delta_x_/2 >= delta_x_min);
         }
 
         if (elements[i].refine_ && elements[i].sigma_ < 1.0 && elements[i].delta_x_/2 >= delta_x_min) {            

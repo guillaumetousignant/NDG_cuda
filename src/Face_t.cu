@@ -26,13 +26,3 @@ void SEM::build_faces(size_t N_faces, SEM::Face_t* faces) {
         faces[i] = SEM::Face_t(neighbour_L, neighbour_R);
     }
 }
-
-__global__
-void SEM::copy_faces(size_t N_faces, const SEM::Face_t* faces, SEM::Face_t* new_faces) {
-    const int index = blockIdx.x * blockDim.x + threadIdx.x;
-    const int stride = blockDim.x * gridDim.x;
-
-    for (size_t i = index; i < N_faces; i += stride) {
-        new_faces[i] = std::move(faces[i]);
-    }
-}

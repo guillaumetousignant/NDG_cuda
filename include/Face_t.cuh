@@ -21,9 +21,6 @@ namespace SEM {
 
     __global__
     void build_faces(size_t N_faces, Face_t* faces);
-
-    __global__
-    void copy_faces(size_t N_faces, const Face_t* faces, Face_t* new_faces);
 }
 
 #endif
