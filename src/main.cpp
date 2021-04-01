@@ -14,9 +14,9 @@ constexpr hostFloat pi = 3.14159265358979323846;
 int main(int argc, char* argv[]) {
     MPI_Init(&argc, &argv);
 
-    const size_t N_elements = 16;
+    const size_t N_elements = 1024;
     const int N_max = 16;
-    const std::array<hostFloat, 2> x {-1.0, 1.0};
+    const std::array<hostFloat, 2> x{-1.0, 1.0};
     const hostFloat max_splits = 3;
     const hostFloat delta_x_min = (x[1] - x[0])/(N_elements * std::pow(2, max_splits));
     const hostFloat CFL = 0.2f;
