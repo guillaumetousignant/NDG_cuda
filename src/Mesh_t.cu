@@ -11,9 +11,10 @@
 
 namespace fs = std::filesystem;
 
-SEM::Mesh_t::Mesh_t(size_t N_elements, int initial_N, deviceFloat delta_x_min, deviceFloat x_min, deviceFloat x_max, cudaStream_t &stream) : 
+SEM::Mesh_t::Mesh_t(size_t N_elements, int initial_N, deviceFloat delta_x_min, deviceFloat x_min, deviceFloat x_max, int adaptivity_interval, cudaStream_t &stream) : 
         N_elements_global_(N_elements), 
-        delta_x_min_(delta_x_min),       
+        delta_x_min_(delta_x_min), 
+        adaptivity_interval_(adaptivity_interval),      
         stream_(stream) {
 
     int global_rank;
@@ -420,7 +421,7 @@ void SEM::Mesh_t::solve(const deviceFloat CFL, const std::vector<deviceFloat> ou
             }
         }
 
-        if (timestep % 100 == 0) {
+        if (timestep % adaptivity_interval_ == 0) {
             SEM::estimate_error<Polynomial><<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, NDG.nodes_, NDG.weights_);
             adapt(NDG.N_max_, NDG.nodes_, NDG.barycentric_weights_);
         }

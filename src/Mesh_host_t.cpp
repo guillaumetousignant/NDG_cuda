@@ -13,9 +13,10 @@ namespace fs = std::filesystem;
 
 constexpr hostFloat pi = 3.14159265358979323846;
 
-SEM::Mesh_host_t::Mesh_host_t(size_t N_elements, int initial_N, hostFloat delta_x_min, hostFloat x_min, hostFloat x_max) : 
+SEM::Mesh_host_t::Mesh_host_t(size_t N_elements, int initial_N, hostFloat delta_x_min, hostFloat x_min, hostFloat x_max, int adaptivity_interval) : 
         N_elements_global_(N_elements),
         delta_x_min_(delta_x_min),
+        adaptivity_interval_(adaptivity_interval),
         initial_N_(initial_N) {
     // CHECK N_faces = N_elements only for periodic BC.
 
@@ -346,7 +347,7 @@ void SEM::Mesh_host_t::solve(const hostFloat CFL, const std::vector<hostFloat> o
             }
         }
 
-        if (timestep % 100 == 0) {
+        if (timestep % adaptivity_interval_ == 0) {
             estimate_error<Polynomial>(NDG.nodes_, NDG.weights_);
             adapt(NDG.N_max_, NDG.nodes_, NDG.barycentric_weights_);
         }

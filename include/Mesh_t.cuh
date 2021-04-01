@@ -13,7 +13,7 @@
 namespace SEM {
     class Mesh_t {
         public:
-            Mesh_t(size_t N_elements, int initial_N, deviceFloat delta_x_min, deviceFloat x_min, deviceFloat x_max, cudaStream_t &stream);
+            Mesh_t(size_t N_elements, int initial_N, deviceFloat delta_x_min, deviceFloat x_min, deviceFloat x_max, int adaptivity_interval, cudaStream_t &stream);
             ~Mesh_t();
 
             constexpr static int elements_blockSize_ = 32;
@@ -32,6 +32,7 @@ namespace SEM {
             size_t N_elements_per_process_;
             int initial_N_;
             deviceFloat delta_x_min_;
+            int adaptivity_interval_;
             Element_t* elements_;
             Face_t* faces_;
             size_t* local_boundary_to_element_;

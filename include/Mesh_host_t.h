@@ -12,7 +12,7 @@
 namespace SEM {
     class Mesh_host_t {
         public:
-            Mesh_host_t(size_t N_elements, int initial_N, hostFloat delta_x_min, hostFloat x_min, hostFloat x_max);
+            Mesh_host_t(size_t N_elements, int initial_N, hostFloat delta_x_min, hostFloat x_min, hostFloat x_max, int adaptivity_interval);
 
             size_t N_elements_global_;
             size_t N_elements_;
@@ -22,6 +22,7 @@ namespace SEM {
             size_t N_elements_per_process_;
             int initial_N_;
             hostFloat delta_x_min_;
+            int adaptivity_interval_;
             std::vector<Element_host_t> elements_;
             std::vector<Face_host_t> faces_;
             std::vector<size_t> local_boundary_to_element_;

@@ -19,6 +19,7 @@ int main(int argc, char* argv[]) {
     const std::array<hostFloat, 2> x{-1.0, 1.0};
     const hostFloat max_splits = 3;
     const hostFloat delta_x_min = (x[1] - x[0])/(N_elements * std::pow(2, max_splits));
+    const int adaptivity_interval = 100;
     const hostFloat CFL = 0.2f;
     const hostFloat viscosity = 0.1/pi;
     std::vector<hostFloat> output_times{0.0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00};
@@ -49,7 +50,7 @@ int main(int argc, char* argv[]) {
     auto t_start_init = std::chrono::high_resolution_clock::now();
 
     SEM::NDG_host_t<SEM::LegendrePolynomial_host_t> NDG(N_max, N_interpolation_points);
-    SEM::Mesh_host_t mesh(N_elements, initial_N, delta_x_min, x[0], x[1]);
+    SEM::Mesh_host_t mesh(N_elements, initial_N, delta_x_min, x[0], x[1], adaptivity_interval);
     mesh.set_initial_conditions(NDG.nodes_);
 
     auto t_end_init = std::chrono::high_resolution_clock::now();
