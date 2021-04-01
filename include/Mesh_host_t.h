@@ -38,7 +38,7 @@ namespace SEM {
             void solve(const hostFloat CFL, const std::vector<hostFloat> output_times, const NDG_host_t<Polynomial> &NDG, hostFloat viscosity);
 
             void build_elements(hostFloat x_min, hostFloat x_max);
-            void build_boundaries(hostFloat x_min, hostFloat x_max);
+            void build_boundaries();
             void adjust_boundaries();
             void build_faces();
             void get_solution(size_t N_interpolation_points, const std::vector<std::vector<hostFloat>>& interpolation_matrices, std::vector<hostFloat>& phi, std::vector<hostFloat>& x, std::vector<hostFloat>& phi_prime, std::vector<hostFloat>& intermediate, std::vector<hostFloat>& x_L, std::vector<hostFloat>& x_R, std::vector<int>& N, std::vector<hostFloat>& sigma, std::vector<bool>& refine, std::vector<bool>& coarsen, std::vector<hostFloat>& error);
@@ -66,6 +66,8 @@ namespace SEM {
 
             void put_MPI_boundaries();
 
+            void move_elements(size_t N_elements, std::vector<Element_host_t>& temp_elements, size_t source_start_index, size_t destination_start_index);
+
             void calculate_fluxes();
 
             void calculate_q_fluxes();
@@ -74,7 +76,7 @@ namespace SEM {
 
             void p_adapt(int N_max, const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& barycentric_weights);
 
-            void hp_adapt(int N_max, std::vector<Element_host_t>& new_elements, std::vector<Face_host_t>& new_faces, const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& barycentric_weights);
+            void hp_adapt(int N_max, std::vector<Element_host_t>& new_elements, const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& barycentric_weights);
 
             // Algorithm 60 (not really anymore)
             void compute_dg_derivative(const std::vector<std::vector<hostFloat>>& weights, const std::vector<std::vector<hostFloat>>& derivative_matrices_hat, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right);

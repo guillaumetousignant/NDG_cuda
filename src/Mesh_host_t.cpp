@@ -54,7 +54,7 @@ SEM::Mesh_host_t::Mesh_host_t(size_t N_elements, int initial_N, hostFloat delta_
     const hostFloat x_max_local = x_min_local + N_elements_ * delta_x;
     
     build_elements(x_min_local, x_max_local);
-    build_boundaries(x_min_local, x_max_local);
+    build_boundaries();
     build_faces(); // CHECK
 }
 
@@ -380,9 +380,8 @@ void SEM::Mesh_host_t::build_elements(hostFloat x_min, hostFloat x_max) {
     }
 }
 
-void SEM::Mesh_host_t::build_boundaries(hostFloat x_min, hostFloat x_max) {
+void SEM::Mesh_host_t::build_boundaries() {
     for (int i = 0; i < N_local_boundaries_; ++i) {
-        const hostFloat delta_x = (x_max - x_min)/N_elements_;
         size_t face_L;
         size_t face_R;
         hostFloat element_x_min;
@@ -391,15 +390,15 @@ void SEM::Mesh_host_t::build_boundaries(hostFloat x_min, hostFloat x_max) {
         if (i == 0) { // CHECK this is hardcoded for 1D
             face_L = 0;
             face_R = 0;
-            element_x_min = x_min - delta_x;
-            element_x_max = x_min;
+            element_x_min = elements_[0].x_[0];
+            element_x_max = elements_[0].x_[0];
             local_boundary_to_element_[i] = N_elements_ - 1;
         }
         else if (i == 1) {
             face_L = N_elements_ + N_local_boundaries_ + N_MPI_boundaries_ - 2;
             face_R = N_elements_ + N_local_boundaries_ + N_MPI_boundaries_ - 2;
-            element_x_min = x_max;
-            element_x_max = x_max + delta_x;
+            element_x_min = elements_[N_elements_ - 1].x_[1];
+            element_x_max = elements_[N_elements_ - 1].x_[1];
             local_boundary_to_element_[i] = 0;
         }
 
@@ -407,7 +406,6 @@ void SEM::Mesh_host_t::build_boundaries(hostFloat x_min, hostFloat x_max) {
     }
 
     for (int i = 0; i < N_MPI_boundaries_; ++i) {
-        const hostFloat delta_x = (x_max - x_min)/N_elements_;
         size_t face_L;
         size_t face_R;
         hostFloat element_x_min;
@@ -416,21 +414,34 @@ void SEM::Mesh_host_t::build_boundaries(hostFloat x_min, hostFloat x_max) {
         if (i == 0) { // CHECK this is hardcoded for 1D
             face_L = 0;
             face_R = 0;
-            element_x_min = x_min - delta_x;
-            element_x_max = x_min;
+            element_x_min = elements_[0].x_[0];
+            element_x_max = elements_[0].x_[0];
             MPI_boundary_to_element_[i] = (global_element_offset_ == 0) ? N_elements_global_ - 1 : global_element_offset_ - 1;
             MPI_boundary_from_element_[i] = global_element_offset_;
         }
         else if (i == 1) {
             face_L = N_elements_ + N_local_boundaries_ + N_MPI_boundaries_ - 2;
             face_R = N_elements_ + N_local_boundaries_ + N_MPI_boundaries_ - 2;
-            element_x_min = x_max;
-            element_x_max = x_max + delta_x;
+            element_x_min = elements_[N_elements_ - 1].x_[1];
+            element_x_max = elements_[N_elements_ - 1].x_[1];
             MPI_boundary_to_element_[i] = (global_element_offset_ + N_elements_ == N_elements_global_) ? 0 : global_element_offset_ + N_elements_;
             MPI_boundary_from_element_[i] = global_element_offset_ + N_elements_ - 1;
         }
 
         elements_[N_elements_ + N_local_boundaries_ + i] = SEM::Element_host_t(0, face_L, face_R, element_x_min, element_x_max);
+    }
+}
+
+void SEM::Mesh_host_t::adjust_boundaries() {
+    for (int i = 0; i < N_MPI_boundaries_; ++i) {
+        if (i == 0) { // CHECK this is hardcoded for 1D
+            MPI_boundary_to_element_[i] = (global_element_offset_ == 0) ? N_elements_global_ - 1 : global_element_offset_ - 1;
+            MPI_boundary_from_element_[i] = global_element_offset_;
+        }
+        else if (i == 1) {
+            MPI_boundary_to_element_[i] = (global_element_offset_ + N_elements_ == N_elements_global_) ? 0 : global_element_offset_ + N_elements_;
+            MPI_boundary_from_element_[i] = global_element_offset_ + N_elements_ - 1;
+        }
     }
 }
 
@@ -555,6 +566,15 @@ void SEM::Mesh_host_t::put_MPI_boundaries() {
     }
 }
 
+void  SEM::Mesh_host_t::move_elements(size_t N_elements, std::vector<Element_host_t>& temp_elements, size_t source_start_index, size_t destination_start_index) {
+    for (size_t i = 0; i < N_elements; ++i) {
+        elements_[i + destination_start_index] = std::move(temp_elements[i + source_start_index]);
+
+        elements_[i + destination_start_index].faces_[0] = elements_[i + destination_start_index].faces_[0] + destination_start_index - source_start_index;
+        elements_[i + destination_start_index].faces_[1] = elements_[i + destination_start_index].faces_[1] + destination_start_index - source_start_index;
+    }
+}
+
 void SEM::Mesh_host_t::calculate_fluxes() {
     for (auto& face: faces_) {
         hostFloat u;
@@ -595,28 +615,189 @@ void SEM::Mesh_host_t::calculate_q_fluxes() {
 }
 
 void SEM::Mesh_host_t::adapt(int N_max, const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& barycentric_weights) {
-    size_t additional_elements = 0;
+    unsigned long long additional_elements = 0;
     for (size_t i = 0; i < N_elements_; ++i) {
-        additional_elements += elements_[i].refine_ * (elements_[i].sigma_ < 1.0);
-        refine_array_[i] = additional_elements - elements_[i].refine_ * (elements_[i].sigma_ < 1.0); // Current offset
+        additional_elements += elements_[i].refine_ * (elements_[i].sigma_ < 1.0) * (elements_[i].delta_x_/2 >= delta_x_min_);
+        refine_array_[i] = additional_elements - elements_[i].refine_ * (elements_[i].sigma_ < 1.0) * (elements_[i].delta_x_/2 >= delta_x_min_); // Current offset
     }
 
-    if (additional_elements == 0) {
+    int global_rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
+    int global_size;
+    MPI_Comm_size(MPI_COMM_WORLD, &global_size);
+
+    std::vector<unsigned long long> additional_elements_global(global_size);
+    MPI_Allgather(&additional_elements, 1, MPI_UNSIGNED_LONG_LONG, additional_elements_global.data(), 1, MPI_UNSIGNED_LONG_LONG, MPI_COMM_WORLD);
+
+    size_t N_additional_elements_previous = 0;
+    for (int i = 0; i < global_rank; ++i) {
+        N_additional_elements_previous += additional_elements_global[i];
+    }
+    const size_t global_element_offset_current = global_element_offset_ + N_additional_elements_previous;
+    size_t N_additional_elements_global = 0;
+    for (int i = 0; i < global_size; ++i) {
+        N_additional_elements_global += additional_elements_global[i];
+    }
+    N_elements_global_ += N_additional_elements_global;
+    const size_t global_element_offset_end_current = global_element_offset_current + N_elements_ + additional_elements - 1;
+
+    const size_t N_elements_per_process_old = N_elements_per_process_;
+    N_elements_per_process_ = (N_elements_global_ + global_size - 1)/global_size;
+    global_element_offset_ = global_rank * N_elements_per_process_;
+    const size_t global_element_offset_end = std::min(global_element_offset_ + N_elements_per_process_ - 1, N_elements_global_ - 1);
+
+    if ((additional_elements == 0) && (global_element_offset_ == global_element_offset_current) && (global_element_offset_end == global_element_offset_end_current)) {
         p_adapt(N_max, nodes, barycentric_weights);
+
+        if (N_additional_elements_previous > 0 || ((global_element_offset_ == 0) && (N_additional_elements_global > 0))) {
+            adjust_boundaries();
+        }
         return;
     }
 
     std::vector<Element_host_t> new_elements(N_elements_ + additional_elements);
-    std::vector<Face_host_t> new_faces(faces_.size() + additional_elements);
+    hp_adapt(N_max, new_elements, nodes, barycentric_weights);
 
-    copy_faces(new_faces);
-    hp_adapt(N_max, new_elements, new_faces, nodes, barycentric_weights);
+    const size_t N_elements_old = N_elements_;
+    N_elements_ = (global_rank == global_size - 1) ? N_elements_per_process_ + N_elements_global_ - N_elements_per_process_ * global_size : N_elements_per_process_;
+    const size_t N_faces = N_elements_ + N_local_boundaries_ + N_MPI_boundaries_ - 1;
 
-    elements_ = std::move(new_elements);
-    faces_ = std::move(new_faces);
-    
-    N_elements_ += additional_elements;
-    N_elements_per_process_ = N_elements_per_process_; // CHECK change
+    faces_ = std::vector<Face_host_t>(N_faces);
+    build_faces();
+    elements_ = std::vector<Element_host_t>(N_elements_ + N_local_boundaries_ + N_MPI_boundaries_);
+
+    const size_t N_elements_send_left = (global_element_offset_ > global_element_offset_current) ? global_element_offset_ - global_element_offset_current : 0;
+    const size_t N_elements_recv_left = (global_element_offset_current > global_element_offset_) ? global_element_offset_current - global_element_offset_ : 0;
+    const size_t N_elements_send_right = (global_element_offset_end_current > global_element_offset_end) ? global_element_offset_end_current - global_element_offset_end : 0;
+    const size_t N_elements_recv_right = (global_element_offset_end > global_element_offset_end_current) ? global_element_offset_end - global_element_offset_end_current : 0;
+
+    if (N_elements_send_left + N_elements_recv_left + N_elements_send_right + N_elements_recv_right > 0) {
+        std::vector<int> left_origins(N_elements_recv_left);
+        std::vector<int> right_origins(N_elements_recv_right);
+        for (int i = 0; i < N_elements_recv_left; ++i) {
+            const int index = global_element_offset_ + i;
+            int process_end_index = -1;
+            for (int rank = 0; rank < global_rank; ++rank) { 
+                process_end_index += N_elements_per_process_old + additional_elements_global[rank];
+                if (process_end_index >= index) {
+                    left_origins[i] = rank;
+                    break;
+                }
+            }
+        }
+        for (int i = 0; i < N_elements_recv_right; ++i) {
+            const int index = global_element_offset_end_current + i + 1;
+            int process_start_index = 0;
+            for (int rank = 1; rank < global_size; ++rank) { 
+                process_start_index += N_elements_per_process_old + additional_elements_global[rank - 1];
+                if (process_start_index >= index) {
+                    right_origins[i] = rank;
+                    break;
+                }
+            }
+        }
+        
+        std::vector<MPI_Request> adaptivity_requests(3 * (N_elements_send_left + N_elements_recv_left + N_elements_send_right + N_elements_recv_right));
+        std::vector<MPI_Status> adaptivity_statuses(3 * (N_elements_send_left + N_elements_recv_left + N_elements_send_right + N_elements_recv_right));
+        constexpr MPI_Datatype data_type = (sizeof(deviceFloat) == sizeof(float)) ? MPI_FLOAT : MPI_DOUBLE;
+
+        for (int i = 0; i < N_elements_send_left; ++i) {
+            const int index = global_element_offset_current + i;
+            const int destination = index/N_elements_per_process_;
+
+            MPI_Isend(&new_elements[i].N_, 1, MPI_INT, destination, 3 * index, MPI_COMM_WORLD, &adaptivity_requests[i + 3 * N_elements_recv_left + 3 * N_elements_recv_right]);
+        }
+
+        for (int i = 0; i < N_elements_send_right; ++i) {
+            const int index = global_element_offset_end + 1 + i;
+            const int destination = index/N_elements_per_process_;
+
+            MPI_Isend(&new_elements[new_elements.size() - N_elements_send_right + i].N_, 1, MPI_INT, destination, 3 * index, MPI_COMM_WORLD, &adaptivity_requests[i + 3 * N_elements_recv_left + 3 * N_elements_recv_right + N_elements_send_left]);
+        }
+
+        for (int i = 0; i < N_elements_recv_left; ++i) {
+            const int index = global_element_offset_ + i;
+
+            MPI_Irecv(&elements_[i].N_, 1, MPI_INT, left_origins[i], 3 * index, MPI_COMM_WORLD, &adaptivity_requests[i]);
+        }
+
+        for (int i = 0; i < N_elements_recv_right; ++i) {
+            const int index = global_element_offset_end_current + i + 1;
+
+            MPI_Irecv(&elements_[elements_.size() - N_elements_recv_right + i].N_, 1, MPI_INT, right_origins[i], 3 * index, MPI_COMM_WORLD, &adaptivity_requests[i + N_elements_recv_left]);
+        }
+
+        MPI_Waitall(N_elements_recv_left + N_elements_recv_right, adaptivity_requests.data(), adaptivity_statuses.data());
+
+        for (int i = 0; i < N_elements_recv_left; ++i) {
+            elements_[i].phi_ = std::vector<hostFloat>(elements_[i].N_ + 1);
+            elements_[i].q_ = std::vector<hostFloat>(elements_[i].N_ + 1);
+            elements_[i].ux_ = std::vector<hostFloat>(elements_[i].N_ + 1);
+            elements_[i].phi_prime_ = std::vector<hostFloat>(elements_[i].N_ + 1);
+            elements_[i].intermediate_ = std::vector<hostFloat>(elements_[i].N_ + 1);
+        }
+
+        for (int i = 0; i < N_elements_recv_right; ++i) {
+            const size_t index = elements_.size() - N_elements_recv_right + i;
+
+            elements_[index].phi_ = std::vector<hostFloat>(elements_[index].N_ + 1);
+            elements_[index].q_ = std::vector<hostFloat>(elements_[index].N_ + 1);
+            elements_[index].ux_ = std::vector<hostFloat>(elements_[index].N_ + 1);
+            elements_[index].phi_prime_ = std::vector<hostFloat>(elements_[index].N_ + 1);
+            elements_[index].intermediate_ = std::vector<hostFloat>(elements_[index].N_ + 1);
+        }
+
+        for (int i = 0; i < N_elements_send_left; ++i) {
+            const int index = global_element_offset_current + i;
+            const int destination = index/N_elements_per_process_;
+
+            MPI_Isend(&new_elements[i].x_[0], 2, data_type, destination, 3 * index + 1, MPI_COMM_WORLD, &adaptivity_requests[i + 3 * N_elements_recv_left + 3 * N_elements_recv_right + N_elements_send_left + N_elements_send_right]);
+            MPI_Isend(new_elements[i].phi_.data(), new_elements[i].N_ + 1, data_type, destination, 3 * index + 2, MPI_COMM_WORLD, &adaptivity_requests[i + 3 * N_elements_recv_left + 3 * N_elements_recv_right + 2 * N_elements_send_left + 2 * N_elements_send_right]);
+        }
+
+        for (int i = 0; i < N_elements_send_right; ++i) {
+            const int index = global_element_offset_end + 1 + i;
+            const int destination = index/N_elements_per_process_;
+
+            MPI_Isend(&new_elements[new_elements.size() - N_elements_send_right + i].x_[0], 2, data_type, destination, 3 * index + 1, MPI_COMM_WORLD, &adaptivity_requests[i + 3 * N_elements_recv_left + 3 * N_elements_recv_right + 2 * N_elements_send_left + N_elements_send_right]);
+            MPI_Isend(new_elements[new_elements.size() - N_elements_send_right + i].phi_.data(), new_elements[new_elements.size() - N_elements_send_right + i].N_ + 1, data_type, destination, 3 * index + 2, MPI_COMM_WORLD, &adaptivity_requests[i + 3 * N_elements_recv_left + 3 * N_elements_recv_right + 3 * N_elements_send_left + 2 * N_elements_send_right]);
+        }
+
+        for (int i = 0; i < N_elements_recv_left; ++i) {
+            const int index = global_element_offset_ + i;
+
+            MPI_Irecv(&elements_[i].x_[0], 2, data_type, left_origins[i], 3 * index + 1, MPI_COMM_WORLD, &adaptivity_requests[i + N_elements_recv_left + N_elements_recv_right]);
+            MPI_Irecv(elements_[i].phi_.data(), elements_[i].N_ + 1, data_type, left_origins[i], 3 * index + 2, MPI_COMM_WORLD, &adaptivity_requests[i + 2 * N_elements_recv_left + 2 * N_elements_recv_right]);
+        }
+
+        for (int i = 0; i < N_elements_recv_right; ++i) {
+            const int index = global_element_offset_end_current + i + 1;
+
+            MPI_Irecv(&elements_[elements_.size() - N_elements_recv_right + i].x_[0], 2, data_type, right_origins[i], 3 * index + 1, MPI_COMM_WORLD, &adaptivity_requests[i + 2 * N_elements_recv_left + N_elements_recv_right]);
+            MPI_Irecv(elements_[elements_.size() - N_elements_recv_right + i].phi_.data(), elements_[elements_.size() - N_elements_recv_right + i].N_ + 1, data_type, right_origins[i], 3 * index + 2, MPI_COMM_WORLD, &adaptivity_requests[i + 3 * N_elements_recv_left + 2 * N_elements_recv_right]);
+        }
+
+        MPI_Waitall(2 * N_elements_recv_left + 2 * N_elements_recv_right, adaptivity_requests.data() + N_elements_recv_left + N_elements_recv_right, adaptivity_statuses.data() + N_elements_recv_left + N_elements_recv_right);
+
+        for (int i = 0; i < N_elements_recv_left; ++i) {
+            elements_[i].delta_x_ = elements_[i].x_[1] - elements_[i].x_[0];
+            elements_[i].faces_ = {static_cast<size_t>(i), static_cast<size_t>(i) + 1};
+        }
+
+        for (int i = 0; i < N_elements_recv_right; ++i) {
+            const size_t index = elements_.size() - N_elements_recv_right + i;
+
+            elements_[index].delta_x_ = elements_[index].x_[1] - elements_[index].x_[0];
+            elements_[index].faces_ = {index, index + 1};
+        }
+
+         // We also wait for the send requests
+        MPI_Waitall(3 * N_elements_send_left + 3 * N_elements_send_right, adaptivity_requests.data() + 3 * N_elements_recv_left + 3 * N_elements_recv_right, adaptivity_statuses.data() + 3 * N_elements_recv_left + 3 * N_elements_recv_right);
+
+    }
+
+    move_elements(N_elements_ - N_elements_recv_left - N_elements_recv_right, new_elements, N_elements_send_left, N_elements_recv_left);
+
 
     local_boundary_to_element_ = std::vector<size_t>(N_local_boundaries_);
     MPI_boundary_to_element_ = std::vector<size_t>(N_MPI_boundaries_);
@@ -628,6 +809,7 @@ void SEM::Mesh_host_t::adapt(int N_max, const std::vector<std::vector<hostFloat>
     refine_array_ = std::vector<size_t>(N_elements_);
 
     // CHECK create boundaries here.
+    build_boundaries();
 }
 
 void SEM::Mesh_host_t::p_adapt(int N_max, const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& barycentric_weights) {
@@ -640,25 +822,23 @@ void SEM::Mesh_host_t::p_adapt(int N_max, const std::vector<std::vector<hostFloa
     }
 }
 
-void SEM::Mesh_host_t::hp_adapt(int N_max, std::vector<Element_host_t>& new_elements, std::vector<Face_host_t>& new_faces, const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& barycentric_weights) {
+void SEM::Mesh_host_t::hp_adapt(int N_max, std::vector<Element_host_t>& new_elements, const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& barycentric_weights) {
     for (size_t i = 0; i < N_elements_; ++i) {
-        if (elements_[i].refine_ && elements_[i].sigma_ < 1.0) {
-            size_t new_index = N_elements_ + refine_array_[i];
+        const size_t element_index = i + refine_array_[i];
 
-            new_elements[i] = SEM::Element_host_t(elements_[i].N_, elements_[i].faces_[0], new_index, elements_[i].x_[0], (elements_[i].x_[0] + elements_[i].x_[1]) * 0.5);
-            new_elements[new_index] = SEM::Element_host_t(elements_[i].N_, new_index, elements_[i].faces_[1], (elements_[i].x_[0] + elements_[i].x_[1]) * 0.5, elements_[i].x_[1]);
-            new_elements[i].interpolate_from(elements_[i], nodes, barycentric_weights);
-            new_elements[new_index].interpolate_from(elements_[i], nodes, barycentric_weights);
-            
-            new_faces[new_index] = SEM::Face_host_t(i, new_index);
-            new_faces[elements_[i].faces_[1]].elements_[0] = new_index;
+        if (elements_[i].refine_ && elements_[i].sigma_ < 1.0 && elements_[i].delta_x_/2 >= delta_x_min_) {
+            new_elements[element_index] = SEM::Element_host_t(elements_[i].N_, element_index, element_index + 1, elements_[i].x_[0], (elements_[i].x_[0] + elements_[i].x_[1]) * 0.5);
+            new_elements[element_index + 1] = SEM::Element_host_t(elements_[i].N_, element_index + 1, element_index + 2, (elements_[i].x_[0] + elements_[i].x_[1]) * 0.5, elements_[i].x_[1]);
+            new_elements[element_index].interpolate_from(elements_[i], nodes, barycentric_weights);
+            new_elements[element_index + 1].interpolate_from(elements_[i], nodes, barycentric_weights);
         }
-        else if (elements_[i].refine_ && elements_[i].N_ < N_max) {
-            new_elements[i] = SEM::Element_host_t(std::min(elements_[i].N_ + 2, N_max), elements_[i].faces_[0], elements_[i].faces_[1], elements_[i].x_[0], elements_[i].x_[1]);
-            new_elements[i].interpolate_from(elements_[i], nodes, barycentric_weights);
+        else if (elements_[i].refine_ && elements_[i].sigma_ >= 1.0 && elements_[i].N_ < N_max) {
+            new_elements[element_index] = SEM::Element_host_t(std::min(elements_[i].N_ + 2, N_max), element_index, element_index + 1, elements_[i].x_[0], elements_[i].x_[1]);
+            new_elements[element_index].interpolate_from(elements_[i], nodes, barycentric_weights);
         }
         else {
-            new_elements[i] = std::move(elements_[i]);
+            new_elements[element_index] = std::move(elements_[i]);
+            new_elements[element_index].faces_ = {element_index, element_index + 1};
         }
     }
 }

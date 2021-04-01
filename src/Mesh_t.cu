@@ -463,7 +463,7 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
     SEM::reduce_refine<elements_blockSize_/2><<<elements_numBlocks_, elements_blockSize_/2, 0, stream_>>>(N_elements_, delta_x_min_, elements_, device_refine_array_);
     cudaMemcpy(host_refine_array_.data(), device_refine_array_, elements_numBlocks_ * sizeof(unsigned long), cudaMemcpyDeviceToHost);
 
-    unsigned long additional_elements = 0;
+    unsigned long long additional_elements = 0;
     for (int i = 0; i < elements_numBlocks_; ++i) {
         additional_elements += host_refine_array_[i];
         host_refine_array_[i] = additional_elements - host_refine_array_[i]; // Current block offset
@@ -474,8 +474,8 @@ void SEM::Mesh_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* 
     int global_size;
     MPI_Comm_size(MPI_COMM_WORLD, &global_size);
 
-    std::vector<unsigned long> additional_elements_global(global_size);
-    MPI_Allgather(&additional_elements, 1, MPI_UNSIGNED_LONG, additional_elements_global.data(), 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+    std::vector<unsigned long long> additional_elements_global(global_size);
+    MPI_Allgather(&additional_elements, 1, MPI_UNSIGNED_LONG_LONG, additional_elements_global.data(), 1, MPI_UNSIGNED_LONG_LONG, MPI_COMM_WORLD);
 
     size_t N_additional_elements_previous = 0;
     for (int i = 0; i < global_rank; ++i) {
