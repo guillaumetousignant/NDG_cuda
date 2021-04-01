@@ -24,6 +24,6 @@ void SEM::ChebyshevPolynomial_t::nodes_and_weights(int N_max, int blockSize, dev
 }
 
 __device__
-void SEM::ChebyshevPolynomial_t::polynomial(int N, deviceFloat x, deviceFloat &T_N) {
-    T_N = cos(N * acos(x));
+deviceFloat SEM::ChebyshevPolynomial_t::polynomial(int N, deviceFloat x) {
+    return cos(N * acos(x));
 }

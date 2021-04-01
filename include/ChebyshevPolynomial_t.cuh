@@ -13,7 +13,7 @@ namespace SEM {
             static void nodes_and_weights(int N_max, int blockSize, deviceFloat* nodes, deviceFloat* weights, cudaStream_t &stream);
 
             __device__
-            static void polynomial(int N, deviceFloat x, deviceFloat &T_N);
+            static deviceFloat polynomial(int N, deviceFloat x);
     };
 }
 

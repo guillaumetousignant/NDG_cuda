@@ -10,6 +10,8 @@ namespace SEM {
             // Algorithm 23
             static void nodes_and_weights(int N, std::vector<hostFloat>& nodes, std::vector<hostFloat>& weights);
 
+            static hostFloat polynomial(int N, hostFloat x);
+
         private:
             // Algorithm 22
             static void legendre_polynomial_and_derivative(int N, hostFloat x, hostFloat &L_N, hostFloat &L_N_prime);

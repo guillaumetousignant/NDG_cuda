@@ -17,7 +17,7 @@ namespace SEM {
             static void polynomial_and_derivative(int N, deviceFloat x, deviceFloat &L_N, deviceFloat &L_N_prime);
 
             __device__
-            static void polynomial(int N, deviceFloat x, deviceFloat &L_N);
+            static deviceFloat polynomial(int N, deviceFloat x);
     };
 }
 

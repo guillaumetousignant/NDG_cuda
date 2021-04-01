@@ -30,6 +30,31 @@ void SEM::LegendrePolynomial_host_t::legendre_polynomial_and_derivative(int N, h
     }
 }
 
+hostFloat SEM::LegendrePolynomial_host_t::polynomial(int N, hostFloat x) {
+    if (N == 0) {
+        return 1.0f;
+    }
+    if (N == 1) {
+        return x;
+    }
+    
+    hostFloat L_N_2 = 1.0f;
+    hostFloat L_N_1 = x;
+    hostFloat L_N_2_prime = 0.0f;
+    hostFloat L_N_1_prime = 1.0f;
+    hostFloat L_N;
+
+    for (int k = 2; k <= N; ++k) {
+        L_N = (2 * k - 1) * x * L_N_1/k - (k - 1) * L_N_2/k; // L_N_1(x) ??
+        const hostFloat L_N_prime = L_N_2_prime + (2 * k - 1) * L_N_1;
+        L_N_2 = L_N_1;
+        L_N_1 = L_N;
+        L_N_2_prime = L_N_1_prime;
+        L_N_1_prime = L_N_prime;
+    }
+    return L_N;
+}
+
 // Algorithm 23
 void SEM::LegendrePolynomial_host_t::nodes_and_weights(int N, std::vector<hostFloat>& nodes, std::vector<hostFloat>& weights) {
     for (int i = 0; i < (N + 1)/2; ++i) {
