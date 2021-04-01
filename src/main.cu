@@ -9,19 +9,19 @@
 #include <array>
 #include <mpi.h>
 
-constexpr hostFloat pi = 3.14159265358979323846;
+constexpr deviceFloat pi = 3.14159265358979323846;
 
 int main(int argc, char* argv[]) {
     MPI_Init(&argc, &argv);
 
     const size_t N_elements = 16;
     const int N_max = 16;
-    const std::array<deviceFloat, 2> x {-1.0, 1.0};
+    const std::array<deviceFloat, 2> x{-1.0, 1.0};
     const deviceFloat max_splits = 3;
     const deviceFloat delta_x_min = (x[1] - x[0])/(N_elements * std::pow(2, max_splits));
     const deviceFloat CFL = 0.2f;
     const deviceFloat viscosity = 0.1/pi;
-    std::vector<deviceFloat> output_times{0.0f, 0.05f, 0.10f, 0.15f, 0.20f, 0.25f, 0.30f, 0.35f, 0.40f, 0.45f, 0.50f, 0.55f, 0.60f, 0.65f, 0.70f, 0.75f, 0.80f, 0.85f, 0.90f, 0.95f, 1.00f};
+    std::vector<deviceFloat> output_times{0.0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00};
 
     const int initial_N = 6;
     const size_t N_interpolation_points = N_max * 8;

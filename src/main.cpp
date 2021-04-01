@@ -9,15 +9,19 @@
 #include <array>
 #include <mpi.h>
 
+constexpr hostFloat pi = 3.14159265358979323846;
+
 int main(int argc, char* argv[]) {
     MPI_Init(&argc, &argv);
 
     const size_t N_elements = 16;
     const int N_max = 16;
     const std::array<hostFloat, 2> x {-1.0, 1.0};
-    const hostFloat CFL = 0.1;
-    const hostFloat viscosity = 0.0f;
-    std::vector<hostFloat> output_times{0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f};
+    const hostFloat max_splits = 3;
+    const hostFloat delta_x_min = (x[1] - x[0])/(N_elements * std::pow(2, max_splits));
+    const hostFloat CFL = 0.2f;
+    const hostFloat viscosity = 0.1/pi;
+    std::vector<hostFloat> output_times{0.0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00};
 
     const int initial_N = 6;
     const size_t N_interpolation_points = N_max * 8;
@@ -45,7 +49,7 @@ int main(int argc, char* argv[]) {
     auto t_start_init = std::chrono::high_resolution_clock::now();
 
     SEM::NDG_host_t<SEM::LegendrePolynomial_host_t> NDG(N_max, N_interpolation_points);
-    SEM::Mesh_host_t mesh(N_elements, initial_N, x[0], x[1]);
+    SEM::Mesh_host_t mesh(N_elements, initial_N, delta_x_min, x[0], x[1]);
     mesh.set_initial_conditions(NDG.nodes_);
 
     auto t_end_init = std::chrono::high_resolution_clock::now();
