@@ -7,12 +7,14 @@
 constexpr deviceFloat pi = 3.14159265358979323846;
 
 __device__ 
-Element_t::Element_t(int N, size_t face_L, size_t face_R, deviceFloat x_L, deviceFloat x_R) : 
+SEM::Element_t::Element_t(int N, size_t face_L, size_t face_R, deviceFloat x_L, deviceFloat x_R) : 
         N_(N),
         faces_{face_L, face_R},
         x_{x_L, x_R},
         delta_x_(x_[1] - x_[0]),
         phi_(new deviceFloat[N_ + 1]),
+        q_(new deviceFloat[N_ + 1]),
+        ux_(new deviceFloat[N_ + 1]),
         phi_prime_(new deviceFloat[N_ + 1]),
         intermediate_(new deviceFloat[N_ + 1]),
         sigma_(0.0),
@@ -21,12 +23,14 @@ Element_t::Element_t(int N, size_t face_L, size_t face_R, deviceFloat x_L, devic
         error_(0.0) {}
 
 __device__
-Element_t::Element_t(const Element_t& other) :
+SEM::Element_t::Element_t(const SEM::Element_t& other) :
         N_(other.N_),
         faces_{other.faces_[0], other.faces_[1]},
         x_{other.x_[0], other.x_[1]},
         delta_x_(other.delta_x_),
         phi_(new deviceFloat[N_ + 1]),
+        q_(new deviceFloat[N_ + 1]),
+        ux_(new deviceFloat[N_ + 1]),
         phi_prime_(new deviceFloat[N_ + 1]),
         intermediate_(new deviceFloat[N_ + 1]),
         sigma_(other.sigma_),
@@ -36,18 +40,22 @@ Element_t::Element_t(const Element_t& other) :
 
     for (int i = 0; i <= N_; ++i) {
         phi_[i] = other.phi_[i];
+        q_[i] = other.q_[i];
+        ux_[i] = other.ux_[i];
         phi_prime_[i] = other.phi_prime_[i];
         intermediate_[i] = other.intermediate_[i];
     }
 }
 
 __device__
-Element_t::Element_t(Element_t&& other) :
+SEM::Element_t::Element_t(SEM::Element_t&& other) :
         N_(other.N_),
         faces_{other.faces_[0], other.faces_[1]},
         x_{other.x_[0], other.x_[1]},
         delta_x_(other.delta_x_),
         phi_(other.phi_),
+        q_(other.q_),
+        ux_(other.ux_),
         phi_prime_(other.phi_prime_),
         intermediate_(other.intermediate_),
         sigma_(other.sigma_),
@@ -56,19 +64,25 @@ Element_t::Element_t(Element_t&& other) :
         error_(other.error_) {
     
     other.phi_ = nullptr;
+    other.q_ = nullptr;
+    other.ux_ = nullptr;
     other.phi_prime_ = nullptr;
     other.intermediate_ = nullptr;
 }
 
 __device__
-Element_t& Element_t::operator=(const Element_t& other) {
+SEM::Element_t& SEM::Element_t::operator=(const SEM::Element_t& other) {
     if (N_ != other.N_) {
         delete[] phi_;
+        delete[] q_;
+        delete[] ux_;
         delete[] phi_prime_;
         delete[] intermediate_;
 
         N_ = other.N_;
         phi_ = new deviceFloat[N_];
+        q_ = new deviceFloat[N_];
+        ux_ = new deviceFloat[N_];
         phi_prime_ = new deviceFloat[N_];
         intermediate_ = new deviceFloat[N_];
     }
@@ -85,6 +99,8 @@ Element_t& Element_t::operator=(const Element_t& other) {
 
     for (int i = 0; i <= N_; ++i) {
         phi_[i] = other.phi_[i];
+        q_[i] = other.q_[i];
+        ux_[i] = other.ux_[i];
         phi_prime_[i] = other.phi_prime_[i];
         intermediate_[i] = other.intermediate_[i];
     }
@@ -93,7 +109,7 @@ Element_t& Element_t::operator=(const Element_t& other) {
 }
 
 __device__
-Element_t& Element_t::operator=(Element_t&& other) {
+SEM::Element_t& SEM::Element_t::operator=(SEM::Element_t&& other) {
     N_ = other.N_;
     faces_[0] = other.faces_[0];
     faces_[1] = other.faces_[1];
@@ -106,6 +122,8 @@ Element_t& Element_t::operator=(Element_t&& other) {
     error_ = other.error_;
 
     thrust::swap(phi_, other.phi_);
+    thrust::swap(q_, other.q_);
+    thrust::swap(ux_, other.ux_);
     thrust::swap(phi_prime_, other.phi_prime_);
     thrust::swap(intermediate_, other.intermediate_);
     
@@ -113,12 +131,14 @@ Element_t& Element_t::operator=(Element_t&& other) {
 }
 
 __host__ __device__
-Element_t::Element_t() :
+SEM::Element_t::Element_t() :
         N_(0),
         faces_{0, 0},
         x_{0.0, 0.0},
         delta_x_(0.0),
         phi_(nullptr),
+        q_(nullptr),
+        ux_(nullptr),
         phi_prime_(nullptr),
         intermediate_(nullptr),
         sigma_(0.0),
@@ -127,76 +147,52 @@ Element_t::Element_t() :
         error_(0.0) {};
 
 __host__ __device__
-Element_t::~Element_t() {
+SEM::Element_t::~Element_t() {
     delete [] phi_;
+    delete [] q_;
+    delete [] ux_;
     delete [] phi_prime_;
     delete [] intermediate_;
 }
 
 // Algorithm 61
 __device__
-void Element_t::interpolate_to_boundaries(const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right, const deviceFloat* lagrange_interpolant_derivative_left, const deviceFloat* lagrange_interpolant_derivative_right) {
+void SEM::Element_t::interpolate_to_boundaries(const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right) {
     const int offset_1D = N_ * (N_ + 1) /2;
     phi_L_ = 0.0;
     phi_R_ = 0.0;
-    phi_prime_L_ = 0.0;
-    phi_prime_R_ = 0.0;
 
     for (int j = 0; j <= N_; ++j) {
         phi_L_ += lagrange_interpolant_left[offset_1D + j] * phi_[j];
         phi_R_ += lagrange_interpolant_right[offset_1D + j] * phi_[j];
     }
+}
+
+// Algorithm 61
+__device__
+void SEM::Element_t::interpolate_q_to_boundaries(const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right) {
+    const int offset_1D = N_ * (N_ + 1) /2;
+    phi_prime_L_ = 0.0;
+    phi_prime_R_ = 0.0;
 
     for (int j = 0; j <= N_; ++j) {
-        phi_prime_L_ += lagrange_interpolant_derivative_left[offset_1D + j] * (phi_L_ - phi_[j]);
-        phi_prime_R_ += lagrange_interpolant_derivative_right[offset_1D + j] * (phi_R_ - phi_[j]);
+        phi_prime_L_ += lagrange_interpolant_left[offset_1D + j] * q_[j];
+        phi_prime_R_ += lagrange_interpolant_right[offset_1D + j] * q_[j];
     }
 }
 
-// This should be illegal, but is needed because I can't for the life of me get separable compilation to work correctly.
-__device__
-void ChebyshevPolynomial_t::polynomial(int N, deviceFloat x, deviceFloat &T_N) {
-    T_N = cos(N * acos(x));
-}
-
-__device__
-void LegendrePolynomial_t::polynomial(int N, deviceFloat x, deviceFloat &L_N) {
-    if (N == 0) {
-        L_N = 1.0f;
-    }
-    else if (N == 1) {
-        L_N = x;
-    }
-    else {
-        deviceFloat L_N_2 = 1.0f;
-        deviceFloat L_N_1 = x;
-        deviceFloat L_N_2_prime = 0.0f;
-        deviceFloat L_N_1_prime = 1.0f;
-
-        for (int k = 2; k <= N; ++k) {
-            L_N = (2 * k - 1) * x * L_N_1/k - (k - 1) * L_N_2/k; // L_N_1(x) ??
-            const deviceFloat L_N_prime = L_N_2_prime + (2 * k - 1) * L_N_1;
-            L_N_2 = L_N_1;
-            L_N_1 = L_N;
-            L_N_2_prime = L_N_1_prime;
-            L_N_1_prime = L_N_prime;
-        }
-    }
-}
-
-template __device__ void Element_t::estimate_error<ChebyshevPolynomial_t>(const deviceFloat* nodes, const deviceFloat* weights);
-template __device__ void Element_t::estimate_error<LegendrePolynomial_t>(const deviceFloat* nodes, const deviceFloat* weights);
+template __device__ void SEM::Element_t::estimate_error<SEM::ChebyshevPolynomial_t>(const deviceFloat* nodes, const deviceFloat* weights);
+template __device__ void SEM::Element_t::estimate_error<SEM::LegendrePolynomial_t>(const deviceFloat* nodes, const deviceFloat* weights);
 
 template<typename Polynomial>
 __device__
-void Element_t::estimate_error<Polynomial>(const deviceFloat* nodes, const deviceFloat* weights) {
+void SEM::Element_t::estimate_error<Polynomial>(const deviceFloat* nodes, const deviceFloat* weights) {
     const int offset_1D = N_ * (N_ + 1) /2;
 
     for (int k = 0; k <= N_; ++k) {
         intermediate_[k] = 0.0;
         for (int i = 0; i <= N_; ++i) {
-            deviceFloat L_N;
-            Polynomial::polynomial(k, nodes[offset_1D + i], L_N);
+            const deviceFloat L_N = Polynomial::polynomial(k, nodes[offset_1D + i]);
 
             intermediate_[k] += (2 * k + 1) * 0.5 * phi_[i] * L_N * weights[offset_1D + i];
         }
@@ -226,7 +222,7 @@ void Element_t::estimate_error<Polynomial>(const deviceFloat* nodes, const devic
 }
 
 __device__
-deviceFloat Element_t::exponential_decay() {
+deviceFloat SEM::Element_t::exponential_decay() {
     const int n_points_least_squares = min(N_, 4); // Number of points to use for thew least squares reduction, but don't go above N.
 
     deviceFloat x_avg = 0.0;
@@ -256,7 +252,7 @@ deviceFloat Element_t::exponential_decay() {
 }
 
 __device__
-void Element_t::interpolate_from(const Element_t& other, const deviceFloat* nodes, const deviceFloat* barycentric_weights) {
+void SEM::Element_t::interpolate_from(const SEM::Element_t& other, const deviceFloat* nodes, const deviceFloat* barycentric_weights) {
     const int offset = N_ * (N_ + 1) /2;
     const int offset_other = other.N_ * (other.N_ + 1) /2;
 
@@ -280,47 +276,140 @@ void Element_t::interpolate_from(const Element_t& other, const deviceFloat* node
 }
 
 __global__
-void SEM::build_elements(size_t N_elements, int N, Element_t* elements, deviceFloat x_min, deviceFloat x_max) {
+void SEM::build_elements(size_t N_elements, int N, SEM::Element_t* elements, deviceFloat x_min, deviceFloat x_max) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
     for (int i = index; i < N_elements; i += stride) {
-        const size_t face_L = (i > 0) ? i - 1 : N_elements - 1;
-        const size_t face_R = i;
+        const size_t face_L = i;
+        const size_t face_R = i + 1;
         const deviceFloat delta_x = (x_max - x_min)/N_elements;
         const deviceFloat element_x_min = x_min + i * delta_x;
         const deviceFloat element_x_max = x_min + (i + 1) * delta_x;
 
         // Those are uninitialised because they are created via cudaMalloc, so they need to be set if we don't want the move constructor to delete random memory.
         elements[i].phi_ = nullptr;
+        elements[i].q_ = nullptr;
+        elements[i].ux_ = nullptr;
         elements[i].phi_prime_ = nullptr;
         elements[i].intermediate_ = nullptr;
 
-        elements[i] = Element_t(N, face_L, face_R, element_x_min, element_x_max);
+        elements[i] = SEM::Element_t(N, face_L, face_R, element_x_min, element_x_max);
     }
 }
 
 __global__
-void SEM::free_elements(size_t N_elements, Element_t* elements) {
+void SEM::build_boundaries(size_t N_elements, size_t N_elements_global, size_t N_local_boundaries, size_t N_MPI_boundaries, Element_t* elements, size_t global_element_offset, size_t* local_boundary_to_element, size_t* MPI_boundary_to_element, size_t* MPI_boundary_from_element) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (int i = index; i < N_local_boundaries; i += stride) {
+        size_t face_L;
+        size_t face_R;
+        deviceFloat element_x_min;
+        deviceFloat element_x_max;
+
+        if (i == 0) { // CHECK this is hardcoded for 1D
+            face_L = 0;
+            face_R = 0;
+            element_x_min = elements[0].x_[0];
+            element_x_max = elements[0].x_[0];
+            local_boundary_to_element[i] = N_elements - 1;
+        }
+        else if (i == 1) {
+            face_L = N_elements + N_local_boundaries + N_MPI_boundaries - 2;
+            face_R = N_elements + N_local_boundaries + N_MPI_boundaries - 2;
+            element_x_min = elements[N_elements - 1].x_[1];
+            element_x_max = elements[N_elements - 1].x_[1];
+            local_boundary_to_element[i] = 0;
+        }
+
+        // Those are uninitialised because they are created via cudaMalloc, so they need to be set if we don't want the move constructor to delete random memory.
+        elements[N_elements + i].phi_ = nullptr;
+        elements[N_elements + i].q_ = nullptr;
+        elements[N_elements + i].ux_ = nullptr;
+        elements[N_elements + i].phi_prime_ = nullptr;
+        elements[N_elements + i].intermediate_ = nullptr;
+
+        elements[N_elements + i] = SEM::Element_t(0, face_L, face_R, element_x_min, element_x_max);
+    }
+
+    for (int i = index; i < N_MPI_boundaries; i += stride) {
+        size_t face_L;
+        size_t face_R;
+        deviceFloat element_x_min;
+        deviceFloat element_x_max;
+
+        if (i == 0) { // CHECK this is hardcoded for 1D
+            face_L = 0;
+            face_R = 0;
+            element_x_min = elements[0].x_[0];
+            element_x_max = elements[0].x_[0];
+            MPI_boundary_to_element[i] = (global_element_offset == 0) ? N_elements_global - 1 : global_element_offset - 1;
+            MPI_boundary_from_element[i] = global_element_offset;
+        }
+        else if (i == 1) {
+            face_L = N_elements + N_local_boundaries + N_MPI_boundaries - 2;
+            face_R = N_elements + N_local_boundaries + N_MPI_boundaries - 2;
+            element_x_min = elements[N_elements - 1].x_[1];
+            element_x_max = elements[N_elements - 1].x_[1];
+            MPI_boundary_to_element[i] = (global_element_offset + N_elements == N_elements_global) ? 0 : global_element_offset + N_elements;
+            MPI_boundary_from_element[i] = global_element_offset + N_elements - 1;
+        }
+
+        // Those are uninitialised because they are created via cudaMalloc, so they need to be set if we don't want the move constructor to delete random memory.
+        elements[N_elements + N_local_boundaries + i].phi_ = nullptr;
+        elements[N_elements + N_local_boundaries + i].q_ = nullptr;
+        elements[N_elements + N_local_boundaries + i].ux_ = nullptr;
+        elements[N_elements + N_local_boundaries + i].phi_prime_ = nullptr;
+        elements[N_elements + N_local_boundaries + i].intermediate_ = nullptr;
+
+        elements[N_elements + N_local_boundaries + i] = SEM::Element_t(0, face_L, face_R, element_x_min, element_x_max);
+    }
+}
+
+__global__
+void SEM::adjust_boundaries(size_t N_elements, size_t N_elements_global, size_t N_MPI_boundaries, size_t global_element_offset, size_t* MPI_boundary_to_element, size_t* MPI_boundary_from_element) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (int i = index; i < N_MPI_boundaries; i += stride) {
+        if (i == 0) { // CHECK this is hardcoded for 1D
+            MPI_boundary_to_element[i] = (global_element_offset == 0) ? N_elements_global - 1 : global_element_offset - 1;
+            MPI_boundary_from_element[i] = global_element_offset;
+        }
+        else if (i == 1) {
+            MPI_boundary_to_element[i] = (global_element_offset + N_elements == N_elements_global) ? 0 : global_element_offset + N_elements;
+            MPI_boundary_from_element[i] = global_element_offset + N_elements - 1;
+        }
+    }
+}
+
+__global__
+void SEM::free_elements(size_t N_elements, SEM::Element_t* elements) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
     for (int i = index; i < N_elements; i += stride) {
         delete[] elements[i].phi_;
+        delete[] elements[i].q_;
+        delete[] elements[i].ux_;
         delete[] elements[i].phi_prime_;
         delete[] elements[i].intermediate_;
         elements[i].phi_ = nullptr;
+        elements[i].q_ = nullptr;
+        elements[i].ux_ = nullptr;
         elements[i].phi_prime_ = nullptr;
         elements[i].intermediate_ = nullptr;
     }
 }
 
-template __global__ void SEM::estimate_error<ChebyshevPolynomial_t>(size_t N_elements, Element_t* elements, const deviceFloat* nodes, const deviceFloat* weights);
-template __global__ void SEM::estimate_error<LegendrePolynomial_t>(size_t N_elements, Element_t* elements, const deviceFloat* nodes, const deviceFloat* weights);
+template __global__ void SEM::estimate_error<SEM::ChebyshevPolynomial_t>(size_t N_elements, SEM::Element_t* elements, const deviceFloat* nodes, const deviceFloat* weights);
+template __global__ void SEM::estimate_error<SEM::LegendrePolynomial_t>(size_t N_elements, SEM::Element_t* elements, const deviceFloat* nodes, const deviceFloat* weights);
 
 template<typename Polynomial>
 __global__
-void SEM::estimate_error<Polynomial>(size_t N_elements, Element_t* elements, const deviceFloat* nodes, const deviceFloat* weights) {
+void SEM::estimate_error<Polynomial>(size_t N_elements, SEM::Element_t* elements, const deviceFloat* nodes, const deviceFloat* weights) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -329,15 +418,20 @@ void SEM::estimate_error<Polynomial>(size_t N_elements, Element_t* elements, con
     }
 }
 
-__device__
+__host__ __device__
 deviceFloat SEM::g(deviceFloat x) {
     //return (x < -0.2f || x > 0.2f) ? 0.2f : 0.8f;
     return -std::sin(pi * x);
 }
 
+__host__ __device__
+deviceFloat SEM::g_prime(deviceFloat x) {
+    //return (x < -0.2f || x > 0.2f) ? 0.2f : 0.8f;
+    return -pi * std::cos(pi * x);
+}
 
 __global__
-void SEM::initial_conditions(size_t N_elements, Element_t* elements, const deviceFloat* nodes) {
+void SEM::initial_conditions(size_t N_elements, SEM::Element_t* elements, const deviceFloat* nodes) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -352,7 +446,7 @@ void SEM::initial_conditions(size_t N_elements, Element_t* elements, const devic
 
 // Basically useless, find better solution when multiple elements.
 __global__
-void SEM::get_elements_data(size_t N_elements, const Element_t* elements, deviceFloat* phi, deviceFloat* phi_prime) {
+void SEM::get_elements_data(size_t N_elements, const SEM::Element_t* elements, deviceFloat* phi, deviceFloat* phi_prime) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -365,21 +459,57 @@ void SEM::get_elements_data(size_t N_elements, const Element_t* elements, device
     }
 }
 
-// Basically useless, find better solution when multiple elements.
 __global__
-void SEM::get_phi(size_t N_elements, const Element_t* elements, deviceFloat* phi) {
+void SEM::get_phi(size_t N_elements, const SEM::Element_t* elements, deviceFloat** phi) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
     for (size_t i = index; i < N_elements; i += stride) {
         for (int j = 0; j <= elements[i].N_; ++j) {
-            phi[j] = elements[i].phi_[j];
+            phi[i][j] = elements[i].phi_[j];
         }
     }
 }
 
 __global__
-void SEM::get_solution(size_t N_elements, size_t N_interpolation_points, const Element_t* elements, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* phi, deviceFloat* phi_prime, deviceFloat* intermediate, deviceFloat* x_L, deviceFloat* x_R, int* N, deviceFloat* sigma, bool* refine, bool* coarsen, deviceFloat* error) {
+void SEM::put_phi(size_t N_elements, SEM::Element_t* elements, deviceFloat** phi) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t i = index; i < N_elements; i += stride) {
+        elements[i].phi_ = new deviceFloat[elements[i].N_ + 1];
+        elements[i].q_ = new deviceFloat[elements[i].N_ + 1];
+        elements[i].ux_ = new deviceFloat[elements[i].N_ + 1];
+        elements[i].phi_prime_ = new deviceFloat[elements[i].N_ + 1];
+        elements[i].intermediate_ = new deviceFloat[elements[i].N_ + 1];
+
+        for (int j = 0; j <= elements[i].N_; ++j) {
+            elements[i].phi_[j] = phi[i][j];
+        }
+    }
+}
+
+__global__
+void SEM::move_elements(size_t N_elements, Element_t* elements, Element_t* new_elements, size_t source_start_index, size_t destination_start_index) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t i = index; i < N_elements; i += stride) {
+        new_elements[i + destination_start_index].phi_ = nullptr;
+        new_elements[i + destination_start_index].q_ = nullptr;
+        new_elements[i + destination_start_index].ux_ = nullptr;
+        new_elements[i + destination_start_index].phi_prime_ = nullptr;
+        new_elements[i + destination_start_index].intermediate_ = nullptr;
+
+        new_elements[i + destination_start_index] = std::move(elements[i + source_start_index]);
+
+        new_elements[i + destination_start_index].faces_[0] = new_elements[i + destination_start_index].faces_[0] + destination_start_index - source_start_index;
+        new_elements[i + destination_start_index].faces_[1] = new_elements[i + destination_start_index].faces_[1] + destination_start_index - source_start_index;
+    }
+}
+
+__global__
+void SEM::get_solution(size_t N_elements, size_t N_interpolation_points, const SEM::Element_t* elements, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* phi, deviceFloat* phi_prime, deviceFloat* intermediate, deviceFloat* x_L, deviceFloat* x_R, int* N, deviceFloat* sigma, bool* refine, bool* coarsen, deviceFloat* error) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -410,73 +540,88 @@ void SEM::get_solution(size_t N_elements, size_t N_interpolation_points, const E
 }
 
 __global__
-void SEM::interpolate_to_boundaries(size_t N_elements, Element_t* elements, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right, const deviceFloat* lagrange_interpolant_derivative_left, const deviceFloat* lagrange_interpolant_derivative_right) {
+void SEM::interpolate_to_boundaries(size_t N_elements, SEM::Element_t* elements, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
     for (size_t i = index; i < N_elements; i += stride) {
-        elements[i].interpolate_to_boundaries(lagrange_interpolant_left, lagrange_interpolant_right, lagrange_interpolant_derivative_left, lagrange_interpolant_derivative_right);
+        elements[i].interpolate_to_boundaries(lagrange_interpolant_left, lagrange_interpolant_right);
     }
 }
 
 __global__
-void SEM::adapt(unsigned long N_elements, Element_t* elements, Element_t* new_elements, Face_t* new_faces, const unsigned long* block_offsets, int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights) {
+void SEM::interpolate_q_to_boundaries(size_t N_elements, SEM::Element_t* elements, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t i = index; i < N_elements; i += stride) {
+        elements[i].interpolate_q_to_boundaries(lagrange_interpolant_left, lagrange_interpolant_right);
+    }
+}
+
+__global__
+void SEM::hp_adapt(unsigned long N_elements, SEM::Element_t* elements, SEM::Element_t* new_elements, const unsigned long* block_offsets, deviceFloat delta_x_min, int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights) {
     const unsigned long index = blockIdx.x * blockDim.x + threadIdx.x;
     const unsigned long stride = blockDim.x * gridDim.x;
     const int thread_id = threadIdx.x;
     const int block_id = blockIdx.x;
     
     for (unsigned long i = index; i < N_elements; i += stride) {
-        if (elements[i].refine_ && elements[i].sigma_ < 1.0) {
-            unsigned long offset = 0;
-            for (unsigned long j = i - thread_id; j < i; ++j) {
-                offset += elements[j].refine_ * (elements[j].sigma_ < 1.0);
-            }
-            unsigned long new_index = N_elements + block_offsets[block_id] + offset;
-            
-            // Those are uninitialised because they are created via cudaMalloc, so they need to be set if we don't want the move constructor to delete random memory.
-            new_elements[i].phi_ = nullptr;
-            new_elements[i].phi_prime_ = nullptr;
-            new_elements[i].intermediate_ = nullptr;
-            new_elements[new_index].phi_ = nullptr;
-            new_elements[new_index].phi_prime_ = nullptr;
-            new_elements[new_index].intermediate_ = nullptr;
-
-            new_elements[i] = Element_t(elements[i].N_, elements[i].faces_[0], new_index, elements[i].x_[0], (elements[i].x_[0] + elements[i].x_[1]) * 0.5);
-            new_elements[new_index] = Element_t(elements[i].N_, new_index, elements[i].faces_[1], (elements[i].x_[0] + elements[i].x_[1]) * 0.5, elements[i].x_[1]);
-            new_elements[i].interpolate_from(elements[i], nodes, barycentric_weights);
-            new_elements[new_index].interpolate_from(elements[i], nodes, barycentric_weights);
-            
-            new_faces[new_index] = Face_t(i, new_index);
-            new_faces[elements[i].faces_[1]].elements_[0] = new_index;
+        unsigned long element_index = i + block_offsets[block_id];
+        for (unsigned long j = i - thread_id; j < i; ++j) {
+            element_index += elements[j].refine_ * (elements[j].sigma_ < 1.0) * (elements[j].delta_x_/2 >= delta_x_min);
         }
-        else if (elements[i].refine_ && elements[i].N_ < N_max) {
-            new_elements[i].phi_ = nullptr;
-            new_elements[i].phi_prime_ = nullptr;
-            new_elements[i].intermediate_ = nullptr;
 
-            new_elements[i] = Element_t(min(elements[i].N_ + 2, N_max), elements[i].faces_[0], elements[i].faces_[1], elements[i].x_[0], elements[i].x_[1]);
-            new_elements[i].interpolate_from(elements[i], nodes, barycentric_weights);
+        if (elements[i].refine_ && elements[i].sigma_ < 1.0 && elements[i].delta_x_/2 >= delta_x_min) {            
+            // Those are uninitialised because they are created via cudaMalloc, so they need to be set if we don't want the move constructor to delete random memory.
+            new_elements[element_index].phi_ = nullptr;
+            new_elements[element_index].q_ = nullptr;
+            new_elements[element_index].ux_ = nullptr;
+            new_elements[element_index].phi_prime_ = nullptr;
+            new_elements[element_index].intermediate_ = nullptr;
+            new_elements[element_index + 1].phi_ = nullptr;
+            new_elements[element_index + 1].q_ = nullptr;
+            new_elements[element_index + 1].ux_ = nullptr;
+            new_elements[element_index + 1].phi_prime_ = nullptr;
+            new_elements[element_index + 1].intermediate_ = nullptr;
+
+            new_elements[element_index] = SEM::Element_t(elements[i].N_, element_index, element_index + 1, elements[i].x_[0], (elements[i].x_[0] + elements[i].x_[1]) * 0.5);
+            new_elements[element_index + 1] = SEM::Element_t(elements[i].N_, element_index + 1,  element_index + 2, (elements[i].x_[0] + elements[i].x_[1]) * 0.5, elements[i].x_[1]);
+            new_elements[element_index].interpolate_from(elements[i], nodes, barycentric_weights);
+            new_elements[element_index + 1].interpolate_from(elements[i], nodes, barycentric_weights);
+        }
+        else if (elements[i].refine_ && elements[i].sigma_ >= 1.0 && elements[i].N_ < N_max) {
+            new_elements[element_index].phi_ = nullptr;
+            new_elements[element_index].q_ = nullptr;
+            new_elements[element_index].ux_ = nullptr;
+            new_elements[element_index].phi_prime_ = nullptr;
+            new_elements[element_index].intermediate_ = nullptr;
+
+            new_elements[element_index] = SEM::Element_t(min(elements[i].N_ + 2, N_max), element_index, element_index + 1, elements[i].x_[0], elements[i].x_[1]);
+            new_elements[element_index].interpolate_from(elements[i], nodes, barycentric_weights);
         }
         else {
             // Those are uninitialised because they are created via cudaMalloc, so they need to be set if we don't want the move constructor to delete random memory.
-            new_elements[i].phi_ = nullptr;
-            new_elements[i].phi_prime_ = nullptr;
-            new_elements[i].intermediate_ = nullptr;
+            new_elements[element_index].phi_ = nullptr;
+            new_elements[element_index].q_ = nullptr;
+            new_elements[element_index].ux_ = nullptr;
+            new_elements[element_index].phi_prime_ = nullptr;
+            new_elements[element_index].intermediate_ = nullptr;
             
-            new_elements[i] = std::move(elements[i]);
+            new_elements[element_index] = std::move(elements[i]);
+            new_elements[element_index].faces_ = {element_index, element_index + 1};
         }
     }
 }
 
 __global__
-void SEM::p_adapt(unsigned long N_elements, Element_t* elements, int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights) {
+void SEM::p_adapt(unsigned long N_elements, SEM::Element_t* elements, int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights) {
     const unsigned long index = blockIdx.x * blockDim.x + threadIdx.x;
     const unsigned long stride = blockDim.x * gridDim.x;
     
     for (unsigned long i = index; i < N_elements; i += stride) {
         if (elements[i].refine_ && elements[i].sigma_ >= 1.0 && elements[i].N_ < N_max) {
-            Element_t new_element(min(elements[i].N_ + 2, N_max), elements[i].faces_[0], elements[i].faces_[1], elements[i].x_[0], elements[i].x_[1]);
+            SEM::Element_t new_element(min(elements[i].N_ + 2, N_max), elements[i].faces_[0], elements[i].faces_[1], elements[i].x_[0], elements[i].x_[1]);
             new_element.interpolate_from(elements[i], nodes, barycentric_weights);
             elements[i] = std::move(new_element);
         }
@@ -492,4 +637,46 @@ bool SEM::almost_equal2(deviceFloat x, deviceFloat y) {
     return std::abs(x-y) <= FLT_EPSILON * std::abs(x+y) * ulp // CHECK change this to double equivalent if using double instead of float
         // unless the result is subnormal
         || std::abs(x-y) < FLT_MIN; // CHECK change this to 64F if using double instead of float
+}
+
+__global__
+void SEM::local_boundaries(size_t N_elements, size_t N_local_boundaries, Element_t* elements, const size_t* local_boundary_to_element) {
+    const unsigned long index = blockIdx.x * blockDim.x + threadIdx.x;
+    const unsigned long stride = blockDim.x * gridDim.x;
+    
+    for (unsigned long i = index; i < N_local_boundaries; i += stride) {
+        elements[N_elements + i].phi_L_ = elements[local_boundary_to_element[i]].phi_L_;
+        elements[N_elements + i].phi_R_ = elements[local_boundary_to_element[i]].phi_R_;
+        elements[N_elements + i].phi_prime_L_ = elements[local_boundary_to_element[i]].phi_prime_L_;
+        elements[N_elements + i].phi_prime_R_ = elements[local_boundary_to_element[i]].phi_prime_R_;
+    }
+}
+
+__global__
+void SEM::get_MPI_boundaries(size_t N_elements, size_t N_local_boundaries, size_t N_MPI_boundaries, const Element_t* elements, const Face_t* faces, deviceFloat* phi_L, deviceFloat* phi_R, deviceFloat* phi_prime_L, deviceFloat* phi_prime_R) {
+    const unsigned long index = blockIdx.x * blockDim.x + threadIdx.x;
+    const unsigned long stride = blockDim.x * gridDim.x;
+    
+    for (unsigned long i = index; i < N_MPI_boundaries; i += stride) {
+        const Element_t& boundary_element = elements[N_elements + N_local_boundaries + i];
+        const Face_t& boundary_face = faces[boundary_element.faces_[0]];
+        const Element_t& domain_element = elements[boundary_face.elements_[boundary_face.elements_[0] == N_elements + N_local_boundaries + i]];
+        phi_L[i] = domain_element.phi_L_;
+        phi_R[i] = domain_element.phi_R_;
+        phi_prime_L[i] = domain_element.phi_prime_L_;
+        phi_prime_R[i] = domain_element.phi_prime_R_;
+    }
+}
+
+__global__
+void SEM::put_MPI_boundaries(size_t N_elements, size_t N_local_boundaries, size_t N_MPI_boundaries, Element_t* elements, const deviceFloat* phi_L, const deviceFloat* phi_R, const deviceFloat* phi_prime_L, const deviceFloat* phi_prime_R) {
+    const unsigned long index = blockIdx.x * blockDim.x + threadIdx.x;
+    const unsigned long stride = blockDim.x * gridDim.x;
+    
+    for (unsigned long i = index; i < N_MPI_boundaries; i += stride) {
+        elements[N_elements + N_local_boundaries + i].phi_L_ = phi_L[i];
+        elements[N_elements + N_local_boundaries + i].phi_R_ = phi_R[i];
+        elements[N_elements + N_local_boundaries + i].phi_prime_L_ = phi_prime_L[i];
+        elements[N_elements + N_local_boundaries + i].phi_prime_R_ = phi_prime_R[i];
+    }
 }

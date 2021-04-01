@@ -54,16 +54,16 @@ void SEM::legendre_gauss_nodes_and_weights(int N, deviceFloat* nodes, deviceFloa
     }
 }
 
-void LegendrePolynomial_t::nodes_and_weights(int N_max, int blockSize, deviceFloat* nodes, deviceFloat* weights) {
+void SEM::LegendrePolynomial_t::nodes_and_weights(int N_max, int blockSize, deviceFloat* nodes, deviceFloat* weights, cudaStream_t &stream) {
     for (int N = 0; N <= N_max; ++N) {
         const int numBlocks = ((N + 1)/2 + blockSize) / blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
-        SEM::legendre_gauss_nodes_and_weights<<<numBlocks, blockSize>>>(N, nodes, weights);
+        SEM::legendre_gauss_nodes_and_weights<<<numBlocks, blockSize, 0, stream>>>(N, nodes, weights);
     }
 }
 
 // Algorithm 22
 __device__
-void LegendrePolynomial_t::polynomial_and_derivative(int N, deviceFloat x, deviceFloat &L_N, deviceFloat &L_N_prime) {
+void SEM::LegendrePolynomial_t::polynomial_and_derivative(int N, deviceFloat x, deviceFloat &L_N, deviceFloat &L_N_prime) {
     if (N == 0) {
         L_N = 1.0f;
         L_N_prime = 0.0f;
@@ -87,4 +87,30 @@ void LegendrePolynomial_t::polynomial_and_derivative(int N, deviceFloat x, devic
             L_N_1_prime = L_N_prime;
         }
     }
+}
+
+__device__
+deviceFloat SEM::LegendrePolynomial_t::polynomial(int N, deviceFloat x) {
+    if (N == 0) {
+        return 1.0f;
+    }
+    if (N == 1) {
+        return x;
+    }
+    
+    deviceFloat L_N_2 = 1.0f;
+    deviceFloat L_N_1 = x;
+    deviceFloat L_N_2_prime = 0.0f;
+    deviceFloat L_N_1_prime = 1.0f;
+    deviceFloat L_N;
+
+    for (int k = 2; k <= N; ++k) {
+        L_N = (2 * k - 1) * x * L_N_1/k - (k - 1) * L_N_2/k; // L_N_1(x) ??
+        const deviceFloat L_N_prime = L_N_2_prime + (2 * k - 1) * L_N_1;
+        L_N_2 = L_N_1;
+        L_N_1 = L_N;
+        L_N_2_prime = L_N_1_prime;
+        L_N_1_prime = L_N_prime;
+    }
+    return L_N;
 }

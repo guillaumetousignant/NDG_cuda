@@ -7,39 +7,73 @@
 #include "float_types.h"
 #include <vector>
 #include <limits>
-
-class Mesh_t {
-    public:
-        Mesh_t(size_t N_elements, int initial_N, deviceFloat x_min, deviceFloat x_max);
-        ~Mesh_t();
-
-        size_t N_elements_;
-        size_t N_faces_;
-        int initial_N_;
-        Element_t* elements_;
-        Face_t* faces_;
-
-        void set_initial_conditions(const deviceFloat* nodes);
-        void print();
-        void write_data(deviceFloat time, size_t N_interpolation_points, const deviceFloat* interpolation_matrices);
-        
-        template<typename Polynomial>
-        void solve(const deviceFloat CFL, const std::vector<deviceFloat> output_times, const NDG_t<Polynomial> &NDG, deviceFloat viscosity);
-
-    private:
-        int elements_numBlocks_;
-        int faces_numBlocks_;
-        deviceFloat* device_delta_t_array_;
-        deviceFloat* host_delta_t_array_;
-        unsigned long* device_refine_array_;
-        unsigned long* host_refine_array_;
-
-        void write_file_data(size_t N_interpolation_points, size_t N_elements, deviceFloat time, const deviceFloat* coordinates, const deviceFloat* velocity, const deviceFloat* du_dx, const deviceFloat* intermediate, const deviceFloat* x_L, const deviceFloat* x_R, const int* N, const deviceFloat* sigma, const bool* refine, const bool* coarsen, const deviceFloat* error);
-        deviceFloat get_delta_t(const deviceFloat CFL);
-        void adapt(int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights);
-};
+#include <mpi.h>
+#include <array>
 
 namespace SEM {
+    class Mesh_t {
+        public:
+            Mesh_t(size_t N_elements, int initial_N, deviceFloat delta_x_min, deviceFloat x_min, deviceFloat x_max, int adaptivity_interval, cudaStream_t &stream);
+            ~Mesh_t();
+
+            constexpr static int elements_blockSize_ = 32;
+            constexpr static int faces_blockSize_ = 32; // Same number of faces as elements for periodic BC
+            constexpr static int boundaries_blockSize_ = 32;
+            int elements_numBlocks_;
+            int faces_numBlocks_;
+            int boundaries_numBlocks_;
+            
+            size_t N_elements_global_;
+            size_t N_elements_;
+            size_t N_faces_;
+            size_t N_local_boundaries_;
+            size_t N_MPI_boundaries_;
+            size_t global_element_offset_;
+            size_t N_elements_per_process_;
+            int initial_N_;
+            deviceFloat delta_x_min_;
+            int adaptivity_interval_;
+            Element_t* elements_;
+            Face_t* faces_;
+            size_t* local_boundary_to_element_;
+            size_t* MPI_boundary_to_element_;
+            size_t* MPI_boundary_from_element_;
+
+            void set_initial_conditions(const deviceFloat* nodes);
+            void boundary_conditions();
+            void print();
+            void write_data(deviceFloat time, size_t N_interpolation_points, const deviceFloat* interpolation_matrices);
+            deviceFloat get_delta_t(const deviceFloat CFL);
+            
+            template<typename Polynomial>
+            void solve(const deviceFloat CFL, const std::vector<deviceFloat> output_times, const NDG_t<Polynomial> &NDG, deviceFloat viscosity);
+
+        private:
+            deviceFloat* device_delta_t_array_;
+            std::vector<deviceFloat> host_delta_t_array_;
+            unsigned long* device_refine_array_;
+            std::vector<unsigned long> host_refine_array_;
+            deviceFloat* device_boundary_phi_L_;
+            std::vector<deviceFloat> host_boundary_phi_L_;
+            deviceFloat* device_boundary_phi_R_;
+            std::vector<deviceFloat> host_boundary_phi_R_;
+            deviceFloat* device_boundary_phi_prime_L_;
+            std::vector<deviceFloat> host_boundary_phi_prime_L_;
+            deviceFloat* device_boundary_phi_prime_R_;
+            std::vector<deviceFloat> host_boundary_phi_prime_R_;
+            std::vector<size_t> host_MPI_boundary_to_element_;
+            std::vector<size_t> host_MPI_boundary_from_element_;
+            cudaStream_t &stream_;
+
+            std::vector<std::array<double, 4>> send_buffers_;
+            std::vector<std::array<double, 4>> receive_buffers_;
+            std::vector<MPI_Request> requests_;
+            std::vector<MPI_Status> statuses_;
+
+            void write_file_data(size_t N_interpolation_points, size_t N_elements, deviceFloat time, int rank, const std::vector<deviceFloat>& coordinates, const std::vector<deviceFloat>& velocity, const std::vector<deviceFloat>& du_dx, const std::vector<deviceFloat>& intermediate, const std::vector<deviceFloat>& x_L, const std::vector<deviceFloat>& x_R, const std::vector<int>& N, const std::vector<deviceFloat>& sigma, const bool* refine, const bool* coarsen, const std::vector<deviceFloat>& error);
+            void adapt(int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights);
+    };
+
     __global__
     void rk3_first_step(size_t N_elements, Element_t* elements, deviceFloat delta_t, deviceFloat g);
 
@@ -49,13 +83,23 @@ namespace SEM {
     __global__
     void calculate_fluxes(size_t N_faces, Face_t* faces, const Element_t* elements);
 
+    __global__
+    void calculate_q_fluxes(size_t N_faces, Face_t* faces, const Element_t* elements);
+
+    __device__
+    void matrix_vector_multiply(int N, const deviceFloat* matrix, const deviceFloat* vector, deviceFloat* result);
+
     // Algorithm 19
     __device__
-    void matrix_vector_derivative(deviceFloat viscosity, int N, const deviceFloat* derivative_matrices_hat, const deviceFloat* g_hat_derivative_matrices, const deviceFloat* phi, deviceFloat* phi_prime);
+    void matrix_vector_derivative(int N, const deviceFloat* derivative_matrices_hat, const deviceFloat* phi, deviceFloat* phi_prime);
 
     // Algorithm 60 (not really anymore)
     __global__
-    void compute_dg_derivative(deviceFloat viscosity, size_t N_elements, Element_t* elements, const Face_t* faces, const deviceFloat* weights, const deviceFloat* derivative_matrices_hat, const deviceFloat* g_hat_derivative_matrices, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right);
+    void compute_dg_derivative(size_t N_elements, Element_t* elements, const Face_t* faces, const deviceFloat* weights, const deviceFloat* derivative_matrices_hat, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right);
+
+    // Algorithm 60 (not really anymore)
+    __global__
+    void compute_dg_derivative2(deviceFloat viscosity, size_t N_elements, Element_t* elements, const Face_t* faces, const deviceFloat* weights, const deviceFloat* derivative_matrices_hat, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right);
 
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>
@@ -84,14 +128,18 @@ namespace SEM {
             for (int j = 0; j <= elements[i].N_; ++j) {
                 phi_max = max(phi_max, abs(elements[i].phi_[j]));
             }
-            deviceFloat delta_t = CFL * elements[i].delta_x_ * elements[i].delta_x_/(phi_max * elements[i].N_ * elements[i].N_);
+            const deviceFloat delta_t_nl = CFL * elements[i].delta_x_/(phi_max * elements[i].N_ * elements[i].N_);
+            const deviceFloat delta_t_viscous = CFL * elements[i].delta_x_ * elements[i].delta_x_/(elements[i].N_ * elements[i].N_);
+            deviceFloat delta_t = min(delta_t_nl, delta_t_viscous);
  
             if (i+blockSize < N_elements) {
                 phi_max = 0.0;
                 for (int j = 0; j <= elements[i+blockSize].N_; ++j) {
                     phi_max = max(phi_max, abs(elements[i+blockSize].phi_[j]));
                 }
-                delta_t = min(delta_t, CFL * elements[i+blockSize].delta_x_ * elements[i+blockSize].delta_x_/(phi_max * elements[i+blockSize].N_ * elements[i+blockSize].N_));
+                const deviceFloat delta_t_nl = CFL * elements[i+blockSize].delta_x_/(phi_max * elements[i+blockSize].N_ * elements[i+blockSize].N_);
+                const deviceFloat delta_t_viscous = CFL * elements[i+blockSize].delta_x_ * elements[i+blockSize].delta_x_/(elements[i+blockSize].N_ * elements[i+blockSize].N_);
+                delta_t = min(delta_t, min(delta_t_nl, delta_t_viscous));
             }
 
             sdata[tid] = min(sdata[tid], delta_t); 
@@ -126,7 +174,7 @@ namespace SEM {
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>
     __global__ 
-    void reduce_refine(size_t N_elements, const Element_t* elements, unsigned long *g_odata) {
+    void reduce_refine(size_t N_elements, deviceFloat delta_x_min, const Element_t* elements, unsigned long *g_odata) {
         __shared__ unsigned long sdata[(blockSize >= 64) ? blockSize : blockSize + blockSize/2]; // Because within a warp there is no branching and this is read up until blockSize + blockSize/2
         unsigned int tid = threadIdx.x;
         size_t i = blockIdx.x*(blockSize*2) + tid;
@@ -134,9 +182,9 @@ namespace SEM {
         sdata[tid] = 0;
 
         while (i < N_elements) { 
-            sdata[tid] += elements[i].refine_ * (elements[i].sigma_ < 1.0);
+            sdata[tid] += elements[i].refine_ * (elements[i].sigma_ < 1.0) * (elements[i].delta_x_/2 >= delta_x_min);
             if (i+blockSize < N_elements) {
-                sdata[tid] += elements[i+blockSize].refine_ * (elements[i+blockSize].sigma_ < 1.0);
+                sdata[tid] += elements[i+blockSize].refine_ * (elements[i+blockSize].sigma_ < 1.0) * (elements[i+blockSize].delta_x_/2 >= delta_x_min);
             }
             i += gridSize; 
         }

@@ -16,10 +16,14 @@ void SEM::chebyshev_gauss_nodes_and_weights(int N, deviceFloat* nodes, deviceFlo
     }
 }
 
-void ChebyshevPolynomial_t::nodes_and_weights(int N_max, int blockSize, deviceFloat* nodes, deviceFloat* weights) {
+void SEM::ChebyshevPolynomial_t::nodes_and_weights(int N_max, int blockSize, deviceFloat* nodes, deviceFloat* weights, cudaStream_t &stream) {
     for (int N = 0; N <= N_max; ++N) {
         const int numBlocks = (N + blockSize) / blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
-        SEM::chebyshev_gauss_nodes_and_weights<<<numBlocks, blockSize>>>(N, nodes, weights);
+        SEM::chebyshev_gauss_nodes_and_weights<<<numBlocks, blockSize, 0, stream>>>(N, nodes, weights);
     }
 }
 
+__device__
+deviceFloat SEM::ChebyshevPolynomial_t::polynomial(int N, deviceFloat x) {
+    return cos(N * acos(x));
+}
