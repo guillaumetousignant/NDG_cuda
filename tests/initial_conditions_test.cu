@@ -19,6 +19,7 @@ TEST_CASE("Initial conditions solution value", "Checks the node values are corre
     const std::array<deviceFloat, 2> x_span {-1.0, 1.0};
     const deviceFloat max_splits = 3;
     const deviceFloat delta_x_min = (x_span[1] - x_span[0])/(N_elements * std::pow(2, max_splits));
+    const int adaptivity_interval = 100;
     const double max_error = 1e-6;
 
     REQUIRE(N_test <= N_max);
@@ -27,7 +28,7 @@ TEST_CASE("Initial conditions solution value", "Checks the node values are corre
     cudaStreamCreate(&stream); 
     
     SEM::NDG_t<SEM::LegendrePolynomial_t> NDG(N_max, N_interpolation_points, stream);
-    SEM::Mesh_t mesh(N_elements, N_test, delta_x_min, x_span[0], x_span[1], stream);
+    SEM::Mesh_t mesh(N_elements, N_test, delta_x_min, x_span[0], x_span[1], adaptivity_interval, stream);
     mesh.set_initial_conditions(NDG.nodes_);
     cudaDeviceSynchronize();
     
@@ -107,6 +108,7 @@ TEST_CASE("Initial conditions boundary values", "Checks the extrapolated boundar
     const std::array<deviceFloat, 2> x_span {-1.0, 1.0};
     const deviceFloat max_splits = 3;
     const deviceFloat delta_x_min = (x_span[1] - x_span[0])/(N_elements * std::pow(2, max_splits));
+    const int adaptivity_interval = 100;
     const double max_error = 1e-6;
 
     REQUIRE(N_test <= N_max);
@@ -115,7 +117,7 @@ TEST_CASE("Initial conditions boundary values", "Checks the extrapolated boundar
     cudaStreamCreate(&stream); 
     
     SEM::NDG_t<SEM::LegendrePolynomial_t> NDG(N_max, N_interpolation_points, stream);
-    SEM::Mesh_t mesh(N_elements, N_test, delta_x_min, x_span[0], x_span[1], stream);
+    SEM::Mesh_t mesh(N_elements, N_test, delta_x_min, x_span[0], x_span[1], adaptivity_interval, stream);
     mesh.set_initial_conditions(NDG.nodes_);
     cudaDeviceSynchronize();
     SEM::interpolate_to_boundaries<<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, stream>>>(mesh.N_elements_, mesh.elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
