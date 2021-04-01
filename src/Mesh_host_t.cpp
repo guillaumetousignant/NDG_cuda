@@ -12,8 +12,9 @@ namespace fs = std::filesystem;
 
 constexpr hostFloat pi = 3.14159265358979323846;
 
-SEM::Mesh_host_t::Mesh_host_t(size_t N_elements, int initial_N, hostFloat x_min, hostFloat x_max) : 
+SEM::Mesh_host_t::Mesh_host_t(size_t N_elements, int initial_N, hostFloat delta_x_min, hostFloat x_min, hostFloat x_max) : 
         N_elements_global_(N_elements),
+        delta_x_min_(delta_x_min),
         initial_N_(initial_N) {
     // CHECK N_faces = N_elements only for periodic BC.
 
@@ -57,8 +58,6 @@ SEM::Mesh_host_t::Mesh_host_t(size_t N_elements, int initial_N, hostFloat x_min,
     build_faces(); // CHECK
 }
 
-SEM::Mesh_host_t::~Mesh_host_t() {}
-
 void SEM::Mesh_host_t::set_initial_conditions(const std::vector<std::vector<hostFloat>>& nodes) {
     for (size_t i = 0; i < N_elements_; ++i) {
         for (int j = 0; j <= elements_[i].N_; ++j) {
@@ -69,6 +68,15 @@ void SEM::Mesh_host_t::set_initial_conditions(const std::vector<std::vector<host
 }
 
 void SEM::Mesh_host_t::print() {
+    std::cout << "N elements global: " << N_elements_global_ << std::endl;
+    std::cout << "N elements local: " << N_elements_ << std::endl;
+    std::cout << "N faces: " << faces_.size() << std::endl;
+    std::cout << "N local boundaries: " << N_local_boundaries_ << std::endl;
+    std::cout << "N MPI boundaries: " << N_MPI_boundaries_ << std::endl;
+    std::cout << "Global element offset: " << global_element_offset_ << std::endl;
+    std::cout << "Number of elements per process: " << N_elements_per_process_ << std::endl;
+    std::cout << "Initial N: " << initial_N_ << std::endl;
+
     std::cout << std::endl << "Phi: " << std::endl;
     for (size_t i = 0; i < elements_.size(); ++i) {
         std::cout << '\t' << "Element " << i << ": ";
@@ -95,6 +103,15 @@ void SEM::Mesh_host_t::print() {
         std::cout << '\t' << '\t';
         std::cout << elements_[i].phi_L_ << " ";
         std::cout << elements_[i].phi_R_;
+        std::cout << std::endl;
+    }
+
+    std::cout << std::endl << "Phi prime interpolated: " << std::endl;
+    for (size_t i = 0; i < elements_.size(); ++i) {
+        std::cout << '\t' << "Element " << i << ": ";
+        std::cout << '\t' << '\t';
+        std::cout << elements_[i].phi_prime_L_ << " ";
+        std::cout << elements_[i].phi_prime_R_;
         std::cout << std::endl;
     }
 
@@ -139,6 +156,20 @@ void SEM::Mesh_host_t::print() {
         std::cout << faces_[i].flux_ << std::endl;
     }
 
+    std::cout << std::endl << "Derivative fluxes: " << std::endl;
+    for (size_t i = 0; i < faces_.size(); ++i) {
+        std::cout << '\t' << "Face " << i << ": ";
+        std::cout << '\t' << '\t';
+        std::cout << faces_[i].derivative_flux_ << std::endl;
+    }
+
+    std::cout << std::endl << "Non linear fluxes: " << std::endl;
+    for (size_t i = 0; i < faces_.size(); ++i) {
+        std::cout << '\t' << "Face " << i << ": ";
+        std::cout << '\t' << '\t';
+        std::cout << faces_[i].nl_flux_ << std::endl;
+    }
+
     std::cout << std::endl << "Elements: " << std::endl;
     for (size_t i = 0; i < faces_.size(); ++i) {
         std::cout << '\t' << "Face " << i << ": ";
@@ -146,6 +177,28 @@ void SEM::Mesh_host_t::print() {
         std::cout << faces_[i].elements_[0] << " ";
         std::cout << faces_[i].elements_[1] << std::endl;
     }
+
+    std::cout << std::endl << "Local boundaries elements: " << std::endl;
+    for (size_t i = 0; i < N_local_boundaries_; ++i) {
+        std::cout << '\t' << "Local boundary " << i << ": ";
+        std::cout << '\t';
+        std::cout << local_boundary_to_element_[i] << std::endl;
+    }
+
+    std::cout << std::endl << "MPI boundaries to elements: " << std::endl;
+    for (size_t i = 0; i < N_MPI_boundaries_; ++i) {
+        std::cout << '\t' << "MPI boundary " << i << ": ";
+        std::cout << '\t';
+        std::cout << MPI_boundary_to_element_[N_local_boundaries_ + i] << std::endl;
+    }
+
+    std::cout << std::endl << "MPI boundaries from elements: " << std::endl;
+    for (size_t i = 0; i < N_MPI_boundaries_; ++i) {
+        std::cout << '\t' << "MPI boundary " << i << ": ";
+        std::cout << '\t';
+        std::cout << MPI_boundary_from_element_[N_local_boundaries_ + i] << std::endl;
+    }
+    std::cout << std::endl;
 }
 
 void SEM::Mesh_host_t::write_file_data(size_t N_interpolation_points, size_t N_elements, hostFloat time, int rank, const std::vector<hostFloat>& velocity, const std::vector<hostFloat>& coordinates, const std::vector<hostFloat>& du_dx, const std::vector<hostFloat>& intermediate, const std::vector<hostFloat>& x_L, const std::vector<hostFloat>& x_R, const std::vector<int>& N, const std::vector<hostFloat>& sigma, const std::vector<bool>& refine, const std::vector<bool>& coarsen, const std::vector<hostFloat>& error) {
@@ -222,45 +275,83 @@ template void SEM::Mesh_host_t::solve(const hostFloat CFL, const std::vector<hos
 
 template<typename Polynomial>
 void SEM::Mesh_host_t::solve(const hostFloat CFL, const std::vector<hostFloat> output_times, const NDG_host_t<Polynomial> &NDG, hostFloat viscosity) {
+    int global_rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
     hostFloat time = 0.0;
     hostFloat t_end = output_times.back();
+    ProgressBar_t bar;
+    size_t timestep = 0;
 
     hostFloat delta_t = get_delta_t(CFL);
     write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
+    if (global_rank == 0) {
+        bar.update(0.0);
+        bar.set_status_text("Iteration 0");
+    }
 
     while (time < t_end) {
+        ++timestep;
+        delta_t = get_delta_t(CFL);
+        if (time + delta_t > t_end) {
+            delta_t = t_end - time;
+        }
+
         // Kinda algorithm 62
         hostFloat t = time;
-        interpolate_to_boundaries(NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_, NDG.lagrange_interpolant_derivative_left_, NDG.lagrange_interpolant_derivative_right_);
+        interpolate_to_boundaries(NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
         boundary_conditions();
         calculate_fluxes();
-        compute_dg_derivative(viscosity, NDG.weights_, NDG.derivative_matrices_hat_, NDG.g_hat_derivative_matrices_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        compute_dg_derivative(NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        interpolate_q_to_boundaries(NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        boundary_conditions();
+        calculate_q_fluxes();
+        compute_dg_derivative(viscosity, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
         rk3_first_step(delta_t, 1.0/3.0);
 
         t = time + 0.33333333333 * delta_t;
-        interpolate_to_boundaries(NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_, NDG.lagrange_interpolant_derivative_left_, NDG.lagrange_interpolant_derivative_right_);
+        interpolate_to_boundaries(NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
         boundary_conditions();
         calculate_fluxes();
-        compute_dg_derivative(viscosity, NDG.weights_, NDG.derivative_matrices_hat_, NDG.g_hat_derivative_matrices_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        compute_dg_derivative(viscosity, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        interpolate_q_to_boundaries(NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        boundary_conditions();
+        calculate_q_fluxes();
+        compute_dg_derivative(viscosity, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
         rk3_step(delta_t, -5.0/9.0, 15.0/16.0);
 
         t = time + 0.75 * delta_t;
-        interpolate_to_boundaries(NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_, NDG.lagrange_interpolant_derivative_left_, NDG.lagrange_interpolant_derivative_right_);
+        interpolate_to_boundaries(NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
         boundary_conditions();
         calculate_fluxes();
-        compute_dg_derivative(viscosity, NDG.weights_, NDG.derivative_matrices_hat_, NDG.g_hat_derivative_matrices_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        compute_dg_derivative(viscosity, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        interpolate_q_to_boundaries(NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        boundary_conditions();
+        calculate_q_fluxes();
+        compute_dg_derivative(viscosity, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
         rk3_step(delta_t, -153.0/128.0, 8.0/15.0);
 
         time += delta_t;
+        if (global_rank == 0) {
+            std::stringstream ss;
+            bar.update(time/t_end);
+            ss << "Iteration " << timestep;
+            bar.set_status_text(ss.str());
+        }
         for (auto const& e : std::as_const(output_times)) {
             if ((time >= e) && (time < e + delta_t)) {
                 estimate_error<Polynomial>(NDG.nodes_, NDG.weights_);
                 write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_);
-                adapt(NDG.N_max_, NDG.nodes_, NDG.barycentric_weights_);
-                delta_t = get_delta_t(CFL);
                 break;
             }
         }
+
+        if (timestep % 100 == 0) {
+            estimate_error<Polynomial>(NDG.nodes_, NDG.weights_);
+            adapt(NDG.N_max_, NDG.nodes_, NDG.barycentric_weights_);
+        }
+    }
+    if (global_rank == 0) {
+        std::cout << std::endl;
     }
 
     bool did_write = false;
@@ -469,8 +560,6 @@ void SEM::Mesh_host_t::calculate_fluxes() {
         hostFloat u;
         const hostFloat u_left = elements_[face.elements_[0]].phi_R_;
         const hostFloat u_right = elements_[face.elements_[1]].phi_L_;
-        const hostFloat u_prime_left = elements_[face.elements_[0]].phi_prime_R_;
-        const hostFloat u_prime_right = elements_[face.elements_[1]].phi_prime_L_;
 
         if (u_left < 0.0 && u_right > 0.0) { // In expansion fan
             u = 0.5 * (u_left + u_right);
@@ -492,8 +581,16 @@ void SEM::Mesh_host_t::calculate_fluxes() {
             }
         }
 
-        face.flux_ = 0.5 * u * u;
-        face.derivative_flux_ = 0.5 * (u_prime_left + u_prime_right);
+        face.flux_ = u_right;
+        face.nl_flux_ = 0.5f * u * u;
+    }
+}
+
+void SEM::Mesh_host_t::calculate_q_fluxes() {
+    for (auto& face: faces_) {
+        const deviceFloat u_prime_left = elements_[face.elements_[0]].phi_prime_R_;
+
+        face.derivative_flux_ = u_prime_left;
     }
 }
 
@@ -566,13 +663,6 @@ void SEM::Mesh_host_t::hp_adapt(int N_max, std::vector<Element_host_t>& new_elem
     }
 }
 
-
-void SEM::Mesh_host_t::copy_faces(std::vector<Face_host_t>& new_faces) {
-    for (size_t i = 0; i < faces_.size(); ++i) {
-        new_faces[i] = std::move(faces_[i]);
-    }
-}
-
 template void SEM::Mesh_host_t::estimate_error<SEM::ChebyshevPolynomial_host_t>(const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& weights);
 template void SEM::Mesh_host_t::estimate_error<SEM::LegendrePolynomial_host_t>(const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& weights);
 
@@ -583,40 +673,75 @@ void SEM::Mesh_host_t::estimate_error(const std::vector<std::vector<hostFloat>>&
     }
 }
 
+void SEM::matrix_vector_multiply(int N, const std::vector<hostFloat>& matrix, const std::vector<hostFloat>& vector, std::vector<hostFloat>& result) {
+    for (int i = 0; i < vector.size(); ++i) {
+        result[i] = 0.0f;
+        for (int j = 0; j < vector.size(); ++j) {
+            result[i] +=  matrix[i * (N + 1) + j] * vector[j];
+        }
+    }
+}
+
 // Algorithm 19
-void SEM::matrix_vector_derivative(hostFloat viscosity, int N, const std::vector<hostFloat>& derivative_matrices_hat,  const std::vector<hostFloat>& g_hat_derivative_matrices, const std::vector<hostFloat>& phi, std::vector<hostFloat>& phi_prime) {
+void SEM::matrix_vector_derivative(int N, const std::vector<hostFloat>& derivative_matrices_hat,  const std::vector<hostFloat>& phi, std::vector<hostFloat>& phi_prime) {
     // s = 0, e = N (p.55 says N - 1)
     
     for (size_t i = 0; i < phi.size(); ++i) {
         phi_prime[i] = 0.0f;
         for (size_t j = 0; j < phi.size(); ++j) {
-            phi_prime[i] -= derivative_matrices_hat[i * (N + 1) + j] * phi[j] * phi[j] * 0.5f + viscosity * g_hat_derivative_matrices[i * (N + 1) + j] * phi[j];
+            phi_prime[i] += derivative_matrices_hat[i * (N + 1) + j] * phi[j] * phi[j]/2;
         }
     }
 }
 
 // Algorithm 60 (not really anymore)
-void SEM::Mesh_host_t::compute_dg_derivative(hostFloat viscosity, const std::vector<std::vector<hostFloat>>& weights, const std::vector<std::vector<hostFloat>>& derivative_matrices_hat, const std::vector<std::vector<hostFloat>>& g_hat_derivative_matrices, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right) {
+void SEM::Mesh_host_t::compute_dg_derivative(const std::vector<std::vector<hostFloat>>& weights, const std::vector<std::vector<hostFloat>>& derivative_matrices_hat, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right) {
     for (size_t i = 0; i < N_elements_; ++i) {
         const hostFloat flux_L = faces_[elements_[i].faces_[0]].flux_;
         const hostFloat flux_R = faces_[elements_[i].faces_[1]].flux_;
-        const hostFloat derivative_flux_L = faces_[elements_[i].faces_[0]].derivative_flux_;
-        const hostFloat derivative_flux_R = faces_[elements_[i].faces_[1]].derivative_flux_;
 
-        SEM::matrix_vector_derivative(viscosity, elements_[i].N_, derivative_matrices_hat[elements_[i].N_], g_hat_derivative_matrices[elements_[i].N_], elements_[i].phi_, elements_[i].phi_prime_);
+        SEM::matrix_vector_multiply(elements_[i].N_, derivative_matrices_hat[elements_[i].N_], elements_[i].phi_, elements_[i].q_);
 
         for (int j = 0; j <= elements_[i].N_; ++j) {
-            elements_[i].phi_prime_[j] += (flux_L * lagrange_interpolant_left[elements_[i].N_][j] 
-                                        - flux_R * lagrange_interpolant_right[elements_[i].N_][j]) / weights[elements_[i].N_][j]
-                                        + (viscosity * derivative_flux_R * lagrange_interpolant_right[elements_[i].N_][j]
-                                        - viscosity * derivative_flux_L * lagrange_interpolant_left[elements_[i].N_][j]) / weights[elements_[i].N_][j];
+            elements_[i].q_[j] = -elements_[i].q_[j] - (flux_R * lagrange_interpolant_right[elements_[i].N_][j]
+                                                     - flux_L * lagrange_interpolant_left[elements_[i].N_][j]) / weights[elements_[i].N_][j];
+            elements_[i].q_[j] *= 2.0f/elements_[i].delta_x_;
+        }
+    }
+}
+
+// Algorithm 60 (not really anymore)
+void SEM::Mesh_host_t::compute_dg_derivative2(hostFloat viscosity, const std::vector<std::vector<hostFloat>>& weights, const std::vector<std::vector<hostFloat>>& derivative_matrices_hat, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right) {
+    for (size_t i = 0; i < N_elements_; ++i) {
+        const hostFloat derivative_flux_L = faces_[elements_[i].faces_[0]].derivative_flux_;
+        const hostFloat derivative_flux_R = faces_[elements_[i].faces_[1]].derivative_flux_;
+        const hostFloat nl_flux_L = faces_[elements_[i].faces_[0]].nl_flux_;
+        const hostFloat nl_flux_R = faces_[elements_[i].faces_[1]].nl_flux_;
+
+        SEM::matrix_vector_derivative(elements_[i].N_, derivative_matrices_hat[elements_[i].N_], elements_[i].phi_, elements_[i].ux_);
+        SEM::matrix_vector_multiply(elements_[i].N_, derivative_matrices_hat[elements_[i].N_], elements_[i].q_, elements_[i].phi_prime_);
+
+        for (int j = 0; j <= elements_[i].N_; ++j) {
+            elements_[i].phi_prime_[j] = -elements_[i].phi_prime_[j] * viscosity
+                                        - (derivative_flux_R * lagrange_interpolant_right[elements_[i].N_][j]
+                                           - derivative_flux_L * lagrange_interpolant_left[elements_[i].N_][j]) * viscosity /weights[elements_[i].N_][j]
+                                        - elements_[i].ux_[j]
+                                        + (nl_flux_L * lagrange_interpolant_left[elements_[i].N_][j] 
+                                            - nl_flux_R * lagrange_interpolant_right[elements_[i].N_][j]) / weights[elements_[i].N_][j];
+
             elements_[i].phi_prime_[j] *= 2.0f/elements_[i].delta_x_;
         }
     }
 }
 
-void SEM::Mesh_host_t::interpolate_to_boundaries(const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_derivative_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_derivative_right) {
+void SEM::Mesh_host_t::interpolate_to_boundaries(const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right) {
     for (size_t i = 0; i < N_elements_; ++i) {
-        elements_[i].interpolate_to_boundaries(lagrange_interpolant_left, lagrange_interpolant_right, lagrange_interpolant_derivative_left, lagrange_interpolant_derivative_right);
+        elements_[i].interpolate_to_boundaries(lagrange_interpolant_left, lagrange_interpolant_right);
+    }
+}
+
+void SEM::Mesh_host_t::interpolate_q_to_boundaries(const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right) {
+    for (size_t i = 0; i < N_elements_; ++i) {
+        elements_[i].interpolate_q_to_boundaries(lagrange_interpolant_left, lagrange_interpolant_right);
     }
 }
