@@ -39,6 +39,7 @@ namespace SEM {
             size_t* MPI_boundary_from_element_;
 
             void set_initial_conditions(const deviceFloat* nodes);
+            void boundary_conditions();
             void print();
             void write_data(deviceFloat time, size_t N_interpolation_points, const deviceFloat* interpolation_matrices);
             deviceFloat get_delta_t(const deviceFloat CFL);
@@ -70,7 +71,6 @@ namespace SEM {
 
             void write_file_data(size_t N_interpolation_points, size_t N_elements, deviceFloat time, int rank, const std::vector<deviceFloat>& coordinates, const std::vector<deviceFloat>& velocity, const std::vector<deviceFloat>& du_dx, const std::vector<deviceFloat>& intermediate, const std::vector<deviceFloat>& x_L, const std::vector<deviceFloat>& x_R, const std::vector<int>& N, const std::vector<deviceFloat>& sigma, const bool* refine, const bool* coarsen, const std::vector<deviceFloat>& error);
             void adapt(int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights);
-            void boundary_conditions();
     };
 
     __global__

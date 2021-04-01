@@ -10,8 +10,6 @@
 #include "LegendrePolynomial_t.cuh"
 
 TEST_CASE("Reduction", "Checks the reduction returns the right result.") {
-    MPI_Init(0, nullptr);
-
     const size_t N_elements = 1024; // N needs to be big enough for a value to be close to the max.
     const int N_max = 4;
     const int N_test = N_max;
@@ -39,5 +37,4 @@ TEST_CASE("Reduction", "Checks the reduction returns the right result.") {
     REQUIRE(std::abs(delta_t_min - delta_t) < error);
 
     cudaStreamDestroy(stream);
-    MPI_Finalize();
 }
