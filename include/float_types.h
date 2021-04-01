@@ -2,6 +2,6 @@
 #define NDG_FLOAT_TYPES_H
 
 typedef double hostFloat;
-typedef double deviceFloat;
+typedef float deviceFloat;
 
 #endif
