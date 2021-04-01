@@ -227,7 +227,7 @@ void SEM::NDG_host_t<Polynomial>::lagrange_interpolating_derivative_polynomials(
 // Algorithm 36
 template<typename Polynomial>
 void SEM::NDG_host_t<Polynomial>::normalize_lagrange_interpolating_derivative_polynomials(hostFloat x, int N, const std::vector<hostFloat>& nodes, const std::vector<hostFloat>& barycentric_weights, std::vector<hostFloat>& lagrange_derivative_interpolant) {
-    deviceFloat sum = 0.0;
+    hostFloat sum = 0.0;
     for (int i = 0; i <= N; ++i) {
         sum += barycentric_weights[i]/(x - nodes[i]);
     }

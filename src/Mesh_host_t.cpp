@@ -506,7 +506,7 @@ void SEM::Mesh_host_t::rk3_step(hostFloat delta_t, hostFloat a, hostFloat g) {
 hostFloat SEM::Mesh_host_t::get_delta_t(const hostFloat CFL) {   
     double delta_t_min_local = std::numeric_limits<double>::infinity();
     for (int i = 0; i < N_elements_; ++i) {
-        deviceFloat phi_max = 0.0;
+        hostFloat phi_max = 0.0;
         for (int j = 0; j <= elements_[i].N_; ++j) {
             phi_max = std::max(phi_max, std::abs(elements_[i].phi_[j]));
         }
@@ -609,7 +609,7 @@ void SEM::Mesh_host_t::calculate_fluxes() {
 
 void SEM::Mesh_host_t::calculate_q_fluxes() {
     for (auto& face: faces_) {
-        const deviceFloat u_prime_left = elements_[face.elements_[0]].phi_prime_R_;
+        const hostFloat u_prime_left = elements_[face.elements_[0]].phi_prime_R_;
 
         face.derivative_flux_ = u_prime_left;
     }
@@ -700,7 +700,7 @@ void SEM::Mesh_host_t::adapt(int N_max, const std::vector<std::vector<hostFloat>
         
         std::vector<MPI_Request> adaptivity_requests(3 * (N_elements_send_left + N_elements_recv_left + N_elements_send_right + N_elements_recv_right));
         std::vector<MPI_Status> adaptivity_statuses(3 * (N_elements_send_left + N_elements_recv_left + N_elements_send_right + N_elements_recv_right));
-        constexpr MPI_Datatype data_type = (sizeof(deviceFloat) == sizeof(float)) ? MPI_FLOAT : MPI_DOUBLE;
+        constexpr MPI_Datatype data_type = (sizeof(hostFloat) == sizeof(float)) ? MPI_FLOAT : MPI_DOUBLE;
 
         for (int i = 0; i < N_elements_send_left; ++i) {
             const int index = global_element_offset_current + i;
