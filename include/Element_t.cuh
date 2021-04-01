@@ -50,11 +50,11 @@ namespace SEM {
 
             // Algorithm 61
             __device__
-            void interpolate_to_boundaries(const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right, const deviceFloat* lagrange_interpolant_derivative_left, const deviceFloat* lagrange_interpolant_derivative_right);
+            void interpolate_to_boundaries(const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right);
 
             // Algorithm 61
             __device__
-            void interpolate_q_to_boundaries(const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right, const deviceFloat* lagrange_interpolant_derivative_left, const deviceFloat* lagrange_interpolant_derivative_right);
+            void interpolate_q_to_boundaries(const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right);
 
             template<typename Polynomial>
             __device__
@@ -110,10 +110,10 @@ namespace SEM {
     void get_solution(size_t N_elements, size_t N_interpolation_points, const Element_t* elements, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* phi, deviceFloat* phi_prime, deviceFloat* intermediate, deviceFloat* x_L, deviceFloat* x_R, int* N, deviceFloat* sigma, bool* refine, bool* coarsen, deviceFloat* error);
     
     __global__
-    void interpolate_to_boundaries(size_t N_elements, Element_t* elements, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right, const deviceFloat* lagrange_interpolant_derivative_left, const deviceFloat* lagrange_interpolant_derivative_right);
+    void interpolate_to_boundaries(size_t N_elements, Element_t* elements, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right);
 
     __global__
-    void interpolate_q_to_boundaries(size_t N_elements, Element_t* elements, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right, const deviceFloat* lagrange_interpolant_derivative_left, const deviceFloat* lagrange_interpolant_derivative_right);
+    void interpolate_q_to_boundaries(size_t N_elements, Element_t* elements, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right);
 
     __global__
     void hp_adapt(unsigned long N_elements, Element_t* elements, Element_t* new_elements, const unsigned long* block_offsets, deviceFloat delta_x_min, int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights);
