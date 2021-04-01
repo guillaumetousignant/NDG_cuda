@@ -9,7 +9,6 @@ namespace SEM {
     class NDG_host_t { 
         public: 
             NDG_host_t(int N_max, size_t N_interpolation_points);
-            ~NDG_host_t();
 
             int N_max_;
             size_t N_interpolation_points_;
@@ -21,8 +20,8 @@ namespace SEM {
             std::vector<std::vector<hostFloat>> lagrange_interpolant_derivative_left_;
             std::vector<std::vector<hostFloat>> lagrange_interpolant_derivative_right_;
             std::vector<std::vector<hostFloat>> derivative_matrices_;
-            std::vector<std::vector<hostFloat>> derivative_matrices_hat_;
             std::vector<std::vector<hostFloat>> g_hat_derivative_matrices_;
+            std::vector<std::vector<hostFloat>> derivative_matrices_hat_;
             std::vector<std::vector<hostFloat>> interpolation_matrices_;
 
             void print();

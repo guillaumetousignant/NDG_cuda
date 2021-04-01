@@ -23,8 +23,8 @@ SEM::NDG_host_t<Polynomial>::NDG_host_t(int N_max, size_t N_interpolation_points
         lagrange_interpolant_derivative_left_(N_max + 1),
         lagrange_interpolant_derivative_right_(N_max + 1),
         derivative_matrices_(N_max + 1),
-        derivative_matrices_hat_(N_max + 1),
         g_hat_derivative_matrices_(N_max + 1),
+        derivative_matrices_hat_(N_max + 1),
         interpolation_matrices_(N_max + 1) {
 
     for(int N = 0; N <= N_max; ++N) {
@@ -36,8 +36,8 @@ SEM::NDG_host_t<Polynomial>::NDG_host_t(int N_max, size_t N_interpolation_points
         lagrange_interpolant_derivative_left_[N] = std::vector<hostFloat>(N + 1);
         lagrange_interpolant_derivative_right_[N] = std::vector<hostFloat>(N + 1);
         derivative_matrices_[N] = std::vector<hostFloat>(std::pow(N + 1, 2));
-        derivative_matrices_hat_[N] = std::vector<hostFloat>(std::pow(N + 1, 2));
         g_hat_derivative_matrices_[N] = std::vector<hostFloat>(std::pow(N + 1, 2));
+        derivative_matrices_hat_[N] = std::vector<hostFloat>(std::pow(N + 1, 2));
         interpolation_matrices_[N] = std::vector<hostFloat>((N + 1) * N_interpolation_points_);
     }
 
@@ -55,13 +55,10 @@ SEM::NDG_host_t<Polynomial>::NDG_host_t(int N_max, size_t N_interpolation_points
         normalize_lagrange_interpolating_derivative_polynomials(-1.0, N, nodes_[N], barycentric_weights_[N], lagrange_interpolant_derivative_left_[N]);
         normalize_lagrange_interpolating_derivative_polynomials(1.0, N, nodes_[N], barycentric_weights_[N], lagrange_interpolant_derivative_right_[N]);
         polynomial_derivative_matrices_diagonal(N, derivative_matrices_[N]);
-        polynomial_derivative_matrices_hat(N, weights_[N], derivative_matrices_[N], derivative_matrices_hat_[N]);
         polynomial_cg_derivative_matrices(N, weights_[N], derivative_matrices_[N], g_hat_derivative_matrices_[N]);
+        polynomial_derivative_matrices_hat(N, weights_[N], derivative_matrices_[N], derivative_matrices_hat_[N]);
     }
 }
-
-template<typename Polynomial>
-SEM::NDG_host_t<Polynomial>::~NDG_host_t() {}
    
 template<typename Polynomial>
 void SEM::NDG_host_t<Polynomial>::print() {
