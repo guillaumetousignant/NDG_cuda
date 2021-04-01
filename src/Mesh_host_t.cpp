@@ -1,6 +1,7 @@
 #include "Mesh_host_t.h"
 #include "ChebyshevPolynomial_host_t.h"
 #include "LegendrePolynomial_host_t.h"
+#include "ProgressBar_t.h"
 #include <iostream>
 #include <fstream>
 #include <sstream> 
@@ -305,29 +306,29 @@ void SEM::Mesh_host_t::solve(const hostFloat CFL, const std::vector<hostFloat> o
         interpolate_q_to_boundaries(NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
         boundary_conditions();
         calculate_q_fluxes();
-        compute_dg_derivative(viscosity, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        compute_dg_derivative2(viscosity, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
         rk3_first_step(delta_t, 1.0/3.0);
 
         t = time + 0.33333333333 * delta_t;
         interpolate_to_boundaries(NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
         boundary_conditions();
         calculate_fluxes();
-        compute_dg_derivative(viscosity, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        compute_dg_derivative(NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
         interpolate_q_to_boundaries(NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
         boundary_conditions();
         calculate_q_fluxes();
-        compute_dg_derivative(viscosity, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        compute_dg_derivative2(viscosity, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
         rk3_step(delta_t, -5.0/9.0, 15.0/16.0);
 
         t = time + 0.75 * delta_t;
         interpolate_to_boundaries(NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
         boundary_conditions();
         calculate_fluxes();
-        compute_dg_derivative(viscosity, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        compute_dg_derivative(NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
         interpolate_q_to_boundaries(NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
         boundary_conditions();
         calculate_q_fluxes();
-        compute_dg_derivative(viscosity, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        compute_dg_derivative2(viscosity, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
         rk3_step(delta_t, -153.0/128.0, 8.0/15.0);
 
         time += delta_t;

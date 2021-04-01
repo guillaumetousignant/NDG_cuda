@@ -107,7 +107,6 @@ TEST_CASE("Initial conditions boundary values", "Checks the extrapolated boundar
     const std::array<deviceFloat, 2> x_span {-1.0, 1.0};
     const deviceFloat max_splits = 3;
     const deviceFloat delta_x_min = (x_span[1] - x_span[0])/(N_elements * std::pow(2, max_splits));
-    const deviceFloat viscosity = 1.0;
     const double max_error = 1e-6;
 
     REQUIRE(N_test <= N_max);
@@ -122,7 +121,7 @@ TEST_CASE("Initial conditions boundary values", "Checks the extrapolated boundar
     SEM::interpolate_to_boundaries<<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, stream>>>(mesh.N_elements_, mesh.elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
     mesh.boundary_conditions();
     SEM::calculate_fluxes<<<mesh.faces_numBlocks_, mesh.faces_blockSize_, 0, stream>>>(mesh.N_faces_, mesh.faces_, mesh.elements_);
-    SEM::compute_dg_derivative<<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, stream>>>(viscosity, mesh.N_elements_, mesh.elements_, mesh.faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.g_hat_derivative_matrices_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+    SEM::compute_dg_derivative<<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, stream>>>(mesh.N_elements_, mesh.elements_, mesh.faces_, NDG.weights_, NDG.derivative_matrices_hat_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
     SEM::interpolate_q_to_boundaries<<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, stream>>>(mesh.N_elements_, mesh.elements_, NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
     cudaDeviceSynchronize();
 
