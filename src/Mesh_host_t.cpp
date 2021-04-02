@@ -701,7 +701,7 @@ void SEM::Mesh_host_t::adapt(int N_max, const std::vector<std::vector<hostFloat>
         
         std::vector<MPI_Request> adaptivity_requests(3 * (N_elements_send_left + N_elements_recv_left + N_elements_send_right + N_elements_recv_right));
         std::vector<MPI_Status> adaptivity_statuses(3 * (N_elements_send_left + N_elements_recv_left + N_elements_send_right + N_elements_recv_right));
-        constexpr MPI_Datatype data_type = (sizeof(hostFloat) == sizeof(float)) ? MPI_FLOAT : MPI_DOUBLE;
+        const MPI_Datatype data_type = (sizeof(hostFloat) == sizeof(float)) ? MPI_FLOAT : MPI_DOUBLE;
 
         for (int i = 0; i < N_elements_send_left; ++i) {
             const int index = global_element_offset_current + i;

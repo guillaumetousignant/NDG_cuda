@@ -66,7 +66,7 @@ void SEM::ProgressBar_t::write_progress(std::ostream &os /* = std::cout */) {
     os << "]";
 
     // Write progress percentage
-    os << " " << min(static_cast<size_t>(progress_ * 100), size_t(100)) << "%"; 
+    os << " " << std::min(static_cast<size_t>(progress_ * 100), size_t(100)) << "%"; 
 
     // Write status text
     os << " " << status_text_;
