@@ -3,6 +3,7 @@ add_library(NDG_cuda
     Element_t.cu
     Face_t.cu
     Mesh_t.cu
+    Mesh2D_t.cu
     ChebyshevPolynomial_t.cu
     LegendrePolynomial_t.cu
     ChebyshevPolynomial_host_t.cpp
