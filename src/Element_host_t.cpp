@@ -2,6 +2,7 @@
 #include "ChebyshevPolynomial_host_t.h"
 #include "LegendrePolynomial_host_t.h"
 #include <cmath>
+#include <cfloat>
 
 SEM::Element_host_t::Element_host_t(int N, size_t face_L, size_t face_R, hostFloat x_L, hostFloat x_R) : 
         N_(N),
