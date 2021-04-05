@@ -17,7 +17,7 @@ int main(int argc, char* argv[]) {
     const size_t N_elements = 128;
     const int N_max = 16;
     const std::array<deviceFloat, 2> x{-1.0, 1.0};
-    const deviceFloat max_splits = 2;
+    const deviceFloat max_splits = 3;
     const deviceFloat delta_x_min = (x[1] - x[0])/(N_elements * std::pow(2, max_splits));
     const int adaptivity_interval = 100;
     const deviceFloat CFL = 0.2f;
