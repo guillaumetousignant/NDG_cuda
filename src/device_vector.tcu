@@ -41,7 +41,7 @@ SEM::device_vector<T>::device_vector(device_vector<T>&& other) noexcept : size_(
 
 template <typename T>
 __host__ __device__
-device_vector& SEM::device_vector<T>::operator=(const device_vector<T>& other) { // copy assignment
+auto SEM::device_vector<T>::operator=(const device_vector<T>& other) -> device_vector& { // copy assignment
     if (size_ != other.size()) {
         cudaFree(data_);
         size_ = other.size();
@@ -52,38 +52,38 @@ device_vector& SEM::device_vector<T>::operator=(const device_vector<T>& other) {
 
 template <typename T>
 __host__ __device__
-device_vector& SEM::device_vector<T>::operator=(device_vector<T>&& other) noexcept { // move assignment
+auto SEM::device_vector<T>::operator=(device_vector<T>&& other) noexcept -> device_vector& { // move assignment
     size_ = other.size();
     std::swap(data_, other.data_);
 }
 
 template <typename T>
 __device__
-T& SEM::device_vector<T>::operator[](size_t index) {
+auto SEM::device_vector<T>::operator[](size_t index) -> T& {
     return data_[index];
 }
 
 template <typename T>
 __device__
-const T& SEM::device_vector<T>::operator[](size_t index) const {
+auto SEM::device_vector<T>::operator[](size_t index) const -> const T& {
     return data_[index];
 }
 
 template <typename T>
 __host__ __device__
-size_t SEM::device_vector<T>::size() const {
+auto SEM::device_vector<T>::size() const -> size_t {
     return size_;
 }
 
 template <typename T>
 __host__ __device__
-T* SEM::device_vector<T>::data() {
+auto SEM::device_vector<T>::data() -> T* {
     return data_;
 }
 
 template <typename T>
 __host__
-void SEM::device_vector<T>::copy_from(const std::vector<T>& host_vector) {
+auto SEM::device_vector<T>::copy_from(const std::vector<T>& host_vector) -> void {
     if (size_ != host_vector.size()) {
         throw std::length_error("Host and device vectors must have the same length.");
     }
@@ -93,7 +93,7 @@ void SEM::device_vector<T>::copy_from(const std::vector<T>& host_vector) {
 
 template <typename T>
 __host__
-void SEM::device_vector<T>::copy_to(std::vector<T>& host_vector) const {
+auto SEM::device_vector<T>::copy_to(std::vector<T>& host_vector) const -> void {
     if (size_ != host_vector.size()) {
         throw std::length_error("Host and device vectors must have the same length.");
     }
@@ -103,20 +103,20 @@ void SEM::device_vector<T>::copy_to(std::vector<T>& host_vector) const {
 
 template <typename T>
 __host__
-void copy_from(const device_vector<T>& device_vector) {
+auto SEM::device_vector<T>::copy_from(const device_vector<T>& device_vector) -> void {
     if (size_ != device_vector.size()) {
         throw std::length_error("Both vectors must have the same length.");
     }
 
-    cudaMemcpy(data_, other.data(), size_ * sizeof(T), cudaMemcpyDeviceToDevice); // Apparently slower than using a kernel
+    cudaMemcpy(data_, device_vector.data(), size_ * sizeof(T), cudaMemcpyDeviceToDevice); // Apparently slower than using a kernel
 }
 
 template <typename T>
 __host__
-void copy_to(device_vector<T>& device_vector) const {
+auto SEM::device_vector<T>::copy_to(device_vector<T>& device_vector) const -> void {
     if (size_ != device_vector.size()) {
         throw std::length_error("Both vectors must have the same length.");
     }
 
-    cudaMemcpy(other.data(), data_, size_ * sizeof(T), cudaMemcpyDeviceToDevice); // Apparently slower than using a kernel
+    cudaMemcpy(device_vector.data(), data_, size_ * sizeof(T), cudaMemcpyDeviceToDevice); // Apparently slower than using a kernel
 }

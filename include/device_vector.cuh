@@ -26,37 +26,40 @@ namespace SEM {
             device_vector(device_vector<T>&& other) noexcept; // move constructor
 
             __host__ __device__
-            device_vector& operator=(const device_vector<T>& other); // copy assignment
+            auto operator=(const device_vector<T>& other) -> device_vector&; // copy assignment
 
             __host__ __device__
-            device_vector& operator=(device_vector<T>&& other) noexcept; // move assignment
+            auto operator=(device_vector<T>&& other) noexcept -> device_vector&; // move assignment
 
             T* data_;
             size_t size_;
 
             __device__
-            T& operator[](size_t index);
+            auto operator[](size_t index) -> T&;
 
             __device__
-            const T& operator[](size_t index) const;
+            auto operator[](size_t index) const -> const T&;
 
             __host__ __device__
-            size_t size() const;
+            auto size() const -> size_t;
 
             __host__ __device__
-            T* data();
+            auto data() -> T*;
+
+            __host__ __device__
+            auto data() const -> const T*;
 
             __host__
-            void copy_from(const std::vector<T>& host_vector);
+            auto copy_from(const std::vector<T>& host_vector) -> void;
 
             __host__
-            void copy_to(std::vector<T>& host_vector) const;
+            auto copy_to(std::vector<T>& host_vector) const -> void;
 
             __host__
-            void copy_from(const device_vector<T>& device_vector);
+            auto copy_from(const device_vector<T>& device_vector) -> void;
 
             __host__
-            void copy_to(device_vector<T>& device_vector) const;
+            auto copy_to(device_vector<T>& device_vector) const -> void;
     };
 }
 
