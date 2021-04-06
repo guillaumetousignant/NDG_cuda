@@ -1,0 +1,122 @@
+#include <stdexcept>
+
+template <typename T>
+__host__ __device__
+SEM::device_vector<T>::device_vector(size_t size) : size_(size) {
+    cudaMalloc(&data_, size_ * sizeof(T));
+}
+
+template <typename T>
+__host__ __device__
+SEM::device_vector<T>::device_vector() : size_(0) {
+    data_ = nullptr;
+}
+
+template <typename T>
+__host__ __device__
+SEM::device_vector<T>::~device_vector() {
+    cudaFree(data_);
+}
+
+template <typename T>
+__host__ __device__
+SEM::device_vector<T>::device_vector(const device_vector<T>& other) : size_(other.size()) { // copy constructor
+    cudaMalloc(&data_, size_ * sizeof(T));
+    cudaMemcpy(data_, other.data(), size_ * sizeof(T), cudaMemcpyDeviceToDevice); // Apparently slower than using a kernel
+}
+
+template <typename T>
+__host__
+SEM::device_vector<T>::device_vector(const std::vector<T>& other) : size_(other.size()) { // copy constructor
+    cudaMalloc(&data_, size_ * sizeof(T));
+    cudaMemcpy(data_, other.data(), size_ * sizeof(T), cudaMemcpyHostToDevice);
+}
+
+template <typename T>
+__host__ __device__
+SEM::device_vector<T>::device_vector(device_vector<T>&& other) noexcept : size_(other.size()) { // move constructor
+    data_ = other.data();
+    other.data_ = nullptr;
+}
+
+template <typename T>
+__host__ __device__
+device_vector& SEM::device_vector<T>::operator=(const device_vector<T>& other) { // copy assignment
+    if (size_ != other.size()) {
+        cudaFree(data_);
+        size_ = other.size();
+        cudaMalloc(&data_, size_ * sizeof(T));
+    }
+    cudaMemcpy(data_, other.data(), size_ * sizeof(T), cudaMemcpyDeviceToDevice); // Apparently slower than using a kernel
+}
+
+template <typename T>
+__host__ __device__
+device_vector& SEM::device_vector<T>::operator=(device_vector<T>&& other) noexcept { // move assignment
+    size_ = other.size();
+    std::swap(data_, other.data_);
+}
+
+template <typename T>
+__device__
+T& SEM::device_vector<T>::operator[](size_t index) {
+    return data_[index];
+}
+
+template <typename T>
+__device__
+const T& SEM::device_vector<T>::operator[](size_t index) const {
+    return data_[index];
+}
+
+template <typename T>
+__host__ __device__
+size_t SEM::device_vector<T>::size() const {
+    return size_;
+}
+
+template <typename T>
+__host__ __device__
+T* SEM::device_vector<T>::data() {
+    return data_;
+}
+
+template <typename T>
+__host__
+void SEM::device_vector<T>::copy_from(const std::vector<T>& host_vector) {
+    if (size_ != host_vector.size()) {
+        throw std::length_error("Host and device vectors must have the same length.");
+    }
+
+    cudaMemcpy(data_, host_vector.data(), size_ * sizeof(T), cudaMemcpyHostToDevice);
+}
+
+template <typename T>
+__host__
+void SEM::device_vector<T>::copy_to(std::vector<T>& host_vector) const {
+    if (size_ != host_vector.size()) {
+        throw std::length_error("Host and device vectors must have the same length.");
+    }
+
+    cudaMemcpy(host_vector.data(), data_, size_ * sizeof(T), cudaMemcpyDeviceToHost);
+}
+
+template <typename T>
+__host__
+void copy_from(const device_vector<T>& device_vector) {
+    if (size_ != device_vector.size()) {
+        throw std::length_error("Both vectors must have the same length.");
+    }
+
+    cudaMemcpy(data_, other.data(), size_ * sizeof(T), cudaMemcpyDeviceToDevice); // Apparently slower than using a kernel
+}
+
+template <typename T>
+__host__
+void copy_to(device_vector<T>& device_vector) const {
+    if (size_ != device_vector.size()) {
+        throw std::length_error("Both vectors must have the same length.");
+    }
+
+    cudaMemcpy(other.data(), data_, size_ * sizeof(T), cudaMemcpyDeviceToDevice); // Apparently slower than using a kernel
+}
