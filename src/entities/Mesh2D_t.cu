@@ -1,4 +1,4 @@
-#include "Mesh2D_t.cuh"
+#include "entities/Mesh2D_t.cuh"
 #include "ChebyshevPolynomial_t.cuh"
 #include "LegendrePolynomial_t.cuh"
 #include "ProgressBar_t.h"
@@ -11,92 +11,246 @@
 
 namespace fs = std::filesystem;
 
-SEM::Mesh2D_t::Mesh2D_t(size_t N_elements, int initial_N, deviceFloat delta_x_min, deviceFloat x_min, deviceFloat x_max, int adaptivity_interval, cudaStream_t &stream) : 
-        N_elements_global_(N_elements), 
-        delta_x_min_(delta_x_min), 
-        adaptivity_interval_(adaptivity_interval),      
+SEM::Entities::Mesh2D_t::Mesh2D_t(std::filesystem::path filename, int initial_N, cudaStream_t &stream) :       
         stream_(stream) {
 
-    int global_rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
-    int global_size;
-    MPI_Comm_size(MPI_COMM_WORLD, &global_size);
+    
+}
 
-    N_elements_per_process_ = (N_elements_global_ + global_size - 1)/global_size;
-    N_elements_ = (global_rank == global_size - 1) ? N_elements_per_process_ + N_elements_global_ - N_elements_per_process_ * global_size : N_elements_per_process_;
-    if (N_elements_ == N_elements_global_) {
-        N_local_boundaries_ = 2;
-        N_MPI_boundaries_ = 0;
-    }
-    else {
-        N_local_boundaries_ = 0;
-        N_MPI_boundaries_ = 2;
+void SEM::Entities::Mesh2D_t::read_su2(std::filesystem::path filename){
+    /*std::string line;
+    std::string token;
+    size_t value;
+
+    std::ifstream meshfile(filename);
+    if (!meshfile.is_open()) {
+        std::cerr << "Error: file '" << filename << "' could not be opened. Exiting." << std::endl;
+        exit(7);
     }
 
-    N_faces_ = N_elements_ + N_local_boundaries_ + N_MPI_boundaries_ - 1; 
-    global_element_offset_ = global_rank * N_elements_per_process_;
-    initial_N_ = initial_N;
-    elements_numBlocks_ = (N_elements_ + elements_blockSize_ - 1) / elements_blockSize_;
-    faces_numBlocks_ = (N_faces_ + faces_blockSize_ - 1) / faces_blockSize_;
-    boundaries_numBlocks_ = (N_local_boundaries_ + N_MPI_boundaries_ + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+    do {
+        std::getline(meshfile, line);  
+    }
+    while (line.empty());
+    
+    std::istringstream liness(line);
+    liness >> token;
+    liness >> value;
+    if (token != "NDIME=") {
+        std::cerr << "Error: first token should be 'NDIME=', found '" << token << "'. Exiting." << std::endl;
+        exit(8);
+    }
 
-    host_delta_t_array_ = std::vector<deviceFloat>(elements_numBlocks_);
-    host_refine_array_ = std::vector<unsigned long>(elements_numBlocks_);
-    host_boundary_phi_L_ = std::vector<deviceFloat>(N_MPI_boundaries_);
-    host_boundary_phi_R_ = std::vector<deviceFloat>(N_MPI_boundaries_);
-    host_boundary_phi_prime_L_ = std::vector<deviceFloat>(N_MPI_boundaries_);
-    host_boundary_phi_prime_R_ = std::vector<deviceFloat>(N_MPI_boundaries_);
-    host_MPI_boundary_to_element_ = std::vector<size_t>(N_MPI_boundaries_);
-    host_MPI_boundary_from_element_ = std::vector<size_t>(N_MPI_boundaries_);
-    send_buffers_ = std::vector<std::array<double, 4>>(N_MPI_boundaries_);
-    receive_buffers_ = std::vector<std::array<double, 4>>(N_MPI_boundaries_);
-    requests_ = std::vector<MPI_Request>(N_MPI_boundaries_*2);
-    statuses_ = std::vector<MPI_Status>(N_MPI_boundaries_*2);
+    if (value != 2) {
+        std::cerr << "Error: program only works for 2 dimensions, found '" << value << "'. Exiting." << std::endl;
+        exit(9);
+    }
 
-    cudaMalloc(&elements_, (N_elements_ + N_local_boundaries_ + N_MPI_boundaries_) * sizeof(Element_t));
-    cudaMalloc(&faces_, N_faces_ * sizeof(Face_t));
-    cudaMalloc(&local_boundary_to_element_, N_local_boundaries_ * sizeof(size_t));
-    cudaMalloc(&MPI_boundary_to_element_, N_MPI_boundaries_ * sizeof(size_t));
-    cudaMalloc(&MPI_boundary_from_element_, N_MPI_boundaries_ * sizeof(size_t));
-    cudaMalloc(&device_delta_t_array_, elements_numBlocks_ * sizeof(deviceFloat));
-    cudaMalloc(&device_refine_array_, elements_numBlocks_ * sizeof(unsigned long));
-    cudaMalloc(&device_boundary_phi_L_, N_MPI_boundaries_ * sizeof(deviceFloat));
-    cudaMalloc(&device_boundary_phi_R_, N_MPI_boundaries_ * sizeof(deviceFloat));
-    cudaMalloc(&device_boundary_phi_prime_L_, N_MPI_boundaries_ * sizeof(deviceFloat));
-    cudaMalloc(&device_boundary_phi_prime_R_, N_MPI_boundaries_ * sizeof(deviceFloat));
+    std::vector<Cell_t> farfield;
+    std::vector<Cell_t> wall;
+    std::vector<Cell_t> inlet;
 
-    const deviceFloat delta_x = (x_max - x_min)/N_elements_global_;
-    const deviceFloat x_min_local = x_min + delta_x * global_rank * N_elements_per_process_;
-    const deviceFloat x_max_local = x_min_local + N_elements_ * delta_x;
+    while (!meshfile.eof()) {
+        do {
+            std::getline(meshfile, line);  
+        }
+        while (line.empty() && !meshfile.eof());
 
-    SEM::build_elements<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, initial_N_, elements_, x_min_local, x_max_local);
-    SEM::build_boundaries<<<boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(N_elements_, N_elements_global_, N_local_boundaries_, N_MPI_boundaries_, elements_, global_element_offset_, local_boundary_to_element_, MPI_boundary_to_element_, MPI_boundary_from_element_);
-    SEM::build_faces<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(N_faces_, faces_);
+        std::istringstream liness(line);
+        liness >> token;
+        std::transform(token.begin(), token.end(), token.begin(),
+            [](unsigned char c){ return std::toupper(c); });
 
-    cudaMemcpy(host_MPI_boundary_to_element_.data(), MPI_boundary_to_element_, N_MPI_boundaries_ * sizeof(size_t), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_MPI_boundary_from_element_.data(), MPI_boundary_from_element_, N_MPI_boundaries_ * sizeof(size_t), cudaMemcpyDeviceToHost);
+        if (token == "NPOIN=") {
+            liness >> value;
+            nodes_ = std::vector<Node_t>(value);
+
+            for (size_t i = 0; i < nodes_.size(); ++i) {
+                std::getline(meshfile, line);
+                std::istringstream liness2(line);
+                liness2 >> nodes_[i].pos_[0] >> nodes_[i].pos_[1];
+            }
+        }
+        else if (token == "NELEM=") {
+            liness >> value;
+            cells_ = std::vector<Cell_t>(value);
+            n_cells_ = value;
+
+            for (size_t i = 0; i < cells_.size(); ++i) {
+                int n_sides;
+                size_t val[4];
+
+                std::getline(meshfile, line);
+                std::istringstream liness2(line);
+                liness2 >> token;
+                if (token == "9") {
+                    n_sides = 4;
+                    liness2 >> val[0] >> val[1] >> val[2] >> val[3];
+
+                    cells_[i] = Cell_t(n_sides);
+                    for (int j = 0; j < n_sides; ++j) {
+                        cells_[i].nodes_[j] = val[j];
+                    }
+                }
+                else if (token == "5") {
+                    n_sides = 3;
+                    liness2 >> val[0] >> val[1] >> val[2];
+
+                    cells_[i] = Cell_t(n_sides);
+                    for (int j = 0; j < n_sides; ++j) {
+                        cells_[i].nodes_[j] = val[j];
+                    }
+                }
+                else {
+                    std::cerr << "Error: expected token '9', found '" << token << "'. Exiting." << std::endl;
+                    exit(10);
+                }
+            }
+        }
+        else if (token == "NMARK=") {
+            int n_markers;
+            liness >> n_markers;
+
+            n_farfield_ = 0;
+            n_wall_ = 0;
+            n_inlet_ = 0;
+
+            for (int i = 0; i < n_markers; ++i) {
+                std::string type;
+                do {
+                    std::getline(meshfile, line);
+                    if (!line.empty()) {
+                        std::istringstream liness(line);
+                        liness >> token;
+                        liness >> type;
+                    }   
+                }
+                while (token != "MARKER_TAG=");
+                std::transform(type.begin(), type.end(), type.begin(),
+                    [](unsigned char c){ return std::tolower(c); });
+
+                if (type == "farfield") {
+                    do {
+                        std::getline(meshfile, line);
+                        if (!line.empty()) {
+                            std::istringstream liness(line);
+                            liness >> token;
+                            liness >> value;
+                        }   
+                    }
+                    while (token != "MARKER_ELEMS=");
+
+                    n_farfield_ += value;
+                    farfield.reserve(n_farfield_);
+
+                    for (size_t j = 0; j < value; ++j) {
+
+                        std::getline(meshfile, line);
+                        std::istringstream liness6(line);
+
+                        liness6 >> token;
+                        if (token != "3") {
+                            std::cerr << "Error: expected token '3', found '" << token << "'. Exiting." << std::endl;
+                            exit(11);
+                        }
+
+                        size_t val0, val1;
+                        liness6 >> val0 >> val1;
+                        farfield.push_back(Cell_t(2));
+                        farfield[farfield.size() - 1].nodes_[0] = val0;
+                        farfield[farfield.size() - 1].nodes_[1] = val1;
+                    }
+                }
+                else if (type == "wall") {
+                    do {
+                        std::getline(meshfile, line);
+                        if (!line.empty()) {
+                            std::istringstream liness(line);
+                            liness >> token;
+                            liness >> value;
+                        }   
+                    }
+                    while (token != "MARKER_ELEMS=");
+
+                    n_wall_ += value;
+                    wall.reserve(n_wall_);
+
+                    for (size_t j = 0; j < value; ++j) {
+
+                        std::getline(meshfile, line);
+                        std::istringstream liness6(line);
+
+                        liness6 >> token;
+                        if (token != "3") {
+                            std::cerr << "Error: expected token '3', found '" << token << "'. Exiting." << std::endl;
+                            exit(12);
+                        }
+
+                        size_t val0, val1;
+                        liness6 >> val0 >> val1;
+                        wall.push_back(Cell_t(2));
+                        wall[wall.size() - 1].nodes_[0] = val0;
+                        wall[wall.size() - 1].nodes_[1] = val1;
+                    }
+                }
+                else if (type == "inlet") {
+                    do {
+                        std::getline(meshfile, line);
+                        if (!line.empty()) {
+                            std::istringstream liness(line);
+                            liness >> token;
+                            liness >> value;
+                        }   
+                    }
+                    while (token != "MARKER_ELEMS=");
+
+                    n_inlet_ += value;
+                    inlet.reserve(n_inlet_);
+
+                    for (size_t j = 0; j < value; ++j) {
+
+                        std::getline(meshfile, line);
+                        std::istringstream liness6(line);
+
+                        liness6 >> token;
+                        if (token != "3") {
+                            std::cerr << "Error: expected token '3', found '" << token << "'. Exiting." << std::endl;
+                            exit(12);
+                        }
+
+                        size_t val0, val1;
+                        liness6 >> val0 >> val1;
+                        inlet.push_back(Cell_t(2));
+                        inlet[inlet.size() - 1].nodes_[0] = val0;
+                        inlet[inlet.size() - 1].nodes_[1] = val1;
+                    }
+                }
+                else {
+                    std::cerr << "Error: expected marker tag 'farfield', 'wall' or 'inlet', found '" << type << "'. Exiting." << std::endl;
+                    exit(6);
+                }
+            }
+        }
+        else {
+            if (!meshfile.eof()) {
+                std::cerr << "Error: expected marker 'NPOIN=', 'NELEM=' or 'NMARK=', found '" << token << "'. Exiting." << std::endl;
+                exit(13);
+            }
+        }
+    }
+
+    meshfile.close();
+
+    cells_.insert(std::end(cells_), std::begin(farfield), std::end(farfield));
+    cells_.insert(std::end(cells_), std::begin(wall), std::end(wall));
+    cells_.insert(std::end(cells_), std::begin(inlet), std::end(inlet));*/
 }
 
-SEM::Mesh2D_t::~Mesh2D_t() {
-    SEM::free_elements<<<elements_numBlocks_, elements_blockSize_>>>(N_elements_ + N_local_boundaries_ + N_MPI_boundaries_, elements_);
-    cudaFree(elements_);
-    cudaFree(faces_);
-    cudaFree(local_boundary_to_element_);
-    cudaFree(MPI_boundary_to_element_);
-    cudaFree(MPI_boundary_from_element_);
-    cudaFree(device_delta_t_array_);
-    cudaFree(device_refine_array_);
-    cudaFree(device_boundary_phi_L_);
-    cudaFree(device_boundary_phi_R_);
-    cudaFree(device_boundary_phi_prime_L_);
-    cudaFree(device_boundary_phi_prime_R_);
+void SEM::Entities::Mesh2D_t::set_initial_conditions(const deviceFloat* nodes) {
+
 }
 
-void SEM::Mesh2D_t::set_initial_conditions(const deviceFloat* nodes) {
-    SEM::initial_conditions<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, nodes);
-}
-
-void SEM::Mesh2D_t::print() {
+void SEM::Entities::Mesh2D_t::print() {
     std::vector<Face_t> host_faces(N_faces_);
     std::vector<Element_t> host_elements(N_elements_ + N_local_boundaries_ + N_MPI_boundaries_);
     std::vector<size_t> host_local_boundary_to_element(N_local_boundaries_);
@@ -229,7 +383,7 @@ void SEM::Mesh2D_t::print() {
     std::cout << std::endl;
 }
 
-void SEM::Mesh2D_t::write_file_data(size_t N_interpolation_points, size_t N_elements, deviceFloat time, int rank, const std::vector<deviceFloat>& coordinates, const std::vector<deviceFloat>& velocity, const std::vector<deviceFloat>& du_dx, const std::vector<deviceFloat>& intermediate, const std::vector<deviceFloat>& x_L, const std::vector<deviceFloat>& x_R, const std::vector<int>& N, const std::vector<deviceFloat>& sigma, const bool* refine, const bool* coarsen, const std::vector<deviceFloat>& error) {
+void SEM::Entities::Mesh2D_t::write_file_data(size_t N_interpolation_points, size_t N_elements, deviceFloat time, int rank, const std::vector<deviceFloat>& coordinates, const std::vector<deviceFloat>& velocity, const std::vector<deviceFloat>& du_dx, const std::vector<deviceFloat>& intermediate, const std::vector<deviceFloat>& x_L, const std::vector<deviceFloat>& x_R, const std::vector<int>& N, const std::vector<deviceFloat>& sigma, const bool* refine, const bool* coarsen, const std::vector<deviceFloat>& error) {
     fs::path save_dir = fs::current_path() / "data";
     fs::create_directory(save_dir);
 
@@ -277,7 +431,7 @@ void SEM::Mesh2D_t::write_file_data(size_t N_interpolation_points, size_t N_elem
     file_element.close();
 }
 
-void SEM::Mesh2D_t::write_data(deviceFloat time, size_t N_interpolation_points, const deviceFloat* interpolation_matrices) {
+void SEM::Entities::Mesh2D_t::write_data(deviceFloat time, size_t N_interpolation_points, const deviceFloat* interpolation_matrices) {
     deviceFloat* x;
     deviceFloat* phi;
     deviceFloat* phi_prime;
@@ -346,22 +500,22 @@ void SEM::Mesh2D_t::write_data(deviceFloat time, size_t N_interpolation_points, 
     cudaFree(error);
 }
 
-template void SEM::Mesh2D_t::solve(const deviceFloat delta_t, const std::vector<deviceFloat> output_times, const NDG_t<ChebyshevPolynomial_t> &NDG, deviceFloat viscosity); // Get with the times c++, it's crazy I have to do this
-template void SEM::Mesh2D_t::solve(const deviceFloat delta_t, const std::vector<deviceFloat> output_times, const NDG_t<LegendrePolynomial_t> &NDG, deviceFloat viscosity);
+template void SEM::Entities::Mesh2D_t::solve(const deviceFloat delta_t, const std::vector<deviceFloat> output_times, const NDG_t<ChebyshevPolynomial_t> &NDG, deviceFloat viscosity); // Get with the times c++, it's crazy I have to do this
+template void SEM::Entities::Mesh2D_t::solve(const deviceFloat delta_t, const std::vector<deviceFloat> output_times, const NDG_t<LegendrePolynomial_t> &NDG, deviceFloat viscosity);
 
 template<typename Polynomial>
-void SEM::Mesh2D_t::solve(const deviceFloat CFL, const std::vector<deviceFloat> output_times, const NDG_t<Polynomial> &NDG, deviceFloat viscosity) {
+void SEM::Entities::Mesh2D_t::solve(const deviceFloat CFL, const std::vector<deviceFloat> output_times, const NDG_t<Polynomial> &NDG, deviceFloat viscosity) {
     
 }
 
-deviceFloat SEM::Mesh2D_t::get_delta_t(const deviceFloat CFL) {   
+deviceFloat SEM::Entities::Mesh2D_t::get_delta_t(const deviceFloat CFL) {   
     return 0.0;
 }
 
-void SEM::Mesh2D_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights) {
+void SEM::Entities::Mesh2D_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights) {
     
 }
 
-void SEM::Mesh2D_t::boundary_conditions() {
+void SEM::Entities::Mesh2D_t::boundary_conditions() {
     
 }

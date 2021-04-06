@@ -1,9 +1,8 @@
-add_library(NDG_cuda
+add_library(SEM
     NDG_t.cu
     Element_t.cu
     Face_t.cu
     Mesh_t.cu
-    Mesh2D_t.cu
     ChebyshevPolynomial_t.cu
     LegendrePolynomial_t.cu
     ChebyshevPolynomial_host_t.cpp
@@ -14,47 +13,49 @@ add_library(NDG_cuda
     Face_host_t.cpp
     ProgressBar_t.cpp)
 
-target_include_directories(NDG_cuda PUBLIC 
-    $<INSTALL_INTERFACE:include/NDG_cuda/>    
+add_subdirectory(entities)
+
+target_include_directories(SEM PUBLIC 
+    $<INSTALL_INTERFACE:include/SEM/>    
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/>)
 
 # Cuda stuff
-set_target_properties(NDG_cuda PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-set_property(TARGET NDG_cuda PROPERTY CUDA_ARCHITECTURES 61) # sm_61 is GTX 10X0
-target_compile_features(NDG_cuda PRIVATE cxx_std_17)
+set_target_properties(SEM PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+set_property(TARGET SEM PROPERTY CUDA_ARCHITECTURES 61) # sm_61 is GTX 10X0
+target_compile_features(SEM PRIVATE cxx_std_17)
 if(NOT ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug"))
-    set_property(TARGET NDG_cuda PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
+    set_property(TARGET SEM PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
 endif()
-target_compile_options(NDG_cuda PUBLIC "$<$<AND:$<COMPILE_LANGUAGE:CUDA>,$<CONFIG:DEBUG>>:-lineinfo>")
-target_compile_options(NDG_cuda PUBLIC "$<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>")
+target_compile_options(SEM PUBLIC "$<$<AND:$<COMPILE_LANGUAGE:CUDA>,$<CONFIG:DEBUG>>:-lineinfo>")
+target_compile_options(SEM PUBLIC "$<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>")
 
 # MPI stuff
 find_package(MPI REQUIRED CXX)
-target_link_libraries(NDG_cuda PUBLIC MPI::MPI_CXX)
+target_link_libraries(SEM PUBLIC MPI::MPI_CXX)
 
-install(TARGETS NDG_cuda 
-    EXPORT NDG_cuda-export
+install(TARGETS SEM 
+    EXPORT SEM-export
     DESTINATION lib)
 
 if(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_INSTALL_PREFIX)
     install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ 
-        DESTINATION include/NDG_cuda
+        DESTINATION include/SEM
         FILES_MATCHING PATTERN "*.cuh")
 endif()
 
-install(EXPORT NDG_cuda-export
+install(EXPORT SEM-export
   FILE
     NDG_cudaConfig.cmake
   NAMESPACE
-    NDG_cuda::
+  SEM::
   DESTINATION
-    lib/cmake/NDG_cuda
+    lib/cmake/SEM
 )
 
 add_executable(NDG 
     main.cu)
 
-target_link_libraries(NDG PRIVATE NDG_cuda)
+target_link_libraries(NDG PRIVATE SEM)
 set_target_properties(NDG PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 set_property(TARGET NDG PROPERTY CUDA_ARCHITECTURES 61) # sm_61 is GTX 10X0
 target_compile_features(NDG PRIVATE cxx_std_17)
@@ -67,7 +68,7 @@ install(TARGETS NDG DESTINATION bin)
 add_executable(NDG_host 
     main.cpp)
 
-target_link_libraries(NDG_host PRIVATE NDG_cuda)
+target_link_libraries(NDG_host PRIVATE SEM)
 set_property(TARGET NDG_host PROPERTY CUDA_ARCHITECTURES 61) # sm_61 is GTX 10X0
 target_compile_features(NDG_host PRIVATE cxx_std_17)
 if(NOT ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug"))

@@ -13,5 +13,6 @@ namespace SEM {
 
 #include "Vec2.cuh"
 #include "device_vector.cuh"
+#include "Mesh2D_t.cuh"
 
 #endif

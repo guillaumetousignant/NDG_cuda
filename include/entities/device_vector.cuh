@@ -3,7 +3,7 @@
 
 #include <vector>
 
-namespace SEM {
+namespace SEM { namespace Entities {
     template<typename T>
     class device_vector { 
         public: 
@@ -61,7 +61,7 @@ namespace SEM {
             __host__
             auto copy_to(device_vector<T>& device_vector) const -> void;
     };
-}
+}}
 
 #include "entities/device_vector.tcu"
 

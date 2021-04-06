@@ -4,17 +4,19 @@
 #include "Element_t.cuh"
 #include "Face_t.cuh"
 #include "NDG_t.cuh"
+#include "entities/device_vector.cuh"
+#include "entities/Vec2.cuh"
 #include "float_types.h"
 #include <vector>
 #include <limits>
 #include <mpi.h>
 #include <array>
+#include <filesystem>
 
-namespace SEM {
+namespace SEM { namespace Entities {
     class Mesh2D_t {
         public:
-            Mesh2D_t(size_t N_elements, int initial_N, deviceFloat delta_x_min, deviceFloat x_min, deviceFloat x_max, int adaptivity_interval, cudaStream_t &stream);
-            ~Mesh2D_t();
+            Mesh2D_t(std::filesystem::path filename, int initial_N, cudaStream_t &stream);
 
             constexpr static int elements_blockSize_ = 32;
             constexpr static int faces_blockSize_ = 32; // Same number of faces as elements for periodic BC
@@ -39,6 +41,7 @@ namespace SEM {
             size_t* MPI_boundary_to_element_;
             size_t* MPI_boundary_from_element_;
 
+            void read_su2(std::filesystem::path filename);
             void set_initial_conditions(const deviceFloat* nodes);
             void boundary_conditions();
             void print();
@@ -73,6 +76,6 @@ namespace SEM {
             void write_file_data(size_t N_interpolation_points, size_t N_elements, deviceFloat time, int rank, const std::vector<deviceFloat>& coordinates, const std::vector<deviceFloat>& velocity, const std::vector<deviceFloat>& du_dx, const std::vector<deviceFloat>& intermediate, const std::vector<deviceFloat>& x_L, const std::vector<deviceFloat>& x_R, const std::vector<int>& N, const std::vector<deviceFloat>& sigma, const bool* refine, const bool* coarsen, const std::vector<deviceFloat>& error);
             void adapt(int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights);
     };
-}
+}}
 
 #endif
