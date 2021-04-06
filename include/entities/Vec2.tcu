@@ -12,7 +12,7 @@ SEM::Entities::Vec2<T>::Vec2(T x, T2 y) : v_{x, y} {}
 
 template <typename T>
 __host__ __device__
-explicit SEM::Entities::Vec2<T>::Vec2(T x) : v_{x, x} {}
+SEM::Entities::Vec2<T>::Vec2(T x) : v_{x, x} {}
 
 template <typename T>
 template <class T2>
@@ -381,18 +381,6 @@ auto SEM::Entities::Vec2<T>::clamp(T2 minimum, T3 maximum) -> Vec2<T>& {
     min(maximum);
     max(minimum);
     return *this;
-}
-
-template <typename T>
-__host__ __device__
-auto SEM::Entities::Vec2<T>::x() const -> T {
-    return v_[0];
-}
-
-template <typename T>
-__host__ __device__
-auto SEM::Entities::Vec2<T>::y() const -> T {
-    return v_[1];
 }
 
 template <typename T>

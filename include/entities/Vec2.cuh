@@ -594,22 +594,6 @@ namespace SEM { namespace Entities {
             auto clamp(T2 minimum, T3 maximum) -> Vec2<T>&;
 
             /**
-             * @brief Returns the x component of the vector
-             * 
-             * @return T x component of the vector.
-             */
-            __host__ __device__
-            auto x() const -> T;
-            
-            /**
-             * @brief Returns the y component of the vector
-             * 
-             * @return T y component of the vector.
-             */
-            __host__ __device__
-            auto y() const -> T;
-
-            /**
              * @brief Returns a reference to the x component of the vector
              * 
              * @return T& Reference to the x component of the vector.
