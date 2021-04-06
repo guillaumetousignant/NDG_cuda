@@ -63,6 +63,6 @@ namespace SEM {
     };
 }
 
-#include "device_vector.tcu"
+#include "entities/device_vector.tcu"
 
 #endif
