@@ -18,7 +18,7 @@ class Solution:
         self.intermediate = intermediate
 
 class Solution_element:
-    def __init__(self, x, x_L, x_R, N, sigma, refine, coarsen, error):
+    def __init__(self, x, x_L, x_R, N, sigma, refine, coarsen, error, delta_x):
         self.x = x
         self.x_L = x_L
         self.x_R = x_R
@@ -27,6 +27,7 @@ class Solution_element:
         self.refine = refine
         self.coarsen = coarsen
         self.error = error
+        self.delta_x = delta_x
 
 def read_file(filename: Path, timesteps: dict) -> dict:
     with open(filename, 'r') as file:
@@ -86,6 +87,7 @@ def read_element_file(filename: Path, timesteps: dict) -> dict:
         refine = np.zeros(N)
         coarsen = np.zeros(N)
         error = np.zeros(N)
+        delta_x = np.zeros(N)
 
         for i in range(N):
             numbers = lines[i+3].split()
@@ -97,6 +99,7 @@ def read_element_file(filename: Path, timesteps: dict) -> dict:
             refine[i] = float(numbers[5])
             coarsen[i] = float(numbers[6])
             error[i] = float(numbers[7])
+            delta_x[i] = float(numbers[8])
 
         if time in timesteps:
             timesteps[time].x = np.append(timesteps[time].x, x)
@@ -107,8 +110,9 @@ def read_element_file(filename: Path, timesteps: dict) -> dict:
             timesteps[time].refine = np.append(timesteps[time].refine, refine)
             timesteps[time].coarsen = np.append(timesteps[time].coarsen, coarsen)
             timesteps[time].error = np.append(timesteps[time].error, error)
+            timesteps[time].delta_x = np.append(timesteps[time].delta_x, delta_x)
         else:
-            timesteps[time] = Solution_element(x, x_L, x_R, N_array, sigma, refine, coarsen, error)
+            timesteps[time] = Solution_element(x, x_L, x_R, N_array, sigma, refine, coarsen, error, delta_x)
     
     return timesteps
 
@@ -186,6 +190,7 @@ sigma_fig, sigma_ax = plt.subplots(1, 1)
 refine_fig, refine_ax = plt.subplots(1, 1)
 coarsen_fig, coarsen_ax = plt.subplots(1, 1)
 error_fig, error_ax = plt.subplots(1, 1)
+delta_x_fig, delta_x_ax = plt.subplots(1, 1)
 
 for time in times_element:
     timestep = timesteps_element[time]
@@ -196,6 +201,7 @@ for time in times_element:
     refine_ax.plot(timestep.x, timestep.refine, color=color_map(normalised_time), marker='+', markeredgewidth=2, markersize=16, label=f"t = {time} s", linestyle='')
     coarsen_ax.plot(timestep.x, timestep.coarsen, color=color_map(normalised_time), marker='+', markeredgewidth=2, markersize=16, label=f"t = {time} s", linestyle='')
     error_ax.semilogy(timestep.x, timestep.error, color=color_map(normalised_time), marker='+', markeredgewidth=2, markersize=16, label=f"t = {time} s", linestyle='')
+    delta_x_ax.semilogy(timestep.x, timestep.delta_x, color=color_map(normalised_time), marker='+', markeredgewidth=2, markersize=16, label=f"t = {time} s", linestyle='')
     
     for x_L in timestep.x_L:
         N_ax.axvline(x=x_L, color=color_map(normalised_time), alpha=vline_alpha, linestyle=vline_linestyle)
@@ -203,11 +209,13 @@ for time in times_element:
         refine_ax.axvline(x=x_L, color=color_map(normalised_time), alpha=vline_alpha, linestyle=vline_linestyle)
         coarsen_ax.axvline(x=x_L, color=color_map(normalised_time), alpha=vline_alpha, linestyle=vline_linestyle)
         error_ax.axvline(x=x_L, color=color_map(normalised_time), alpha=vline_alpha, linestyle=vline_linestyle)
+        delta_x_ax.axvline(x=x_L, color=color_map(normalised_time), alpha=vline_alpha, linestyle=vline_linestyle)
     N_ax.axvline(x=timestep.x_R[-1], color=color_map(normalised_time), alpha=vline_alpha, linestyle=vline_linestyle)
     sigma_ax.axvline(x=timestep.x_R[-1], color=color_map(normalised_time), alpha=vline_alpha, linestyle=vline_linestyle)
     refine_ax.axvline(x=timestep.x_R[-1], color=color_map(normalised_time), alpha=vline_alpha, linestyle=vline_linestyle)
     coarsen_ax.axvline(x=timestep.x_R[-1], color=color_map(normalised_time), alpha=vline_alpha, linestyle=vline_linestyle)
     error_ax.axvline(x=timestep.x_R[-1], color=color_map(normalised_time), alpha=vline_alpha, linestyle=vline_linestyle)
+    delta_x_ax.axvline(x=timestep.x_R[-1], color=color_map(normalised_time), alpha=vline_alpha, linestyle=vline_linestyle)
 
 N_ax.grid()
 N_ax.set_ylabel('N [-]')
@@ -243,5 +251,12 @@ error_ax.set_xlabel('x [m]')
 error_ax.set_title("Error estimation along x")
 error_ax.legend(loc='best')
 error_fig.canvas.set_window_title('Error estimation')
+
+delta_x_ax.grid()
+delta_x_ax.set_ylabel('$\Delta_x$ [m]')
+delta_x_ax.set_xlabel('x [m]')
+delta_x_ax.set_title("$\Delta_x$ along x")
+delta_x_ax.legend(loc='best')
+delta_x_fig.canvas.set_window_title('Delta x')
 
 plt.show()

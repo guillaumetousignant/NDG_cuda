@@ -509,7 +509,7 @@ void SEM::move_elements(size_t N_elements, Element_t* elements, Element_t* new_e
 }
 
 __global__
-void SEM::get_solution(size_t N_elements, size_t N_interpolation_points, const SEM::Element_t* elements, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* phi, deviceFloat* phi_prime, deviceFloat* intermediate, deviceFloat* x_L, deviceFloat* x_R, int* N, deviceFloat* sigma, bool* refine, bool* coarsen, deviceFloat* error) {
+void SEM::get_solution(size_t N_elements, size_t N_interpolation_points, const SEM::Element_t* elements, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* phi, deviceFloat* phi_prime, deviceFloat* intermediate, deviceFloat* x_L, deviceFloat* x_R, int* N, deviceFloat* sigma, bool* refine, bool* coarsen, deviceFloat* error, deviceFloat* delta_x) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -536,6 +536,7 @@ void SEM::get_solution(size_t N_elements, size_t N_interpolation_points, const S
         refine[i] = elements[i].refine_;
         coarsen[i] = elements[i].coarsen_;
         error[i] = elements[i].error_;
+        delta_x[i] = elements[i].delta_x_;
     }
 }
 

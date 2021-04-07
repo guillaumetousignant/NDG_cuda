@@ -43,6 +43,7 @@ TEST_CASE("Initial conditions solution value", "Checks the node values are corre
     bool* refine;
     bool* coarsen;
     deviceFloat* error;
+    deviceFloat* delta_x;
     std::vector<deviceFloat> host_x(mesh.N_elements_ * N_interpolation_points);
     std::vector<deviceFloat> host_phi(mesh.N_elements_ * N_interpolation_points);
     std::vector<deviceFloat> host_phi_prime(mesh.N_elements_ * N_interpolation_points);
@@ -54,6 +55,7 @@ TEST_CASE("Initial conditions solution value", "Checks the node values are corre
     bool* host_refine = new bool[mesh.N_elements_]; // Vectors of bools can be messed-up by some implementations
     bool* host_coarsen = new bool[mesh.N_elements_]; // Like they won't be an array of bools but packed in integers, in which case getting them from Cuda will fail.
     std::vector<deviceFloat> host_error(mesh.N_elements_);
+    std::vector<deviceFloat> host_delta_x(mesh.N_elements_);
     cudaMalloc(&x, mesh.N_elements_ * N_interpolation_points * sizeof(deviceFloat));
     cudaMalloc(&phi, mesh.N_elements_ * N_interpolation_points * sizeof(deviceFloat));
     cudaMalloc(&phi_prime, mesh.N_elements_ * N_interpolation_points * sizeof(deviceFloat));
@@ -65,8 +67,9 @@ TEST_CASE("Initial conditions solution value", "Checks the node values are corre
     cudaMalloc(&refine, mesh.N_elements_ * sizeof(bool));
     cudaMalloc(&coarsen, mesh.N_elements_ * sizeof(bool));
     cudaMalloc(&error, mesh.N_elements_ * sizeof(deviceFloat));
+    cudaMalloc(&delta_x, mesh.N_elements_ * sizeof(deviceFloat));
 
-    SEM::get_solution<<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, stream>>>(mesh.N_elements_, N_interpolation_points, mesh.elements_, NDG.interpolation_matrices_, x, phi, phi_prime, intermediate, x_L, x_R, N, sigma, refine, coarsen, error);
+    SEM::get_solution<<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, stream>>>(mesh.N_elements_, N_interpolation_points, mesh.elements_, NDG.interpolation_matrices_, x, phi, phi_prime, intermediate, x_L, x_R, N, sigma, refine, coarsen, error, delta_x);
     
     cudaMemcpy(host_x.data(), x , mesh.N_elements_ * N_interpolation_points * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_phi.data(), phi, mesh.N_elements_ * N_interpolation_points * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
@@ -79,6 +82,7 @@ TEST_CASE("Initial conditions solution value", "Checks the node values are corre
     cudaMemcpy(host_refine, refine, mesh.N_elements_ * sizeof(bool), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_coarsen, coarsen, mesh.N_elements_ * sizeof(bool), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_error.data(), error, mesh.N_elements_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_delta_x.data(), delta_x, mesh.N_elements_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
 
     for (int i = 0; i < N_elements * N_interpolation_points; ++i) {
         const double expected = SEM::g(host_x[i]);
@@ -98,6 +102,7 @@ TEST_CASE("Initial conditions solution value", "Checks the node values are corre
     cudaFree(refine);
     cudaFree(coarsen);
     cudaFree(error);
+    cudaFree(delta_x);
 }
 
 TEST_CASE("Initial conditions boundary values", "Checks the extrapolated boundary values are correct after initial conditions.") {   
