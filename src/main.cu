@@ -14,7 +14,7 @@ constexpr deviceFloat pi = 3.14159265358979323846;
 int main(int argc, char* argv[]) {
     MPI_Init(&argc, &argv);
 
-    const size_t N_elements = 1024;
+    const size_t N_elements = 128;
     const int N_max = 16;
     const std::array<deviceFloat, 2> x{-1.0, 1.0};
     const deviceFloat max_splits = 3;
