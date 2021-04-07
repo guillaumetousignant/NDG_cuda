@@ -126,7 +126,9 @@ for filename in data_path.glob("output_element_t*.dat"):
 
 # Plotting 
 times = sorted(timesteps.keys())
+time_span = times[-1] - times[0] if len(times) > 1 else 1
 times_element = sorted(timesteps_element.keys())
+time_span_element = times_element[-1] - times_element[0] if len(times_element) > 1 else 1
 
 vline_alpha = 0.2
 vline_linestyle = '--'
@@ -138,7 +140,7 @@ intermediate_fig, intermediate_ax = plt.subplots(1, 1)
 
 for time in times:
     timestep = timesteps[time]
-    normalised_time = (time - times[0])/(times[-1] - times[0])
+    normalised_time = (time - times[0])/time_span
 
     ux_ax.plot(timestep.x[0], timestep.ux[0], color=color_map(normalised_time), label=f"t = {time} s")
     ux_prime_ax.plot(timestep.x[0], timestep.ux_prime[0], color=color_map(normalised_time), label=f"t = {time} s")
@@ -187,7 +189,7 @@ error_fig, error_ax = plt.subplots(1, 1)
 
 for time in times_element:
     timestep = timesteps_element[time]
-    normalised_time = (time - times_element[0])/(times_element[-1] - times_element[0])
+    normalised_time = (time - times_element[0])/time_span_element
 
     N_ax.plot(timestep.x, timestep.N, color=color_map(normalised_time), marker='+', markeredgewidth=2, markersize=16, label=f"t = {time} s", linestyle='')
     sigma_ax.plot(timestep.x, timestep.sigma, color=color_map(normalised_time), marker='+', markeredgewidth=2, markersize=16, label=f"t = {time} s", linestyle='')
