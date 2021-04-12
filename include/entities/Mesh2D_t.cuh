@@ -18,6 +18,14 @@ namespace SEM { namespace Entities {
         public:
             Mesh2D_t(std::filesystem::path filename, int initial_N, cudaStream_t &stream);
 
+            SEM::Entities::device_vector<SEM::Entities::Vec2<deviceFloat>> nodes_;
+            SEM::Entities::device_vector<std::array<size_t, 4>> element_to_nodes_;
+            
+            size_t n_elements_;
+            
+            
+            
+
             constexpr static int elements_blockSize_ = 32;
             constexpr static int faces_blockSize_ = 32; // Same number of faces as elements for periodic BC
             constexpr static int boundaries_blockSize_ = 32;
