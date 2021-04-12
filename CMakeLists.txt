@@ -18,6 +18,11 @@ endif()
 
 add_subdirectory(src)
 
+option(BUILD_EXTRAS "Build extras, such as meshing tools." OFF)
+if (BUILD_EXTRAS)
+    add_subdirectory(extras)
+endif()
+
 option(BUILD_TESTING "Build all tests." OFF)
 if (BUILD_TESTING)
     enable_testing()

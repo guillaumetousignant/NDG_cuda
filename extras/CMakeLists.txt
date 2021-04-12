@@ -1,0 +1,2 @@
+add_subdirectory(mesh_generator)
+add_subdirectory(mesh_partitioner)
