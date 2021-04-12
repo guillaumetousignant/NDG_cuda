@@ -16,6 +16,8 @@ if(NOT DEFINED CMAKE_CUDA_STANDARD)
     set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 endif()
 
+set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
+
 add_subdirectory(src)
 
 option(BUILD_EXTRAS "Build extras, such as meshing tools." OFF)
