@@ -1,3 +1,5 @@
+find_package(CGNS REQUIRED)
+
 add_executable(mesh_generator main.cpp)
 
 target_link_libraries(mesh_generator PRIVATE SEM)
