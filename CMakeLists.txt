@@ -5,7 +5,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
     message(FATAL_ERROR "Do not build in-source. Please remove CMakeCache.txt and the CMakeFiles/ directory. Then build out-of-source.")
 endif()
 
-project(NDG_cuda VERSION 1.0.0 LANGUAGES CUDA CXX)
+project(NDG_cuda VERSION 1.0.0 LANGUAGES CUDA CXX C)
 
 #enable_language(CUDA) # Put this somewhere conditionally if CUDA is optional
 include(CheckLanguage)
