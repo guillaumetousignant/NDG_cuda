@@ -25,15 +25,15 @@ int main(int argc, char* argv[]) {
     const int y_res = (input_y_res.empty()) ? 4 : std::stoi(input_y_res);
 
     /* create gridpoints for simple example: */
-    double x[9][17], y[9][17];
-    const int nj = 17;
-    const int nk = 9;
-    for (int k = 0; k < nk; ++k)
+    std::vector<double> x(x_res * y_res);
+    std::vector<double> y(x_res * y_res);
+
+    for (int i = 0; i < x_res; ++i)
     {
-        for (int j = 0; j < nj; ++j)
+        for (int j = 0; j < y_res; ++j)
         {
-            x[k][j]=k;
-            y[k][j]=j;
+            x[i * y_res + j] = i;
+            y[i * y_res + j] = j;
         }
     }
     std::cout << "Created simple 2D grid points" << std::endl;
@@ -72,8 +72,8 @@ int main(int argc, char* argv[]) {
 
     /* write grid coordinates (user must use SIDS-standard names here) */
     int index_coord;
-    cg_coord_write(index_file, index_base, index_zone, RealDouble, "CoordinateX", x, &index_coord);
-    cg_coord_write(index_file, index_base, index_zone, RealDouble, "CoordinateY", y,&index_coord);
+    cg_coord_write(index_file, index_base, index_zone, RealDouble, "CoordinateX", x.data(), &index_coord);
+    cg_coord_write(index_file, index_base, index_zone, RealDouble, "CoordinateY", y.data(), &index_coord);
 
     /* close CGNS file */
     cg_close(index_file);
