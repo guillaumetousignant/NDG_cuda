@@ -1,8 +1,8 @@
-#include "float_types.h"
-#include "NDG_t.cuh"
-#include "Mesh_t.cuh"
-#include "ChebyshevPolynomial_t.cuh"
-#include "LegendrePolynomial_t.cuh"
+#include "helpers/float_types.h"
+#include "entities/NDG_t.cuh"
+#include "meshes/Mesh_t.cuh"
+#include "polynomials/ChebyshevPolynomial_t.cuh"
+#include "polynomials/LegendrePolynomial_t.cuh"
 #include <iostream>
 #include <chrono>
 #include <vector>
@@ -78,8 +78,8 @@ int main(int argc, char* argv[]) {
     // Initialisation
     auto t_start_init = std::chrono::high_resolution_clock::now();
 
-    SEM::NDG_t<SEM::LegendrePolynomial_t> NDG(N_max, N_interpolation_points, stream);
-    SEM::Mesh_t mesh(N_elements, initial_N, delta_x_min, x[0], x[1], adaptivity_interval, stream);
+    SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> NDG(N_max, N_interpolation_points, stream);
+    SEM::Meshes::Mesh_t mesh(N_elements, initial_N, delta_x_min, x[0], x[1], adaptivity_interval, stream);
     mesh.set_initial_conditions(NDG.nodes_);
     cudaDeviceSynchronize();
 

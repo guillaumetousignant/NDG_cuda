@@ -1,4 +1,9 @@
 target_sources(SEM
     PRIVATE
-        Mesh2D_t.cu
+        Element_t.cu
+        Element_host_t.cpp
+        Face_t.cu
+        Face_host_t.cpp
+        NDG_t.cu
+        NDG_host_t.cpp
 )

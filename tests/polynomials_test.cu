@@ -2,10 +2,10 @@
 #include <iostream>
 #include <cmath>
 #include <array>
-#include "NDG_t.cuh"
-#include "ChebyshevPolynomial_t.cuh"
-#include "LegendrePolynomial_t.cuh"
-#include "float_types.h"
+#include "entities/NDG_t.cuh"
+#include "polynomials/ChebyshevPolynomial_t.cuh"
+#include "polynomials/LegendrePolynomial_t.cuh"
+#include "helpers/float_types.h"
 
 constexpr double pi = 3.14159265358979323846;
 
@@ -22,7 +22,7 @@ TEST_CASE("ChebyshevPolynomials", "Checks the Chebyshev polynomials"){
     cudaStream_t stream;
     cudaStreamCreate(&stream); 
     
-    SEM::NDG_t<SEM::ChebyshevPolynomial_t> NDG(N_max, N_interpolation_points, stream);
+    SEM::Entities::NDG_t<SEM::Polynomials::ChebyshevPolynomial_t> NDG(N_max, N_interpolation_points, stream);
 
     std::vector<deviceFloat> host_nodes(NDG.vector_length_);
     std::vector<deviceFloat> host_weights(NDG.vector_length_);
@@ -156,7 +156,7 @@ TEST_CASE("LegendrePolynomials", "Checks the Legendre polynomials"){
     cudaStream_t stream;
     cudaStreamCreate(&stream); 
     
-    SEM::NDG_t<SEM::LegendrePolynomial_t> NDG(N_max, N_interpolation_points, stream);
+    SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> NDG(N_max, N_interpolation_points, stream);
 
     std::vector<deviceFloat> host_nodes(NDG.vector_length_);
     std::vector<deviceFloat> host_weights(NDG.vector_length_);

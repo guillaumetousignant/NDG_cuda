@@ -11,8 +11,13 @@ namespace SEM {
     namespace Entities {}
 }
 
+#include "Element_t.cuh"
+#include "Element_host_t.h"
+#include "Face_t.cuh"
+#include "Face_host_t.h"
+#include "NDG_t.cuh"
+#include "NDG_host_t.h"
 #include "Vec2.cuh"
 #include "device_vector.cuh"
-#include "Mesh2D_t.cuh"
 
 #endif

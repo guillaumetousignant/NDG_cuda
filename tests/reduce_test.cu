@@ -4,10 +4,10 @@
 #include <array>
 #include <limits>
 #include <mpi.h>
-#include "float_types.h"
-#include "NDG_t.cuh"
-#include "Mesh_t.cuh"
-#include "LegendrePolynomial_t.cuh"
+#include "helpers/float_types.h"
+#include "entities/NDG_t.cuh"
+#include "meshes/Mesh_t.cuh"
+#include "polynomials/LegendrePolynomial_t.cuh"
 
 TEST_CASE("Reduction", "Checks the reduction returns the right result.") {
     const size_t N_elements = 1024; // N needs to be big enough for a value to be close to the max.
@@ -25,8 +25,8 @@ TEST_CASE("Reduction", "Checks the reduction returns the right result.") {
     cudaStream_t stream;
     cudaStreamCreate(&stream); 
 
-    SEM::NDG_t<SEM::LegendrePolynomial_t> NDG(N_max, N_interpolation_points, stream);
-    SEM::Mesh_t mesh(N_elements, N_test, delta_x_min, x[0], x[1], adaptivity_interval, stream);
+    SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> NDG(N_max, N_interpolation_points, stream);
+    SEM::Meshes::Mesh_t mesh(N_elements, N_test, delta_x_min, x[0], x[1], adaptivity_interval, stream);
     mesh.set_initial_conditions(NDG.nodes_);
 
     const deviceFloat delta_t_min = mesh.get_delta_t(CFL);

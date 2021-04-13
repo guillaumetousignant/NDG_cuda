@@ -1,19 +1,9 @@
-add_library(SEM
-    NDG_t.cu
-    Element_t.cu
-    Face_t.cu
-    Mesh_t.cu
-    ChebyshevPolynomial_t.cu
-    LegendrePolynomial_t.cu
-    ChebyshevPolynomial_host_t.cpp
-    LegendrePolynomial_host_t.cpp
-    NDG_host_t.cpp
-    Mesh_host_t.cpp
-    Element_host_t.cpp
-    Face_host_t.cpp
-    ProgressBar_t.cpp)
+add_library(SEM "")
 
 add_subdirectory(entities)
+add_subdirectory(helpers)
+add_subdirectory(meshes)
+add_subdirectory(polynomials)
 
 target_include_directories(SEM PUBLIC 
     $<INSTALL_INTERFACE:include/SEM/>    
