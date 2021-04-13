@@ -74,7 +74,7 @@ int main(int argc, char* argv[]) {
 
     /* close CGNS file */
     cg_close(index_file);
-    std::cout << "Successfully wrote grid to file grid_c.cgns" << std::endl;
+    std::cout << "Successfully wrote grid to file " <<  save_file << std::endl;
     
     return 0;
 }
