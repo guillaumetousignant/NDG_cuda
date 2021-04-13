@@ -25,15 +25,15 @@ int main(int argc, char* argv[]) {
     const int y_res = (input_y_res.empty()) ? 4 : std::stoi(input_y_res);
 
     /* create gridpoints for simple example: */
-    std::vector<double> x(x_res * y_res);
-    std::vector<double> y(x_res * y_res);
+    std::vector<double> x((x_res + 1) * (y_res + 1));
+    std::vector<double> y((x_res + 1) * (y_res + 1));
 
-    for (int i = 0; i < x_res; ++i)
+    for (int i = 0; i < x_res + 1; ++i)
     {
-        for (int j = 0; j < y_res; ++j)
+        for (int j = 0; j < y_res + 1; ++j)
         {
-            x[i * y_res + j] = i;
-            y[i * y_res + j] = j;
+            x[i * (y_res + 1) + j] = i;
+            y[i * (y_res + 1) + j] = j;
         }
     }
     std::cout << "Created simple 2D grid points" << std::endl;
@@ -54,21 +54,18 @@ int main(int argc, char* argv[]) {
     std::string zone_name("Zone  1");
 
     /* vertex size */
-    cgsize_t isize[3][2];
-    isize[0][0] = 21;
-    isize[0][1] = 17;
+    cgsize_t isize[3];
+    isize[0] = (x_res + 1) * (y_res + 1);
 
     /* cell size */
-    isize[1][0] = isize[0][0]-1;
-    isize[1][1] = isize[0][1]-1;
+    isize[1] = x_res * y_res;
 
     /* boundary vertex size (always zero for structured grids) */
-    isize[2][0] = 0;
-    isize[2][1] = 0;
+    isize[2] = 0;
 
     /* create zone */
     int index_zone;
-    cg_zone_write(index_file, index_base, zone_name.c_str(), *isize,Structured, &index_zone);
+    cg_zone_write(index_file, index_base, zone_name.c_str(), isize, Unstructured, &index_zone);
 
     /* write grid coordinates (user must use SIDS-standard names here) */
     int index_coord;
