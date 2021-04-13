@@ -1,63 +1,80 @@
+#include "helpers/InputParser_t.h"
 #include "cgnslib.h"
+#include <string>
 #include <iostream>
+#include <filesystem>
+
+namespace fs = std::filesystem;
 
 int main(int argc, char* argv[]) {
-    double x[9][17][21],y[9][17][21],z[9][17][21];
-    cgsize_t isize[3][3];
-    int ni,nj,nk,i,j,k;
-    int index_file,icelldim,iphysdim,index_base;
-    int index_zone,index_coord;
-    char basename[33],zonename[33];
+    const SEM::Helpers::InputParser_t input_parser(argc, argv);
+
+    const std::string input_filename = input_parser.getCmdOption("--filename");
+    const std::string filename = (input_filename.empty()) ? "mesh.cgns" : input_filename;
+
+    const std::string input_save_dir = input_parser.getCmdOption("--directory");
+    const fs::path save_dir = (input_save_dir.empty()) ? fs::current_path() / "meshes" : input_save_dir;
+
+    fs::create_directory(save_dir);
+    const fs::path save_file = save_dir / filename;
+
+    const std::string input_x_res = input_parser.getCmdOption("--xres");
+    const int x_res = (input_x_res.empty()) ? 4 : std::stoi(input_x_res);
+
+    const std::string input_y_res = input_parser.getCmdOption("--yres");
+    const int y_res = (input_y_res.empty()) ? 4 : std::stoi(input_y_res);
 
     /* create gridpoints for simple example: */
-    ni=21;
-    nj=17;
-    nk=9;
-    for (k=0; k < nk; ++k)
+    double x[9][17], y[9][17];
+    const int nj = 17;
+    const int nk = 9;
+    for (int k = 0; k < nk; ++k)
     {
-        for (j=0; j < nj; ++j)
+        for (int j = 0; j < nj; ++j)
         {
-        for (i=0; i < ni; ++i)
-        {
-            x[k][j][i]=i;
-            y[k][j][i]=j;
-            z[k][j][i]=k;
-        }
+            x[k][j]=k;
+            y[k][j]=j;
         }
     }
-    std::cout << "Created simple 3-D grid points" << std::endl;
+    std::cout << "Created simple 2D grid points" << std::endl;
 
     /* WRITE X, Y, Z GRID POINTS TO CGNS FILE */
     /* open CGNS file for write */
-    if (cg_open("grid_c.cgns",CG_MODE_WRITE,&index_file)) cg_error_exit();
+    int index_file;
+    if (cg_open(save_file.string().c_str(), CG_MODE_WRITE, &index_file)) cg_error_exit();
+
     /* create base (user can give any name) */
-    strcpy(basename,"Base");
-    icelldim=3;
-    iphysdim=3;
-    cg_base_write(index_file,basename,icelldim,iphysdim,&index_base);
+    std::string base_name("Base");
+    const int icelldim = 2;
+    const int iphysdim = 2;
+    int index_base;
+    cg_base_write(index_file, base_name.c_str(), icelldim, iphysdim, &index_base);
+
     /* define zone name (user can give any name) */
-    strcpy(zonename,"Zone  1");
+    std::string zone_name("Zone  1");
+
     /* vertex size */
-    isize[0][0]=21;
-    isize[0][1]=17;
-    isize[0][2]=9;
+    cgsize_t isize[3][2];
+    isize[0][0] = 21;
+    isize[0][1] = 17;
+
     /* cell size */
-    isize[1][0]=isize[0][0]-1;
-    isize[1][1]=isize[0][1]-1;
-    isize[1][2]=isize[0][2]-1;
+    isize[1][0] = isize[0][0]-1;
+    isize[1][1] = isize[0][1]-1;
+
     /* boundary vertex size (always zero for structured grids) */
-    isize[2][0]=0;
-    isize[2][1]=0;
-    isize[2][2]=0;
+    isize[2][0] = 0;
+    isize[2][1] = 0;
+
     /* create zone */
-    cg_zone_write(index_file,index_base,zonename,*isize,Structured,&index_zone);
+    int index_zone;
+    cg_zone_write(index_file, index_base, zone_name.c_str(), *isize,Structured, &index_zone);
+
     /* write grid coordinates (user must use SIDS-standard names here) */
-    cg_coord_write(index_file,index_base,index_zone,RealDouble,"CoordinateX",
-        x,&index_coord);
-    cg_coord_write(index_file,index_base,index_zone,RealDouble,"CoordinateY",
-        y,&index_coord);
-    cg_coord_write(index_file,index_base,index_zone,RealDouble,"CoordinateZ",
-        z,&index_coord);
+    int index_coord;
+    cg_coord_write(index_file, index_base, index_zone, RealDouble, "CoordinateX", x, &index_coord);
+    cg_coord_write(index_file, index_base, index_zone, RealDouble, "CoordinateY", y,&index_coord);
+
     /* close CGNS file */
     cg_close(index_file);
     std::cout << "Successfully wrote grid to file grid_c.cgns" << std::endl;

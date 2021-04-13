@@ -1,3 +1,6 @@
+#ifndef NDG_PROGRESSBAR_T_H
+#define NDG_PROGRESSBAR_T_H
+
 #include "helpers/float_types.h"
 #include <atomic>
 #include <mutex>
@@ -31,3 +34,5 @@ namespace SEM { namespace Helpers {
             std::string status_text_;  
     };
 }}
+
+#endif

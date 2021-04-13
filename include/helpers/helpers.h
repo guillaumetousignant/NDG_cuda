@@ -10,7 +10,8 @@ namespace SEM {
     namespace Helpers {}
 }
 
-#include "helpers/float_types.h"
+#include "float_types.h"
+#include "InputParser_t.h"
 #include "ProgressBar_t.h"
 #include "termcolor.hpp"
 
