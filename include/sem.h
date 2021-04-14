@@ -9,6 +9,7 @@
 namespace SEM {}
 
 #include "entities/entities.h"
+#include "functions/functions.h"
 #include "helpers/helpers.h"
 #include "meshes/meshes.h"
 #include "polynomials/polynomials.h"
