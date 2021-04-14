@@ -98,7 +98,7 @@ auto main(int argc, char* argv[]) -> int {
         elements[i * n_sides]     = (x_res + 1) * (xy[0] + 1) + xy[1] + 1;
         elements[i * n_sides + 1] = (x_res + 1) * (xy[0] + 1) + xy[1] + 2;
         elements[i * n_sides + 2] = (x_res + 1) * xy[0] + xy[1] + 2;
-        elements[i * n_sides + 3] = (x_res + 1) * xy[0] + xy[1] = 1;
+        elements[i * n_sides + 3] = (x_res + 1) * xy[0] + xy[1] + 1;
     }
 
     /* write HEX_8 element connectivity (user can give any name) */
