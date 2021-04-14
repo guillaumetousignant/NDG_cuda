@@ -1,6 +1,7 @@
 add_library(SEM "")
 
 add_subdirectory(entities)
+add_subdirectory(functions)
 add_subdirectory(helpers)
 add_subdirectory(meshes)
 add_subdirectory(polynomials)
