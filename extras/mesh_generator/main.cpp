@@ -104,8 +104,8 @@ auto main(int argc, char* argv[]) -> int {
     /* write HEX_8 element connectivity (user can give any name) */
     const std::string elements_name("Elements");
     int index_section;
-    const int nelem_start = 0;
-    const int nelem_end = n_elements - 1;
+    const int nelem_start = 1;
+    const int nelem_end = n_elements;
     const int n_boundary_elem = 0; // No boundaries yet
     cg_section_write(index_file, index_base, index_zone, elements_name.c_str(), QUAD_4, nelem_start, nelem_end, n_boundary_elem, elements.data(), &index_section);
 
