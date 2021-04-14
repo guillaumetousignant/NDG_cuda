@@ -95,10 +95,10 @@ auto main(int argc, char* argv[]) -> int {
 
     for (int i = 0; i < n_elements; ++i) {
         const std::array<int, 2> xy = SEM::Hilbert::d2xy(res, i);
-        elements[i * n_sides]     = (x_res + 1) * (xy[0] + 1) + xy[1];
-        elements[i * n_sides + 1] = (x_res + 1) * (xy[0] + 1) + xy[1] + 1;
-        elements[i * n_sides + 2] = (x_res + 1) * xy[0] + xy[1] + 1;
-        elements[i * n_sides + 3] = (x_res + 1) * xy[0] + xy[1];
+        elements[i * n_sides]     = (x_res + 1) * (xy[0] + 1) + xy[1] + 1;
+        elements[i * n_sides + 1] = (x_res + 1) * (xy[0] + 1) + xy[1] + 2;
+        elements[i * n_sides + 2] = (x_res + 1) * xy[0] + xy[1] + 2;
+        elements[i * n_sides + 3] = (x_res + 1) * xy[0] + xy[1] = 1;
     }
 
     /* write HEX_8 element connectivity (user can give any name) */
