@@ -120,10 +120,12 @@ auto main(int argc, char* argv[]) -> int {
     const int n_boundary_elem = 0; // No boundaries yet
     cg_section_write(index_file, index_base, index_zone, elements_name.c_str(), QUAD_4, nelem_start, nelem_end, n_boundary_elem, elements.data(), &index_section);
 
-    /* do boundary (BAR) elements */
+    /* create boundary (BAR) elements */
     constexpr int boundary_n_sides = 2;
+    int bottom_index_section;
+    const std::string bottom_boundary_name("BottomElements");
     const int bottom_start_index = n_elements + 1;
-    const int bottom_end_index = n_elements + x_res + 1;
+    const int bottom_end_index   = n_elements + x_res;
     std::vector<int> bottom_elements(boundary_n_sides * x_res);
 
     for (int i = 0; i < x_res; ++i) {
@@ -131,7 +133,92 @@ auto main(int argc, char* argv[]) -> int {
         bottom_elements[i * boundary_n_sides + 1] = (i + 1) * y_node_res + 1;
     }
 
-    
+    cg_section_write(index_file, index_base, index_zone, bottom_boundary_name.c_str(), BAR_2, bottom_start_index, bottom_end_index, n_boundary_elem, bottom_elements.data(), &bottom_index_section);
+
+    int right_index_section;
+    const std::string right_boundary_name("RightElements");
+    const int right_start_index = bottom_end_index + 1;
+    const int right_end_index   = bottom_end_index + y_res;
+    std::vector<int> right_elements(boundary_n_sides * y_res);
+
+    for (int j = 0; j < y_res; ++j) {
+        right_elements[j * boundary_n_sides]     = y_node_res * (x_node_res - 1) + j + 1;
+        right_elements[j * boundary_n_sides + 1] = y_node_res * (x_node_res - 1) + j + 2;
+    }
+
+    cg_section_write(index_file, index_base, index_zone, right_boundary_name.c_str(), BAR_2, right_start_index, right_end_index, n_boundary_elem, right_elements.data(), &right_index_section);
+
+    int top_index_section;
+    const std::string top_boundary_name("TopElements");
+    const int top_start_index = right_end_index + 1;
+    const int top_end_index   = right_end_index + x_res;
+    std::vector<int> top_elements(boundary_n_sides * x_res);
+
+    for (int i = 0; i < x_res; ++i) {
+        top_elements[i * boundary_n_sides]     = (x_res - i + 1) * y_node_res;
+        top_elements[i * boundary_n_sides + 1] = (x_res - i) * y_node_res;
+    }
+
+    cg_section_write(index_file, index_base, index_zone, top_boundary_name.c_str(), BAR_2, top_start_index, top_end_index, n_boundary_elem, top_elements.data(), &top_index_section);
+
+    int left_index_section;
+    const std::string left_boundary_name("LeftElements");
+    const int left_start_index = top_end_index + 1;
+    const int left_end_index   = top_end_index + y_res;
+    std::vector<int> left_elements(boundary_n_sides * y_res);
+
+    for (int j = 0; j < y_res; ++j) {
+        left_elements[j * boundary_n_sides]     = y_res - j + 1;
+        left_elements[j * boundary_n_sides + 1] = y_res - j;
+    }
+
+    cg_section_write(index_file, index_base, index_zone, left_boundary_name.c_str(), BAR_2, left_start_index, left_end_index, n_boundary_elem, left_elements.data(), &left_index_section);
+
+    /* write boundary conditions */
+    int bottom_index_boundary;
+    std::vector<int> bottom_boundary(x_res);
+
+    for (int i = 0; i < x_res; ++i) {
+        bottom_boundary[i] = bottom_start_index + i;
+    }
+
+    cg_boco_write(index_file, index_base, index_zone, "BottomBoundary", BCWall, PointList, x_res, bottom_boundary.data(), &bottom_index_boundary);
+
+    int right_index_boundary;
+    std::vector<int> right_boundary(y_res);
+
+    for (int i = 0; i < y_res; ++i) {
+        right_boundary[i] = right_start_index + i;
+    }
+
+    cg_boco_write(index_file, index_base, index_zone, "RightBoundary", BCWall, PointList, y_res, right_boundary.data(), &right_index_boundary);
+
+    int top_index_boundary;
+    std::vector<int> top_boundary(x_res);
+
+    for (int i = 0; i < x_res; ++i) {
+        top_boundary[i] = top_start_index + i;
+    }
+
+    cg_boco_write(index_file, index_base, index_zone, "TopBoundary", BCWall, PointList, x_res, top_boundary.data(), &top_index_boundary);
+
+    int left_index_boundary;
+    std::vector<int> left_boundary(y_res);
+
+    for (int i = 0; i < y_res; ++i) {
+        left_boundary[i] = left_start_index + i;
+    }
+
+    cg_boco_write(index_file, index_base, index_zone, "LeftBoundary", BCWall, PointList, y_res, left_boundary.data(), &left_index_boundary);
+
+    /* the above are all face-center locations for the BCs - must indicate this, otherwise Vertices will be assumed! */
+    cg_boco_gridlocation_write(index_file, index_base, index_zone, bottom_index_boundary, GridLocation_t::EdgeCenter);
+
+    cg_boco_gridlocation_write(index_file, index_base, index_zone, right_index_boundary, GridLocation_t::EdgeCenter);
+
+    cg_boco_gridlocation_write(index_file, index_base, index_zone, top_index_boundary, GridLocation_t::EdgeCenter);
+
+    cg_boco_gridlocation_write(index_file, index_base, index_zone, left_index_boundary, GridLocation_t::EdgeCenter);
 
     /* close CGNS file */
     cg_close(index_file);
