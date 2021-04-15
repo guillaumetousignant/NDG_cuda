@@ -16,16 +16,27 @@ auto isPowerOfTwo (int x) -> bool {
 }
  
 auto main(int argc, char* argv[]) -> int {
+    fs::path save_dir;
+    std::string filename;
+    fs::path save_file;
+
     const SEM::Helpers::InputParser_t input_parser(argc, argv);
 
-    const std::string input_filename = input_parser.getCmdOption("--filename");
-    const std::string filename = (input_filename.empty()) ? "mesh.cgns" : input_filename;
+    const std::string input_save_path = input_parser.getCmdOption("--path");
+    if (!input_save_path.empty()) {
+        save_file = input_save_path;
+        fs::create_directory(save_file.parent_path());
+    }
+    else {
+        const std::string input_filename = input_parser.getCmdOption("--filename");
+        filename = (input_filename.empty()) ? "mesh.cgns" : input_filename;
 
-    const std::string input_save_dir = input_parser.getCmdOption("--directory");
-    const fs::path save_dir = (input_save_dir.empty()) ? fs::current_path() / "meshes" : input_save_dir;
+        const std::string input_save_dir = input_parser.getCmdOption("--directory");
+        save_dir = (input_save_dir.empty()) ? fs::current_path() / "meshes" : input_save_dir;
 
-    fs::create_directory(save_dir);
-    const fs::path save_file = save_dir / filename;
+        fs::create_directory(save_dir);
+        save_file = save_dir / filename;
+    }
 
     const std::string input_res = input_parser.getCmdOption("--resolution");
     const int res = (input_res.empty()) ? 4 : std::stoi(input_res);
