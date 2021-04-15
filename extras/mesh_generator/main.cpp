@@ -46,19 +46,22 @@ auto main(int argc, char* argv[]) -> int {
     const int x_res = res;
     const int y_res = res;
 
+    const int x_node_res = x_res + 1;
+    const int y_node_res = y_res + 1;
+
     const int n_elements = x_res * y_res;
-    const int n_nodes = (x_res + 1) * (y_res + 1);
+    const int n_nodes = x_node_res * y_node_res;
 
     /* create gridpoints for simple example: */
     std::vector<double> x(n_nodes);
     std::vector<double> y(n_nodes);
 
-    for (int i = 0; i < x_res + 1; ++i)
+    for (int i = 0; i < x_node_res; ++i)
     {
-        for (int j = 0; j < y_res + 1; ++j)
+        for (int j = 0; j < y_node_res; ++j)
         {
-            x[i * (y_res + 1) + j] = i;
-            y[i * (y_res + 1) + j] = j;
+            x[i * y_node_res + j] = i;
+            y[i * y_node_res + j] = j;
         }
     }
     std::cout << "Created simple 2D grid points" << std::endl;
@@ -103,10 +106,10 @@ auto main(int argc, char* argv[]) -> int {
 
     for (int i = 0; i < n_elements; ++i) {
         const std::array<int, 2> xy = SEM::Hilbert::d2xy(res, i);
-        elements[i * n_sides]     = (x_res + 1) * (xy[0] + 1) + xy[1] + 1;
-        elements[i * n_sides + 1] = (x_res + 1) * (xy[0] + 1) + xy[1] + 2;
-        elements[i * n_sides + 2] = (x_res + 1) * xy[0] + xy[1] + 2;
-        elements[i * n_sides + 3] = (x_res + 1) * xy[0] + xy[1] + 1;
+        elements[i * n_sides]     = y_node_res * (xy[0] + 1) + xy[1] + 1;
+        elements[i * n_sides + 1] = y_node_res * (xy[0] + 1) + xy[1] + 2;
+        elements[i * n_sides + 2] = y_node_res * xy[0] + xy[1] + 2;
+        elements[i * n_sides + 3] = y_node_res * xy[0] + xy[1] + 1;
     }
 
     /* write HEX_8 element connectivity (user can give any name) */
@@ -116,6 +119,19 @@ auto main(int argc, char* argv[]) -> int {
     const int nelem_end = n_elements;
     const int n_boundary_elem = 0; // No boundaries yet
     cg_section_write(index_file, index_base, index_zone, elements_name.c_str(), QUAD_4, nelem_start, nelem_end, n_boundary_elem, elements.data(), &index_section);
+
+    /* do boundary (BAR) elements */
+    constexpr int boundary_n_sides = 2;
+    const int bottom_start_index = n_elements + 1;
+    const int bottom_end_index = n_elements + x_res + 1;
+    std::vector<int> bottom_elements(boundary_n_sides * x_res);
+
+    for (int i = 0; i < x_res; ++i) {
+        bottom_elements[i * boundary_n_sides]     = i * y_node_res + 1;
+        bottom_elements[i * boundary_n_sides + 1] = (i + 1) * y_node_res + 1;
+    }
+
+    
 
     /* close CGNS file */
     cg_close(index_file);
