@@ -35,11 +35,11 @@ auto get_save_file(const SEM::Helpers::InputParser_t& input_parser) -> fs::path 
 }
  
 auto main(int argc, char* argv[]) -> int {
-    
     const SEM::Helpers::InputParser_t input_parser(argc, argv);
 
     const fs::path save_file = get_save_file(input_parser);
 
+    // Mesh resolution input
     const std::string input_res = input_parser.getCmdOption("--resolution");
     const int res = (input_res.empty()) ? 4 : std::stoi(input_res);
 
@@ -57,6 +57,23 @@ auto main(int argc, char* argv[]) -> int {
     const int n_elements = x_res * y_res;
     const int n_nodes = x_node_res * y_node_res;
 
+    // Boundary conditions input
+    bool x_symmetry = false;
+    bool y_symmetry = false;
+
+    BCType_t bottom_boundary_type = BCType_t::BCTypeNull;
+    BCType_t right_boundary_type  = BCType_t::BCTypeNull;
+    BCType_t top_boundary_type    = BCType_t::BCTypeNull;
+    BCType_t right_boundary_type  = BCType_t::BCTypeNull;
+
+    const std::string input_boundaries = input_parser.getCmdOption("--boundaries");
+    if (!input_boundaries.empty()) {
+
+    }
+    else {
+
+    }
+
     /* create gridpoints for simple example: */
     std::vector<double> x(n_nodes);
     std::vector<double> y(n_nodes);
@@ -73,35 +90,30 @@ auto main(int argc, char* argv[]) -> int {
 
     /* WRITE X, Y, Z GRID POINTS TO CGNS FILE */
     /* open CGNS file for write */
-    int index_file;
+    int index_file = 0;
     if (cg_open(save_file.string().c_str(), CG_MODE_WRITE, &index_file)) cg_error_exit();
 
     /* create base (user can give any name) */
     const std::string base_name("Base");
     const int icelldim = 2;
     const int iphysdim = 2;
-    int index_base;
+    int index_base = 0;
     cg_base_write(index_file, base_name.c_str(), icelldim, iphysdim, &index_base);
 
     /* define zone name (user can give any name) */
     const std::string zone_name("Zone  1");
 
-    /* vertex size */
-    cgsize_t isize[3];
-    isize[0] = n_nodes;
-
-    /* cell size */
-    isize[1] = n_elements;
-
-    /* boundary vertex size (always zero for structured grids) */
-    isize[2] = 0;
+    /* vertex size, cell size, boundary vertex size (always zero for structured grids) */
+    std::array<cgsize_t, 3> isize {n_nodes,
+                                   n_elements,
+                                   0};
 
     /* create zone */
-    int index_zone;
-    cg_zone_write(index_file, index_base, zone_name.c_str(), isize, ZoneType_t::Unstructured, &index_zone);
+    int index_zone = 0;
+    cg_zone_write(index_file, index_base, zone_name.c_str(), isize.data(), ZoneType_t::Unstructured, &index_zone);
 
     /* write grid coordinates (user must use SIDS-standard names here) */
-    int index_coord;
+    int index_coord = 0;
     cg_coord_write(index_file, index_base, index_zone, DataType_t::RealDouble, "CoordinateX", x.data(), &index_coord);
     cg_coord_write(index_file, index_base, index_zone, DataType_t::RealDouble, "CoordinateY", y.data(), &index_coord);
 
@@ -119,7 +131,7 @@ auto main(int argc, char* argv[]) -> int {
 
     /* write HEX_8 element connectivity (user can give any name) */
     const std::string elements_name("Elements");
-    int index_section;
+    int index_section = 0;
     const int nelem_start = 1;
     const int nelem_end = n_elements;
     const int n_boundary_elem = 0; // No boundaries yet
@@ -127,7 +139,7 @@ auto main(int argc, char* argv[]) -> int {
 
     /* create boundary (BAR) elements */
     constexpr int boundary_n_sides = 2;
-    int bottom_index_section;
+    int bottom_index_section = 0;
     const std::string bottom_boundary_name("BottomElements");
     const int bottom_start_index = n_elements + 1;
     const int bottom_end_index   = n_elements + x_res;
@@ -140,7 +152,7 @@ auto main(int argc, char* argv[]) -> int {
 
     cg_section_write(index_file, index_base, index_zone, bottom_boundary_name.c_str(), ElementType_t::BAR_2, bottom_start_index, bottom_end_index, n_boundary_elem, bottom_elements.data(), &bottom_index_section);
 
-    int right_index_section;
+    int right_index_section = 0;
     const std::string right_boundary_name("RightElements");
     const int right_start_index = bottom_end_index + 1;
     const int right_end_index   = bottom_end_index + y_res;
@@ -153,7 +165,7 @@ auto main(int argc, char* argv[]) -> int {
 
     cg_section_write(index_file, index_base, index_zone, right_boundary_name.c_str(), ElementType_t::BAR_2, right_start_index, right_end_index, n_boundary_elem, right_elements.data(), &right_index_section);
 
-    int top_index_section;
+    int top_index_section = 0;
     const std::string top_boundary_name("TopElements");
     const int top_start_index = right_end_index + 1;
     const int top_end_index   = right_end_index + x_res;
@@ -166,7 +178,7 @@ auto main(int argc, char* argv[]) -> int {
 
     cg_section_write(index_file, index_base, index_zone, top_boundary_name.c_str(), ElementType_t::BAR_2, top_start_index, top_end_index, n_boundary_elem, top_elements.data(), &top_index_section);
 
-    int left_index_section;
+    int left_index_section = 0;
     const std::string left_boundary_name("LeftElements");
     const int left_start_index = top_end_index + 1;
     const int left_end_index   = top_end_index + y_res;
@@ -180,7 +192,7 @@ auto main(int argc, char* argv[]) -> int {
     cg_section_write(index_file, index_base, index_zone, left_boundary_name.c_str(), ElementType_t::BAR_2, left_start_index, left_end_index, n_boundary_elem, left_elements.data(), &left_index_section);
 
     /* write boundary conditions */
-    int bottom_index_boundary;
+    int bottom_index_boundary = 0;
     std::vector<int> bottom_boundary(x_res);
 
     for (int i = 0; i < x_res; ++i) {
@@ -189,7 +201,7 @@ auto main(int argc, char* argv[]) -> int {
 
     cg_boco_write(index_file, index_base, index_zone, "BottomBoundary", BCType_t::BCWall, PointSetType_t::PointList, x_res, bottom_boundary.data(), &bottom_index_boundary);
 
-    int right_index_boundary;
+    int right_index_boundary = 0;
     std::vector<int> right_boundary(y_res);
 
     for (int i = 0; i < y_res; ++i) {
@@ -198,7 +210,7 @@ auto main(int argc, char* argv[]) -> int {
 
     cg_boco_write(index_file, index_base, index_zone, "RightBoundary", BCType_t::BCWall, PointSetType_t::PointList, y_res, right_boundary.data(), &right_index_boundary);
 
-    int top_index_boundary;
+    int top_index_boundary = 0;
     std::vector<int> top_boundary(x_res);
 
     for (int i = 0; i < x_res; ++i) {
@@ -207,7 +219,7 @@ auto main(int argc, char* argv[]) -> int {
 
     cg_boco_write(index_file, index_base, index_zone, "TopBoundary", BCType_t::BCWall, PointSetType_t::PointList, x_res, top_boundary.data(), &top_index_boundary);
 
-    int left_index_boundary;
+    int left_index_boundary = 0;
     std::vector<int> left_boundary(y_res);
 
     for (int i = 0; i < y_res; ++i) {
