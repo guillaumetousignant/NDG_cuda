@@ -10,19 +10,17 @@
 namespace fs = std::filesystem;
 
 /* Function to check if x is power of 2*/
-auto isPowerOfTwo (int x) -> bool {
+auto is_power_of_two(int x) -> bool {
     /* First x in the below expression is for the case when x is 0 */
     return x && (!(x&(x-1)));
 }
- 
-auto main(int argc, char* argv[]) -> int {
-    fs::path save_file;
-    const SEM::Helpers::InputParser_t input_parser(argc, argv);
 
+auto get_save_file(const SEM::Helpers::InputParser_t& input_parser) -> fs::path {
     const std::string input_save_path = input_parser.getCmdOption("--path");
     if (!input_save_path.empty()) {
-        save_file = input_save_path;
+        const fs::path save_file = input_save_path;
         fs::create_directory(save_file.parent_path());
+        return save_file;
     }
     else {
         const std::string input_filename = input_parser.getCmdOption("--filename");
@@ -32,13 +30,20 @@ auto main(int argc, char* argv[]) -> int {
         const fs::path save_dir = (input_save_dir.empty()) ? fs::current_path() / "meshes" : input_save_dir;
 
         fs::create_directory(save_dir);
-        save_file = save_dir / save_filename;
+        return save_dir / save_filename;
     }
+}
+ 
+auto main(int argc, char* argv[]) -> int {
+    
+    const SEM::Helpers::InputParser_t input_parser(argc, argv);
+
+    const fs::path save_file = get_save_file(input_parser);
 
     const std::string input_res = input_parser.getCmdOption("--resolution");
     const int res = (input_res.empty()) ? 4 : std::stoi(input_res);
 
-    if (!isPowerOfTwo(res)) {
+    if (!is_power_of_two(res)) {
         std::cerr << "Error, grid resolution should be a power of two for the Hillbert curve to work. Input resolution: " << res << "'. Exiting." << std::endl;
         exit(3);
     }
@@ -93,12 +98,12 @@ auto main(int argc, char* argv[]) -> int {
 
     /* create zone */
     int index_zone;
-    cg_zone_write(index_file, index_base, zone_name.c_str(), isize, Unstructured, &index_zone);
+    cg_zone_write(index_file, index_base, zone_name.c_str(), isize, ZoneType_t::Unstructured, &index_zone);
 
     /* write grid coordinates (user must use SIDS-standard names here) */
     int index_coord;
-    cg_coord_write(index_file, index_base, index_zone, RealDouble, "CoordinateX", x.data(), &index_coord);
-    cg_coord_write(index_file, index_base, index_zone, RealDouble, "CoordinateY", y.data(), &index_coord);
+    cg_coord_write(index_file, index_base, index_zone, DataType_t::RealDouble, "CoordinateX", x.data(), &index_coord);
+    cg_coord_write(index_file, index_base, index_zone, DataType_t::RealDouble, "CoordinateY", y.data(), &index_coord);
 
     /* set element connectivity */
     constexpr int n_sides = 4;
@@ -118,7 +123,7 @@ auto main(int argc, char* argv[]) -> int {
     const int nelem_start = 1;
     const int nelem_end = n_elements;
     const int n_boundary_elem = 0; // No boundaries yet
-    cg_section_write(index_file, index_base, index_zone, elements_name.c_str(), QUAD_4, nelem_start, nelem_end, n_boundary_elem, elements.data(), &index_section);
+    cg_section_write(index_file, index_base, index_zone, elements_name.c_str(), ElementType_t::QUAD_4, nelem_start, nelem_end, n_boundary_elem, elements.data(), &index_section);
 
     /* create boundary (BAR) elements */
     constexpr int boundary_n_sides = 2;
@@ -133,7 +138,7 @@ auto main(int argc, char* argv[]) -> int {
         bottom_elements[i * boundary_n_sides + 1] = (i + 1) * y_node_res + 1;
     }
 
-    cg_section_write(index_file, index_base, index_zone, bottom_boundary_name.c_str(), BAR_2, bottom_start_index, bottom_end_index, n_boundary_elem, bottom_elements.data(), &bottom_index_section);
+    cg_section_write(index_file, index_base, index_zone, bottom_boundary_name.c_str(), ElementType_t::BAR_2, bottom_start_index, bottom_end_index, n_boundary_elem, bottom_elements.data(), &bottom_index_section);
 
     int right_index_section;
     const std::string right_boundary_name("RightElements");
@@ -146,7 +151,7 @@ auto main(int argc, char* argv[]) -> int {
         right_elements[j * boundary_n_sides + 1] = y_node_res * (x_node_res - 1) + j + 2;
     }
 
-    cg_section_write(index_file, index_base, index_zone, right_boundary_name.c_str(), BAR_2, right_start_index, right_end_index, n_boundary_elem, right_elements.data(), &right_index_section);
+    cg_section_write(index_file, index_base, index_zone, right_boundary_name.c_str(), ElementType_t::BAR_2, right_start_index, right_end_index, n_boundary_elem, right_elements.data(), &right_index_section);
 
     int top_index_section;
     const std::string top_boundary_name("TopElements");
@@ -159,7 +164,7 @@ auto main(int argc, char* argv[]) -> int {
         top_elements[i * boundary_n_sides + 1] = (x_res - i) * y_node_res;
     }
 
-    cg_section_write(index_file, index_base, index_zone, top_boundary_name.c_str(), BAR_2, top_start_index, top_end_index, n_boundary_elem, top_elements.data(), &top_index_section);
+    cg_section_write(index_file, index_base, index_zone, top_boundary_name.c_str(), ElementType_t::BAR_2, top_start_index, top_end_index, n_boundary_elem, top_elements.data(), &top_index_section);
 
     int left_index_section;
     const std::string left_boundary_name("LeftElements");
@@ -172,7 +177,7 @@ auto main(int argc, char* argv[]) -> int {
         left_elements[j * boundary_n_sides + 1] = y_res - j;
     }
 
-    cg_section_write(index_file, index_base, index_zone, left_boundary_name.c_str(), BAR_2, left_start_index, left_end_index, n_boundary_elem, left_elements.data(), &left_index_section);
+    cg_section_write(index_file, index_base, index_zone, left_boundary_name.c_str(), ElementType_t::BAR_2, left_start_index, left_end_index, n_boundary_elem, left_elements.data(), &left_index_section);
 
     /* write boundary conditions */
     int bottom_index_boundary;
@@ -182,7 +187,7 @@ auto main(int argc, char* argv[]) -> int {
         bottom_boundary[i] = bottom_start_index + i;
     }
 
-    cg_boco_write(index_file, index_base, index_zone, "BottomBoundary", BCWall, PointList, x_res, bottom_boundary.data(), &bottom_index_boundary);
+    cg_boco_write(index_file, index_base, index_zone, "BottomBoundary", BCType_t::BCWall, PointSetType_t::PointList, x_res, bottom_boundary.data(), &bottom_index_boundary);
 
     int right_index_boundary;
     std::vector<int> right_boundary(y_res);
@@ -191,7 +196,7 @@ auto main(int argc, char* argv[]) -> int {
         right_boundary[i] = right_start_index + i;
     }
 
-    cg_boco_write(index_file, index_base, index_zone, "RightBoundary", BCWall, PointList, y_res, right_boundary.data(), &right_index_boundary);
+    cg_boco_write(index_file, index_base, index_zone, "RightBoundary", BCType_t::BCWall, PointSetType_t::PointList, y_res, right_boundary.data(), &right_index_boundary);
 
     int top_index_boundary;
     std::vector<int> top_boundary(x_res);
@@ -200,7 +205,7 @@ auto main(int argc, char* argv[]) -> int {
         top_boundary[i] = top_start_index + i;
     }
 
-    cg_boco_write(index_file, index_base, index_zone, "TopBoundary", BCWall, PointList, x_res, top_boundary.data(), &top_index_boundary);
+    cg_boco_write(index_file, index_base, index_zone, "TopBoundary", BCType_t::BCWall, PointSetType_t::PointList, x_res, top_boundary.data(), &top_index_boundary);
 
     int left_index_boundary;
     std::vector<int> left_boundary(y_res);
@@ -209,7 +214,7 @@ auto main(int argc, char* argv[]) -> int {
         left_boundary[i] = left_start_index + i;
     }
 
-    cg_boco_write(index_file, index_base, index_zone, "LeftBoundary", BCWall, PointList, y_res, left_boundary.data(), &left_index_boundary);
+    cg_boco_write(index_file, index_base, index_zone, "LeftBoundary", BCType_t::BCWall, PointSetType_t::PointList, y_res, left_boundary.data(), &left_index_boundary);
 
     /* the above are all face-center locations for the BCs - must indicate this, otherwise Vertices will be assumed! */
     cg_boco_gridlocation_write(index_file, index_base, index_zone, bottom_index_boundary, GridLocation_t::EdgeCenter);
