@@ -33,6 +33,11 @@ auto get_save_file(const SEM::Helpers::InputParser_t& input_parser) -> fs::path 
         return save_dir / save_filename;
     }
 }
+
+auto to_lower(std::string& data) -> void {
+    std::transform(data.begin(), data.end(), data.begin(),
+            [](auto c){ return std::tolower(c); });
+}
  
 auto main(int argc, char* argv[]) -> int {
     const SEM::Helpers::InputParser_t input_parser(argc, argv);
@@ -64,11 +69,23 @@ auto main(int argc, char* argv[]) -> int {
     BCType_t bottom_boundary_type = BCType_t::BCTypeNull;
     BCType_t right_boundary_type  = BCType_t::BCTypeNull;
     BCType_t top_boundary_type    = BCType_t::BCTypeNull;
-    BCType_t right_boundary_type  = BCType_t::BCTypeNull;
+    BCType_t left_boundary_type  = BCType_t::BCTypeNull;
 
-    const std::string input_boundaries = input_parser.getCmdOption("--boundaries");
+    std::string input_boundaries = input_parser.getCmdOption("--boundaries");
     if (!input_boundaries.empty()) {
+        to_lower(input_boundaries);
 
+        if (input_boundaries == "wall") {
+            bottom_boundary_type = BCType_t::BCWall;
+            right_boundary_type = BCType_t::BCWall;
+            top_boundary_type = BCType_t::BCWall;
+            left_boundary_type = BCType_t::BCWall;
+        }
+        else {
+            std::cerr << "Error, unknown boundary type '" << input_boundaries << "'. Implemented boundary types are: 'wall'. Exiting." << std::endl;
+            exit(4);
+        }
+        
     }
     else {
 
@@ -199,7 +216,7 @@ auto main(int argc, char* argv[]) -> int {
         bottom_boundary[i] = bottom_start_index + i;
     }
 
-    cg_boco_write(index_file, index_base, index_zone, "BottomBoundary", BCType_t::BCWall, PointSetType_t::PointList, x_res, bottom_boundary.data(), &bottom_index_boundary);
+    cg_boco_write(index_file, index_base, index_zone, "BottomBoundary", bottom_boundary_type, PointSetType_t::PointList, x_res, bottom_boundary.data(), &bottom_index_boundary);
 
     int right_index_boundary = 0;
     std::vector<int> right_boundary(y_res);
@@ -208,7 +225,7 @@ auto main(int argc, char* argv[]) -> int {
         right_boundary[i] = right_start_index + i;
     }
 
-    cg_boco_write(index_file, index_base, index_zone, "RightBoundary", BCType_t::BCWall, PointSetType_t::PointList, y_res, right_boundary.data(), &right_index_boundary);
+    cg_boco_write(index_file, index_base, index_zone, "RightBoundary", right_boundary_type, PointSetType_t::PointList, y_res, right_boundary.data(), &right_index_boundary);
 
     int top_index_boundary = 0;
     std::vector<int> top_boundary(x_res);
@@ -217,7 +234,7 @@ auto main(int argc, char* argv[]) -> int {
         top_boundary[i] = top_start_index + i;
     }
 
-    cg_boco_write(index_file, index_base, index_zone, "TopBoundary", BCType_t::BCWall, PointSetType_t::PointList, x_res, top_boundary.data(), &top_index_boundary);
+    cg_boco_write(index_file, index_base, index_zone, "TopBoundary", top_boundary_type, PointSetType_t::PointList, x_res, top_boundary.data(), &top_index_boundary);
 
     int left_index_boundary = 0;
     std::vector<int> left_boundary(y_res);
@@ -226,7 +243,7 @@ auto main(int argc, char* argv[]) -> int {
         left_boundary[i] = left_start_index + i;
     }
 
-    cg_boco_write(index_file, index_base, index_zone, "LeftBoundary", BCType_t::BCWall, PointSetType_t::PointList, y_res, left_boundary.data(), &left_index_boundary);
+    cg_boco_write(index_file, index_base, index_zone, "LeftBoundary", left_boundary_type, PointSetType_t::PointList, y_res, left_boundary.data(), &left_index_boundary);
 
     /* the above are all face-center locations for the BCs - must indicate this, otherwise Vertices will be assumed! */
     cg_boco_gridlocation_write(index_file, index_base, index_zone, bottom_index_boundary, GridLocation_t::EdgeCenter);
