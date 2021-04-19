@@ -165,10 +165,11 @@ auto main(int argc, char* argv[]) -> int {
     const int n_nodes = x_node_res * y_node_res;
 
     // Boundary conditions input
-    bool x_symmetry = false;
-    bool y_symmetry = false;
-
     const auto [bottom_boundary_type, right_boundary_type, top_boundary_type, left_boundary_type] = get_boundary_conditions(input_parser);
+
+    // Symmetry input
+    const bool x_symmetry = input_parser.cmdOptionExists("--x_symmetry");
+    const bool y_symmetry = input_parser.cmdOptionExists("--y_symmetry");
 
     /* create gridpoints for simple example: */
     std::vector<double> x(n_nodes);
@@ -235,10 +236,17 @@ auto main(int argc, char* argv[]) -> int {
 
     /* create boundary (BAR) elements */
     constexpr int boundary_n_sides = 2;
-    int bottom_index_section = 0;
-    const std::string bottom_boundary_name("BottomElements");
     const int bottom_start_index = n_elements + 1;
     const int bottom_end_index   = n_elements + x_res;
+    const int right_start_index  = n_elements + x_res + 1;
+    const int right_end_index    = n_elements + x_res + y_res;
+    const int top_start_index    = n_elements + x_res + y_res + 1;
+    const int top_end_index      = n_elements + 2 * x_res + y_res;
+    const int left_start_index   = n_elements + 2 * x_res + y_res + 1;
+    const int left_end_index     = n_elements + 2 * x_res + 2 * y_res;
+
+    int bottom_index_section = 0;
+    const std::string bottom_boundary_name("BottomElements");
     std::vector<int> bottom_elements(boundary_n_sides * x_res);
 
     for (int i = 0; i < x_res; ++i) {
@@ -250,8 +258,6 @@ auto main(int argc, char* argv[]) -> int {
 
     int right_index_section = 0;
     const std::string right_boundary_name("RightElements");
-    const int right_start_index = bottom_end_index + 1;
-    const int right_end_index   = bottom_end_index + y_res;
     std::vector<int> right_elements(boundary_n_sides * y_res);
 
     for (int j = 0; j < y_res; ++j) {
@@ -263,8 +269,6 @@ auto main(int argc, char* argv[]) -> int {
 
     int top_index_section = 0;
     const std::string top_boundary_name("TopElements");
-    const int top_start_index = right_end_index + 1;
-    const int top_end_index   = right_end_index + x_res;
     std::vector<int> top_elements(boundary_n_sides * x_res);
 
     for (int i = 0; i < x_res; ++i) {
@@ -276,8 +280,6 @@ auto main(int argc, char* argv[]) -> int {
 
     int left_index_section = 0;
     const std::string left_boundary_name("LeftElements");
-    const int left_start_index = top_end_index + 1;
-    const int left_end_index   = top_end_index + y_res;
     std::vector<int> left_elements(boundary_n_sides * y_res);
 
     for (int j = 0; j < y_res; ++j) {
@@ -288,50 +290,77 @@ auto main(int argc, char* argv[]) -> int {
     cg_section_write(index_file, index_base, index_zone, left_boundary_name.c_str(), ElementType_t::BAR_2, left_start_index, left_end_index, n_boundary_elem, left_elements.data(), &left_index_section);
 
     /* write boundary conditions */
-    int bottom_index_boundary = 0;
-    std::vector<int> bottom_boundary(x_res);
-
-    for (int i = 0; i < x_res; ++i) {
-        bottom_boundary[i] = bottom_start_index + i;
-    }
-
-    cg_boco_write(index_file, index_base, index_zone, "BottomBoundary", bottom_boundary_type, PointSetType_t::PointList, x_res, bottom_boundary.data(), &bottom_index_boundary);
-
-    int right_index_boundary = 0;
-    std::vector<int> right_boundary(y_res);
-
-    for (int i = 0; i < y_res; ++i) {
-        right_boundary[i] = right_start_index + i;
-    }
-
-    cg_boco_write(index_file, index_base, index_zone, "RightBoundary", right_boundary_type, PointSetType_t::PointList, y_res, right_boundary.data(), &right_index_boundary);
-
-    int top_index_boundary = 0;
-    std::vector<int> top_boundary(x_res);
-
-    for (int i = 0; i < x_res; ++i) {
-        top_boundary[i] = top_start_index + i;
-    }
-
-    cg_boco_write(index_file, index_base, index_zone, "TopBoundary", top_boundary_type, PointSetType_t::PointList, x_res, top_boundary.data(), &top_index_boundary);
-
-    int left_index_boundary = 0;
-    std::vector<int> left_boundary(y_res);
-
-    for (int i = 0; i < y_res; ++i) {
-        left_boundary[i] = left_start_index + i;
-    }
-
-    cg_boco_write(index_file, index_base, index_zone, "LeftBoundary", left_boundary_type, PointSetType_t::PointList, y_res, left_boundary.data(), &left_index_boundary);
-
     /* the above are all face-center locations for the BCs - must indicate this, otherwise Vertices will be assumed! */
-    cg_boco_gridlocation_write(index_file, index_base, index_zone, bottom_index_boundary, GridLocation_t::EdgeCenter);
+    if (!y_symmetry) {
+        int bottom_index_boundary = 0;
+        std::vector<int> bottom_boundary(x_res);
 
-    cg_boco_gridlocation_write(index_file, index_base, index_zone, right_index_boundary, GridLocation_t::EdgeCenter);
+        for (int i = 0; i < x_res; ++i) {
+            bottom_boundary[i] = bottom_start_index + i;
+        }
 
-    cg_boco_gridlocation_write(index_file, index_base, index_zone, top_index_boundary, GridLocation_t::EdgeCenter);
+        cg_boco_write(index_file, index_base, index_zone, "BottomBoundary", bottom_boundary_type, PointSetType_t::PointList, x_res, bottom_boundary.data(), &bottom_index_boundary);
+        cg_boco_gridlocation_write(index_file, index_base, index_zone, bottom_index_boundary, GridLocation_t::EdgeCenter);
 
-    cg_boco_gridlocation_write(index_file, index_base, index_zone, left_index_boundary, GridLocation_t::EdgeCenter);
+        int top_index_boundary = 0;
+        std::vector<int> top_boundary(x_res);
+
+        for (int i = 0; i < x_res; ++i) {
+            top_boundary[i] = top_start_index + i;
+        }
+
+        cg_boco_write(index_file, index_base, index_zone, "TopBoundary", top_boundary_type, PointSetType_t::PointList, x_res, top_boundary.data(), &top_index_boundary);
+        cg_boco_gridlocation_write(index_file, index_base, index_zone, top_index_boundary, GridLocation_t::EdgeCenter);
+    }
+
+    if (!x_symmetry) {
+        int right_index_boundary = 0;
+        std::vector<int> right_boundary(y_res);
+
+        for (int i = 0; i < y_res; ++i) {
+            right_boundary[i] = right_start_index + i;
+        }
+
+        cg_boco_write(index_file, index_base, index_zone, "RightBoundary", right_boundary_type, PointSetType_t::PointList, y_res, right_boundary.data(), &right_index_boundary);
+        cg_boco_gridlocation_write(index_file, index_base, index_zone, right_index_boundary, GridLocation_t::EdgeCenter);
+        
+        int left_index_boundary = 0;
+        std::vector<int> left_boundary(y_res);
+
+        for (int i = 0; i < y_res; ++i) {
+            left_boundary[i] = left_start_index + i;
+        }
+
+        cg_boco_write(index_file, index_base, index_zone, "LeftBoundary", left_boundary_type, PointSetType_t::PointList, y_res, left_boundary.data(), &left_index_boundary);
+        cg_boco_gridlocation_write(index_file, index_base, index_zone, left_index_boundary, GridLocation_t::EdgeCenter);
+    }
+
+    /* write integer connectivity info (user can give any name) */
+    if (y_symmetry) {
+        int y_symmetry_index = 0;
+        std::vector<int> elements_bottom(x_res);
+        std::vector<int> elements_top(x_res);
+
+        for (int i = 0; i < x_res; ++i) {
+            elements_bottom[i] = bottom_start_index + i;
+            elements_top[i] = top_end_index - i;
+        }
+
+        cg_conn_write(index_file, index_base, index_zone, "YSymmetry", GridLocation_t::EdgeCenter, GridConnectivityType_t::Abutting1to1, PointSetType_t::PointList, x_res, elements_bottom.data(), zone_name.c_str(), ZoneType_t::Unstructured, PointSetType_t::PointListDonor, DataType_t::Integer, x_res, elements_top.data(), &y_symmetry_index);
+    }
+
+    if (x_symmetry) {
+        int x_symmetry_index = 0;
+        std::vector<int> elements_right(y_res);
+        std::vector<int> elements_left(y_res);
+
+        for (int j = 0; j < y_res; ++j) {
+            elements_right[j] = right_start_index + j;
+            elements_left[j] = left_end_index - j;
+        }
+
+        cg_conn_write(index_file, index_base, index_zone, "XSymmetry", GridLocation_t::EdgeCenter, GridConnectivityType_t::Abutting1to1, PointSetType_t::PointList, y_res, elements_right.data(), zone_name.c_str(), ZoneType_t::Unstructured, PointSetType_t::PointListDonor, DataType_t::Integer, y_res, elements_left.data(), &x_symmetry_index);
+    }
 
     /* close CGNS file */
     cg_close(index_file);
