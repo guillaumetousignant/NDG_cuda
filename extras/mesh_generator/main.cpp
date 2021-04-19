@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <vector>
 #include <array>
+#include <unordered_map>
 
 namespace fs = std::filesystem;
 
@@ -38,6 +39,107 @@ auto to_lower(std::string& data) -> void {
     std::transform(data.begin(), data.end(), data.begin(),
             [](auto c){ return std::tolower(c); });
 }
+
+auto get_boundary_conditions(const SEM::Helpers::InputParser_t& input_parser) -> std::array<BCType_t, 4> {
+    BCType_t bottom_boundary_type = BCType_t::BCTypeNull;
+    BCType_t right_boundary_type  = BCType_t::BCTypeNull;
+    BCType_t top_boundary_type    = BCType_t::BCTypeNull;
+    BCType_t left_boundary_type   = BCType_t::BCTypeNull;
+
+    const std::unordered_map<std::string, BCType_t> values {
+        {"wall",     BCType_t::BCWall},
+        {"symmetry", BCType_t::BCSymmetryPlane}, 
+        {"null",     BCType_t::BCTypeNull}
+    };
+
+    std::string input_boundaries = input_parser.getCmdOption("--boundaries");
+    if (!input_boundaries.empty()) {
+        to_lower(input_boundaries);
+
+        const auto it = values.find(input_boundaries);
+        if (it == values.end()) {
+            std::cerr << "Error, unknown boundary type '" << input_boundaries << "'. Implemented boundary types are: 'wall', 'symmetry'. Exiting." << std::endl;
+            exit(4);
+        }
+        else {
+            bottom_boundary_type = it->second;
+            right_boundary_type = it->second;
+            top_boundary_type = it->second;
+            left_boundary_type = it->second;
+        }
+    }
+    else {
+        std::string input_bottom_boundary = input_parser.getCmdOption("--bottom_boundary");
+        if (input_bottom_boundary.empty()) {
+            bottom_boundary_type = BCType_t::BCWall;
+        }
+        else {
+            to_lower(input_bottom_boundary);
+
+            const auto it = values.find(input_bottom_boundary);
+            if (it == values.end()) {
+                std::cerr << "Error, unknown bottom boundary type '" << input_bottom_boundary << "'. Implemented boundary types are: 'wall', 'symmetry'. Exiting." << std::endl;
+                exit(5);
+            }
+            else {
+                bottom_boundary_type = it->second;
+            }
+        }
+
+        std::string input_right_boundary = input_parser.getCmdOption("--right_boundary");
+        if (input_right_boundary.empty()) {
+            right_boundary_type = BCType_t::BCWall;
+        }
+        else {
+            to_lower(input_right_boundary);
+
+            const auto it = values.find(input_right_boundary);
+            if (it == values.end()) {
+                std::cerr << "Error, unknown right boundary type '" << input_right_boundary << "'. Implemented boundary types are: 'wall', 'symmetry'. Exiting." << std::endl;
+                exit(6);
+            }
+            else {
+                right_boundary_type = it->second;
+            }
+        }
+
+        std::string input_top_boundary = input_parser.getCmdOption("--top_boundary");
+        if (input_top_boundary.empty()) {
+            top_boundary_type = BCType_t::BCWall;
+        }
+        else {
+            to_lower(input_top_boundary);
+
+            const auto it = values.find(input_top_boundary);
+            if (it == values.end()) {
+                std::cerr << "Error, unknown top boundary type '" << input_top_boundary << "'. Implemented boundary types are: 'wall', 'symmetry'. Exiting." << std::endl;
+                exit(7);
+            }
+            else {
+                top_boundary_type = it->second;
+            }
+        }
+
+        std::string input_left_boundary = input_parser.getCmdOption("--left_boundary");
+        if (input_left_boundary.empty()) {
+            left_boundary_type = BCType_t::BCWall;
+        }
+        else {
+            to_lower(input_left_boundary);
+
+            const auto it = values.find(input_left_boundary);
+            if (it == values.end()) {
+                std::cerr << "Error, unknown left boundary type '" << input_left_boundary << "'. Implemented boundary types are: 'wall', 'symmetry'. Exiting." << std::endl;
+                exit(8);
+            }
+            else {
+                left_boundary_type = it->second;
+            }
+        }
+    }
+
+    return {bottom_boundary_type, right_boundary_type, top_boundary_type, left_boundary_type};
+}
  
 auto main(int argc, char* argv[]) -> int {
     const SEM::Helpers::InputParser_t input_parser(argc, argv);
@@ -66,30 +168,7 @@ auto main(int argc, char* argv[]) -> int {
     bool x_symmetry = false;
     bool y_symmetry = false;
 
-    BCType_t bottom_boundary_type = BCType_t::BCTypeNull;
-    BCType_t right_boundary_type  = BCType_t::BCTypeNull;
-    BCType_t top_boundary_type    = BCType_t::BCTypeNull;
-    BCType_t left_boundary_type  = BCType_t::BCTypeNull;
-
-    std::string input_boundaries = input_parser.getCmdOption("--boundaries");
-    if (!input_boundaries.empty()) {
-        to_lower(input_boundaries);
-
-        if (input_boundaries == "wall") {
-            bottom_boundary_type = BCType_t::BCWall;
-            right_boundary_type = BCType_t::BCWall;
-            top_boundary_type = BCType_t::BCWall;
-            left_boundary_type = BCType_t::BCWall;
-        }
-        else {
-            std::cerr << "Error, unknown boundary type '" << input_boundaries << "'. Implemented boundary types are: 'wall'. Exiting." << std::endl;
-            exit(4);
-        }
-        
-    }
-    else {
-
-    }
+    const auto [bottom_boundary_type, right_boundary_type, top_boundary_type, left_boundary_type] = get_boundary_conditions(input_parser);
 
     /* create gridpoints for simple example: */
     std::vector<double> x(n_nodes);
