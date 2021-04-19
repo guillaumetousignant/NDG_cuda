@@ -299,7 +299,7 @@ auto main(int argc, char* argv[]) -> int {
             bottom_boundary[i] = bottom_start_index + i;
         }
 
-        cg_boco_write(index_file, index_base, index_zone, "BottomBoundary", bottom_boundary_type, PointSetType_t::PointList, x_res, bottom_boundary.data(), &bottom_index_boundary);
+        const int err = cg_boco_write(index_file, index_base, index_zone, "BottomBoundary", bottom_boundary_type, PointSetType_t::PointList, x_res, bottom_boundary.data(), &bottom_index_boundary);
         cg_boco_gridlocation_write(index_file, index_base, index_zone, bottom_index_boundary, GridLocation_t::EdgeCenter);
 
         int top_index_boundary = 0;
@@ -337,7 +337,8 @@ auto main(int argc, char* argv[]) -> int {
 
     /* write integer connectivity info (user can give any name) */
     if (y_symmetry) {
-        int y_symmetry_index = 0;
+        int y_symmetry_bottom_index = 0;
+        int y_symmetry_top_index = 0;
         std::vector<int> elements_bottom(x_res);
         std::vector<int> elements_top(x_res);
 
@@ -346,11 +347,13 @@ auto main(int argc, char* argv[]) -> int {
             elements_top[i] = top_end_index - i;
         }
 
-        cg_conn_write(index_file, index_base, index_zone, "YSymmetry", GridLocation_t::EdgeCenter, GridConnectivityType_t::Abutting1to1, PointSetType_t::PointList, x_res, elements_bottom.data(), zone_name.c_str(), ZoneType_t::Unstructured, PointSetType_t::PointListDonor, DataType_t::Integer, x_res, elements_top.data(), &y_symmetry_index);
+        cg_conn_write(index_file, index_base, index_zone, "YSymmetryBottom", GridLocation_t::EdgeCenter, GridConnectivityType_t::Abutting1to1, PointSetType_t::PointList, x_res, elements_bottom.data(), zone_name.c_str(), ZoneType_t::Unstructured, PointSetType_t::PointListDonor, DataType_t::Integer, x_res, elements_top.data(), &y_symmetry_bottom_index);
+        cg_conn_write(index_file, index_base, index_zone, "YSymmetryTop", GridLocation_t::EdgeCenter, GridConnectivityType_t::Abutting1to1, PointSetType_t::PointList, x_res, elements_top.data(), zone_name.c_str(), ZoneType_t::Unstructured, PointSetType_t::PointListDonor, DataType_t::Integer, x_res, elements_bottom.data(), &y_symmetry_top_index);
     }
 
     if (x_symmetry) {
-        int x_symmetry_index = 0;
+        int x_symmetry_right_index = 0;
+        int x_symmetry_left_index = 0;
         std::vector<int> elements_right(y_res);
         std::vector<int> elements_left(y_res);
 
@@ -359,7 +362,8 @@ auto main(int argc, char* argv[]) -> int {
             elements_left[j] = left_end_index - j;
         }
 
-        cg_conn_write(index_file, index_base, index_zone, "XSymmetry", GridLocation_t::EdgeCenter, GridConnectivityType_t::Abutting1to1, PointSetType_t::PointList, y_res, elements_right.data(), zone_name.c_str(), ZoneType_t::Unstructured, PointSetType_t::PointListDonor, DataType_t::Integer, y_res, elements_left.data(), &x_symmetry_index);
+        cg_conn_write(index_file, index_base, index_zone, "XSymmetryRight", GridLocation_t::FaceCenter, GridConnectivityType_t::Abutting1to1, PointSetType_t::PointList, y_res, elements_right.data(), zone_name.c_str(), ZoneType_t::Unstructured, PointSetType_t::PointListDonor, DataType_t::Integer, y_res, elements_left.data(), &x_symmetry_right_index);
+        cg_conn_write(index_file, index_base, index_zone, "XSymmetryLeft", GridLocation_t::FaceCenter, GridConnectivityType_t::Abutting1to1, PointSetType_t::PointList, y_res, elements_left.data(), zone_name.c_str(), ZoneType_t::Unstructured, PointSetType_t::PointListDonor, DataType_t::Integer, y_res, elements_right.data(), &x_symmetry_left_index);
     }
 
     /* close CGNS file */
