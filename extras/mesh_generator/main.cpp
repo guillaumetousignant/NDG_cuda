@@ -337,8 +337,8 @@ auto main(int argc, char* argv[]) -> int {
             elements_top[i] = top_end_index - i;
         }
 
-        cg_conn_write(index_file, index_base, index_zone, "YSymmetryBottom", GridLocation_t::EdgeCenter, GridConnectivityType_t::Abutting1to1, PointSetType_t::PointList, x_res, elements_bottom.data(), zone_name.c_str(), ZoneType_t::Unstructured, PointSetType_t::PointListDonor, DataType_t::Integer, x_res, elements_top.data(), &y_symmetry_bottom_index);
-        cg_conn_write(index_file, index_base, index_zone, "YSymmetryTop", GridLocation_t::EdgeCenter, GridConnectivityType_t::Abutting1to1, PointSetType_t::PointList, x_res, elements_top.data(), zone_name.c_str(), ZoneType_t::Unstructured, PointSetType_t::PointListDonor, DataType_t::Integer, x_res, elements_bottom.data(), &y_symmetry_top_index);
+        cg_conn_write(index_file, index_base, index_zone, "YSymmetryBottom", GridLocation_t::FaceCenter, GridConnectivityType_t::Abutting1to1, PointSetType_t::PointList, x_res, elements_bottom.data(), zone_name.c_str(), ZoneType_t::Unstructured, PointSetType_t::PointListDonor, DataType_t::Integer, x_res, elements_top.data(), &y_symmetry_bottom_index);
+        cg_conn_write(index_file, index_base, index_zone, "YSymmetryTop", GridLocation_t::FaceCenter, GridConnectivityType_t::Abutting1to1, PointSetType_t::PointList, x_res, elements_top.data(), zone_name.c_str(), ZoneType_t::Unstructured, PointSetType_t::PointListDonor, DataType_t::Integer, x_res, elements_bottom.data(), &y_symmetry_top_index);
     }
 
     if (x_symmetry) {
