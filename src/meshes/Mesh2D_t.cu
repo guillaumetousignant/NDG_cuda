@@ -324,7 +324,7 @@ void SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) {
     cg_ncoords(index_file, index_base, index_zone, &n_coords);
     if (n_coords != 2) {
         std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << " has " << n_coords << " sets of coordinates, but for now only two are supported. Exiting." << std::endl;
-        exit(22);
+        exit(23);
     }
 
     std::array<std::array<char, CGIO_MAX_NAME_LENGTH>, 2> coord_names; // Oh yeah cause it's the 80s still
@@ -333,15 +333,40 @@ void SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) {
         cg_coord_info(index_file, index_base, index_zone, index_coord, &coord_data_types[index_coord - 1], coord_names[index_coord - 1].data());
     }
 
-    
     std::array<std::vector<double>, 2> xy{std::vector<double>(n_nodes), std::vector<double>(n_nodes)};
 
     for (int index_coord = 1; index_coord <= n_coords; ++index_coord) {
         const int index_coord_start = 1;
-        cg_coord_read(index_file, index_base, index_zone,  coord_names[index_coord - 1].data(), DataType_t::RealDouble, &index_coord_start, &n_nodes, xy[index_coord - 1].data());
+        cg_coord_read(index_file, index_base, index_zone, coord_names[index_coord - 1].data(), DataType_t::RealDouble, &index_coord_start, &n_nodes, xy[index_coord - 1].data());
     }
     
+    // Getting connectivity
+    int n_sections = 0;
+    cg_nsections(index_file, index_base, index_zone, &n_sections);
 
+    std::vector<int> section_data_size(n_sections);
+    std::vector<std::array<char, CGIO_MAX_NAME_LENGTH>> section_names(n_sections); // Oh yeah cause it's the 80s still
+    std::vector<ElementType_t> section_type(n_sections);
+    std::vector<std::array<int, 2>> section_ranges(n_sections);
+    std::vector<int> section_n_boundaries(n_sections);
+    std::vector<int> section_parent_flags(n_sections);
+    for (int index_section = 1; index_section <= n_sections; ++index_section) {
+        cg_ElementDataSize(index_file, index_base, index_zone, index_section, &section_data_size[index_section - 1]);
+        cg_section_read(index_file, index_base, index_zone, index_section, section_names[index_section - 1].data(), &section_type[index_section - 1], &section_ranges[index_section - 1][0], &section_ranges[index_section - 1][1], &section_n_boundaries[index_section - 1], &section_parent_flags[index_section - 1]);
+        if (section_n_boundaries[index_section - 1] != 0) {
+            std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", section " << index_section << " has " << section_n_boundaries[index_section - 1] << " boundary elements, but to be honest I'm not sure how to deal with them. Exiting." << std::endl;
+            exit(24);
+        }
+    }
+
+    std::vector<std::vector<int>> connectivity(n_sections);
+    std::vector<std::vector<int>> parent_data(n_sections);
+    for (int index_section = 1; index_section <= n_sections; ++index_section) {
+        connectivity[index_section - 1] = std::vector<int>((section_ranges[index_section - 1][1] - section_ranges[index_section - 1][0]) * section_data_size[index_section - 1]);
+        parent_data[index_section - 1] = std::vector<int>(section_ranges[index_section - 1][1] - section_ranges[index_section - 1][0]);
+
+        cg_elements_read(index_file, index_base, index_zone, index_section, connectivity[index_section - 1].data(), parent_data[index_section - 1].data());
+    }
 
 
     cg_close(index_file);
