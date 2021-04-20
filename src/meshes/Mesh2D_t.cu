@@ -362,7 +362,7 @@ void SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) {
     std::vector<std::vector<int>> connectivity(n_sections);
     std::vector<std::vector<int>> parent_data(n_sections);
     for (int index_section = 1; index_section <= n_sections; ++index_section) {
-        connectivity[index_section - 1] = std::vector<int>((section_ranges[index_section - 1][1] - section_ranges[index_section - 1][0]) * section_data_size[index_section - 1]);
+        connectivity[index_section - 1] = std::vector<int>(section_data_size[index_section - 1]);
         parent_data[index_section - 1] = std::vector<int>(section_ranges[index_section - 1][1] - section_ranges[index_section - 1][0]);
 
         cg_elements_read(index_file, index_base, index_zone, index_section, connectivity[index_section - 1].data(), parent_data[index_section - 1].data());
