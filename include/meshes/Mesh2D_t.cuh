@@ -50,6 +50,7 @@ namespace SEM { namespace Meshes {
             size_t* MPI_boundary_from_element_;
 
             void read_su2(std::filesystem::path filename);
+            void read_cgns(std::filesystem::path filename);
             void set_initial_conditions(const deviceFloat* nodes);
             void boundary_conditions();
             void print();

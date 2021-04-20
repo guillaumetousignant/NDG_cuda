@@ -11,5 +11,6 @@ namespace SEM {
 }
 
 #include "Hilbert.h"
+#include "Utilities.h"
 
 #endif

@@ -1,5 +1,6 @@
 #include "helpers/InputParser_t.h"
 #include "functions/Hilbert.h"
+#include "functions/Utilities.h"
 #include "cgnslib.h"
 #include <string>
 #include <iostream>
@@ -9,12 +10,6 @@
 #include <unordered_map>
 
 namespace fs = std::filesystem;
-
-/* Function to check if x is power of 2*/
-auto is_power_of_two(int x) -> bool {
-    /* First x in the below expression is for the case when x is 0 */
-    return x && (!(x&(x-1)));
-}
 
 auto get_save_file(const SEM::Helpers::InputParser_t& input_parser) -> fs::path {
     const std::string input_save_path = input_parser.getCmdOption("--path");
@@ -35,11 +30,6 @@ auto get_save_file(const SEM::Helpers::InputParser_t& input_parser) -> fs::path 
     }
 }
 
-auto to_lower(std::string& data) -> void {
-    std::transform(data.begin(), data.end(), data.begin(),
-            [](auto c){ return std::tolower(c); });
-}
-
 auto get_boundary_conditions(const SEM::Helpers::InputParser_t& input_parser) -> std::array<BCType_t, 4> {
     BCType_t bottom_boundary_type = BCType_t::BCTypeNull;
     BCType_t right_boundary_type  = BCType_t::BCTypeNull;
@@ -54,7 +44,7 @@ auto get_boundary_conditions(const SEM::Helpers::InputParser_t& input_parser) ->
 
     std::string input_boundaries = input_parser.getCmdOption("--boundaries");
     if (!input_boundaries.empty()) {
-        to_lower(input_boundaries);
+        SEM::to_lower(input_boundaries);
 
         const auto it = values.find(input_boundaries);
         if (it == values.end()) {
@@ -74,7 +64,7 @@ auto get_boundary_conditions(const SEM::Helpers::InputParser_t& input_parser) ->
             bottom_boundary_type = BCType_t::BCWall;
         }
         else {
-            to_lower(input_bottom_boundary);
+            SEM::to_lower(input_bottom_boundary);
 
             const auto it = values.find(input_bottom_boundary);
             if (it == values.end()) {
@@ -91,7 +81,7 @@ auto get_boundary_conditions(const SEM::Helpers::InputParser_t& input_parser) ->
             right_boundary_type = BCType_t::BCWall;
         }
         else {
-            to_lower(input_right_boundary);
+            SEM::to_lower(input_right_boundary);
 
             const auto it = values.find(input_right_boundary);
             if (it == values.end()) {
@@ -108,7 +98,7 @@ auto get_boundary_conditions(const SEM::Helpers::InputParser_t& input_parser) ->
             top_boundary_type = BCType_t::BCWall;
         }
         else {
-            to_lower(input_top_boundary);
+            SEM::to_lower(input_top_boundary);
 
             const auto it = values.find(input_top_boundary);
             if (it == values.end()) {
@@ -125,7 +115,7 @@ auto get_boundary_conditions(const SEM::Helpers::InputParser_t& input_parser) ->
             left_boundary_type = BCType_t::BCWall;
         }
         else {
-            to_lower(input_left_boundary);
+            SEM::to_lower(input_left_boundary);
 
             const auto it = values.find(input_left_boundary);
             if (it == values.end()) {
@@ -150,7 +140,7 @@ auto main(int argc, char* argv[]) -> int {
     const std::string input_res = input_parser.getCmdOption("--resolution");
     const int res = (input_res.empty()) ? 4 : std::stoi(input_res);
 
-    if (!is_power_of_two(res)) {
+    if (!SEM::is_power_of_two(res)) {
         std::cerr << "Error, grid resolution should be a power of two for the Hillbert curve to work. Input resolution: " << res << "'. Exiting." << std::endl;
         exit(3);
     }

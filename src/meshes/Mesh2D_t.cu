@@ -1,7 +1,8 @@
 #include "meshes/Mesh2D_t.cuh"
 #include "polynomials/ChebyshevPolynomial_t.cuh"
 #include "polynomials/LegendrePolynomial_t.cuh"
-#include "Helpers/ProgressBar_t.h"
+#include "helpers/ProgressBar_t.h"
+#include "functions/Utilities.h"
 #include <iostream>
 #include <fstream>
 #include <sstream> 
@@ -16,10 +17,25 @@ using SEM::Entities::Vec2;
 SEM::Meshes::Mesh2D_t::Mesh2D_t(std::filesystem::path filename, int initial_N, cudaStream_t &stream) :       
         stream_(stream) {
 
-    
+    std::string extension = filename.extension().string();
+    SEM::to_lower(extension);
+
+    if (extension == ".cgns") {
+        read_cgns(filename);
+    }
+    else if (extension == ".su2") {
+        read_su2(filename);
+    }
+    else {
+        std::cerr << "Error: extension '" << extension << "' not recognized. Exiting." << std::endl;
+        exit(14);
+    }
 }
 
-void SEM::Meshes::Mesh2D_t::read_su2(std::filesystem::path filename){
+void SEM::Meshes::Mesh2D_t::read_su2(std::filesystem::path filename) {
+    std::cerr << "Error: SU2 meshes not implemented yet. Exiting." << std::endl;
+    exit(15);
+
     /*std::string line;
     std::string token;
     size_t value;
@@ -242,6 +258,10 @@ void SEM::Meshes::Mesh2D_t::read_su2(std::filesystem::path filename){
     cells_.insert(std::end(cells_), std::begin(farfield), std::end(farfield));
     cells_.insert(std::end(cells_), std::begin(wall), std::end(wall));
     cells_.insert(std::end(cells_), std::begin(inlet), std::end(inlet));*/
+}
+
+void SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) {
+
 }
 
 void SEM::Meshes::Mesh2D_t::set_initial_conditions(const deviceFloat* nodes) {
