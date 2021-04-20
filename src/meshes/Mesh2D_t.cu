@@ -15,6 +15,8 @@ namespace fs = std::filesystem;
 using SEM::Entities::device_vector;
 using SEM::Entities::Vec2;
 
+constexpr int CGIO_MAX_NAME_LENGTH = 33; // Includes the null terminator
+
 SEM::Meshes::Mesh2D_t::Mesh2D_t(std::filesystem::path filename, int initial_N, cudaStream_t &stream) :       
         stream_(stream) {
 
@@ -262,7 +264,89 @@ void SEM::Meshes::Mesh2D_t::read_su2(std::filesystem::path filename) {
 }
 
 void SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) {
+    int index_file;
+    const int open_error = cg_open(filename.string().c_str(), CG_MODE_READ, &index_file);
+    if (open_error != CG_OK) {
+        std::cerr << "Error: file '" << filename << "' could not be opened with error '" << cg_get_error() << "'. Exiting." << std::endl;
+        exit(16);
+    }
 
+    // Getting base information
+    int n_bases = 0;
+    cg_nbases(index_file, &n_bases);
+    if (n_bases != 1) {
+        std::cerr << "Error: CGNS mesh has " << n_bases << " base(s), but for now only a single base is supported. Exiting." << std::endl;
+        exit(17);
+    }
+    const int index_base = 1;
+
+    std::array<char, CGIO_MAX_NAME_LENGTH> base_name; // Oh yeah cause it's the 80s still
+    int dim = 0;
+    int physDim = 0;
+    cg_base_read(index_file, index_base, base_name.data(), &dim, &physDim);
+    if (dim != 2) {
+        std::cerr << "Error: CGNS mesh, base " << index_base << " has " << dim << " dimensions, but the program only supports 2 dimensions. Exiting." << std::endl;
+        exit(18);
+    }
+    if (physDim != 2) {
+        std::cerr << "Error: CGNS mesh, base " << index_base << " has " << physDim << " physical dimensions, but the program only supports 2 physical dimensions. Exiting." << std::endl;
+        exit(19);
+    }
+
+    // Getting zone information
+    int n_zones = 0;
+    cg_nzones(index_file, index_base, &n_zones);
+    if (n_bases != 1) {
+        std::cerr << "Error: CGNS mesh, base " << index_base << " has " << n_zones << " zone(s), but for now only a single zone is supported. Exiting." << std::endl;
+        exit(20);
+    }
+    const int index_zone = 1;
+
+    ZoneType_t zone_type = ZoneType_t::ZoneTypeNull;
+    cg_zone_type(index_file, index_base, index_zone, &zone_type);
+    if (zone_type != ZoneType_t::Unstructured) {
+        std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << " is not an unstructured zone. For now only unstructured zones are supported. Exiting." << std::endl;
+        exit(21);
+    }
+
+    std::array<char, CGIO_MAX_NAME_LENGTH> zone_name; // Oh yeah cause it's the 80s still
+    std::array<int, 3> isize{0, 0, 0};
+    cg_zone_read(index_file, index_base, index_zone, zone_name.data(), isize.data());
+    if (isize[2] != 0) {
+        std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << " has " << isize[2] << " boundary vertices, but to be honest I'm not sure how to deal with them. Exiting." << std::endl;
+        exit(22);
+    }
+    const int n_nodes = isize[0];
+    const int n_cells = isize[1];
+
+    // Getting nodes
+    int n_coords = 0;
+    cg_ncoords(index_file, index_base, index_zone, &n_coords);
+    if (n_coords != 2) {
+        std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << " has " << n_coords << " sets of coordinates, but for now only two are supported. Exiting." << std::endl;
+        exit(22);
+    }
+
+    std::array<std::array<char, CGIO_MAX_NAME_LENGTH>, 2> coord_names; // Oh yeah cause it's the 80s still
+    std::array<DataType_t, 2> coord_data_types {DataType_t::DataTypeNull, DataType_t::DataTypeNull};
+    for (int index_coord = 1; index_coord <= n_coords; ++index_coord) {
+        cg_coord_info(index_file, index_base, index_zone, index_coord, &coord_data_types[index_coord - 1], coord_names[index_coord - 1].data());
+    }
+
+    
+    std::array<std::vector<double>, 2> xy{std::vector<double>(n_nodes), std::vector<double>(n_nodes)};
+
+    for (int index_coord = 1; index_coord <= n_coords; ++index_coord) {
+        const int index_coord_start = 1;
+        cg_coord_read(index_file, index_base, index_zone,  coord_names[index_coord - 1].data(), DataType_t::RealDouble, &index_coord_start, &n_nodes, xy[index_coord - 1].data());
+    }
+    
+
+
+
+    cg_close(index_file);
+
+    std::vector<Vec2<deviceFloat>> host_nodes(n_nodes);
 }
 
 void SEM::Meshes::Mesh2D_t::set_initial_conditions(const deviceFloat* nodes) {
