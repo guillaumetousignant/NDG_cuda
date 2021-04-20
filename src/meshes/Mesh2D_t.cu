@@ -370,7 +370,7 @@ void SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) {
 
     // Interfaces
     int n_connectivity = 0;
-    cg_nconns(index_file, index_base, index_zone, n_connectivity);
+    cg_nconns(index_file, index_base, index_zone, &n_connectivity);
 
     std::vector<std::array<char, CGIO_MAX_NAME_LENGTH>> connectivity_names(n_connectivity); // Oh yeah cause it's the 80s still
     std::vector<GridLocation_t> connectivity_grid_locations(n_connectivity);
@@ -389,27 +389,27 @@ void SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) {
             &connectivity_donor_zone_types[index_connectivity - 1], &connectivity_donor_point_set_types[index_connectivity - 1],
             &connectivity_donor_data_types[index_connectivity - 1], &connectivity_donor_sizes[index_connectivity - 1]);
 
-        if (connectivity_donor_zone_types[index_section - 1] != ZoneType_t::Unstructured) {
+        if (connectivity_donor_zone_types[index_connectivity - 1] != ZoneType_t::Unstructured) {
             std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", connectivity " << index_connectivity << " has a donor zone type that isn't unstructured. For now only unstructured zones are supported. Exiting." << std::endl;
             exit(25);
         }
-        if (connectivity_point_set_types[index_section - 1] != PointSetType_t::PointList) {
+        if (connectivity_point_set_types[index_connectivity - 1] != PointSetType_t::PointList) {
             std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", connectivity " << index_connectivity << " has a point set type that isn't PointList. For now only PointList point set types are supported. Exiting." << std::endl;
             exit(26);
         }
-        if (connectivity_donor_point_set_types[index_section - 1] != PointSetType_t::PointListDonor) {
+        if (connectivity_donor_point_set_types[index_connectivity - 1] != PointSetType_t::PointListDonor) {
             std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", connectivity " << index_connectivity << " has a donor point set type that isn't PointListDonor. For now only PointListDonor point set types are supported. Exiting." << std::endl;
             exit(27);
         }
 
-        if (connectivity_grid_locations[index_section - 1] != GridLocation_t::FaceCenter) {
+        if (connectivity_grid_locations[index_connectivity - 1] != GridLocation_t::FaceCenter) {
             std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", connectivity " << index_connectivity << " has a grid location that isn't FaceCenter. For now only FaceCenter grid locations are supported. Exiting." << std::endl;
             exit(28);
         }
 
-        if (connectivity_types[index_section - 1] != GridConnectivityType_t::Abutting1to1) {
+        if (connectivity_types[index_connectivity - 1] != GridConnectivityType_t::Abutting1to1) {
             std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", connectivity " << index_connectivity << " has a grid connectivity type that isn't Abutting1to1. For now only Abutting1to1 grid connectivity types are supported. Exiting." << std::endl;
-            exit(28);
+            exit(29);
         }
     }
 
@@ -423,7 +423,44 @@ void SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) {
     }
 
     // Boundary conditions
+    int n_boundaries = 0;
+    cg_nbocos(index_file, index_base, index_zone, &n_boundaries);
 
+    std::vector<std::array<char, CGIO_MAX_NAME_LENGTH>> boundary_names(n_boundaries); // Oh yeah cause it's the 80s still
+    std::vector<BCType_t> boundary_types(n_boundaries);
+    std::vector<PointSetType_t> boundary_point_set_types(n_boundaries);
+    std::vector<int> boundary_sizes(n_boundaries);
+    std::vector<int> boundary_normal_indices(n_boundaries);
+    std::vector<int> boundary_normal_list_sizes(n_boundaries);
+    std::vector<DataType_t> boundary_normal_data_types(n_boundaries);
+    std::vector<int> boundary_n_datasets(n_boundaries);
+    std::vector<GridLocation_t> boundary_grid_locations(n_boundaries);
+    for (int index_boundary = 1; index_boundary <= n_boundaries; ++index_boundary) {
+        cg_boco_info(index_file, index_base, index_zone, index_boundary, boundary_names[index_boundary - 1].data(),
+            &boundary_types[index_boundary - 1], &boundary_point_set_types[index_boundary - 1], &boundary_sizes[index_boundary - 1],
+            &boundary_normal_indices[index_boundary - 1], &boundary_normal_list_sizes[index_boundary - 1],
+            &boundary_normal_data_types[index_boundary - 1], &boundary_n_datasets[index_boundary - 1]);
+
+        if (boundary_point_set_types[index_boundary - 1] != PointSetType_t::PointList) {
+            std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", boundary " << index_boundary << " has a point set type that isn't PointList. For now only PointList point set types are supported. Exiting." << std::endl;
+            exit(30);
+        }
+
+        cg_boco_gridlocation_read(index_file, index_base, index_zone, index_boundary, &boundary_grid_locations[index_boundary - 1]);
+
+        if (boundary_grid_locations[index_boundary - 1] != GridLocation_t::EdgeCenter) {
+            std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", boundary " << index_boundary << " has a grid location that isn't EdgeCenter. For now only EdgeCenter grid locations are supported. Exiting." << std::endl;
+            exit(31);
+        }
+    }
+
+    std::vector<std::vector<int>> boundary_elements(n_boundaries);
+    std::vector<std::vector<int>> boundary_normals(n_boundaries);
+    for (int index_boundary = 1; index_boundary <= n_boundaries; ++index_boundary) {
+        boundary_elements[index_boundary - 1] = std::vector<int>(boundary_sizes[index_boundary - 1]);
+        boundary_normals[index_boundary - 1] = std::vector<int>(boundary_sizes[index_boundary - 1]);
+        cg_boco_read(index_file, index_base, index_zone, index_boundary, boundary_elements[index_boundary - 1].data(), boundary_normals[index_boundary - 1].data());
+    }
 
     cg_close(index_file);
 
