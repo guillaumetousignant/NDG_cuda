@@ -24,6 +24,17 @@ target_compile_options(SEM PUBLIC "$<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-con
 find_package(MPI REQUIRED CXX)
 target_link_libraries(SEM PUBLIC MPI::MPI_CXX)
 
+# CGNS stuff
+set(HDF5_USE_STATIC_LIBRARIES ON)
+
+find_package(HDF5 COMPONENTS C)
+find_package(CGNS REQUIRED)
+
+target_link_libraries(SEM PUBLIC 
+                        hdf5::hdf5-static
+                        CGNS::CGNS)
+
+# Installation stuff
 install(TARGETS SEM 
     EXPORT SEM-export
     DESTINATION lib)

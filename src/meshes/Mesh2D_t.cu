@@ -3,6 +3,7 @@
 #include "polynomials/LegendrePolynomial_t.cuh"
 #include "helpers/ProgressBar_t.h"
 #include "functions/Utilities.h"
+#include "cgnslib.h"
 #include <iostream>
 #include <fstream>
 #include <sstream> 
