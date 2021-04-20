@@ -458,7 +458,7 @@ void SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) {
     std::vector<std::vector<int>> boundary_normals(n_boundaries);
     for (int index_boundary = 1; index_boundary <= n_boundaries; ++index_boundary) {
         boundary_elements[index_boundary - 1] = std::vector<int>(boundary_sizes[index_boundary - 1]);
-        boundary_normals[index_boundary - 1] = std::vector<int>(boundary_sizes[index_boundary - 1]);
+        boundary_normals[index_boundary - 1] = std::vector<int>(boundary_normal_list_sizes[index_boundary - 1]);
         cg_boco_read(index_file, index_base, index_zone, index_boundary, boundary_elements[index_boundary - 1].data(), boundary_normals[index_boundary - 1].data());
     }
 
