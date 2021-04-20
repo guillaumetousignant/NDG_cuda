@@ -1,18 +1,27 @@
 #include "helpers/float_types.h"
+#include "helpers/InputParser_t.h"
 #include "entities/NDG_t.cuh"
 #include "meshes/Mesh_t.cuh"
+#include "meshes/Mesh2D_t.cuh"
 #include "polynomials/ChebyshevPolynomial_t.cuh"
 #include "polynomials/LegendrePolynomial_t.cuh"
+#include <filesystem>
 #include <iostream>
 #include <chrono>
 #include <vector>
 #include <array>
 #include <mpi.h>
 
+namespace fs = std::filesystem;
+
 constexpr deviceFloat pi = 3.14159265358979323846;
 
 int main(int argc, char* argv[]) {
+    const SEM::Helpers::InputParser_t input_parser(argc, argv);
     MPI_Init(&argc, &argv);
+
+    const std::string input_mesh_file = input_parser.getCmdOption("--mesh");
+    const fs::path mesh_file = (input_mesh_file.empty()) ? fs::current_path() / "meshes" / "mesh.cgns" : input_mesh_file;
 
     const size_t N_elements = 128;
     const int N_max = 16;
@@ -62,10 +71,10 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    int n_proc_per_gpu = (node_size + deviceCount - 1)/deviceCount;
-    int device = node_rank/n_proc_per_gpu;
-    int device_rank = node_rank%n_proc_per_gpu;
-    int device_size = (device == deviceCount - 1) ? n_proc_per_gpu + node_size - n_proc_per_gpu * deviceCount : n_proc_per_gpu;
+    const int n_proc_per_gpu = (node_size + deviceCount - 1)/deviceCount;
+    const int device = node_rank/n_proc_per_gpu;
+    const int device_rank = node_rank%n_proc_per_gpu;
+    const int device_size = (device == deviceCount - 1) ? n_proc_per_gpu + node_size - n_proc_per_gpu * deviceCount : n_proc_per_gpu;
     cudaSetDevice(device);
     cudaStream_t stream;
     cudaStreamCreate(&stream); 
@@ -79,8 +88,7 @@ int main(int argc, char* argv[]) {
     auto t_start_init = std::chrono::high_resolution_clock::now();
 
     SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> NDG(N_max, N_interpolation_points, stream);
-    SEM::Meshes::Mesh_t mesh(N_elements, initial_N, delta_x_min, x[0], x[1], adaptivity_interval, stream);
-    mesh.set_initial_conditions(NDG.nodes_);
+    SEM::Meshes::Mesh2D_t mesh(mesh_file, initial_N, stream);
     cudaDeviceSynchronize();
 
     auto t_end_init = std::chrono::high_resolution_clock::now();
@@ -91,7 +99,7 @@ int main(int argc, char* argv[]) {
     // Computation
     auto t_start = std::chrono::high_resolution_clock::now();
 
-    mesh.solve(CFL, output_times, NDG, viscosity);
+    //mesh.solve(CFL, output_times, NDG, viscosity);
     // Wait for GPU to finish before copying to host
     cudaDeviceSynchronize();
 
