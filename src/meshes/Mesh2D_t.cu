@@ -317,7 +317,7 @@ void SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) {
         exit(22);
     }
     const int n_nodes = isize[0];
-    const int n_cells = isize[1];
+    const int n_elements = isize[1];
 
     // Getting nodes
     int n_coords = 0;
@@ -464,7 +464,40 @@ void SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) {
 
     cg_close(index_file);
 
+    // Putting everything in the format used by the mesh
     std::vector<Vec2<deviceFloat>> host_nodes(n_nodes);
+    for (int i = 0; i < n_nodes; ++i) {
+        host_nodes[i].x() = xy[0][i];
+        host_nodes[i].y() = xy[1][i];
+    }
+
+    std::vector<bool> section_is_domain(n_sections);
+    int n_elements_domain = 0;
+    int n_elements_ghost = 0;
+    for (int i = 0; i < n_sections; ++i) {
+        switch (section_type[n_sections]) {
+            case ElementType_t::BAR_2:
+                section_is_domain[i] = false;
+                n_elements_ghost += section_ranges[i][1] - section_ranges[i][0];
+                break;
+
+            case ElementType_t::QUAD_4:
+                section_is_domain[i] = true;
+                n_elements_domain += section_ranges[i][1] - section_ranges[i][0];
+                break;
+
+            default:
+                std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", section " << i << " has an unknown element type. For now only BAR_2 and QUAD_4 are implemented, for boundaries and domain respectively. Exiting." << std::endl;
+                exit(32);
+        }
+    }
+
+    if (n_elements_domain + n_elements_ghost != n_elements) {
+        std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << " has " << n_elements << " elements but the sum of its sections is " << n_elements_domain + n_elements_ghost << " elements. Exiting." << std::endl;
+        exit(33);
+    }
+
+
 }
 
 void SEM::Meshes::Mesh2D_t::set_initial_conditions(const deviceFloat* nodes) {
