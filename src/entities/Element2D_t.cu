@@ -2,7 +2,6 @@
 #include "polynomials/ChebyshevPolynomial_t.cuh"
 #include "polynomials/LegendrePolynomial_t.cuh"
 #include <cmath>
-#include <thrust/swap.h>
 
 constexpr deviceFloat pi = 3.14159265358979323846;
 
@@ -60,7 +59,7 @@ void SEM::Entities::Element2D_t::estimate_error<Polynomial>(const deviceFloat* n
 
 __device__
 deviceFloat SEM::Entities::Element2D_t::exponential_decay() {
-   
+    return 0.0;
 }
 
 __device__
