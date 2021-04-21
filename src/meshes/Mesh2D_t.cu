@@ -18,6 +18,7 @@ using SEM::Entities::Vec2;
 constexpr int CGIO_MAX_NAME_LENGTH = 33; // Includes the null terminator
 
 SEM::Meshes::Mesh2D_t::Mesh2D_t(std::filesystem::path filename, int initial_N, cudaStream_t &stream) :       
+        initial_N_(initial_N),        
         stream_(stream) {
 
     std::string extension = filename.extension().string();
@@ -495,6 +496,35 @@ void SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) {
     if (n_elements_domain + n_elements_ghost != n_elements) {
         std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << " has " << n_elements << " elements but the sum of its sections is " << n_elements_domain + n_elements_ghost << " elements. Exiting." << std::endl;
         exit(33);
+    }
+
+    std::vector<SEM::Entities::Element2D_t> host_elements(n_elements);
+    std::vector<size_t> section_start_indices(n_sections);
+    size_t element_domain_index = 0;
+    size_t element_ghost_index = n_elements_domain;
+    for (int i = 0; i < n_sections; ++i) {
+        if (section_is_domain[i]) {
+            section_start_indices[i] = element_domain_index;
+            for (int j = 0; j < section_ranges[i][1] - section_ranges[i][0]; ++j) {
+                host_elements[section_start_indices[i] + j].N_ = initial_N_;
+                host_elements[section_start_indices[i] + j].nodes_ = {static_cast<size_t>(connectivity[i][4 * j] - 1),
+                                                                      static_cast<size_t>(connectivity[i][4 * j + 1] - 1),
+                                                                      static_cast<size_t>(connectivity[i][4 * j + 2] - 1),
+                                                                      static_cast<size_t>(connectivity[i][4 * j + 3] - 1)};
+            }
+            element_domain_index += section_ranges[i][1] - section_ranges[i][0];
+        }
+        else {
+            section_start_indices[i] = element_ghost_index;
+            for (int j = 0; j < section_ranges[i][1] - section_ranges[i][0]; ++j) {
+                host_elements[section_start_indices[i] + j].N_ = 0;
+                host_elements[section_start_indices[i] + j].nodes_ = {static_cast<size_t>(connectivity[i][2 * j] - 1),
+                                                                      static_cast<size_t>(connectivity[i][2 * j + 1] - 1),
+                                                                      static_cast<size_t>(connectivity[i][2 * j + 1] - 1),
+                                                                      static_cast<size_t>(connectivity[i][2 * j] - 1)};
+            }
+            element_ghost_index += section_ranges[i][1] - section_ranges[i][0];
+        }
     }
 
 

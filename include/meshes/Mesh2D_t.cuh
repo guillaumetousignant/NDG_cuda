@@ -1,7 +1,7 @@
 #ifndef NDG_MESH2D_T_H
 #define NDG_MESH2D_T_H
 
-#include "entities/Element_t.cuh"
+#include "entities/Element2D_t.cuh"
 #include "entities/Face_t.cuh"
 #include "entities/NDG_t.cuh"
 #include "entities/device_vector.cuh"
@@ -20,9 +20,7 @@ namespace SEM { namespace Meshes {
 
             SEM::Entities::device_vector<SEM::Entities::Vec2<deviceFloat>> nodes_;
             SEM::Entities::device_vector<std::array<size_t, 4>> element_to_nodes_;
-            
-            size_t n_elements_;
-            
+            SEM::Entities::device_vector<SEM::Entities::Element2D_t> elements_;
             
             
 
@@ -43,7 +41,6 @@ namespace SEM { namespace Meshes {
             int initial_N_;
             deviceFloat delta_x_min_;
             int adaptivity_interval_;
-            SEM::Entities::Element_t* elements_;
             SEM::Entities::Face_t* faces_;
             size_t* local_boundary_to_element_;
             size_t* MPI_boundary_to_element_;
