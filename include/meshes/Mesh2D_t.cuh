@@ -46,16 +46,16 @@ namespace SEM { namespace Meshes {
             size_t* MPI_boundary_to_element_;
             size_t* MPI_boundary_from_element_;
 
-            void read_su2(std::filesystem::path filename);
-            void read_cgns(std::filesystem::path filename);
-            void set_initial_conditions(const deviceFloat* nodes);
-            void boundary_conditions();
-            void print();
-            void write_data(deviceFloat time, size_t N_interpolation_points, const deviceFloat* interpolation_matrices);
-            deviceFloat get_delta_t(const deviceFloat CFL);
+            auto read_su2(std::filesystem::path filename) -> void;
+            auto read_cgns(std::filesystem::path filename) -> void;
+            auto set_initial_conditions(const deviceFloat* nodes) -> void;
+            auto boundary_conditions() -> void;
+            auto print() -> void;
+            auto write_data(deviceFloat time, size_t N_interpolation_points, const deviceFloat* interpolation_matrices) -> void;
+            auto get_delta_t(const deviceFloat CFL) -> deviceFloat;
             
             template<typename Polynomial>
-            void solve(const deviceFloat CFL, const std::vector<deviceFloat> output_times, const SEM::Entities::NDG_t<Polynomial> &NDG, deviceFloat viscosity);
+            auto solve(const deviceFloat CFL, const std::vector<deviceFloat> output_times, const SEM::Entities::NDG_t<Polynomial> &NDG, deviceFloat viscosity) -> void;
 
         private:
             deviceFloat* device_delta_t_array_;
@@ -79,8 +79,8 @@ namespace SEM { namespace Meshes {
             std::vector<MPI_Request> requests_;
             std::vector<MPI_Status> statuses_;
 
-            void write_file_data(size_t N_interpolation_points, size_t N_elements, deviceFloat time, int rank, const std::vector<deviceFloat>& coordinates, const std::vector<deviceFloat>& velocity, const std::vector<deviceFloat>& du_dx, const std::vector<deviceFloat>& intermediate, const std::vector<deviceFloat>& x_L, const std::vector<deviceFloat>& x_R, const std::vector<int>& N, const std::vector<deviceFloat>& sigma, const bool* refine, const bool* coarsen, const std::vector<deviceFloat>& error);
-            void adapt(int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights);
+            auto write_file_data(size_t N_interpolation_points, size_t N_elements, deviceFloat time, int rank, const std::vector<deviceFloat>& coordinates, const std::vector<deviceFloat>& velocity, const std::vector<deviceFloat>& du_dx, const std::vector<deviceFloat>& intermediate, const std::vector<deviceFloat>& x_L, const std::vector<deviceFloat>& x_R, const std::vector<int>& N, const std::vector<deviceFloat>& sigma, const bool* refine, const bool* coarsen, const std::vector<deviceFloat>& error) -> void;
+            auto adapt(int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights) -> void;
     };
 }}
 

@@ -33,22 +33,22 @@ namespace SEM { namespace Entities {
 
             // Algorithm 61
             __device__
-            void interpolate_to_boundaries(const deviceFloat* lagrange_interpolant_minus, const deviceFloat* lagrange_interpolant_plus);
+            auto interpolate_to_boundaries(const deviceFloat* lagrange_interpolant_minus, const deviceFloat* lagrange_interpolant_plus) -> void;
 
             // Algorithm 61
             __device__
-            void interpolate_q_to_boundaries(const deviceFloat* lagrange_interpolant_minus, const deviceFloat* lagrange_interpolant_plus);
+            auto interpolate_q_to_boundaries(const deviceFloat* lagrange_interpolant_minus, const deviceFloat* lagrange_interpolant_plus) -> void;
 
             template<typename Polynomial>
             __device__
-            void estimate_error(const deviceFloat* nodes, const deviceFloat* weights);
+            auto estimate_error(const deviceFloat* nodes, const deviceFloat* weights) -> void;
 
             __device__
-            void interpolate_from(const Element2D_t& other, const deviceFloat* nodes, const deviceFloat* barycentric_weights);
+            auto interpolate_from(const Element2D_t& other, const deviceFloat* nodes, const deviceFloat* barycentric_weights) -> void;
 
         private:
             __device__
-            deviceFloat exponential_decay();
+            auto exponential_decay() -> deviceFloat;
     };
 }}
 

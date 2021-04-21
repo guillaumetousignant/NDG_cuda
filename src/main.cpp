@@ -11,7 +11,7 @@
 
 constexpr hostFloat pi = 3.14159265358979323846;
 
-int main(int argc, char* argv[]) {
+auto main(int argc, char* argv[]) -> int {
     MPI_Init(&argc, &argv);
 
     const size_t N_elements = 128;

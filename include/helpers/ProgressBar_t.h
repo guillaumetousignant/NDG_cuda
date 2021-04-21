@@ -11,19 +11,19 @@ namespace SEM { namespace Helpers {
         public: 
             ProgressBar_t();
 
-            void set_progress(hostFloat value);
+            auto set_progress(hostFloat value) -> void;
 
-            void set_bar_width(size_t width);
+            auto set_bar_width(size_t width) -> void;
 
-            void fill_bar_progress_with(const std::string& chars);
+            auto fill_bar_progress_with(const std::string& chars) -> void;
 
-            void fill_bar_remainder_with(const std::string& chars);
+            auto fill_bar_remainder_with(const std::string& chars) -> void;
 
-            void set_status_text(const std::string& status);
+            auto set_status_text(const std::string& status) -> void;
 
-            void update(hostFloat value, std::ostream &os = std::cout);
+            auto update(hostFloat value, std::ostream &os = std::cout) -> void;
 
-            void write_progress(std::ostream &os = std::cout);
+            auto write_progress(std::ostream &os = std::cout) -> void;
 
         private:
             std::mutex mutex_;

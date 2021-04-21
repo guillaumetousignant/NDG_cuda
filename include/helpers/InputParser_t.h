@@ -7,11 +7,11 @@
 namespace SEM { namespace Helpers {
     class InputParser_t {
         public:
-            InputParser_t (int &argc, char **argv);
+            InputParser_t(int &argc, char **argv);
 
-            std::string getCmdOption(const std::string &option) const;
+            auto getCmdOption(const std::string &option) const -> std::string;
 
-            bool cmdOptionExists(const std::string &option) const;
+            auto cmdOptionExists(const std::string &option) const -> bool;
 
         private:
             std::vector <std::string> tokens_;

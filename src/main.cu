@@ -16,7 +16,7 @@ namespace fs = std::filesystem;
 
 constexpr deviceFloat pi = 3.14159265358979323846;
 
-int main(int argc, char* argv[]) {
+auto main(int argc, char* argv[]) -> int {
     const SEM::Helpers::InputParser_t input_parser(argc, argv);
     MPI_Init(&argc, &argv);
 

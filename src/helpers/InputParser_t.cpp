@@ -7,7 +7,7 @@ SEM::Helpers::InputParser_t::InputParser_t (int &argc, char **argv) {
 }
 
 /// @author iain
-std::string SEM::Helpers::InputParser_t::getCmdOption(const std::string &option) const {
+auto SEM::Helpers::InputParser_t::getCmdOption(const std::string &option) const -> std::string {
     auto itr = std::find(tokens_.begin(), tokens_.end(), option);
     if (itr != tokens_.end() && ++itr != tokens_.end()){
         return *itr;
@@ -16,6 +16,6 @@ std::string SEM::Helpers::InputParser_t::getCmdOption(const std::string &option)
 }
 
 /// @author iain
-bool SEM::Helpers::InputParser_t::cmdOptionExists(const std::string &option) const {
+auto SEM::Helpers::InputParser_t::cmdOptionExists(const std::string &option) const -> bool {
     return std::find(tokens_.begin(), tokens_.end(), option) != tokens_.end();
 }

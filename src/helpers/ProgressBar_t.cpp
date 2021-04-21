@@ -9,37 +9,37 @@ SEM::Helpers::ProgressBar_t::ProgressBar_t() :
         remainder_{" "},
         status_text_{""} {}
 
-void SEM::Helpers::ProgressBar_t::set_progress(hostFloat value) {
+auto SEM::Helpers::ProgressBar_t::set_progress(hostFloat value) -> void {
     std::unique_lock lock{mutex_};
     progress_ = value;
 }
 
-void SEM::Helpers::ProgressBar_t::set_bar_width(size_t width) {
+auto SEM::Helpers::ProgressBar_t::set_bar_width(size_t width) -> void {
     std::unique_lock lock{mutex_};
     bar_width_ = width;    
 }
 
-void SEM::Helpers::ProgressBar_t::fill_bar_progress_with(const std::string& chars) {
+auto SEM::Helpers::ProgressBar_t::fill_bar_progress_with(const std::string& chars) -> void {
     std::unique_lock lock{mutex_};
     fill_ = chars;    
 }
 
-void SEM::Helpers::ProgressBar_t::fill_bar_remainder_with(const std::string& chars) {
+auto SEM::Helpers::ProgressBar_t::fill_bar_remainder_with(const std::string& chars) -> void {
     std::unique_lock lock{mutex_};
     remainder_ = chars;    
 }
 
-void SEM::Helpers::ProgressBar_t::set_status_text(const std::string& status) {
+auto SEM::Helpers::ProgressBar_t::set_status_text(const std::string& status) -> void {
     std::unique_lock lock{mutex_};
     status_text_ = status;    
 }
 
-void SEM::Helpers::ProgressBar_t::update(hostFloat value, std::ostream &os /* = std::cout */) {
+auto SEM::Helpers::ProgressBar_t::update(hostFloat value, std::ostream &os /* = std::cout */) -> void {
     set_progress(value);
     write_progress(os);
 }
 
-void SEM::Helpers::ProgressBar_t::write_progress(std::ostream &os /* = std::cout */) {
+auto SEM::Helpers::ProgressBar_t::write_progress(std::ostream &os /* = std::cout */) -> void {
     std::unique_lock lock{mutex_};
 
     // No need to write once progress is 100%

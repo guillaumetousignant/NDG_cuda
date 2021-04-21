@@ -36,7 +36,7 @@ SEM::Meshes::Mesh2D_t::Mesh2D_t(std::filesystem::path filename, int initial_N, c
     }
 }
 
-void SEM::Meshes::Mesh2D_t::read_su2(std::filesystem::path filename) {
+auto SEM::Meshes::Mesh2D_t::read_su2(std::filesystem::path filename) -> void {
     std::cerr << "Error: SU2 meshes not implemented yet. Exiting." << std::endl;
     exit(15);
 
@@ -264,7 +264,7 @@ void SEM::Meshes::Mesh2D_t::read_su2(std::filesystem::path filename) {
     cells_.insert(std::end(cells_), std::begin(inlet), std::end(inlet));*/
 }
 
-void SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) {
+auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     int index_file;
     const int open_error = cg_open(filename.string().c_str(), CG_MODE_READ, &index_file);
     if (open_error != CG_OK) {
@@ -530,38 +530,38 @@ void SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) {
 
 }
 
-void SEM::Meshes::Mesh2D_t::set_initial_conditions(const deviceFloat* nodes) {
+auto SEM::Meshes::Mesh2D_t::set_initial_conditions(const deviceFloat* nodes) -> void {
 
 }
 
-void SEM::Meshes::Mesh2D_t::print() {
+auto SEM::Meshes::Mesh2D_t::print() -> void {
     
 }
 
-void SEM::Meshes::Mesh2D_t::write_file_data(size_t N_interpolation_points, size_t N_elements, deviceFloat time, int rank, const std::vector<deviceFloat>& coordinates, const std::vector<deviceFloat>& velocity, const std::vector<deviceFloat>& du_dx, const std::vector<deviceFloat>& intermediate, const std::vector<deviceFloat>& x_L, const std::vector<deviceFloat>& x_R, const std::vector<int>& N, const std::vector<deviceFloat>& sigma, const bool* refine, const bool* coarsen, const std::vector<deviceFloat>& error) {
+auto SEM::Meshes::Mesh2D_t::write_file_data(size_t N_interpolation_points, size_t N_elements, deviceFloat time, int rank, const std::vector<deviceFloat>& coordinates, const std::vector<deviceFloat>& velocity, const std::vector<deviceFloat>& du_dx, const std::vector<deviceFloat>& intermediate, const std::vector<deviceFloat>& x_L, const std::vector<deviceFloat>& x_R, const std::vector<int>& N, const std::vector<deviceFloat>& sigma, const bool* refine, const bool* coarsen, const std::vector<deviceFloat>& error) -> void {
     
 }
 
-void SEM::Meshes::Mesh2D_t::write_data(deviceFloat time, size_t N_interpolation_points, const deviceFloat* interpolation_matrices) {
+auto SEM::Meshes::Mesh2D_t::write_data(deviceFloat time, size_t N_interpolation_points, const deviceFloat* interpolation_matrices) -> void {
 
 }
 
-template void SEM::Meshes::Mesh2D_t::solve(const deviceFloat delta_t, const std::vector<deviceFloat> output_times, const SEM::Entities::NDG_t<SEM::Polynomials::ChebyshevPolynomial_t> &NDG, deviceFloat viscosity); // Get with the times c++, it's crazy I have to do this
-template void SEM::Meshes::Mesh2D_t::solve(const deviceFloat delta_t, const std::vector<deviceFloat> output_times, const SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> &NDG, deviceFloat viscosity);
+template auto SEM::Meshes::Mesh2D_t::solve(const deviceFloat delta_t, const std::vector<deviceFloat> output_times, const SEM::Entities::NDG_t<SEM::Polynomials::ChebyshevPolynomial_t> &NDG, deviceFloat viscosity) -> void; // Get with the times c++, it's crazy I have to do this
+template auto SEM::Meshes::Mesh2D_t::solve(const deviceFloat delta_t, const std::vector<deviceFloat> output_times, const SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> &NDG, deviceFloat viscosity) -> void;
 
 template<typename Polynomial>
-void SEM::Meshes::Mesh2D_t::solve(const deviceFloat CFL, const std::vector<deviceFloat> output_times, const SEM::Entities::NDG_t<Polynomial> &NDG, deviceFloat viscosity) {
+auto SEM::Meshes::Mesh2D_t::solve(const deviceFloat CFL, const std::vector<deviceFloat> output_times, const SEM::Entities::NDG_t<Polynomial> &NDG, deviceFloat viscosity) -> void {
     
 }
 
-deviceFloat SEM::Meshes::Mesh2D_t::get_delta_t(const deviceFloat CFL) {   
+auto SEM::Meshes::Mesh2D_t::get_delta_t(const deviceFloat CFL) -> deviceFloat {   
     return 0.0;
 }
 
-void SEM::Meshes::Mesh2D_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights) {
+auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights) -> void {
     
 }
 
-void SEM::Meshes::Mesh2D_t::boundary_conditions() {
+auto SEM::Meshes::Mesh2D_t::boundary_conditions() -> void {
     
 }

@@ -38,31 +38,31 @@ SEM::Entities::Element2D_t::Element2D_t() :
 
 // Algorithm 61
 __device__
-void SEM::Entities::Element2D_t::interpolate_to_boundaries(const deviceFloat* lagrange_interpolant_minus, const deviceFloat* lagrange_interpolant_plus) {
+auto SEM::Entities::Element2D_t::interpolate_to_boundaries(const deviceFloat* lagrange_interpolant_minus, const deviceFloat* lagrange_interpolant_plus) -> void {
     
 }
 
 // Algorithm 61
 __device__
-void SEM::Entities::Element2D_t::interpolate_q_to_boundaries(const deviceFloat* lagrange_interpolant_minus, const deviceFloat* lagrange_interpolant_plus) {
+auto SEM::Entities::Element2D_t::interpolate_q_to_boundaries(const deviceFloat* lagrange_interpolant_minus, const deviceFloat* lagrange_interpolant_plus) -> void {
     
 }
 
-template __device__ void SEM::Entities::Element2D_t::estimate_error<SEM::Polynomials::ChebyshevPolynomial_t>(const deviceFloat* nodes, const deviceFloat* weights);
-template __device__ void SEM::Entities::Element2D_t::estimate_error<SEM::Polynomials::LegendrePolynomial_t>(const deviceFloat* nodes, const deviceFloat* weights);
+template __device__ auto SEM::Entities::Element2D_t::estimate_error<SEM::Polynomials::ChebyshevPolynomial_t>(const deviceFloat* nodes, const deviceFloat* weights) -> void;
+template __device__ auto SEM::Entities::Element2D_t::estimate_error<SEM::Polynomials::LegendrePolynomial_t>(const deviceFloat* nodes, const deviceFloat* weights) -> void;
 
 template<typename Polynomial>
 __device__
-void SEM::Entities::Element2D_t::estimate_error<Polynomial>(const deviceFloat* nodes, const deviceFloat* weights) {
+auto SEM::Entities::Element2D_t::estimate_error<Polynomial>(const deviceFloat* nodes, const deviceFloat* weights) -> void {
     
 }
 
 __device__
-deviceFloat SEM::Entities::Element2D_t::exponential_decay() {
+auto SEM::Entities::Element2D_t::exponential_decay() -> deviceFloat {
     return 0.0;
 }
 
 __device__
-void SEM::Entities::Element2D_t::interpolate_from(const SEM::Entities::Element2D_t& other, const deviceFloat* nodes, const deviceFloat* barycentric_weights) {
+auto SEM::Entities::Element2D_t::interpolate_from(const SEM::Entities::Element2D_t& other, const deviceFloat* nodes, const deviceFloat* barycentric_weights) -> void {
 
 }
