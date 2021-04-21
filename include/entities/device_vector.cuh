@@ -7,8 +7,9 @@ namespace SEM { namespace Entities {
     template<typename T>
     class device_vector { 
         public: 
+            template<typename TI>
             __host__ __device__
-            device_vector(size_t size);
+            device_vector(TI size);
 
             __host__ __device__
             device_vector();
@@ -34,11 +35,13 @@ namespace SEM { namespace Entities {
             T* data_;
             size_t size_;
 
+            template<typename TI>
             __device__
-            auto operator[](size_t index) -> T&;
+            auto operator[](TI index) -> T&;
 
+            template<typename TI>
             __device__
-            auto operator[](size_t index) const -> const T&;
+            auto operator[](TI index) const -> const T&;
 
             __host__ __device__
             auto size() const -> size_t;

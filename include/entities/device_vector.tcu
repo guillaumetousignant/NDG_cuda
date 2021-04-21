@@ -1,8 +1,9 @@
 #include <stdexcept>
 
 template <typename T>
+template<typename TI>
 __host__ __device__
-SEM::Entities::device_vector<T>::device_vector(size_t size) : size_(size) {
+SEM::Entities::device_vector<T>::device_vector(TI size) : size_(size) {
     cudaMalloc(&data_, size_ * sizeof(T));
 }
 
@@ -66,14 +67,16 @@ auto SEM::Entities::device_vector<T>::operator=(device_vector<T>&& other) noexce
 }
 
 template <typename T>
+template<typename TI>
 __device__
-auto SEM::Entities::device_vector<T>::operator[](size_t index) -> T& {
+auto SEM::Entities::device_vector<T>::operator[](TI index) -> T& {
     return data_[index];
 }
 
 template <typename T>
+template<typename TI>
 __device__
-auto SEM::Entities::device_vector<T>::operator[](size_t index) const -> const T& {
+auto SEM::Entities::device_vector<T>::operator[](TI index) const -> const T& {
     return data_[index];
 }
 
@@ -86,6 +89,12 @@ auto SEM::Entities::device_vector<T>::size() const -> size_t {
 template <typename T>
 __host__ __device__
 auto SEM::Entities::device_vector<T>::data() -> T* {
+    return data_;
+}
+
+template <typename T>
+__host__ __device__
+auto SEM::Entities::device_vector<T>::data() const -> const T* {
     return data_;
 }
 
