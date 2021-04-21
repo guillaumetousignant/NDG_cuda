@@ -465,13 +465,14 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
 
     cg_close(index_file);
 
-    // Putting everything in the format used by the mesh
+    // Putting nodes in the format used by the mesh
     std::vector<Vec2<deviceFloat>> host_nodes(n_nodes);
     for (int i = 0; i < n_nodes; ++i) {
         host_nodes[i].x() = xy[0][i];
         host_nodes[i].y() = xy[1][i];
     }
 
+    // Figuring out which sections are the domain and which are ghost cells
     std::vector<bool> section_is_domain(n_sections);
     int n_elements_domain = 0;
     int n_elements_ghost = 0;
@@ -498,6 +499,7 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
         exit(33);
     }
 
+    // Putting connectivity data in the format used by the mesh
     std::vector<SEM::Entities::Element2D_t> host_elements(n_elements);
     std::vector<size_t> section_start_indices(n_sections);
     size_t element_domain_index = 0;
@@ -527,6 +529,7 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
         }
     }
 
+    // Computing nodes to elements
 
 }
 
