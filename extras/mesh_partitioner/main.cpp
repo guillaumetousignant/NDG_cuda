@@ -6,7 +6,7 @@
 
 namespace fs = std::filesystem;
 
-int main(int argc, char* argv[]) {
+auto main(int argc, char* argv[]) -> int {
     fs::path in_file;
     fs::path out_file;
 
