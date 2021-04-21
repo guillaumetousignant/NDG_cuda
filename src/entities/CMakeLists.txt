@@ -1,6 +1,7 @@
 target_sources(SEM
     PRIVATE
         Element_t.cu
+        Element2D_t.cu
         Element_host_t.cpp
         Face_t.cu
         Face_host_t.cpp

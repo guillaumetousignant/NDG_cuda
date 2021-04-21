@@ -1,0 +1,91 @@
+#include <stdexcept>
+
+template <typename T>
+template<typename TI>
+__device__
+SEM::Entities::cuda_vector<T>::cuda_vector(TI size) : size_(size), data_(new T[size]) {}
+
+template <typename T>
+__device__
+SEM::Entities::cuda_vector<T>::cuda_vector() : size_(0), data_(nullptr) {}
+
+template <typename T>
+__device__
+SEM::Entities::cuda_vector<T>::~cuda_vector() {
+    delete[] data_;
+}
+
+template <typename T>
+__device__
+SEM::Entities::cuda_vector<T>::cuda_vector(const cuda_vector<T>& other) : size_(other.size()), data_(new T[size_]) { // copy constructor
+    for (size_t i = 0; i < size_; ++i) {
+        data_[i] = other.data_[i];
+    }
+}
+
+template <typename T>
+__device__
+SEM::Entities::cuda_vector<T>::cuda_vector(cuda_vector<T>&& other) noexcept : size_(other.size()), data_(other.data()) { // move constructor
+    other.data_ = nullptr;
+}
+
+template <typename T>
+__device__
+auto SEM::Entities::cuda_vector<T>::operator=(const cuda_vector<T>& other) -> cuda_vector& { // copy assignment
+    if (&other == this) {
+        return *this;
+    }
+    
+    if (size_ != other.size()) {
+        delete[] data_;
+        size_ = other.size();
+        data_ = new T[size_];
+    }
+    
+    for (size_t i = 0; i < size_; ++i) {
+        data_[i] = other.data_[i];
+    }
+
+    return *this;
+}
+
+template <typename T>
+__device__
+auto SEM::Entities::cuda_vector<T>::operator=(cuda_vector<T>&& other) noexcept -> cuda_vector& { // move assignment
+    size_ = other.size();
+    std::swap(data_, other.data_);
+
+    return *this;
+}
+
+template <typename T>
+template<typename TI>
+__device__
+auto SEM::Entities::cuda_vector<T>::operator[](TI index) -> T& {
+    return data_[index];
+}
+
+template <typename T>
+template<typename TI>
+__device__
+auto SEM::Entities::cuda_vector<T>::operator[](TI index) const -> const T& {
+    return data_[index];
+}
+
+template <typename T>
+__device__
+auto SEM::Entities::cuda_vector<T>::size() const -> size_t {
+    return size_;
+}
+
+template <typename T>
+__device__
+auto SEM::Entities::cuda_vector<T>::data() -> T* {
+    return data_;
+}
+
+template <typename T>
+__device__
+auto SEM::Entities::cuda_vector<T>::data() const -> const T* {
+    return data_;
+}
