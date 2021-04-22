@@ -530,7 +530,67 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     }
 
     // Computing nodes to elements
+    const std::vector<std::vector<size_t>> node_to_element = build_node_to_element(n_nodes, host_elements);
 
+    // Computing element to elements
+    const std::vector<std::vector<size_t>> element_to_element = build_element_to_element(host_elements, node_to_element);
+
+}
+
+auto SEM::Meshes::Mesh2D_t::build_node_to_element(size_t n_nodes, const std::vector<SEM::Entities::Element2D_t>& elements) -> std::vector<std::vector<size_t>> {
+    std::vector<std::vector<size_t>> node_to_element(n_nodes);
+
+    for (size_t j = 0; j < elements.size(); ++j) {
+        for (auto node_index: elements[j].nodes_) {
+            node_to_element[node_index].push_back(j);
+        }
+    }
+
+    return node_to_element;
+}
+
+auto SEM::Meshes::Mesh2D_t::build_element_to_element(const std::vector<SEM::Entities::Element2D_t>& elements, const std::vector<std::vector<size_t>>& node_to_element) -> std::vector<std::vector<size_t>> {
+    std::vector<std::vector<size_t>> element_to_element(elements.size());
+
+    for (size_t i = 0; i < elements.size(); ++i) {
+        const SEM::Entities::Element2D_t& element = elements[i];
+        element_to_element[i] = std::vector<size_t>(element.nodes_.size());
+
+        for (size_t j = 0; j < element.nodes_.size() - 1; ++j) {
+            const size_t node_index = element.nodes_[j];
+
+            for (size_t m = 0; m < node_to_element[node_index].size(); ++m) {
+                const size_t element_index = node_to_element[node_index][m];
+
+                if (element_index != i) {
+                    for (size_t n = 0; n < node_to_element[element.nodes_[j + 1]].size(); ++n) {
+                        if (element_index == node_to_element[element.nodes_[j + 1]][n]) {
+                            element_to_element[i][j] = element_index;
+                            goto endloop; // I hate this too don't worry
+                        }
+                    }
+                }
+            }
+            endloop: ;
+        }
+
+        const size_t node_index_last = element.nodes_[element.nodes_.size() - 1];
+        for (size_t m = 0; m < node_to_element[node_index_last].size(); ++m) {
+            const size_t element_index = element_to_element[node_index_last][m];
+
+            if (node_to_element[node_index_last][m] != i) { // Weird CHECK
+                for (size_t n = 0; n < node_to_element[element.nodes_[0]].size(); ++n) {
+                    if (element_index == element_to_element[element.nodes_[0]][n]) {
+                        element_to_element[i][element.nodes_.size() - 1] = element_index;
+                        goto endloop2; // I hate this too don't worry
+                    }
+                }
+            }
+        }
+        endloop2: ;
+    }
+ 
+    return element_to_element;
 }
 
 auto SEM::Meshes::Mesh2D_t::set_initial_conditions(const deviceFloat* nodes) -> void {
