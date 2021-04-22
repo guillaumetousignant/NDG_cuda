@@ -7,7 +7,7 @@
 namespace SEM { namespace Entities {
     class Face_t {
         public:
-            __device__ 
+            __host__ __device__ 
             Face_t(size_t element_L, size_t element_R);
 
             __host__ __device__

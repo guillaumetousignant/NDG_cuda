@@ -1,7 +1,7 @@
 #include "entities/Face_t.cuh"
 #include <utility>
 
-__device__ 
+__host__ __device__ 
 SEM::Entities::Face_t::Face_t(size_t element_L, size_t element_R) : 
         elements_{element_L, element_R},
         flux_{0.0},
