@@ -609,6 +609,16 @@ auto SEM::Meshes::Mesh2D_t::build_faces(size_t n_nodes, std::vector<SEM::Entitie
     for (size_t i = 0; i < elements.size(); ++i) {
         for (size_t j = 0; j < elements[i].nodes_.size(); ++j) {
             std::array<size_t, 2> nodes{elements[i].nodes_[j], (j < elements[i].nodes_.size() - 1) ? elements[i].nodes_[j + 1] : elements[i].nodes_[0]};
+
+            if (nodes[0] ==  nodes[1]) { // Shitty workaround for 4-sided boundaries
+                for (auto just_any_other_node_index : elements[i].nodes_) {
+                    if (just_any_other_node_index != nodes[0]) {
+                        nodes[1] = just_any_other_node_index;
+                        break;
+                    }
+                }
+            }
+
             bool found = false;
             for (auto face_index: node_to_face[nodes[0]]) {
                 if (((faces[face_index].nodes_[0] == nodes[0]) && (faces[face_index].nodes_[1] == nodes[1])) || ((faces[face_index].nodes_[0] == nodes[1]) && (faces[face_index].nodes_[1] == nodes[0]))) {
@@ -625,7 +635,7 @@ auto SEM::Meshes::Mesh2D_t::build_faces(size_t n_nodes, std::vector<SEM::Entitie
                 if (nodes[1] != nodes[0]) {
                     node_to_face[nodes[1]].push_back(faces.size());
                 }
-                faces.push_back(SEM::Entities::Face2D_t({nodes[0], nodes[1]}, {i, static_cast<size_t>(-1)}));
+                faces.emplace_back(std::array<size_t, 2>{nodes[0], nodes[1]}, std::array<size_t, 2>{i, static_cast<size_t>(-1)});
             }
         }
     }
