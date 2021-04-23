@@ -480,12 +480,12 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
         switch (section_type[i]) {
             case ElementType_t::BAR_2:
                 section_is_domain[i] = false;
-                n_elements_ghost += section_ranges[i][1] - section_ranges[i][0];
+                n_elements_ghost += section_ranges[i][1] - section_ranges[i][0] + 1;
                 break;
 
             case ElementType_t::QUAD_4:
                 section_is_domain[i] = true;
-                n_elements_domain += section_ranges[i][1] - section_ranges[i][0];
+                n_elements_domain += section_ranges[i][1] - section_ranges[i][0] + 1;
                 break;
 
             default:
