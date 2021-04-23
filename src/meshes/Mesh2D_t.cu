@@ -507,25 +507,25 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     for (int i = 0; i < n_sections; ++i) {
         if (section_is_domain[i]) {
             section_start_indices[i] = element_domain_index;
-            for (int j = 0; j < section_ranges[i][1] - section_ranges[i][0]; ++j) {
+            for (int j = 0; j < section_ranges[i][1] - section_ranges[i][0] + 1; ++j) {
                 host_elements[section_start_indices[i] + j].N_ = initial_N_;
                 host_elements[section_start_indices[i] + j].nodes_ = {static_cast<size_t>(connectivity[i][4 * j] - 1),
                                                                       static_cast<size_t>(connectivity[i][4 * j + 1] - 1),
                                                                       static_cast<size_t>(connectivity[i][4 * j + 2] - 1),
                                                                       static_cast<size_t>(connectivity[i][4 * j + 3] - 1)};
             }
-            element_domain_index += section_ranges[i][1] - section_ranges[i][0];
+            element_domain_index += section_ranges[i][1] - section_ranges[i][0] + 1;
         }
         else {
             section_start_indices[i] = element_ghost_index;
-            for (int j = 0; j < section_ranges[i][1] - section_ranges[i][0]; ++j) {
+            for (int j = 0; j < section_ranges[i][1] - section_ranges[i][0] + 1; ++j) {
                 host_elements[section_start_indices[i] + j].N_ = 0;
                 host_elements[section_start_indices[i] + j].nodes_ = {static_cast<size_t>(connectivity[i][2 * j] - 1),
                                                                       static_cast<size_t>(connectivity[i][2 * j + 1] - 1),
                                                                       static_cast<size_t>(connectivity[i][2 * j + 1] - 1),
                                                                       static_cast<size_t>(connectivity[i][2 * j] - 1)};
             }
-            element_ghost_index += section_ranges[i][1] - section_ranges[i][0];
+            element_ghost_index += section_ranges[i][1] - section_ranges[i][0] + 1;
         }
     }
 
