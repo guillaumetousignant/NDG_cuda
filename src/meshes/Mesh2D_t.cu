@@ -544,7 +544,9 @@ auto SEM::Meshes::Mesh2D_t::build_node_to_element(size_t n_nodes, const std::vec
 
     for (size_t j = 0; j < elements.size(); ++j) {
         for (auto node_index: elements[j].nodes_) {
-            node_to_element[node_index].push_back(j);
+            if (std::find(node_to_element[node_index].begin(), node_to_element[node_index].end(), j) == node_to_element[node_index].end()) { // This will be slower, but is needed because boundaries have 4 sides and not 2. Remove when variable geometry elements are added.
+                node_to_element[node_index].push_back(j);
+            }
         }
     }
 
