@@ -477,7 +477,7 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     int n_elements_domain = 0;
     int n_elements_ghost = 0;
     for (int i = 0; i < n_sections; ++i) {
-        switch (section_type[n_sections]) {
+        switch (section_type[i]) {
             case ElementType_t::BAR_2:
                 section_is_domain[i] = false;
                 n_elements_ghost += section_ranges[i][1] - section_ranges[i][0];
