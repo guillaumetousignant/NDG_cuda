@@ -2,7 +2,7 @@
 #define NDG_MESH2D_T_H
 
 #include "entities/Element2D_t.cuh"
-#include "entities/Face_t.cuh"
+#include "entities/Face2D_t.cuh"
 #include "entities/NDG_t.cuh"
 #include "entities/device_vector.cuh"
 #include "entities/Vec2.cuh"
@@ -11,6 +11,7 @@
 #include <limits>
 #include <mpi.h>
 #include <array>
+#include <utility>
 #include <filesystem>
 
 namespace SEM { namespace Meshes {
@@ -41,7 +42,7 @@ namespace SEM { namespace Meshes {
             int initial_N_;
             deviceFloat delta_x_min_;
             int adaptivity_interval_;
-            SEM::Entities::Face_t* faces_;
+            SEM::Entities::Face2D_t* faces_;
             size_t* local_boundary_to_element_;
             size_t* MPI_boundary_to_element_;
             size_t* MPI_boundary_from_element_;
@@ -81,6 +82,7 @@ namespace SEM { namespace Meshes {
 
             static auto build_node_to_element(size_t n_nodes, const std::vector<SEM::Entities::Element2D_t>& elements) -> std::vector<std::vector<size_t>>;
             static auto build_element_to_element(const std::vector<SEM::Entities::Element2D_t>& elements, const std::vector<std::vector<size_t>>& node_to_element) -> std::vector<std::vector<size_t>>;
+            static auto build_faces(size_t n_nodes, std::vector<SEM::Entities::Element2D_t>& elements) -> std::pair<std::vector<SEM::Entities::Face2D_t>, std::vector<std::vector<size_t>>>;
 
             auto write_file_data(size_t N_interpolation_points, size_t N_elements, deviceFloat time, int rank, const std::vector<deviceFloat>& coordinates, const std::vector<deviceFloat>& velocity, const std::vector<deviceFloat>& du_dx, const std::vector<deviceFloat>& intermediate, const std::vector<deviceFloat>& x_L, const std::vector<deviceFloat>& x_R, const std::vector<int>& N, const std::vector<deviceFloat>& sigma, const bool* refine, const bool* coarsen, const std::vector<deviceFloat>& error) -> void;
             auto adapt(int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights) -> void;

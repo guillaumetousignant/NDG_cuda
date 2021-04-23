@@ -535,6 +535,8 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     // Computing element to elements
     const std::vector<std::vector<size_t>> element_to_element = build_element_to_element(host_elements, node_to_element);
 
+    // Computing faces and filling element faces
+    auto [host_faces, node_to_face] = build_faces(n_nodes, host_elements);
 }
 
 auto SEM::Meshes::Mesh2D_t::build_node_to_element(size_t n_nodes, const std::vector<SEM::Entities::Element2D_t>& elements) -> std::vector<std::vector<size_t>> {
@@ -591,6 +593,42 @@ auto SEM::Meshes::Mesh2D_t::build_element_to_element(const std::vector<SEM::Enti
     }
  
     return element_to_element;
+}
+
+auto SEM::Meshes::Mesh2D_t::build_faces(size_t n_nodes, std::vector<SEM::Entities::Element2D_t>& elements) -> std::pair<std::vector<SEM::Entities::Face2D_t>, std::vector<std::vector<size_t>>> {
+    size_t total_edges = 0;
+    for (const auto& element: elements) {
+        total_edges += element.nodes_.size();
+    }
+
+    std::vector<SEM::Entities::Face2D_t> faces;
+    faces.reserve(total_edges/2); // This is not exact
+
+    std::vector<std::vector<size_t>> node_to_face(n_nodes);
+
+    for (size_t i = 0; i < elements.size(); ++i) {
+        for (size_t j = 0; j < elements[i].nodes_.size(); ++j) {
+            std::array<size_t, 2> nodes{elements[i].nodes_[j], (j < elements[i].nodes_.size() - 1) ? elements[i].nodes_[j + 1] : elements[i].nodes_[0]};
+            bool found = false;
+            for (auto face_index: node_to_face[nodes[0]]) {
+                if (faces[face_index].nodes_[0] == nodes[1] || faces[face_index].nodes_[1] == nodes[1] ) {
+                    found = true;
+                    faces[face_index].elements_[1] = i;
+                    elements[i].faces_[j] = face_index;
+                    break;
+                }
+            }
+
+            if (!found) {
+                elements[i].faces_[j] = faces.size();
+                node_to_face[nodes[0]].push_back(faces.size());
+                node_to_face[nodes[1]].push_back(faces.size());
+                faces.push_back(SEM::Entities::Face2D_t({nodes[0], nodes[1]}, {i, static_cast<size_t>(-1)}));
+            }
+        }
+    }
+
+    return std::make_pair(faces, node_to_face);
 }
 
 auto SEM::Meshes::Mesh2D_t::set_initial_conditions(const deviceFloat* nodes) -> void {

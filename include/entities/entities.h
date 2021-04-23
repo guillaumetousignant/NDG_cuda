@@ -15,6 +15,7 @@ namespace SEM {
 #include "Element2D_t.cuh"
 #include "Element_host_t.h"
 #include "Face_t.cuh"
+#include "Face2D_t.cuh"
 #include "Face_host_t.h"
 #include "NDG_t.cuh"
 #include "NDG_host_t.h"

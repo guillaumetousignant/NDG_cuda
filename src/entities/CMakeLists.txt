@@ -4,6 +4,7 @@ target_sources(SEM
         Element2D_t.cu
         Element_host_t.cpp
         Face_t.cu
+        Face2D_t.cu
         Face_host_t.cpp
         NDG_t.cu
         NDG_host_t.cpp
