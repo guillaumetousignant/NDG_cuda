@@ -611,7 +611,7 @@ auto SEM::Meshes::Mesh2D_t::build_faces(size_t n_nodes, std::vector<SEM::Entitie
             std::array<size_t, 2> nodes{elements[i].nodes_[j], (j < elements[i].nodes_.size() - 1) ? elements[i].nodes_[j + 1] : elements[i].nodes_[0]};
             bool found = false;
             for (auto face_index: node_to_face[nodes[0]]) {
-                if (faces[face_index].nodes_[0] == nodes[1] || faces[face_index].nodes_[1] == nodes[1] ) {
+                if (((faces[face_index].nodes_[0] == nodes[0]) && (faces[face_index].nodes_[1] == nodes[1])) || ((faces[face_index].nodes_[0] == nodes[1]) && (faces[face_index].nodes_[1] == nodes[0]))) {
                     found = true;
                     faces[face_index].elements_[1] = i;
                     elements[i].faces_[j] = face_index;
@@ -622,7 +622,9 @@ auto SEM::Meshes::Mesh2D_t::build_faces(size_t n_nodes, std::vector<SEM::Entitie
             if (!found) {
                 elements[i].faces_[j] = faces.size();
                 node_to_face[nodes[0]].push_back(faces.size());
-                node_to_face[nodes[1]].push_back(faces.size());
+                if (nodes[1] != nodes[0]) {
+                    node_to_face[nodes[1]].push_back(faces.size());
+                }
                 faces.push_back(SEM::Entities::Face2D_t({nodes[0], nodes[1]}, {i, static_cast<size_t>(-1)}));
             }
         }
