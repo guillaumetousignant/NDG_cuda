@@ -566,10 +566,24 @@ auto SEM::Meshes::Mesh2D_t::build_element_to_element(const std::vector<SEM::Enti
 
             for (auto element_index : node_to_element[node_index]) {
                 if (element_index != i) {
-                    for (auto element_index_next: node_to_element[node_index_next]) {
-                        if (element_index == element_index_next) {
-                            element_to_element[i][j] = element_index;
-                            goto endloop; // I hate this too don't worry
+                    const SEM::Entities::Element2D_t& element_neighbor = elements[element_index];
+
+                    auto it = find(element_neighbor.nodes_.begin(), element_neighbor.nodes_.end(), node_index);
+                    if (it != element_neighbor.nodes_.end()) {
+                        const size_t node_element_index = it - element_neighbor.nodes_.begin();
+                        
+                        for (size_t node_element_index_next = 0; node_element_index_next < node_element_index; ++node_element_index_next) {
+                            if (element_neighbor.nodes_[node_element_index_next] == node_index_next) {
+                                element_to_element[i][j] = element_index;
+                                goto endloop; // I hate this too don't worry
+                            }
+                        }
+
+                        for (size_t node_element_index_next = node_element_index + 1; node_element_index_next < element_neighbor.nodes_.size(); ++node_element_index_next) {
+                            if (element_neighbor.nodes_[node_element_index_next] == node_index_next) {
+                                element_to_element[i][j] = element_index;
+                                goto endloop; // I hate this too don't worry
+                            }
                         }
                     }
                 }
