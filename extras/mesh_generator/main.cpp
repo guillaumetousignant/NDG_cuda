@@ -152,6 +152,7 @@ auto main(int argc, char* argv[]) -> int {
     const int y_node_res = y_res + 1;
 
     const int n_elements = x_res * y_res;
+    const int n_elements_total = n_elements + 2 * x_res + 2 * y_res;
     const int n_nodes = x_node_res * y_node_res;
 
     // Boundary conditions input
@@ -192,7 +193,7 @@ auto main(int argc, char* argv[]) -> int {
 
     /* vertex size, cell size, boundary vertex size (always zero for structured grids) */
     std::array<cgsize_t, 3> isize {n_nodes,
-                                   n_elements,
+                                   n_elements_total,
                                    0};
 
     /* create zone */
