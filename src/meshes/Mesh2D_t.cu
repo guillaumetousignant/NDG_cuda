@@ -560,15 +560,14 @@ auto SEM::Meshes::Mesh2D_t::build_element_to_element(const std::vector<SEM::Enti
         const SEM::Entities::Element2D_t& element = elements[i];
         element_to_element[i] = std::vector<size_t>(element.nodes_.size());
 
-        for (size_t j = 0; j < element.nodes_.size() - 1; ++j) {
+        for (size_t j = 0; j < element.nodes_.size(); ++j) {
             const size_t node_index = element.nodes_[j];
+            const size_t node_index_next = (j < element.nodes_.size() - 1) ? element.nodes_[j + 1] : element.nodes_[0];
 
-            for (size_t m = 0; m < node_to_element[node_index].size(); ++m) {
-                const size_t element_index = node_to_element[node_index][m];
-
+            for (auto element_index : node_to_element[node_index]) {
                 if (element_index != i) {
-                    for (size_t n = 0; n < node_to_element[element.nodes_[j + 1]].size(); ++n) {
-                        if (element_index == node_to_element[element.nodes_[j + 1]][n]) {
+                    for (auto element_index_next: node_to_element[node_index_next]) {
+                        if (element_index == element_index_next) {
                             element_to_element[i][j] = element_index;
                             goto endloop; // I hate this too don't worry
                         }
@@ -577,21 +576,6 @@ auto SEM::Meshes::Mesh2D_t::build_element_to_element(const std::vector<SEM::Enti
             }
             endloop: ;
         }
-
-        const size_t node_index_last = element.nodes_[element.nodes_.size() - 1];
-        for (size_t m = 0; m < node_to_element[node_index_last].size(); ++m) {
-            const size_t element_index = element_to_element[node_index_last][m];
-
-            if (node_to_element[node_index_last][m] != i) { // Weird CHECK
-                for (size_t n = 0; n < node_to_element[element.nodes_[0]].size(); ++n) {
-                    if (element_index == element_to_element[element.nodes_[0]][n]) {
-                        element_to_element[i][element.nodes_.size() - 1] = element_index;
-                        goto endloop2; // I hate this too don't worry
-                    }
-                }
-            }
-        }
-        endloop2: ;
     }
  
     return element_to_element;
