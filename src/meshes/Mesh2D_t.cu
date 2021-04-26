@@ -600,9 +600,15 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     }
 
     // Building interfaces
-    std::vector<std::array<size_t, 2>> interfaces;
+    size_t n_interface_elements = 0;
+    std::vector<size_t> interface_start_index(n_connectivity);
     for (int i = 0; i < n_connectivity; ++i) {
-        interfaces.reserve(interfaces.size() + connectivity_sizes[i]);
+        interface_start_index[i] = n_interface_elements;
+        n_interface_elements += connectivity_sizes[i];
+    }
+    std::vector<std::array<size_t, 2>> interfaces(n_interface_elements);
+
+    for (int i = 0; i < n_connectivity; ++i) {
         for (int j = 0; j < connectivity_sizes[i]; ++j) {
             int origin_section_index = -1;
             for (int k = 0; k < n_sections; ++k) {
@@ -630,7 +636,8 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
                 exit(39);
             }
 
-            interfaces.push_back({section_start_indices[origin_section_index] + interface_elements[i][j] - section_ranges[origin_section_index][0], section_start_indices[donor_section_index] + interface_donor_elements[i][j] - section_ranges[donor_section_index][0]});
+            interfaces[interface_start_index[i] + j] = {section_start_indices[origin_section_index] + interface_elements[i][j] - section_ranges[origin_section_index][0], 
+                                                        section_start_indices[donor_section_index] + interface_donor_elements[i][j] - section_ranges[donor_section_index][0]};
         }
     }
 }
