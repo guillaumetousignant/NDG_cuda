@@ -412,6 +412,11 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
             std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", connectivity " << index_connectivity << " has a grid connectivity type that isn't Abutting1to1. For now only Abutting1to1 grid connectivity types are supported. Exiting." << std::endl;
             exit(29);
         }
+
+        if (connectivity_sizes[index_connectivity - 1] != connectivity_donor_sizes[index_connectivity - 1]) {
+            std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", connectivity " << index_connectivity << " has a different number of elements in the origin and destination zones. Exiting." << std::endl;
+            exit(30);
+        }
     }
 
     std::vector<std::vector<int>> interface_elements(n_connectivity);
@@ -444,14 +449,14 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
 
         if (boundary_point_set_types[index_boundary - 1] != PointSetType_t::PointList) {
             std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", boundary " << index_boundary << " has a point set type that isn't PointList. For now only PointList point set types are supported. Exiting." << std::endl;
-            exit(30);
+            exit(31);
         }
 
         cg_boco_gridlocation_read(index_file, index_base, index_zone, index_boundary, &boundary_grid_locations[index_boundary - 1]);
 
         if (boundary_grid_locations[index_boundary - 1] != GridLocation_t::EdgeCenter) {
             std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", boundary " << index_boundary << " has a grid location that isn't EdgeCenter. For now only EdgeCenter grid locations are supported. Exiting." << std::endl;
-            exit(31);
+            exit(32);
         }
     }
 
@@ -490,13 +495,13 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
 
             default:
                 std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", section " << i << " has an unknown element type. For now only BAR_2 and QUAD_4 are implemented, for boundaries and domain respectively. Exiting." << std::endl;
-                exit(32);
+                exit(33);
         }
     }
 
     if (n_elements_domain + n_elements_ghost != n_elements) {
         std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << " has " << n_elements << " elements but the sum of its sections is " << n_elements_domain + n_elements_ghost << " elements. Exiting." << std::endl;
-        exit(33);
+        exit(34);
     }
 
     // Putting connectivity data in the format used by the mesh
@@ -543,7 +548,7 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     std::vector<size_t> symmetry_boundaries;
 
     for (int i = 0; i < n_boundaries; ++i) {
-        switch (boundary_types(i)) {
+        switch (boundary_types[i]) {
             case BCType_t::BCWall:
                 wall_boundaries.reserve(wall_boundaries.size() + boundary_sizes[i]);
                 for (int j = 0; j < boundary_sizes[i]; ++j) {
@@ -557,10 +562,10 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
 
                     if (section_index == -1) {
                         std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", boundary " << i << " is a wall boundary and contains element " << boundary_elements[i][j] << " but it is not found in any mesh section. Exiting." << std::endl;
-                        exit(35);
+                        exit(36);
                     }
 
-                    wall_boundaries.push_back(section_start_indices[section_index] + boundary_elements[i][j] - section_ranges[k][section_index]);
+                    wall_boundaries.push_back(section_start_indices[section_index] + boundary_elements[i][j] - section_ranges[section_index][0]);
                 }
                 break;
 
@@ -577,10 +582,10 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
 
                     if (section_index == -1) {
                         std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", boundary " << i << " is a symmetry boundary and contains element " << boundary_elements[i][j] << " but it is not found in any mesh section. Exiting." << std::endl;
-                        exit(36);
+                        exit(37);
                     }
 
-                    symmetry_boundaries.push_back(section_start_indices[section_index] + boundary_elements[i][j] - section_ranges[k][section_index]);
+                    symmetry_boundaries.push_back(section_start_indices[section_index] + boundary_elements[i][j] - section_ranges[section_index][0]);
                 }
                 
                 break;
@@ -590,12 +595,44 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
 
             default:
                 std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", boundary " << i << " has an unknown boundary type. For now only BCWall, BCSymmetryPlane and BCTypeNull are implemented. Exiting." << std::endl;
-                exit(34);
+                exit(35);
         }
     }
 
     // Building interfaces
-    
+    std::vector<std::array<size_t, 2>> interfaces;
+    for (int i = 0; i < n_connectivity; ++i) {
+        interfaces.reserve(interfaces.size() + connectivity_sizes[i]);
+        for (int j = 0; j < connectivity_sizes[i]; ++j) {
+            int origin_section_index = -1;
+            for (int k = 0; k < n_sections; ++k) {
+                if ((interface_elements[i][j] >= section_ranges[k][0]) && (interface_elements[i][j] <= section_ranges[k][1])) {
+                    origin_section_index = k;
+                    break;
+                }
+            }
+
+            if (origin_section_index == -1) {
+                std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", connectivity " << i << " contains element " << interface_elements[i][j] << " but it is not found in any mesh section. Exiting." << std::endl;
+                exit(38);
+            }
+
+            int donor_section_index = -1;
+            for (int k = 0; k < n_sections; ++k) {
+                if ((interface_donor_elements[i][j] >= section_ranges[k][0]) && (interface_donor_elements[i][j] <= section_ranges[k][1])) {
+                    donor_section_index = k;
+                    break;
+                }
+            }
+
+            if (donor_section_index == -1) {
+                std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", connectivity " << i << " contains donor element " << interface_donor_elements[i][j] << " but it is not found in any mesh section. Exiting." << std::endl;
+                exit(39);
+            }
+
+            interfaces.push_back({section_start_indices[origin_section_index] + interface_elements[i][j] - section_ranges[origin_section_index][0], section_start_indices[donor_section_index] + interface_donor_elements[i][j] - section_ranges[donor_section_index][0]});
+        }
+    }
 }
 
 auto SEM::Meshes::Mesh2D_t::build_node_to_element(size_t n_nodes, const std::vector<SEM::Entities::Element2D_t>& elements) -> std::vector<std::vector<size_t>> {
