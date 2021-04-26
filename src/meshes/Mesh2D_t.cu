@@ -537,6 +537,65 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
 
     // Computing faces and filling element faces
     auto [host_faces, node_to_face] = build_faces(n_nodes, host_elements);
+
+    // Building boundaries
+    std::vector<size_t> wall_boundaries;
+    std::vector<size_t> symmetry_boundaries;
+
+    for (int i = 0; i < n_boundaries; ++i) {
+        switch (boundary_types(i)) {
+            case BCType_t::BCWall:
+                wall_boundaries.reserve(wall_boundaries.size() + boundary_sizes[i]);
+                for (int j = 0; j < boundary_sizes[i]; ++j) {
+                    int section_index = -1;
+                    for (int k = 0; k < n_sections; ++k) {
+                        if ((boundary_elements[i][j] >= section_ranges[k][0]) && (boundary_elements[i][j] <= section_ranges[k][1])) {
+                            section_index = k;
+                            break;
+                        }
+                    }
+
+                    if (section_index == -1) {
+                        std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", boundary " << i << " is a wall boundary and contains element " << boundary_elements[i][j] << " but it is not found in any mesh section. Exiting." << std::endl;
+                        exit(35);
+                    }
+
+                    wall_boundaries.push_back(section_start_indices[section_index] + boundary_elements[i][j] - section_ranges[k][section_index]);
+                }
+                break;
+
+            case BCType_t::BCSymmetryPlane:
+                symmetry_boundaries.reserve(symmetry_boundaries.size() + boundary_sizes[i]);
+                for (int j = 0; j < boundary_sizes[i]; ++j) {
+                    int section_index = -1;
+                    for (int k = 0; k < n_sections; ++k) {
+                        if ((boundary_elements[i][j] >= section_ranges[k][0]) && (boundary_elements[i][j] <= section_ranges[k][1])) {
+                            section_index = k;
+                            break;
+                        }
+                    }
+
+                    if (section_index == -1) {
+                        std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", boundary " << i << " is a symmetry boundary and contains element " << boundary_elements[i][j] << " but it is not found in any mesh section. Exiting." << std::endl;
+                        exit(36);
+                    }
+
+                    symmetry_boundaries.push_back(section_start_indices[section_index] + boundary_elements[i][j] - section_ranges[k][section_index]);
+                }
+                
+                break;
+
+            case BCType_t::BCTypeNull:
+                break;
+
+            default:
+                std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", boundary " << i << " has an unknown boundary type. For now only BCWall, BCSymmetryPlane and BCTypeNull are implemented. Exiting." << std::endl;
+                exit(34);
+        }
+    }
+
+    // Building interfaces
+    
 }
 
 auto SEM::Meshes::Mesh2D_t::build_node_to_element(size_t n_nodes, const std::vector<SEM::Entities::Element2D_t>& elements) -> std::vector<std::vector<size_t>> {
