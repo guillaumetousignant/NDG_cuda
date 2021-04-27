@@ -3,6 +3,7 @@
 #include "polynomials/LegendrePolynomial_t.cuh"
 #include "helpers/ProgressBar_t.h"
 #include "functions/Utilities.h"
+#include "entities/cuda_vector.cuh"
 #include "cgnslib.h"
 #include <iostream>
 #include <fstream>
@@ -649,6 +650,8 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     interfaces_ = interfaces;
     wall_boundaries_ = wall_boundaries;
     symmetry_boundaries_ = symmetry_boundaries;
+
+    allocate_element_storage<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(elements_);
 }
 
 auto SEM::Meshes::Mesh2D_t::build_node_to_element(size_t n_nodes, const std::vector<SEM::Entities::Element2D_t>& elements) -> std::vector<std::vector<size_t>> {
@@ -789,4 +792,19 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const deviceFloat* nodes, const dev
 
 auto SEM::Meshes::Mesh2D_t::boundary_conditions() -> void {
     
+}
+
+__global__
+auto SEM::Meshes::allocate_element_storage(SEM::Entities::device_vector<SEM::Entities::Element2D_t> elements) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t i = index; i < elements.size(); i += stride) {
+        const int N = elements[i].N_;
+        elements[i].phi_          = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
+        elements[i].q_            = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
+        elements[i].ux_           = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
+        elements[i].phi_prime_    = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
+        elements[i].intermediate_ = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
+    }
 }

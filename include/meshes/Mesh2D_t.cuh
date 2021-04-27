@@ -86,6 +86,9 @@ namespace SEM { namespace Meshes {
             auto write_file_data(size_t N_interpolation_points, size_t N_elements, deviceFloat time, int rank, const std::vector<deviceFloat>& coordinates, const std::vector<deviceFloat>& velocity, const std::vector<deviceFloat>& du_dx, const std::vector<deviceFloat>& intermediate, const std::vector<deviceFloat>& x_L, const std::vector<deviceFloat>& x_R, const std::vector<int>& N, const std::vector<deviceFloat>& sigma, const bool* refine, const bool* coarsen, const std::vector<deviceFloat>& error) -> void;
             auto adapt(int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights) -> void;
     };
+
+    __global__
+    auto allocate_element_storage(SEM::Entities::device_vector<SEM::Entities::Element2D_t> elements) -> void;
 }}
 
 #endif
