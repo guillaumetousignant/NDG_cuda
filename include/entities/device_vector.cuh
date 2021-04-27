@@ -19,7 +19,7 @@ namespace SEM { namespace Entities {
 
             __host__ __device__
             device_vector(const device_vector<T>& other); // copy constructor
-
+            
             __host__ 
             device_vector(const std::vector<T>& other); // copy constructor
 

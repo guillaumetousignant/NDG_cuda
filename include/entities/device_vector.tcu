@@ -23,7 +23,11 @@ template <typename T>
 __host__ __device__
 SEM::Entities::device_vector<T>::device_vector(const device_vector<T>& other) : size_(other.size()) { // copy constructor
     cudaMalloc(&data_, size_ * sizeof(T));
+    #ifdef  __CUDA_ARCH__
+    memcpy(data_, other.data(), size_ * sizeof(T));
+    #else
     cudaMemcpy(data_, other.data(), size_ * sizeof(T), cudaMemcpyDeviceToDevice); // Apparently slower than using a kernel
+    #endif
 }
 
 template <typename T>
@@ -52,7 +56,11 @@ auto SEM::Entities::device_vector<T>::operator=(const device_vector<T>& other) -
         size_ = other.size();
         cudaMalloc(&data_, size_ * sizeof(T));
     }
+    #ifdef  __CUDA_ARCH__
+    memcpy(data_, other.data(), size_ * sizeof(T));
+    #else
     cudaMemcpy(data_, other.data(), size_ * sizeof(T), cudaMemcpyDeviceToDevice); // Apparently slower than using a kernel
+    #endif
 
     return *this;
 }
