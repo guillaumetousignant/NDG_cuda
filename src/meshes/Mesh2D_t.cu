@@ -801,10 +801,8 @@ auto SEM::Meshes::allocate_element_storage(SEM::Entities::device_vector<SEM::Ent
 
     for (size_t i = index; i < elements.size(); i += stride) {
         const int N = elements[i].N_;
-        elements[i].phi_          = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
-        elements[i].q_            = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
-        elements[i].ux_           = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
-        elements[i].phi_prime_    = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
-        elements[i].intermediate_ = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
+        elements[i].p_ = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
+        elements[i].u_ = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
+        elements[i].v_ = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
     }
 }

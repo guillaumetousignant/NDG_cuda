@@ -20,11 +20,9 @@ namespace SEM { namespace Entities {
             std::array<deviceFloat, 2> delta_xy_;
             std::array<deviceFloat, 4> phi_extrapolated_;
             std::array<deviceFloat, 4> phi_prime_extrapolated_;
-            SEM::Entities::cuda_vector<deviceFloat> phi_; // Solution
-            SEM::Entities::cuda_vector<deviceFloat> q_;
-            SEM::Entities::cuda_vector<deviceFloat> ux_;
-            SEM::Entities::cuda_vector<deviceFloat> phi_prime_;
-            SEM::Entities::cuda_vector<deviceFloat> intermediate_; // This is used for RK3, and also for adaptivity. So don't try to adapt between rk steps.
+            SEM::Entities::cuda_vector<deviceFloat> p_;
+            SEM::Entities::cuda_vector<deviceFloat> u_;
+            SEM::Entities::cuda_vector<deviceFloat> v_;
 
             deviceFloat sigma_;
             bool refine_;
