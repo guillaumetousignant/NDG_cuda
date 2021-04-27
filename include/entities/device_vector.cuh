@@ -30,6 +30,9 @@ namespace SEM { namespace Entities {
             auto operator=(const device_vector<T>& other) -> device_vector&; // copy assignment
 
             __host__ __device__
+            auto operator=(const std::vector<T>& other) -> device_vector&; // copy assignment
+
+            __host__ __device__
             auto operator=(device_vector<T>&& other) noexcept -> device_vector&; // move assignment
 
             T* data_;

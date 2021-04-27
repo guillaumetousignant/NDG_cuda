@@ -59,6 +59,20 @@ auto SEM::Entities::device_vector<T>::operator=(const device_vector<T>& other) -
 
 template <typename T>
 __host__ __device__
+auto SEM::Entities::device_vector<T>::operator=(const std::vector<T>& other) -> device_vector& { // copy assignment
+    if (size_ != other.size()) {
+        cudaFree(data_);
+        size_ = other.size();
+        cudaMalloc(&data_, size_ * sizeof(T));
+    }
+
+    cudaMemcpy(data_, other.data(), size_ * sizeof(T), cudaMemcpyHostToDevice);
+
+    return *this;
+}
+
+template <typename T>
+__host__ __device__
 auto SEM::Entities::device_vector<T>::operator=(device_vector<T>&& other) noexcept -> device_vector& { // move assignment
     size_ = other.size();
     std::swap(data_, other.data_);
