@@ -20,8 +20,11 @@ namespace SEM { namespace Meshes {
             Mesh2D_t(std::filesystem::path filename, int initial_N, cudaStream_t &stream);
 
             SEM::Entities::device_vector<SEM::Entities::Vec2<deviceFloat>> nodes_;
-            SEM::Entities::device_vector<std::array<size_t, 4>> element_to_nodes_;
             SEM::Entities::device_vector<SEM::Entities::Element2D_t> elements_;
+            SEM::Entities::device_vector<SEM::Entities::Face2D_t> faces_;
+            SEM::Entities::device_vector<std::array<size_t, 2>> interfaces_;
+            SEM::Entities::device_vector<size_t> wall_boundaries_;
+            SEM::Entities::device_vector<size_t> symmetry_boundaries_;
             
             
 
@@ -42,10 +45,6 @@ namespace SEM { namespace Meshes {
             int initial_N_;
             deviceFloat delta_x_min_;
             int adaptivity_interval_;
-            SEM::Entities::Face2D_t* faces_;
-            size_t* local_boundary_to_element_;
-            size_t* MPI_boundary_to_element_;
-            size_t* MPI_boundary_from_element_;
 
             auto read_su2(std::filesystem::path filename) -> void;
             auto read_cgns(std::filesystem::path filename) -> void;

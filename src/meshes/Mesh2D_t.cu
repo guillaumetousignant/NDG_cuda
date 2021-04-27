@@ -640,6 +640,15 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
                                                         section_start_indices[donor_section_index] + interface_donor_elements[i][j] - section_ranges[donor_section_index][0]};
         }
     }
+
+    // Transferring onto the GPU
+    N_elements_ = n_elements_domain;
+    nodes_ = host_nodes;
+    elements_ = host_elements;
+    faces_ = host_faces;
+    interfaces_ = interfaces;
+    wall_boundaries_ = wall_boundaries;
+    symmetry_boundaries_ = symmetry_boundaries;
 }
 
 auto SEM::Meshes::Mesh2D_t::build_node_to_element(size_t n_nodes, const std::vector<SEM::Entities::Element2D_t>& elements) -> std::vector<std::vector<size_t>> {
