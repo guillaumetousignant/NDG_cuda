@@ -7,7 +7,7 @@ __device__
 SEM::Entities::cuda_vector<T>::cuda_vector(TI size) : size_(size), data_(new T[size]) {}
 
 template <typename T>
-__device__
+__device__ __host__
 SEM::Entities::cuda_vector<T>::cuda_vector() : size_(0), data_(nullptr) {}
 
 template <typename T>

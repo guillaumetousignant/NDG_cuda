@@ -9,7 +9,7 @@ namespace SEM { namespace Entities {
             __device__
             cuda_vector(TI size);
 
-            __device__
+            __device__ __host__
             cuda_vector();
 
             __device__
