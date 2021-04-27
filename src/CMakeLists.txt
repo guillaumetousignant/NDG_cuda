@@ -5,6 +5,7 @@ add_subdirectory(functions)
 add_subdirectory(helpers)
 add_subdirectory(meshes)
 add_subdirectory(polynomials)
+add_subdirectory(solvers)
 
 target_include_directories(SEM PUBLIC 
     $<INSTALL_INTERFACE:include/SEM/>    

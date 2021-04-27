@@ -13,5 +13,6 @@ namespace SEM {}
 #include "helpers/helpers.h"
 #include "meshes/meshes.h"
 #include "polynomials/polynomials.h"
+#include "solvers/solvers.h"
 
 #endif
