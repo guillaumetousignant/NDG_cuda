@@ -29,7 +29,7 @@ namespace SEM { namespace Entities {
             __host__ __device__
             auto operator=(const device_vector<T>& other) -> device_vector&; // copy assignment
 
-            __host__ __device__
+            __host__
             auto operator=(const std::vector<T>& other) -> device_vector&; // copy assignment
 
             __host__ __device__
