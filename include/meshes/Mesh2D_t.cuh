@@ -57,6 +57,9 @@ namespace SEM { namespace Meshes {
             template<typename Polynomial>
             auto solve(const deviceFloat CFL, const std::vector<deviceFloat> output_times, const SEM::Entities::NDG_t<Polynomial> &NDG, deviceFloat viscosity) -> void;
 
+            __host__ __device__
+            static auto g(SEM::Entities::Vec2<deviceFloat> xy) -> std::array<deviceFloat, 3>;
+
         private:
             deviceFloat* device_delta_t_array_;
             std::vector<deviceFloat> host_delta_t_array_;
@@ -88,7 +91,10 @@ namespace SEM { namespace Meshes {
     };
 
     __global__
-    auto allocate_element_storage(SEM::Entities::device_vector<SEM::Entities::Element2D_t> elements) -> void;
+    auto allocate_element_storage(SEM::Entities::device_vector<SEM::Entities::Element2D_t>& elements) -> void;
+
+    __global__
+    auto initial_conditions_2D(size_t n_elements, SEM::Entities::device_vector<SEM::Entities::Element2D_t>& elements, const SEM::Entities::device_vector<SEM::Entities::Vec2<deviceFloat>>& nodes) -> void;
 }}
 
 #endif

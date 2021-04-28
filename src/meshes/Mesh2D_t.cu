@@ -782,6 +782,25 @@ auto SEM::Meshes::Mesh2D_t::solve(const deviceFloat CFL, const std::vector<devic
     
 }
 
+__host__ __device__
+auto SEM::Meshes::Mesh2D_t::g(SEM::Entities::Vec2<deviceFloat> xy) -> std::array<deviceFloat, 3> {
+    constexpr Vec2<deviceFloat> xy0 {0, 0};
+    const Vec2<deviceFloat> k {std::sqrt(static_cast<deviceFloat>(2.0)) / 2, -std::sqrt(static_cast<deviceFloat>(2.0)) / 2};
+    const deviceFloat d = 0.2 / (2 * std::sqrt(std::log(2.0)));
+    constexpr deviceFloat c = 1;
+    
+    std::array<deviceFloat, 3> state {
+        static_cast<deviceFloat>(std::exp(-std::pow((k.x() * (xy.x() - xy0.x()) + k.y() * (xy.y() - xy0.y())), 2) / std::pow(d, 2))),
+        0.0,
+        0.0
+    };
+
+    state[1] = state[0] * k.x() / c;
+    state[2] = state[0] * k.y() / c;
+
+    return state;
+}
+
 auto SEM::Meshes::Mesh2D_t::get_delta_t(const deviceFloat CFL) -> deviceFloat {   
     return 0.0;
 }
@@ -795,7 +814,7 @@ auto SEM::Meshes::Mesh2D_t::boundary_conditions() -> void {
 }
 
 __global__
-auto SEM::Meshes::allocate_element_storage(SEM::Entities::device_vector<SEM::Entities::Element2D_t> elements) -> void {
+auto SEM::Meshes::allocate_element_storage(SEM::Entities::device_vector<SEM::Entities::Element2D_t>& elements) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -804,5 +823,22 @@ auto SEM::Meshes::allocate_element_storage(SEM::Entities::device_vector<SEM::Ent
         elements[i].p_ = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
         elements[i].u_ = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
         elements[i].v_ = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
+    }
+}
+
+__global__
+auto SEM::Meshes::initial_conditions_2D(size_t n_elements, SEM::Entities::device_vector<SEM::Entities::Element2D_t>& elements, const SEM::Entities::device_vector<SEM::Entities::Vec2<deviceFloat>>& nodes) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t elem_index = index; elem_index < n_elements; elem_index += stride) {
+        const SEM::Entities::Element2D_t& element = elements[elem_index];
+
+        for (int i = 0; i <= element.N_; ++i) {
+            for (int j = 0; j <= element.N_; ++j) {
+                //const Vec2f<deviceFloat> coordinates = 
+
+            }
+        }
     }
 }
