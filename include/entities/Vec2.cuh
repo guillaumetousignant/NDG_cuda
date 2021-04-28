@@ -21,7 +21,7 @@ namespace SEM { namespace Entities {
              * @brief Construct a new Vec2 object with (0, 0).
              */
             __host__ __device__
-            Vec2();
+            constexpr Vec2();
 
             /**
              * @brief Construct a new Vec2 object from 2 components.
@@ -31,7 +31,7 @@ namespace SEM { namespace Entities {
              */
             template <class T2>
             __host__ __device__
-            Vec2(T x, T2 y); 
+            constexpr Vec2(T x, T2 y); 
 
             /**
              * @brief Construct a new Vec2 object from one value.
@@ -39,7 +39,7 @@ namespace SEM { namespace Entities {
              * @param x Value given to the two components of the vector.
              */
              __host__ __device__
-            explicit Vec2(T x); 
+             constexpr explicit Vec2(T x); 
 
             /**
              * @brief Accesses the selected component of the vector, returning a reference.
@@ -49,7 +49,7 @@ namespace SEM { namespace Entities {
              */
             template <class T2>
             __host__ __device__
-            auto operator[](T2 index) -> T&;
+            constexpr auto operator[](T2 index) -> T&;
 
             /**
              * @brief Accesses the selected component of the vector, returning a const reference.
@@ -59,7 +59,7 @@ namespace SEM { namespace Entities {
              */
             template <class T2>
             __host__ __device__
-            auto operator[](T2 index) const -> const T&;
+            constexpr auto operator[](T2 index) const -> const T&;
 
             /**
              * @brief Returns the selected component of the vector.
@@ -69,7 +69,7 @@ namespace SEM { namespace Entities {
              */
             template <class T2>
             __host__ __device__
-            auto operator[](T2 index) const -> T; 
+            constexpr auto operator[](T2 index) const -> T; 
 
             /**
              * @brief Multiplies all components of the vector by a factor.
@@ -81,7 +81,7 @@ namespace SEM { namespace Entities {
              */
             template <class T2>
             __host__ __device__
-            auto operator*(T2 scale) const -> Vec2<T>;
+            constexpr auto operator*(T2 scale) const -> Vec2<T>;
 
             /**
              * @brief Element-wise multiplication of two vectors.
@@ -93,7 +93,7 @@ namespace SEM { namespace Entities {
              */
             template <class T2>
             __host__ __device__
-            auto operator*(const Vec2<T2> &other) const -> Vec2<T>;
+            constexpr auto operator*(const Vec2<T2> &other) const -> Vec2<T>;
 
             /**
              * @brief Divides all components of the vector by a factor.
@@ -105,7 +105,7 @@ namespace SEM { namespace Entities {
              */
             template <class T2>
             __host__ __device__
-            auto operator/(T2 scale) const -> Vec2<T>;
+            constexpr auto operator/(T2 scale) const -> Vec2<T>;
 
             /**
              * @brief Elements-wise division by the provided vector.
@@ -117,7 +117,7 @@ namespace SEM { namespace Entities {
              */
             template <class T2>
             __host__ __device__
-            auto operator/(const Vec2<T2> &other) const -> Vec2<T>;
+            constexpr auto operator/(const Vec2<T2> &other) const -> Vec2<T>;
 
             /**
              * @brief Adds two vectors.
@@ -129,7 +129,7 @@ namespace SEM { namespace Entities {
              */
             template <class T2>
             __host__ __device__
-            auto operator+(const Vec2<T2> &other) const -> Vec2<T>;
+            constexpr auto operator+(const Vec2<T2> &other) const -> Vec2<T>;
 
             /**
              * @brief Adds a factor to all components of the vector.
@@ -141,7 +141,7 @@ namespace SEM { namespace Entities {
              */
             template <class T2>
             __host__ __device__
-            auto operator+(T2 factor) const -> Vec2<T>;
+            constexpr auto operator+(T2 factor) const -> Vec2<T>;
 
             /**
              * @brief Subtracts a vector from this vector.
@@ -153,7 +153,7 @@ namespace SEM { namespace Entities {
              */
             template <class T2>
             __host__ __device__
-            auto operator-(const Vec2<T2> &other) const -> Vec2<T>;
+            constexpr auto operator-(const Vec2<T2> &other) const -> Vec2<T>;
 
             /**
              * @brief Subtracts a factor from all components of the vector.
@@ -165,7 +165,7 @@ namespace SEM { namespace Entities {
              */
             template <class T2>
             __host__ __device__
-            auto operator-(T2 factor) const -> Vec2<T>;
+            constexpr auto operator-(T2 factor) const -> Vec2<T>;
 
             /**
              * @brief Returns the vector negated.
@@ -175,7 +175,7 @@ namespace SEM { namespace Entities {
              * @return Vec2 Resulting vector, (-x1, -y1).
              */
             __host__ __device__
-            auto operator-() const -> Vec2<T>; 
+            constexpr auto operator-() const -> Vec2<T>; 
 
             /**
              * @brief Tests equality between two vectors.
@@ -185,7 +185,7 @@ namespace SEM { namespace Entities {
              * @return false At least one component of the vectors is different.
              */
             __host__ __device__
-            auto operator==(const Vec2<T> &other) const -> bool;
+            constexpr auto operator==(const Vec2<T> &other) const -> bool;
 
             /**
              * @brief In-place multiplies all components of the vector by a factor.
@@ -197,7 +197,7 @@ namespace SEM { namespace Entities {
              */
             template <class T2>
             __host__ __device__
-            auto operator*=(T2 scale) -> const Vec2<T>&;
+            constexpr auto operator*=(T2 scale) -> const Vec2<T>&;
 
             /**
              * @brief In-place element-wise multiplication of the vector by another vector.
@@ -209,7 +209,7 @@ namespace SEM { namespace Entities {
              */
             template <class T2>
             __host__ __device__
-            auto operator*=(const Vec2<T2> &other) -> const Vec2<T>&;
+            constexpr auto operator*=(const Vec2<T2> &other) -> const Vec2<T>&;
 
             /**
              * @brief In-place divides all components of the vector by a factor.
@@ -221,7 +221,7 @@ namespace SEM { namespace Entities {
              */
             template <class T2>
             __host__ __device__
-            auto operator/=(T2 scale) -> const Vec2<T>&;
+            constexpr auto operator/=(T2 scale) -> const Vec2<T>&;
 
             /**
              * @brief In-place elements-wise division by the provided vector.
@@ -233,7 +233,7 @@ namespace SEM { namespace Entities {
              */
             template <class T2>
             __host__ __device__
-            auto operator/=(const Vec2<T2> &other) -> const Vec2<T>&;
+            constexpr auto operator/=(const Vec2<T2> &other) -> const Vec2<T>&;
 
             /**
              * @brief In-place addition of another vector.
@@ -245,7 +245,7 @@ namespace SEM { namespace Entities {
              */
             template <class T2>
             __host__ __device__
-            auto operator+=(const Vec2<T2> &other) -> const Vec2<T>&;
+            constexpr auto operator+=(const Vec2<T2> &other) -> const Vec2<T>&;
 
             /**
              * @brief In-place adds a factor to all components of the vector.
@@ -257,7 +257,7 @@ namespace SEM { namespace Entities {
              */
             template <class T2>
             __host__ __device__
-            auto operator+=(T2 factor) -> const Vec2<T>&;
+            constexpr auto operator+=(T2 factor) -> const Vec2<T>&;
 
             /**
              * @brief In-place subtracts a vector from this vector.
@@ -269,7 +269,7 @@ namespace SEM { namespace Entities {
              */
             template <class T2>
             __host__ __device__
-            auto operator-=(const Vec2<T2> &other) -> const Vec2<T>&; 
+            constexpr auto operator-=(const Vec2<T2> &other) -> const Vec2<T>&; 
 
             /**
              * @brief In-place subtracts a factor from all components of the vector.
@@ -281,7 +281,7 @@ namespace SEM { namespace Entities {
              */
             template <class T2>
             __host__ __device__
-            auto operator-=(T2 factor) -> const Vec2<T>&;
+            constexpr auto operator-=(T2 factor) -> const Vec2<T>&;
 
             /**
              * @brief Sets the components of the vector to the minimum of its components and the other's.
@@ -293,7 +293,7 @@ namespace SEM { namespace Entities {
              */
             template <class T2>
             __host__ __device__
-            auto min(const Vec2<T2> &other) -> Vec2<T>&;
+            constexpr auto min(const Vec2<T2> &other) -> Vec2<T>&;
 
             /**
              * @brief Sets the components of the vector to the minimum of its components and the provided factor.
@@ -305,7 +305,7 @@ namespace SEM { namespace Entities {
              */
             template <class T2>
             __host__ __device__
-            auto min(T2 other) -> Vec2<T>&;
+            constexpr auto min(T2 other) -> Vec2<T>&;
 
             /**
              * @brief Sets the components of the vector to the maximum of its components and the other's.
@@ -317,7 +317,7 @@ namespace SEM { namespace Entities {
              */
             template <class T2>
             __host__ __device__
-            auto max(const Vec2<T2> &other) -> Vec2<T>&;
+            constexpr auto max(const Vec2<T2> &other) -> Vec2<T>&;
 
             /**
              * @brief Sets the components of the vector to the maximum of its components and the provided factor.
@@ -329,7 +329,7 @@ namespace SEM { namespace Entities {
              */
             template <class T2>
             __host__ __device__
-            auto max(T2 other) -> Vec2<T>&;
+            constexpr auto max(T2 other) -> Vec2<T>&;
 
             /**
              * @brief Returns a vector with the minimum components of this vector and another.
@@ -341,7 +341,7 @@ namespace SEM { namespace Entities {
              */
             template <class T2>
             __host__ __device__
-            auto getMin(const Vec2<T2> &other) const -> Vec2<T>;
+            constexpr auto getMin(const Vec2<T2> &other) const -> Vec2<T>;
 
             /**
              * @brief Returns a vector with the minimum components of this vector and a factor.
@@ -353,7 +353,7 @@ namespace SEM { namespace Entities {
              */
             template <class T2>
             __host__ __device__
-            auto getMin(T2 other) const -> Vec2<T>;
+            constexpr auto getMin(T2 other) const -> Vec2<T>;
 
             /**
              * @brief Returns a vector with the maximum components of this vector and another.
@@ -365,7 +365,7 @@ namespace SEM { namespace Entities {
              */
             template <class T2>
             __host__ __device__
-            auto getMax(const Vec2<T2> &other) const -> Vec2<T>;
+            constexpr auto getMax(const Vec2<T2> &other) const -> Vec2<T>;
 
             /**
              * @brief Returns a vector with the maximum components of this vector and a factor.
@@ -377,7 +377,7 @@ namespace SEM { namespace Entities {
              */
             template <class T2>
             __host__ __device__
-            auto getMax(T2 other) const -> Vec2<T>;
+            constexpr auto getMax(T2 other) const -> Vec2<T>;
 
             /**
              * @brief Returns the magnitude of the vector.
@@ -398,7 +398,7 @@ namespace SEM { namespace Entities {
              * @return T Squared magnitude of the norm.
              */
             __host__ __device__
-            auto magnitudeSquared() const -> T;
+            constexpr auto magnitudeSquared() const -> T;
 
             /**
              * @brief Returns a the normalized vector.
@@ -430,7 +430,7 @@ namespace SEM { namespace Entities {
              */
             template <class T2>
             __host__ __device__
-            auto dot(const Vec2<T2> &other) const -> T;
+            constexpr auto dot(const Vec2<T2> &other) const -> T;
 
             /**
              * @brief Changes the vector in-place to polar coordinates.
@@ -591,7 +591,7 @@ namespace SEM { namespace Entities {
              */
             template <class T2, class T3>
             __host__ __device__
-            auto clamp(T2 minimum, T3 maximum) -> Vec2<T>&;
+            constexpr auto clamp(T2 minimum, T3 maximum) -> Vec2<T>&;
 
             /**
              * @brief Returns a reference to the x component of the vector
@@ -599,7 +599,7 @@ namespace SEM { namespace Entities {
              * @return T& Reference to the x component of the vector.
              */
             __host__ __device__
-            auto x() -> T&;
+            constexpr auto x() -> T&;
             
             /**
              * @brief Returns a reference to the y component of the vector
@@ -607,7 +607,7 @@ namespace SEM { namespace Entities {
              * @return T& Reference to the y component of the vector.
              */
             __host__ __device__
-            auto y() -> T&;
+            constexpr auto y() -> T&;
 
             /**
              * @brief Returns a const reference to the x component of the vector
@@ -615,7 +615,7 @@ namespace SEM { namespace Entities {
              * @return T& Const reference to the x component of the vector.
              */
              __host__ __device__
-             auto x() const -> const T&;
+             constexpr auto x() const -> const T&;
              
              /**
               * @brief Returns a const reference to the y component of the vector
@@ -623,7 +623,7 @@ namespace SEM { namespace Entities {
               * @return T& Const reference to the y component of the vector.
               */
              __host__ __device__
-             auto y() const -> const T&;
+             constexpr auto y() const -> const T&;
     };
 }}
 
@@ -649,7 +649,7 @@ auto operator<<(std::ostream &output, const SEM::Entities::Vec2<T> &v) -> std::o
  */
 template <class T, class T2>
 __host__ __device__
-auto operator*(const T2 factor, const SEM::Entities::Vec2<T> &v) -> SEM::Entities::Vec2<T>;
+constexpr auto operator*(const T2 factor, const SEM::Entities::Vec2<T> &v) -> SEM::Entities::Vec2<T>;
 
 #include "entities/Vec2.tcu"
 
