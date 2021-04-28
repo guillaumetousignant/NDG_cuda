@@ -89,6 +89,7 @@ auto main(int argc, char* argv[]) -> int {
 
     SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> NDG(N_max, N_interpolation_points, stream);
     SEM::Meshes::Mesh2D_t mesh(mesh_file, initial_N, stream);
+    mesh.initial_conditions(NDG.nodes_.data());
     cudaDeviceSynchronize();
 
     auto t_end_init = std::chrono::high_resolution_clock::now();

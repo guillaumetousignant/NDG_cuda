@@ -651,7 +651,7 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     wall_boundaries_ = wall_boundaries;
     symmetry_boundaries_ = symmetry_boundaries;
 
-    allocate_element_storage<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(elements_);
+    allocate_element_storage<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(elements_.size(), elements_.data());
 }
 
 auto SEM::Meshes::Mesh2D_t::build_node_to_element(size_t n_nodes, const std::vector<SEM::Entities::Element2D_t>& elements) -> std::vector<std::vector<size_t>> {
@@ -758,8 +758,8 @@ auto SEM::Meshes::Mesh2D_t::build_faces(size_t n_nodes, std::vector<SEM::Entitie
     return std::make_pair(faces, node_to_face);
 }
 
-auto SEM::Meshes::Mesh2D_t::set_initial_conditions(const deviceFloat* nodes) -> void {
-
+auto SEM::Meshes::Mesh2D_t::initial_conditions(const deviceFloat* nodes) -> void {
+    initial_conditions_2D<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data(), nodes_.data(), nodes);
 }
 
 auto SEM::Meshes::Mesh2D_t::print() -> void {
@@ -814,11 +814,11 @@ auto SEM::Meshes::Mesh2D_t::boundary_conditions() -> void {
 }
 
 __global__
-auto SEM::Meshes::allocate_element_storage(SEM::Entities::device_vector<SEM::Entities::Element2D_t>& elements) -> void {
+auto SEM::Meshes::allocate_element_storage(size_t n_elements, SEM::Entities::Element2D_t* elements) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (size_t i = index; i < elements.size(); i += stride) {
+    for (size_t i = index; i < n_elements; i += stride) {
         const int N = elements[i].N_;
         elements[i].p_ = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
         elements[i].u_ = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
@@ -827,17 +827,31 @@ auto SEM::Meshes::allocate_element_storage(SEM::Entities::device_vector<SEM::Ent
 }
 
 __global__
-auto SEM::Meshes::initial_conditions_2D(size_t n_elements, SEM::Entities::device_vector<SEM::Entities::Element2D_t>& elements, const SEM::Entities::device_vector<SEM::Entities::Vec2<deviceFloat>>& nodes) -> void {
+auto SEM::Meshes::initial_conditions_2D(size_t n_elements, SEM::Entities::Element2D_t* elements, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* NDG_nodes) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
     for (size_t elem_index = index; elem_index < n_elements; elem_index += stride) {
-        const SEM::Entities::Element2D_t& element = elements[elem_index];
+        SEM::Entities::Element2D_t& element = elements[elem_index];
+        const size_t offset_1D = element.N_ * (element.N_ + 1) /2;
 
         for (int i = 0; i <= element.N_; ++i) {
             for (int j = 0; j <= element.N_; ++j) {
-                //const Vec2f<deviceFloat> coordinates = 
+                const Vec2<deviceFloat> coordinates {NDG_nodes[offset_1D + i], NDG_nodes[offset_1D + j]};
+                const Vec2<deviceFloat> delta_top = nodes[element.nodes_[2]] - nodes[element.nodes_[3]];
+                const Vec2<deviceFloat> delta_bottom = nodes[element.nodes_[1]] - nodes[element.nodes_[0]];
 
+                const Vec2<deviceFloat> coordinates_normalised = coordinates * 0.5 + 0.5;
+
+                const Vec2<deviceFloat> delta = delta_bottom * (1 - coordinates_normalised.y()) + delta_top * coordinates_normalised.y();
+                const Vec2<deviceFloat> origin = nodes[element.nodes_[0]] + (nodes[element.nodes_[3]] - nodes[element.nodes_[0]]) * coordinates_normalised.y();
+
+                const Vec2<deviceFloat> global_coordinates = origin + delta * coordinates_normalised.x();
+
+                const std::array<deviceFloat, 3> state = SEM::Meshes::Mesh2D_t::g(global_coordinates);
+                element.p_[i * (element.N_ + 1) + j] = state[0];
+                element.u_[i * (element.N_ + 1) + j] = state[1];
+                element.v_[i * (element.N_ + 1) + j] = state[2];
             }
         }
     }

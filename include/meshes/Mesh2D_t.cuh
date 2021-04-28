@@ -7,6 +7,7 @@
 #include "entities/device_vector.cuh"
 #include "entities/Vec2.cuh"
 #include "helpers/float_types.h"
+#include "entities/NDG_t.cuh"
 #include <vector>
 #include <limits>
 #include <mpi.h>
@@ -48,7 +49,7 @@ namespace SEM { namespace Meshes {
 
             auto read_su2(std::filesystem::path filename) -> void;
             auto read_cgns(std::filesystem::path filename) -> void;
-            auto set_initial_conditions(const deviceFloat* nodes) -> void;
+            auto initial_conditions(const deviceFloat* nodes) -> void;
             auto boundary_conditions() -> void;
             auto print() -> void;
             auto write_data(deviceFloat time, size_t N_interpolation_points, const deviceFloat* interpolation_matrices) -> void;
@@ -91,10 +92,10 @@ namespace SEM { namespace Meshes {
     };
 
     __global__
-    auto allocate_element_storage(SEM::Entities::device_vector<SEM::Entities::Element2D_t>& elements) -> void;
+    auto allocate_element_storage(size_t n_elements, SEM::Entities::Element2D_t* elements) -> void;
 
     __global__
-    auto initial_conditions_2D(size_t n_elements, SEM::Entities::device_vector<SEM::Entities::Element2D_t>& elements, const SEM::Entities::device_vector<SEM::Entities::Vec2<deviceFloat>>& nodes) -> void;
+    auto initial_conditions_2D(size_t n_elements, SEM::Entities::Element2D_t* elements, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* NDG_nodes) -> void;
 }}
 
 #endif
