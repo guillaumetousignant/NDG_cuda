@@ -61,16 +61,6 @@ namespace SEM { namespace Entities {
             constexpr auto operator[](T2 index) const -> const T&;
 
             /**
-             * @brief Returns the selected component of the vector.
-             * 
-             * @param index Index of the component to return.
-             * @return T Selected component.
-             */
-            template <class T2>
-            __host__ __device__
-            constexpr auto operator[](T2 index) const -> T; 
-
-            /**
              * @brief Multiplies all components of the vector by a factor.
              * 
              * Returns (x1*a, y1*a).

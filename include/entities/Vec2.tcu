@@ -30,13 +30,6 @@ constexpr auto SEM::Entities::Vec2<T>::operator[](T2 index) const -> const T& {
 template <typename T>
 template <class T2>
 __host__ __device__
-constexpr auto SEM::Entities::Vec2<T>::operator[](T2 index) const -> T {
-    return v_[index];
-}
-
-template <typename T>
-template <class T2>
-__host__ __device__
 constexpr auto SEM::Entities::Vec2<T>::operator*(T2 scale) const -> Vec2<T> {
     return Vec2(v_[0] * scale, v_[1] * scale);
 }
