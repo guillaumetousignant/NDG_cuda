@@ -13,6 +13,8 @@ constexpr int poly_blockSize = 16; // Small number of threads per block because 
 constexpr int interpolation_blockSize = 32;
 const dim3 matrix_blockSize(16, 16); // Small number of threads per block because N will never be huge
 
+using SEM::Entities::device_vector;
+
 template class SEM::Entities::NDG_t<SEM::Polynomials::ChebyshevPolynomial_t>; // Like, I understand why I need this, but man is it crap.
 template class SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t>;
 
@@ -22,26 +24,25 @@ SEM::Entities::NDG_t<Polynomial>::NDG_t(int N_max, size_t N_interpolation_points
         N_interpolation_points_(N_interpolation_points),
         vector_length_((N_max_ + 1) * (N_max_ + 2)/2), 
         matrix_length_((N_max_ + 1) * (N_max_ + 2) * (2 * N_max_ + 3)/6),
-        interpolation_length_((N_max_ + 1) * (N_max_ + 2) * N_interpolation_points_/2) {
+        interpolation_length_((N_max_ + 1) * (N_max_ + 2) * N_interpolation_points_/2),
+        nodes_(vector_length_),
+        weights_(vector_length_),
+        barycentric_weights_(vector_length_),
+        lagrange_interpolant_left_(vector_length_),
+        lagrange_interpolant_right_(vector_length_),
+        lagrange_interpolant_derivative_left_(vector_length_),
+        lagrange_interpolant_derivative_right_(vector_length_),
+        derivative_matrices_(matrix_length_),
+        g_hat_derivative_matrices_(matrix_length_),
+        derivative_matrices_hat_(matrix_length_),
+        interpolation_matrices_(interpolation_length_) {
 
-    cudaMalloc(&nodes_, vector_length_ * sizeof(deviceFloat));
-    cudaMalloc(&weights_, vector_length_ * sizeof(deviceFloat));
-    cudaMalloc(&barycentric_weights_, vector_length_ * sizeof(deviceFloat));
-    cudaMalloc(&lagrange_interpolant_left_, vector_length_ * sizeof(deviceFloat));
-    cudaMalloc(&lagrange_interpolant_right_, vector_length_ * sizeof(deviceFloat));
-    cudaMalloc(&lagrange_interpolant_derivative_left_, vector_length_ * sizeof(deviceFloat));
-    cudaMalloc(&lagrange_interpolant_derivative_right_, vector_length_ * sizeof(deviceFloat));
-    cudaMalloc(&derivative_matrices_, matrix_length_ * sizeof(deviceFloat));
-    cudaMalloc(&g_hat_derivative_matrices_, matrix_length_ * sizeof(deviceFloat));
-    cudaMalloc(&derivative_matrices_hat_, matrix_length_ * sizeof(deviceFloat));
-    cudaMalloc(&interpolation_matrices_, interpolation_length_ * sizeof(deviceFloat));
-
-    Polynomial::nodes_and_weights(N_max_, poly_blockSize, nodes_, weights_, stream);
+    Polynomial::nodes_and_weights(N_max_, poly_blockSize, nodes_.data(), weights_.data(), stream);
 
     // Nodes are needed to compute barycentric weights
     for (int N = 0; N <= N_max_; ++N) {
         const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
-        SEM::Entities::calculate_barycentric_weights<<<vector_numBlocks, poly_blockSize, 0, stream>>>(N, nodes_, barycentric_weights_);
+        SEM::Entities::calculate_barycentric_weights<<<vector_numBlocks, poly_blockSize, 0, stream>>>(N, nodes_.data(), barycentric_weights_.data());
     }
 
     // We need the barycentric weights for derivative matrix, interpolation matrices and Lagrange interpolants
@@ -49,46 +50,31 @@ SEM::Entities::NDG_t<Polynomial>::NDG_t(int N_max, size_t N_interpolation_points
     for (int N = 0; N <= N_max_; ++N) {
         const dim3 matrix_numBlocks((N +  matrix_blockSize.x) / matrix_blockSize.x, (N +  matrix_blockSize.y) / matrix_blockSize.y); // Should be (N + poly_blockSize - 1) if N is not inclusive
         const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
-        SEM::Entities::polynomial_derivative_matrices<<<matrix_numBlocks, matrix_blockSize, 0, stream>>>(N, nodes_, barycentric_weights_, derivative_matrices_);
-        SEM::Entities::create_interpolation_matrices<<<interpolation_numBlocks, interpolation_blockSize, 0, stream>>>(N, N_interpolation_points_, nodes_, barycentric_weights_, interpolation_matrices_);
-        SEM::Entities::lagrange_interpolating_polynomials<<<vector_numBlocks, poly_blockSize, 0, stream>>>(-1.0f, N, nodes_, barycentric_weights_, lagrange_interpolant_left_);
-        SEM::Entities::lagrange_interpolating_polynomials<<<vector_numBlocks, poly_blockSize, 0, stream>>>(1.0f, N, nodes_, barycentric_weights_, lagrange_interpolant_right_);
-        SEM::Entities::lagrange_interpolating_derivative_polynomials<<<vector_numBlocks, poly_blockSize, 0, stream>>>(-1.0f, N, nodes_, barycentric_weights_, lagrange_interpolant_derivative_left_);
-        SEM::Entities::lagrange_interpolating_derivative_polynomials<<<vector_numBlocks, poly_blockSize, 0, stream>>>(1.0f, N, nodes_, barycentric_weights_, lagrange_interpolant_derivative_right_);
+        SEM::Entities::polynomial_derivative_matrices<<<matrix_numBlocks, matrix_blockSize, 0, stream>>>(N, nodes_.data(), barycentric_weights_.data(), derivative_matrices_.data());
+        SEM::Entities::create_interpolation_matrices<<<interpolation_numBlocks, interpolation_blockSize, 0, stream>>>(N, N_interpolation_points_, nodes_.data(), barycentric_weights_.data(), interpolation_matrices_.data());
+        SEM::Entities::lagrange_interpolating_polynomials<<<vector_numBlocks, poly_blockSize, 0, stream>>>(-1.0f, N, nodes_.data(), barycentric_weights_.data(), lagrange_interpolant_left_.data());
+        SEM::Entities::lagrange_interpolating_polynomials<<<vector_numBlocks, poly_blockSize, 0, stream>>>(1.0f, N, nodes_.data(), barycentric_weights_.data(), lagrange_interpolant_right_.data());
+        SEM::Entities::lagrange_interpolating_derivative_polynomials<<<vector_numBlocks, poly_blockSize, 0, stream>>>(-1.0f, N, nodes_.data(), barycentric_weights_.data(), lagrange_interpolant_derivative_left_.data());
+        SEM::Entities::lagrange_interpolating_derivative_polynomials<<<vector_numBlocks, poly_blockSize, 0, stream>>>(1.0f, N, nodes_.data(), barycentric_weights_.data(), lagrange_interpolant_derivative_right_.data());
     }
 
     // Then we calculate the derivative matrix diagonal and normalize the Lagrange interpolants
     const int poly_numBlocks = (N_max_ + poly_blockSize) / poly_blockSize;
-    SEM::Entities::normalize_lagrange_interpolating_polynomials<<<poly_numBlocks, poly_blockSize, 0, stream>>>(N_max_, lagrange_interpolant_left_);
-    SEM::Entities::normalize_lagrange_interpolating_polynomials<<<poly_numBlocks, poly_blockSize, 0, stream>>>(N_max_, lagrange_interpolant_right_);
-    SEM::Entities::normalize_lagrange_interpolating_derivative_polynomials<<<poly_numBlocks, poly_blockSize, 0, stream>>>(-1.0f, N_max_, nodes_, barycentric_weights_, lagrange_interpolant_derivative_left_);
-    SEM::Entities::normalize_lagrange_interpolating_derivative_polynomials<<<poly_numBlocks, poly_blockSize, 0, stream>>>(1.0f, N_max_, nodes_, barycentric_weights_, lagrange_interpolant_derivative_right_);
+    SEM::Entities::normalize_lagrange_interpolating_polynomials<<<poly_numBlocks, poly_blockSize, 0, stream>>>(N_max_, lagrange_interpolant_left_.data());
+    SEM::Entities::normalize_lagrange_interpolating_polynomials<<<poly_numBlocks, poly_blockSize, 0, stream>>>(N_max_, lagrange_interpolant_right_.data());
+    SEM::Entities::normalize_lagrange_interpolating_derivative_polynomials<<<poly_numBlocks, poly_blockSize, 0, stream>>>(-1.0f, N_max_, nodes_.data(), barycentric_weights_.data(), lagrange_interpolant_derivative_left_.data());
+    SEM::Entities::normalize_lagrange_interpolating_derivative_polynomials<<<poly_numBlocks, poly_blockSize, 0, stream>>>(1.0f, N_max_, nodes_.data(), barycentric_weights_.data(), lagrange_interpolant_derivative_right_.data());
     for (int N = 0; N <= N_max_; ++N) {
         const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
-        SEM::Entities::polynomial_derivative_matrices_diagonal<<<vector_numBlocks, poly_blockSize, 0, stream>>>(N, derivative_matrices_);
+        SEM::Entities::polynomial_derivative_matrices_diagonal<<<vector_numBlocks, poly_blockSize, 0, stream>>>(N, derivative_matrices_.data());
     }
 
     // All the derivative matrix has to be computed before D^
     for (int N = 0; N <= N_max_; ++N) {
         const dim3 matrix_numBlocks((N +  matrix_blockSize.x) / matrix_blockSize.x, (N +  matrix_blockSize.y) / matrix_blockSize.y); // Should be (N + poly_blockSize - 1) if N is not inclusive
-        SEM::Entities::polynomial_cg_derivative_matrices<<<matrix_numBlocks, matrix_blockSize, 0, stream>>>(N, weights_, derivative_matrices_, g_hat_derivative_matrices_);
-        SEM::Entities::polynomial_derivative_matrices_hat<<<matrix_numBlocks, matrix_blockSize, 0, stream>>>(N, weights_, derivative_matrices_, derivative_matrices_hat_);
+        SEM::Entities::polynomial_cg_derivative_matrices<<<matrix_numBlocks, matrix_blockSize, 0, stream>>>(N, weights_.data(), derivative_matrices_.data(), g_hat_derivative_matrices_.data());
+        SEM::Entities::polynomial_derivative_matrices_hat<<<matrix_numBlocks, matrix_blockSize, 0, stream>>>(N, weights_.data(), derivative_matrices_.data(), derivative_matrices_hat_.data());
     }
-}
-
-template<typename Polynomial>
-SEM::Entities::NDG_t<Polynomial>::~NDG_t() {
-    cudaFree(nodes_);
-    cudaFree(weights_);
-    cudaFree(barycentric_weights_);
-    cudaFree(lagrange_interpolant_left_);
-    cudaFree(lagrange_interpolant_right_);
-    cudaFree(lagrange_interpolant_derivative_left_);
-    cudaFree(lagrange_interpolant_derivative_right_);
-    cudaFree(derivative_matrices_);
-    cudaFree(g_hat_derivative_matrices_);
-    cudaFree(derivative_matrices_hat_);
-    cudaFree(interpolation_matrices_);
 }
    
 template<typename Polynomial>
@@ -106,17 +92,17 @@ void SEM::Entities::NDG_t<Polynomial>::print() {
     std::vector<deviceFloat> host_derivative_matrices_hat(matrix_length_);
     std::vector<deviceFloat> host_interpolation_matrices(interpolation_length_);
 
-    cudaMemcpy(host_nodes.data(), nodes_, vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_weights.data(), weights_, vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_barycentric_weights.data(), barycentric_weights_, vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_lagrange_interpolant_left.data(), lagrange_interpolant_left_, vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_lagrange_interpolant_right.data(), lagrange_interpolant_right_, vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_lagrange_interpolant_derivative_left.data(), lagrange_interpolant_derivative_left_, vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_lagrange_interpolant_derivative_right.data(), lagrange_interpolant_derivative_right_, vector_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_derivative_matrices.data(), derivative_matrices_, matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_g_hat_derivative_matrices.data(), g_hat_derivative_matrices_, matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_derivative_matrices_hat.data(), derivative_matrices_hat_, matrix_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_interpolation_matrices.data(), interpolation_matrices_, interpolation_length_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    nodes_.copy_to(host_nodes);
+    weights_.copy_to(host_weights);
+    barycentric_weights_.copy_to(host_barycentric_weights);
+    lagrange_interpolant_left_.copy_to(host_lagrange_interpolant_left);
+    lagrange_interpolant_right_.copy_to(host_lagrange_interpolant_right);
+    lagrange_interpolant_derivative_left_.copy_to(host_lagrange_interpolant_derivative_left);
+    lagrange_interpolant_derivative_right_.copy_to(host_lagrange_interpolant_derivative_right);
+    derivative_matrices_.copy_to(host_derivative_matrices);
+    g_hat_derivative_matrices_.copy_to(host_g_hat_derivative_matrices);
+    derivative_matrices_hat_.copy_to(host_derivative_matrices_hat);
+    interpolation_matrices_.copy_to(host_interpolation_matrices);
 
     std::cout << "Nodes: " << std::endl;
     for (int N = 0; N <= N_max_; ++N) {

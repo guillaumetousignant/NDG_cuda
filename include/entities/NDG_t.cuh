@@ -2,30 +2,30 @@
 #define NDG_NDG_T_H
 
 #include "helpers/float_types.h"
+#include "entities/device_vector.cuh"
 
 namespace SEM { namespace Entities {
     template<typename Polynomial>
     class NDG_t { 
         public: 
             NDG_t(int N_max, size_t N_interpolation_points, cudaStream_t &stream);
-            ~NDG_t();
 
             int N_max_;
             size_t N_interpolation_points_;
             size_t vector_length_; // Flattened length of all N one after the other
             size_t matrix_length_; // Flattened length of all N² one after the other
             size_t interpolation_length_;
-            deviceFloat* nodes_;
-            deviceFloat* weights_;
-            deviceFloat* barycentric_weights_;
-            deviceFloat* lagrange_interpolant_left_;
-            deviceFloat* lagrange_interpolant_right_;
-            deviceFloat* lagrange_interpolant_derivative_left_;
-            deviceFloat* lagrange_interpolant_derivative_right_;
-            deviceFloat* derivative_matrices_;
-            deviceFloat* g_hat_derivative_matrices_;
-            deviceFloat* derivative_matrices_hat_;
-            deviceFloat* interpolation_matrices_;
+            SEM::Entities::device_vector<deviceFloat> nodes_;
+            SEM::Entities::device_vector<deviceFloat> weights_;
+            SEM::Entities::device_vector<deviceFloat> barycentric_weights_;
+            SEM::Entities::device_vector<deviceFloat> lagrange_interpolant_left_;
+            SEM::Entities::device_vector<deviceFloat> lagrange_interpolant_right_;
+            SEM::Entities::device_vector<deviceFloat> lagrange_interpolant_derivative_left_;
+            SEM::Entities::device_vector<deviceFloat> lagrange_interpolant_derivative_right_;
+            SEM::Entities::device_vector<deviceFloat> derivative_matrices_;
+            SEM::Entities::device_vector<deviceFloat> g_hat_derivative_matrices_;
+            SEM::Entities::device_vector<deviceFloat> derivative_matrices_hat_;
+            SEM::Entities::device_vector<deviceFloat> interpolation_matrices_;
 
             void print();
     };
