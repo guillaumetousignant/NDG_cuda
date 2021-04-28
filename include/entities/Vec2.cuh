@@ -29,9 +29,8 @@ namespace SEM { namespace Entities {
              * @param x First component of the vector.
              * @param y Second component of the vector.
              */
-            template <class T2>
             __host__ __device__
-            constexpr Vec2(T x, T2 y); 
+            constexpr Vec2(T x, T y); 
 
             /**
              * @brief Construct a new Vec2 object from one value.

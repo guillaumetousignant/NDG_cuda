@@ -6,9 +6,8 @@ __host__ __device__
 constexpr SEM::Entities::Vec2<T>::Vec2() : v_{0, 0} {}
 
 template <typename T>
-template <class T2>
 __host__ __device__
-constexpr SEM::Entities::Vec2<T>::Vec2(T x, T2 y) : v_{x, y} {}
+constexpr SEM::Entities::Vec2<T>::Vec2(T x, T y) : v_{x, y} {}
 
 template <typename T>
 __host__ __device__
