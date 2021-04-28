@@ -790,7 +790,7 @@ auto SEM::Meshes::Mesh2D_t::g(SEM::Entities::Vec2<deviceFloat> xy) -> std::array
     constexpr deviceFloat c = 1;
     
     std::array<deviceFloat, 3> state {
-        static_cast<deviceFloat>(std::exp(-std::pow((k.x() * (xy.x() - xy0.x()) + k.y() * (xy.y() - xy0.y())), 2) / std::pow(d, 2))),
+        static_cast<deviceFloat>(std::exp(-((k.x() * (xy.x() - xy0.x()) + k.y() * (xy.y() - xy0.y())) * (k.x() * (xy.x() - xy0.x()) + k.y() * (xy.y() - xy0.y()))) / (d * d))),
         0.0,
         0.0
     };
