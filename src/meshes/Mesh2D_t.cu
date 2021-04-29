@@ -763,7 +763,38 @@ auto SEM::Meshes::Mesh2D_t::initial_conditions(const deviceFloat* nodes) -> void
 }
 
 auto SEM::Meshes::Mesh2D_t::print() -> void {
+    std::vector<SEM::Entities::Face2D_t> host_faces(faces_.size());
+    std::vector<SEM::Entities::Element2D_t> host_elements(elements_.size());
+    std::vector<Vec2<deviceFloat>> host_nodes(nodes_.size());
+    std::vector<std::array<size_t, 2>> host_interfaces(interfaces_.size());
+    std::vector<size_t> host_wall_boundaries(wall_boundaries_.size());
+    std::vector<size_t> host_symmetry_boundaries(symmetry_boundaries_.size());
     
+    faces_.copy_to(host_faces);
+    elements_.copy_to(host_elements);
+    nodes_.copy_to(host_nodes);
+    interfaces_.copy_to(host_interfaces);
+    wall_boundaries_.copy_to(host_wall_boundaries);
+    symmetry_boundaries_.copy_to(host_symmetry_boundaries);
+
+    // Invalidate GPU pointers, or else they will be deleted on the CPU, where they point to random stuff
+    for (auto& element: host_elements) {
+        element.p_.data_ = nullptr;
+        element.p_.size_ = 0;
+        element.u_.data_ = nullptr;
+        element.u_.size_ = 0;
+        element.v_.data_ = nullptr;
+        element.v_.size_ = 0;
+    }
+
+    std::cout << "N elements: " << N_elements_ << std::endl;
+    std::cout << "N elements and ghosts: " << elements_.size() << std::endl;
+    std::cout << "N faces: " << faces_.size() << std::endl;
+    std::cout << "N nodes: " << nodes_.size() << std::endl;
+    std::cout << "N interfaces: " << interfaces_.size() << std::endl;
+    std::cout << "N wall boundaries: " << wall_boundaries_.size() << std::endl;
+    std::cout << "N symmetry boundaries: " << symmetry_boundaries_.size() << std::endl;
+    std::cout << "Initial N: " << initial_N_ << std::endl;
 }
 
 auto SEM::Meshes::Mesh2D_t::write_file_data(size_t N_interpolation_points, size_t N_elements, deviceFloat time, int rank, const std::vector<deviceFloat>& coordinates, const std::vector<deviceFloat>& velocity, const std::vector<deviceFloat>& du_dx, const std::vector<deviceFloat>& intermediate, const std::vector<deviceFloat>& x_L, const std::vector<deviceFloat>& x_R, const std::vector<int>& N, const std::vector<deviceFloat>& sigma, const bool* refine, const bool* coarsen, const std::vector<deviceFloat>& error) -> void {
