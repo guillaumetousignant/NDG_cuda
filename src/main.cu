@@ -102,6 +102,7 @@ auto main(int argc, char* argv[]) -> int {
 
     //mesh.solve(CFL, output_times, NDG, viscosity);
     mesh.print();
+    mesh.write_data(0.0, NDG.N_interpolation_points_, NDG.interpolation_matrices_.data());
     // Wait for GPU to finish before copying to host
     cudaDeviceSynchronize();
 

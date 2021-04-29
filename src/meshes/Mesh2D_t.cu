@@ -813,7 +813,7 @@ auto SEM::Meshes::Mesh2D_t::print() -> void {
         std::cout << std::endl;
     }
 
-    std::cout << '\t' <<  "Face nodes:" << std::endl;
+    std::cout << std::endl << '\t' <<  "Face nodes:" << std::endl;
     for (size_t i = 0; i < host_faces.size(); ++i) {
         std::cout << '\t' << '\t' << "face " << i << " : ";
         for (auto node_index : host_faces[i].nodes_) {
@@ -822,7 +822,7 @@ auto SEM::Meshes::Mesh2D_t::print() -> void {
         std::cout << std::endl;
     }
 
-    std::cout << '\t' <<  "Element faces:" << std::endl;
+    std::cout << std::endl << '\t' <<  "Element faces:" << std::endl;
     for (size_t i = 0; i < host_elements.size(); ++i) {
         std::cout << '\t' << '\t' << "element " << i << " : ";
         for (auto face_index : host_elements[i].faces_) {
@@ -831,7 +831,7 @@ auto SEM::Meshes::Mesh2D_t::print() -> void {
         std::cout << std::endl;
     }
 
-    std::cout << '\t' <<  "Face elements:" << std::endl;
+    std::cout << std::endl << '\t' <<  "Face elements:" << std::endl;
     for (size_t i = 0; i < host_faces.size(); ++i) {
         std::cout << '\t' << '\t' << "face " << i << " : ";
         for (auto element_index : host_faces[i].elements_) {
