@@ -795,6 +795,49 @@ auto SEM::Meshes::Mesh2D_t::print() -> void {
     std::cout << "N wall boundaries: " << wall_boundaries_.size() << std::endl;
     std::cout << "N symmetry boundaries: " << symmetry_boundaries_.size() << std::endl;
     std::cout << "Initial N: " << initial_N_ << std::endl;
+
+    std::cout << std::endl <<  "Connectivity" << std::endl;
+    std::cout << '\t' <<  "Nodes:" << std::endl;
+    for (size_t i = 0; i < host_nodes.size(); ++i) {
+        std::cout << '\t' << '\t' << "node " << i << " : " << host_nodes[i] << std::endl;
+    }
+
+    std::cout << '\t' <<  "Element nodes:" << std::endl;
+    for (size_t i = 0; i < host_elements.size(); ++i) {
+        std::cout << '\t' << '\t' << "element " << i << " : ";
+        for (auto node_index : host_elements[i].nodes_) {
+            std::cout << node_index << " ";
+        }
+        std::cout << std::endl;
+    }
+
+    std::cout << '\t' <<  "Face nodes:" << std::endl;
+    for (size_t i = 0; i < host_faces.size(); ++i) {
+        std::cout << '\t' << '\t' << "face " << i << " : ";
+        for (auto node_index : host_faces[i].nodes_) {
+            std::cout << node_index << " ";
+        }
+        std::cout << std::endl;
+    }
+
+    std::cout << '\t' <<  "Element faces:" << std::endl;
+    for (size_t i = 0; i < host_elements.size(); ++i) {
+        std::cout << '\t' << '\t' << "element " << i << " : ";
+        for (auto face_index : host_elements[i].faces_) {
+            std::cout << face_index << " ";
+        }
+        std::cout << std::endl;
+    }
+
+    std::cout << '\t' <<  "Face elements:" << std::endl;
+    for (size_t i = 0; i < host_faces.size(); ++i) {
+        std::cout << '\t' << '\t' << "face " << i << " : ";
+        for (auto element_index : host_faces[i].elements_) {
+            std::cout << element_index << " ";
+        }
+        std::cout << std::endl;
+    }
+    
 }
 
 auto SEM::Meshes::Mesh2D_t::write_file_data(size_t N_interpolation_points, size_t N_elements, deviceFloat time, int rank, const std::vector<deviceFloat>& coordinates, const std::vector<deviceFloat>& velocity, const std::vector<deviceFloat>& du_dx, const std::vector<deviceFloat>& intermediate, const std::vector<deviceFloat>& x_L, const std::vector<deviceFloat>& x_R, const std::vector<int>& N, const std::vector<deviceFloat>& sigma, const bool* refine, const bool* coarsen, const std::vector<deviceFloat>& error) -> void {
