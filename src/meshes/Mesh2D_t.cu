@@ -785,6 +785,8 @@ auto SEM::Meshes::Mesh2D_t::print() -> void {
         element.u_.size_ = 0;
         element.v_.data_ = nullptr;
         element.v_.size_ = 0;
+        element.interpolation_intermediate_.data_ = nullptr;
+        element.interpolation_intermediate_.size_ = 0;
     }
 
     std::cout << "N elements: " << N_elements_ << std::endl;
@@ -845,7 +847,89 @@ auto SEM::Meshes::Mesh2D_t::write_file_data(size_t N_interpolation_points, size_
 }
 
 auto SEM::Meshes::Mesh2D_t::write_data(deviceFloat time, size_t N_interpolation_points, const deviceFloat* interpolation_matrices) -> void {
+    SEM::Entities::device_vector<deviceFloat> x(N_elements_ * N_interpolation_points * N_interpolation_points);
+    SEM::Entities::device_vector<deviceFloat> y(N_elements_ * N_interpolation_points * N_interpolation_points);
+    SEM::Entities::device_vector<deviceFloat> p(N_elements_ * N_interpolation_points * N_interpolation_points);
+    SEM::Entities::device_vector<deviceFloat> u(N_elements_ * N_interpolation_points * N_interpolation_points);
+    SEM::Entities::device_vector<deviceFloat> v(N_elements_ * N_interpolation_points * N_interpolation_points);
+    SEM::Entities::device_vector<deviceFloat> N(N_elements_);
 
+    SEM::Entities::get_solution<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, N_interpolation_points, elements_, nodes_, interpolation_matrices, x.data(), y.data(), p.data(), u.data(), v.data(), N.data());
+    
+    std::vector<deviceFloat> x_host(N_elements_ * N_interpolation_points * N_interpolation_points);
+    std::vector<deviceFloat> y_host(N_elements_ * N_interpolation_points * N_interpolation_points);
+    std::vector<deviceFloat> p_host(N_elements_ * N_interpolation_points * N_interpolation_points);
+    std::vector<deviceFloat> u_host(N_elements_ * N_interpolation_points * N_interpolation_points);
+    std::vector<deviceFloat> v_host(N_elements_ * N_interpolation_points * N_interpolation_points);
+    std::vector<deviceFloat> N_host(N_elements_);
+
+    x.copy_to(x_host);
+    y.copy_to(y_host);
+    p.copy_to(p_host);
+    u.copy_to(u_host);
+    v.copy_to(v_host);
+    N.copy_to(N_host);
+
+    std::cout << std::endl << "Element data:" << std::endl;
+    std::cout << "x" std::endl;
+    for (size_t i = 0; i < N_elements_; ++i) {
+        std::cout << '\t' << "element " << i << std::endl;
+        for (int m = 0; m <= N[i]; ++m) {
+            std::cout << '\t' << '\t';
+            for (int n = 0; n <= N[i]; ++n) {
+                std::cout << x[i * N_interpolation_points * N_interpolation_points + m * (N[i] + 1) + n] <<  " ";
+            }
+            std::cout << std::endl;
+        }
+    }
+
+    std::cout << std::endl << "y" std::endl;
+    for (size_t i = 0; i < N_elements_; ++i) {
+        std::cout << '\t' << "element " << i << std::endl;
+        for (int m = 0; m <= N[i]; ++m) {
+            std::cout << '\t' << '\t';
+            for (int n = 0; n <= N[i]; ++n) {
+                std::cout << y[i * N_interpolation_points * N_interpolation_points + m * (N[i] + 1) + n] <<  " ";
+            }
+            std::cout << std::endl;
+        }
+    }
+
+    std::cout << std::endl << "p" std::endl;
+    for (size_t i = 0; i < N_elements_; ++i) {
+        std::cout << '\t' << "element " << i << std::endl;
+        for (int m = 0; m <= N[i]; ++m) {
+            std::cout << '\t' << '\t';
+            for (int n = 0; n <= N[i]; ++n) {
+                std::cout << p[i * N_interpolation_points * N_interpolation_points + m * (N[i] + 1) + n] <<  " ";
+            }
+            std::cout << std::endl;
+        }
+    }
+
+    std::cout << std::endl << "u" std::endl;
+    for (size_t i = 0; i < N_elements_; ++i) {
+        std::cout << '\t' << "element " << i << std::endl;
+        for (int m = 0; m <= N[i]; ++m) {
+            std::cout << '\t' << '\t';
+            for (int n = 0; n <= N[i]; ++n) {
+                std::cout << u[i * N_interpolation_points * N_interpolation_points + m * (N[i] + 1) + n] <<  " ";
+            }
+            std::cout << std::endl;
+        }
+    }
+
+    std::cout << std::endl << "v" std::endl;
+    for (size_t i = 0; i < N_elements_; ++i) {
+        std::cout << '\t' << "element " << i << std::endl;
+        for (int m = 0; m <= N[i]; ++m) {
+            std::cout << '\t' << '\t';
+            for (int n = 0; n <= N[i]; ++n) {
+                std::cout << v[i * N_interpolation_points * N_interpolation_points + m * (N[i] + 1) + n] <<  " ";
+            }
+            std::cout << std::endl;
+        }
+    }
 }
 
 template auto SEM::Meshes::Mesh2D_t::solve(const deviceFloat delta_t, const std::vector<deviceFloat> output_times, const SEM::Entities::NDG_t<SEM::Polynomials::ChebyshevPolynomial_t> &NDG, deviceFloat viscosity) -> void; // Get with the times c++, it's crazy I have to do this
@@ -897,6 +981,7 @@ auto SEM::Meshes::allocate_element_storage(size_t n_elements, SEM::Entities::Ele
         elements[i].p_ = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
         elements[i].u_ = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
         elements[i].v_ = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
+        elements[i].interpolation_intermediate_ = SEM::Entities::cuda_vector<deviceFloat>(N + 1);
     }
 }
 
@@ -926,6 +1011,80 @@ auto SEM::Meshes::initial_conditions_2D(size_t n_elements, SEM::Entities::Elemen
                 element.p_[i * (element.N_ + 1) + j] = state[0];
                 element.u_[i * (element.N_ + 1) + j] = state[1];
                 element.v_[i * (element.N_ + 1) + j] = state[2];
+            }
+        }
+    }
+}
+
+__global__
+void SEM::Entities::get_solution(size_t N_elements, size_t N_interpolation_points, const Element2D_t* elements, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v, int* N) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t element_index = index; element_index < N_elements; element_index += stride) {
+        const SEM::Entities::Element2D_t& element = elements[element_index];
+        const size_t offset_interp_2D = element_index * N_interpolation_points * N_interpolation_points;
+        const size_t offset_interp = element.N_ * (element.N_ + 1) * N_interpolation_points/2;
+
+        N[element_index] = element.N_;
+
+        for (size_t i = 0; i < N_interpolation_points; ++i) {
+            // x and y
+            for (size_t j = 0; j < N_interpolation_points; ++j) {
+                const Vec2<deviceFloat> coordinates {static_cast<deviceFloat>(i)/static_cast<deviceFloat>(N_interpolation_points - 1), static_cast<deviceFloat>(j)/static_cast<deviceFloat>(N_interpolation_points - 1)};
+                const Vec2<deviceFloat> delta_top = nodes[element.nodes_[2]] - nodes[element.nodes_[3]];
+                const Vec2<deviceFloat> delta_bottom = nodes[element.nodes_[1]] - nodes[element.nodes_[0]];
+                const Vec2<deviceFloat> delta = delta_bottom * (1 - coordinates.y()) + delta_top * coordinates.y();
+                const Vec2<deviceFloat> origin = nodes[element.nodes_[0]] + (nodes[element.nodes_[3]] - nodes[element.nodes_[0]]) * coordinates.y();
+                const Vec2<deviceFloat> global_coordinates = origin + delta * coordinate.x();
+
+                x[offset_interp_2D + i * N_interpolation_points + j] = global_coordinates.x();
+                y[offset_interp_2D + i * N_interpolation_points + j] = global_coordinates.y();
+            }
+
+            // Pressure
+            for (int m = 0; m <= element.N_; ++m) {
+                element.interpolation_intermediate_[m] = 0.0;
+                for (int n = 0; n <= element.N_; ++n) {
+                    element.interpolation_intermediate_[m] += interpolation_matrices[offset_interp + i * (element.N_ + 1) + n] * element.p_[(element.N_ + 1) * m + n];
+                }
+            }
+
+            for (size_t j = 0; j < N_interpolation_points; ++j) {
+                p[offset_interp_2D + i * N_interpolation_points + j] = 0.0;
+                for (int n = 0; n <= element.N_; ++n) {
+                    p[offset_interp_2D + i * N_interpolation_points + j] += interpolation_matrices[offset_interp + j * (element.N_ + 1) + n] * element.interpolation_intermediate_[n];
+                }
+            }
+
+            // u
+            for (int m = 0; m <= element.N_; ++m) {
+                element.interpolation_intermediate_[m] = 0.0;
+                for (int n = 0; n <= element.N_; ++n) {
+                    element.interpolation_intermediate_[m] += interpolation_matrices[offset_interp + i * (element.N_ + 1) + n] * element.u_[(element.N_ + 1) * m + n];
+                }
+            }
+
+            for (size_t j = 0; j < N_interpolation_points; ++j) {
+                u[offset_interp_2D + i * N_interpolation_points + j] = 0.0;
+                for (int n = 0; n <= element.N_; ++n) {
+                    u[offset_interp_2D + i * N_interpolation_points + j] += interpolation_matrices[offset_interp + j * (element.N_ + 1) + n] * element.interpolation_intermediate_[n];
+                }
+            }
+
+            // v
+            for (int m = 0; m <= element.N_; ++m) {
+                element.interpolation_intermediate_[m] = 0.0;
+                for (int n = 0; n <= element.N_; ++n) {
+                    element.interpolation_intermediate_[m] += interpolation_matrices[offset_interp + i * (element.N_ + 1) + n] * element.v_[(element.N_ + 1) * m + n];
+                }
+            }
+
+            for (size_t j = 0; j < N_interpolation_points; ++j) {
+                v[offset_interp_2D + i * N_interpolation_points + j] = 0.0;
+                for (int n = 0; n <= element.N_; ++n) {
+                    v[offset_interp_2D + i * N_interpolation_points + j] += interpolation_matrices[offset_interp + j * (element.N_ + 1) + n] * element.interpolation_intermediate_[n];
+                }
             }
         }
     }

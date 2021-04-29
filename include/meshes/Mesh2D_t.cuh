@@ -96,6 +96,9 @@ namespace SEM { namespace Meshes {
 
     __global__
     auto initial_conditions_2D(size_t n_elements, SEM::Entities::Element2D_t* elements, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* NDG_nodes) -> void;
+
+    __global__
+    auto get_solution(size_t N_elements, size_t N_interpolation_points, const Element2D_t* elements, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v, int* N) -> void;
 }}
 
 #endif
