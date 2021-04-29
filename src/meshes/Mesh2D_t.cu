@@ -871,11 +871,11 @@ auto SEM::Meshes::Mesh2D_t::write_data(deviceFloat time, size_t N_interpolation_
     N.copy_to(N_host);
 
     std::cout << std::endl << "Element data:" << std::endl;
-    std::cout << "x" << std::endl;
+    std::cout << '\t' << "x" << std::endl;
     for (size_t i = 0; i < N_elements_; ++i) {
-        std::cout << '\t' << "element " << i << std::endl;
+        std::cout << '\t' << '\t' << "element " << i << std::endl;
         for (int m = 0; m <= N_host[i]; ++m) {
-            std::cout << '\t' << '\t';
+            std::cout << '\t' << '\t' << '\t';
             for (int n = 0; n <= N_host[i]; ++n) {
                 std::cout << x_host[i * N_interpolation_points * N_interpolation_points + m * (N_host[i] + 1) + n] <<  " ";
             }
@@ -883,11 +883,11 @@ auto SEM::Meshes::Mesh2D_t::write_data(deviceFloat time, size_t N_interpolation_
         }
     }
 
-    std::cout << std::endl << "y" << std::endl;
+    std::cout << std::endl << '\t' << "y" << std::endl;
     for (size_t i = 0; i < N_elements_; ++i) {
-        std::cout << '\t' << "element " << i << std::endl;
+        std::cout << '\t' << '\t' << "element " << i << std::endl;
         for (int m = 0; m <= N_host[i]; ++m) {
-            std::cout << '\t' << '\t';
+            std::cout << '\t' << '\t' << '\t';
             for (int n = 0; n <= N_host[i]; ++n) {
                 std::cout << y_host[i * N_interpolation_points * N_interpolation_points + m * (N_host[i] + 1) + n] <<  " ";
             }
@@ -895,11 +895,11 @@ auto SEM::Meshes::Mesh2D_t::write_data(deviceFloat time, size_t N_interpolation_
         }
     }
 
-    std::cout << std::endl << "p" << std::endl;
+    std::cout << std::endl << '\t' << "p" << std::endl;
     for (size_t i = 0; i < N_elements_; ++i) {
-        std::cout << '\t' << "element " << i << std::endl;
+        std::cout << '\t' << '\t' << "element " << i << std::endl;
         for (int m = 0; m <= N_host[i]; ++m) {
-            std::cout << '\t' << '\t';
+            std::cout << '\t' << '\t' << '\t';
             for (int n = 0; n <= N_host[i]; ++n) {
                 std::cout << p_host[i * N_interpolation_points * N_interpolation_points + m * (N_host[i] + 1) + n] <<  " ";
             }
@@ -907,11 +907,11 @@ auto SEM::Meshes::Mesh2D_t::write_data(deviceFloat time, size_t N_interpolation_
         }
     }
 
-    std::cout << std::endl << "u" <<  std::endl;
+    std::cout << std::endl << '\t' << "u" <<  std::endl;
     for (size_t i = 0; i < N_elements_; ++i) {
-        std::cout << '\t' << "element " << i << std::endl;
+        std::cout << '\t' << '\t' << "element " << i << std::endl;
         for (int m = 0; m <= N_host[i]; ++m) {
-            std::cout << '\t' << '\t';
+            std::cout << '\t' << '\t' << '\t';
             for (int n = 0; n <= N_host[i]; ++n) {
                 std::cout << u_host[i * N_interpolation_points * N_interpolation_points + m * (N_host[i] + 1) + n] <<  " ";
             }
@@ -919,11 +919,11 @@ auto SEM::Meshes::Mesh2D_t::write_data(deviceFloat time, size_t N_interpolation_
         }
     }
 
-    std::cout << std::endl << "v" << std::endl;
+    std::cout << std::endl << '\t' << "v" << std::endl;
     for (size_t i = 0; i < N_elements_; ++i) {
-        std::cout << '\t' << "element " << i << std::endl;
+        std::cout << '\t' << '\t' << "element " << i << std::endl;
         for (int m = 0; m <= N_host[i]; ++m) {
-            std::cout << '\t' << '\t';
+            std::cout << '\t' << '\t' << '\t';
             for (int n = 0; n <= N_host[i]; ++n) {
                 std::cout << v_host[i * N_interpolation_points * N_interpolation_points + m * (N_host[i] + 1) + n] <<  " ";
             }
