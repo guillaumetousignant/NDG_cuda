@@ -35,6 +35,19 @@ target_link_libraries(SEM PUBLIC
                         hdf5::hdf5-static
                         CGNS::CGNS)
 
+# VTK stuff
+find_package(VTK COMPONENTS 
+                    CommonCore
+                    FiltersCore
+                    FiltersSources
+                    IOParallelXML)
+
+target_link_libraries(SEM PUBLIC 
+                        ${VTK_LIBRARIES})
+
+vtk_module_autoinit(TARGETS SEM
+                        MODULES ${VTK_LIBRARIES})
+
 # Installation stuff
 install(TARGETS SEM 
     EXPORT SEM-export

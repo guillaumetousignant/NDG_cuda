@@ -91,7 +91,7 @@ namespace SEM { namespace Meshes {
             static auto build_element_to_element(const std::vector<SEM::Entities::Element2D_t>& elements, const std::vector<std::vector<size_t>>& node_to_element) -> std::vector<std::vector<size_t>>;
             static auto build_faces(size_t n_nodes, std::vector<SEM::Entities::Element2D_t>& elements) -> std::pair<std::vector<SEM::Entities::Face2D_t>, std::vector<std::vector<size_t>>>;
 
-            auto write_file_data(size_t N_interpolation_points, size_t N_elements, deviceFloat time, int rank, const std::vector<deviceFloat>& coordinates, const std::vector<deviceFloat>& velocity, const std::vector<deviceFloat>& du_dx, const std::vector<deviceFloat>& intermediate, const std::vector<deviceFloat>& x_L, const std::vector<deviceFloat>& x_R, const std::vector<int>& N, const std::vector<deviceFloat>& sigma, const bool* refine, const bool* coarsen, const std::vector<deviceFloat>& error) -> void;
+            static auto write_file_data(size_t N_interpolation_points, size_t N_elements, deviceFloat time, int rank, const std::vector<deviceFloat>& x, const std::vector<deviceFloat>& y, const std::vector<deviceFloat>& p, const std::vector<deviceFloat>& u, const std::vector<deviceFloat>& v, const std::vector<int>& N) -> void;
             auto adapt(int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights) -> void;
     };
 
