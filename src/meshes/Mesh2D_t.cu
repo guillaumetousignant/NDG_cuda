@@ -643,13 +643,20 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     }
 
     // Transferring onto the GPU
-    N_elements_ = n_elements_domain;
     nodes_ = host_nodes;
     elements_ = host_elements;
     faces_ = host_faces;
     interfaces_ = interfaces;
     wall_boundaries_ = wall_boundaries;
     symmetry_boundaries_ = symmetry_boundaries;
+
+    // Setting sizes
+    N_elements_ = n_elements_domain;
+    elements_numBlocks_ = (N_elements_ + elements_blockSize_ - 1) / elements_blockSize_;
+    faces_numBlocks_ = (faces_.size() + faces_blockSize_ - 1) / faces_blockSize_;
+    interfaces_numBlocks_ = (interfaces_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+    wall_boundaries_numBlocks_ = (wall_boundaries_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+    symmetry_boundaries_numBlocks_ = (symmetry_boundaries_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
 
     allocate_element_storage<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(elements_.size(), elements_.data());
 }

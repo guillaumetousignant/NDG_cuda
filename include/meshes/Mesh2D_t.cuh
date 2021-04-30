@@ -34,13 +34,13 @@ namespace SEM { namespace Meshes {
             constexpr static int boundaries_blockSize_ = 32;
             int elements_numBlocks_;
             int faces_numBlocks_;
-            int boundaries_numBlocks_;
+            int interfaces_numBlocks_;
+            int wall_boundaries_numBlocks_;
+            int symmetry_boundaries_numBlocks_;
             
             size_t N_elements_global_;
             size_t N_elements_;
             size_t N_faces_;
-            size_t N_local_boundaries_;
-            size_t N_MPI_boundaries_;
             size_t global_element_offset_;
             size_t N_elements_per_process_;
             int initial_N_;
