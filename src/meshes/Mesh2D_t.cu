@@ -792,8 +792,6 @@ auto SEM::Meshes::Mesh2D_t::print() -> void {
         element.u_.size_ = 0;
         element.v_.data_ = nullptr;
         element.v_.size_ = 0;
-        element.interpolation_intermediate_.data_ = nullptr;
-        element.interpolation_intermediate_.size_ = 0;
     }
 
     std::cout << "N elements: " << N_elements_ << std::endl;
@@ -997,7 +995,6 @@ auto SEM::Meshes::allocate_element_storage(size_t n_elements, SEM::Entities::Ele
         elements[i].p_ = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
         elements[i].u_ = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
         elements[i].v_ = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
-        elements[i].interpolation_intermediate_ = SEM::Entities::cuda_vector<deviceFloat>(N + 1);
     }
 }
 
@@ -1039,63 +1036,30 @@ void SEM::Meshes::get_solution(size_t N_elements, size_t N_interpolation_points,
         const size_t offset_interp = element.N_ * (element.N_ + 1) * N_interpolation_points/2;
 
         N[element_index] = element.N_;
+        const std::array<Vec2<deviceFloat>, 4> points {nodes[element.nodes_[0]],
+                                                       nodes[element.nodes_[1]],
+                                                       nodes[element.nodes_[2]],
+                                                       nodes[element.nodes_[3]]};
 
         for (size_t i = 0; i < N_interpolation_points; ++i) {
-            // x and y
             for (size_t j = 0; j < N_interpolation_points; ++j) {
-                const Vec2<deviceFloat> coordinates {static_cast<deviceFloat>(i)/static_cast<deviceFloat>(N_interpolation_points - 1), static_cast<deviceFloat>(j)/static_cast<deviceFloat>(N_interpolation_points - 1)};
-                const Vec2<deviceFloat> delta_top = nodes[element.nodes_[2]] - nodes[element.nodes_[3]];
-                const Vec2<deviceFloat> delta_bottom = nodes[element.nodes_[1]] - nodes[element.nodes_[0]];
-                const Vec2<deviceFloat> delta = delta_bottom * (1 - coordinates.y()) + delta_top * coordinates.y();
-                const Vec2<deviceFloat> origin = nodes[element.nodes_[0]] + (nodes[element.nodes_[3]] - nodes[element.nodes_[0]]) * coordinates.y();
-                const Vec2<deviceFloat> global_coordinates = origin + delta * coordinates.x();
+                // x and y
+                const Vec2<deviceFloat> coordinates {static_cast<deviceFloat>(i)/static_cast<deviceFloat>(N_interpolation_points - 1) * 2 - 1, static_cast<deviceFloat>(j)/static_cast<deviceFloat>(N_interpolation_points - 1) * 2 - 1};
+                const Vec2<deviceFloat> global_coordinates = SEM::Meshes::Mesh2D_t::quad_map(coordinates, points);
 
                 x[offset_interp_2D + i * N_interpolation_points + j] = global_coordinates.x();
                 y[offset_interp_2D + i * N_interpolation_points + j] = global_coordinates.y();
-            }
 
-            // Pressure
-            for (int m = 0; m <= element.N_; ++m) {
-                element.interpolation_intermediate_[m] = 0.0;
-                for (int n = 0; n <= element.N_; ++n) {
-                    element.interpolation_intermediate_[m] += interpolation_matrices[offset_interp + i * (element.N_ + 1) + n] * element.p_[(element.N_ + 1) * m + n];
-                }
-            }
-
-            for (size_t j = 0; j < N_interpolation_points; ++j) {
+                // Pressure, u, and v
                 p[offset_interp_2D + i * N_interpolation_points + j] = 0.0;
-                for (int n = 0; n <= element.N_; ++n) {
-                    p[offset_interp_2D + i * N_interpolation_points + j] += interpolation_matrices[offset_interp + j * (element.N_ + 1) + n] * element.interpolation_intermediate_[n];
-                }
-            }
-
-            // u
-            for (int m = 0; m <= element.N_; ++m) {
-                element.interpolation_intermediate_[m] = 0.0;
-                for (int n = 0; n <= element.N_; ++n) {
-                    element.interpolation_intermediate_[m] += interpolation_matrices[offset_interp + i * (element.N_ + 1) + n] * element.u_[(element.N_ + 1) * m + n];
-                }
-            }
-
-            for (size_t j = 0; j < N_interpolation_points; ++j) {
                 u[offset_interp_2D + i * N_interpolation_points + j] = 0.0;
-                for (int n = 0; n <= element.N_; ++n) {
-                    u[offset_interp_2D + i * N_interpolation_points + j] += interpolation_matrices[offset_interp + j * (element.N_ + 1) + n] * element.interpolation_intermediate_[n];
-                }
-            }
-
-            // v
-            for (int m = 0; m <= element.N_; ++m) {
-                element.interpolation_intermediate_[m] = 0.0;
-                for (int n = 0; n <= element.N_; ++n) {
-                    element.interpolation_intermediate_[m] += interpolation_matrices[offset_interp + i * (element.N_ + 1) + n] * element.v_[(element.N_ + 1) * m + n];
-                }
-            }
-
-            for (size_t j = 0; j < N_interpolation_points; ++j) {
                 v[offset_interp_2D + i * N_interpolation_points + j] = 0.0;
-                for (int n = 0; n <= element.N_; ++n) {
-                    v[offset_interp_2D + i * N_interpolation_points + j] += interpolation_matrices[offset_interp + j * (element.N_ + 1) + n] * element.interpolation_intermediate_[n];
+                for (int m = 0; m <= element.N_; ++m) {
+                    for (int n = 0; n <= element.N_; ++n) {
+                        p[offset_interp_2D + i * N_interpolation_points + j] += element.p_[m * (element.N_ + 1) + n] * interpolation_matrices[offset_interp + i * (element.N_ + 1) + m] * interpolation_matrices[offset_interp + j * (element.N_ + 1) + n];
+                        u[offset_interp_2D + i * N_interpolation_points + j] += element.u_[m * (element.N_ + 1) + n] * interpolation_matrices[offset_interp + i * (element.N_ + 1) + m] * interpolation_matrices[offset_interp + j * (element.N_ + 1) + n];
+                        v[offset_interp_2D + i * N_interpolation_points + j] += element.v_[m * (element.N_ + 1) + n] * interpolation_matrices[offset_interp + i * (element.N_ + 1) + m] * interpolation_matrices[offset_interp + j * (element.N_ + 1) + n];
+                    }
                 }
             }
         }

@@ -16,7 +16,6 @@ SEM::Entities::Element2D_t::Element2D_t(int N, std::array<size_t, 4> faces, std:
         p_((N_ + 1) * (N_ + 1)),
         u_((N_ + 1) * (N_ + 1)),
         v_((N_ + 1) * (N_ + 1)),
-        interpolation_intermediate_(N_ + 1),
         sigma_(0.0),
         refine_(false),
         coarsen_(false),
