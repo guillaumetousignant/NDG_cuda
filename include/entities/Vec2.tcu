@@ -31,62 +31,62 @@ template <typename T>
 template <class T2>
 __host__ __device__
 constexpr auto SEM::Entities::Vec2<T>::operator*(T2 scale) const -> Vec2<T> {
-    return Vec2(v_[0] * scale, v_[1] * scale);
+    return {v_[0] * scale, v_[1] * scale};
 }
 
 template <typename T>
 template <class T2>
 __host__ __device__
 constexpr auto SEM::Entities::Vec2<T>::operator*(const Vec2<T2> &other) const -> Vec2<T> {
-    return Vec2(v_[0] * other[0], v_[1] * other[1]);
+    return {v_[0] * other[0], v_[1] * other[1]};
 }
 
 template <typename T>
 template <class T2>
 __host__ __device__
 constexpr auto SEM::Entities::Vec2<T>::operator/(T2 scale) const -> Vec2<T> {
-    return Vec2(v_[0] / scale, v_[1] / scale);
+    return {v_[0] / scale, v_[1] / scale};
 }
 
 template <typename T>
 template <class T2>
 __host__ __device__
 constexpr auto SEM::Entities::Vec2<T>::operator/(const Vec2<T2> &other) const -> Vec2<T> {
-    
+    return {v_[0] / other[0], v_[1] / other[1]};
 }
 
 template <typename T>
 template <class T2>
 __host__ __device__
 constexpr auto SEM::Entities::Vec2<T>::operator+(const Vec2<T2> &other) const -> Vec2<T> {
-    return Vec2(v_[0] / other[0], v_[1] / other[1]);
+    return {v_[0] / other[0], v_[1] / other[1]};
 }
 
 template <typename T>
 template <class T2>
 __host__ __device__
 constexpr auto SEM::Entities::Vec2<T>::operator+(T2 factor) const -> Vec2<T> {
-    return Vec2(v_[0] + factor, v_[1] + factor);
+    return {v_[0] + factor, v_[1] + factor};
 }
 
 template <typename T>
 template <class T2>
 __host__ __device__
 constexpr auto SEM::Entities::Vec2<T>::operator-(const Vec2<T2> &other) const -> Vec2<T> {
-    return Vec2(v_[0] - other[0], v_[1] - other[1]);
+    return {v_[0] - other[0], v_[1] - other[1]};
 }
 
 template <typename T>
 template <class T2>
 __host__ __device__
 constexpr auto SEM::Entities::Vec2<T>::operator-(T2 factor) const -> Vec2<T> {
-    return Vec2(v_[0] - factor, v_[1] - factor);
+    return {v_[0] - factor, v_[1] - factor};
 }
 
 template <typename T>
 __host__ __device__
 constexpr auto SEM::Entities::Vec2<T>::operator-() const -> Vec2<T> {
-    return Vec2(-v_[0], -v_[1]);
+    return {-v_[0], -v_[1]};
 }
 
 template <typename T>
@@ -207,28 +207,28 @@ template <typename T>
 template <class T2>
 __host__ __device__
 constexpr auto SEM::Entities::Vec2<T>::getMin(const Vec2<T2> &other) const -> Vec2<T> {
-    return Vec2(std::min(v_[0], other[0]), std::min(v_[1], other[1]));
+    return {std::min(v_[0], other[0]), std::min(v_[1], other[1])};
 }
 
 template <typename T>
 template <class T2>
 __host__ __device__
 constexpr auto SEM::Entities::Vec2<T>::getMin(T2 other) const -> Vec2<T> {
-    return Vec2(std::min(v_[0], other), std::min(v_[1], other));
+    return {std::min(v_[0], other), std::min(v_[1], other)};
 }
 
 template <typename T>
 template <class T2>
 __host__ __device__
 constexpr auto SEM::Entities::Vec2<T>::getMax(const Vec2<T2> &other) const -> Vec2<T> {
-    return Vec2(std::max(v_[0], other[0]), std::max(v_[1], other[1]));
+    return {std::max(v_[0], other[0]), std::max(v_[1], other[1])};
 }
 
 template <typename T>
 template <class T2>
 __host__ __device__
 constexpr auto SEM::Entities::Vec2<T>::getMax(T2 other) const -> Vec2<T> {
-    return Vec2(std::max(v_[0], other), std::max(v_[1], other));
+    return {std::max(v_[0], other), std::max(v_[1], other)};
 }
 
 template <typename T>
@@ -247,7 +247,7 @@ template <typename T>
 __host__ __device__
 auto SEM::Entities::Vec2<T>::normalize() const -> Vec2<T> {
     const T m = magnitude();
-    return Vec2(v_[0] / m, v_[1] / m);
+    return {v_[0] / m, v_[1] / m};
 }
 
 template <typename T>
@@ -298,13 +298,13 @@ auto SEM::Entities::Vec2<T>::to_xy_offset(const Vec2<T2>& ref1, const Vec2<T3>& 
 template <typename T>
 __host__ __device__
 auto SEM::Entities::Vec2<T>::get_sph() const -> Vec2<T> {
-    return Vec2(magnitude(), std::atan2(v_[1], v_[0]));
+    return {magnitude(), std::atan2(v_[1], v_[0])};
 }
 
 template <typename T>
 __host__ __device__
 auto SEM::Entities::Vec2<T>::get_xy() const -> Vec2<T> {
-    return Vec2(v_[0]*std::cos(v_[1]), v_[0]*std::sin(v_[1]));
+    return {v_[0]*std::cos(v_[1]), v_[0]*std::sin(v_[1])};
 }
 
 template <typename T>
@@ -317,26 +317,26 @@ auto SEM::Entities::Vec2<T>::get_xy_offset(const Vec2<T2>& ref1, const Vec2<T3>&
 template <typename T>
 __host__ __device__
 auto SEM::Entities::Vec2<T>::ln() const -> Vec2<T> {
-    return Vec2(std::log(v_[0]), std::log(v_[1]));
+    return {std::log(v_[0]), std::log(v_[1])};
 }
 
 template <typename T>
 __host__ __device__
 auto SEM::Entities::Vec2<T>::sqrt() const -> Vec2<T> {
-    return Vec2(std::sqrt(v_[0]), std::sqrt(v_[1]));
+    return {std::sqrt(v_[0]), std::sqrt(v_[1])};
 }
 
 template <typename T>
 __host__ __device__
 auto SEM::Entities::Vec2<T>::exp() const -> Vec2<T> {
-    return Vec2(std::exp(v_[0]), std::exp(v_[1]));
+    return {std::exp(v_[0]), std::exp(v_[1])};
 }
 
 template <typename T>
 template <class T2>
 __host__ __device__
 auto SEM::Entities::Vec2<T>::pow(T2 exp) const -> Vec2<T> {
-    return Vec2(std::pow(v_[0], exp), std::pow(v_[1], exp));
+    return {std::pow(v_[0], exp), std::pow(v_[1], exp)};
 }
 
 template <typename T>
@@ -351,13 +351,13 @@ auto SEM::Entities::Vec2<T>::pow_inplace(T2 exp) -> Vec2<T>& {
 template <typename T>
 __host__ __device__
 auto SEM::Entities::Vec2<T>::floor() const -> Vec2<T> {
-    return Vec2(std::floor(v_[0]), std::floor(v_[1]));
+    return {std::floor(v_[0]), std::floor(v_[1])};
 }
 
 template <typename T>
 __host__ __device__
 auto SEM::Entities::Vec2<T>::ceil() const -> Vec2<T> {
-    return Vec2(std::ceil(v_[0]), std::ceil(v_[1]));
+    return {std::ceil(v_[0]), std::ceil(v_[1])};
 }
 
 template <typename T>
@@ -411,5 +411,5 @@ auto operator<<(std::ostream &output, const SEM::Entities::Vec2<T> &v) -> std::o
 template <class T, class T2>
 __host__ __device__
 constexpr auto operator*(const T2 factor, const SEM::Entities::Vec2<T> &v) -> SEM::Entities::Vec2<T> {
-    return Vec2(v[0] * factor, v[1] * factor);
+    return {v[0] * factor, v[1] * factor};
 }
