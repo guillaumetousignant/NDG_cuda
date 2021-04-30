@@ -879,10 +879,10 @@ auto SEM::Meshes::Mesh2D_t::write_data(deviceFloat time, size_t N_interpolation_
     std::cout << '\t' << "x" << std::endl;
     for (size_t i = 0; i < N_elements_; ++i) {
         std::cout << '\t' << '\t' << "element " << i << std::endl;
-        for (int m = 0; m <= N_host[i]; ++m) {
+        for (int m = 0; m < N_interpolation_points; ++m) {
             std::cout << '\t' << '\t' << '\t';
-            for (int n = 0; n <= N_host[i]; ++n) {
-                std::cout << x_host[i * N_interpolation_points * N_interpolation_points + m * (N_host[i] + 1) + n] <<  " ";
+            for (int n = 0; n < N_interpolation_points; ++n) {
+                std::cout << x_host[i * N_interpolation_points * N_interpolation_points + m * N_interpolation_points + n] <<  " ";
             }
             std::cout << std::endl;
         }
@@ -891,10 +891,10 @@ auto SEM::Meshes::Mesh2D_t::write_data(deviceFloat time, size_t N_interpolation_
     std::cout << std::endl << '\t' << "y" << std::endl;
     for (size_t i = 0; i < N_elements_; ++i) {
         std::cout << '\t' << '\t' << "element " << i << std::endl;
-        for (int m = 0; m <= N_host[i]; ++m) {
+        for (int m = 0; m < N_interpolation_points; ++m) {
             std::cout << '\t' << '\t' << '\t';
-            for (int n = 0; n <= N_host[i]; ++n) {
-                std::cout << y_host[i * N_interpolation_points * N_interpolation_points + m * (N_host[i] + 1) + n] <<  " ";
+            for (int n = 0; n < N_interpolation_points; ++n) {
+                std::cout << y_host[i * N_interpolation_points * N_interpolation_points + m * N_interpolation_points + n] <<  " ";
             }
             std::cout << std::endl;
         }
@@ -903,10 +903,10 @@ auto SEM::Meshes::Mesh2D_t::write_data(deviceFloat time, size_t N_interpolation_
     std::cout << std::endl << '\t' << "p" << std::endl;
     for (size_t i = 0; i < N_elements_; ++i) {
         std::cout << '\t' << '\t' << "element " << i << std::endl;
-        for (int m = 0; m <= N_host[i]; ++m) {
+        for (int m = 0; m < N_interpolation_points; ++m) {
             std::cout << '\t' << '\t' << '\t';
-            for (int n = 0; n <= N_host[i]; ++n) {
-                std::cout << p_host[i * N_interpolation_points * N_interpolation_points + m * (N_host[i] + 1) + n] <<  " ";
+            for (int n = 0; n < N_interpolation_points; ++n) {
+                std::cout << p_host[i * N_interpolation_points * N_interpolation_points + m * N_interpolation_points + n] <<  " ";
             }
             std::cout << std::endl;
         }
@@ -915,10 +915,10 @@ auto SEM::Meshes::Mesh2D_t::write_data(deviceFloat time, size_t N_interpolation_
     std::cout << std::endl << '\t' << "u" <<  std::endl;
     for (size_t i = 0; i < N_elements_; ++i) {
         std::cout << '\t' << '\t' << "element " << i << std::endl;
-        for (int m = 0; m <= N_host[i]; ++m) {
+        for (int m = 0; m < N_interpolation_points; ++m) {
             std::cout << '\t' << '\t' << '\t';
-            for (int n = 0; n <= N_host[i]; ++n) {
-                std::cout << u_host[i * N_interpolation_points * N_interpolation_points + m * (N_host[i] + 1) + n] <<  " ";
+            for (int n = 0; n < N_interpolation_points; ++n) {
+                std::cout << u_host[i * N_interpolation_points * N_interpolation_points + m * N_interpolation_points + n] <<  " ";
             }
             std::cout << std::endl;
         }
@@ -927,10 +927,10 @@ auto SEM::Meshes::Mesh2D_t::write_data(deviceFloat time, size_t N_interpolation_
     std::cout << std::endl << '\t' << "v" << std::endl;
     for (size_t i = 0; i < N_elements_; ++i) {
         std::cout << '\t' << '\t' << "element " << i << std::endl;
-        for (int m = 0; m <= N_host[i]; ++m) {
+        for (int m = 0; m < N_interpolation_points; ++m) {
             std::cout << '\t' << '\t' << '\t';
-            for (int n = 0; n <= N_host[i]; ++n) {
-                std::cout << v_host[i * N_interpolation_points * N_interpolation_points + m * (N_host[i] + 1) + n] <<  " ";
+            for (int n = 0; n < N_interpolation_points; ++n) {
+                std::cout << v_host[i * N_interpolation_points * N_interpolation_points + m * N_interpolation_points + n] <<  " ";
             }
             std::cout << std::endl;
         }
