@@ -966,6 +966,15 @@ auto SEM::Meshes::Mesh2D_t::g(SEM::Entities::Vec2<deviceFloat> xy) -> std::array
     return state;
 }
 
+// Algorithm 95
+__host__ __device__
+auto SEM::Meshes::Mesh2D_t::quad_map(Vec2<deviceFloat> local_coordinates, const std::array<Vec2<deviceFloat>, 4>& points) -> Vec2<deviceFloat> {
+    return (points[0] * (1 - local_coordinates.x()) * (1 - local_coordinates.y()) 
+            + points[1] * (local_coordinates.x() + 1) * (1 - local_coordinates.y())
+            + points[2] * (local_coordinates.x() + 1) * (local_coordinates.y() + 1)
+            + points[3] * (1 - local_coordinates.x()) * (local_coordinates.y() + 1)) / 4;
+}
+
 auto SEM::Meshes::Mesh2D_t::get_delta_t(const deviceFloat CFL) -> deviceFloat {   
     return 0.0;
 }
@@ -1000,24 +1009,22 @@ auto SEM::Meshes::initial_conditions_2D(size_t n_elements, SEM::Entities::Elemen
     for (size_t elem_index = index; elem_index < n_elements; elem_index += stride) {
         SEM::Entities::Element2D_t& element = elements[elem_index];
         const size_t offset_1D = element.N_ * (element.N_ + 1) /2;
+        printf("Element %u has nodes: (%g, %g), (%g, %g), (%g, %g), (%g, %g)\n", static_cast<unsigned int>(elem_index), nodes[element.nodes_[0]].x(), nodes[element.nodes_[0]].y(), nodes[element.nodes_[1]].x(), nodes[element.nodes_[1]].y(), nodes[element.nodes_[2]].x(), nodes[element.nodes_[2]].y(), nodes[element.nodes_[3]].x(), nodes[element.nodes_[3]].y());
 
         for (int i = 0; i <= element.N_; ++i) {
             for (int j = 0; j <= element.N_; ++j) {
                 const Vec2<deviceFloat> coordinates {NDG_nodes[offset_1D + i], NDG_nodes[offset_1D + j]};
-                const Vec2<deviceFloat> delta_top = nodes[element.nodes_[2]] - nodes[element.nodes_[3]];
-                const Vec2<deviceFloat> delta_bottom = nodes[element.nodes_[1]] - nodes[element.nodes_[0]];
-
-                const Vec2<deviceFloat> coordinates_normalised = coordinates * 0.5 + 0.5;
-
-                const Vec2<deviceFloat> delta = delta_bottom * (1 - coordinates_normalised.y()) + delta_top * coordinates_normalised.y();
-                const Vec2<deviceFloat> origin = nodes[element.nodes_[0]] + (nodes[element.nodes_[3]] - nodes[element.nodes_[0]]) * coordinates_normalised.y();
-
-                const Vec2<deviceFloat> global_coordinates = origin + delta * coordinates_normalised.x();
+                const std::array<Vec2<deviceFloat>, 4> points {nodes[element.nodes_[0]],
+                                                               nodes[element.nodes_[1]],
+                                                               nodes[element.nodes_[2]],
+                                                               nodes[element.nodes_[3]]};
+                const Vec2<deviceFloat> global_coordinates = SEM::Meshes::Mesh2D_t::quad_map(coordinates, points);
 
                 const std::array<deviceFloat, 3> state = SEM::Meshes::Mesh2D_t::g(global_coordinates);
                 element.p_[i * (element.N_ + 1) + j] = state[0];
                 element.u_[i * (element.N_ + 1) + j] = state[1];
                 element.v_[i * (element.N_ + 1) + j] = state[2];
+                printf("Core %d filling element %u at (%g, %g) with %g, %g, %g\n", index, static_cast<unsigned int>(elem_index), global_coordinates[0], global_coordinates[1], state[0], state[1], state[2]);
             }
         }
     }

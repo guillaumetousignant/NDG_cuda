@@ -2,8 +2,6 @@
 #include <iostream>
 #include <cmath>
 #include <array>
-#include <limits>
-#include <mpi.h>
 #include "helpers/float_types.h"
 #include "entities/NDG_t.cuh"
 #include "meshes/Mesh_t.cuh"
