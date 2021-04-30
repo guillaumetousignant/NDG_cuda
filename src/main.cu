@@ -24,7 +24,7 @@ auto main(int argc, char* argv[]) -> int {
     const fs::path mesh_file = (input_mesh_file.empty()) ? fs::current_path() / "meshes" / "mesh.cgns" : input_mesh_file;
 
     const size_t N_elements = 128;
-    const int N_max = 16;
+    const int N_max = 8;
     const std::array<deviceFloat, 2> x{-1.0, 1.0};
     const deviceFloat max_splits = 3;
     const deviceFloat delta_x_min = (x[1] - x[0])/(N_elements * std::pow(2, max_splits));
@@ -33,8 +33,8 @@ auto main(int argc, char* argv[]) -> int {
     const deviceFloat viscosity = 0.1/pi;
     std::vector<deviceFloat> output_times{0.0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00};
 
-    const int initial_N = 6;
-    const size_t N_interpolation_points = N_max * 8;
+    const int initial_N = 4;
+    const size_t N_interpolation_points = std::pow(N_max, 2);
 
     // MPI ranks
     MPI_Comm node_communicator;
