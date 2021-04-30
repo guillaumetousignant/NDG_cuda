@@ -1009,8 +1009,7 @@ auto SEM::Meshes::initial_conditions_2D(size_t n_elements, SEM::Entities::Elemen
     for (size_t elem_index = index; elem_index < n_elements; elem_index += stride) {
         SEM::Entities::Element2D_t& element = elements[elem_index];
         const size_t offset_1D = element.N_ * (element.N_ + 1) /2;
-        printf("Element %u has nodes: (%g, %g), (%g, %g), (%g, %g), (%g, %g)\n", static_cast<unsigned int>(elem_index), nodes[element.nodes_[0]].x(), nodes[element.nodes_[0]].y(), nodes[element.nodes_[1]].x(), nodes[element.nodes_[1]].y(), nodes[element.nodes_[2]].x(), nodes[element.nodes_[2]].y(), nodes[element.nodes_[3]].x(), nodes[element.nodes_[3]].y());
-
+        
         for (int i = 0; i <= element.N_; ++i) {
             for (int j = 0; j <= element.N_; ++j) {
                 const Vec2<deviceFloat> coordinates {NDG_nodes[offset_1D + i], NDG_nodes[offset_1D + j]};
@@ -1024,7 +1023,6 @@ auto SEM::Meshes::initial_conditions_2D(size_t n_elements, SEM::Entities::Elemen
                 element.p_[i * (element.N_ + 1) + j] = state[0];
                 element.u_[i * (element.N_ + 1) + j] = state[1];
                 element.v_[i * (element.N_ + 1) + j] = state[2];
-                printf("Core %d filling element %u at (%g, %g) with %g, %g, %g\n", index, static_cast<unsigned int>(elem_index), global_coordinates[0], global_coordinates[1], state[0], state[1], state[2]);
             }
         }
     }
