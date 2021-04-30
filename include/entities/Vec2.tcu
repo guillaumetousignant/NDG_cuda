@@ -59,7 +59,7 @@ template <typename T>
 template <class T2>
 __host__ __device__
 constexpr auto SEM::Entities::Vec2<T>::operator+(const Vec2<T2> &other) const -> Vec2<T> {
-    return {v_[0] / other[0], v_[1] / other[1]};
+    return {v_[0] + other[0], v_[1] + other[1]};
 }
 
 template <typename T>
