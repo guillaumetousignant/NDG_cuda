@@ -1,5 +1,6 @@
 #include "helpers/float_types.h"
 #include "helpers/InputParser_t.h"
+#include "helpers/DataWriter_t.h"
 #include "entities/NDG_t.cuh"
 #include "meshes/Mesh_t.cuh"
 #include "meshes/Mesh2D_t.cuh"
@@ -16,12 +17,65 @@ namespace fs = std::filesystem;
 
 constexpr deviceFloat pi = 3.14159265358979323846;
 
+auto get_input_file(const SEM::Helpers::InputParser_t& input_parser) -> fs::path {
+    const std::string input_mesh_path = input_parser.getCmdOption("--mesh");
+    if (!input_mesh_path.empty()) {
+        const fs::path mesh_file = input_mesh_path;
+        fs::create_directory(mesh_file.parent_path());
+        return (mesh_file.extension().empty()) ? mesh_file / ".cgns" : mesh_file;
+    }
+    else {
+        const std::string input_filename = input_parser.getCmdOption("--mesh_filename");
+        const std::string mesh_filename = (input_filename.empty()) ? "mesh.cgns" : input_filename;
+
+        const std::string input_mesh_dir = input_parser.getCmdOption("--mesh_directory");
+        const fs::path mesh_dir = (input_mesh_dir.empty()) ? fs::current_path() / "meshes" : input_mesh_dir;
+
+        fs::create_directory(mesh_dir);
+        const fs::path mesh_file = mesh_dir / mesh_filename;
+        return (mesh_file.extension().empty()) ? mesh_file / ".cgns" : mesh_file;
+    }
+}
+
+auto get_output_file(const SEM::Helpers::InputParser_t& input_parser) -> fs::path {
+    const std::string input_save_path = input_parser.getCmdOption("--output");
+    if (!input_save_path.empty()) {
+        const fs::path save_file = input_save_path;
+        fs::create_directory(save_file.parent_path());
+        return (save_file.extension().empty()) ? save_file / ".pvtu" : save_file;
+    }
+    else {
+        const std::string input_filename = input_parser.getCmdOption("--output_filename");
+        const std::string save_filename = (input_filename.empty()) ? "output.pvtu" : input_filename;
+
+        const std::string input_save_dir = input_parser.getCmdOption("--output_directory");
+        const fs::path save_dir = (input_save_dir.empty()) ? fs::current_path() / "data" : input_save_dir;
+
+        fs::create_directory(save_dir);
+        const fs::path save_file = save_dir / save_filename;
+        return (save_file.extension().empty()) ? save_file / ".pvtu" : save_file;
+    }
+}
+
 auto main(int argc, char* argv[]) -> int {
     const SEM::Helpers::InputParser_t input_parser(argc, argv);
+    if (input_parser.cmdOptionExists("--help") || input_parser.cmdOptionExists("-h")) {
+        std::cout << "Spectral element method 2D unstructured solver" << std::endl;
+        std::cout << '\t' <<  "Solves the 2D wave equation on 2D unstructured meshes. The meshes use the CGNS HDF5 format, and output uses the VTK format." << std::endl << std::endl;
+        std::cout << "Available options:" << std::endl;
+        std::cout << '\t' <<  "--mesh"             <<  '\t' <<  "Full path of the input mesh file. Overrides mesh_filename and mesh_directory if set." << std::endl;
+        std::cout << '\t' <<  "--mesh_filename"    <<  '\t' <<  "File name of the input mesh file. Defaults to [mesh.cgns]" << std::endl;
+        std::cout << '\t' <<  "--mesh_directory"   <<  '\t' <<  "Directory of the input mesh file. Defaults to [./meshes/]" << std::endl;
+        std::cout << '\t' <<  "--output"           <<  '\t' <<  "Full path of the output data file. Overrides output_filename and output_directory if set." << std::endl;
+        std::cout << '\t' <<  "--output_filename"  <<  '\t' <<  "File name of the output data file. Defaults to [output.pvtu]" << std::endl;
+        std::cout << '\t' <<  "--output_directory" <<  '\t' <<  "Directory of the output data file. Defaults to [./data/]" << std::endl;
+        exit(0);
+    }
+
     MPI_Init(&argc, &argv);
 
-    const std::string input_mesh_file = input_parser.getCmdOption("--mesh");
-    const fs::path mesh_file = (input_mesh_file.empty()) ? fs::current_path() / "meshes" / "mesh.cgns" : input_mesh_file;
+    const fs::path mesh_file = get_input_file(input_parser);
+    const fs::path output_file = get_output_file(input_parser);
 
     const size_t N_elements = 128;
     const int N_max = 8;
@@ -89,6 +143,7 @@ auto main(int argc, char* argv[]) -> int {
 
     SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> NDG(N_max, N_interpolation_points, stream);
     SEM::Meshes::Mesh2D_t mesh(mesh_file, initial_N, stream);
+    SEM::Helpers::DataWriter_t data_writer(output_file);
     mesh.initial_conditions(NDG.nodes_.data());
     cudaDeviceSynchronize();
 
@@ -102,7 +157,7 @@ auto main(int argc, char* argv[]) -> int {
 
     //mesh.solve(CFL, output_times, NDG, viscosity);
     mesh.print();
-    mesh.write_data(0.0, NDG.N_interpolation_points_, NDG.interpolation_matrices_.data());
+    mesh.write_data(0.0, NDG.N_interpolation_points_, NDG.interpolation_matrices_.data(), data_writer);
     // Wait for GPU to finish before copying to host
     cudaDeviceSynchronize();
 

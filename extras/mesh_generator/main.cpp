@@ -16,7 +16,7 @@ auto get_save_file(const SEM::Helpers::InputParser_t& input_parser) -> fs::path 
     if (!input_save_path.empty()) {
         const fs::path save_file = input_save_path;
         fs::create_directory(save_file.parent_path());
-        return save_file;
+        return (save_file.extension().empty()) ? save_file / ".cgns" : save_file;
     }
     else {
         const std::string input_filename = input_parser.getCmdOption("--filename");
@@ -26,7 +26,8 @@ auto get_save_file(const SEM::Helpers::InputParser_t& input_parser) -> fs::path 
         const fs::path save_dir = (input_save_dir.empty()) ? fs::current_path() / "meshes" : input_save_dir;
 
         fs::create_directory(save_dir);
-        return save_dir / save_filename;
+        const fs::path save_file = save_dir / save_filename;
+        return (save_file.extension().empty()) ? save_file / ".cgns" : save_file;
     }
 }
 
@@ -128,18 +129,19 @@ auto main(int argc, char* argv[]) -> int {
     const SEM::Helpers::InputParser_t input_parser(argc, argv);
     if (input_parser.cmdOptionExists("--help") || input_parser.cmdOptionExists("-h")) {
         std::cout << "Square unstructured mesh generator" << std::endl;
-        std::cout << '\t' << "Available options:" << std::endl;
-        std::cout << '\t' << '\t' <<  "--path"            <<  '\t' <<  "Full path to the output mesh file. Overrides filename and directory if set." << std::endl;
-        std::cout << '\t' << '\t' <<  "--filename"        <<  '\t' <<  "File name to the output mesh file. Defaults to [mesh.cgns]" << std::endl;
-        std::cout << '\t' << '\t' <<  "--directory"       <<  '\t' <<  "Directory in which to save the output mesh file. Defaults to [./meshes/]" << std::endl;
-        std::cout << '\t' << '\t' <<  "--resolution"      <<  '\t' <<  "Number of elements in the x and y directions. Must be a power of two. Defaults to [4]" << std::endl;
-        std::cout << '\t' << '\t' <<  "--x_periodic"      <<  '\t' <<  "Sets the mesh to be periodic in the x direction. Overrides left and right boundaries." << std::endl;
-        std::cout << '\t' << '\t' <<  "--y_periodic"      <<  '\t' <<  "Sets the mesh to be periodic in the y direction. Overrides top and bottom boundaries." << std::endl;
-        std::cout << '\t' << '\t' <<  "--boundaries"      <<  '\t' <<  "Sets all four boundary conditions. Acceptable values are \"wall\", \"symmetry\" and \"null\". Defaults to [wall]" << std::endl;
-        std::cout << '\t' << '\t' <<  "--bottom_boundary" <<  '\t' <<  "Sets the bottom boundary condition. Acceptable values are \"wall\", \"symmetry\" and \"null\". Overrides boundaries." << std::endl;
-        std::cout << '\t' << '\t' <<  "--right_boundary"  <<  '\t' <<  "Sets the right boundary condition. Acceptable values are \"wall\", \"symmetry\" and \"null\". Overrides boundaries." << std::endl;
-        std::cout << '\t' << '\t' <<  "--top_boundary"    <<  '\t' <<  "Sets the top boundary condition. Acceptable values are \"wall\", \"symmetry\" and \"null\". Overrides boundaries." << std::endl;
-        std::cout << '\t' << '\t' <<  "--left_boundary"   <<  '\t' <<  "Sets the left boundary condition. Acceptable values are \"wall\", \"symmetry\" and \"null\". Overrides boundaries." << std::endl;
+        std::cout << '\t' << "Generates 2D square unstructured meshes following a Hillbert curve, saved using the CGNS HDF5 format." << std::endl << std::endl;
+        std::cout << "Available options:" << std::endl;
+        std::cout << '\t' <<  "--path"            <<  '\t' <<  "Full path of the output mesh file. Overrides filename and directory if set." << std::endl;
+        std::cout << '\t' <<  "--filename"        <<  '\t' <<  "File name of the output mesh file. Defaults to [mesh.cgns]" << std::endl;
+        std::cout << '\t' <<  "--directory"       <<  '\t' <<  "Directory of the output mesh file. Defaults to [./meshes/]" << std::endl;
+        std::cout << '\t' <<  "--resolution"      <<  '\t' <<  "Number of elements in the x and y directions. Must be a power of two. Defaults to [4]" << std::endl;
+        std::cout << '\t' <<  "--x_periodic"      <<  '\t' <<  "Sets the mesh to be periodic in the x direction. Overrides left and right boundaries." << std::endl;
+        std::cout << '\t' <<  "--y_periodic"      <<  '\t' <<  "Sets the mesh to be periodic in the y direction. Overrides top and bottom boundaries." << std::endl;
+        std::cout << '\t' <<  "--boundaries"      <<  '\t' <<  "Sets all four boundary conditions. Acceptable values are \"wall\", \"symmetry\" and \"null\". Defaults to [wall]" << std::endl;
+        std::cout << '\t' <<  "--bottom_boundary" <<  '\t' <<  "Sets the bottom boundary condition. Acceptable values are \"wall\", \"symmetry\" and \"null\". Overrides boundaries." << std::endl;
+        std::cout << '\t' <<  "--right_boundary"  <<  '\t' <<  "Sets the right boundary condition. Acceptable values are \"wall\", \"symmetry\" and \"null\". Overrides boundaries." << std::endl;
+        std::cout << '\t' <<  "--top_boundary"    <<  '\t' <<  "Sets the top boundary condition. Acceptable values are \"wall\", \"symmetry\" and \"null\". Overrides boundaries." << std::endl;
+        std::cout << '\t' <<  "--left_boundary"   <<  '\t' <<  "Sets the left boundary condition. Acceptable values are \"wall\", \"symmetry\" and \"null\". Overrides boundaries." << std::endl;
         exit(0);
     }
 

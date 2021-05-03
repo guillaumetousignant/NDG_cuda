@@ -8,6 +8,7 @@
 #include "entities/Vec2.cuh"
 #include "helpers/float_types.h"
 #include "entities/NDG_t.cuh"
+#include "helpers/DataWriter_t.h"
 #include <vector>
 #include <limits>
 #include <mpi.h>
@@ -52,7 +53,7 @@ namespace SEM { namespace Meshes {
             auto initial_conditions(const deviceFloat* nodes) -> void;
             auto boundary_conditions() -> void;
             auto print() -> void;
-            auto write_data(deviceFloat time, size_t N_interpolation_points, const deviceFloat* interpolation_matrices) -> void;
+            auto write_data(deviceFloat time, size_t N_interpolation_points, const deviceFloat* interpolation_matrices, const SEM::Helpers::DataWriter_t& data_writer) -> void;
             auto get_delta_t(const deviceFloat CFL) -> deviceFloat;
             
             template<typename Polynomial>
@@ -91,7 +92,6 @@ namespace SEM { namespace Meshes {
             static auto build_element_to_element(const std::vector<SEM::Entities::Element2D_t>& elements, const std::vector<std::vector<size_t>>& node_to_element) -> std::vector<std::vector<size_t>>;
             static auto build_faces(size_t n_nodes, std::vector<SEM::Entities::Element2D_t>& elements) -> std::pair<std::vector<SEM::Entities::Face2D_t>, std::vector<std::vector<size_t>>>;
 
-            static auto write_file_data(size_t N_interpolation_points, size_t N_elements, deviceFloat time, int rank, const std::vector<deviceFloat>& x, const std::vector<deviceFloat>& y, const std::vector<deviceFloat>& p, const std::vector<deviceFloat>& u, const std::vector<deviceFloat>& v, const std::vector<int>& N) -> void;
             auto adapt(int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights) -> void;
     };
 

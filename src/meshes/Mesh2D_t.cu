@@ -5,8 +5,6 @@
 #include "functions/Utilities.h"
 #include "entities/cuda_vector.cuh"
 #include "cgnslib.h"
-#include <vtkNew.h>
-#include <vtkXMLPUnstructuredGridWriter.h>
 #include <iostream>
 #include <fstream>
 #include <sstream> 
@@ -849,11 +847,7 @@ auto SEM::Meshes::Mesh2D_t::print() -> void {
     
 }
 
-auto SEM::Meshes::Mesh2D_t::write_file_data(size_t N_interpolation_points, size_t N_elements, deviceFloat time, int rank, const std::vector<deviceFloat>& x, const std::vector<deviceFloat>& y, const std::vector<deviceFloat>& p, const std::vector<deviceFloat>& u, const std::vector<deviceFloat>& v, const std::vector<int>& N) -> void {
-    
-}
-
-auto SEM::Meshes::Mesh2D_t::write_data(deviceFloat time, size_t N_interpolation_points, const deviceFloat* interpolation_matrices) -> void {
+auto SEM::Meshes::Mesh2D_t::write_data(deviceFloat time, size_t N_interpolation_points, const deviceFloat* interpolation_matrices, const SEM::Helpers::DataWriter_t& data_writer) -> void {
     SEM::Entities::device_vector<deviceFloat> x(N_elements_ * N_interpolation_points * N_interpolation_points);
     SEM::Entities::device_vector<deviceFloat> y(N_elements_ * N_interpolation_points * N_interpolation_points);
     SEM::Entities::device_vector<deviceFloat> p(N_elements_ * N_interpolation_points * N_interpolation_points);
@@ -880,7 +874,7 @@ auto SEM::Meshes::Mesh2D_t::write_data(deviceFloat time, size_t N_interpolation_
     int global_rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
 
-    write_file_data(N_interpolation_points, N_elements_, time, global_rank, x_host, y_host, p_host, u_host, v_host, N_host);
+    data_writer.write_data(N_interpolation_points, N_elements_, time, global_rank, x_host, y_host, p_host, u_host, v_host, N_host);
 
     std::cout << std::endl << "Element data:" << std::endl;
     std::cout << '\t' << "x" << std::endl;
