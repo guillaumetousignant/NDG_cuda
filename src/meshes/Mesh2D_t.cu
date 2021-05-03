@@ -876,7 +876,7 @@ auto SEM::Meshes::Mesh2D_t::write_data(deviceFloat time, size_t N_interpolation_
 
     data_writer.write_data(N_interpolation_points, N_elements_, time, global_rank, x_host, y_host, p_host, u_host, v_host, N_host);
 
-    std::cout << std::endl << "Element data:" << std::endl;
+    /*std::cout << std::endl << "Element data:" << std::endl;
     std::cout << '\t' << "x" << std::endl;
     for (size_t i = 0; i < N_elements_; ++i) {
         std::cout << '\t' << '\t' << "element " << i << std::endl;
@@ -935,7 +935,7 @@ auto SEM::Meshes::Mesh2D_t::write_data(deviceFloat time, size_t N_interpolation_
             }
             std::cout << std::endl;
         }
-    }
+    }*/
 }
 
 template auto SEM::Meshes::Mesh2D_t::solve(const deviceFloat delta_t, const std::vector<deviceFloat> output_times, const SEM::Entities::NDG_t<SEM::Polynomials::ChebyshevPolynomial_t> &NDG, deviceFloat viscosity) -> void; // Get with the times c++, it's crazy I have to do this
