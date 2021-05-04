@@ -2,7 +2,9 @@
 #include <array>
 #include <mpi.h>
 #include <vtkNew.h>
-#include <vtkPoints2D.h>
+#include <vtkDoubleArray.h>
+#include <vtkPoints.h>
+#include <vtkPointData.h>
 #include <vtkUnstructuredGrid.h>
 #include <vtkXMLPUnstructuredGridWriter.h>
 
@@ -27,6 +29,7 @@ auto SEM::Helpers::DataWriter_t::write_data(size_t N_interpolation_points,
 
     // Creating points
     vtkNew<vtkPoints> points; // Should bt vtkPoints2D, but unstructured meshes can't take 2D points.
+    points->Allocate(N_elements * N_interpolation_points * N_interpolation_points);
     for (size_t element_index = 0; element_index < N_elements; ++element_index) {
         const size_t offset = element_index * N_interpolation_points * N_interpolation_points;
         for (size_t i = 0; i < N_interpolation_points; ++i) {
@@ -38,7 +41,7 @@ auto SEM::Helpers::DataWriter_t::write_data(size_t N_interpolation_points,
 
     // Creating cells, currently as points (It seems like a bad idea)
     vtkNew<vtkUnstructuredGrid> grid;
-    grid->Allocate(N_elements * N_interpolation_points * N_interpolation_points);
+    grid->AllocateExact(N_elements * N_interpolation_points * N_interpolation_points, 4);
     for (size_t element_index = 0; element_index < N_elements; ++element_index) {
         const size_t offset = element_index * N_interpolation_points * N_interpolation_points;
         for (size_t i = 0; i < N_interpolation_points - 1; ++i) {
@@ -53,6 +56,41 @@ auto SEM::Helpers::DataWriter_t::write_data(size_t N_interpolation_points,
     }
 
     grid->SetPoints(points);
+
+    // Add pressure to each point
+    vtkNew<vtkDoubleArray> pressure;
+    pressure->SetNumberOfComponents(1);
+    pressure->Allocate(N_elements * N_interpolation_points * N_interpolation_points);
+    pressure->SetName("Pressure");
+
+    for (size_t element_index = 0; element_index < N_elements; ++element_index) {
+        const size_t offset = element_index * N_interpolation_points * N_interpolation_points;
+        for (size_t i = 0; i < N_interpolation_points; ++i) {
+            for (size_t j = 0; j < N_interpolation_points; ++j) {
+                pressure->InsertNextValue(p[offset + i * N_interpolation_points + j]);
+            }
+        }
+    }
+
+    grid->GetPointData()->AddArray(pressure);
+
+    // Add velocity to each point
+    vtkNew<vtkDoubleArray> velocity;
+    velocity->SetNumberOfComponents(2);
+    velocity->Allocate(N_elements * N_interpolation_points * N_interpolation_points * 2);
+    velocity->SetName("Velocity");
+
+    for (size_t element_index = 0; element_index < N_elements; ++element_index) {
+        const size_t offset = element_index * N_interpolation_points * N_interpolation_points;
+        for (size_t i = 0; i < N_interpolation_points; ++i) {
+            for (size_t j = 0; j < N_interpolation_points; ++j) {
+                velocity->InsertNextValue(u[offset + i * N_interpolation_points + j]);
+                velocity->InsertNextValue(v[offset + i * N_interpolation_points + j]);
+            }
+        }
+    }
+
+    grid->GetPointData()->AddArray(velocity);
 
     vtkNew<vtkXMLPUnstructuredGridWriter> writer;
     writer->SetInputData(grid);
