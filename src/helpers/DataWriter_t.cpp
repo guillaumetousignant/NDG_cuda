@@ -92,9 +92,17 @@ auto SEM::Helpers::DataWriter_t::write_data(size_t N_interpolation_points,
 
     grid->GetPointData()->AddArray(velocity);
 
+    std::stringstream ss;
+    ss << "_t" << std::setprecision(9) << std::fixed << time << "s";
+    std::string time_string = ss.str();
+    std::replace(time_string.begin(), time_string.end(), '.', '_');
+    std::stringstream ss2;
+    ss2 << filename_.stem().string() << time_string << filename_.extension().string();
+    const fs::path output_filename = filename_.parent_path() / ss2.str(); // It would be better to store all timesteps in the same file
+
     vtkNew<vtkXMLPUnstructuredGridWriter> writer;
     writer->SetInputData(grid);
-    writer->SetFileName(filename_.string().c_str());
+    writer->SetFileName(output_filename.string().c_str());
     writer->SetNumberOfPieces(global_size);
     writer->SetStartPiece(0);
     writer->SetEndPiece(global_size - 1);
