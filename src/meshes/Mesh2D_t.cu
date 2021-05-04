@@ -938,12 +938,102 @@ auto SEM::Meshes::Mesh2D_t::write_data(deviceFloat time, size_t N_interpolation_
     }*/
 }
 
-template auto SEM::Meshes::Mesh2D_t::solve(const deviceFloat delta_t, const std::vector<deviceFloat> output_times, const SEM::Entities::NDG_t<SEM::Polynomials::ChebyshevPolynomial_t> &NDG, deviceFloat viscosity) -> void; // Get with the times c++, it's crazy I have to do this
-template auto SEM::Meshes::Mesh2D_t::solve(const deviceFloat delta_t, const std::vector<deviceFloat> output_times, const SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> &NDG, deviceFloat viscosity) -> void;
+template auto SEM::Meshes::Mesh2D_t::solve(const deviceFloat delta_t, const std::vector<deviceFloat> output_times, const SEM::Entities::NDG_t<SEM::Polynomials::ChebyshevPolynomial_t> &NDG, deviceFloat viscosity, const SEM::Helpers::DataWriter_t& data_writer) -> void; // Get with the times c++, it's crazy I have to do this
+template auto SEM::Meshes::Mesh2D_t::solve(const deviceFloat delta_t, const std::vector<deviceFloat> output_times, const SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> &NDG, deviceFloat viscosity, const SEM::Helpers::DataWriter_t& data_writer) -> void;
 
 template<typename Polynomial>
-auto SEM::Meshes::Mesh2D_t::solve(const deviceFloat CFL, const std::vector<deviceFloat> output_times, const SEM::Entities::NDG_t<Polynomial> &NDG, deviceFloat viscosity) -> void {
+auto SEM::Meshes::Mesh2D_t::solve(const deviceFloat CFL, const std::vector<deviceFloat> output_times, const SEM::Entities::NDG_t<Polynomial> &NDG, deviceFloat viscosity, const SEM::Helpers::DataWriter_t& data_writer) -> void {
+    int global_rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
+    deviceFloat time = 0.0;
+    const deviceFloat t_end = output_times.back();
+    SEM::Helpers::ProgressBar_t bar;
+    size_t timestep = 0;
+
+    deviceFloat delta_t = get_delta_t(CFL);
+    write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_.data(), data_writer);
+    if (global_rank == 0) {
+        bar.update(0.0);
+        bar.set_status_text("Iteration 0");
+    }
     
+    /*while (time < t_end) {
+        ++timestep;
+        delta_t = get_delta_t(CFL);
+        if (time + delta_t > t_end) {
+            delta_t = t_end - time;
+        }
+
+        // Kinda algorithm 62
+        deviceFloat t = time;
+        SEM::Entities::interpolate_to_boundaries<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
+        boundary_conditions();
+        SEM::Meshes::calculate_fluxes<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(N_faces_, faces_, elements_);
+        SEM::Meshes::compute_dg_derivative<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, faces_, NDG.weights_.data(), NDG.derivative_matrices_hat_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
+        SEM::Entities::interpolate_q_to_boundaries<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
+        boundary_conditions();
+        SEM::Meshes::calculate_q_fluxes<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(N_faces_, faces_, elements_);
+        SEM::Meshes::compute_dg_derivative2<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(viscosity, N_elements_, elements_, faces_, NDG.weights_.data(), NDG.derivative_matrices_hat_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
+        SEM::Meshes::rk3_first_step<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, delta_t, 1.0/3.0);
+
+        t = time + 0.33333333333f * delta_t;
+        SEM::Entities::interpolate_to_boundaries<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
+        boundary_conditions();
+        SEM::Meshes::calculate_fluxes<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(N_faces_, faces_, elements_);
+        SEM::Meshes::compute_dg_derivative<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, faces_, NDG.weights_.data(), NDG.derivative_matrices_hat_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
+        SEM::Entities::interpolate_q_to_boundaries<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
+        boundary_conditions();
+        SEM::Meshes::calculate_q_fluxes<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(N_faces_, faces_, elements_);
+        SEM::Meshes::compute_dg_derivative2<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(viscosity, N_elements_, elements_, faces_, NDG.weights_.data(), NDG.derivative_matrices_hat_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
+        SEM::Meshes::rk3_step<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, delta_t, -5.0/9.0, 15.0/16.0);
+
+        t = time + 0.75f * delta_t;
+        SEM::Entities::interpolate_to_boundaries<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
+        boundary_conditions();
+        SEM::Meshes::calculate_fluxes<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(N_faces_, faces_, elements_);
+        SEM::Meshes::compute_dg_derivative<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, faces_, NDG.weights_.data(), NDG.derivative_matrices_hat_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
+        SEM::Entities::interpolate_q_to_boundaries<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
+        boundary_conditions();
+        SEM::Meshes::calculate_q_fluxes<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(N_faces_, faces_, elements_);
+        SEM::Meshes::compute_dg_derivative2<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(viscosity, N_elements_, elements_, faces_, NDG.weights_.data(), NDG.derivative_matrices_hat_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
+        SEM::Meshes::rk3_step<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, delta_t, -153.0/128.0, 8.0/15.0);
+
+        time += delta_t;
+        if (global_rank == 0) {
+            std::stringstream ss;
+            bar.update(time/t_end);
+            ss << "Iteration " << timestep;
+            bar.set_status_text(ss.str());
+        }
+        for (auto const& e : std::as_const(output_times)) {
+            if ((time >= e) && (time < e + delta_t)) {
+                SEM::Entities::estimate_error<Polynomial><<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, NDG.nodes_.data(), NDG.weights_.data());
+                write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_.data(), data_writer);
+                break;
+            }
+        }
+
+        if (timestep % adaptivity_interval_ == 0) {
+            SEM::Entities::estimate_error<Polynomial><<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, NDG.nodes_.data(), NDG.weights_.data());
+            adapt(NDG.N_max_, NDG.nodes_.data(), NDG.barycentric_weights_.data());
+        }
+    }*/
+    if (global_rank == 0) {
+        std::cout << std::endl;
+    }
+
+    bool did_write = false;
+    for (auto const& e : std::as_const(output_times)) {
+        if ((time >= e) && (time < e + delta_t)) {
+            did_write = true;
+            break;
+        }
+    }
+
+    if (!did_write) {
+        //SEM::Entities::estimate_error<Polynomial><<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, NDG.nodes_.data(), NDG.weights_.data());
+        write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_.data(), data_writer);
+    }
 }
 
 __host__ __device__

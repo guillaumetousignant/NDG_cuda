@@ -155,9 +155,8 @@ auto main(int argc, char* argv[]) -> int {
     // Computation
     auto t_start = std::chrono::high_resolution_clock::now();
 
-    //mesh.solve(CFL, output_times, NDG, viscosity);
+    mesh.solve(CFL, output_times, NDG, viscosity, data_writer);
     mesh.print();
-    mesh.write_data(0.0, NDG.N_interpolation_points_, NDG.interpolation_matrices_.data(), data_writer);
     // Wait for GPU to finish before copying to host
     cudaDeviceSynchronize();
 

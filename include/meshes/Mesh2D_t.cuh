@@ -57,7 +57,7 @@ namespace SEM { namespace Meshes {
             auto get_delta_t(const deviceFloat CFL) -> deviceFloat;
             
             template<typename Polynomial>
-            auto solve(const deviceFloat CFL, const std::vector<deviceFloat> output_times, const SEM::Entities::NDG_t<Polynomial> &NDG, deviceFloat viscosity) -> void;
+            auto solve(const deviceFloat CFL, const std::vector<deviceFloat> output_times, const SEM::Entities::NDG_t<Polynomial> &NDG, deviceFloat viscosity, const SEM::Helpers::DataWriter_t& data_writer) -> void;
 
             __host__ __device__
             static auto g(SEM::Entities::Vec2<deviceFloat> xy) -> std::array<deviceFloat, 3>;
