@@ -25,12 +25,12 @@ auto SEM::Helpers::DataWriter_t::write_data(size_t N_interpolation_points,
     MPI_Comm_size(MPI_COMM_WORLD, &global_size);
 
     // Creating points
-    vtkNew<vtkPoints2D> points;
+    vtkNew<vtkPoints> points; // Should bt vtkPoints2D, but unstructured meshes can't take 2D points.
     for (size_t element_index = 0; element_index < N_elements; ++element_index) {
         const size_t offset = element_index * N_interpolation_points * N_interpolation_points;
         for (size_t i = 0; i < N_interpolation_points; ++i) {
             for (size_t j = 0; j < N_interpolation_points; ++j) {
-                points->InsertPoint(offset + i * N_interpolation_points + j, x[offset + i * N_interpolation_points + j], y[offset + i * N_interpolation_points + j]);
+                points->InsertPoint(offset + i * N_interpolation_points + j, x[offset + i * N_interpolation_points + j], y[offset + i * N_interpolation_points + j], 0);
             }
         }
     }
@@ -51,7 +51,7 @@ auto SEM::Helpers::DataWriter_t::write_data(size_t N_interpolation_points,
     grid->SetPoints(points);
 
     vtkNew<vtkXMLPUnstructuredGridWriter> writer;
-    writer->SetInputConnection(grid->GetOutputPort());
+    writer->SetInputData(grid);
     writer->SetFileName(filename_.string().c_str());
     writer->SetNumberOfPieces(global_size);
     writer->SetStartPiece(0);
