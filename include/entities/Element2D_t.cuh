@@ -23,6 +23,9 @@ namespace SEM { namespace Entities {
             SEM::Entities::cuda_vector<deviceFloat> p_;
             SEM::Entities::cuda_vector<deviceFloat> u_;
             SEM::Entities::cuda_vector<deviceFloat> v_;
+            SEM::Entities::cuda_vector<deviceFloat> G_p_;
+            SEM::Entities::cuda_vector<deviceFloat> G_u_;
+            SEM::Entities::cuda_vector<deviceFloat> G_v_;
 
             deviceFloat sigma_;
             bool refine_;

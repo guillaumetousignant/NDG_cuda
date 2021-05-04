@@ -792,6 +792,12 @@ auto SEM::Meshes::Mesh2D_t::print() -> void {
         element.u_.size_ = 0;
         element.v_.data_ = nullptr;
         element.v_.size_ = 0;
+        element.G_p_.data_ = nullptr;
+        element.G_p_.size_ = 0;
+        element.G_u_.data_ = nullptr;
+        element.G_u_.size_ = 0;
+        element.G_v_.data_ = nullptr;
+        element.G_v_.size_ = 0;
     }
 
     std::cout << "N elements: " << N_elements_ << std::endl;
@@ -1086,6 +1092,9 @@ auto SEM::Meshes::allocate_element_storage(size_t n_elements, SEM::Entities::Ele
         elements[i].p_ = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
         elements[i].u_ = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
         elements[i].v_ = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
+        elements[i].G_p_ = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
+        elements[i].G_u_ = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
+        elements[i].G_v_ = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
     }
 }
 
