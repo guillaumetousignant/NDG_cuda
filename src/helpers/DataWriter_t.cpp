@@ -1,4 +1,5 @@
 #include "helpers/DataWriter_t.h"
+#include <array>
 #include <mpi.h>
 #include <vtkNew.h>
 #include <vtkPoints2D.h>
@@ -40,10 +41,13 @@ auto SEM::Helpers::DataWriter_t::write_data(size_t N_interpolation_points,
     grid->Allocate(N_elements * N_interpolation_points * N_interpolation_points);
     for (size_t element_index = 0; element_index < N_elements; ++element_index) {
         const size_t offset = element_index * N_interpolation_points * N_interpolation_points;
-        for (size_t i = 0; i < N_interpolation_points; ++i) {
-            for (size_t j = 0; j < N_interpolation_points; ++j) {
-                const vtkIdType index = offset + i * N_interpolation_points + j;
-                grid->InsertNextCell(VTK_VERTEX, 1, &index);
+        for (size_t i = 0; i < N_interpolation_points - 1; ++i) {
+            for (size_t j = 0; j < N_interpolation_points - 1; ++j) {
+                const std::array<vtkIdType, 4> index {static_cast<vtkIdType>(offset + (i + 1) * N_interpolation_points + j),
+                                                      static_cast<vtkIdType>(offset + (i + 1) * N_interpolation_points + j + 1),
+                                                      static_cast<vtkIdType>(offset + i * N_interpolation_points + j + 1),
+                                                      static_cast<vtkIdType>(offset + i * N_interpolation_points + j)};
+                grid->InsertNextCell(VTK_QUAD, 4, index.data());
             }
         }
     }
