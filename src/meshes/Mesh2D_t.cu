@@ -3,6 +3,7 @@
 #include "polynomials/LegendrePolynomial_t.cuh"
 #include "helpers/ProgressBar_t.h"
 #include "functions/Utilities.h"
+#include "functions/quad_map.cuh"
 #include "entities/cuda_vector.cuh"
 #include "cgnslib.h"
 #include <iostream>
@@ -1077,15 +1078,6 @@ auto SEM::Meshes::Mesh2D_t::g(SEM::Entities::Vec2<deviceFloat> xy) -> std::array
     return state;
 }
 
-// Algorithm 95
-__host__ __device__
-auto SEM::Meshes::Mesh2D_t::quad_map(Vec2<deviceFloat> local_coordinates, const std::array<Vec2<deviceFloat>, 4>& points) -> Vec2<deviceFloat> {
-    return (points[0] * (1 - local_coordinates.x()) * (1 - local_coordinates.y()) 
-            + points[1] * (local_coordinates.x() + 1) * (1 - local_coordinates.y())
-            + points[2] * (local_coordinates.x() + 1) * (local_coordinates.y() + 1)
-            + points[3] * (1 - local_coordinates.x()) * (local_coordinates.y() + 1)) / 4;
-}
-
 auto SEM::Meshes::Mesh2D_t::get_delta_t(const deviceFloat CFL) -> deviceFloat {   
     return 0.1;
 }
@@ -1130,7 +1122,7 @@ auto SEM::Meshes::initial_conditions_2D(size_t n_elements, SEM::Entities::Elemen
                                                                nodes[element.nodes_[1]],
                                                                nodes[element.nodes_[2]],
                                                                nodes[element.nodes_[3]]};
-                const Vec2<deviceFloat> global_coordinates = SEM::Meshes::Mesh2D_t::quad_map(coordinates, points);
+                const Vec2<deviceFloat> global_coordinates = SEM::quad_map(coordinates, points);
 
                 const std::array<deviceFloat, 3> state = SEM::Meshes::Mesh2D_t::g(global_coordinates);
                 element.p_[i * (element.N_ + 1) + j] = state[0];
@@ -1157,27 +1149,6 @@ void SEM::Meshes::get_solution(size_t N_elements, size_t N_interpolation_points,
                                                        nodes[element.nodes_[2]],
                                                        nodes[element.nodes_[3]]};
 
-        for (size_t i = 0; i < N_interpolation_points; ++i) {
-            for (size_t j = 0; j < N_interpolation_points; ++j) {
-                // x and y
-                const Vec2<deviceFloat> coordinates {static_cast<deviceFloat>(i)/static_cast<deviceFloat>(N_interpolation_points - 1) * 2 - 1, static_cast<deviceFloat>(j)/static_cast<deviceFloat>(N_interpolation_points - 1) * 2 - 1};
-                const Vec2<deviceFloat> global_coordinates = SEM::Meshes::Mesh2D_t::quad_map(coordinates, points);
-
-                x[offset_interp_2D + i * N_interpolation_points + j] = global_coordinates.x();
-                y[offset_interp_2D + i * N_interpolation_points + j] = global_coordinates.y();
-
-                // Pressure, u, and v
-                p[offset_interp_2D + i * N_interpolation_points + j] = 0.0;
-                u[offset_interp_2D + i * N_interpolation_points + j] = 0.0;
-                v[offset_interp_2D + i * N_interpolation_points + j] = 0.0;
-                for (int m = 0; m <= element.N_; ++m) {
-                    for (int n = 0; n <= element.N_; ++n) {
-                        p[offset_interp_2D + i * N_interpolation_points + j] += element.p_[m * (element.N_ + 1) + n] * interpolation_matrices[offset_interp + i * (element.N_ + 1) + m] * interpolation_matrices[offset_interp + j * (element.N_ + 1) + n];
-                        u[offset_interp_2D + i * N_interpolation_points + j] += element.u_[m * (element.N_ + 1) + n] * interpolation_matrices[offset_interp + i * (element.N_ + 1) + m] * interpolation_matrices[offset_interp + j * (element.N_ + 1) + n];
-                        v[offset_interp_2D + i * N_interpolation_points + j] += element.v_[m * (element.N_ + 1) + n] * interpolation_matrices[offset_interp + i * (element.N_ + 1) + m] * interpolation_matrices[offset_interp + j * (element.N_ + 1) + n];
-                    }
-                }
-            }
-        }
+        element.interpolate_solution(N_interpolation_points, points, interpolation_matrices + offset_interp, x + offset_interp_2D, y + offset_interp_2D, p + offset_interp_2D, u + offset_interp_2D, v + offset_interp_2D);
     }
 }

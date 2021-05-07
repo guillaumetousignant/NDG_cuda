@@ -3,6 +3,7 @@
 
 #include "helpers/float_types.h"
 #include "entities/cuda_vector.cuh"
+#include "entities/Vec2.cuh"
 #include <array>
 
 namespace SEM { namespace Entities {
@@ -46,6 +47,9 @@ namespace SEM { namespace Entities {
 
             __device__
             auto interpolate_from(const Element2D_t& other, const deviceFloat* nodes, const deviceFloat* barycentric_weights) -> void;
+
+            __device__
+            auto interpolate_solution(size_t N_interpolation_points, const std::array<Vec2<deviceFloat>, 4>& points, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v) -> void;
 
         private:
             __device__

@@ -4,6 +4,7 @@
 #include <cmath>
 #include <array>
 #include "entities/NDG_t.cuh"
+#include "entities/Element2D_t.cuh"
 #include "helpers/float_types.h"
 
 TEST_CASE("2D interpolation test", "Checks the interpolated value of the solution at the output interpolation points.") {   

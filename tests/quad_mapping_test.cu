@@ -2,6 +2,7 @@
 #include "helpers/float_types.h"
 #include "entities/Vec2.cuh"
 #include "meshes/Mesh2D_t.cuh"
+#include "functions/quad_map.cuh"
 
 using SEM::Entities::Vec2;
 
@@ -68,7 +69,7 @@ TEST_CASE("Quad mapping", "Checks the quad mapping returns the right result.") {
     std::array<Vec2<deviceFloat>, 25> global_coordinates_computed;
 
     for (int i = 0; i < global_coordinates_computed.size(); ++i) {
-        global_coordinates_computed[i] = SEM::Meshes::Mesh2D_t::quad_map(local_coordinates[i], points);
+        global_coordinates_computed[i] = SEM::quad_map(local_coordinates[i], points);
         REQUIRE(std::abs(global_coordinates_computed[i].x() - global_coordinates[i].x()) < error);
         REQUIRE(std::abs(global_coordinates_computed[i].y() - global_coordinates[i].y()) < error);
     }

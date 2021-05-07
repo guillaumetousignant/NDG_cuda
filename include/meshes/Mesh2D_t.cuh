@@ -62,10 +62,6 @@ namespace SEM { namespace Meshes {
             __host__ __device__
             static auto g(SEM::Entities::Vec2<deviceFloat> xy) -> std::array<deviceFloat, 3>;
 
-            // Algorithm 95
-            __host__ __device__
-            static auto quad_map(SEM::Entities::Vec2<deviceFloat> local_coordinates, const std::array<SEM::Entities::Vec2<deviceFloat>, 4>& points) -> SEM::Entities::Vec2<deviceFloat>;
-
         private:
             deviceFloat* device_delta_t_array_;
             std::vector<deviceFloat> host_delta_t_array_;
