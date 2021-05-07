@@ -12,6 +12,7 @@ include(Catch)
 
 add_executable(unit_tests 
     test_main.cpp
+    2D_interpolation_test.cu
     polynomials_test.cu
     reduce_test.cu
     initial_conditions_test.cu
