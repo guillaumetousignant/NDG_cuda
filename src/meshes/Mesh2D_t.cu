@@ -659,67 +659,6 @@ auto SEM::Meshes::Mesh2D_t::write_data(deviceFloat time, size_t N_interpolation_
     MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
 
     data_writer.write_data(N_interpolation_points, N_elements_, time, global_rank, x_host, y_host, p_host, u_host, v_host, N_host);
-
-    /*std::cout << std::endl << "Element data:" << std::endl;
-    std::cout << '\t' << "x" << std::endl;
-    for (size_t i = 0; i < N_elements_; ++i) {
-        std::cout << '\t' << '\t' << "element " << i << std::endl;
-        for (int m = 0; m < N_interpolation_points; ++m) {
-            std::cout << '\t' << '\t' << '\t';
-            for (int n = 0; n < N_interpolation_points; ++n) {
-                std::cout << x_host[i * N_interpolation_points * N_interpolation_points + m * N_interpolation_points + n] <<  " ";
-            }
-            std::cout << std::endl;
-        }
-    }
-
-    std::cout << std::endl << '\t' << "y" << std::endl;
-    for (size_t i = 0; i < N_elements_; ++i) {
-        std::cout << '\t' << '\t' << "element " << i << std::endl;
-        for (int m = 0; m < N_interpolation_points; ++m) {
-            std::cout << '\t' << '\t' << '\t';
-            for (int n = 0; n < N_interpolation_points; ++n) {
-                std::cout << y_host[i * N_interpolation_points * N_interpolation_points + m * N_interpolation_points + n] <<  " ";
-            }
-            std::cout << std::endl;
-        }
-    }
-
-    std::cout << std::endl << '\t' << "p" << std::endl;
-    for (size_t i = 0; i < N_elements_; ++i) {
-        std::cout << '\t' << '\t' << "element " << i << std::endl;
-        for (int m = 0; m < N_interpolation_points; ++m) {
-            std::cout << '\t' << '\t' << '\t';
-            for (int n = 0; n < N_interpolation_points; ++n) {
-                std::cout << p_host[i * N_interpolation_points * N_interpolation_points + m * N_interpolation_points + n] <<  " ";
-            }
-            std::cout << std::endl;
-        }
-    }
-
-    std::cout << std::endl << '\t' << "u" <<  std::endl;
-    for (size_t i = 0; i < N_elements_; ++i) {
-        std::cout << '\t' << '\t' << "element " << i << std::endl;
-        for (int m = 0; m < N_interpolation_points; ++m) {
-            std::cout << '\t' << '\t' << '\t';
-            for (int n = 0; n < N_interpolation_points; ++n) {
-                std::cout << u_host[i * N_interpolation_points * N_interpolation_points + m * N_interpolation_points + n] <<  " ";
-            }
-            std::cout << std::endl;
-        }
-    }
-
-    std::cout << std::endl << '\t' << "v" << std::endl;
-    for (size_t i = 0; i < N_elements_; ++i) {
-        std::cout << '\t' << '\t' << "element " << i << std::endl;
-        for (int m = 0; m < N_interpolation_points; ++m) {
-            std::cout << '\t' << '\t' << '\t';
-            for (int n = 0; n < N_interpolation_points; ++n) {
-                std::cout << v_host[i * N_interpolation_points * N_interpolation_points + m * N_interpolation_points + n] <<  " ";
-            }
-            std::cout << std::endl;
-        }
-    }*/
 }
 
 template auto SEM::Meshes::Mesh2D_t::solve(const deviceFloat delta_t, const std::vector<deviceFloat> output_times, const SEM::Entities::NDG_t<SEM::Polynomials::ChebyshevPolynomial_t> &NDG, deviceFloat viscosity, const SEM::Helpers::DataWriter_t& data_writer) -> void; // Get with the times c++, it's crazy I have to do this
