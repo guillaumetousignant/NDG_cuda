@@ -31,7 +31,8 @@ namespace SEM { namespace Helpers {
             size_t bar_width_;
             std::string fill_;
             std::string remainder_;
-            std::string status_text_;  
+            std::string status_text_;
+            size_t status_width_;
     };
 }}
 

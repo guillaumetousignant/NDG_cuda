@@ -957,10 +957,14 @@ auto SEM::Meshes::Mesh2D_t::solve(const deviceFloat CFL, const std::vector<devic
     size_t timestep = 0;
 
     deviceFloat delta_t = get_delta_t(CFL);
+    if (global_rank == 0) {
+        bar.set_status_text("Writing solution");
+        bar.update(0.0);
+    }
     write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_.data(), data_writer);
     if (global_rank == 0) {
-        bar.update(0.0);
         bar.set_status_text("Iteration 0");
+        bar.update(0.0);
     }
     
     /*while (time < t_end) {
@@ -1005,18 +1009,22 @@ auto SEM::Meshes::Mesh2D_t::solve(const deviceFloat CFL, const std::vector<devic
         SEM::Meshes::rk3_step<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, delta_t, -153.0/128.0, 8.0/15.0);
 
         time += delta_t;
-        if (global_rank == 0) {
-            std::stringstream ss;
-            bar.update(time/t_end);
-            ss << "Iteration " << timestep;
-            bar.set_status_text(ss.str());
-        }
         for (auto const& e : std::as_const(output_times)) {
             if ((time >= e) && (time < e + delta_t)) {
                 SEM::Entities::estimate_error<Polynomial><<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, NDG.nodes_.data(), NDG.weights_.data());
+                if (global_rank == 0) {
+                    bar.set_status_text("Writing solution");
+                    bar.update(time/t_end);
+                }
                 write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_.data(), data_writer);
                 break;
             }
+        }
+        if (global_rank == 0) {
+            std::stringstream ss;
+            ss << "Iteration " << timestep;
+            bar.set_status_text(ss.str());
+            bar.update(time/t_end);
         }
 
         if (timestep % adaptivity_interval_ == 0) {
@@ -1024,9 +1032,6 @@ auto SEM::Meshes::Mesh2D_t::solve(const deviceFloat CFL, const std::vector<devic
             adapt(NDG.N_max_, NDG.nodes_.data(), NDG.barycentric_weights_.data());
         }
     }*/
-    if (global_rank == 0) {
-        std::cout << std::endl;
-    }
 
     bool did_write = false;
     for (auto const& e : std::as_const(output_times)) {
@@ -1038,7 +1043,18 @@ auto SEM::Meshes::Mesh2D_t::solve(const deviceFloat CFL, const std::vector<devic
 
     if (!did_write) {
         //SEM::Entities::estimate_error<Polynomial><<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, NDG.nodes_.data(), NDG.weights_.data());
+        if (global_rank == 0) {
+            bar.set_status_text("Writing solution");
+            bar.update(1.0);
+        }
         write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_.data(), data_writer);
+    }
+    if (global_rank == 0) {
+        bar.set_status_text("Done");
+        bar.update(1.0);
+    }
+    if (global_rank == 0) {
+        std::cout << std::endl;
     }
 }
 
@@ -1071,7 +1087,7 @@ auto SEM::Meshes::Mesh2D_t::quad_map(Vec2<deviceFloat> local_coordinates, const 
 }
 
 auto SEM::Meshes::Mesh2D_t::get_delta_t(const deviceFloat CFL) -> deviceFloat {   
-    return 0.0;
+    return 0.1;
 }
 
 auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights) -> void {

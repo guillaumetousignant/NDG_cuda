@@ -7,7 +7,8 @@ SEM::Helpers::ProgressBar_t::ProgressBar_t() :
         bar_width_{60},
         fill_{"#"},
         remainder_{" "},
-        status_text_{""} {}
+        status_text_{""},
+        status_width_{0} {}
 
 auto SEM::Helpers::ProgressBar_t::set_progress(hostFloat value) -> void {
     std::unique_lock lock{mutex_};
@@ -42,8 +43,8 @@ auto SEM::Helpers::ProgressBar_t::update(hostFloat value, std::ostream &os /* = 
 auto SEM::Helpers::ProgressBar_t::write_progress(std::ostream &os /* = std::cout */) -> void {
     std::unique_lock lock{mutex_};
 
-    // No need to write once progress is 100%
-    if (progress_ > 100.0) return;
+    // Cap progress to 100%
+    if (progress_ > 1.0) progress_ = 1.0;
 
     // Print in bold yellow
     os << termcolor::bold << termcolor::yellow;
@@ -56,10 +57,10 @@ auto SEM::Helpers::ProgressBar_t::write_progress(std::ostream &os /* = std::cout
 
     const auto completed = static_cast<size_t>(progress_ * static_cast<hostFloat>(bar_width_));
     for (size_t i = 0; i < bar_width_; ++i) {
-    if (i <= completed) 
-        os << fill_;
-    else 
-        os << remainder_;
+        if (i <= completed) 
+            os << fill_;
+        else 
+            os << remainder_;
     }
 
     // End bar
@@ -70,6 +71,10 @@ auto SEM::Helpers::ProgressBar_t::write_progress(std::ostream &os /* = std::cout
 
     // Write status text
     os << " " << status_text_;
+    for (long long i = 0; i < static_cast<long long>(status_width_) - static_cast<long long>(status_text_.size()); ++i) {
+        os << " ";
+    }
+    status_width_ = status_text_.size();
 
     // Reset the color
     os << termcolor::reset;
