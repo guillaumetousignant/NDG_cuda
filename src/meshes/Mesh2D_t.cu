@@ -292,22 +292,33 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
         if (section_is_domain[i]) {
             section_start_indices[i] = element_domain_index;
             for (int j = 0; j < section_ranges[i][1] - section_ranges[i][0] + 1; ++j) {
-                host_elements[section_start_indices[i] + j].N_ = initial_N_;
-                host_elements[section_start_indices[i] + j].nodes_ = {static_cast<size_t>(connectivity[i][4 * j] - 1),
-                                                                      static_cast<size_t>(connectivity[i][4 * j + 1] - 1),
-                                                                      static_cast<size_t>(connectivity[i][4 * j + 2] - 1),
-                                                                      static_cast<size_t>(connectivity[i][4 * j + 3] - 1)};
+                SEM::Entities::Element2D_t& element = host_elements[section_start_indices[i] + j];
+                element.N_ = initial_N_;
+                element.nodes_ = {static_cast<size_t>(connectivity[i][4 * j] - 1),
+                                  static_cast<size_t>(connectivity[i][4 * j + 1] - 1),
+                                  static_cast<size_t>(connectivity[i][4 * j + 2] - 1),
+                                  static_cast<size_t>(connectivity[i][4 * j + 3] - 1)};
+                
+                // Calculating min element length, from left and right sides, top and bottom sides, and finally both diagonals                                                    
+                element.delta_xy_min_ = std::min(std::min(
+                    std::min((host_nodes[element.nodes_[1]] - host_nodes[element.nodes_[0]]).magnitude(), (host_nodes[element.nodes_[2]] - host_nodes[element.nodes_[3]]).magnitude()), 
+                    std::min((host_nodes[element.nodes_[1]] - host_nodes[element.nodes_[2]]).magnitude(), (host_nodes[element.nodes_[0]] - host_nodes[element.nodes_[3]]).magnitude())), 
+                    std::min((host_nodes[element.nodes_[1]] - host_nodes[element.nodes_[3]]).magnitude(), (host_nodes[element.nodes_[2]] - host_nodes[element.nodes_[0]]).magnitude()));
             }
             element_domain_index += section_ranges[i][1] - section_ranges[i][0] + 1;
         }
         else {
             section_start_indices[i] = element_ghost_index;
             for (int j = 0; j < section_ranges[i][1] - section_ranges[i][0] + 1; ++j) {
-                host_elements[section_start_indices[i] + j].N_ = 0;
-                host_elements[section_start_indices[i] + j].nodes_ = {static_cast<size_t>(connectivity[i][2 * j] - 1),
-                                                                      static_cast<size_t>(connectivity[i][2 * j + 1] - 1),
-                                                                      static_cast<size_t>(connectivity[i][2 * j + 1] - 1),
-                                                                      static_cast<size_t>(connectivity[i][2 * j] - 1)};
+                SEM::Entities::Element2D_t& element = host_elements[section_start_indices[i] + j];
+                element.N_ = 0;
+                element.nodes_ = {static_cast<size_t>(connectivity[i][2 * j] - 1),
+                                  static_cast<size_t>(connectivity[i][2 * j + 1] - 1),
+                                  static_cast<size_t>(connectivity[i][2 * j + 1] - 1),
+                                  static_cast<size_t>(connectivity[i][2 * j] - 1)};
+
+                // Calculating min element length from its (only) side                                                    
+                element.delta_xy_min_ = (host_nodes[element.nodes_[1]] - host_nodes[element.nodes_[0]]).magnitude();
             }
             element_ghost_index += section_ranges[i][1] - section_ranges[i][0] + 1;
         }
@@ -562,22 +573,6 @@ auto SEM::Meshes::Mesh2D_t::print() -> void {
     wall_boundaries_.copy_to(host_wall_boundaries);
     symmetry_boundaries_.copy_to(host_symmetry_boundaries);
 
-    // Invalidate GPU pointers, or else they will be deleted on the CPU, where they point to random stuff
-    for (auto& element: host_elements) {
-        element.p_.data_ = nullptr;
-        element.p_.size_ = 0;
-        element.u_.data_ = nullptr;
-        element.u_.size_ = 0;
-        element.v_.data_ = nullptr;
-        element.v_.size_ = 0;
-        element.G_p_.data_ = nullptr;
-        element.G_p_.size_ = 0;
-        element.G_u_.data_ = nullptr;
-        element.G_u_.size_ = 0;
-        element.G_v_.data_ = nullptr;
-        element.G_v_.size_ = 0;
-    }
-
     std::cout << "N elements: " << N_elements_ << std::endl;
     std::cout << "N elements and ghosts: " << elements_.size() << std::endl;
     std::cout << "N faces: " << faces_.size() << std::endl;
@@ -819,6 +814,18 @@ auto SEM::Meshes::allocate_element_storage(size_t n_elements, SEM::Entities::Ele
         elements[i].G_p_ = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
         elements[i].G_u_ = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
         elements[i].G_v_ = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
+        elements[i].p_extrapolated_ = {SEM::Entities::cuda_vector<deviceFloat>(N + 1),
+                                       SEM::Entities::cuda_vector<deviceFloat>(N + 1),
+                                       SEM::Entities::cuda_vector<deviceFloat>(N + 1),
+                                       SEM::Entities::cuda_vector<deviceFloat>(N + 1)};
+        elements[i].u_extrapolated_ = {SEM::Entities::cuda_vector<deviceFloat>(N + 1),
+                                       SEM::Entities::cuda_vector<deviceFloat>(N + 1),
+                                       SEM::Entities::cuda_vector<deviceFloat>(N + 1),
+                                       SEM::Entities::cuda_vector<deviceFloat>(N + 1)};
+        elements[i].v_extrapolated_ = {SEM::Entities::cuda_vector<deviceFloat>(N + 1),
+                                       SEM::Entities::cuda_vector<deviceFloat>(N + 1),
+                                       SEM::Entities::cuda_vector<deviceFloat>(N + 1),
+                                       SEM::Entities::cuda_vector<deviceFloat>(N + 1)};
     }
 }
 

@@ -16,17 +16,18 @@ namespace SEM { namespace Entities {
             Element2D_t();
 
             int N_;
-            std::array<size_t, 4> faces_; // Could also be pointers. bottom, right, top, left
-            std::array<size_t, 4> nodes_; // Could also be pointers. bottom, right, top, left
-            std::array<deviceFloat, 2> delta_xy_;
-            std::array<deviceFloat, 4> phi_extrapolated_;
-            std::array<deviceFloat, 4> phi_prime_extrapolated_;
+            std::array<size_t, 4> faces_;
+            std::array<size_t, 4> nodes_;
+            deviceFloat delta_xy_min_;
             SEM::Entities::cuda_vector<deviceFloat> p_;
             SEM::Entities::cuda_vector<deviceFloat> u_;
             SEM::Entities::cuda_vector<deviceFloat> v_;
             SEM::Entities::cuda_vector<deviceFloat> G_p_;
             SEM::Entities::cuda_vector<deviceFloat> G_u_;
             SEM::Entities::cuda_vector<deviceFloat> G_v_;
+            std::array<SEM::Entities::cuda_vector<deviceFloat>, 4> p_extrapolated_;
+            std::array<SEM::Entities::cuda_vector<deviceFloat>, 4> u_extrapolated_;
+            std::array<SEM::Entities::cuda_vector<deviceFloat>, 4> v_extrapolated_;
 
             deviceFloat sigma_;
             bool refine_;
