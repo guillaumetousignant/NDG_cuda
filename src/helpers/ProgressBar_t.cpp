@@ -71,8 +71,10 @@ auto SEM::Helpers::ProgressBar_t::write_progress(std::ostream &os /* = std::cout
 
     // Write status text
     os << " " << status_text_;
-    for (long long i = 0; i < static_cast<long long>(status_width_) - static_cast<long long>(status_text_.size()); ++i) {
-        os << " ";
+    if (status_width_ > status_text_.size()) {
+        for (size_t i = 0; i < status_width_ - status_text_.size(); ++i) {
+            os << " ";
+        }
     }
     status_width_ = status_text_.size();
 
