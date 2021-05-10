@@ -7,7 +7,7 @@ SEM::Entities::Face2D_t::Face2D_t(std::array<size_t, 2> nodes, std::array<size_t
         elements_{elements},
         flux_{0.0},
         derivative_flux_{0.0},
-        nl_flux_{0.0} {};
+        nl_flux_{0.0} {}
 
 __host__ __device__
 SEM::Entities::Face2D_t::Face2D_t() :
