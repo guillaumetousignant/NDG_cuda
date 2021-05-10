@@ -64,14 +64,6 @@ TEST_CASE("2D interpolation test", "Checks the interpolated value of the solutio
 
     std::vector<SEM::Entities::Element2D_t> host_elements(1);
     host_elements[0].N_ = N_test;
-    host_elements[0].nodes_ = {0,
-                               1,
-                               2,
-                               3};
-    host_elements[0].faces_ = {0,
-                               1,
-                               2,
-                               3};
 
     SEM::Entities::device_vector<SEM::Entities::Element2D_t> device_elements;
     device_elements = host_elements;

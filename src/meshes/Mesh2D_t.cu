@@ -331,7 +331,7 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     const std::vector<std::vector<size_t>> element_to_element = build_element_to_element(host_elements, node_to_element);
 
     // Computing faces and filling element faces
-    auto [host_faces, node_to_face] = build_faces(n_nodes, host_elements);
+    auto [host_faces, node_to_face, element_to_face] = build_faces(n_nodes, host_elements);
 
     // Building boundaries
     std::vector<size_t> wall_boundaries;
@@ -448,6 +448,9 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     symmetry_boundaries_numBlocks_ = (symmetry_boundaries_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
 
     allocate_element_storage<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(elements_.size(), elements_.data());
+
+    SEM::Entities::device_vector<std::array<size_t, 4>> device_element_to_face(element_to_face);
+    fill_element_faces<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(elements_.size(), elements_.data(), device_element_to_face.data());
 }
 
 auto SEM::Meshes::Mesh2D_t::build_node_to_element(size_t n_nodes, const std::vector<SEM::Entities::Element2D_t>& elements) -> std::vector<std::vector<size_t>> {
@@ -506,7 +509,7 @@ auto SEM::Meshes::Mesh2D_t::build_element_to_element(const std::vector<SEM::Enti
     return element_to_element;
 }
 
-auto SEM::Meshes::Mesh2D_t::build_faces(size_t n_nodes, std::vector<SEM::Entities::Element2D_t>& elements) -> std::pair<std::vector<SEM::Entities::Face2D_t>, std::vector<std::vector<size_t>>> {
+auto SEM::Meshes::Mesh2D_t::build_faces(size_t n_nodes, const std::vector<SEM::Entities::Element2D_t>& elements) -> std::tuple<std::vector<SEM::Entities::Face2D_t>, std::vector<std::vector<size_t>>, std::vector<std::array<size_t, 4>>> {
     size_t total_edges = 0;
     for (const auto& element: elements) {
         total_edges += element.nodes_.size();
@@ -516,6 +519,7 @@ auto SEM::Meshes::Mesh2D_t::build_faces(size_t n_nodes, std::vector<SEM::Entitie
     faces.reserve(total_edges/2); // This is not exact
 
     std::vector<std::vector<size_t>> node_to_face(n_nodes);
+    std::vector<std::array<size_t, 4>> element_to_face(elements.size());
 
     for (size_t i = 0; i < elements.size(); ++i) {
         for (size_t j = 0; j < elements[i].nodes_.size(); ++j) {
@@ -535,13 +539,13 @@ auto SEM::Meshes::Mesh2D_t::build_faces(size_t n_nodes, std::vector<SEM::Entitie
                 if (((faces[face_index].nodes_[0] == nodes[0]) && (faces[face_index].nodes_[1] == nodes[1])) || ((faces[face_index].nodes_[0] == nodes[1]) && (faces[face_index].nodes_[1] == nodes[0]))) {
                     found = true;
                     faces[face_index].elements_[1] = i;
-                    elements[i].faces_[j] = face_index;
+                    element_to_face[i][j] = face_index;
                     break;
                 }
             }
 
             if (!found) {
-                elements[i].faces_[j] = faces.size();
+                element_to_face[i][j] = faces.size();
                 node_to_face[nodes[0]].push_back(faces.size());
                 if (nodes[1] != nodes[0]) {
                     node_to_face[nodes[1]].push_back(faces.size());
@@ -551,7 +555,7 @@ auto SEM::Meshes::Mesh2D_t::build_faces(size_t n_nodes, std::vector<SEM::Entitie
         }
     }
 
-    return std::make_pair(faces, node_to_face);
+    return std::make_tuple(faces, node_to_face, element_to_face);
 }
 
 auto SEM::Meshes::Mesh2D_t::initial_conditions(const deviceFloat* nodes) -> void {
@@ -602,15 +606,6 @@ auto SEM::Meshes::Mesh2D_t::print() -> void {
         std::cout << '\t' << '\t' << "face " << i << " : ";
         for (auto node_index : host_faces[i].nodes_) {
             std::cout << node_index << " ";
-        }
-        std::cout << std::endl;
-    }
-
-    std::cout << std::endl << '\t' <<  "Element faces:" << std::endl;
-    for (size_t i = 0; i < host_elements.size(); ++i) {
-        std::cout << '\t' << '\t' << "element " << i << " : ";
-        for (auto face_index : host_elements[i].faces_) {
-            std::cout << face_index << " ";
         }
         std::cout << std::endl;
     }
@@ -808,6 +803,10 @@ auto SEM::Meshes::allocate_element_storage(size_t n_elements, SEM::Entities::Ele
 
     for (size_t i = index; i < n_elements; i += stride) {
         const int N = elements[i].N_;
+        elements[i].faces_ = {SEM::Entities::cuda_vector<size_t>(1),
+                              SEM::Entities::cuda_vector<size_t>(1),
+                              SEM::Entities::cuda_vector<size_t>(1),
+                              SEM::Entities::cuda_vector<size_t>(1)};
         elements[i].p_ = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
         elements[i].u_ = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
         elements[i].v_ = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
@@ -826,6 +825,18 @@ auto SEM::Meshes::allocate_element_storage(size_t n_elements, SEM::Entities::Ele
                                        SEM::Entities::cuda_vector<deviceFloat>(N + 1),
                                        SEM::Entities::cuda_vector<deviceFloat>(N + 1),
                                        SEM::Entities::cuda_vector<deviceFloat>(N + 1)};
+    }
+}
+
+__global__
+auto SEM::Meshes::fill_element_faces(size_t n_elements, SEM::Entities::Element2D_t* elements, std::array<size_t, 4>* element_to_face) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t i = index; i < n_elements; i += stride) {
+        for (size_t j = 0; j < elements[i].faces_.size(); ++j) {
+            elements[i].faces_[j][0] = element_to_face[i][j];
+        }
     }
 }
 

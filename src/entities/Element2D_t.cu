@@ -7,7 +7,7 @@
 constexpr deviceFloat pi = 3.14159265358979323846;
 
 __device__ 
-SEM::Entities::Element2D_t::Element2D_t(int N, std::array<size_t, 4> faces, std::array<size_t, 4> nodes) : 
+SEM::Entities::Element2D_t::Element2D_t(int N, std::array<SEM::Entities::cuda_vector<size_t>, 4> faces, std::array<size_t, 4> nodes) : 
         N_(N),
         faces_{faces},
         nodes_{nodes},
@@ -29,7 +29,7 @@ SEM::Entities::Element2D_t::Element2D_t(int N, std::array<size_t, 4> faces, std:
 __host__ __device__
 SEM::Entities::Element2D_t::Element2D_t() :
         N_(0),
-        faces_{0, 0, 0, 0},
+        faces_{},
         nodes_{0, 0, 0, 0},
         delta_xy_min_{0.0},
         p_extrapolated_{},
