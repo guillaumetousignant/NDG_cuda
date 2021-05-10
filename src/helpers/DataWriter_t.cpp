@@ -92,6 +92,40 @@ auto SEM::Helpers::DataWriter_t::write_data(size_t N_interpolation_points,
 
     grid->GetPointData()->AddArray(velocity);
 
+    // Add N to each point
+    vtkNew<vtkDoubleArray> N_output;
+    N_output->SetNumberOfComponents(1);
+    N_output->Allocate(N_elements * N_interpolation_points * N_interpolation_points);
+    N_output->SetName("N");
+
+    for (size_t element_index = 0; element_index < N_elements; ++element_index) {
+        const size_t offset = element_index * N_interpolation_points * N_interpolation_points;
+        for (size_t i = 0; i < N_interpolation_points; ++i) {
+            for (size_t j = 0; j < N_interpolation_points; ++j) {
+                N_output->InsertNextValue(N[element_index]);
+            }
+        }
+    }
+
+    grid->GetPointData()->AddArray(N_output);
+
+    // Add index to each point
+    vtkNew<vtkDoubleArray> index;
+    index->SetNumberOfComponents(1);
+    index->Allocate(N_elements * N_interpolation_points * N_interpolation_points);
+    index->SetName("index");
+
+    for (size_t element_index = 0; element_index < N_elements; ++element_index) {
+        const size_t offset = element_index * N_interpolation_points * N_interpolation_points;
+        for (size_t i = 0; i < N_interpolation_points; ++i) {
+            for (size_t j = 0; j < N_interpolation_points; ++j) {
+                index->InsertNextValue(element_index);
+            }
+        }
+    }
+
+    grid->GetPointData()->AddArray(index);
+
     std::stringstream ss;
     ss << "_t" << std::setprecision(9) << std::fixed << time << "s";
     std::string time_string = ss.str();
