@@ -561,7 +561,11 @@ auto SEM::Meshes::Mesh2D_t::build_faces(size_t n_nodes, const std::vector<Elemen
         }
     }
 
-    return std::make_tuple(faces, node_to_face, element_to_face);
+    // Faces have to be moved, or else this copies the vector, and the device (???) vector copy for face vectors is used, which bad allocs for some reason.
+    // 1) Why doesn't this move the vector, as it would be if it was plain returned?
+    // 2) Why is the device copy used, it shouldn't be able to be called from that's like the whole point.
+    // 3) Why does it bad alloc, the copied face should have its size default-constructed to 0.
+    return {std::move(faces), std::move(node_to_face), std::move(element_to_face)};
 }
 
 auto SEM::Meshes::Mesh2D_t::initial_conditions(const deviceFloat* nodes) -> void {
