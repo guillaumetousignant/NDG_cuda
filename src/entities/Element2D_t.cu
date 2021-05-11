@@ -4,10 +4,12 @@
 #include "functions/quad_map.cuh"
 #include <cmath>
 
+using SEM::Entities::cuda_vector;
+
 constexpr deviceFloat pi = 3.14159265358979323846;
 
 __device__ 
-SEM::Entities::Element2D_t::Element2D_t(int N, std::array<SEM::Entities::cuda_vector<size_t>, 4> faces, std::array<size_t, 4> nodes) : 
+SEM::Entities::Element2D_t::Element2D_t(int N, std::array<cuda_vector<size_t>, 4> faces, std::array<size_t, 4> nodes) : 
         N_(N),
         faces_{faces},
         nodes_{nodes},
@@ -32,9 +34,6 @@ SEM::Entities::Element2D_t::Element2D_t() :
         faces_{},
         nodes_{0, 0, 0, 0},
         delta_xy_min_{0.0},
-        p_extrapolated_{},
-        u_extrapolated_{},
-        v_extrapolated_{},
         sigma_(0.0),
         refine_(false),
         coarsen_(false),
@@ -95,4 +94,33 @@ auto SEM::Entities::Element2D_t::interpolate_solution(size_t N_interpolation_poi
             }
         }
     }
+}
+
+__device__
+auto SEM::Entities::Element2D_t::allocate_storage() -> void {
+    faces_ = {cuda_vector<size_t>(1),
+              cuda_vector<size_t>(1),
+              cuda_vector<size_t>(1),
+              cuda_vector<size_t>(1)};
+
+    p_ = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
+    u_ = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
+    v_ = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
+
+    G_p_ = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
+    G_u_ = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
+    G_v_ = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
+
+    p_extrapolated_ = {cuda_vector<deviceFloat>(N_ + 1),
+                       cuda_vector<deviceFloat>(N_ + 1),
+                       cuda_vector<deviceFloat>(N_ + 1),
+                       cuda_vector<deviceFloat>(N_ + 1)};
+    u_extrapolated_ = {cuda_vector<deviceFloat>(N_ + 1),
+                       cuda_vector<deviceFloat>(N_ + 1),
+                       cuda_vector<deviceFloat>(N_ + 1),
+                       cuda_vector<deviceFloat>(N_ + 1)};
+    v_extrapolated_ = {cuda_vector<deviceFloat>(N_ + 1),
+                       cuda_vector<deviceFloat>(N_ + 1),
+                       cuda_vector<deviceFloat>(N_ + 1),
+                       cuda_vector<deviceFloat>(N_ + 1)};
 }

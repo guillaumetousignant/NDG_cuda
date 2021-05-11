@@ -96,7 +96,10 @@ namespace SEM { namespace Meshes {
     auto allocate_element_storage(size_t n_elements, SEM::Entities::Element2D_t* elements) -> void;
 
     __global__
-    auto fill_element_faces(size_t n_elements, SEM::Entities::Element2D_t* elements, std::array<size_t, 4>* element_to_face) -> void;
+    auto allocate_face_storage(size_t n_faces, SEM::Entities::Face2D_t* faces) -> void;
+
+    __global__
+    auto fill_element_faces(size_t n_elements, SEM::Entities::Element2D_t* elements, const std::array<size_t, 4>* element_to_face) -> void;
 
     __global__
     auto initial_conditions_2D(size_t n_elements, SEM::Entities::Element2D_t* elements, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* NDG_nodes) -> void;
