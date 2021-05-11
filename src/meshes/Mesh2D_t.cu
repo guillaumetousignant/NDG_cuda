@@ -927,3 +927,13 @@ void SEM::Meshes::estimate_error<Polynomial>(size_t N_elements, Element2D_t* ele
         elements[i].estimate_error<Polynomial>(polynomial_nodes, weights);
     }
 }
+
+__global__
+void SEM::Meshes::interpolate_to_boundaries(size_t N_elements, Element2D_t* elements, const deviceFloat* lagrange_interpolant_minus, const deviceFloat* lagrange_interpolant_plus) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t i = index; i < N_elements; i += stride) {
+        elements[i].interpolate_to_boundaries(lagrange_interpolant_minus, lagrange_interpolant_plus);
+    }
+}
