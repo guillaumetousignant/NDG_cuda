@@ -450,6 +450,9 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     wall_boundaries_numBlocks_ = (wall_boundaries_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
     symmetry_boundaries_numBlocks_ = (symmetry_boundaries_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
 
+    host_delta_t_array_ = std::vector<deviceFloat>(elements_numBlocks_);
+    device_delta_t_array_ = device_vector<deviceFloat>(elements_numBlocks_);
+
     allocate_element_storage<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(elements_.size(), elements_.data());
     allocate_face_storage<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces_.size(), faces_.data());
 
@@ -810,7 +813,18 @@ auto SEM::Meshes::Mesh2D_t::g(Vec2<deviceFloat> xy) -> std::array<deviceFloat, 3
 }
 
 auto SEM::Meshes::Mesh2D_t::get_delta_t(const deviceFloat CFL) -> deviceFloat {   
-    return 0.1;
+    SEM::Meshes::reduce_wave_delta_t<elements_blockSize_/2><<<elements_numBlocks_, elements_blockSize_/2, 0, stream_>>>(CFL, N_elements_, elements_.data(), device_delta_t_array_.data());
+    device_delta_t_array_.copy_to(host_delta_t_array_);
+
+    deviceFloat delta_t_min_local = std::numeric_limits<deviceFloat>::infinity();
+    for (int i = 0; i < elements_numBlocks_; ++i) {
+        delta_t_min_local = min(delta_t_min_local, host_delta_t_array_[i]);
+    }
+
+    deviceFloat delta_t_min;
+    constexpr MPI_Datatype data_type = (sizeof(deviceFloat) == sizeof(float)) ? MPI_FLOAT : MPI_DOUBLE;
+    MPI_Allreduce(&delta_t_min_local, &delta_t_min, 1, data_type, MPI_MIN, MPI_COMM_WORLD);
+    return delta_t_min;
 }
 
 auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights) -> void {
