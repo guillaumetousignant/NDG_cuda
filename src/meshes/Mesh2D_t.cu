@@ -713,21 +713,21 @@ auto SEM::Meshes::Mesh2D_t::solve(const deviceFloat CFL, const std::vector<devic
         deviceFloat t = time;
         SEM::Meshes::interpolate_to_boundaries<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
         //boundary_conditions();
-        //SEM::Meshes::calculate_fluxes<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(N_faces_, faces_, elements_);
+        //SEM::Meshes::calculate_wave_fluxes<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(N_faces_, faces_.data(), elements_.data());
         //SEM::Meshes::compute_dg_derivative<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, faces_, NDG.weights_.data(), NDG.derivative_matrices_hat_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
         //SEM::Meshes::rk3_first_step<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, delta_t, 1.0/3.0);
 
         t = time + 0.33333333333f * delta_t;
         SEM::Meshes::interpolate_to_boundaries<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
         //boundary_conditions();
-        //SEM::Meshes::calculate_fluxes<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(N_faces_, faces_, elements_);
+        //SEM::Meshes::calculate_wave_fluxes<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(N_faces_, faces_.data(), elements_.data());
         //SEM::Meshes::compute_dg_derivative<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, faces_, NDG.weights_.data(), NDG.derivative_matrices_hat_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
         //SEM::Meshes::rk3_step<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, delta_t, -5.0/9.0, 15.0/16.0);
 
         t = time + 0.75f * delta_t;
         SEM::Meshes::interpolate_to_boundaries<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
         //boundary_conditions();
-        //SEM::Meshes::calculate_fluxes<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(N_faces_, faces_, elements_);
+        //SEM::Meshes::calculate_wave_fluxes<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(N_faces_, faces_.data(), elements_.data());
         //SEM::Meshes::compute_dg_derivative<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, faces_, NDG.weights_.data(), NDG.derivative_matrices_hat_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
         //SEM::Meshes::rk3_step<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, delta_t, -153.0/128.0, 8.0/15.0);
         
@@ -923,5 +923,40 @@ void SEM::Meshes::interpolate_to_boundaries(size_t N_elements, Element2D_t* elem
 
     for (size_t i = index; i < N_elements; i += stride) {
         elements[i].interpolate_to_boundaries(lagrange_interpolant_minus, lagrange_interpolant_plus);
+    }
+}
+
+__global__
+void SEM::Meshes::calculate_wave_fluxes(size_t N_faces, Face2D_t* faces, const SEM::Entities::Element2D_t* elements) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t i = index; i < N_faces; i += stride) {
+        /*deviceFloat u;
+        const deviceFloat u_left = elements[faces[i].elements_[0]].phi_R_;
+        const deviceFloat u_right = elements[faces[i].elements_[1]].phi_L_;
+
+        if (u_left < 0.0f && u_right > 0.0f) { // In expansion fan
+            u = 0.5f * (u_left + u_right);
+        }
+        else if (u_left >= u_right) { // Shock
+            if (u_left > 0.0f) {
+                u = u_left;
+            }
+            else {
+                u = u_right;
+            }
+        }
+        else { // Expansion fan
+            if (u_left > 0.0f) {
+                u = u_left;
+            }
+            else  {
+                u = u_right;
+            }
+        }
+    
+        faces[i].flux_ = u_right;
+        faces[i].nl_flux_ = 0.5f * u * u;*/
     }
 }
