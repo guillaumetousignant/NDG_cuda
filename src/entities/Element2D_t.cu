@@ -42,13 +42,38 @@ SEM::Entities::Element2D_t::Element2D_t() :
 // Algorithm 61
 __device__
 auto SEM::Entities::Element2D_t::interpolate_to_boundaries(const deviceFloat* lagrange_interpolant_minus, const deviceFloat* lagrange_interpolant_plus) -> void {
-    
+    const int offset_1D = N_ * (N_ + 1) /2;
+
+    for (int i = 0; i <= N_; ++i) {
+        for (size_t k = 0; k < p_extrapolated_.size(); ++k) {
+            p_extrapolated_[k][i] = 0.0;
+            u_extrapolated_[k][i] = 0.0;
+            v_extrapolated_[k][i] = 0.0;
+        }
+        
+        for (int j = 0; j <= N_; ++j) {
+            p_extrapolated_[0][i] += lagrange_interpolant_minus[offset_1D + j] * p_[i * (N_ + 1) + j];
+            p_extrapolated_[2][i] += lagrange_interpolant_plus[offset_1D + j] * p_[i * (N_ + 1) + j];
+            p_extrapolated_[1][i] += lagrange_interpolant_plus[offset_1D + j] * p_[j * (N_ + 1) + i];
+            p_extrapolated_[3][i] += lagrange_interpolant_minus[offset_1D + j] * p_[j * (N_ + 1) + i];
+
+            u_extrapolated_[0][i] += lagrange_interpolant_minus[offset_1D + j] * u_[i * (N_ + 1) + j];
+            u_extrapolated_[2][i] += lagrange_interpolant_plus[offset_1D + j] * u_[i * (N_ + 1) + j];
+            u_extrapolated_[1][i] += lagrange_interpolant_plus[offset_1D + j] * u_[j * (N_ + 1) + i];
+            u_extrapolated_[3][i] += lagrange_interpolant_minus[offset_1D + j] * u_[j * (N_ + 1) + i];
+
+            v_extrapolated_[0][i] += lagrange_interpolant_minus[offset_1D + j] * v_[i * (N_ + 1) + j];
+            v_extrapolated_[2][i] += lagrange_interpolant_plus[offset_1D + j] * v_[i * (N_ + 1) + j];
+            v_extrapolated_[1][i] += lagrange_interpolant_plus[offset_1D + j] * v_[j * (N_ + 1) + i];
+            v_extrapolated_[3][i] += lagrange_interpolant_minus[offset_1D + j] * v_[j * (N_ + 1) + i];
+        }
+    }
 }
 
 // Algorithm 61
 __device__
 auto SEM::Entities::Element2D_t::interpolate_q_to_boundaries(const deviceFloat* lagrange_interpolant_minus, const deviceFloat* lagrange_interpolant_plus) -> void {
-    
+    printf("Warning, SEM::Entities::Element2D_t::interpolate_q_to_boundaries is not implemented.\n");
 }
 
 template __device__ auto SEM::Entities::Element2D_t::estimate_error<SEM::Polynomials::ChebyshevPolynomial_t>(const deviceFloat* nodes, const deviceFloat* weights) -> void;
@@ -57,17 +82,18 @@ template __device__ auto SEM::Entities::Element2D_t::estimate_error<SEM::Polynom
 template<typename Polynomial>
 __device__
 auto SEM::Entities::Element2D_t::estimate_error<Polynomial>(const deviceFloat* polynomial_nodes, const deviceFloat* weights) -> void {
-    
+    printf("Warning, SEM::Entities::Element2D_t::estimate_error is not implemented.\n");
 }
 
 __device__
 auto SEM::Entities::Element2D_t::exponential_decay() -> deviceFloat {
+    printf("Warning, SEM::Entities::Element2D_t::exponential_decay is not implemented.\n");
     return 0.0;
 }
 
 __device__
 auto SEM::Entities::Element2D_t::interpolate_from(const SEM::Entities::Element2D_t& other, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void {
-
+    printf("Warning, SEM::Entities::Element2D_t::interpolate_from is not implemented.\n");
 }
 
 __device__
