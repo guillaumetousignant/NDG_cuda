@@ -56,7 +56,7 @@ template __device__ auto SEM::Entities::Element2D_t::estimate_error<SEM::Polynom
 
 template<typename Polynomial>
 __device__
-auto SEM::Entities::Element2D_t::estimate_error<Polynomial>(const deviceFloat* nodes, const deviceFloat* weights) -> void {
+auto SEM::Entities::Element2D_t::estimate_error<Polynomial>(const deviceFloat* polynomial_nodes, const deviceFloat* weights) -> void {
     
 }
 
@@ -66,7 +66,7 @@ auto SEM::Entities::Element2D_t::exponential_decay() -> deviceFloat {
 }
 
 __device__
-auto SEM::Entities::Element2D_t::interpolate_from(const SEM::Entities::Element2D_t& other, const deviceFloat* nodes, const deviceFloat* barycentric_weights) -> void {
+auto SEM::Entities::Element2D_t::interpolate_from(const SEM::Entities::Element2D_t& other, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void {
 
 }
 

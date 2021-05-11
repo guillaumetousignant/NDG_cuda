@@ -44,10 +44,10 @@ namespace SEM { namespace Entities {
 
             template<typename Polynomial>
             __device__
-            auto estimate_error(const deviceFloat* nodes, const deviceFloat* weights) -> void;
+            auto estimate_error(const deviceFloat* polynomial_nodes, const deviceFloat* weights) -> void;
 
             __device__
-            auto interpolate_from(const Element2D_t& other, const deviceFloat* nodes, const deviceFloat* barycentric_weights) -> void;
+            auto interpolate_from(const Element2D_t& other, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void;
 
             __device__
             auto interpolate_solution(size_t N_interpolation_points, const std::array<Vec2<deviceFloat>, 4>& points, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v) -> void;

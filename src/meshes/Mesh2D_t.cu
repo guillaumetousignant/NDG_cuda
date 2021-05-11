@@ -571,8 +571,8 @@ auto SEM::Meshes::Mesh2D_t::build_faces(size_t n_nodes, const std::vector<Elemen
     return {std::move(faces), std::move(node_to_face), std::move(element_to_face)};
 }
 
-auto SEM::Meshes::Mesh2D_t::initial_conditions(const deviceFloat* nodes) -> void {
-    initial_conditions_2D<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data(), nodes_.data(), nodes);
+auto SEM::Meshes::Mesh2D_t::initial_conditions(const deviceFloat* polynomial_nodes) -> void {
+    initial_conditions_2D<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data(), nodes_.data(), polynomial_nodes);
 }
 
 auto SEM::Meshes::Mesh2D_t::print() -> void {
@@ -702,7 +702,7 @@ auto SEM::Meshes::Mesh2D_t::solve(const deviceFloat CFL, const std::vector<devic
         bar.update(0.0);
     }
     
-    /*while (time < t_end) {
+    while (time < t_end) {
         ++timestep;
         delta_t = get_delta_t(CFL);
         if (time + delta_t > t_end) {
@@ -710,7 +710,7 @@ auto SEM::Meshes::Mesh2D_t::solve(const deviceFloat CFL, const std::vector<devic
         }
 
         // Kinda algorithm 62
-        deviceFloat t = time;
+        /*deviceFloat t = time;
         SEM::Entities::interpolate_to_boundaries<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
         boundary_conditions();
         SEM::Meshes::calculate_fluxes<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(N_faces_, faces_, elements_);
@@ -742,11 +742,11 @@ auto SEM::Meshes::Mesh2D_t::solve(const deviceFloat CFL, const std::vector<devic
         SEM::Meshes::calculate_q_fluxes<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(N_faces_, faces_, elements_);
         SEM::Meshes::compute_dg_derivative2<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(viscosity, N_elements_, elements_, faces_, NDG.weights_.data(), NDG.derivative_matrices_hat_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
         SEM::Meshes::rk3_step<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, delta_t, -153.0/128.0, 8.0/15.0);
-
+        */
         time += delta_t;
         for (auto const& e : std::as_const(output_times)) {
             if ((time >= e) && (time < e + delta_t)) {
-                SEM::Entities::estimate_error<Polynomial><<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, NDG.nodes_.data(), NDG.weights_.data());
+                SEM::Meshes::estimate_error<Polynomial><<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data(), NDG.nodes_.data(), NDG.weights_.data());
                 if (global_rank == 0) {
                     bar.set_status_text("Writing solution");
                     bar.update(time/t_end);
@@ -763,10 +763,10 @@ auto SEM::Meshes::Mesh2D_t::solve(const deviceFloat CFL, const std::vector<devic
         }
 
         if (timestep % adaptivity_interval_ == 0) {
-            SEM::Entities::estimate_error<Polynomial><<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, NDG.nodes_.data(), NDG.weights_.data());
+            SEM::Meshes::estimate_error<Polynomial><<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data(), NDG.nodes_.data(), NDG.weights_.data());
             adapt(NDG.N_max_, NDG.nodes_.data(), NDG.barycentric_weights_.data());
         }
-    }*/
+    }
 
     bool did_write = false;
     for (auto const& e : std::as_const(output_times)) {
@@ -777,7 +777,7 @@ auto SEM::Meshes::Mesh2D_t::solve(const deviceFloat CFL, const std::vector<devic
     }
 
     if (!did_write) {
-        //SEM::Entities::estimate_error<Polynomial><<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, NDG.nodes_.data(), NDG.weights_.data());
+        SEM::Meshes::estimate_error<Polynomial><<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data(), NDG.nodes_.data(), NDG.weights_.data());
         if (global_rank == 0) {
             bar.set_status_text("Writing solution");
             bar.update(1.0);
@@ -868,7 +868,7 @@ auto SEM::Meshes::fill_element_faces(size_t n_elements, Element2D_t* elements, c
 }
 
 __global__
-auto SEM::Meshes::initial_conditions_2D(size_t n_elements, Element2D_t* elements, const Vec2<deviceFloat>* nodes, const deviceFloat* NDG_nodes) -> void {
+auto SEM::Meshes::initial_conditions_2D(size_t n_elements, Element2D_t* elements, const Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -878,7 +878,7 @@ auto SEM::Meshes::initial_conditions_2D(size_t n_elements, Element2D_t* elements
         
         for (int i = 0; i <= element.N_; ++i) {
             for (int j = 0; j <= element.N_; ++j) {
-                const Vec2<deviceFloat> coordinates {NDG_nodes[offset_1D + i], NDG_nodes[offset_1D + j]};
+                const Vec2<deviceFloat> coordinates {polynomial_nodes[offset_1D + i], polynomial_nodes[offset_1D + j]};
                 const std::array<Vec2<deviceFloat>, 4> points {nodes[element.nodes_[0]],
                                                                nodes[element.nodes_[1]],
                                                                nodes[element.nodes_[2]],
@@ -911,5 +911,19 @@ auto SEM::Meshes::get_solution(size_t N_elements, size_t N_interpolation_points,
                                                        nodes[element.nodes_[3]]};
 
         element.interpolate_solution(N_interpolation_points, points, interpolation_matrices + offset_interp, x + offset_interp_2D, y + offset_interp_2D, p + offset_interp_2D, u + offset_interp_2D, v + offset_interp_2D);
+    }
+}
+
+template __global__ void SEM::Meshes::estimate_error<SEM::Polynomials::ChebyshevPolynomial_t>(size_t N_elements, Element2D_t* elements, const deviceFloat* polynomial_nodes, const deviceFloat* weights);
+template __global__ void SEM::Meshes::estimate_error<SEM::Polynomials::LegendrePolynomial_t>(size_t N_elements, Element2D_t* elements, const deviceFloat* polynomial_nodes, const deviceFloat* weights);
+
+template<typename Polynomial>
+__global__
+void SEM::Meshes::estimate_error<Polynomial>(size_t N_elements, Element2D_t* elements, const deviceFloat* polynomial_nodes, const deviceFloat* weights) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t i = index; i < N_elements; i += stride) {
+        elements[i].estimate_error<Polynomial>(polynomial_nodes, weights);
     }
 }

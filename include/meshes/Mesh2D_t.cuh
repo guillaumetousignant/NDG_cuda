@@ -51,7 +51,7 @@ namespace SEM { namespace Meshes {
 
             auto read_su2(std::filesystem::path filename) -> void;
             auto read_cgns(std::filesystem::path filename) -> void;
-            auto initial_conditions(const deviceFloat* nodes) -> void;
+            auto initial_conditions(const deviceFloat* polynomial_nodes) -> void;
             auto boundary_conditions() -> void;
             auto print() -> void;
             auto write_data(deviceFloat time, size_t N_interpolation_points, const deviceFloat* interpolation_matrices, const SEM::Helpers::DataWriter_t& data_writer) -> void;
@@ -102,10 +102,14 @@ namespace SEM { namespace Meshes {
     auto fill_element_faces(size_t n_elements, SEM::Entities::Element2D_t* elements, const std::array<size_t, 4>* element_to_face) -> void;
 
     __global__
-    auto initial_conditions_2D(size_t n_elements, SEM::Entities::Element2D_t* elements, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* NDG_nodes) -> void;
+    auto initial_conditions_2D(size_t n_elements, SEM::Entities::Element2D_t* elements, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes) -> void;
 
     __global__
     auto get_solution(size_t N_elements, size_t N_interpolation_points, SEM::Entities::Element2D_t* elements, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v, int* N) -> void;
+
+    template<typename Polynomial>
+    __global__
+    void estimate_error(size_t N_elements, SEM::Entities::Element2D_t* elements, const deviceFloat* polynomial_nodes, const deviceFloat* weights);
 
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>
