@@ -1,4 +1,5 @@
 #include <stdexcept>
+#include <thrust/swap.h>
 
 template <typename T>
 template<typename TI>
@@ -83,7 +84,12 @@ template <typename T>
 __host__ __device__
 auto SEM::Entities::device_vector<T>::operator=(device_vector<T>&& other) noexcept -> device_vector& { // move assignment
     size_ = other.size();
+    
+    #ifdef  __CUDA_ARCH__
+    thrust::swap(data_, other.data_);
+    #else
     std::swap(data_, other.data_);
+    #endif
 
     return *this;
 }
