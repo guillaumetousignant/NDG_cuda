@@ -734,7 +734,7 @@ auto SEM::Meshes::Mesh2D_t::solve(const deviceFloat CFL, const std::vector<devic
         time += delta_t;
         for (auto const& e : std::as_const(output_times)) {
             if ((time >= e) && (time < e + delta_t)) {
-                SEM::Meshes::estimate_error<Polynomial><<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data(), NDG.nodes_.data(), NDG.weights_.data());
+                //SEM::Meshes::estimate_error<Polynomial><<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data(), NDG.nodes_.data(), NDG.weights_.data());
                 if (global_rank == 0) {
                     bar.set_status_text("Writing solution");
                     bar.update(time/t_end);
@@ -751,7 +751,7 @@ auto SEM::Meshes::Mesh2D_t::solve(const deviceFloat CFL, const std::vector<devic
         }
 
         if (timestep % adaptivity_interval_ == 0) {
-            SEM::Meshes::estimate_error<Polynomial><<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data(), NDG.nodes_.data(), NDG.weights_.data());
+            //SEM::Meshes::estimate_error<Polynomial><<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data(), NDG.nodes_.data(), NDG.weights_.data());
             adapt(NDG.N_max_, NDG.nodes_.data(), NDG.barycentric_weights_.data());
         }
     }
@@ -765,7 +765,7 @@ auto SEM::Meshes::Mesh2D_t::solve(const deviceFloat CFL, const std::vector<devic
     }
 
     if (!did_write) {
-        SEM::Meshes::estimate_error<Polynomial><<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data(), NDG.nodes_.data(), NDG.weights_.data());
+        //SEM::Meshes::estimate_error<Polynomial><<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data(), NDG.nodes_.data(), NDG.weights_.data());
         if (global_rank == 0) {
             bar.set_status_text("Writing solution");
             bar.update(1.0);
