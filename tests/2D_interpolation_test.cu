@@ -13,7 +13,7 @@
 
 using SEM::Entities::Vec2;
 
-__device__ constexpr std::array<Vec2<deviceFloat>, 4> points {Vec2<deviceFloat>{1, -1},
+__device__ const std::array<Vec2<deviceFloat>, 4> points {Vec2<deviceFloat>{1, -1},
                                                               Vec2<deviceFloat>{1, 1},
                                                               Vec2<deviceFloat>{-1, 1},
                                                               Vec2<deviceFloat>{-1, -1}};
