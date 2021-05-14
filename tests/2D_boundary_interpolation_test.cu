@@ -108,19 +108,23 @@ TEST_CASE("2D boundary interpolation test", "Checks the interpolated value of th
     }
 
     // Generating target values
+    std::vector<deviceFloat> polynomial_nodes_host(NDG.nodes_.size());
+    NDG.nodes_.copy_to(polynomial_nodes_host);
+    const size_t offset_1D = N_test * (N_test + 1) /2;
+
     std::array<std::vector<deviceFloat>, 4> p_target {std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1)};
     std::array<std::vector<deviceFloat>, 4> u_target {std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1)};
     std::array<std::vector<deviceFloat>, 4> v_target {std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1)};
     for (int i = 0; i <= N_test; ++i) {
-        const std::array<Vec2<deviceFloat>, 4> coordinates {Vec2<deviceFloat>{static_cast<deviceFloat>(i)/static_cast<deviceFloat>(N_interpolation_points - 1) * 2 - 1, -1},
-                                                            Vec2<deviceFloat>{1, static_cast<deviceFloat>(i)/static_cast<deviceFloat>(N_interpolation_points - 1) * 2 - 1},
-                                                            Vec2<deviceFloat>{static_cast<deviceFloat>(i)/static_cast<deviceFloat>(N_interpolation_points - 1) * 2 - 1, 1},
-                                                            Vec2<deviceFloat>{-1, static_cast<deviceFloat>(i)/static_cast<deviceFloat>(N_interpolation_points - 1) * 2 - 1}};
+        const std::array<Vec2<deviceFloat>, 4> coordinates {Vec2<deviceFloat>{polynomial_nodes_host[offset_1D + i], -1},
+                                                            Vec2<deviceFloat>{1, polynomial_nodes_host[offset_1D + i]},
+                                                            Vec2<deviceFloat>{polynomial_nodes_host[offset_1D + i], 1},
+                                                            Vec2<deviceFloat>{-1, polynomial_nodes_host[offset_1D + i]}};
         const std::array<Vec2<deviceFloat>, 4> global_coordinates {SEM::quad_map(coordinates[0], points),
                                                                    SEM::quad_map(coordinates[1], points),
                                                                    SEM::quad_map(coordinates[2], points),
                                                                    SEM::quad_map(coordinates[3], points)};
-            
+                                                                
         for (size_t k = 0; k < coordinates.size(); ++k) {
             p_target[k][i] = std::sin(global_coordinates[k][0]) * std::cos(global_coordinates[k][1]);
             u_target[k][i] = global_coordinates[k][0];
@@ -130,7 +134,7 @@ TEST_CASE("2D boundary interpolation test", "Checks the interpolated value of th
 
     // Verifying values
     for (int i = 0; i <= N_test; ++i) {
-        for (size_t k = 0; k < p_target[k].size(); ++k) {
+        for (size_t k = 0; k < p_target.size(); ++k) {
             REQUIRE(std::abs(p_target[k][i] - p_host[k][i]) < max_error);
             REQUIRE(std::abs(u_target[k][i] - u_host[k][i]) < max_error);
             REQUIRE(std::abs(v_target[k][i] - v_host[k][i]) < max_error);
