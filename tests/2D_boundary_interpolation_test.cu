@@ -14,6 +14,7 @@
 
 using SEM::Entities::Vec2;
 using SEM::Entities::device_vector;
+using SEM::Entities::cuda_vector;
 
 __device__ const std::array<Vec2<deviceFloat>, 4> points {Vec2<deviceFloat>{1, -1},
                                                               Vec2<deviceFloat>{1, 1},
@@ -30,9 +31,12 @@ auto elements_init(size_t n_elements, SEM::Entities::Element2D_t* elements, cons
         const size_t offset_1D = element.N_ * (element.N_ + 1) /2;
 
         const int N = element.N_;
-        element.p_ = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
-        element.u_ = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
-        element.v_ = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
+        element.p_ = cuda_vector<deviceFloat>((N + 1) * (N + 1));
+        element.u_ = cuda_vector<deviceFloat>((N + 1) * (N + 1));
+        element.v_ = cuda_vector<deviceFloat>((N + 1) * (N + 1));
+        element.p_extrapolated_ = {cuda_vector<deviceFloat>(N + 1), cuda_vector<deviceFloat>(N + 1), cuda_vector<deviceFloat>(N + 1), cuda_vector<deviceFloat>(N + 1)};
+        element.u_extrapolated_ = {cuda_vector<deviceFloat>(N + 1), cuda_vector<deviceFloat>(N + 1), cuda_vector<deviceFloat>(N + 1), cuda_vector<deviceFloat>(N + 1)};
+        element.v_extrapolated_ = {cuda_vector<deviceFloat>(N + 1), cuda_vector<deviceFloat>(N + 1), cuda_vector<deviceFloat>(N + 1), cuda_vector<deviceFloat>(N + 1)};
 
         for (int i = 0; i <= element.N_; ++i) {
             for (int j = 0; j <= element.N_; ++j) {
@@ -86,16 +90,16 @@ TEST_CASE("2D boundary interpolation test", "Checks the interpolated value of th
 
     SEM::Meshes::interpolate_to_boundaries<<<1, 1, 0, stream>>>(1, device_elements.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
 
-    std::array<device_vector<deviceFloat>, 4> p {N_test, N_test, N_test, N_test};
-    std::array<device_vector<deviceFloat>, 4> u {N_test, N_test, N_test, N_test};
-    std::array<device_vector<deviceFloat>, 4> v {N_test, N_test, N_test, N_test};
+    std::array<device_vector<deviceFloat>, 4> p {N_test + 1, N_test + 1, N_test + 1, N_test + 1};
+    std::array<device_vector<deviceFloat>, 4> u {N_test + 1, N_test + 1, N_test + 1, N_test + 1};
+    std::array<device_vector<deviceFloat>, 4> v {N_test + 1, N_test + 1, N_test + 1, N_test + 1};
     get_boundary_solution<<<1, 1, 0, stream>>>(1, device_elements.data(), {p[0].data(), p[1].data(), p[2].data(), p[3].data()}, 
                                                                           {u[0].data(), u[1].data(), u[2].data(), u[3].data()}, 
                                                                           {v[0].data(), v[1].data(), v[2].data(), v[3].data()});
 
-    std::array<std::vector<deviceFloat>, 4> p_host {std::vector<deviceFloat>(N_test), std::vector<deviceFloat>(N_test), std::vector<deviceFloat>(N_test), std::vector<deviceFloat>(N_test)};
-    std::array<std::vector<deviceFloat>, 4> u_host {std::vector<deviceFloat>(N_test), std::vector<deviceFloat>(N_test), std::vector<deviceFloat>(N_test), std::vector<deviceFloat>(N_test)};
-    std::array<std::vector<deviceFloat>, 4> v_host {std::vector<deviceFloat>(N_test), std::vector<deviceFloat>(N_test), std::vector<deviceFloat>(N_test), std::vector<deviceFloat>(N_test)};
+    std::array<std::vector<deviceFloat>, 4> p_host {std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1)};
+    std::array<std::vector<deviceFloat>, 4> u_host {std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1)};
+    std::array<std::vector<deviceFloat>, 4> v_host {std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1)};
 
     for (size_t k = 0; k < p_host.size(); ++k) {
         p[k].copy_to(p_host[k]);
