@@ -334,7 +334,7 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     const std::vector<std::vector<size_t>> element_to_element = build_element_to_element(host_elements, node_to_element);
 
     // Computing faces and filling element faces
-    auto [host_faces, node_to_face, element_to_face] = build_faces(n_nodes, host_elements);
+    auto [host_faces, node_to_face, element_to_face] = build_faces(n_nodes, initial_N_, host_elements);
 
     // Building boundaries
     std::vector<size_t> wall_boundaries;
@@ -516,7 +516,7 @@ auto SEM::Meshes::Mesh2D_t::build_element_to_element(const std::vector<Element2D
     return element_to_element;
 }
 
-auto SEM::Meshes::Mesh2D_t::build_faces(size_t n_nodes, const std::vector<Element2D_t>& elements) -> std::tuple<std::vector<Face2D_t>, std::vector<std::vector<size_t>>, std::vector<std::array<size_t, 4>>> {
+auto SEM::Meshes::Mesh2D_t::build_faces(size_t n_nodes, int initial_N, const std::vector<Element2D_t>& elements) -> std::tuple<std::vector<Face2D_t>, std::vector<std::vector<size_t>>, std::vector<std::array<size_t, 4>>> {
     size_t total_edges = 0;
     for (const auto& element: elements) {
         total_edges += element.nodes_.size();
@@ -546,6 +546,7 @@ auto SEM::Meshes::Mesh2D_t::build_faces(size_t n_nodes, const std::vector<Elemen
                 if (((faces[face_index].nodes_[0] == nodes[0]) && (faces[face_index].nodes_[1] == nodes[1])) || ((faces[face_index].nodes_[0] == nodes[1]) && (faces[face_index].nodes_[1] == nodes[0]))) {
                     found = true;
                     faces[face_index].elements_[1] = i;
+                    faces[face_index].elements_side_[1] = j;
                     element_to_face[i][j] = face_index;
                     break;
                 }
@@ -558,8 +559,10 @@ auto SEM::Meshes::Mesh2D_t::build_faces(size_t n_nodes, const std::vector<Elemen
                     node_to_face[nodes[1]].push_back(faces.size());
                 }
                 faces.emplace_back();
+                faces.back().N_ = initial_N;
                 faces.back().nodes_ = {nodes[0], nodes[1]};
                 faces.back().elements_ = {i, static_cast<size_t>(-1)};
+                faces.back().elements_side_ = {j, static_cast<size_t>(-1)};
             }
         }
     }
@@ -628,6 +631,15 @@ auto SEM::Meshes::Mesh2D_t::print() -> void {
         std::cout << '\t' << '\t' << "face " << i << " : ";
         for (auto element_index : host_faces[i].elements_) {
             std::cout << element_index << " ";
+        }
+        std::cout << std::endl;
+    }
+
+    std::cout << std::endl << '\t' <<  "Face elements side:" << std::endl;
+    for (size_t i = 0; i < host_faces.size(); ++i) {
+        std::cout << '\t' << '\t' << "face " << i << " : ";
+        for (auto side_index : host_faces[i].elements_side_) {
+            std::cout << side_index << " ";
         }
         std::cout << std::endl;
     }
