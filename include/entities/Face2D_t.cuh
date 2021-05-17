@@ -9,7 +9,7 @@ namespace SEM { namespace Entities {
     class Face2D_t {
         public:
             __device__ 
-            Face2D_t(int N, std::array<size_t, 2> nodes, std::array<size_t, 2> elements);
+            Face2D_t(int N, std::array<size_t, 2> nodes, std::array<size_t, 2> elements, std::array<size_t, 2> elements_size);
 
             __host__ __device__
             Face2D_t();
@@ -17,6 +17,7 @@ namespace SEM { namespace Entities {
             int N_;
             std::array<size_t, 2> nodes_; // left, right
             std::array<size_t, 2> elements_; // left, right
+            std::array<size_t, 2> elements_side_; // left, right
             std::array<SEM::Entities::cuda_vector<deviceFloat>, 2> p_;
             std::array<SEM::Entities::cuda_vector<deviceFloat>, 2> u_;
             std::array<SEM::Entities::cuda_vector<deviceFloat>, 2> v_;
