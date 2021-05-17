@@ -939,11 +939,40 @@ void SEM::Meshes::interpolate_to_boundaries(size_t N_elements, Element2D_t* elem
 }
 
 __global__
-void SEM::Meshes::calculate_wave_fluxes(size_t N_faces, Face2D_t* faces, const SEM::Entities::Element2D_t* elements) {
+void SEM::Meshes::calculate_wave_fluxes(size_t N_faces, Face2D_t* faces, const Element2D_t* elements) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
     for (size_t i = index; i < N_faces; i += stride) {
+        Face2D_t& face = faces[i];
+
+        // Getting element solution
+        for (size_t side_index = 0; side_index < face.elements_.size(); ++side_index) {
+            const Element2D_t& element = elements[face.elements_[side_index]];
+
+            // Conforming
+            if ((face.N_ == element.N_) && (face.nodes_[0] == element.nodes_[face.elements_side_[side_index]]) && (face.nodes_[1] == element.nodes_[(face.elements_side_[side_index] + 1) * (!(face.elements_side_[side_index] == (element.nodes_.size() - 1))])) {
+                for (int i = 0; i <= face.N_; ++i) {
+                    face.p_[side_index][i] = element.p_extrapolated_[face.elements_side_[side_index]][i];
+                    face.u_[side_index][i] = element.u_extrapolated_[face.elements_side_[side_index]][i];
+                    face.v_[side_index][i] = element.v_extrapolated_[face.elements_side_[side_index]][i];
+                }
+            }
+            // Conforming, but reversed
+            else if ((face.N_ == element.N_) && (face.nodes_[1] == element.nodes_[face.elements_side_[side_index]]) && (face.nodes_[0] == element.nodes_[(face.elements_side_[side_index] + 1) * (!(face.elements_side_[side_index] == (element.nodes_.size() - 1))])) {
+                for (int i = 0; i <= face.N_; ++i) {
+                    face.p_[side_index][face.N_ - i] = element.p_extrapolated_[face.elements_side_[side_index]][i];
+                    face.u_[side_index][face.N_ - i] = element.u_extrapolated_[face.elements_side_[side_index]][i];
+                    face.v_[side_index][face.N_ - i] = element.v_extrapolated_[face.elements_side_[side_index]][i];
+                }
+            }
+            else { // We need to interpolate
+                printf("Warning, non-conforming surfaces are not implemented yet.\n");
+            }
+        }
+
+        // Computing fluxes
+
         /*deviceFloat u;
         const deviceFloat u_left = elements[faces[i].elements_[0]].phi_R_;
         const deviceFloat u_right = elements[faces[i].elements_[1]].phi_L_;
