@@ -314,7 +314,7 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
             section_start_indices[i] = element_ghost_index;
             for (int j = 0; j < section_ranges[i][1] - section_ranges[i][0] + 1; ++j) {
                 Element2D_t& element = host_elements[section_start_indices[i] + j];
-                element.N_ = 0;
+                element.N_ = initial_N_;
                 element.nodes_ = {static_cast<size_t>(connectivity[i][2 * j] - 1),
                                   static_cast<size_t>(connectivity[i][2 * j + 1] - 1),
                                   static_cast<size_t>(connectivity[i][2 * j + 1] - 1),
