@@ -17,9 +17,12 @@ namespace SEM { namespace Entities {
             int N_;
             std::array<size_t, 2> nodes_; // left, right
             std::array<size_t, 2> elements_; // left, right
-            SEM::Entities::cuda_vector<deviceFloat> p_;
-            SEM::Entities::cuda_vector<deviceFloat> u_;
-            SEM::Entities::cuda_vector<deviceFloat> v_;
+            std::array<SEM::Entities::cuda_vector<deviceFloat>, 2> p_;
+            std::array<SEM::Entities::cuda_vector<deviceFloat>, 2> u_;
+            std::array<SEM::Entities::cuda_vector<deviceFloat>, 2> v_;
+            SEM::Entities::cuda_vector<deviceFloat> p_flux_;
+            SEM::Entities::cuda_vector<deviceFloat> u_flux_;
+            SEM::Entities::cuda_vector<deviceFloat> v_flux_;
 
             __device__
             auto allocate_storage() -> void;
