@@ -429,8 +429,11 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
                 exit(39);
             }
 
+            const size_t donor_boundary_element_index = section_start_indices[donor_section_index] + interface_donor_elements[i][j] - section_ranges[donor_section_index][0];
+            const size_t face_index = element_to_face[donor_boundary_element_index][0];
+            const size_t donor_domain_element_index = host_faces[face_index].elements_[host_faces[face_index].elements_[0] == donor_boundary_element_index];
             interfaces[interface_start_index[i] + j] = {section_start_indices[origin_section_index] + interface_elements[i][j] - section_ranges[origin_section_index][0], 
-                                                        section_start_indices[donor_section_index] + interface_donor_elements[i][j] - section_ranges[donor_section_index][0]};
+                                                        donor_domain_element_index};
         }
     }
 
@@ -677,10 +680,12 @@ auto SEM::Meshes::Mesh2D_t::print() -> void {
     }
 
     std::cout << std::endl <<  "Interfaces" << std::endl;
-    std::cout << '\t' <<  "Interface origin and destination:" << std::endl;
+    std::cout << '\t' <<  "Interface destination and origin:" << std::endl;
     for (size_t i = 0; i < host_interfaces.size(); ++i) {
         std::cout << '\t' << '\t' << "interface " << i << " : " << host_interfaces[i][0] << " " << host_interfaces[i][1] << std::endl;
     }
+
+    std::cout << std::endl;
 }
 
 auto SEM::Meshes::Mesh2D_t::write_data(deviceFloat time, size_t N_interpolation_points, const deviceFloat* interpolation_matrices, const SEM::Helpers::DataWriter_t& data_writer) -> void {
@@ -993,8 +998,8 @@ void SEM::Meshes::local_interfaces(size_t N_local_interfaces, Element2D_t* eleme
     const int stride = blockDim.x * gridDim.x;
 
     for (size_t i = index; i < N_local_interfaces; i += stride) {
-        const Element2D_t& source_element = elements[local_interfaces[i][0]];
-        Element2D_t& destination_element = elements[local_interfaces[i][1]];
+        const Element2D_t& source_element = elements[local_interfaces[i][1]];
+        Element2D_t& destination_element = elements[local_interfaces[i][0]];
 
         for (size_t j = 0; j < source_element.faces_.size(); ++j) {
             for (int k = 0; k <= source_element.N_; ++k) {
