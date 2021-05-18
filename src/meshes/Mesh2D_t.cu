@@ -740,22 +740,22 @@ auto SEM::Meshes::Mesh2D_t::solve(const deviceFloat CFL, const std::vector<devic
         // Kinda algorithm 62
         deviceFloat t = time;
         SEM::Meshes::interpolate_to_boundaries<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
-        //boundary_conditions();
-        //SEM::Meshes::calculate_wave_fluxes<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(N_faces_, faces_.data(), elements_.data());
+        boundary_conditions();
+        //SEM::Meshes::calculate_wave_fluxes<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces.size(), faces_.data(), elements_.data());
         //SEM::Meshes::compute_dg_derivative<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, faces_, NDG.weights_.data(), NDG.derivative_matrices_hat_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
         //SEM::Meshes::rk3_first_step<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, delta_t, 1.0/3.0);
 
         t = time + 0.33333333333f * delta_t;
         SEM::Meshes::interpolate_to_boundaries<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
-        //boundary_conditions();
-        //SEM::Meshes::calculate_wave_fluxes<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(N_faces_, faces_.data(), elements_.data());
+        boundary_conditions();
+        //SEM::Meshes::calculate_wave_fluxes<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces.size(), faces_.data(), elements_.data());
         //SEM::Meshes::compute_dg_derivative<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, faces_, NDG.weights_.data(), NDG.derivative_matrices_hat_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
         //SEM::Meshes::rk3_step<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, delta_t, -5.0/9.0, 15.0/16.0);
 
         t = time + 0.75f * delta_t;
         SEM::Meshes::interpolate_to_boundaries<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
-        //boundary_conditions();
-        //SEM::Meshes::calculate_wave_fluxes<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(N_faces_, faces_.data(), elements_.data());
+        boundary_conditions();
+        //SEM::Meshes::calculate_wave_fluxes<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces.size(), faces_.data(), elements_.data());
         //SEM::Meshes::compute_dg_derivative<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, faces_, NDG.weights_.data(), NDG.derivative_matrices_hat_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
         //SEM::Meshes::rk3_step<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, delta_t, -153.0/128.0, 8.0/15.0);
         
@@ -848,7 +848,8 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const deviceFloat* nodes, const dev
 }
 
 auto SEM::Meshes::Mesh2D_t::boundary_conditions() -> void {
-    std::cout << "Warning, SEM::Meshes::Mesh2D_t::boundary_conditions is not implemented." << std::endl;
+    SEM::Meshes::local_interfaces<<<interfaces_numBlocks_, boundaries_blockSize_, 0, stream_>>>(interfaces_.size(), elements_.data(), interfaces_.data());
+
 }
 
 __global__
@@ -977,6 +978,25 @@ void SEM::Meshes::interpolate_to_boundaries(size_t N_elements, Element2D_t* elem
 
     for (size_t i = index; i < N_elements; i += stride) {
         elements[i].interpolate_to_boundaries(lagrange_interpolant_minus, lagrange_interpolant_plus);
+    }
+}
+
+__global__
+void SEM::Meshes::local_interfaces(size_t N_local_interfaces, Element2D_t* elements, const std::array<size_t, 2>* local_interfaces) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t i = index; i < N_local_interfaces; i += stride) {
+        const Element2D_t& source_element = elements[local_interfaces[i][0]];
+        Element2D_t& destination_element = elements[local_interfaces[i][1]];
+
+        for (size_t j = 0; j < source_element.faces_.size(); ++j) {
+            for (int k = 0; k <= source_element.N_; ++k) {
+                destination_element.p_extrapolated_[j][k] = source_element.p_extrapolated_[j][k];
+                destination_element.u_extrapolated_[j][k] = source_element.u_extrapolated_[j][k];
+                destination_element.v_extrapolated_[j][k] = source_element.v_extrapolated_[j][k];
+            }
+        }
     }
 }
 

@@ -42,7 +42,6 @@ namespace SEM { namespace Meshes {
             
             size_t N_elements_global_;
             size_t N_elements_;
-            size_t N_faces_;
             size_t global_element_offset_;
             size_t N_elements_per_process_;
             int initial_N_;
@@ -116,6 +115,9 @@ namespace SEM { namespace Meshes {
 
     __global__
     void interpolate_to_boundaries(size_t N_elements, SEM::Entities::Element2D_t* elements, const deviceFloat* lagrange_interpolant_minus, const deviceFloat* lagrange_interpolant_plus);
+
+    __global__
+    void local_interfaces(size_t N_local_interfaces, SEM::Entities::Element2D_t* elements, const std::array<size_t, 2>* local_interfaces);
 
     __global__
     void calculate_wave_fluxes(size_t N_faces, SEM::Entities::Face2D_t* faces, const SEM::Entities::Element2D_t* elements);
