@@ -675,6 +675,12 @@ auto SEM::Meshes::Mesh2D_t::print() -> void {
     for (size_t i = 0; i < host_faces.size(); ++i) {
         std::cout << '\t' << '\t' << "face " << i << " : " << host_faces[i].tangent_ << std::endl;
     }
+
+    std::cout << std::endl <<  "Interfaces" << std::endl;
+    std::cout << '\t' <<  "Interface origin and destination:" << std::endl;
+    for (size_t i = 0; i < host_interfaces.size(); ++i) {
+        std::cout << '\t' << '\t' << "interface " << i << " : " << host_interfaces[i][0] << " " << host_interfaces[i][1] << std::endl;
+    }
 }
 
 auto SEM::Meshes::Mesh2D_t::write_data(deviceFloat time, size_t N_interpolation_points, const deviceFloat* interpolation_matrices, const SEM::Helpers::DataWriter_t& data_writer) -> void {
