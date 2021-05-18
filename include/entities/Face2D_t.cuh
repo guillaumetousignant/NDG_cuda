@@ -2,6 +2,7 @@
 #define NDG_FACE2D_T_H
 
 #include "helpers/float_types.h"
+#include "entities/Vec2.cuh"
 #include "entities/cuda_vector.cuh"
 #include <array>
 
@@ -15,9 +16,18 @@ namespace SEM { namespace Entities {
             Face2D_t();
 
             int N_;
+
+            // Connectivity
             std::array<size_t, 2> nodes_; // left, right
             std::array<size_t, 2> elements_; // left, right
             std::array<size_t, 2> elements_side_; // left, right
+
+            // Geometry
+            SEM::Entities::Vec2<deviceFloat> normal_;
+            SEM::Entities::Vec2<deviceFloat> tangent_;
+            deviceFloat length_;
+
+            // Solution
             std::array<SEM::Entities::cuda_vector<deviceFloat>, 2> p_;
             std::array<SEM::Entities::cuda_vector<deviceFloat>, 2> u_;
             std::array<SEM::Entities::cuda_vector<deviceFloat>, 2> v_;

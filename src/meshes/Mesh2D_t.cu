@@ -455,6 +455,7 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
 
     allocate_element_storage<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(elements_.size(), elements_.data());
     allocate_face_storage<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces_.size(), faces_.data());
+    compute_face_geometry<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces_.size(), faces_.data(), elements_.data(), nodes_.data());
 
     const SEM::Entities::device_vector<std::array<size_t, 4>> device_element_to_face(element_to_face);
     fill_element_faces<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(elements_.size(), elements_.data(), device_element_to_face.data());
@@ -658,6 +659,21 @@ auto SEM::Meshes::Mesh2D_t::print() -> void {
     std::cout << std::endl << '\t' <<  "Face N:" << std::endl;
     for (size_t i = 0; i < host_faces.size(); ++i) {
         std::cout << '\t' << '\t' << "face " << i << " : " << host_faces[i].N_ << std::endl;
+    }
+
+    std::cout << std::endl << '\t' <<  "Face length:" << std::endl;
+    for (size_t i = 0; i < host_faces.size(); ++i) {
+        std::cout << '\t' << '\t' << "face " << i << " : " << host_faces[i].length_ << std::endl;
+    }
+
+    std::cout << std::endl << '\t' <<  "Face normal:" << std::endl;
+    for (size_t i = 0; i < host_faces.size(); ++i) {
+        std::cout << '\t' << '\t' << "face " << i << " : " << host_faces[i].normal_ << std::endl;
+    }
+
+    std::cout << std::endl << '\t' <<  "Face tangent:" << std::endl;
+    for (size_t i = 0; i < host_faces.size(); ++i) {
+        std::cout << '\t' << '\t' << "face " << i << " : " << host_faces[i].tangent_ << std::endl;
     }
 }
 
@@ -868,6 +884,32 @@ auto SEM::Meshes::fill_element_faces(size_t n_elements, Element2D_t* elements, c
 }
 
 __global__
+auto SEM::Meshes::compute_face_geometry(size_t n_faces, Face2D_t* faces, const Element2D_t* elements, const Vec2<deviceFloat>* nodes) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t i = index; i < n_faces; i += stride) {
+        SEM::Entities::Face2D_t& face = faces[i];
+        face.tangent_ = nodes[face.nodes_[1]] - nodes[face.nodes_[0]]; 
+        face.length_ = face.tangent_.magnitude();
+        face.tangent_ /= face.length_; // CHECK should be normalized or not?
+        face.normal_ = Vec2<deviceFloat>(face.tangent_.y(), -face.tangent_.x());         
+
+        const Vec2<deviceFloat> center = (nodes[face.nodes_[0]] + nodes[face.nodes_[1]]) * 0.5;
+        Vec2<deviceFloat> element_center {0.0};
+        for (const auto node_index : elements[face.elements_[0]].nodes_) {
+            element_center += nodes[node_index];
+        }
+        element_center /= elements[face.elements_[0]].nodes_.size();
+
+        const Vec2<deviceFloat> delta = center - element_center; // CHECK doesn't work with ghost cells
+        const double sign = std::copysign(1.0, face.normal_.dot(delta));
+        face.normal_ *= sign;
+        face.tangent_ *= sign;
+    }
+}
+
+__global__
 auto SEM::Meshes::initial_conditions_2D(size_t n_elements, Element2D_t* elements, const Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
@@ -951,7 +993,9 @@ void SEM::Meshes::calculate_wave_fluxes(size_t N_faces, Face2D_t* faces, const E
             const Element2D_t& element = elements[face.elements_[side_index]];
 
             // Conforming
-            if ((face.N_ == element.N_) && (face.nodes_[0] == element.nodes_[face.elements_side_[side_index]]) && (face.nodes_[1] == element.nodes_[(face.elements_side_[side_index] + 1) * (!(face.elements_side_[side_index] == (element.nodes_.size() - 1))])) {
+            if ((face.N_ == element.N_) 
+                    && (face.nodes_[0] == element.nodes_[face.elements_side_[side_index]]) 
+                    && (face.nodes_[1] == element.nodes_[(face.elements_side_[side_index] + 1) * (!(face.elements_side_[side_index] == (element.nodes_.size() - 1)))])) {
                 for (int i = 0; i <= face.N_; ++i) {
                     face.p_[side_index][i] = element.p_extrapolated_[face.elements_side_[side_index]][i];
                     face.u_[side_index][i] = element.u_extrapolated_[face.elements_side_[side_index]][i];
@@ -959,7 +1003,9 @@ void SEM::Meshes::calculate_wave_fluxes(size_t N_faces, Face2D_t* faces, const E
                 }
             }
             // Conforming, but reversed
-            else if ((face.N_ == element.N_) && (face.nodes_[1] == element.nodes_[face.elements_side_[side_index]]) && (face.nodes_[0] == element.nodes_[(face.elements_side_[side_index] + 1) * (!(face.elements_side_[side_index] == (element.nodes_.size() - 1))])) {
+            else if ((face.N_ == element.N_) 
+                    && (face.nodes_[1] == element.nodes_[face.elements_side_[side_index]]) 
+                    && (face.nodes_[0] == element.nodes_[(face.elements_side_[side_index] + 1) * (!(face.elements_side_[side_index] == (element.nodes_.size() - 1)))])) {
                 for (int i = 0; i <= face.N_; ++i) {
                     face.p_[side_index][face.N_ - i] = element.p_extrapolated_[face.elements_side_[side_index]][i];
                     face.u_[side_index][face.N_ - i] = element.u_extrapolated_[face.elements_side_[side_index]][i];
