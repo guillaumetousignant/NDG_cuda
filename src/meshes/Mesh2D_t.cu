@@ -335,7 +335,7 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     const std::vector<std::vector<size_t>> element_to_element = build_element_to_element(host_elements, node_to_element);
 
     // Computing faces and filling element faces
-    auto [host_faces, node_to_face, element_to_face] = build_faces(n_nodes, initial_N_, host_elements);
+    auto [host_faces, node_to_face, element_to_face] = build_faces(n_elements_domain, n_nodes, initial_N_, host_elements);
 
     // Building boundaries
     std::vector<size_t> wall_boundaries;
@@ -400,7 +400,9 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
         interface_start_index[i] = n_interface_elements;
         n_interface_elements += connectivity_sizes[i];
     }
-    std::vector<std::array<size_t, 2>> interfaces(n_interface_elements);
+    std::vector<size_t> interfaces_origin(n_interface_elements);
+    std::vector<size_t> interfaces_origin_side(n_interface_elements);
+    std::vector<size_t> interfaces_destination(n_interface_elements);
 
     for (int i = 0; i < n_connectivity; ++i) {
         for (int j = 0; j < connectivity_sizes[i]; ++j) {
@@ -432,9 +434,12 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
 
             const size_t donor_boundary_element_index = section_start_indices[donor_section_index] + interface_donor_elements[i][j] - section_ranges[donor_section_index][0];
             const size_t face_index = element_to_face[donor_boundary_element_index][0];
-            const size_t donor_domain_element_index = host_faces[face_index].elements_[host_faces[face_index].elements_[0] == donor_boundary_element_index];
-            interfaces[interface_start_index[i] + j] = {section_start_indices[origin_section_index] + interface_elements[i][j] - section_ranges[origin_section_index][0], 
-                                                        donor_domain_element_index};
+            const size_t face_side_index = host_faces[face_index].elements_[0] == donor_boundary_element_index;
+            const size_t donor_domain_element_index = host_faces[face_index].elements_[face_side_index];
+            
+            interfaces_origin[interface_start_index[i] + j] = donor_domain_element_index;
+            interfaces_origin_side[interface_start_index[i] + j] = host_faces[face_index].elements_side_[face_side_index];
+            interfaces_destination[interface_start_index[i] + j] = section_start_indices[origin_section_index] + interface_elements[i][j] - section_ranges[origin_section_index][0];
         }
     }
 
@@ -442,7 +447,9 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     nodes_ = host_nodes;
     elements_ = host_elements;
     faces_ = host_faces;
-    interfaces_ = interfaces;
+    interfaces_origin_ = interfaces_origin;
+    interfaces_origin_side_ = interfaces_origin_side;
+    interfaces_destination_ = interfaces_destination;
     wall_boundaries_ = wall_boundaries;
     symmetry_boundaries_ = symmetry_boundaries;
 
@@ -450,14 +457,16 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     N_elements_ = n_elements_domain;
     elements_numBlocks_ = (N_elements_ + elements_blockSize_ - 1) / elements_blockSize_;
     faces_numBlocks_ = (faces_.size() + faces_blockSize_ - 1) / faces_blockSize_;
-    interfaces_numBlocks_ = (interfaces_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+    interfaces_numBlocks_ = (interfaces_origin_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
     wall_boundaries_numBlocks_ = (wall_boundaries_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
     symmetry_boundaries_numBlocks_ = (symmetry_boundaries_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+    all_boundaries_numBlocks_ = (interfaces_origin_.size() + wall_boundaries_.size() + symmetry_boundaries_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
 
     host_delta_t_array_ = std::vector<deviceFloat>(elements_numBlocks_);
     device_delta_t_array_ = device_vector<deviceFloat>(elements_numBlocks_);
 
-    allocate_element_storage<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(elements_.size(), elements_.data());
+    allocate_element_storage<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data());
+    allocate_boundary_storage<<<all_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(N_elements_, elements_.size(), elements_.data());
     allocate_face_storage<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces_.size(), faces_.data());
     compute_face_geometry<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces_.size(), faces_.data(), elements_.data(), nodes_.data());
 
@@ -521,7 +530,7 @@ auto SEM::Meshes::Mesh2D_t::build_element_to_element(const std::vector<Element2D
     return element_to_element;
 }
 
-auto SEM::Meshes::Mesh2D_t::build_faces(size_t n_nodes, int initial_N, const std::vector<Element2D_t>& elements) -> std::tuple<std::vector<Face2D_t>, std::vector<std::vector<size_t>>, std::vector<std::array<size_t, 4>>> {
+auto SEM::Meshes::Mesh2D_t::build_faces(size_t n_elements_domain, size_t n_nodes, int initial_N, const std::vector<Element2D_t>& elements) -> std::tuple<std::vector<Face2D_t>, std::vector<std::vector<size_t>>, std::vector<std::array<size_t, 4>>> {
     size_t total_edges = 0;
     for (const auto& element: elements) {
         total_edges += element.nodes_.size();
@@ -533,34 +542,48 @@ auto SEM::Meshes::Mesh2D_t::build_faces(size_t n_nodes, int initial_N, const std
     std::vector<std::vector<size_t>> node_to_face(n_nodes);
     std::vector<std::array<size_t, 4>> element_to_face(elements.size());
 
-    for (size_t i = 0; i < elements.size(); ++i) {
+    for (size_t i = 0; i < n_elements_domain; ++i) {
         for (size_t j = 0; j < elements[i].nodes_.size(); ++j) {
-            std::array<size_t, 2> nodes{elements[i].nodes_[j], (j < elements[i].nodes_.size() - 1) ? elements[i].nodes_[j + 1] : elements[i].nodes_[0]};
+            const std::array<size_t, 2> nodes{elements[i].nodes_[j], (j < elements[i].nodes_.size() - 1) ? elements[i].nodes_[j + 1] : elements[i].nodes_[0]};
 
-            if (nodes[0] != nodes[1]) { // Shitty workaround for 4-sided boundaries
-                bool found = false;
-                for (auto face_index: node_to_face[nodes[0]]) {
-                    if (((faces[face_index].nodes_[0] == nodes[0]) && (faces[face_index].nodes_[1] == nodes[1])) || ((faces[face_index].nodes_[0] == nodes[1]) && (faces[face_index].nodes_[1] == nodes[0]))) {
-                        found = true;
-                        faces[face_index].elements_[1] = i;
-                        faces[face_index].elements_side_[1] = j;
-                        element_to_face[i][j] = face_index;
-                        break;
-                    }
+            bool found = false;
+            for (auto face_index: node_to_face[nodes[0]]) {
+                if ((faces[face_index].nodes_[0] == nodes[1]) && (faces[face_index].nodes_[1] == nodes[0])) {
+                    found = true;
+                    faces[face_index].elements_[1] = i;
+                    faces[face_index].elements_side_[1] = j;
+                    element_to_face[i][j] = face_index;
+                    break;
                 }
+            }
 
-                if (!found) {
-                    element_to_face[i][j] = faces.size();
-                    node_to_face[nodes[0]].push_back(faces.size());
-                    if (nodes[1] != nodes[0]) {
-                        node_to_face[nodes[1]].push_back(faces.size());
-                    }
-                    faces.emplace_back();
-                    faces.back().N_ = initial_N;
-                    faces.back().nodes_ = {nodes[0], nodes[1]};
-                    faces.back().elements_ = {i, static_cast<size_t>(-1)};
-                    faces.back().elements_side_ = {j, static_cast<size_t>(-1)};
+            if (!found) {
+                element_to_face[i][j] = faces.size();
+                node_to_face[nodes[0]].push_back(faces.size());
+                if (nodes[1] != nodes[0]) {
+                    node_to_face[nodes[1]].push_back(faces.size());
                 }
+                faces.emplace_back();
+                faces.back().N_ = initial_N;
+                faces.back().nodes_ = {nodes[0], nodes[1]};
+                faces.back().elements_ = {i, static_cast<size_t>(-1)};
+                faces.back().elements_side_ = {j, static_cast<size_t>(-1)};
+            }
+        }
+    }
+
+    for (size_t i = n_elements_domain; i < elements.size(); ++i) {
+        const std::array<size_t, 2> nodes{elements[i].nodes_[0], elements[i].nodes_[1]};
+
+        for (auto face_index: node_to_face[nodes[0]]) {
+            if ((faces[face_index].nodes_[0] == nodes[1]) && (faces[face_index].nodes_[1] == nodes[0])) {
+                faces[face_index].elements_[1] = i;
+                faces[face_index].elements_side_[1] = 0;
+                element_to_face[i][0] = face_index;
+                for (size_t j = 1; j < element_to_face[i].size(); ++j) {
+                    element_to_face[i][j] = static_cast<size_t>(-1);
+                }
+                break;
             }
         }
     }
@@ -580,14 +603,18 @@ auto SEM::Meshes::Mesh2D_t::print() -> void {
     std::vector<Face2D_t> host_faces(faces_.size());
     std::vector<Element2D_t> host_elements(elements_.size());
     std::vector<Vec2<deviceFloat>> host_nodes(nodes_.size());
-    std::vector<std::array<size_t, 2>> host_interfaces(interfaces_.size());
+    std::vector<size_t> host_interfaces_origin(interfaces_origin_.size());
+    std::vector<size_t> host_interfaces_origin_side(interfaces_origin_side_.size());
+    std::vector<size_t> host_interfaces_destination(interfaces_destination_.size());
     std::vector<size_t> host_wall_boundaries(wall_boundaries_.size());
     std::vector<size_t> host_symmetry_boundaries(symmetry_boundaries_.size());
     
     faces_.copy_to(host_faces);
     elements_.copy_to(host_elements);
     nodes_.copy_to(host_nodes);
-    interfaces_.copy_to(host_interfaces);
+    interfaces_origin_.copy_to(host_interfaces_origin);
+    interfaces_origin_side_.copy_to(host_interfaces_origin_side);
+    interfaces_destination_.copy_to(host_interfaces_destination);
     wall_boundaries_.copy_to(host_wall_boundaries);
     symmetry_boundaries_.copy_to(host_symmetry_boundaries);
 
@@ -595,7 +622,7 @@ auto SEM::Meshes::Mesh2D_t::print() -> void {
     std::cout << "N elements and ghosts: " << elements_.size() << std::endl;
     std::cout << "N faces: " << faces_.size() << std::endl;
     std::cout << "N nodes: " << nodes_.size() << std::endl;
-    std::cout << "N interfaces: " << interfaces_.size() << std::endl;
+    std::cout << "N interfaces: " << interfaces_origin_.size() << std::endl;
     std::cout << "N wall boundaries: " << wall_boundaries_.size() << std::endl;
     std::cout << "N symmetry boundaries: " << symmetry_boundaries_.size() << std::endl;
     std::cout << "Initial N: " << initial_N_ << std::endl;
@@ -674,9 +701,9 @@ auto SEM::Meshes::Mesh2D_t::print() -> void {
     }
 
     std::cout << std::endl <<  "Interfaces" << std::endl;
-    std::cout << '\t' <<  "Interface destination and origin:" << std::endl;
-    for (size_t i = 0; i < host_interfaces.size(); ++i) {
-        std::cout << '\t' << '\t' << "interface " << i << " : " << host_interfaces[i][0] << " " << host_interfaces[i][1] << std::endl;
+    std::cout << '\t' <<  "Interface destination, origin and origin side:" << std::endl;
+    for (size_t i = 0; i < host_interfaces_origin.size(); ++i) {
+        std::cout << '\t' << '\t' << "interface " << i << " : " << host_interfaces_destination[i] << " " << host_interfaces_origin[i] << " " << host_interfaces_origin_side[i] << std::endl;
     }
 
     std::cout << std::endl;
@@ -852,7 +879,7 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const deviceFloat* nodes, const dev
 }
 
 auto SEM::Meshes::Mesh2D_t::boundary_conditions() -> void {
-    SEM::Meshes::local_interfaces<<<interfaces_numBlocks_, boundaries_blockSize_, 0, stream_>>>(interfaces_.size(), elements_.data(), interfaces_.data());
+    SEM::Meshes::local_interfaces<<<interfaces_numBlocks_, boundaries_blockSize_, 0, stream_>>>(interfaces_origin_.size(), elements_.data(), interfaces_origin_.data(), interfaces_origin_side_.data(), interfaces_destination_.data());
 
 }
 
@@ -863,6 +890,16 @@ auto SEM::Meshes::allocate_element_storage(size_t n_elements, Element2D_t* eleme
 
     for (size_t i = index; i < n_elements; i += stride) {
         elements[i].allocate_storage();
+    }
+}
+
+__global__
+auto SEM::Meshes::allocate_boundary_storage(size_t n_domain_elements, size_t n_total_elements, Element2D_t* elements) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t i = index + n_domain_elements; i < n_total_elements; i += stride) {
+        elements[i].allocate_boundary_storage();
     }
 }
 
@@ -986,20 +1023,19 @@ void SEM::Meshes::interpolate_to_boundaries(size_t N_elements, Element2D_t* elem
 }
 
 __global__
-void SEM::Meshes::local_interfaces(size_t N_local_interfaces, Element2D_t* elements, const std::array<size_t, 2>* local_interfaces) {
+void SEM::Meshes::local_interfaces(size_t N_local_interfaces, Element2D_t* elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_origin_side, const size_t* local_interfaces_destination) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
     for (size_t i = index; i < N_local_interfaces; i += stride) {
-        const Element2D_t& source_element = elements[local_interfaces[i][1]];
-        Element2D_t& destination_element = elements[local_interfaces[i][0]];
+        const Element2D_t& source_element = elements[local_interfaces_origin[i]];
+        Element2D_t& destination_element = elements[local_interfaces_destination[i]];
+        const size_t element_side = local_interfaces_origin_side[i];
 
-        for (size_t j = 0; j < source_element.faces_.size(); ++j) {
-            for (int k = 0; k <= source_element.N_; ++k) {
-                destination_element.p_extrapolated_[j][k] = source_element.p_extrapolated_[j][k];
-                destination_element.u_extrapolated_[j][k] = source_element.u_extrapolated_[j][k];
-                destination_element.v_extrapolated_[j][k] = source_element.v_extrapolated_[j][k];
-            }
+        for (int k = 0; k <= source_element.N_; ++k) {
+            destination_element.p_extrapolated_[0][k] = source_element.p_extrapolated_[element_side][k];
+            destination_element.u_extrapolated_[0][k] = source_element.u_extrapolated_[element_side][k];
+            destination_element.v_extrapolated_[0][k] = source_element.v_extrapolated_[element_side][k];
         }
     }
 }
@@ -1013,32 +1049,34 @@ void SEM::Meshes::calculate_wave_fluxes(size_t N_faces, Face2D_t* faces, const E
         Face2D_t& face = faces[face_index];
 
         // Getting element solution
-        for (size_t side_index = 0; side_index < face.elements_.size(); ++side_index) {
-            const Element2D_t& element = elements[face.elements_[side_index]];
-            
-            // Conforming
-            if ((face.N_ == element.N_) 
-                    && (face.nodes_[0] == element.nodes_[face.elements_side_[side_index]]) 
-                    && (face.nodes_[1] == element.nodes_[(face.elements_side_[side_index] + 1) * (!(face.elements_side_[side_index] == (element.nodes_.size() - 1)))])) {
-                for (int i = 0; i <= face.N_; ++i) {
-                    face.p_[side_index][i] = element.p_extrapolated_[face.elements_side_[side_index]][i];
-                    face.u_[side_index][i] = element.u_extrapolated_[face.elements_side_[side_index]][i];
-                    face.v_[side_index][i] = element.v_extrapolated_[face.elements_side_[side_index]][i];
-                }
+        const Element2D_t& element_L = elements[face.elements_[0]];
+        // Conforming
+        if ((face.N_ == element_L.N_) && (face.nodes_[0] == element_L.nodes_[face.elements_side_[0]]) 
+                && (face.nodes_[1] == element_L.nodes_[(face.elements_side_[0] + 1) * (!(face.elements_side_[0] == (element_L.nodes_.size() - 1)))])) {
+            for (int i = 0; i <= face.N_; ++i) {
+                face.p_[0][i] = element_L.p_extrapolated_[face.elements_side_[0]][i];
+                face.u_[0][i] = element_L.u_extrapolated_[face.elements_side_[0]][i];
+                face.v_[0][i] = element_L.v_extrapolated_[face.elements_side_[0]][i];
             }
-            // Conforming, but reversed
-            else if ((face.N_ == element.N_) 
-                    && (face.nodes_[1] == element.nodes_[face.elements_side_[side_index]]) 
-                    && (face.nodes_[0] == element.nodes_[(face.elements_side_[side_index] + 1) * (!(face.elements_side_[side_index] == (element.nodes_.size() - 1)))])) {
-                for (int i = 0; i <= face.N_; ++i) {
-                    face.p_[side_index][face.N_ - i] = element.p_extrapolated_[face.elements_side_[side_index]][i];
-                    face.u_[side_index][face.N_ - i] = element.u_extrapolated_[face.elements_side_[side_index]][i];
-                    face.v_[side_index][face.N_ - i] = element.v_extrapolated_[face.elements_side_[side_index]][i];
-                }
+        }
+        else { // We need to interpolate
+            printf("Warning, non-conforming surfaces are not implemented yet.\n");
+        }
+
+
+        const Element2D_t& element_R = elements[face.elements_[1]];
+        // Conforming, but reversed
+        if ((face.N_ == element_R.N_) 
+                && (face.nodes_[1] == element_R.nodes_[face.elements_side_[1]]) 
+                && (face.nodes_[0] == element_R.nodes_[(face.elements_side_[1] + 1) * (!(face.elements_side_[1] == (element_R.nodes_.size() - 1)))])) {
+            for (int i = 0; i <= face.N_; ++i) {
+                face.p_[1][face.N_ - i] = element_R.p_extrapolated_[face.elements_side_[1]][i];
+                face.u_[1][face.N_ - i] = element_R.u_extrapolated_[face.elements_side_[1]][i];
+                face.v_[1][face.N_ - i] = element_R.v_extrapolated_[face.elements_side_[1]][i];
             }
-            else { // We need to interpolate
-                printf("Warning, non-conforming surfaces are not implemented yet.\n");
-            }
+        }
+        else { // We need to interpolate
+            printf("Warning, non-conforming surfaces are not implemented yet.\n");
         }
 
         // Computing fluxes

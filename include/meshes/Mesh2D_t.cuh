@@ -25,7 +25,9 @@ namespace SEM { namespace Meshes {
             SEM::Entities::device_vector<SEM::Entities::Vec2<deviceFloat>> nodes_;
             SEM::Entities::device_vector<SEM::Entities::Element2D_t> elements_;
             SEM::Entities::device_vector<SEM::Entities::Face2D_t> faces_;
-            SEM::Entities::device_vector<std::array<size_t, 2>> interfaces_;
+            SEM::Entities::device_vector<size_t> interfaces_origin_;
+            SEM::Entities::device_vector<size_t> interfaces_origin_side_;
+            SEM::Entities::device_vector<size_t> interfaces_destination_;
             SEM::Entities::device_vector<size_t> wall_boundaries_;
             SEM::Entities::device_vector<size_t> symmetry_boundaries_;
             
@@ -39,6 +41,7 @@ namespace SEM { namespace Meshes {
             int interfaces_numBlocks_;
             int wall_boundaries_numBlocks_;
             int symmetry_boundaries_numBlocks_;
+            int all_boundaries_numBlocks_;
             
             size_t N_elements_global_;
             size_t N_elements_;
@@ -86,13 +89,16 @@ namespace SEM { namespace Meshes {
 
             static auto build_node_to_element(size_t n_nodes, const std::vector<SEM::Entities::Element2D_t>& elements) -> std::vector<std::vector<size_t>>;
             static auto build_element_to_element(const std::vector<SEM::Entities::Element2D_t>& elements, const std::vector<std::vector<size_t>>& node_to_element) -> std::vector<std::vector<size_t>>;
-            static auto build_faces(size_t n_nodes, int initial_N, const std::vector<SEM::Entities::Element2D_t>& elements) -> std::tuple<std::vector<SEM::Entities::Face2D_t>, std::vector<std::vector<size_t>>, std::vector<std::array<size_t, 4>>>;
+            static auto build_faces(size_t n_elements_domain, size_t n_nodes, int initial_N, const std::vector<SEM::Entities::Element2D_t>& elements) -> std::tuple<std::vector<SEM::Entities::Face2D_t>, std::vector<std::vector<size_t>>, std::vector<std::array<size_t, 4>>>;
 
             auto adapt(int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights) -> void;
     };
 
     __global__
     auto allocate_element_storage(size_t n_elements, SEM::Entities::Element2D_t* elements) -> void;
+
+    __global__
+    auto allocate_boundary_storage(size_t n_domain_elements, size_t n_total_elements, SEM::Entities::Element2D_t* elements) -> void;
 
     __global__
     auto allocate_face_storage(size_t n_faces, SEM::Entities::Face2D_t* faces) -> void;
@@ -117,7 +123,7 @@ namespace SEM { namespace Meshes {
     void interpolate_to_boundaries(size_t N_elements, SEM::Entities::Element2D_t* elements, const deviceFloat* lagrange_interpolant_minus, const deviceFloat* lagrange_interpolant_plus);
 
     __global__
-    void local_interfaces(size_t N_local_interfaces, SEM::Entities::Element2D_t* elements, const std::array<size_t, 2>* local_interfaces);
+    void local_interfaces(size_t N_local_interfaces, SEM::Entities::Element2D_t* elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_origin_side, const size_t* local_interfaces_destination);
 
     __global__
     void calculate_wave_fluxes(size_t N_faces, SEM::Entities::Face2D_t* faces, const SEM::Entities::Element2D_t* elements);

@@ -55,6 +55,9 @@ namespace SEM { namespace Entities {
             __device__
             auto allocate_storage() -> void;
 
+            __device__
+            auto allocate_boundary_storage() -> void;
+
         private:
             __device__
             auto exponential_decay() -> deviceFloat;
