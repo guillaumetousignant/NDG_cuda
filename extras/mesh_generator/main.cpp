@@ -252,8 +252,8 @@ auto main(int argc, char* argv[]) -> int {
     std::vector<int> bottom_elements(boundary_n_sides * x_res);
 
     for (int i = 0; i < x_res; ++i) {
-        bottom_elements[i * boundary_n_sides]     = i * y_node_res + 1;
-        bottom_elements[i * boundary_n_sides + 1] = (i + 1) * y_node_res + 1;
+        bottom_elements[i * boundary_n_sides]     = (i + 1) * y_node_res + 1;
+        bottom_elements[i * boundary_n_sides + 1] = i * y_node_res + 1;
     }
 
     cg_section_write(index_file, index_base, index_zone, bottom_boundary_name.c_str(), ElementType_t::BAR_2, bottom_start_index, bottom_end_index, n_boundary_elem, bottom_elements.data(), &bottom_index_section);
@@ -263,8 +263,8 @@ auto main(int argc, char* argv[]) -> int {
     std::vector<int> right_elements(boundary_n_sides * y_res);
 
     for (int j = 0; j < y_res; ++j) {
-        right_elements[j * boundary_n_sides]     = y_node_res * (x_node_res - 1) + j + 1;
-        right_elements[j * boundary_n_sides + 1] = y_node_res * (x_node_res - 1) + j + 2;
+        right_elements[j * boundary_n_sides]     = y_node_res * (x_node_res - 1) + j + 2;
+        right_elements[j * boundary_n_sides + 1] = y_node_res * (x_node_res - 1) + j + 1;
     }
 
     cg_section_write(index_file, index_base, index_zone, right_boundary_name.c_str(), ElementType_t::BAR_2, right_start_index, right_end_index, n_boundary_elem, right_elements.data(), &right_index_section);
@@ -274,8 +274,8 @@ auto main(int argc, char* argv[]) -> int {
     std::vector<int> top_elements(boundary_n_sides * x_res);
 
     for (int i = 0; i < x_res; ++i) {
-        top_elements[i * boundary_n_sides]     = (x_res - i + 1) * y_node_res;
-        top_elements[i * boundary_n_sides + 1] = (x_res - i) * y_node_res;
+        top_elements[i * boundary_n_sides]     = (x_res - i) * y_node_res;
+        top_elements[i * boundary_n_sides + 1] = (x_res - i + 1) * y_node_res;
     }
 
     cg_section_write(index_file, index_base, index_zone, top_boundary_name.c_str(), ElementType_t::BAR_2, top_start_index, top_end_index, n_boundary_elem, top_elements.data(), &top_index_section);
@@ -285,8 +285,8 @@ auto main(int argc, char* argv[]) -> int {
     std::vector<int> left_elements(boundary_n_sides * y_res);
 
     for (int j = 0; j < y_res; ++j) {
-        left_elements[j * boundary_n_sides]     = y_res - j + 1;
-        left_elements[j * boundary_n_sides + 1] = y_res - j;
+        left_elements[j * boundary_n_sides]     = y_res - j;
+        left_elements[j * boundary_n_sides + 1] = y_res - j + 1;
     }
 
     cg_section_write(index_file, index_base, index_zone, left_boundary_name.c_str(), ElementType_t::BAR_2, left_start_index, left_end_index, n_boundary_elem, left_elements.data(), &left_index_section);
