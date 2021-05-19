@@ -21,6 +21,7 @@ using SEM::Entities::Element2D_t;
 using SEM::Entities::Face2D_t;
 
 constexpr int CGIO_MAX_NAME_LENGTH = 33; // Includes the null terminator
+constexpr deviceFloat c = 1;
 
 SEM::Meshes::Mesh2D_t::Mesh2D_t(std::filesystem::path filename, int initial_N, cudaStream_t &stream) :       
         initial_N_(initial_N),        
@@ -536,37 +537,30 @@ auto SEM::Meshes::Mesh2D_t::build_faces(size_t n_nodes, int initial_N, const std
         for (size_t j = 0; j < elements[i].nodes_.size(); ++j) {
             std::array<size_t, 2> nodes{elements[i].nodes_[j], (j < elements[i].nodes_.size() - 1) ? elements[i].nodes_[j + 1] : elements[i].nodes_[0]};
 
-            if (nodes[0] ==  nodes[1]) { // Shitty workaround for 4-sided boundaries
-                for (auto just_any_other_node_index : elements[i].nodes_) {
-                    if (just_any_other_node_index != nodes[0]) {
-                        nodes[1] = just_any_other_node_index;
+            if (nodes[0] != nodes[1]) { // Shitty workaround for 4-sided boundaries
+                bool found = false;
+                for (auto face_index: node_to_face[nodes[0]]) {
+                    if (((faces[face_index].nodes_[0] == nodes[0]) && (faces[face_index].nodes_[1] == nodes[1])) || ((faces[face_index].nodes_[0] == nodes[1]) && (faces[face_index].nodes_[1] == nodes[0]))) {
+                        found = true;
+                        faces[face_index].elements_[1] = i;
+                        faces[face_index].elements_side_[1] = j;
+                        element_to_face[i][j] = face_index;
                         break;
                     }
                 }
-            }
 
-            bool found = false;
-            for (auto face_index: node_to_face[nodes[0]]) {
-                if (((faces[face_index].nodes_[0] == nodes[0]) && (faces[face_index].nodes_[1] == nodes[1])) || ((faces[face_index].nodes_[0] == nodes[1]) && (faces[face_index].nodes_[1] == nodes[0]))) {
-                    found = true;
-                    faces[face_index].elements_[1] = i;
-                    faces[face_index].elements_side_[1] = j;
-                    element_to_face[i][j] = face_index;
-                    break;
+                if (!found) {
+                    element_to_face[i][j] = faces.size();
+                    node_to_face[nodes[0]].push_back(faces.size());
+                    if (nodes[1] != nodes[0]) {
+                        node_to_face[nodes[1]].push_back(faces.size());
+                    }
+                    faces.emplace_back();
+                    faces.back().N_ = initial_N;
+                    faces.back().nodes_ = {nodes[0], nodes[1]};
+                    faces.back().elements_ = {i, static_cast<size_t>(-1)};
+                    faces.back().elements_side_ = {j, static_cast<size_t>(-1)};
                 }
-            }
-
-            if (!found) {
-                element_to_face[i][j] = faces.size();
-                node_to_face[nodes[0]].push_back(faces.size());
-                if (nodes[1] != nodes[0]) {
-                    node_to_face[nodes[1]].push_back(faces.size());
-                }
-                faces.emplace_back();
-                faces.back().N_ = initial_N;
-                faces.back().nodes_ = {nodes[0], nodes[1]};
-                faces.back().elements_ = {i, static_cast<size_t>(-1)};
-                faces.back().elements_side_ = {j, static_cast<size_t>(-1)};
             }
         }
     }
@@ -752,21 +746,21 @@ auto SEM::Meshes::Mesh2D_t::solve(const deviceFloat CFL, const std::vector<devic
         deviceFloat t = time;
         SEM::Meshes::interpolate_to_boundaries<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
         boundary_conditions();
-        //SEM::Meshes::calculate_wave_fluxes<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces.size(), faces_.data(), elements_.data());
+        SEM::Meshes::calculate_wave_fluxes<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces_.size(), faces_.data(), elements_.data());
         //SEM::Meshes::compute_dg_derivative<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, faces_, NDG.weights_.data(), NDG.derivative_matrices_hat_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
         //SEM::Meshes::rk3_first_step<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, delta_t, 1.0/3.0);
 
         t = time + 0.33333333333f * delta_t;
         SEM::Meshes::interpolate_to_boundaries<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
         boundary_conditions();
-        //SEM::Meshes::calculate_wave_fluxes<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces.size(), faces_.data(), elements_.data());
+        SEM::Meshes::calculate_wave_fluxes<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces_.size(), faces_.data(), elements_.data());
         //SEM::Meshes::compute_dg_derivative<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, faces_, NDG.weights_.data(), NDG.derivative_matrices_hat_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
         //SEM::Meshes::rk3_step<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, delta_t, -5.0/9.0, 15.0/16.0);
 
         t = time + 0.75f * delta_t;
         SEM::Meshes::interpolate_to_boundaries<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
         boundary_conditions();
-        //SEM::Meshes::calculate_wave_fluxes<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces.size(), faces_.data(), elements_.data());
+        SEM::Meshes::calculate_wave_fluxes<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces_.size(), faces_.data(), elements_.data());
         //SEM::Meshes::compute_dg_derivative<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, faces_, NDG.weights_.data(), NDG.derivative_matrices_hat_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
         //SEM::Meshes::rk3_step<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, delta_t, -153.0/128.0, 8.0/15.0);
         
@@ -825,7 +819,6 @@ auto SEM::Meshes::Mesh2D_t::g(Vec2<deviceFloat> xy) -> std::array<deviceFloat, 3
     constexpr Vec2<deviceFloat> xy0 {0, 0};
     const Vec2<deviceFloat> k {std::sqrt(static_cast<deviceFloat>(2.0)) / 2, -std::sqrt(static_cast<deviceFloat>(2.0)) / 2};
     const deviceFloat d = 0.2 / (2 * std::sqrt(std::log(2.0)));
-    constexpr deviceFloat c = 1;
     
     std::array<deviceFloat, 3> state {
         static_cast<deviceFloat>(std::exp(-((k.x() * (xy.x() - xy0.x()) + k.y() * (xy.y() - xy0.y())) * (k.x() * (xy.x() - xy0.x()) + k.y() * (xy.y() - xy0.y()))) / (d * d))),
@@ -1016,13 +1009,13 @@ void SEM::Meshes::calculate_wave_fluxes(size_t N_faces, Face2D_t* faces, const E
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (size_t i = index; i < N_faces; i += stride) {
-        Face2D_t& face = faces[i];
+    for (size_t face_index = index; face_index < N_faces; face_index += stride) {
+        Face2D_t& face = faces[face_index];
 
         // Getting element solution
         for (size_t side_index = 0; side_index < face.elements_.size(); ++side_index) {
             const Element2D_t& element = elements[face.elements_[side_index]];
-
+            
             // Conforming
             if ((face.N_ == element.N_) 
                     && (face.nodes_[0] == element.nodes_[face.elements_side_[side_index]]) 
@@ -1049,32 +1042,23 @@ void SEM::Meshes::calculate_wave_fluxes(size_t N_faces, Face2D_t* faces, const E
         }
 
         // Computing fluxes
+        for (int i = 0; i <= face.N_; ++i) {
+            const Vec2<deviceFloat> u_L {face.u_[0][i], face.v_[0][i]};
+            const Vec2<deviceFloat> u_R {face.u_[1][i], face.v_[1][i]};
+            const Vec2<deviceFloat> u_prime_L {u_L.dot(face.normal_), u_L.dot(face.tangent_)};
+            const Vec2<deviceFloat> u_prime_R {u_R.dot(face.normal_), u_R.dot(face.tangent_)};
 
-        /*deviceFloat u;
-        const deviceFloat u_left = elements[faces[i].elements_[0]].phi_R_;
-        const deviceFloat u_right = elements[faces[i].elements_[1]].phi_L_;
+            const deviceFloat w_L = (face.p_[0][i] + c * u_prime_L.x()) / 2;
+            const deviceFloat w_R = (face.p_[1][i] - c * u_prime_R.x()) / 2;
 
-        if (u_left < 0.0f && u_right > 0.0f) { // In expansion fan
-            u = 0.5f * (u_left + u_right);
+            const Vec2<deviceFloat> normal_inv {face.normal_[0], face.tangent_[0]};
+            const Vec2<deviceFloat> tangent_inv {face.normal_[1], face.tangent_[1]};
+
+            const Vec2<deviceFloat> velocity_flux {w_L + w_R, 0};
+
+            face.p_flux_[i] = c * (w_L - w_R);
+            face.u_flux_[i] = velocity_flux.dot(normal_inv);
+            face.v_flux_[i] = velocity_flux.dot(tangent_inv);
         }
-        else if (u_left >= u_right) { // Shock
-            if (u_left > 0.0f) {
-                u = u_left;
-            }
-            else {
-                u = u_right;
-            }
-        }
-        else { // Expansion fan
-            if (u_left > 0.0f) {
-                u = u_left;
-            }
-            else  {
-                u = u_right;
-            }
-        }
-    
-        faces[i].flux_ = u_right;
-        faces[i].nl_flux_ = 0.5f * u * u;*/
     }
 }
