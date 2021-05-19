@@ -1051,7 +1051,8 @@ void SEM::Meshes::calculate_wave_fluxes(size_t N_faces, Face2D_t* faces, const E
         // Getting element solution
         const Element2D_t& element_L = elements[face.elements_[0]];
         // Conforming
-        if ((face.N_ == element_L.N_) && (face.nodes_[0] == element_L.nodes_[face.elements_side_[0]]) 
+        if ((face.N_ == element_L.N_) 
+                && (face.nodes_[0] == element_L.nodes_[face.elements_side_[0]]) 
                 && (face.nodes_[1] == element_L.nodes_[(face.elements_side_[0] + 1) * (!(face.elements_side_[0] == (element_L.nodes_.size() - 1)))])) {
             for (int i = 0; i <= face.N_; ++i) {
                 face.p_[0][i] = element_L.p_extrapolated_[face.elements_side_[0]][i];
