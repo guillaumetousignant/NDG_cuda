@@ -20,6 +20,7 @@ find_library(CGNS_LIBRARY
   NAMES
     cgns
   HINTS
+    /usr/lib64
     "C:/Program Files (x86)/cgns/lib"
     "C:/Program Files/cgns/lib"
   DOC "CGNS library")
