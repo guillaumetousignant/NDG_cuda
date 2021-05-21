@@ -12,6 +12,7 @@
 #include <iomanip>
 #include <filesystem>
 #include <limits>
+#include <algorithm>
 
 namespace fs = std::filesystem;
 
@@ -503,7 +504,7 @@ auto SEM::Meshes::Mesh2D_t::build_element_to_element(const std::vector<Element2D
                 if (element_index != i) {
                     const Element2D_t& element_neighbor = elements[element_index];
 
-                    auto it = find(element_neighbor.nodes_.begin(), element_neighbor.nodes_.end(), node_index);
+                    auto it = std::find(element_neighbor.nodes_.begin(), element_neighbor.nodes_.end(), node_index);
                     if (it != element_neighbor.nodes_.end()) {
                         const size_t node_element_index = it - element_neighbor.nodes_.begin();
                         

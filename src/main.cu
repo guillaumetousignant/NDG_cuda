@@ -29,7 +29,7 @@ auto get_input_file(const SEM::Helpers::InputParser_t& input_parser) -> fs::path
         const std::string mesh_filename = (input_filename.empty()) ? "mesh.cgns" : input_filename;
 
         const std::string input_mesh_dir = input_parser.getCmdOption("--mesh_directory");
-        const fs::path mesh_dir = (input_mesh_dir.empty()) ? fs::current_path() / "meshes" : input_mesh_dir;
+        const fs::path mesh_dir = (input_mesh_dir.empty()) ? fs::current_path() / "meshes" : fs::path(input_mesh_dir);
 
         fs::create_directory(mesh_dir);
         const fs::path mesh_file = mesh_dir / mesh_filename;
@@ -49,7 +49,7 @@ auto get_output_file(const SEM::Helpers::InputParser_t& input_parser) -> fs::pat
         const std::string save_filename = (input_filename.empty()) ? "output.pvtu" : input_filename;
 
         const std::string input_save_dir = input_parser.getCmdOption("--output_directory");
-        const fs::path save_dir = (input_save_dir.empty()) ? fs::current_path() / "data" : input_save_dir;
+        const fs::path save_dir = (input_save_dir.empty()) ? fs::current_path() / "data" : fs::path(input_save_dir);
 
         fs::create_directory(save_dir);
         const fs::path save_file = save_dir / save_filename;

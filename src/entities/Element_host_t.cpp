@@ -2,6 +2,7 @@
 #include "polynomials/ChebyshevPolynomial_host_t.h"
 #include "polynomials/LegendrePolynomial_host_t.h"
 #include <cmath>
+#include <limits>
 
 SEM::Entities::Element_host_t::Element_host_t(int N, size_t face_L, size_t face_R, hostFloat x_L, hostFloat x_R) : 
         N_(N),
@@ -150,7 +151,7 @@ bool SEM::Entities::Element_host_t::almost_equal(hostFloat x, hostFloat y) {
     constexpr int ulp = 2; // ULP
     // the machine epsilon has to be scaled to the magnitude of the values used
     // and multiplied by the desired precision in ULPs (units in the last place)
-    return std::abs(x-y) <= FLT_EPSILON * std::abs(x+y) * ulp // CHECK change this to double equivalent if using double instead of float
+    return std::abs(x-y) <= std::numeric_limits<hostFloat>::epsilon() * std::abs(x+y) * ulp
         // unless the result is subnormal
-        || std::abs(x-y) < FLT_MIN; // CHECK change this to 64F if using double instead of float
+        || std::abs(x-y) < std::numeric_limits<hostFloat>::min(); // CHECK change this to 64F if using double instead of float
 }

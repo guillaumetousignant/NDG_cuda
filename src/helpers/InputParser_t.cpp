@@ -1,4 +1,5 @@
 #include "helpers/InputParser_t.h"
+#include <algorithm>
 
 SEM::Helpers::InputParser_t::InputParser_t (int &argc, char **argv) {
     for (int i=1; i < argc; ++i) {

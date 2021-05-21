@@ -7,6 +7,7 @@
 #include <chrono>
 #include <vector>
 #include <array>
+#include <cmath>
 #include <mpi.h>
 
 constexpr hostFloat pi = 3.14159265358979323846;
