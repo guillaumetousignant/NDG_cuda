@@ -2,8 +2,8 @@
 #include "helpers/InputParser_t.h"
 #include "helpers/DataWriter_t.h"
 #include "entities/NDG_t.cuh"
-#include "meshes/Mesh_t.cuh"
 #include "meshes/Mesh2D_t.cuh"
+#include "solvers/Solver2D_t.cuh"
 #include "polynomials/ChebyshevPolynomial_t.cuh"
 #include "polynomials/LegendrePolynomial_t.cuh"
 #include <filesystem>
@@ -142,7 +142,8 @@ auto main(int argc, char* argv[]) -> int {
     auto t_start_init = std::chrono::high_resolution_clock::now();
 
     SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> NDG(N_max, N_interpolation_points, stream);
-    SEM::Meshes::Mesh2D_t mesh(mesh_file, initial_N, NDG, stream);
+    SEM::Meshes::Mesh2D_t mesh(mesh_file, initial_N, NDG.nodes_, stream);
+    SEM::Solvers::Solver2D_t solver(CFL, output_times, viscosity);
     SEM::Helpers::DataWriter_t data_writer(output_file);
     mesh.initial_conditions(NDG.nodes_.data());
     cudaDeviceSynchronize();
@@ -155,7 +156,7 @@ auto main(int argc, char* argv[]) -> int {
     // Computation
     auto t_start = std::chrono::high_resolution_clock::now();
 
-    mesh.solve(CFL, output_times, NDG, viscosity, data_writer);
+    solver.solve(NDG, mesh, data_writer);
     //mesh.print();
     // Wait for GPU to finish before copying to host
     cudaDeviceSynchronize();

@@ -10,6 +10,7 @@ namespace SEM {
     namespace Helpers {}
 }
 
+#include "constants.h"
 #include "DataWriter_t.h"
 #include "float_types.h"
 #include "InputParser_t.h"
