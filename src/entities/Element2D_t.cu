@@ -6,8 +6,6 @@
 
 using SEM::Entities::cuda_vector;
 
-constexpr deviceFloat pi = 3.14159265358979323846;
-
 __device__ 
 SEM::Entities::Element2D_t::Element2D_t(int N, std::array<cuda_vector<size_t>, 4> faces, std::array<size_t, 4> nodes) : 
         N_(N),
