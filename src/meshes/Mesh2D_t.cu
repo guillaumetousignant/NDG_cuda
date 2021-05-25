@@ -768,11 +768,11 @@ auto SEM::Meshes::Mesh2D_t::interpolate_to_boundaries(const device_vector<device
 }
 
 auto SEM::Meshes::Mesh2D_t::project_to_boundaries() -> void {
-    SEM::Meshes::project_to_boundaries<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(interfaces_origin_.size(), elements_.data(), interfaces_origin_.data(), interfaces_origin_side_.data(), interfaces_destination_.data());
+    SEM::Meshes::project_to_boundaries<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces_.size(), faces_.data(), elements_.data());
 }
 
 auto SEM::Meshes::Mesh2D_t::project_to_elements() -> void {
-    SEM::Meshes::project_to_elements<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(interfaces_origin_.size(), elements_.data(), interfaces_origin_.data(), interfaces_origin_side_.data(), interfaces_destination_.data());
+    SEM::Meshes::project_to_elements<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, faces_.data(), elements_.data());
 }
 
 __global__
@@ -1007,25 +1007,30 @@ auto SEM::Meshes::project_to_elements(size_t N_elements, const Face2D_t* faces, 
         Element2D_t& element = elements[element_index];
 
         for (size_t i = 0; i < element.faces_.size(); ++i) {
-            const Face2D_t& face = faces[element.faces_[i]];
+            // Conforming, forward
+            if ((element.faces_[i].size() == 1)
+                    && (faces[element.faces_[i][0]].N_ == element.N_)  
+                    && (faces[element.faces_[i][0]].nodes_[0] == element.nodes_[i]) 
+                    && (faces[element.faces_[i][0]].nodes_[1] == element.nodes_[(i + 1) * !(i == (element.faces_.size() - 1))])) {
 
-            if ((face.N_ == element.N_)  // Conforming, forward
-                    && (face.nodes_[0] == element.nodes_[i]) 
-                    && (face.nodes_[1] == element.nodes_[(i + 1) * !(i == (element.faces_.size() - 1))]) {
-                for (int j = 0; j <= face.N_; ++j) {
-                    element.p_flux_extrapolated_[i][j] = face.p_flux_[j]
-                    element.u_flux_extrapolated_[i][j] = face.u_flux_[j]
-                    element.v_flux_extrapolated_[i][j] = face.v_flux_[j]
+                const Face2D_t& face = faces[element.faces_[i][0]];
+                for (int j = 0; j <= faces[element.faces_[i][0]].N_; ++j) {
+                    element.p_flux_extrapolated_[i][j] = face.p_flux_[j];
+                    element.u_flux_extrapolated_[i][j] = face.u_flux_[j];
+                    element.v_flux_extrapolated_[i][j] = face.v_flux_[j];
                 }
             }
-            else if ((face.N_ == element.N_) // Conforming, backwards
-                    && (face.nodes_[1] == element.nodes_[i]) 
-                    && (face.nodes_[0] == element.nodes_[(i + 1) * !(i == (element.faces_.size() - 1))]) {
+            // Conforming, backwards
+            else if ((element.faces_[i].size() == 1)
+                    && (faces[element.faces_[i][0]].N_ == element.N_) 
+                    && (faces[element.faces_[i][0]].nodes_[1] == element.nodes_[i]) 
+                    && (faces[element.faces_[i][0]].nodes_[0] == element.nodes_[(i + 1) * !(i == (element.faces_.size() - 1))])) {
 
+                const Face2D_t& face = faces[element.faces_[i][0]];
                 for (int j = 0; j <= face.N_; ++j) {
-                    element.p_flux_extrapolated_[i][face.N_ - j] = face.p_flux_[j]
-                    element.u_flux_extrapolated_[i][face.N_ - j] = face.u_flux_[j]
-                    element.v_flux_extrapolated_[i][face.N_ - j] = face.v_flux_[j]
+                    element.p_flux_extrapolated_[i][face.N_ - j] = face.p_flux_[j];
+                    element.u_flux_extrapolated_[i][face.N_ - j] = face.u_flux_[j];
+                    element.v_flux_extrapolated_[i][face.N_ - j] = face.v_flux_[j];
                 }
             }
             else { // We need to interpolate

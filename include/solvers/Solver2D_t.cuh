@@ -42,16 +42,11 @@ namespace SEM { namespace Solvers {
     __global__
     auto compute_dg_wave_derivative(size_t N_elements, SEM::Entities::Element2D_t* elements, const SEM::Entities::Face2D_t* faces, const deviceFloat* weights, const deviceFloat* derivative_matrices_hat, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right) -> void;
 
-    // Algorithm 92
     __global__
-    auto compute_dg_wave_space_derivative(size_t N_elements, SEM::Entities::Element2D_t* elements, const SEM::Entities::Face2D_t* faces, const deviceFloat* weights, const deviceFloat* derivative_matrices_hat, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right) -> void;
+    auto rk3_first_step(size_t N_elements, SEM::Entities::Element2D_t* elements, deviceFloat delta_t, deviceFloat g) -> void;
 
     __global__
-    void rk3_first_step(size_t N_elements, SEM::Entities::Element2D_t* elements, deviceFloat delta_t, deviceFloat g);
-
-    __global__
-    void rk3_step(size_t N_elements, SEM::Entities::Element2D_t* elements, deviceFloat delta_t, deviceFloat a, deviceFloat g);
-    
+    auto rk3_step(size_t N_elements, SEM::Entities::Element2D_t* elements, deviceFloat delta_t, deviceFloat a, deviceFloat g) -> void;
 
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>
