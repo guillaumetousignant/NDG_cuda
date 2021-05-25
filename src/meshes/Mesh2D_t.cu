@@ -4,6 +4,7 @@
 #include "helpers/ProgressBar_t.h"
 #include "functions/Utilities.h"
 #include "functions/quad_map.cuh"
+#include "functions/quad_metrics.cuh"
 #include "entities/cuda_vector.cuh"
 #include "cgnslib.h"
 #include <iostream>
@@ -24,7 +25,11 @@ using SEM::Entities::Face2D_t;
 constexpr int CGIO_MAX_NAME_LENGTH = 33; // Includes the null terminator
 constexpr deviceFloat c = 1;
 
-SEM::Meshes::Mesh2D_t::Mesh2D_t(std::filesystem::path filename, int initial_N, cudaStream_t &stream) :       
+template SEM::Meshes::Mesh2D_t::Mesh2D_t(std::filesystem::path filename, int initial_N, const SEM::Entities::NDG_t<SEM::Polynomials::ChebyshevPolynomial_t> &NDG, cudaStream_t &stream); // Get with the times c++, it's crazy I have to do this
+template SEM::Meshes::Mesh2D_t::Mesh2D_t(std::filesystem::path filename, int initial_N, const SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> &NDG, cudaStream_t &stream);
+
+template<typename Polynomial>
+SEM::Meshes::Mesh2D_t::Mesh2D_t(std::filesystem::path filename, int initial_N, const SEM::Entities::NDG_t<Polynomial> &NDG, cudaStream_t &stream) :       
         initial_N_(initial_N),        
         stream_(stream) {
 
@@ -41,6 +46,9 @@ SEM::Meshes::Mesh2D_t::Mesh2D_t(std::filesystem::path filename, int initial_N, c
         std::cerr << "Error: extension '" << extension << "' not recognized. Exiting." << std::endl;
         exit(14);
     }
+
+    compute_element_geometry<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data(), nodes_.data(), NDG.nodes_.data());
+    compute_face_geometry<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces_.size(), faces_.data(), elements_.data(), nodes_.data());
 }
 
 auto SEM::Meshes::Mesh2D_t::read_su2(std::filesystem::path filename) -> void {
@@ -468,9 +476,7 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
 
     allocate_element_storage<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data());
     allocate_boundary_storage<<<all_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(N_elements_, elements_.size(), elements_.data());
-    compute_element_geometry<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data(), nodes_.data());
     allocate_face_storage<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces_.size(), faces_.data());
-    compute_face_geometry<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces_.size(), faces_.data(), elements_.data(), nodes_.data());
 
     const SEM::Entities::device_vector<std::array<size_t, 4>> device_element_to_face(element_to_face);
     fill_element_faces<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(elements_.size(), elements_.data(), device_element_to_face.data());
@@ -906,13 +912,45 @@ auto SEM::Meshes::allocate_boundary_storage(size_t n_domain_elements, size_t n_t
 }
 
 __global__
-auto SEM::Meshes::compute_element_geometry(size_t n_elements, Element2D_t* elements, const Vec2<deviceFloat>* nodes) -> void {
+auto SEM::Meshes::compute_element_geometry(size_t n_elements, Element2D_t* elements, const Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
     for (size_t i = index; i < n_elements; i += stride) {
         SEM::Entities::Element2D_t& element = elements[i];
-        
+        const size_t offset_1D = element.N_ * (element.N_ + 1) /2;
+        const std::array<Vec2<deviceFloat>, 4> points {nodes[element.nodes_[0]],
+                                                       nodes[element.nodes_[1]],
+                                                       nodes[element.nodes_[2]],
+                                                       nodes[element.nodes_[3]]};
+
+        for (int i = 0; i <= element.N_; ++i) {
+            for (int j = 0; j <= element.N_; ++j) {
+                const Vec2<deviceFloat> coordinates {polynomial_nodes[offset_1D + i], polynomial_nodes[offset_1D + j]};
+                const std::array<Vec2<deviceFloat>, 2> metrics = SEM::quad_metrics(coordinates, points);
+
+                element.dx_dxi_[i * (element.N_ + 1) + j]  = metrics[0].x();
+                element.dx_deta_[i * (element.N_ + 1) + j] = metrics[0].y();
+                element.dy_dxi_[i * (element.N_ + 1) + j]  = metrics[1].x();
+                element.dy_deta_[i * (element.N_ + 1) + j] = metrics[1].y();
+                element.jacobian_[i * (element.N_ + 1) + j] = metrics[0].x() * metrics[1].y() - metrics[0].y() * metrics[1].x();
+            }
+
+            const Vec2<deviceFloat> coordinates_bottom {polynomial_nodes[offset_1D + i], -1};
+            const Vec2<deviceFloat> coordinates_right  {1, polynomial_nodes[offset_1D + i]};
+            const Vec2<deviceFloat> coordinates_top    {polynomial_nodes[offset_1D + i], 1};
+            const Vec2<deviceFloat> coordinates_left   {-1, polynomial_nodes[offset_1D + i]};
+
+            const std::array<Vec2<deviceFloat>, 2> metrics_bottom = SEM::quad_metrics(coordinates_bottom, points);
+            const std::array<Vec2<deviceFloat>, 2> metrics_right  = SEM::quad_metrics(coordinates_right, points);
+            const std::array<Vec2<deviceFloat>, 2> metrics_top    = SEM::quad_metrics(coordinates_top, points);
+            const std::array<Vec2<deviceFloat>, 2> metrics_left   = SEM::quad_metrics(coordinates_left, points);
+
+            element.scaling_factor_[0][i] = std::sqrt(std::pow(metrics_bottom[0].x(), 2) * std::pow(metrics_bottom[1].x(), 2));
+            element.scaling_factor_[1][i] = std::sqrt(std::pow(metrics_bottom[0].y(), 2) * std::pow(metrics_bottom[1].y(), 2));
+            element.scaling_factor_[2][i] = std::sqrt(std::pow(metrics_bottom[0].x(), 2) * std::pow(metrics_bottom[1].x(), 2));
+            element.scaling_factor_[3][i] = std::sqrt(std::pow(metrics_bottom[0].y(), 2) * std::pow(metrics_bottom[1].y(), 2));
+        }    
     }
 }
 
@@ -972,14 +1010,14 @@ auto SEM::Meshes::initial_conditions_2D(size_t n_elements, Element2D_t* elements
     for (size_t elem_index = index; elem_index < n_elements; elem_index += stride) {
         Element2D_t& element = elements[elem_index];
         const size_t offset_1D = element.N_ * (element.N_ + 1) /2;
+        const std::array<Vec2<deviceFloat>, 4> points {nodes[element.nodes_[0]],
+                                                       nodes[element.nodes_[1]],
+                                                       nodes[element.nodes_[2]],
+                                                       nodes[element.nodes_[3]]};
         
         for (int i = 0; i <= element.N_; ++i) {
             for (int j = 0; j <= element.N_; ++j) {
                 const Vec2<deviceFloat> coordinates {polynomial_nodes[offset_1D + i], polynomial_nodes[offset_1D + j]};
-                const std::array<Vec2<deviceFloat>, 4> points {nodes[element.nodes_[0]],
-                                                               nodes[element.nodes_[1]],
-                                                               nodes[element.nodes_[2]],
-                                                               nodes[element.nodes_[3]]};
                 const Vec2<deviceFloat> global_coordinates = SEM::quad_map(coordinates, points);
 
                 const std::array<deviceFloat, 3> state = SEM::Meshes::Mesh2D_t::g(global_coordinates);

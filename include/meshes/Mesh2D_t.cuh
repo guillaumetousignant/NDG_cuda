@@ -20,7 +20,8 @@
 namespace SEM { namespace Meshes {
     class Mesh2D_t {
         public:
-            Mesh2D_t(std::filesystem::path filename, int initial_N, cudaStream_t &stream);
+            template<typename Polynomial>
+            Mesh2D_t(std::filesystem::path filename, int initial_N, const SEM::Entities::NDG_t<Polynomial> &NDG, cudaStream_t &stream);
 
             SEM::Entities::device_vector<SEM::Entities::Vec2<deviceFloat>> nodes_;
             SEM::Entities::device_vector<SEM::Entities::Element2D_t> elements_;
@@ -101,7 +102,7 @@ namespace SEM { namespace Meshes {
     auto allocate_boundary_storage(size_t n_domain_elements, size_t n_total_elements, SEM::Entities::Element2D_t* elements) -> void;
 
     __global__
-    auto compute_element_geometry(size_t n_elements, SEM::Entities::Element2D_t* elements, const SEM::Entities::Vec2<deviceFloat>* nodes) -> void;
+    auto compute_element_geometry(size_t n_elements, SEM::Entities::Element2D_t* elements, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes) -> void;
 
     __global__
     auto allocate_face_storage(size_t n_faces, SEM::Entities::Face2D_t* faces) -> void;

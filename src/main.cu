@@ -142,7 +142,7 @@ auto main(int argc, char* argv[]) -> int {
     auto t_start_init = std::chrono::high_resolution_clock::now();
 
     SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> NDG(N_max, N_interpolation_points, stream);
-    SEM::Meshes::Mesh2D_t mesh(mesh_file, initial_N, stream);
+    SEM::Meshes::Mesh2D_t mesh(mesh_file, initial_N, NDG, stream);
     SEM::Helpers::DataWriter_t data_writer(output_file);
     mesh.initial_conditions(NDG.nodes_.data());
     cudaDeviceSynchronize();
