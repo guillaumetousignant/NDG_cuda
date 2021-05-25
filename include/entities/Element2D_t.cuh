@@ -16,9 +16,21 @@ namespace SEM { namespace Entities {
             Element2D_t();
 
             int N_;
+
+            // Connectivity
             std::array<SEM::Entities::cuda_vector<size_t>, 4> faces_;
             std::array<size_t, 4> nodes_;
+
+            // Geometry
             deviceFloat delta_xy_min_;
+            SEM::Entities::cuda_vector<deviceFloat> dx_dxi_;
+            SEM::Entities::cuda_vector<deviceFloat> dx_deta_;
+            SEM::Entities::cuda_vector<deviceFloat> dy_dxi_;
+            SEM::Entities::cuda_vector<deviceFloat> dy_deta_;
+            SEM::Entities::cuda_vector<deviceFloat> jacobian_;
+            std::array<SEM::Entities::cuda_vector<deviceFloat>, 4> scaling_factor_;
+
+            // Solution
             SEM::Entities::cuda_vector<deviceFloat> p_;
             SEM::Entities::cuda_vector<deviceFloat> u_;
             SEM::Entities::cuda_vector<deviceFloat> v_;

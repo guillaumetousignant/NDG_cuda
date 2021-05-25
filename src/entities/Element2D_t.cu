@@ -14,6 +14,12 @@ SEM::Entities::Element2D_t::Element2D_t(int N, std::array<cuda_vector<size_t>, 4
         faces_{faces},
         nodes_{nodes},
         delta_xy_min_{0.0},
+        dx_dxi_((N_ + 1) * (N_ + 1)),
+        dx_deta_((N_ + 1) * (N_ + 1)),
+        dy_dxi_((N_ + 1) * (N_ + 1)),
+        dy_deta_((N_ + 1) * (N_ + 1)),
+        jacobian_((N_ + 1) * (N_ + 1)),
+        scaling_factor_{N_ + 1, N_ + 1, N_ + 1, N_ + 1},
         p_((N_ + 1) * (N_ + 1)),
         u_((N_ + 1) * (N_ + 1)),
         v_((N_ + 1) * (N_ + 1)),
@@ -34,6 +40,10 @@ SEM::Entities::Element2D_t::Element2D_t() :
         faces_{},
         nodes_{0, 0, 0, 0},
         delta_xy_min_{0.0},
+        scaling_factor_{},
+        p_extrapolated_{},
+        u_extrapolated_{},
+        v_extrapolated_{},
         sigma_(0.0),
         refine_(false),
         coarsen_(false),
@@ -128,6 +138,16 @@ auto SEM::Entities::Element2D_t::allocate_storage() -> void {
               cuda_vector<size_t>(1),
               cuda_vector<size_t>(1),
               cuda_vector<size_t>(1)};
+
+    dx_dxi_ = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
+    dx_deta_ = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
+    dy_dxi_ = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
+    dy_deta_ = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
+    jacobian_ = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
+    scaling_factor_ = {cuda_vector<deviceFloat>(N_ + 1),
+                       cuda_vector<deviceFloat>(N_ + 1),
+                       cuda_vector<deviceFloat>(N_ + 1),
+                       cuda_vector<deviceFloat>(N_ + 1)};
 
     p_ = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
     u_ = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
