@@ -133,6 +133,16 @@ auto SEM::Solvers::Solver2D_t::get_delta_t(SEM::Meshes::Mesh2D_t& mesh) -> devic
     return delta_t_min;
 }
 
+__host__ __device__
+auto SEM::Solvers::Solver2D_t::x_flux(deviceFloat p, deviceFloat u, deviceFloat v) -> std::array<deviceFloat, 3> {
+    return {SEM::Constants::c * u, p, 0};
+}
+
+__host__ __device__
+auto SEM::Solvers::Solver2D_t::y_flux(deviceFloat p, deviceFloat u, deviceFloat v) -> std::array<deviceFloat, 3> {
+    return {SEM::Constants::c * v, 0, p};
+}
+
 __global__
 void SEM::Solvers::calculate_wave_fluxes(size_t N_faces, Face2D_t* faces, const Element2D_t* elements) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;

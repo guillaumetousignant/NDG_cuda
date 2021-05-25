@@ -22,6 +22,12 @@ namespace SEM { namespace Solvers {
             auto solve(const SEM::Entities::NDG_t<Polynomial> &NDG, SEM::Meshes::Mesh2D_t& mesh, const SEM::Helpers::DataWriter_t& data_writer) -> void;
 
             auto get_delta_t(SEM::Meshes::Mesh2D_t& mesh) -> deviceFloat;
+
+            __host__ __device__
+            static auto x_flux(deviceFloat p, deviceFloat u, deviceFloat v) -> std::array<deviceFloat, 3>;
+
+            __host__ __device__
+            static auto y_flux(deviceFloat p, deviceFloat u, deviceFloat v) -> std::array<deviceFloat, 3>;
     };
 
     __global__
