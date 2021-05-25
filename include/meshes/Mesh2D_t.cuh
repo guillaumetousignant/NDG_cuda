@@ -101,6 +101,9 @@ namespace SEM { namespace Meshes {
     auto allocate_boundary_storage(size_t n_domain_elements, size_t n_total_elements, SEM::Entities::Element2D_t* elements) -> void;
 
     __global__
+    auto compute_element_geometry(size_t n_elements, SEM::Entities::Element2D_t* elements, const SEM::Entities::Vec2<deviceFloat>* nodes) -> void;
+
+    __global__
     auto allocate_face_storage(size_t n_faces, SEM::Entities::Face2D_t* faces) -> void;
 
     __global__
