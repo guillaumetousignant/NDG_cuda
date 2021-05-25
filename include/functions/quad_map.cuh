@@ -4,7 +4,6 @@
 #include "helpers/float_types.h"
 #include "entities/Vec2.cuh"
 #include <array>
-#include <string>
 
 namespace SEM {
     // Algorithm 95
