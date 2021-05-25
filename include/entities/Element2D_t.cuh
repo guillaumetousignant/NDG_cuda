@@ -46,6 +46,12 @@ namespace SEM { namespace Entities {
             SEM::Entities::cuda_vector<deviceFloat> p_flux_derivative_;
             SEM::Entities::cuda_vector<deviceFloat> u_flux_derivative_;
             SEM::Entities::cuda_vector<deviceFloat> v_flux_derivative_;
+            std::array<SEM::Entities::cuda_vector<deviceFloat>, 4> p_flux_extrapolated_;
+            std::array<SEM::Entities::cuda_vector<deviceFloat>, 4> u_flux_extrapolated_;
+            std::array<SEM::Entities::cuda_vector<deviceFloat>, 4> v_flux_extrapolated_;
+            SEM::Entities::cuda_vector<deviceFloat> p_intermediate_;
+            SEM::Entities::cuda_vector<deviceFloat> u_intermediate_;
+            SEM::Entities::cuda_vector<deviceFloat> v_intermediate_;
 
             deviceFloat sigma_;
             bool refine_;

@@ -767,6 +767,14 @@ auto SEM::Meshes::Mesh2D_t::interpolate_to_boundaries(const device_vector<device
     SEM::Meshes::interpolate_to_boundaries<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data(), lagrange_interpolant_left.data(), lagrange_interpolant_right.data());
 }
 
+auto SEM::Meshes::Mesh2D_t::project_to_boundaries() -> void {
+    SEM::Meshes::project_to_boundaries<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(interfaces_origin_.size(), elements_.data(), interfaces_origin_.data(), interfaces_origin_side_.data(), interfaces_destination_.data());
+}
+
+auto SEM::Meshes::Mesh2D_t::project_to_elements() -> void {
+    SEM::Meshes::project_to_elements<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(interfaces_origin_.size(), elements_.data(), interfaces_origin_.data(), interfaces_origin_side_.data(), interfaces_destination_.data());
+}
+
 __global__
 auto SEM::Meshes::allocate_element_storage(size_t n_elements, Element2D_t* elements) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
@@ -946,6 +954,84 @@ void SEM::Meshes::interpolate_to_boundaries(size_t N_elements, Element2D_t* elem
 
     for (size_t i = index; i < N_elements; i += stride) {
         elements[i].interpolate_to_boundaries(lagrange_interpolant_minus, lagrange_interpolant_plus);
+    }
+}
+
+__global__
+auto SEM::Meshes::project_to_boundaries(size_t N_faces, Face2D_t* faces, const Element2D_t* elements) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t face_index = index; face_index < N_faces; face_index += stride) {
+        Face2D_t& face = faces[face_index];
+
+        // Getting element solution
+        const Element2D_t& element_L = elements[face.elements_[0]];
+        // Conforming
+        if ((face.N_ == element_L.N_) 
+                && (face.nodes_[0] == element_L.nodes_[face.elements_side_[0]]) 
+                && (face.nodes_[1] == element_L.nodes_[(face.elements_side_[0] + 1) * (!(face.elements_side_[0] == (element_L.nodes_.size() - 1)))])) {
+            for (int i = 0; i <= face.N_; ++i) {
+                face.p_[0][i] = element_L.p_extrapolated_[face.elements_side_[0]][i];
+                face.u_[0][i] = element_L.u_extrapolated_[face.elements_side_[0]][i];
+                face.v_[0][i] = element_L.v_extrapolated_[face.elements_side_[0]][i];
+            }
+        }
+        else { // We need to interpolate
+            printf("Warning, non-conforming surfaces are not implemented yet to project to boundaries.\n");
+        }
+
+        const Element2D_t& element_R = elements[face.elements_[1]];
+        // Conforming, but reversed
+        if ((face.N_ == element_R.N_) 
+                && (face.nodes_[1] == element_R.nodes_[face.elements_side_[1]]) 
+                && (face.nodes_[0] == element_R.nodes_[(face.elements_side_[1] + 1) * (!(face.elements_side_[1] == (element_R.nodes_.size() - 1)))])) {
+            for (int i = 0; i <= face.N_; ++i) {
+                face.p_[1][face.N_ - i] = element_R.p_extrapolated_[face.elements_side_[1]][i];
+                face.u_[1][face.N_ - i] = element_R.u_extrapolated_[face.elements_side_[1]][i];
+                face.v_[1][face.N_ - i] = element_R.v_extrapolated_[face.elements_side_[1]][i];
+            }
+        }
+        else { // We need to interpolate
+            printf("Warning, non-conforming surfaces are not implemented yet to project to boundaries.\n");
+        }
+    }
+}
+
+__global__
+auto SEM::Meshes::project_to_elements(size_t N_elements, const Face2D_t* faces, Element2D_t* elements) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t element_index = index; element_index < N_elements; element_index += stride) {
+        Element2D_t& element = elements[element_index];
+
+        for (size_t i = 0; i < element.faces_.size(); ++i) {
+            const Face2D_t& face = faces[element.faces_[i]];
+
+            if ((face.N_ == element.N_)  // Conforming, forward
+                    && (face.nodes_[0] == element.nodes_[i]) 
+                    && (face.nodes_[1] == element.nodes_[(i + 1) * !(i == (element.faces_.size() - 1))]) {
+                for (int j = 0; j <= face.N_; ++j) {
+                    element.p_flux_extrapolated_[i][j] = face.p_flux_[j]
+                    element.u_flux_extrapolated_[i][j] = face.u_flux_[j]
+                    element.v_flux_extrapolated_[i][j] = face.v_flux_[j]
+                }
+            }
+            else if ((face.N_ == element.N_) // Conforming, backwards
+                    && (face.nodes_[1] == element.nodes_[i]) 
+                    && (face.nodes_[0] == element.nodes_[(i + 1) * !(i == (element.faces_.size() - 1))]) {
+
+                for (int j = 0; j <= face.N_; ++j) {
+                    element.p_flux_extrapolated_[i][face.N_ - j] = face.p_flux_[j]
+                    element.u_flux_extrapolated_[i][face.N_ - j] = face.u_flux_[j]
+                    element.v_flux_extrapolated_[i][face.N_ - j] = face.v_flux_[j]
+                }
+            }
+            else { // We need to interpolate
+                printf("Warning, non-conforming surfaces are not implemented yet to project to elements.\n");
+            }
+        }
     }
 }
 

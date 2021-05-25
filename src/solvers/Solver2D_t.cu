@@ -50,23 +50,29 @@ auto SEM::Solvers::Solver2D_t::solve(const SEM::Entities::NDG_t<Polynomial> &NDG
         deviceFloat t = time;
         mesh.interpolate_to_boundaries(NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
         mesh.boundary_conditions();
+        mesh.project_to_boundaries()
         SEM::Solvers::calculate_wave_fluxes<<<mesh.faces_numBlocks_, mesh.faces_blockSize_, 0, mesh.stream_>>>(mesh.faces_.size(), mesh.faces_.data(), mesh.elements_.data());
+        mesh.project_to_elements();
         SEM::Solvers::compute_dg_wave_derivative<<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, mesh.stream_>>>(mesh.N_elements_, mesh.elements_.data(), mesh.faces_.data(), NDG.weights_.data(), NDG.derivative_matrices_hat_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
-        //SEM::Meshes::rk3_first_step<<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, mesh.stream_>>>(mesh.N_elements_, mesh.elements_, delta_t, 1.0/3.0);
+        SEM::Meshes::rk3_first_step<<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, mesh.stream_>>>(mesh.N_elements_, mesh.elements_, delta_t, 1.0/3.0);
 
         t = time + 0.33333333333f * delta_t;
         mesh.interpolate_to_boundaries(NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
         mesh.boundary_conditions();
+        mesh.project_to_boundaries()
         SEM::Solvers::calculate_wave_fluxes<<<mesh.faces_numBlocks_, mesh.faces_blockSize_, 0, mesh.stream_>>>(mesh.faces_.size(), mesh.faces_.data(), mesh.elements_.data());
+        mesh.project_to_elements();
         SEM::Solvers::compute_dg_wave_derivative<<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, mesh.stream_>>>(mesh.N_elements_, mesh.elements_.data(), mesh.faces_.data(), NDG.weights_.data(), NDG.derivative_matrices_hat_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
-        //SEM::Meshes::rk3_step<<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, mesh.stream_>>>(mesh.N_elements_, mesh.elements_, delta_t, -5.0/9.0, 15.0/16.0);
+        SEM::Meshes::rk3_step<<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, mesh.stream_>>>(mesh.N_elements_, mesh.elements_, delta_t, -5.0/9.0, 15.0/16.0);
 
         t = time + 0.75f * delta_t;
         mesh.interpolate_to_boundaries(NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
         mesh.boundary_conditions();
+        mesh.project_to_boundaries();
         SEM::Solvers::calculate_wave_fluxes<<<mesh.faces_numBlocks_, mesh.faces_blockSize_, 0, mesh.stream_>>>(mesh.faces_.size(), mesh.faces_.data(), mesh.elements_.data());
+        mesh.project_to_elements();
         SEM::Solvers::compute_dg_wave_derivative<<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, mesh.stream_>>>(mesh.N_elements_, mesh.elements_.data(), mesh.faces_.data(), NDG.weights_.data(), NDG.derivative_matrices_hat_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
-        //SEM::Meshes::rk3_step<<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, mesh.stream_>>>(mesh.N_elements_, mesh.elements_, delta_t, -153.0/128.0, 8.0/15.0);
+        SEM::Meshes::rk3_step<<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, mesh.stream_>>>(mesh.N_elements_, mesh.elements_, delta_t, -153.0/128.0, 8.0/15.0);
         
         time += delta_t;
         for (auto const& e : std::as_const(output_times_)) {
@@ -143,45 +149,23 @@ auto SEM::Solvers::Solver2D_t::y_flux(deviceFloat p, deviceFloat u, deviceFloat 
     return {SEM::Constants::c * v, 0, p};
 }
 
+__device__
+void SEM::Solvers::Solver2D_t::matrix_vector_multiply(int N, const deviceFloat* matrix, const deviceFloat* vector, deviceFloat* result) {
+    for (int i = 0; i <= N; ++i) {
+        result[i] = 0.0;
+        for (int j = 0; j <= N; ++j) {
+            result[i] +=  matrix[i * (N + 1) + j] * vector[j];
+        }
+    }
+}
+
 __global__
-void SEM::Solvers::calculate_wave_fluxes(size_t N_faces, Face2D_t* faces, const Element2D_t* elements) {
+auto SEM::Solvers::calculate_wave_fluxes(size_t N_faces, Face2D_t* faces, const Element2D_t* elements) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
     for (size_t face_index = index; face_index < N_faces; face_index += stride) {
         Face2D_t& face = faces[face_index];
-
-        // Getting element solution
-        const Element2D_t& element_L = elements[face.elements_[0]];
-        // Conforming
-        if ((face.N_ == element_L.N_) 
-                && (face.nodes_[0] == element_L.nodes_[face.elements_side_[0]]) 
-                && (face.nodes_[1] == element_L.nodes_[(face.elements_side_[0] + 1) * (!(face.elements_side_[0] == (element_L.nodes_.size() - 1)))])) {
-            for (int i = 0; i <= face.N_; ++i) {
-                face.p_[0][i] = element_L.p_extrapolated_[face.elements_side_[0]][i];
-                face.u_[0][i] = element_L.u_extrapolated_[face.elements_side_[0]][i];
-                face.v_[0][i] = element_L.v_extrapolated_[face.elements_side_[0]][i];
-            }
-        }
-        else { // We need to interpolate
-            printf("Warning, non-conforming surfaces are not implemented yet.\n");
-        }
-
-
-        const Element2D_t& element_R = elements[face.elements_[1]];
-        // Conforming, but reversed
-        if ((face.N_ == element_R.N_) 
-                && (face.nodes_[1] == element_R.nodes_[face.elements_side_[1]]) 
-                && (face.nodes_[0] == element_R.nodes_[(face.elements_side_[1] + 1) * (!(face.elements_side_[1] == (element_R.nodes_.size() - 1)))])) {
-            for (int i = 0; i <= face.N_; ++i) {
-                face.p_[1][face.N_ - i] = element_R.p_extrapolated_[face.elements_side_[1]][i];
-                face.u_[1][face.N_ - i] = element_R.u_extrapolated_[face.elements_side_[1]][i];
-                face.v_[1][face.N_ - i] = element_R.v_extrapolated_[face.elements_side_[1]][i];
-            }
-        }
-        else { // We need to interpolate
-            printf("Warning, non-conforming surfaces are not implemented yet.\n");
-        }
 
         // Computing fluxes
         for (int i = 0; i <= face.N_; ++i) {
@@ -205,16 +189,127 @@ void SEM::Solvers::calculate_wave_fluxes(size_t N_faces, Face2D_t* faces, const 
     }
 }
 
-// Algorithm 60 (not really anymore)
+// Algorithm 114
 __global__
-void SEM::Solvers::compute_dg_wave_derivative(size_t N_elements, Element2D_t* elements, const Face2D_t* faces, const deviceFloat* weights, const deviceFloat* derivative_matrices_hat, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right) {
+auto SEM::Solvers::compute_dg_wave_derivative(size_t N_elements, Element2D_t* elements, const Face2D_t* faces, const deviceFloat* weights, const deviceFloat* derivative_matrices_hat, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
     for (size_t element_index = index; element_index < N_elements; element_index += stride) {
         Element2D_t& element = elements[element_index];
-        const size_t offset_1D = elements[i].N_ * (elements[i].N_ + 1) /2; // CHECK cache?
-        const size_t offset_2D = elements[i].N_ * (elements[i].N_ + 1) * (2 * elements[i].N_ + 1) /6;
+        const size_t offset_1D = element.N_ * (element.N_ + 1) /2; // CHECK cache?
+        const size_t offset_2D = element.N_ * (element.N_ + 1) * (2 * element.N_ + 1) /6;
+
+        for (int i = 0; i <= element.N_; ++i) {
+            for (int j = 0; j <= element.N_; ++j) {
+                const std::array<deviceFloat, 3> flux_x = SEM::Solvers::Solver2D_t::x_flux(element.p_[i * (element.N_ + 1) + j], element.u_[i * (element.N_ + 1) + j], element.v_[i * (element.N_ + 1) + j]);
+                const std::array<deviceFloat, 3> flux_y = SEM::Solvers::Solver2D_t::y_flux(element.p_[i * (element.N_ + 1) + j], element.u_[i * (element.N_ + 1) + j], element.v_[i * (element.N_ + 1) + j]);
+            
+                element.p_flux_[j] = element.deta_dy_[i * (element.N_ + 1) + j] * flux_x[0] - element.deta_dx_[i * (element.N_ + 1) + j] * flux_y[0];
+                element.u_flux_[j] = element.deta_dy_[i * (element.N_ + 1) + j] * flux_x[1] - element.deta_dx_[i * (element.N_ + 1) + j] * flux_y[1];
+                element.v_flux_[j] = element.deta_dy_[i * (element.N_ + 1) + j] * flux_x[2] - element.deta_dx_[i * (element.N_ + 1) + j] * flux_y[2];
+            }
+
+            SEM::Solvers::Solver2D_t::matrix_vector_multiply(element.N_, derivative_matrices_hat + offset_2D, elements.p_flux_.data(), elements.p_flux_derivative_.data());
+            SEM::Solvers::Solver2D_t::matrix_vector_multiply(element.N_, derivative_matrices_hat + offset_2D, elements.u_flux_.data(), elements.u_flux_derivative_.data());
+            SEM::Solvers::Solver2D_t::matrix_vector_multiply(element.N_, derivative_matrices_hat + offset_2D, elements.v_flux_.data(), elements.v_flux_derivative_.data());
+
+            for (int j = 0; j <= element.N_; ++j) {
+                element.p_flux_derivative_[j] += (element.p_flux_extrapolated_[1][j] * lagrange_interpolant_right[offset_1D + j] + element.p_flux_extrapolated_[3][j] * lagrange_interpolant_left[offset_1D + j]) / weights[offset_1D + j];
+                element.u_flux_derivative_[j] += (element.u_flux_extrapolated_[1][j] * lagrange_interpolant_right[offset_1D + j] + element.u_flux_extrapolated_[3][j] * lagrange_interpolant_left[offset_1D + j]) / weights[offset_1D + j];
+                element.v_flux_derivative_[j] += (element.v_flux_extrapolated_[1][j] * lagrange_interpolant_right[offset_1D + j] + element.v_flux_extrapolated_[3][j] * lagrange_interpolant_left[offset_1D + j]) / weights[offset_1D + j];
+            }
+
+            for (int j = 0; j <= element.N_; ++j) {
+                element.G_p_[i * (element.N_ + 1) + j] = -element.p_flux_derivative_[j];
+                element.G_u_[i * (element.N_ + 1) + j] = -element.u_flux_derivative_[j];
+                element.G_v_[i * (element.N_ + 1) + j] = -element.v_flux_derivative_[j];
+            }
+        }
+
+        for (int j = 0; j <= element.N_; ++j) {
+            for (int i = 0; i <= element.N_; ++i) {
+                const std::array<deviceFloat, 3> flux_x = SEM::Solvers::Solver2D_t::x_flux(element.p_[i * (element.N_ + 1) + j], element.u_[i * (element.N_ + 1) + j], element.v_[i * (element.N_ + 1) + j]);
+                const std::array<deviceFloat, 3> flux_y = SEM::Solvers::Solver2D_t::y_flux(element.p_[i * (element.N_ + 1) + j], element.u_[i * (element.N_ + 1) + j], element.v_[i * (element.N_ + 1) + j]);
+
+                element.p_flux_[i] = -element.dxi_dy_[i * (element.N_ + 1) + j] * flux_x[0] + element.dxi_dx_[i * (element.N_ + 1) + j] * flux_y[0];
+                element.u_flux_[i] = -element.dxi_dy_[i * (element.N_ + 1) + j] * flux_x[1] + element.dxi_dx_[i * (element.N_ + 1) + j] * flux_y[1];
+                element.v_flux_[i] = -element.dxi_dy_[i * (element.N_ + 1) + j] * flux_x[2] + element.dxi_dx_[i * (element.N_ + 1) + j] * flux_y[2];
+            }
+
+            SEM::Solvers::Solver2D_t::matrix_vector_multiply(element.N_, derivative_matrices_hat + offset_2D, elements.p_flux_.data(), elements.p_flux_derivative_.data());
+            SEM::Solvers::Solver2D_t::matrix_vector_multiply(element.N_, derivative_matrices_hat + offset_2D, elements.u_flux_.data(), elements.u_flux_derivative_.data());
+            SEM::Solvers::Solver2D_t::matrix_vector_multiply(element.N_, derivative_matrices_hat + offset_2D, elements.v_flux_.data(), elements.v_flux_derivative_.data());
+
+            for (int i = 0; i <= element.N_; ++i) {
+                element.p_flux_derivative_[i] += (element.p_flux_extrapolated_[2][i] * lagrange_interpolant_right[offset_1D + i] + element.p_flux_extrapolated_[0][i] * lagrange_interpolant_left[offset_1D + i]) / weights[offset_1D + i];
+                element.u_flux_derivative_[i] += (element.u_flux_extrapolated_[2][i] * lagrange_interpolant_right[offset_1D + i] + element.u_flux_extrapolated_[0][i] * lagrange_interpolant_left[offset_1D + i]) / weights[offset_1D + i];
+                element.v_flux_derivative_[i] += (element.v_flux_extrapolated_[2][i] * lagrange_interpolant_right[offset_1D + i] + element.v_flux_extrapolated_[0][i] * lagrange_interpolant_left[offset_1D + i]) / weights[offset_1D + i];
+            }
+
+            for (int i = 0; i <= element.N_; ++i) {
+                element.G_p_[i * (element.N_ + 1) + j] = element.G_p_[i * (element.N_ + 1) + j] - element.p_flux_derivative_[i];
+                element.G_u_[i * (element.N_ + 1) + j] = element.G_u_[i * (element.N_ + 1) + j] - element.u_flux_derivative_[i];
+                element.G_v_[i * (element.N_ + 1) + j] = element.G_v_[i * (element.N_ + 1) + j] - element.v_flux_derivative_[i];
+            }
+        }
+    }
+}
+
+__global__
+void SEM::Meshes::rk3_first_step(size_t N_elements, SEM::Entities::Element_t* elements, deviceFloat delta_t, deviceFloat g) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t element_index = index; element_index < N_elements; element_index += stride) {
+        Element2D_t& element = elements[element_index];
+
+        for (int i = 0; i <= element.N_; ++i){
+            for (int j = 0; j <= element.N_; ++j){
+                element.p_intermediate_[i * (element.N_ + 1) + j] = element.G_p_[i * (element.N_ + 1) + j];
+                element.u_intermediate_[i * (element.N_ + 1) + j] = element.G_u_[i * (element.N_ + 1) + j];
+                element.v_intermediate_[i * (element.N_ + 1) + j] = element.G_v_[i * (element.N_ + 1) + j];
+
+                element.p_[i * (element.N_ + 1) + j] += g * delta_t * element.p_intermediate_[i * (element.N_ + 1) + j];
+                element.u_[i * (element.N_ + 1) + j] += g * delta_t * element.u_intermediate_[i * (element.N_ + 1) + j];
+                element.v_[i * (element.N_ + 1) + j] += g * delta_t * element.v_intermediate_[i * (element.N_ + 1) + j];
+            }
+        }
+    }
+}
+
+__global__
+voidSEM::Solvers::rk3_step(size_t N_elements, SEM::Entities::Element2D_t* elements, deviceFloat delta_t, deviceFloat a, deviceFloat g) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t element_index = index; element_index < N_elements; element_index += stride) {
+        Element2D_t& element = elements[element_index];
+
+        for (int i = 0; i <= element.N_; ++i){
+            for (int j = 0; j <= element.N_; ++j){
+                element.p_intermediate_[i * (element.N_ + 1) + j] = a * element.p_intermediate_[i * (element.N_ + 1) + j] + element.G_p_[i * (element.N_ + 1) + j];
+                element.u_intermediate_[i * (element.N_ + 1) + j] = a * element.u_intermediate_[i * (element.N_ + 1) + j] + element.G_u_[i * (element.N_ + 1) + j];
+                element.v_intermediate_[i * (element.N_ + 1) + j] = a * element.v_intermediate_[i * (element.N_ + 1) + j] + element.G_v_[i * (element.N_ + 1) + j];
+
+                element.p_[i * (element.N_ + 1) + j] += g * delta_t * element.p_intermediate_[i * (element.N_ + 1) + j];
+                element.u_[i * (element.N_ + 1) + j] += g * delta_t * element.u_intermediate_[i * (element.N_ + 1) + j];
+                element.v_[i * (element.N_ + 1) + j] += g * delta_t * element.v_intermediate_[i * (element.N_ + 1) + j];
+            }
+        }
+    }
+}
+
+// Algorithm 92
+__global__
+auto SEM::Solvers::compute_dg_wave_space_derivative(size_t N_elements, Element2D_t* elements, const Face2D_t* faces, const deviceFloat* weights, const deviceFloat* derivative_matrices_hat, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t element_index = index; element_index < N_elements; element_index += stride) {
+        Element2D_t& element = elements[element_index];
+        const size_t offset_1D = element.N_ * (element.N_ + 1) /2; // CHECK cache?
+        const size_t offset_2D = element.N_ * (element.N_ + 1) * (2 * element.N_ + 1) /6;
 
         for (int i = 0; i <= element.N_; ++i) {
             for (int j = 0; j <= element.N_; ++j) {

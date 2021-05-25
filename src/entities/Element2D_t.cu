@@ -29,12 +29,18 @@ SEM::Entities::Element2D_t::Element2D_t(int N, std::array<cuda_vector<size_t>, 4
         p_extrapolated_{N_ + 1, N_ + 1, N_ + 1, N_ + 1},
         u_extrapolated_{N_ + 1, N_ + 1, N_ + 1, N_ + 1},
         v_extrapolated_{N_ + 1, N_ + 1, N_ + 1, N_ + 1},
-        p_flux_((N_ + 1) * (N_ + 1)),
-        u_flux_((N_ + 1) * (N_ + 1)),
-        v_flux_((N_ + 1) * (N_ + 1)),
-        p_flux_derivative_((N_ + 1) * (N_ + 1)),
-        u_flux_derivative_((N_ + 1) * (N_ + 1)),
-        v_flux_derivative_((N_ + 1) * (N_ + 1)),
+        p_flux_(N_ + 1),
+        u_flux_(N_ + 1),
+        v_flux_(N_ + 1),
+        p_flux_derivative_(N_ + 1),
+        u_flux_derivative_(N_ + 1),
+        v_flux_derivative_(N_ + 1),
+        p_flux_extrapolated_{N_ + 1, N_ + 1, N_ + 1, N_ + 1},
+        u_flux_extrapolated_{N_ + 1, N_ + 1, N_ + 1, N_ + 1},
+        v_flux_extrapolated_{N_ + 1, N_ + 1, N_ + 1, N_ + 1},
+        p_intermediate_((N_ + 1) * (N_ + 1)),
+        u_intermediate_((N_ + 1) * (N_ + 1)),
+        v_intermediate_((N_ + 1) * (N_ + 1)),
         sigma_(0.0),
         refine_(false),
         coarsen_(false),
@@ -50,6 +56,9 @@ SEM::Entities::Element2D_t::Element2D_t() :
         p_extrapolated_{},
         u_extrapolated_{},
         v_extrapolated_{},
+        p_flux_extrapolated_{},
+        u_flux_extrapolated_{},
+        v_flux_extrapolated_{},
         sigma_(0.0),
         refine_(false),
         coarsen_(false),
@@ -176,12 +185,25 @@ auto SEM::Entities::Element2D_t::allocate_storage() -> void {
                        cuda_vector<deviceFloat>(N_ + 1),
                        cuda_vector<deviceFloat>(N_ + 1)};
 
-    p_flux_ = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
-    u_flux_ = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
-    v_flux_ = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
-    p_flux_derivative_ = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
-    u_flux_derivative_ = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
-    v_flux_derivative_ = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
+    p_flux_ = cuda_vector<deviceFloat>(N_ + 1);
+    u_flux_ = cuda_vector<deviceFloat>(N_ + 1);
+    v_flux_ = cuda_vector<deviceFloat>(N_ + 1);
+    p_flux_derivative_ = cuda_vector<deviceFloat>(N_ + 1);
+    u_flux_derivative_ = cuda_vector<deviceFloat>(N_ + 1);
+    v_flux_derivative_ = cuda_vector<deviceFloat>(N_ + 1);
+
+    p_flux_extrapolated_ = {cuda_vector<deviceFloat>(N_ + 1),
+                            cuda_vector<deviceFloat>(N_ + 1),
+                            cuda_vector<deviceFloat>(N_ + 1),
+                            cuda_vector<deviceFloat>(N_ + 1)};
+    u_flux_extrapolated_ = {cuda_vector<deviceFloat>(N_ + 1),
+                            cuda_vector<deviceFloat>(N_ + 1),
+                            cuda_vector<deviceFloat>(N_ + 1),
+                            cuda_vector<deviceFloat>(N_ + 1)};
+    v_flux_extrapolated_ = {cuda_vector<deviceFloat>(N_ + 1),
+                            cuda_vector<deviceFloat>(N_ + 1),
+                            cuda_vector<deviceFloat>(N_ + 1),
+                            cuda_vector<deviceFloat>(N_ + 1)};
 }
 
 __device__

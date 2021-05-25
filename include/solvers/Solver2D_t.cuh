@@ -29,19 +29,34 @@ namespace SEM { namespace Solvers {
 
             __host__ __device__
             static auto y_flux(deviceFloat p, deviceFloat u, deviceFloat v) -> std::array<deviceFloat, 3>;
+
+            // Algorithm 19
+            __device__
+            static auto matrix_vector_multiply(int N, const deviceFloat* matrix, const deviceFloat* vector, deviceFloat* result) -> void;
     };
 
     __global__
-    void calculate_wave_fluxes(size_t N_faces, SEM::Entities::Face2D_t* faces, const SEM::Entities::Element2D_t* elements);
+    auto calculate_wave_fluxes(size_t N_faces, SEM::Entities::Face2D_t* faces, const SEM::Entities::Element2D_t* elements) -> void;
 
-    // Algorithm 60 (not really anymore)
+    // Algorithm 114
     __global__
-    void compute_dg_wave_derivative(size_t N_elements, SEM::Entities::Element2D_t* elements, const SEM::Entities::Face2D_t* faces, const deviceFloat* weights, const deviceFloat* derivative_matrices_hat, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right);
+    auto compute_dg_wave_derivative(size_t N_elements, SEM::Entities::Element2D_t* elements, const SEM::Entities::Face2D_t* faces, const deviceFloat* weights, const deviceFloat* derivative_matrices_hat, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right) -> void;
+
+    // Algorithm 92
+    __global__
+    auto compute_dg_wave_space_derivative(size_t N_elements, SEM::Entities::Element2D_t* elements, const SEM::Entities::Face2D_t* faces, const deviceFloat* weights, const deviceFloat* derivative_matrices_hat, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right) -> void;
+
+    __global__
+    void rk3_first_step(size_t N_elements, SEM::Entities::Element2D_t* elements, deviceFloat delta_t, deviceFloat g);
+
+    __global__
+    void rk3_step(size_t N_elements, SEM::Entities::Element2D_t* elements, deviceFloat delta_t, deviceFloat a, deviceFloat g);
+    
 
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>
     __device__ 
-    void warp_reduce_delta_t_2D(volatile deviceFloat *sdata, unsigned int tid) {
+    auto warp_reduce_delta_t_2D(volatile deviceFloat *sdata, unsigned int tid) -> void {
         if (blockSize >= 64) sdata[tid] = min(sdata[tid], sdata[tid + 32]);
         if (blockSize >= 32) sdata[tid] = min(sdata[tid], sdata[tid + 16]);
         if (blockSize >= 16) sdata[tid] = min(sdata[tid], sdata[tid + 8]);
@@ -53,7 +68,7 @@ namespace SEM { namespace Solvers {
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>
     __global__ 
-    void reduce_wave_delta_t(deviceFloat CFL, size_t N_elements, const SEM::Entities::Element2D_t* elements, deviceFloat *g_odata) {
+    auto reduce_wave_delta_t(deviceFloat CFL, size_t N_elements, const SEM::Entities::Element2D_t* elements, deviceFloat *g_odata) -> void {
         __shared__ deviceFloat sdata[(blockSize >= 64) ? blockSize : blockSize + blockSize/2]; // Because within a warp there is no branching and this is read up until blockSize + blockSize/2
         unsigned int tid = threadIdx.x;
         size_t i = blockIdx.x*(blockSize*2) + tid;

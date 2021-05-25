@@ -60,6 +60,8 @@ namespace SEM { namespace Meshes {
             auto initial_conditions(const deviceFloat* polynomial_nodes) -> void;
             auto boundary_conditions() -> void;
             auto interpolate_to_boundaries(const SEM::Entities::device_vector<deviceFloat>& lagrange_interpolant_left, const SEM::Entities::device_vector<deviceFloat>& lagrange_interpolant_right) -> void;
+            auto project_to_boundaries() -> void;
+            auto project_to_elements() -> void;
             auto print() -> void;
             auto write_data(deviceFloat time, size_t N_interpolation_points, const deviceFloat* interpolation_matrices, const SEM::Helpers::DataWriter_t& data_writer) -> void;
 
@@ -122,6 +124,12 @@ namespace SEM { namespace Meshes {
 
     __global__
     void interpolate_to_boundaries(size_t N_elements, SEM::Entities::Element2D_t* elements, const deviceFloat* lagrange_interpolant_minus, const deviceFloat* lagrange_interpolant_plus);
+
+    __global__
+    auto project_to_boundaries(size_t N_faces, SEM::Entities::Face2D_t* faces, const SEM::Entities::Element2D_t* elements) -> void;
+
+    __global__
+    auto project_to_elements(size_t N_elements, const SEM::Entities::Face2D_t* faces, SEM::Entities::Element2D_t* elements) -> void;
 
     __global__
     void local_interfaces(size_t N_local_interfaces, SEM::Entities::Element2D_t* elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_origin_side, const size_t* local_interfaces_destination);
