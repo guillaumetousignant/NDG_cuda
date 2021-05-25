@@ -204,6 +204,10 @@ auto SEM::Entities::Element2D_t::allocate_storage() -> void {
                             cuda_vector<deviceFloat>(N_ + 1),
                             cuda_vector<deviceFloat>(N_ + 1),
                             cuda_vector<deviceFloat>(N_ + 1)};
+    
+    p_intermediate_ = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
+    u_intermediate_ = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
+    v_intermediate_ = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
 }
 
 __device__
