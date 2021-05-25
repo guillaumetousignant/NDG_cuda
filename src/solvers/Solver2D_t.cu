@@ -211,18 +211,20 @@ void SEM::Solvers::compute_dg_wave_derivative(size_t N_elements, Element2D_t* el
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (size_t i = index; i < N_elements; i += stride) {
-        /*const size_t offset_1D = elements[i].N_ * (elements[i].N_ + 1) /2; // CHECK cache?
+    for (size_t element_index = index; element_index < N_elements; element_index += stride) {
+        Element2D_t& element = elements[element_index];
+        const size_t offset_1D = elements[i].N_ * (elements[i].N_ + 1) /2; // CHECK cache?
         const size_t offset_2D = elements[i].N_ * (elements[i].N_ + 1) * (2 * elements[i].N_ + 1) /6;
 
-        const deviceFloat flux_L = faces[elements[i].faces_[0]].flux_;
-        const deviceFloat flux_R = faces[elements[i].faces_[1]].flux_;
-
-        SEM::Meshes::matrix_vector_multiply(elements[i].N_, derivative_matrices_hat + offset_2D, elements[i].phi_, elements[i].q_);
-        for (int j = 0; j <= elements[i].N_; ++j) {
-            elements[i].q_[j] = -elements[i].q_[j] - (flux_R * lagrange_interpolant_right[offset_1D + j]
-                                                     - flux_L * lagrange_interpolant_left[offset_1D + j]) / weights[offset_1D + j];
-            elements[i].q_[j] *= 2.0f/elements[i].delta_x_;
-        }*/
+        for (int i = 0; i <= element.N_; ++i) {
+            for (int j = 0; j <= element.N_; ++j) {
+                const std::array<deviceFloat, 3> flux_x = x_flux(element.p_[i * (element.N_ + 1) + j], element.u_[i * (element.N_ + 1) + j], element.v_[i * (element.N_ + 1) + j]);
+                const std::array<deviceFloat, 3> flux_y = y_flux(element.p_[i * (element.N_ + 1) + j], element.u_[i * (element.N_ + 1) + j], element.v_[i * (element.N_ + 1) + j]);
+            
+                p_flux_[i * (element.N_ + 1) + j] = element.deta_dy_[i * (element.N_ + 1) + j] * flux_x[0] - element.deta_dx_[i * (element.N_ + 1) + j] * flux_y[0];
+                u_flux_[i * (element.N_ + 1) + j] = element.deta_dy_[i * (element.N_ + 1) + j] * flux_x[1] - element.deta_dx_[i * (element.N_ + 1) + j] * flux_y[1];
+                v_flux_[i * (element.N_ + 1) + j] = element.deta_dy_[i * (element.N_ + 1) + j] * flux_x[2] - element.deta_dx_[i * (element.N_ + 1) + j] * flux_y[2];
+            }
+        }
     }
 }

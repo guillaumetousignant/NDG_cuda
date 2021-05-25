@@ -8,6 +8,7 @@
 #include "entities/Face2D_t.cuh"
 #include "entities/Element2D_t.cuh"
 #include <vector>
+#include <array>
 
 namespace SEM { namespace Solvers {
     class Solver2D_t {

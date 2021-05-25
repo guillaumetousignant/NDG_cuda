@@ -14,10 +14,10 @@ SEM::Entities::Element2D_t::Element2D_t(int N, std::array<cuda_vector<size_t>, 4
         faces_{faces},
         nodes_{nodes},
         delta_xy_min_{0.0},
-        dx_dxi_((N_ + 1) * (N_ + 1)),
-        dx_deta_((N_ + 1) * (N_ + 1)),
-        dy_dxi_((N_ + 1) * (N_ + 1)),
-        dy_deta_((N_ + 1) * (N_ + 1)),
+        dxi_dx_((N_ + 1) * (N_ + 1)),
+        deta_dx_((N_ + 1) * (N_ + 1)),
+        dxi_dy_((N_ + 1) * (N_ + 1)),
+        deta_dy_((N_ + 1) * (N_ + 1)),
         jacobian_((N_ + 1) * (N_ + 1)),
         scaling_factor_{N_ + 1, N_ + 1, N_ + 1, N_ + 1},
         p_((N_ + 1) * (N_ + 1)),
@@ -29,8 +29,12 @@ SEM::Entities::Element2D_t::Element2D_t(int N, std::array<cuda_vector<size_t>, 4
         p_extrapolated_{N_ + 1, N_ + 1, N_ + 1, N_ + 1},
         u_extrapolated_{N_ + 1, N_ + 1, N_ + 1, N_ + 1},
         v_extrapolated_{N_ + 1, N_ + 1, N_ + 1, N_ + 1},
-        flux_((N_ + 1) * (N_ + 1)),
-        flux_derivative_((N_ + 1) * (N_ + 1)),
+        p_flux_((N_ + 1) * (N_ + 1)),
+        u_flux_((N_ + 1) * (N_ + 1)),
+        v_flux_((N_ + 1) * (N_ + 1)),
+        p_flux_derivative_((N_ + 1) * (N_ + 1)),
+        u_flux_derivative_((N_ + 1) * (N_ + 1)),
+        v_flux_derivative_((N_ + 1) * (N_ + 1)),
         sigma_(0.0),
         refine_(false),
         coarsen_(false),
@@ -141,10 +145,10 @@ auto SEM::Entities::Element2D_t::allocate_storage() -> void {
               cuda_vector<size_t>(1),
               cuda_vector<size_t>(1)};
 
-    dx_dxi_ = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
-    dx_deta_ = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
-    dy_dxi_ = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
-    dy_deta_ = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
+    dxi_dx_  = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
+    deta_dx_ = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
+    dxi_dy_  = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
+    deta_dy_ = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
     jacobian_ = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
     scaling_factor_ = {cuda_vector<deviceFloat>(N_ + 1),
                        cuda_vector<deviceFloat>(N_ + 1),
@@ -172,8 +176,12 @@ auto SEM::Entities::Element2D_t::allocate_storage() -> void {
                        cuda_vector<deviceFloat>(N_ + 1),
                        cuda_vector<deviceFloat>(N_ + 1)};
 
-    flux_ = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
-    flux_derivative_ = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
+    p_flux_ = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
+    u_flux_ = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
+    v_flux_ = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
+    p_flux_derivative_ = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
+    u_flux_derivative_ = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
+    v_flux_derivative_ = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
 }
 
 __device__

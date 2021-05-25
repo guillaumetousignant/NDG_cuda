@@ -23,10 +23,10 @@ namespace SEM { namespace Entities {
 
             // Geometry
             deviceFloat delta_xy_min_;
-            SEM::Entities::cuda_vector<deviceFloat> dx_dxi_;
-            SEM::Entities::cuda_vector<deviceFloat> dx_deta_;
-            SEM::Entities::cuda_vector<deviceFloat> dy_dxi_;
-            SEM::Entities::cuda_vector<deviceFloat> dy_deta_;
+            SEM::Entities::cuda_vector<deviceFloat> dxi_dx_;
+            SEM::Entities::cuda_vector<deviceFloat> deta_dx_;
+            SEM::Entities::cuda_vector<deviceFloat> dxi_dy_;
+            SEM::Entities::cuda_vector<deviceFloat> deta_dy_;
             SEM::Entities::cuda_vector<deviceFloat> jacobian_;
             std::array<SEM::Entities::cuda_vector<deviceFloat>, 4> scaling_factor_;
 
@@ -40,8 +40,12 @@ namespace SEM { namespace Entities {
             std::array<SEM::Entities::cuda_vector<deviceFloat>, 4> p_extrapolated_;
             std::array<SEM::Entities::cuda_vector<deviceFloat>, 4> u_extrapolated_;
             std::array<SEM::Entities::cuda_vector<deviceFloat>, 4> v_extrapolated_;
-            SEM::Entities::cuda_vector<deviceFloat> flux_;
-            SEM::Entities::cuda_vector<deviceFloat> flux_derivative_;
+            SEM::Entities::cuda_vector<deviceFloat> p_flux_;
+            SEM::Entities::cuda_vector<deviceFloat> u_flux_;
+            SEM::Entities::cuda_vector<deviceFloat> v_flux_;
+            SEM::Entities::cuda_vector<deviceFloat> p_flux_derivative_;
+            SEM::Entities::cuda_vector<deviceFloat> u_flux_derivative_;
+            SEM::Entities::cuda_vector<deviceFloat> v_flux_derivative_;
 
             deviceFloat sigma_;
             bool refine_;

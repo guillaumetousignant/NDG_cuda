@@ -805,10 +805,10 @@ auto SEM::Meshes::compute_element_geometry(size_t n_elements, Element2D_t* eleme
                 const Vec2<deviceFloat> coordinates {polynomial_nodes[offset_1D + i], polynomial_nodes[offset_1D + j]};
                 const std::array<Vec2<deviceFloat>, 2> metrics = SEM::quad_metrics(coordinates, points);
 
-                element.dx_dxi_[i * (element.N_ + 1) + j]  = metrics[0].x();
-                element.dx_deta_[i * (element.N_ + 1) + j] = metrics[0].y();
-                element.dy_dxi_[i * (element.N_ + 1) + j]  = metrics[1].x();
-                element.dy_deta_[i * (element.N_ + 1) + j] = metrics[1].y();
+                element.dxi_dx_[i * (element.N_ + 1) + j]  = metrics[0].x();
+                element.deta_dx_[i * (element.N_ + 1) + j] = metrics[0].y();
+                element.dxi_dy_[i * (element.N_ + 1) + j]  = metrics[1].x();
+                element.deta_dy_[i * (element.N_ + 1) + j] = metrics[1].y();
                 element.jacobian_[i * (element.N_ + 1) + j] = metrics[0].x() * metrics[1].y() - metrics[0].y() * metrics[1].x();
             }
 
