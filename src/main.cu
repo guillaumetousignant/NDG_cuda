@@ -94,28 +94,41 @@ auto main(int argc, char* argv[]) -> int {
     MPI_Comm node_communicator;
     MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, 0,
                         MPI_INFO_NULL, &node_communicator);
-    int global_rank;
+    int global_rank = -1;
     MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
-    int global_size;
+    int global_size = -1;
     MPI_Comm_size(MPI_COMM_WORLD, &global_size);
-    int node_rank;
-    MPI_Comm_rank(node_communicator, &node_rank);
-    int node_size;
-    MPI_Comm_size(node_communicator, &node_size);
+    int local_rank = -1;
+    MPI_Comm_rank(node_communicator, &local_rank);
+    int local_size = -1;
+    MPI_Comm_size(node_communicator, &local_size);
+
+    std::vector<int> local_ranks(global_size);
+    MPI_Allgather(&local_rank, 1, MPI_INT, local_ranks.data(), 1, MPI_INT, MPI_COMM_WORLD);
+    int node_rank = 0;
+    int node_size = 0;
+    for (int i = 0; i < global_size; ++i) {
+        if (local_ranks[i] == 0) {
+            ++node_size;
+            if (i < global_rank) {
+                ++node_rank;
+            }
+        }
+    }
 
     // Device selection
     int deviceCount;
     cudaGetDeviceCount(&deviceCount);
-    if (node_rank == 0) {
+    if (local_rank == 0) {
         switch(deviceCount) {
             case 0:
-                std::cout << "There are no Cuda devices." << std::endl;
+                std::cout << "Node " << node_rank << " has no Cuda devices." << std::endl;
                 break;
             case 1:
-                std::cout << "There is one Cuda device:" << std::endl;
+                std::cout << "Node " << node_rank << " has one Cuda device:" << std::endl;
                 break;
             default:
-                std::cout << "There are " << deviceCount << " Cuda devices:" << std::endl;
+                std::cout << "Node " << node_rank << " has " << deviceCount << " Cuda devices:" << std::endl;
                 break;
         }
         for (int device = 0; device < deviceCount; ++device) {
@@ -125,14 +138,28 @@ auto main(int argc, char* argv[]) -> int {
         }
     }
 
-    const int n_proc_per_gpu = (node_size + deviceCount - 1)/deviceCount;
-    const int device = node_rank/n_proc_per_gpu;
-    const int device_rank = node_rank%n_proc_per_gpu;
-    const int device_size = (device == deviceCount - 1) ? n_proc_per_gpu + node_size - n_proc_per_gpu * deviceCount : n_proc_per_gpu;
+    const int n_proc_per_gpu = (local_size + deviceCount - 1)/deviceCount;
+    const int device = local_rank/n_proc_per_gpu;
+    const int device_rank = local_rank%n_proc_per_gpu;
+    const int device_size = (device == deviceCount - 1) ? n_proc_per_gpu + local_size - n_proc_per_gpu * deviceCount : n_proc_per_gpu;
+
     cudaSetDevice(device);
+    if (device_rank == 0) {
+        cudaDeviceProp deviceProp;
+        cudaGetDeviceProperties(&deviceProp, device);
+        const cudaError_t code = cudaDeviceSetLimit(cudaLimitMallocHeapSize, deviceProp.totalGlobalMem);
+        if (code != cudaSuccess) {
+            std::cerr << "GPU memory request failed: " << cudaGetErrorString(code) << std::endl;
+            exit(1);
+        }
+        size_t device_heap_limit = 0;
+        cudaDeviceGetLimit(&device_heap_limit, cudaLimitMallocHeapSize);
+        std::cout << "Node " << node_rank << ", device " << device << " requested " << deviceProp.totalGlobalMem << " bytes and got " << device_heap_limit << " bytes." << std::endl;
+    }
+
     cudaStream_t stream;
     cudaStreamCreate(&stream); 
-    std::cout << "Process with global id " << global_rank << "/" << global_size << " and local id " << node_rank << "/" << node_size << " picked GPU " << device << "/" << deviceCount << " with stream " << device_rank << "/" << device_size << "." << std::endl;
+    std::cout << "Process with global id " << global_rank << "/" << global_size << " on node " << node_rank << "/" << node_size << " and local id " << local_rank << "/" << local_size << " picked GPU " << device << "/" << deviceCount << " with stream " << device_rank << "/" << device_size << "." << std::endl;
 
     if (global_rank == 0) {
         std::cout << "CFL is: " << CFL << std::endl;
