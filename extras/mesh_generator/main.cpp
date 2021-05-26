@@ -142,6 +142,10 @@ auto main(int argc, char* argv[]) -> int {
         std::cout << '\t' <<  "--right_boundary"  <<  '\t' <<  "Sets the right boundary condition. Acceptable values are \"wall\", \"symmetry\" and \"null\". Overrides boundaries." << std::endl;
         std::cout << '\t' <<  "--top_boundary"    <<  '\t' <<  "Sets the top boundary condition. Acceptable values are \"wall\", \"symmetry\" and \"null\". Overrides boundaries." << std::endl;
         std::cout << '\t' <<  "--left_boundary"   <<  '\t' <<  "Sets the left boundary condition. Acceptable values are \"wall\", \"symmetry\" and \"null\". Overrides boundaries." << std::endl;
+        std::cout << '\t' <<  "--x_min"           <<  '\t' <<  "x coordinate of the left side of the grid. Defaults to [0]" << std::endl;
+        std::cout << '\t' <<  "--x_max"           <<  '\t' <<  "x coordinate of the right side of the grid. Defaults to [1]" << std::endl;
+        std::cout << '\t' <<  "--y_min"           <<  '\t' <<  "y coordinate of the left side of the grid. Defaults to [0]" << std::endl;
+        std::cout << '\t' <<  "--y_max"           <<  '\t' <<  "y coordinate of the right side of the grid. Defaults to [1]" << std::endl;
         exit(0);
     }
 
@@ -166,6 +170,16 @@ auto main(int argc, char* argv[]) -> int {
     const int n_elements_total = n_elements + 2 * x_res + 2 * y_res;
     const int n_nodes = x_node_res * y_node_res;
 
+    // Mesh span input
+    const std::string input_x_min = input_parser.getCmdOption("--x_min");
+    const std::string input_x_max = input_parser.getCmdOption("--x_max");
+    const std::string input_y_min = input_parser.getCmdOption("--y_min");
+    const std::string input_y_max = input_parser.getCmdOption("--y_max");
+    const double x_min = (input_x_min.empty()) ? 0 : std::stod(input_x_min);
+    const double x_max = (input_x_max.empty()) ? 1 : std::stod(input_x_max);
+    const double y_min = (input_y_min.empty()) ? 0 : std::stod(input_y_min);
+    const double y_max = (input_y_max.empty()) ? 1 : std::stod(input_y_max);
+
     // Boundary conditions input
     const auto [bottom_boundary_type, right_boundary_type, top_boundary_type, left_boundary_type] = get_boundary_conditions(input_parser);
 
@@ -177,12 +191,10 @@ auto main(int argc, char* argv[]) -> int {
     std::vector<double> x(n_nodes);
     std::vector<double> y(n_nodes);
 
-    for (int i = 0; i < x_node_res; ++i)
-    {
-        for (int j = 0; j < y_node_res; ++j)
-        {
-            x[i * y_node_res + j] = i;
-            y[i * y_node_res + j] = j;
+    for (int i = 0; i < x_node_res; ++i) {
+        for (int j = 0; j < y_node_res; ++j) {
+            x[i * y_node_res + j] = x_min + i * (x_max - x_min)/(x_node_res - 1);
+            y[i * y_node_res + j] = y_min + j * (y_max - y_min)/(y_node_res - 1);
         }
     }
     std::cout << "Created simple 2D grid points" << std::endl;
