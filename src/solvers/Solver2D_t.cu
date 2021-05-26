@@ -173,7 +173,7 @@ auto SEM::Solvers::calculate_wave_fluxes(size_t N_faces, Face2D_t* faces, const 
             const Vec2<deviceFloat> u_R {face.u_[1][i], face.v_[1][i]};
 
             const deviceFloat w_L = face.p_[0][i] + SEM::Constants::c * u_L.dot(face.normal_);
-            const deviceFloat w_R = face.p_[1][i] - SEM::Constants::c * u_R.dot(face.normal_),;
+            const deviceFloat w_R = face.p_[1][i] - SEM::Constants::c * u_R.dot(face.normal_);
 
             const Vec2<deviceFloat> velocity_flux {w_L + w_R, 0};
 
