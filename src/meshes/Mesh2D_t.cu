@@ -1015,9 +1015,9 @@ auto SEM::Meshes::project_to_elements(size_t N_elements, const Face2D_t* faces, 
 
                 const Face2D_t& face = faces[element.faces_[i][0]];
                 for (int j = 0; j <= faces[element.faces_[i][0]].N_; ++j) {
-                    element.p_flux_extrapolated_[i][j] = face.p_flux_[j];
-                    element.u_flux_extrapolated_[i][j] = face.u_flux_[j];
-                    element.v_flux_extrapolated_[i][j] = face.v_flux_[j];
+                    element.p_flux_extrapolated_[i][j] = face.p_flux_[j] * element.scaling_factor_[i][j];
+                    element.u_flux_extrapolated_[i][j] = face.u_flux_[j] * element.scaling_factor_[i][j];
+                    element.v_flux_extrapolated_[i][j] = face.v_flux_[j] * element.scaling_factor_[i][j];
                 }
             }
             // Conforming, backwards
@@ -1028,9 +1028,9 @@ auto SEM::Meshes::project_to_elements(size_t N_elements, const Face2D_t* faces, 
 
                 const Face2D_t& face = faces[element.faces_[i][0]];
                 for (int j = 0; j <= face.N_; ++j) {
-                    element.p_flux_extrapolated_[i][face.N_ - j] = face.p_flux_[j];
-                    element.u_flux_extrapolated_[i][face.N_ - j] = face.u_flux_[j];
-                    element.v_flux_extrapolated_[i][face.N_ - j] = face.v_flux_[j];
+                    element.p_flux_extrapolated_[i][face.N_ - j] = -face.p_flux_[j] * element.scaling_factor_[i][j];
+                    element.u_flux_extrapolated_[i][face.N_ - j] = -face.u_flux_[j] * element.scaling_factor_[i][j];
+                    element.v_flux_extrapolated_[i][face.N_ - j] = -face.v_flux_[j] * element.scaling_factor_[i][j];
                 }
             }
             else { // We need to interpolate
