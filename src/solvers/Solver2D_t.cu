@@ -171,20 +171,15 @@ auto SEM::Solvers::calculate_wave_fluxes(size_t N_faces, Face2D_t* faces, const 
         for (int i = 0; i <= face.N_; ++i) {
             const Vec2<deviceFloat> u_L {face.u_[0][i], face.v_[0][i]};
             const Vec2<deviceFloat> u_R {face.u_[1][i], face.v_[1][i]};
-            const Vec2<deviceFloat> u_prime_L {u_L.dot(face.normal_), u_L.dot(face.tangent_)};
-            const Vec2<deviceFloat> u_prime_R {u_R.dot(face.normal_), u_R.dot(face.tangent_)};
 
-            const deviceFloat w_L = (face.p_[0][i] + SEM::Constants::c * u_prime_L.x()) / 2;
-            const deviceFloat w_R = (face.p_[1][i] - SEM::Constants::c * u_prime_R.x()) / 2;
-
-            const Vec2<deviceFloat> normal_inv {face.normal_[0], face.tangent_[0]};
-            const Vec2<deviceFloat> tangent_inv {face.normal_[1], face.tangent_[1]};
+            const deviceFloat w_L = face.p_[0][i] + SEM::Constants::c * u_L.dot(face.normal_);
+            const deviceFloat w_R = face.p_[1][i] - SEM::Constants::c * u_R.dot(face.normal_),;
 
             const Vec2<deviceFloat> velocity_flux {w_L + w_R, 0};
 
-            face.p_flux_[i] = SEM::Constants::c * (w_L - w_R);
-            face.u_flux_[i] = velocity_flux.dot(normal_inv);
-            face.v_flux_[i] = velocity_flux.dot(tangent_inv);
+            face.p_flux_[i] = SEM::Constants::c * (w_L - w_R) / 2;
+            face.u_flux_[i] = face.normal_.x() * (w_L + w_R) / 2;
+            face.v_flux_[i] = face.normal_.y() * (w_L + w_R) / 2;
         }
     }
 }
