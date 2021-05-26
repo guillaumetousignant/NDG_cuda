@@ -154,7 +154,7 @@ auto main(int argc, char* argv[]) -> int {
         }
         size_t device_heap_limit = 0;
         cudaDeviceGetLimit(&device_heap_limit, cudaLimitMallocHeapSize);
-        std::cout << "Node " << node_rank << ", device " << device << " requested " << deviceProp.totalGlobalMem << " bytes and got " << device_heap_limit << " bytes." << std::endl;
+        std::cout << "Node " << node_rank << ", device " << device << " requested " << deviceProp.totalGlobalMem/2 << " bytes and got " << device_heap_limit << " bytes." << std::endl;
     }
 
     cudaStream_t stream;
