@@ -1,5 +1,7 @@
 #include "helpers/DataWriter_t.h"
+#include "helpers/json.hpp"
 #include <array>
+#include <fstream>
 #include <mpi.h>
 #include <vtkNew.h>
 #include <vtkDoubleArray.h>
@@ -9,8 +11,11 @@
 #include <vtkXMLPUnstructuredGridWriter.h>
 
 namespace fs = std::filesystem;
+using json = nlohmann::json;
 
-SEM::Helpers::DataWriter_t::DataWriter_t (fs::path output_filename) : filename_(output_filename) {}
+SEM::Helpers::DataWriter_t::DataWriter_t (fs::path output_filename) : filename_(output_filename) {
+    create_time_series_file();
+}
 
 auto SEM::Helpers::DataWriter_t::write_data(size_t N_interpolation_points, 
                                             size_t N_elements, 
@@ -141,4 +146,16 @@ auto SEM::Helpers::DataWriter_t::write_data(size_t N_interpolation_points,
     writer->SetStartPiece(0);
     writer->SetEndPiece(global_size - 1);
     writer->Update();
+}
+
+auto SEM::Helpers::DataWriter_t::create_time_series_file() -> void {
+    json j;
+    j["file-series-version"] = "1.0";
+    j["files"] = json::array();
+
+    fs::path output_filename = filename_;
+    output_filename += ".series";
+    std::ofstream o(output_filename);
+    o << std::setw(2) << j << std::endl;
+    o.close();
 }

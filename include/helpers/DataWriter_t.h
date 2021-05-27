@@ -16,6 +16,8 @@ namespace SEM { namespace Helpers {
 
         private:
             fs::path filename_;
+
+            auto create_time_series_file() -> void;
     };
 }}
 
