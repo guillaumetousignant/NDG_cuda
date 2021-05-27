@@ -14,6 +14,8 @@ namespace fs = std::filesystem;
 using json = nlohmann::json;
 
 SEM::Helpers::DataWriter_t::DataWriter_t (fs::path output_filename) : filename_(output_filename) {
+    series_filename_ = filename_;
+    series_filename_+= ".series";
     create_time_series_file();
 }
 
@@ -146,16 +148,25 @@ auto SEM::Helpers::DataWriter_t::write_data(size_t N_interpolation_points,
     writer->SetStartPiece(0);
     writer->SetEndPiece(global_size - 1);
     writer->Update();
+
+    add_time_series_to_file(ss2.str(), time);
 }
 
-auto SEM::Helpers::DataWriter_t::create_time_series_file() -> void {
+auto SEM::Helpers::DataWriter_t::create_time_series_file() const -> void {
     json j;
     j["file-series-version"] = "1.0";
     j["files"] = json::array();
 
-    fs::path output_filename = filename_;
-    output_filename += ".series";
-    std::ofstream o(output_filename);
+    std::ofstream o(series_filename_);
     o << std::setw(2) << j << std::endl;
-    o.close();
+}
+
+auto SEM::Helpers::DataWriter_t::add_time_series_to_file(std::string filename, deviceFloat time) const -> void {
+    std::fstream series_file(series_filename_, ios::in | ios::out);
+    json j;
+    series_file >> j;
+
+    series_file.clear();
+    series_file.seekp(std::ios_base::beg);
+    series_file << std::setw(2) << j << std::endl;
 }

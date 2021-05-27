@@ -16,8 +16,10 @@ namespace SEM { namespace Helpers {
 
         private:
             fs::path filename_;
+            fs::path series_filename_;
 
-            auto create_time_series_file() -> void;
+            auto create_time_series_file() const -> void;
+            auto add_time_series_to_file(std::string filename, deviceFloat time) const -> void;
     };
 }}
 
