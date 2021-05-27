@@ -14,6 +14,7 @@ namespace SEM {
 #include "DataWriter_t.h"
 #include "float_types.h"
 #include "InputParser_t.h"
+#include "json.hpp"
 #include "ProgressBar_t.h"
 #include "termcolor.hpp"
 
