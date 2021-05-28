@@ -784,8 +784,8 @@ auto SEM::Meshes::allocate_element_storage(size_t n_elements, Element2D_t* eleme
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (size_t i = index; i < n_elements; i += stride) {
-        elements[i].allocate_storage();
+    for (size_t element_index = index; element_index < n_elements; element_index += stride) {
+        elements[element_index].allocate_storage();
     }
 }
 
@@ -794,8 +794,8 @@ auto SEM::Meshes::allocate_boundary_storage(size_t n_domain_elements, size_t n_t
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (size_t i = index + n_domain_elements; i < n_total_elements; i += stride) {
-        elements[i].allocate_boundary_storage();
+    for (size_t element_index = index + n_domain_elements; element_index < n_total_elements; element_index += stride) {
+        elements[element_index].allocate_boundary_storage();
     }
 }
 
@@ -804,8 +804,8 @@ auto SEM::Meshes::compute_element_geometry(size_t n_elements, Element2D_t* eleme
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (size_t i = index; i < n_elements; i += stride) {
-        SEM::Entities::Element2D_t& element = elements[i];
+    for (size_t element_index = index; element_index < n_elements; element_index += stride) {
+        SEM::Entities::Element2D_t& element = elements[element_index];
         const size_t offset_1D = element.N_ * (element.N_ + 1) /2;
         const std::array<Vec2<deviceFloat>, 4> points {nodes[element.nodes_[0]],
                                                        nodes[element.nodes_[1]],
@@ -847,8 +847,8 @@ auto SEM::Meshes::allocate_face_storage(size_t n_faces, Face2D_t* faces) -> void
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (size_t i = index; i < n_faces; i += stride) {
-        faces[i].allocate_storage();
+    for (size_t face_index = index; face_index < n_faces; face_index += stride) {
+        faces[face_index].allocate_storage();
     }
 }
 
@@ -857,9 +857,9 @@ auto SEM::Meshes::fill_element_faces(size_t n_elements, Element2D_t* elements, c
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (size_t i = index; i < n_elements; i += stride) {
-        for (size_t j = 0; j < elements[i].faces_.size(); ++j) {
-            elements[i].faces_[j][0] = element_to_face[i][j];
+    for (size_t element_index = index; element_index < n_elements; element_index += stride) {
+        for (size_t j = 0; j < elements[element_index].faces_.size(); ++j) {
+            elements[element_index].faces_[j][0] = element_to_face[element_index][j];
         }
     }
 }
@@ -869,8 +869,8 @@ auto SEM::Meshes::compute_face_geometry(size_t n_faces, Face2D_t* faces, const E
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (size_t i = index; i < n_faces; i += stride) {
-        SEM::Entities::Face2D_t& face = faces[i];
+    for (size_t face_index = index; face_index < n_faces; face_index += stride) {
+        SEM::Entities::Face2D_t& face = faces[face_index];
         face.tangent_ = nodes[face.nodes_[1]] - nodes[face.nodes_[0]]; 
         face.length_ = face.tangent_.magnitude();
         face.tangent_ /= face.length_; // CHECK should be normalized or not?
@@ -895,8 +895,8 @@ auto SEM::Meshes::initial_conditions_2D(size_t n_elements, Element2D_t* elements
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (size_t elem_index = index; elem_index < n_elements; elem_index += stride) {
-        Element2D_t& element = elements[elem_index];
+    for (size_t element_index = index; element_index < n_elements; element_index += stride) {
+        Element2D_t& element = elements[element_index];
         const size_t offset_1D = element.N_ * (element.N_ + 1) /2;
         const std::array<Vec2<deviceFloat>, 4> points {nodes[element.nodes_[0]],
                                                        nodes[element.nodes_[1]],
@@ -946,8 +946,8 @@ void SEM::Meshes::estimate_error<Polynomial>(size_t N_elements, Element2D_t* ele
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (size_t i = index; i < N_elements; i += stride) {
-        elements[i].estimate_error<Polynomial>(polynomial_nodes, weights);
+    for (size_t element_index = index; element_index < N_elements; element_index += stride) {
+        elements[element_index].estimate_error<Polynomial>(polynomial_nodes, weights);
     }
 }
 
@@ -956,8 +956,8 @@ void SEM::Meshes::interpolate_to_boundaries(size_t N_elements, Element2D_t* elem
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (size_t i = index; i < N_elements; i += stride) {
-        elements[i].interpolate_to_boundaries(lagrange_interpolant_minus, lagrange_interpolant_plus);
+    for (size_t element_index = index; element_index < N_elements; element_index += stride) {
+        elements[element_index].interpolate_to_boundaries(lagrange_interpolant_minus, lagrange_interpolant_plus);
     }
 }
 
@@ -1010,31 +1010,31 @@ auto SEM::Meshes::project_to_elements(size_t N_elements, const Face2D_t* faces, 
     for (size_t element_index = index; element_index < N_elements; element_index += stride) {
         Element2D_t& element = elements[element_index];
 
-        for (size_t i = 0; i < element.faces_.size(); ++i) {
+        for (size_t side_index = 0; side_index < element.faces_.size(); ++side_index) {
             // Conforming, forward
-            if ((element.faces_[i].size() == 1)
-                    && (faces[element.faces_[i][0]].N_ == element.N_)  
-                    && (faces[element.faces_[i][0]].nodes_[0] == element.nodes_[i]) 
-                    && (faces[element.faces_[i][0]].nodes_[1] == element.nodes_[(i + 1) * !(i == (element.faces_.size() - 1))])) {
+            if ((element.faces_[side_index].size() == 1)
+                    && (faces[element.faces_[side_index][0]].N_ == element.N_)  
+                    && (faces[element.faces_[side_index][0]].nodes_[0] == element.nodes_[side_index]) 
+                    && (faces[element.faces_[side_index][0]].nodes_[1] == element.nodes_[(side_index + 1) * !(side_index == (element.faces_.size() - 1))])) {
 
-                const Face2D_t& face = faces[element.faces_[i][0]];
-                for (int j = 0; j <= faces[element.faces_[i][0]].N_; ++j) {
-                    element.p_flux_extrapolated_[i][j] = face.p_flux_[j] * element.scaling_factor_[i][j];
-                    element.u_flux_extrapolated_[i][j] = face.u_flux_[j] * element.scaling_factor_[i][j];
-                    element.v_flux_extrapolated_[i][j] = face.v_flux_[j] * element.scaling_factor_[i][j];
+                const Face2D_t& face = faces[element.faces_[side_index][0]];
+                for (int j = 0; j <= faces[element.faces_[side_index][0]].N_; ++j) {
+                    element.p_flux_extrapolated_[side_index][j] = face.p_flux_[j] * element.scaling_factor_[side_index][j];
+                    element.u_flux_extrapolated_[side_index][j] = face.u_flux_[j] * element.scaling_factor_[side_index][j];
+                    element.v_flux_extrapolated_[side_index][j] = face.v_flux_[j] * element.scaling_factor_[side_index][j];
                 }
             }
             // Conforming, backwards
-            else if ((element.faces_[i].size() == 1)
-                    && (faces[element.faces_[i][0]].N_ == element.N_) 
-                    && (faces[element.faces_[i][0]].nodes_[1] == element.nodes_[i]) 
-                    && (faces[element.faces_[i][0]].nodes_[0] == element.nodes_[(i + 1) * !(i == (element.faces_.size() - 1))])) {
+            else if ((element.faces_[side_index].size() == 1)
+                    && (faces[element.faces_[side_index][0]].N_ == element.N_) 
+                    && (faces[element.faces_[side_index][0]].nodes_[1] == element.nodes_[side_index]) 
+                    && (faces[element.faces_[side_index][0]].nodes_[0] == element.nodes_[(side_index + 1) * !(side_index == (element.faces_.size() - 1))])) {
 
-                const Face2D_t& face = faces[element.faces_[i][0]];
+                const Face2D_t& face = faces[element.faces_[side_index][0]];
                 for (int j = 0; j <= face.N_; ++j) {
-                    element.p_flux_extrapolated_[i][face.N_ - j] = -face.p_flux_[j] * element.scaling_factor_[i][j];
-                    element.u_flux_extrapolated_[i][face.N_ - j] = -face.u_flux_[j] * element.scaling_factor_[i][j];
-                    element.v_flux_extrapolated_[i][face.N_ - j] = -face.v_flux_[j] * element.scaling_factor_[i][j];
+                    element.p_flux_extrapolated_[side_index][face.N_ - j] = -face.p_flux_[j] * element.scaling_factor_[side_index][j];
+                    element.u_flux_extrapolated_[side_index][face.N_ - j] = -face.u_flux_[j] * element.scaling_factor_[side_index][j];
+                    element.v_flux_extrapolated_[side_index][face.N_ - j] = -face.v_flux_[j] * element.scaling_factor_[side_index][j];
                 }
             }
             else { // We need to interpolate
@@ -1049,10 +1049,10 @@ void SEM::Meshes::local_interfaces(size_t N_local_interfaces, Element2D_t* eleme
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (size_t i = index; i < N_local_interfaces; i += stride) {
-        const Element2D_t& source_element = elements[local_interfaces_origin[i]];
-        Element2D_t& destination_element = elements[local_interfaces_destination[i]];
-        const size_t element_side = local_interfaces_origin_side[i];
+    for (size_t interface_index = index; interface_index < N_local_interfaces; interface_index += stride) {
+        const Element2D_t& source_element = elements[local_interfaces_origin[interface_index]];
+        Element2D_t& destination_element = elements[local_interfaces_destination[interface_index]];
+        const size_t element_side = local_interfaces_origin_side[interface_index];
 
         for (int k = 0; k <= source_element.N_; ++k) {
             destination_element.p_extrapolated_[0][k] = source_element.p_extrapolated_[element_side][k];
