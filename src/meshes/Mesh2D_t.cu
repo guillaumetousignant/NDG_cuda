@@ -741,17 +741,12 @@ auto SEM::Meshes::Mesh2D_t::write_data(deviceFloat time, size_t N_interpolation_
 }
 
 __host__ __device__
-auto SEM::Meshes::Mesh2D_t::g(Vec2<deviceFloat> xy) -> std::array<deviceFloat, 3> {    
-    std::array<deviceFloat, 3> state {
-        static_cast<deviceFloat>(std::exp(-((SEM::Constants::k.x() * (xy.x() - SEM::Constants::xy0.x()) + SEM::Constants::k.y() * (xy.y() - SEM::Constants::xy0.y())) * (SEM::Constants::k.x() * (xy.x() - SEM::Constants::xy0.x()) + SEM::Constants::k.y() * (xy.y() - SEM::Constants::xy0.y()))) / (SEM::Constants::d * SEM::Constants::d))),
-        0.0,
-        0.0
-    };
+auto SEM::Meshes::Mesh2D_t::g(Vec2<deviceFloat> xy, deviceFloat t) -> std::array<deviceFloat, 3> {    
+    const deviceFloat p = std::exp(-std::pow(SEM::Constants::k.x() * (xy.x() - SEM::Constants::xy0.x()) + SEM::Constants::k.y() * (xy.y() - SEM::Constants::xy0.y()) - SEM::Constants::c * t, 2) / (SEM::Constants::d * SEM::Constants::d));
 
-    state[1] = state[0] * SEM::Constants::k.x() / SEM::Constants::c;
-    state[2] = state[0] * SEM::Constants::k.y() / SEM::Constants::c;
-
-    return state;
+    return {p,
+            p * SEM::Constants::k.x() / SEM::Constants::c,
+            p * SEM::Constants::k.y() / SEM::Constants::c};
 }
 
 auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights) -> void {
@@ -904,7 +899,7 @@ auto SEM::Meshes::initial_conditions_2D(size_t n_elements, Element2D_t* elements
                 const Vec2<deviceFloat> coordinates {polynomial_nodes[offset_1D + i], polynomial_nodes[offset_1D + j]};
                 const Vec2<deviceFloat> global_coordinates = SEM::quad_map(coordinates, points);
 
-                const std::array<deviceFloat, 3> state = SEM::Meshes::Mesh2D_t::g(global_coordinates);
+                const std::array<deviceFloat, 3> state = SEM::Meshes::Mesh2D_t::g(global_coordinates, 0);
                 element.p_[i * (element.N_ + 1) + j] = state[0];
                 element.u_[i * (element.N_ + 1) + j] = state[1];
                 element.v_[i * (element.N_ + 1) + j] = state[2];
