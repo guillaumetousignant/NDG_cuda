@@ -28,7 +28,10 @@ auto SEM::Helpers::DataWriter_t::write_data(size_t N_interpolation_points,
                                             const std::vector<deviceFloat>& p, 
                                             const std::vector<deviceFloat>& u, 
                                             const std::vector<deviceFloat>& v, 
-                                            const std::vector<int>& N) const -> void {
+                                            const std::vector<int>& N,
+                                            const std::vector<deviceFloat>& dp_dt, 
+                                            const std::vector<deviceFloat>& du_dt, 
+                                            const std::vector<deviceFloat>& dv_dt) const -> void {
     int global_rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
     int global_size;
@@ -133,6 +136,42 @@ auto SEM::Helpers::DataWriter_t::write_data(size_t N_interpolation_points,
 
     grid->GetPointData()->AddArray(index);
 
+    // Add pressure derivative to each point
+    vtkNew<vtkDoubleArray> pressure_derivative;
+    pressure_derivative->SetNumberOfComponents(1);
+    pressure_derivative->Allocate(N_elements * N_interpolation_points * N_interpolation_points);
+    pressure_derivative->SetName("PressureDerivative");
+
+    for (size_t element_index = 0; element_index < N_elements; ++element_index) {
+        const size_t offset = element_index * N_interpolation_points * N_interpolation_points;
+        for (size_t i = 0; i < N_interpolation_points; ++i) {
+            for (size_t j = 0; j < N_interpolation_points; ++j) {
+                pressure_derivative->InsertNextValue(dp_dt[offset + i * N_interpolation_points + j]);
+            }
+        }
+    }
+
+    grid->GetPointData()->AddArray(pressure_derivative);
+
+    // Add velocity derivative to each point
+    vtkNew<vtkDoubleArray> velocity_derivative;
+    velocity_derivative->SetNumberOfComponents(2);
+    velocity_derivative->Allocate(N_elements * N_interpolation_points * N_interpolation_points * 2);
+    velocity_derivative->SetName("VelocityDerivative");
+
+    for (size_t element_index = 0; element_index < N_elements; ++element_index) {
+        const size_t offset = element_index * N_interpolation_points * N_interpolation_points;
+        for (size_t i = 0; i < N_interpolation_points; ++i) {
+            for (size_t j = 0; j < N_interpolation_points; ++j) {
+                velocity_derivative->InsertNextValue(du_dt[offset + i * N_interpolation_points + j]);
+                velocity_derivative->InsertNextValue(dv_dt[offset + i * N_interpolation_points + j]);
+            }
+        }
+    }
+
+    grid->GetPointData()->AddArray(velocity_derivative);
+
+    // Filename
     std::stringstream ss;
     ss << "_t" << std::setprecision(9) << std::fixed << time << "s";
     std::string time_string = ss.str();
@@ -141,6 +180,7 @@ auto SEM::Helpers::DataWriter_t::write_data(size_t N_interpolation_points,
     ss2 << filename_.stem().string() << time_string << filename_.extension().string();
     const fs::path output_filename = filename_.parent_path() / ss2.str(); // It would be better to store all timesteps in the same file
 
+    // Writing to the file
     vtkNew<vtkXMLPUnstructuredGridWriter> writer;
     writer->SetInputData(grid);
     writer->SetFileName(output_filename.string().c_str());

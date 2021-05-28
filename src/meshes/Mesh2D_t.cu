@@ -716,15 +716,21 @@ auto SEM::Meshes::Mesh2D_t::write_data(deviceFloat time, size_t N_interpolation_
     device_vector<deviceFloat> p(N_elements_ * N_interpolation_points * N_interpolation_points);
     device_vector<deviceFloat> u(N_elements_ * N_interpolation_points * N_interpolation_points);
     device_vector<deviceFloat> v(N_elements_ * N_interpolation_points * N_interpolation_points);
+    device_vector<deviceFloat> dp_dt(N_elements_ * N_interpolation_points * N_interpolation_points);
+    device_vector<deviceFloat> du_dt(N_elements_ * N_interpolation_points * N_interpolation_points);
+    device_vector<deviceFloat> dv_dt(N_elements_ * N_interpolation_points * N_interpolation_points);
     device_vector<int> N(N_elements_);
 
-    SEM::Meshes::get_solution<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, N_interpolation_points, elements_.data(), nodes_.data(), interpolation_matrices, x.data(), y.data(), p.data(), u.data(), v.data(), N.data());
+    SEM::Meshes::get_solution<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, N_interpolation_points, elements_.data(), nodes_.data(), interpolation_matrices, x.data(), y.data(), p.data(), u.data(), v.data(), N.data(), dp_dt.data(), du_dt.data(), dv_dt.data());
     
     std::vector<deviceFloat> x_host(N_elements_ * N_interpolation_points * N_interpolation_points);
     std::vector<deviceFloat> y_host(N_elements_ * N_interpolation_points * N_interpolation_points);
     std::vector<deviceFloat> p_host(N_elements_ * N_interpolation_points * N_interpolation_points);
     std::vector<deviceFloat> u_host(N_elements_ * N_interpolation_points * N_interpolation_points);
     std::vector<deviceFloat> v_host(N_elements_ * N_interpolation_points * N_interpolation_points);
+    std::vector<deviceFloat> dp_dt_host(N_elements_ * N_interpolation_points * N_interpolation_points);
+    std::vector<deviceFloat> du_dt_host(N_elements_ * N_interpolation_points * N_interpolation_points);
+    std::vector<deviceFloat> dv_dt_host(N_elements_ * N_interpolation_points * N_interpolation_points);
     std::vector<int> N_host(N_elements_);
 
     x.copy_to(x_host);
@@ -732,12 +738,15 @@ auto SEM::Meshes::Mesh2D_t::write_data(deviceFloat time, size_t N_interpolation_
     p.copy_to(p_host);
     u.copy_to(u_host);
     v.copy_to(v_host);
+    dp_dt.copy_to(dp_dt_host);
+    du_dt.copy_to(du_dt_host);
+    dv_dt.copy_to(dv_dt_host);
     N.copy_to(N_host);
 
     int global_rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
 
-    data_writer.write_data(N_interpolation_points, N_elements_, time, global_rank, x_host, y_host, p_host, u_host, v_host, N_host);
+    data_writer.write_data(N_interpolation_points, N_elements_, time, global_rank, x_host, y_host, p_host, u_host, v_host, N_host, dp_dt_host, du_dt_host, dv_dt_host);
 }
 
 __host__ __device__
@@ -909,7 +918,7 @@ auto SEM::Meshes::initial_conditions_2D(size_t n_elements, Element2D_t* elements
 }
 
 __global__
-auto SEM::Meshes::get_solution(size_t N_elements, size_t N_interpolation_points, Element2D_t* elements, const Vec2<deviceFloat>* nodes, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v, int* N) -> void {
+auto SEM::Meshes::get_solution(size_t N_elements, size_t N_interpolation_points, Element2D_t* elements, const Vec2<deviceFloat>* nodes, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v, int* N, deviceFloat* dp_dt, deviceFloat* du_dt, deviceFloat* dv_dt) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -924,7 +933,7 @@ auto SEM::Meshes::get_solution(size_t N_elements, size_t N_interpolation_points,
                                                        nodes[element.nodes_[2]],
                                                        nodes[element.nodes_[3]]};
 
-        element.interpolate_solution(N_interpolation_points, points, interpolation_matrices + offset_interp, x + offset_interp_2D, y + offset_interp_2D, p + offset_interp_2D, u + offset_interp_2D, v + offset_interp_2D);
+        element.interpolate_solution(N_interpolation_points, points, interpolation_matrices + offset_interp, x + offset_interp_2D, y + offset_interp_2D, p + offset_interp_2D, u + offset_interp_2D, v + offset_interp_2D, dp_dt + offset_interp_2D, du_dt + offset_interp_2D, dv_dt + offset_interp_2D);
     }
 }
 
