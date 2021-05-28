@@ -13,8 +13,8 @@ namespace SEM {
      */
     namespace Constants {
         constexpr deviceFloat c = 1;
-        constexpr SEM::Entities::Vec2<deviceFloat> xy0 {0, 0};
-        constexpr SEM::Entities::Vec2<deviceFloat> k {0.707106781186548, -0.707106781186548}; // √2/2, -√2/2
+        constexpr SEM::Entities::Vec2<deviceFloat> xy0 {0.2, 0.2};
+        constexpr SEM::Entities::Vec2<deviceFloat> k {0.707106781186548, 0.707106781186548}; // √2/2, √2/2
         constexpr deviceFloat d = 0.120112240878645; // 0.2/(2 * √ln(2))
     }
 }
