@@ -165,6 +165,7 @@ auto SEM::Helpers::DataWriter_t::add_time_series_to_file(std::string filename, d
     std::fstream series_file(series_filename_, ios::in | ios::out);
     json j;
     series_file >> j;
+    j["files"].push_back({{"name", filename}, {"time", time}});
 
     series_file.clear();
     series_file.seekp(std::ios_base::beg);
