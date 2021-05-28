@@ -835,9 +835,9 @@ auto SEM::Meshes::compute_element_geometry(size_t n_elements, Element2D_t* eleme
             const std::array<Vec2<deviceFloat>, 2> metrics_left   = SEM::quad_metrics(coordinates_left, points);
 
             element.scaling_factor_[0][i] = std::sqrt(std::pow(metrics_bottom[0].x(), 2) * std::pow(metrics_bottom[1].x(), 2));
-            element.scaling_factor_[1][i] = std::sqrt(std::pow(metrics_bottom[0].y(), 2) * std::pow(metrics_bottom[1].y(), 2));
-            element.scaling_factor_[2][i] = std::sqrt(std::pow(metrics_bottom[0].x(), 2) * std::pow(metrics_bottom[1].x(), 2));
-            element.scaling_factor_[3][i] = std::sqrt(std::pow(metrics_bottom[0].y(), 2) * std::pow(metrics_bottom[1].y(), 2));
+            element.scaling_factor_[1][i] = std::sqrt(std::pow(metrics_right[0].y(), 2) * std::pow(metrics_right[1].y(), 2));
+            element.scaling_factor_[2][i] = std::sqrt(std::pow(metrics_top[0].x(), 2) * std::pow(metrics_top[1].x(), 2));
+            element.scaling_factor_[3][i] = std::sqrt(std::pow(metrics_left[0].y(), 2) * std::pow(metrics_left[1].y(), 2));
         }    
     }
 }
