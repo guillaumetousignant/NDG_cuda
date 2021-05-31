@@ -207,10 +207,15 @@ auto SEM::Solvers::compute_dg_wave_derivative(size_t N_elements, Element2D_t* el
             SEM::Solvers::Solver2D_t::matrix_vector_multiply(element.N_, derivative_matrices_hat + offset_2D, element.u_flux_.data(), element.u_flux_derivative_.data());
             SEM::Solvers::Solver2D_t::matrix_vector_multiply(element.N_, derivative_matrices_hat + offset_2D, element.v_flux_.data(), element.v_flux_derivative_.data());
 
+            // For the boundaries, the numbering increases from the first node to the second. 
+            // Inside the element, the ksi and eta coordinates increase from left to right, bottom to top.
+            // This means that there is an inconsistency on the top and left edges, and the numbering has to be reversed.
+            // This way, the projection from the element edge to the face(s) can always be done in the same way.
+            // The same process has to be done when interpolating to the boundaries.
             for (int j = 0; j <= element.N_; ++j) {
-                element.p_flux_derivative_[j] += (element.p_flux_extrapolated_[1][j] * lagrange_interpolant_right[offset_1D + j] + element.p_flux_extrapolated_[3][j] * lagrange_interpolant_left[offset_1D + j]) / weights[offset_1D + j];
-                element.u_flux_derivative_[j] += (element.u_flux_extrapolated_[1][j] * lagrange_interpolant_right[offset_1D + j] + element.u_flux_extrapolated_[3][j] * lagrange_interpolant_left[offset_1D + j]) / weights[offset_1D + j];
-                element.v_flux_derivative_[j] += (element.v_flux_extrapolated_[1][j] * lagrange_interpolant_right[offset_1D + j] + element.v_flux_extrapolated_[3][j] * lagrange_interpolant_left[offset_1D + j]) / weights[offset_1D + j];
+                element.p_flux_derivative_[j] += (element.p_flux_extrapolated_[1][j] * lagrange_interpolant_right[offset_1D + j] + element.p_flux_extrapolated_[3][element.N_ - j] * lagrange_interpolant_left[offset_1D + j]) / weights[offset_1D + j];
+                element.u_flux_derivative_[j] += (element.u_flux_extrapolated_[1][j] * lagrange_interpolant_right[offset_1D + j] + element.u_flux_extrapolated_[3][element.N_ - j] * lagrange_interpolant_left[offset_1D + j]) / weights[offset_1D + j];
+                element.v_flux_derivative_[j] += (element.v_flux_extrapolated_[1][j] * lagrange_interpolant_right[offset_1D + j] + element.v_flux_extrapolated_[3][element.N_ - j] * lagrange_interpolant_left[offset_1D + j]) / weights[offset_1D + j];
             }
 
             for (int j = 0; j <= element.N_; ++j) {
@@ -234,10 +239,15 @@ auto SEM::Solvers::compute_dg_wave_derivative(size_t N_elements, Element2D_t* el
             SEM::Solvers::Solver2D_t::matrix_vector_multiply(element.N_, derivative_matrices_hat + offset_2D, element.u_flux_.data(), element.u_flux_derivative_.data());
             SEM::Solvers::Solver2D_t::matrix_vector_multiply(element.N_, derivative_matrices_hat + offset_2D, element.v_flux_.data(), element.v_flux_derivative_.data());
 
+            // For the boundaries, the numbering increases from the first node to the second. 
+            // Inside the element, the ksi and eta coordinates increase from left to right, bottom to top.
+            // This means that there is an inconsistency on the top and left edges, and the numbering has to be reversed.
+            // This way, the projection from the element edge to the face(s) can always be done in the same way.
+            // The same process has to be done when interpolating to the boundaries.
             for (int i = 0; i <= element.N_; ++i) {
-                element.p_flux_derivative_[i] += (element.p_flux_extrapolated_[2][i] * lagrange_interpolant_right[offset_1D + i] + element.p_flux_extrapolated_[0][i] * lagrange_interpolant_left[offset_1D + i]) / weights[offset_1D + i];
-                element.u_flux_derivative_[i] += (element.u_flux_extrapolated_[2][i] * lagrange_interpolant_right[offset_1D + i] + element.u_flux_extrapolated_[0][i] * lagrange_interpolant_left[offset_1D + i]) / weights[offset_1D + i];
-                element.v_flux_derivative_[i] += (element.v_flux_extrapolated_[2][i] * lagrange_interpolant_right[offset_1D + i] + element.v_flux_extrapolated_[0][i] * lagrange_interpolant_left[offset_1D + i]) / weights[offset_1D + i];
+                element.p_flux_derivative_[i] += (element.p_flux_extrapolated_[2][element.N_ - i] * lagrange_interpolant_right[offset_1D + i] + element.p_flux_extrapolated_[0][i] * lagrange_interpolant_left[offset_1D + i]) / weights[offset_1D + i];
+                element.u_flux_derivative_[i] += (element.u_flux_extrapolated_[2][element.N_ - i] * lagrange_interpolant_right[offset_1D + i] + element.u_flux_extrapolated_[0][i] * lagrange_interpolant_left[offset_1D + i]) / weights[offset_1D + i];
+                element.v_flux_derivative_[i] += (element.v_flux_extrapolated_[2][element.N_ - i] * lagrange_interpolant_right[offset_1D + i] + element.v_flux_extrapolated_[0][i] * lagrange_interpolant_left[offset_1D + i]) / weights[offset_1D + i];
             }
 
             for (int i = 0; i <= element.N_; ++i) {

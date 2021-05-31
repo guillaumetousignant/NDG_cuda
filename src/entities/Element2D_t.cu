@@ -74,21 +74,26 @@ auto SEM::Entities::Element2D_t::interpolate_to_boundaries(const deviceFloat* la
             v_extrapolated_[k][i] = 0.0;
         }
         
+        // For the boundaries, the numbering increases from the first node to the second. 
+        // Inside the element, the ksi and eta coordinates increase from left to right, bottom to top.
+        // This means that there is an inconsistency on the top and left edges, and the numbering has to be reversed.
+        // This way, the projection from the element edge to the face(s) can always be done in the same way.
+        // The same process has to be done when adding back to the solution, but I bet I'll forget.
         for (int j = 0; j <= N_; ++j) {
             p_extrapolated_[0][i] += lagrange_interpolant_minus[offset_1D + j] * p_[i * (N_ + 1) + j];
-            p_extrapolated_[2][i] += lagrange_interpolant_plus[offset_1D + j] * p_[i * (N_ + 1) + j];
+            p_extrapolated_[2][N_ - i] += lagrange_interpolant_plus[offset_1D + j] * p_[i * (N_ + 1) + j];
             p_extrapolated_[1][i] += lagrange_interpolant_plus[offset_1D + j] * p_[j * (N_ + 1) + i];
-            p_extrapolated_[3][i] += lagrange_interpolant_minus[offset_1D + j] * p_[j * (N_ + 1) + i];
+            p_extrapolated_[3][N_ - i] += lagrange_interpolant_minus[offset_1D + j] * p_[j * (N_ + 1) + i];
 
             u_extrapolated_[0][i] += lagrange_interpolant_minus[offset_1D + j] * u_[i * (N_ + 1) + j];
-            u_extrapolated_[2][i] += lagrange_interpolant_plus[offset_1D + j] * u_[i * (N_ + 1) + j];
+            u_extrapolated_[2][N_ - i] += lagrange_interpolant_plus[offset_1D + j] * u_[i * (N_ + 1) + j];
             u_extrapolated_[1][i] += lagrange_interpolant_plus[offset_1D + j] * u_[j * (N_ + 1) + i];
-            u_extrapolated_[3][i] += lagrange_interpolant_minus[offset_1D + j] * u_[j * (N_ + 1) + i];
+            u_extrapolated_[3][N_ - i] += lagrange_interpolant_minus[offset_1D + j] * u_[j * (N_ + 1) + i];
 
             v_extrapolated_[0][i] += lagrange_interpolant_minus[offset_1D + j] * v_[i * (N_ + 1) + j];
-            v_extrapolated_[2][i] += lagrange_interpolant_plus[offset_1D + j] * v_[i * (N_ + 1) + j];
+            v_extrapolated_[2][N_ - i] += lagrange_interpolant_plus[offset_1D + j] * v_[i * (N_ + 1) + j];
             v_extrapolated_[1][i] += lagrange_interpolant_plus[offset_1D + j] * v_[j * (N_ + 1) + i];
-            v_extrapolated_[3][i] += lagrange_interpolant_minus[offset_1D + j] * v_[j * (N_ + 1) + i];
+            v_extrapolated_[3][N_ - i] += lagrange_interpolant_minus[offset_1D + j] * v_[j * (N_ + 1) + i];
         }
     }
 }
