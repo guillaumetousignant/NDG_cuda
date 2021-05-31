@@ -771,8 +771,8 @@ auto SEM::Meshes::Mesh2D_t::interpolate_to_boundaries(const device_vector<device
     SEM::Meshes::interpolate_to_boundaries<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data(), lagrange_interpolant_left.data(), lagrange_interpolant_right.data());
 }
 
-auto SEM::Meshes::Mesh2D_t::project_to_boundaries() -> void {
-    SEM::Meshes::project_to_boundaries<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces_.size(), faces_.data(), elements_.data());
+auto SEM::Meshes::Mesh2D_t::project_to_faces() -> void {
+    SEM::Meshes::project_to_faces<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces_.size(), faces_.data(), elements_.data());
 }
 
 auto SEM::Meshes::Mesh2D_t::project_to_elements() -> void {
@@ -962,7 +962,7 @@ void SEM::Meshes::interpolate_to_boundaries(size_t N_elements, Element2D_t* elem
 }
 
 __global__
-auto SEM::Meshes::project_to_boundaries(size_t N_faces, Face2D_t* faces, const Element2D_t* elements) -> void {
+auto SEM::Meshes::project_to_faces(size_t N_faces, Face2D_t* faces, const Element2D_t* elements) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
