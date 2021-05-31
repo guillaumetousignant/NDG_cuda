@@ -68,11 +68,20 @@ auto SEM::Entities::Element2D_t::interpolate_to_boundaries(const deviceFloat* la
     const int offset_1D = N_ * (N_ + 1) /2;
 
     for (int i = 0; i <= N_; ++i) {
-        for (size_t k = 0; k < p_extrapolated_.size(); ++k) {
-            p_extrapolated_[k][i] = 0.0;
-            u_extrapolated_[k][i] = 0.0;
-            v_extrapolated_[k][i] = 0.0;
-        }
+        p_extrapolated_[0][i] = 0.0;
+        p_extrapolated_[2][N_ - i] = 0.0;
+        p_extrapolated_[1][i] = 0.0;
+        p_extrapolated_[3][N_ - i] = 0.0;
+
+        u_extrapolated_[0][i] = 0.0;
+        u_extrapolated_[2][N_ - i] = 0.0;
+        u_extrapolated_[1][i] = 0.0;
+        u_extrapolated_[3][N_ - i] = 0.0;
+
+        v_extrapolated_[0][i] = 0.0;
+        v_extrapolated_[2][N_ - i] = 0.0;
+        v_extrapolated_[1][i] = 0.0;
+        v_extrapolated_[3][N_ - i] = 0.0;
         
         // For the boundaries, the numbering increases from the first node to the second. 
         // Inside the element, the ksi and eta coordinates increase from left to right, bottom to top.
