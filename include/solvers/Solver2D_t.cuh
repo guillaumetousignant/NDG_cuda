@@ -20,9 +20,9 @@ namespace SEM { namespace Solvers {
             std::vector<deviceFloat> output_times_;
 
             template<typename Polynomial>
-            auto solve(const SEM::Entities::NDG_t<Polynomial> &NDG, SEM::Meshes::Mesh2D_t& mesh, const SEM::Helpers::DataWriter_t& data_writer) -> void;
+            auto solve(const SEM::Entities::NDG_t<Polynomial> &NDG, SEM::Meshes::Mesh2D_t& mesh, const SEM::Helpers::DataWriter_t& data_writer) const -> void;
 
-            auto get_delta_t(SEM::Meshes::Mesh2D_t& mesh) -> deviceFloat;
+            auto get_delta_t(SEM::Meshes::Mesh2D_t& mesh) const -> deviceFloat;
 
             __host__ __device__
             static auto x_flux(deviceFloat p, deviceFloat u, deviceFloat v) -> std::array<deviceFloat, 3>;

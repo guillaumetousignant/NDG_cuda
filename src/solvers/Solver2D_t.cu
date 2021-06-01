@@ -16,11 +16,11 @@ SEM::Solvers::Solver2D_t::Solver2D_t(deviceFloat CFL, std::vector<deviceFloat> o
         output_times_{output_times},
         viscosity_{viscosity} {}
 
-template auto SEM::Solvers::Solver2D_t::solve(const SEM::Entities::NDG_t<SEM::Polynomials::ChebyshevPolynomial_t> &NDG, SEM::Meshes::Mesh2D_t& mesh, const SEM::Helpers::DataWriter_t& data_writer) -> void; // Get with the times c++, it's crazy I have to do this
-template auto SEM::Solvers::Solver2D_t::solve(const SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> &NDG, SEM::Meshes::Mesh2D_t& mesh, const SEM::Helpers::DataWriter_t& data_writer) -> void;
+template auto SEM::Solvers::Solver2D_t::solve(const SEM::Entities::NDG_t<SEM::Polynomials::ChebyshevPolynomial_t> &NDG, SEM::Meshes::Mesh2D_t& mesh, const SEM::Helpers::DataWriter_t& data_writer) const -> void; // Get with the times c++, it's crazy I have to do this
+template auto SEM::Solvers::Solver2D_t::solve(const SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> &NDG, SEM::Meshes::Mesh2D_t& mesh, const SEM::Helpers::DataWriter_t& data_writer) const -> void;
 
 template<typename Polynomial>
-auto SEM::Solvers::Solver2D_t::solve(const SEM::Entities::NDG_t<Polynomial> &NDG, SEM::Meshes::Mesh2D_t& mesh, const SEM::Helpers::DataWriter_t& data_writer) -> void {
+auto SEM::Solvers::Solver2D_t::solve(const SEM::Entities::NDG_t<Polynomial> &NDG, SEM::Meshes::Mesh2D_t& mesh, const SEM::Helpers::DataWriter_t& data_writer) const -> void {
     int global_rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
     deviceFloat time = 0.0;
@@ -124,7 +124,7 @@ auto SEM::Solvers::Solver2D_t::solve(const SEM::Entities::NDG_t<Polynomial> &NDG
     }
 }
 
-auto SEM::Solvers::Solver2D_t::get_delta_t(SEM::Meshes::Mesh2D_t& mesh) -> deviceFloat {   
+auto SEM::Solvers::Solver2D_t::get_delta_t(SEM::Meshes::Mesh2D_t& mesh) const -> deviceFloat {   
     SEM::Solvers::reduce_wave_delta_t<mesh.elements_blockSize_/2><<<mesh.elements_numBlocks_, mesh.elements_blockSize_/2, 0, mesh.stream_>>>(CFL_, mesh.N_elements_, mesh.elements_.data(), mesh.device_delta_t_array_.data());
     mesh.device_delta_t_array_.copy_to(mesh.host_delta_t_array_);
 
