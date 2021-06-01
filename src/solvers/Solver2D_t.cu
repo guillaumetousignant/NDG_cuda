@@ -213,9 +213,9 @@ auto SEM::Solvers::compute_dg_wave_derivative(size_t N_elements, Element2D_t* el
             // This way, the projection from the element edge to the face(s) can always be done in the same way.
             // The same process has to be done when interpolating to the boundaries.
             for (int j = 0; j <= element.N_; ++j) {
-                element.p_flux_derivative_[j] += (element.p_flux_extrapolated_[1][j] * lagrange_interpolant_right[offset_1D + j] + element.p_flux_extrapolated_[3][element.N_ - j] * lagrange_interpolant_left[offset_1D + j]) / weights[offset_1D + j];
-                element.u_flux_derivative_[j] += (element.u_flux_extrapolated_[1][j] * lagrange_interpolant_right[offset_1D + j] + element.u_flux_extrapolated_[3][element.N_ - j] * lagrange_interpolant_left[offset_1D + j]) / weights[offset_1D + j];
-                element.v_flux_derivative_[j] += (element.v_flux_extrapolated_[1][j] * lagrange_interpolant_right[offset_1D + j] + element.v_flux_extrapolated_[3][element.N_ - j] * lagrange_interpolant_left[offset_1D + j]) / weights[offset_1D + j];
+                element.p_flux_derivative_[j] += (element.p_flux_extrapolated_[1][i] * lagrange_interpolant_right[offset_1D + j] + element.p_flux_extrapolated_[3][element.N_ - i] * lagrange_interpolant_left[offset_1D + j]) / weights[offset_1D + j];
+                element.u_flux_derivative_[j] += (element.u_flux_extrapolated_[1][i] * lagrange_interpolant_right[offset_1D + j] + element.u_flux_extrapolated_[3][element.N_ - i] * lagrange_interpolant_left[offset_1D + j]) / weights[offset_1D + j];
+                element.v_flux_derivative_[j] += (element.v_flux_extrapolated_[1][i] * lagrange_interpolant_right[offset_1D + j] + element.v_flux_extrapolated_[3][element.N_ - i] * lagrange_interpolant_left[offset_1D + j]) / weights[offset_1D + j];
             }
 
             for (int j = 0; j <= element.N_; ++j) {
@@ -245,9 +245,9 @@ auto SEM::Solvers::compute_dg_wave_derivative(size_t N_elements, Element2D_t* el
             // This way, the projection from the element edge to the face(s) can always be done in the same way.
             // The same process has to be done when interpolating to the boundaries.
             for (int i = 0; i <= element.N_; ++i) {
-                element.p_flux_derivative_[i] += (element.p_flux_extrapolated_[2][element.N_ - i] * lagrange_interpolant_right[offset_1D + i] + element.p_flux_extrapolated_[0][i] * lagrange_interpolant_left[offset_1D + i]) / weights[offset_1D + i];
-                element.u_flux_derivative_[i] += (element.u_flux_extrapolated_[2][element.N_ - i] * lagrange_interpolant_right[offset_1D + i] + element.u_flux_extrapolated_[0][i] * lagrange_interpolant_left[offset_1D + i]) / weights[offset_1D + i];
-                element.v_flux_derivative_[i] += (element.v_flux_extrapolated_[2][element.N_ - i] * lagrange_interpolant_right[offset_1D + i] + element.v_flux_extrapolated_[0][i] * lagrange_interpolant_left[offset_1D + i]) / weights[offset_1D + i];
+                element.p_flux_derivative_[i] += (element.p_flux_extrapolated_[2][element.N_ - j] * lagrange_interpolant_right[offset_1D + i] + element.p_flux_extrapolated_[0][j] * lagrange_interpolant_left[offset_1D + i]) / weights[offset_1D + i];
+                element.u_flux_derivative_[i] += (element.u_flux_extrapolated_[2][element.N_ - j] * lagrange_interpolant_right[offset_1D + i] + element.u_flux_extrapolated_[0][j] * lagrange_interpolant_left[offset_1D + i]) / weights[offset_1D + i];
+                element.v_flux_derivative_[i] += (element.v_flux_extrapolated_[2][element.N_ - j] * lagrange_interpolant_right[offset_1D + i] + element.v_flux_extrapolated_[0][j] * lagrange_interpolant_left[offset_1D + i]) / weights[offset_1D + i];
             }
 
             for (int i = 0; i <= element.N_; ++i) {
