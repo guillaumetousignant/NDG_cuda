@@ -62,7 +62,7 @@ namespace SEM { namespace Meshes {
             auto interpolate_to_boundaries(const SEM::Entities::device_vector<deviceFloat>& lagrange_interpolant_left, const SEM::Entities::device_vector<deviceFloat>& lagrange_interpolant_right) -> void;
             auto project_to_faces() -> void;
             auto project_to_elements() -> void;
-            auto print() -> void;
+            auto print() const -> void;
             auto write_data(deviceFloat time, size_t N_interpolation_points, const deviceFloat* interpolation_matrices, const SEM::Helpers::DataWriter_t& data_writer) -> void;
 
             __host__ __device__

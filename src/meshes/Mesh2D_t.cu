@@ -600,7 +600,7 @@ auto SEM::Meshes::Mesh2D_t::initial_conditions(const deviceFloat* polynomial_nod
     initial_conditions_2D<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data(), nodes_.data(), polynomial_nodes);
 }
 
-auto SEM::Meshes::Mesh2D_t::print() -> void {
+auto SEM::Meshes::Mesh2D_t::print() const -> void {
     std::vector<Face2D_t> host_faces(faces_.size());
     std::vector<Element2D_t> host_elements(elements_.size());
     std::vector<Vec2<deviceFloat>> host_nodes(nodes_.size());
@@ -710,7 +710,7 @@ auto SEM::Meshes::Mesh2D_t::print() -> void {
     std::cout << std::endl;
 }
 
-auto SEM::Meshes::Mesh2D_t::write_data(deviceFloat time, size_t N_interpolation_points, const deviceFloat* interpolation_matrices, const SEM::Helpers::DataWriter_t& data_writer) -> void {
+auto SEM::Meshes::Mesh2D_t::write_data(deviceFloat time, size_t N_interpolation_points, const deviceFloat* interpolation_matrices, const SEM::Helpers::DataWriter_t& data_writer) const -> void {
     device_vector<deviceFloat> x(N_elements_ * N_interpolation_points * N_interpolation_points);
     device_vector<deviceFloat> y(N_elements_ * N_interpolation_points * N_interpolation_points);
     device_vector<deviceFloat> p(N_elements_ * N_interpolation_points * N_interpolation_points);
