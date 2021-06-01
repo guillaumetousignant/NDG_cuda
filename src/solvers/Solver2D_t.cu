@@ -251,9 +251,9 @@ auto SEM::Solvers::compute_dg_wave_derivative(size_t N_elements, Element2D_t* el
             }
 
             for (int i = 0; i <= element.N_; ++i) {
-                element.G_p_[i * (element.N_ + 1) + j] = element.G_p_[i * (element.N_ + 1) + j] - element.p_flux_derivative_[i];
-                element.G_u_[i * (element.N_ + 1) + j] = element.G_u_[i * (element.N_ + 1) + j] - element.u_flux_derivative_[i];
-                element.G_v_[i * (element.N_ + 1) + j] = element.G_v_[i * (element.N_ + 1) + j] - element.v_flux_derivative_[i];
+                element.G_p_[i * (element.N_ + 1) + j] = (element.G_p_[i * (element.N_ + 1) + j] - element.p_flux_derivative_[i]) / element.jacobian_[i * (element.N_ + 1) + j];
+                element.G_u_[i * (element.N_ + 1) + j] = (element.G_u_[i * (element.N_ + 1) + j] - element.u_flux_derivative_[i]) / element.jacobian_[i * (element.N_ + 1) + j];
+                element.G_v_[i * (element.N_ + 1) + j] = (element.G_v_[i * (element.N_ + 1) + j] - element.v_flux_derivative_[i]) / element.jacobian_[i * (element.N_ + 1) + j];
             }
         }
     }
