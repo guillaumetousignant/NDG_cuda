@@ -74,7 +74,7 @@ auto main(int argc, char* argv[]) -> int {
         std::cerr << "Error: file '" << in_file << "' could not be opened with error '" << cg_get_error() << "'. Exiting." << std::endl;
         exit(16);
     }
-    
+
     // Getting base information
     int n_bases = 0;
     cg_nbases(index_file, &n_bases);
@@ -114,14 +114,14 @@ auto main(int argc, char* argv[]) -> int {
     }
 
     std::array<char, CGIO_MAX_NAME_LENGTH> zone_name; // Oh yeah cause it's the 80s still
-    std::array<int, 3> isize{0, 0, 0};
+    std::array<cgsize_t, 3> isize{0, 0, 0};
     cg_zone_read(index_file, index_base, index_zone, zone_name.data(), isize.data());
     if (isize[2] != 0) {
         std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << " has " << isize[2] << " boundary vertices, but to be honest I'm not sure how to deal with them. Exiting." << std::endl;
         exit(22);
     }
-    const int n_nodes = isize[0];
-    const int n_elements = isize[1];
+    const cgsize_t n_nodes = isize[0];
+    const cgsize_t n_elements = isize[1];
 
     // Getting nodes
     int n_coords = 0;
@@ -140,18 +140,18 @@ auto main(int argc, char* argv[]) -> int {
     std::array<std::vector<double>, 2> xy{std::vector<double>(n_nodes), std::vector<double>(n_nodes)};
 
     for (int index_coord = 1; index_coord <= n_coords; ++index_coord) {
-        const int index_coord_start = 1;
+        const cgsize_t index_coord_start = 1;
         cg_coord_read(index_file, index_base, index_zone, coord_names[index_coord - 1].data(), DataType_t::RealDouble, &index_coord_start, &n_nodes, xy[index_coord - 1].data());
     }
-
+    
     // Getting connectivity
     int n_sections = 0;
     cg_nsections(index_file, index_base, index_zone, &n_sections);
 
-    std::vector<int> section_data_size(n_sections);
+    std::vector<cgsize_t> section_data_size(n_sections);
     std::vector<std::array<char, CGIO_MAX_NAME_LENGTH>> section_names(n_sections); // Oh yeah cause it's the 80s still
     std::vector<ElementType_t> section_type(n_sections);
-    std::vector<std::array<int, 2>> section_ranges(n_sections);
+    std::vector<std::array<cgsize_t, 2>> section_ranges(n_sections);
     std::vector<int> section_n_boundaries(n_sections);
     std::vector<int> section_parent_flags(n_sections);
     for (int index_section = 1; index_section <= n_sections; ++index_section) {
@@ -163,11 +163,11 @@ auto main(int argc, char* argv[]) -> int {
         }
     }
 
-    std::vector<std::vector<int>> connectivity(n_sections);
-    std::vector<std::vector<int>> parent_data(n_sections);
+    std::vector<std::vector<cgsize_t>> connectivity(n_sections);
+    std::vector<std::vector<cgsize_t>> parent_data(n_sections);
     for (int index_section = 1; index_section <= n_sections; ++index_section) {
-        connectivity[index_section - 1] = std::vector<int>(section_data_size[index_section - 1]);
-        parent_data[index_section - 1] = std::vector<int>(section_ranges[index_section - 1][1] - section_ranges[index_section - 1][0]);
+        connectivity[index_section - 1] = std::vector<cgsize_t>(section_data_size[index_section - 1]);
+        parent_data[index_section - 1] = std::vector<cgsize_t>(section_ranges[index_section - 1][1] - section_ranges[index_section - 1][0]);
 
         cg_elements_read(index_file, index_base, index_zone, index_section, connectivity[index_section - 1].data(), parent_data[index_section - 1].data());
     }
@@ -180,12 +180,12 @@ auto main(int argc, char* argv[]) -> int {
     std::vector<GridLocation_t> connectivity_grid_locations(n_connectivity);
     std::vector<GridConnectivityType_t> connectivity_types(n_connectivity);
     std::vector<PointSetType_t> connectivity_point_set_types(n_connectivity);
-    std::vector<int> connectivity_sizes(n_connectivity);
+    std::vector<cgsize_t> connectivity_sizes(n_connectivity);
     std::vector<std::array<char, CGIO_MAX_NAME_LENGTH>> connectivity_donor_names(n_connectivity); // Oh yeah cause it's the 80s still
     std::vector<ZoneType_t> connectivity_donor_zone_types(n_connectivity);
     std::vector<PointSetType_t> connectivity_donor_point_set_types(n_connectivity);
     std::vector<DataType_t> connectivity_donor_data_types(n_connectivity);
-    std::vector<int> connectivity_donor_sizes(n_connectivity);
+    std::vector<cgsize_t> connectivity_donor_sizes(n_connectivity);
     for (int index_connectivity = 1; index_connectivity <= n_connectivity; ++index_connectivity) {
         cg_conn_info(index_file, index_base, index_zone, index_connectivity, connectivity_names[index_connectivity - 1].data(),
             &connectivity_grid_locations[index_connectivity - 1], &connectivity_types[index_connectivity - 1],
@@ -222,8 +222,8 @@ auto main(int argc, char* argv[]) -> int {
         }
     }
 
-    std::vector<std::vector<int>> interface_elements(n_connectivity);
-    std::vector<std::vector<int>> interface_donor_elements(n_connectivity);
+    std::vector<std::vector<cgsize_t>> interface_elements(n_connectivity);
+    std::vector<std::vector<cgsize_t>> interface_donor_elements(n_connectivity);
     for (int index_connectivity = 1; index_connectivity <= n_connectivity; ++index_connectivity) {
         interface_elements[index_connectivity - 1] = std::vector<int>(connectivity_sizes[index_connectivity - 1]);
         interface_donor_elements[index_connectivity - 1] = std::vector<int>(connectivity_donor_sizes[index_connectivity - 1]);
@@ -231,7 +231,6 @@ auto main(int argc, char* argv[]) -> int {
             DataType_t::Integer, interface_donor_elements[index_connectivity - 1].data());
     }
 
-    
     // Boundary conditions
     int n_boundaries = 0;
     cg_nbocos(index_file, index_base, index_zone, &n_boundaries);
@@ -239,9 +238,9 @@ auto main(int argc, char* argv[]) -> int {
     std::vector<std::array<char, CGIO_MAX_NAME_LENGTH>> boundary_names(n_boundaries); // Oh yeah cause it's the 80s still
     std::vector<BCType_t> boundary_types(n_boundaries);
     std::vector<PointSetType_t> boundary_point_set_types(n_boundaries);
-    std::vector<int> boundary_sizes(n_boundaries);
+    std::vector<cgsize_t> boundary_sizes(n_boundaries);
     std::vector<int> boundary_normal_indices(n_boundaries);
-    std::vector<int> boundary_normal_list_sizes(n_boundaries);
+    std::vector<cgsize_t> boundary_normal_list_sizes(n_boundaries);
     std::vector<DataType_t> boundary_normal_data_types(n_boundaries);
     std::vector<int> boundary_n_datasets(n_boundaries);
     std::vector<GridLocation_t> boundary_grid_locations(n_boundaries);
@@ -264,11 +263,11 @@ auto main(int argc, char* argv[]) -> int {
         }
     }
 
-    std::vector<std::vector<int>> boundary_elements(n_boundaries);
-    std::vector<std::vector<int>> boundary_normals(n_boundaries);
+    std::vector<std::vector<cgsize_t>> boundary_elements(n_boundaries);
+    std::vector<std::vector<cgsize_t>> boundary_normals(n_boundaries);
     for (int index_boundary = 1; index_boundary <= n_boundaries; ++index_boundary) {
-        boundary_elements[index_boundary - 1] = std::vector<int>(boundary_sizes[index_boundary - 1]);
-        boundary_normals[index_boundary - 1] = std::vector<int>(boundary_normal_list_sizes[index_boundary - 1]);
+        boundary_elements[index_boundary - 1] = std::vector<cgsize_t>(boundary_sizes[index_boundary - 1]);
+        boundary_normals[index_boundary - 1] = std::vector<cgsize_t>(boundary_normal_list_sizes[index_boundary - 1]);
         cg_boco_read(index_file, index_base, index_zone, index_boundary, boundary_elements[index_boundary - 1].data(), boundary_normals[index_boundary - 1].data());
     }
 
