@@ -50,7 +50,7 @@ auto SEM::Meshes::Mesh2D_t::read_su2(std::filesystem::path filename) -> void {
 }
 
 auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
-    int index_file;
+    int index_file = 0;
     const int open_error = cg_open(filename.string().c_str(), CG_MODE_READ, &index_file);
     if (open_error != CG_OK) {
         std::cerr << "Error: file '" << filename << "' could not be opened with error '" << cg_get_error() << "'. Exiting." << std::endl;
@@ -64,7 +64,7 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
         std::cerr << "Error: CGNS mesh has " << n_bases << " base(s), but for now only a single base is supported. Exiting." << std::endl;
         exit(17);
     }
-    const int index_base = 1;
+    constexpr int index_base = 1;
 
     std::array<char, CGIO_MAX_NAME_LENGTH> base_name; // Oh yeah cause it's the 80s still
     int dim = 0;
