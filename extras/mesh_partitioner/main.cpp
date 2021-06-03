@@ -10,16 +10,10 @@ namespace fs = std::filesystem;
 
 constexpr int CGIO_MAX_NAME_LENGTH = 33; // Includes the null terminator
 
-auto main(int argc, char* argv[]) -> int {
-    fs::path in_file;
-    fs::path out_file;
-
-    const SEM::Helpers::InputParser_t input_parser(argc, argv);
-
-    const std::string input_save_path = input_parser.getCmdOption("--in_path");
-    if (!input_save_path.empty()) {
-        in_file = input_save_path;
-        fs::create_directory(in_file.parent_path());
+auto get_input_file(const SEM::Helpers::InputParser_t& input_parser) -> fs::path {
+    const std::string input_path = input_parser.getCmdOption("--in_path");
+    if (!input_path.empty()) {
+        return input_path;
     }
     else {
         const std::string input_filename = input_parser.getCmdOption("--in_filename");
@@ -28,14 +22,16 @@ auto main(int argc, char* argv[]) -> int {
         const std::string input_save_dir = input_parser.getCmdOption("--in_directory");
         const fs::path save_dir = (input_save_dir.empty()) ? fs::current_path() / "meshes" : input_save_dir;
 
-        fs::create_directory(save_dir);
-        in_file = save_dir / save_filename;
+        return save_dir / save_filename;
     }
+}
 
+auto get_output_file(const SEM::Helpers::InputParser_t& input_parser) -> fs::path {
     const std::string output_save_path = input_parser.getCmdOption("--out_path");
     if (!output_save_path.empty()) {
-        out_file = output_save_path;
+        const fs::path out_file = output_save_path;
         fs::create_directory(out_file.parent_path());
+        return out_file;
     }
     else {
         const std::string output_filename = input_parser.getCmdOption("--out_filename");
@@ -45,9 +41,33 @@ auto main(int argc, char* argv[]) -> int {
         const fs::path save_dir = (output_save_dir.empty()) ? fs::current_path() / "meshes" : output_save_dir;
 
         fs::create_directory(save_dir);
-        out_file = save_dir / save_filename;
+        return save_dir / save_filename;
+    }
+}
+
+auto main(int argc, char* argv[]) -> int {
+    const SEM::Helpers::InputParser_t input_parser(argc, argv);
+    if (input_parser.cmdOptionExists("--help") || input_parser.cmdOptionExists("-h")) {
+        std::cout << "Square unstructured mesh partitioner" << std::endl;
+        std::cout << '\t' << "Generates multi-block 2D unstructured meshes from single-block meshes, both using the CGNS HDF5 format." << std::endl << std::endl;
+        std::cout << "Available options:" << std::endl;
+        std::cout << '\t' <<  "--in_path"       <<  '\t' <<  "Full path of the input mesh file. Overrides filename and directory if set." << std::endl;
+        std::cout << '\t' <<  "--in_filename"   <<  '\t' <<  "File name of the input mesh file. Defaults to [mesh.cgns]" << std::endl;
+        std::cout << '\t' <<  "--in_directory"  <<  '\t' <<  "Directory of the input mesh file. Defaults to [./meshes/]" << std::endl;
+        std::cout << '\t' <<  "--out_path"      <<  '\t' <<  "Full path of the output mesh file. Overrides filename and directory if set." << std::endl;
+        std::cout << '\t' <<  "--out_filename"  <<  '\t' <<  "File name of the output mesh file. Defaults to [mesh_partitioned.cgns]" << std::endl;
+        std::cout << '\t' <<  "--out_directory" <<  '\t' <<  "Directory of the output mesh file. Defaults to [./meshes/]" << std::endl;
+        std::cout << '\t' <<  "--n"             <<  '\t' <<  "Number of blocks in the output mesh. Defaults to [4]" << std::endl;
+        exit(0);
     }
 
+    const fs::path in_file = get_input_file(input_parser);
+    const fs::path out_file = get_output_file(input_parser);
+
+    const std::string input_n_proc = input_parser.getCmdOption("--n");
+    const int n_proc = (input_n_proc.empty()) ? 4 : std::stoi(input_n_proc);
+
+    // CGNS input
     int index_file = 0;
     const int open_error = cg_open(in_file.string().c_str(), CG_MODE_READ, &index_file);
     if (open_error != CG_OK) {
