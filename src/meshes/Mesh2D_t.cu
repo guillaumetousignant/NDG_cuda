@@ -86,7 +86,7 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
         std::cerr << "Error: CGNS mesh, base " << index_base << " has " << n_zones << " zone(s), but for now only a single zone is supported. Exiting." << std::endl;
         exit(20);
     }
-    const int index_zone = 1;
+    constexpr int index_zone = 1;
 
     ZoneType_t zone_type = ZoneType_t::ZoneTypeNull;
     cg_zone_type(index_file, index_base, index_zone, &zone_type);
@@ -918,12 +918,12 @@ auto SEM::Meshes::initial_conditions_2D(size_t n_elements, Element2D_t* elements
 }
 
 __global__
-auto SEM::Meshes::get_solution(size_t N_elements, size_t N_interpolation_points, Element2D_t* elements, const Vec2<deviceFloat>* nodes, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v, int* N, deviceFloat* dp_dt, deviceFloat* du_dt, deviceFloat* dv_dt) -> void {
+auto SEM::Meshes::get_solution(size_t N_elements, size_t N_interpolation_points, const Element2D_t* elements, const Vec2<deviceFloat>* nodes, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v, int* N, deviceFloat* dp_dt, deviceFloat* du_dt, deviceFloat* dv_dt) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
     for (size_t element_index = index; element_index < N_elements; element_index += stride) {
-        Element2D_t& element = elements[element_index];
+        const Element2D_t& element = elements[element_index];
         const size_t offset_interp_2D = element_index * N_interpolation_points * N_interpolation_points;
         const size_t offset_interp = element.N_ * (element.N_ + 1) * N_interpolation_points/2;
 
