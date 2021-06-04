@@ -273,7 +273,33 @@ auto main(int argc, char* argv[]) -> int {
 
     cg_close(index_file);
 
+    // Partitioning
+    // Figuring out which sections are the domain and which are ghost cells
+    std::vector<bool> section_is_domain(n_sections);
+    cgsize_t n_elements_domain = 0;
+    cgsize_t n_elements_ghost = 0;
+    for (int i = 0; i < n_sections; ++i) {
+        switch (section_type[i]) {
+            case ElementType_t::BAR_2:
+                section_is_domain[i] = false;
+                n_elements_ghost += section_ranges[i][1] - section_ranges[i][0] + 1;
+                break;
 
+            case ElementType_t::QUAD_4:
+                section_is_domain[i] = true;
+                n_elements_domain += section_ranges[i][1] - section_ranges[i][0] + 1;
+                break;
+
+            default:
+                std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", section " << i << " has an unknown element type. For now only BAR_2 and QUAD_4 are implemented, for boundaries and domain respectively. Exiting." << std::endl;
+                exit(33);
+        }
+    }
+
+    if (n_elements_domain + n_elements_ghost != n_elements) {
+        std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << " has " << n_elements << " elements but the sum of its sections is " << n_elements_domain + n_elements_ghost << " elements. Exiting." << std::endl;
+        exit(34);  
+    }
 
     return 0;
 }
