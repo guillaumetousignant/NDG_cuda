@@ -301,5 +301,12 @@ auto main(int argc, char* argv[]) -> int {
         exit(34);  
     }
 
+    // Splitting elements
+    const size_t N_elements_per_process = (n_elements_domain + n_proc - 1)/n_proc;
+    std::vector<size_t> N_elements(n_proc);
+    for (size_t i = 0; i < n_proc; ++i) {
+        N_elements[i] = = (i == n_proc - 1) ? N_elements_per_process + n_elements_domain - N_elements_per_process * n_proc : N_elements_per_process;
+    }
+
     return 0;
 }
