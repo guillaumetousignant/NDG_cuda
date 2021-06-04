@@ -350,6 +350,9 @@ auto main(int argc, char* argv[]) -> int {
         exit(40);
     }
 
+    int index_out_base = 0;
+    cg_base_write(index_out_file, base_name.data(), dim, physDim, &index_out_base);
+
     // Getting relevant points
     for (size_t i = 0; i < n_proc; ++i) {
         std::vector<cgsize_t> elements_in_proc(4 * N_elements[i]);
@@ -390,6 +393,16 @@ auto main(int argc, char* argv[]) -> int {
                 }
             }
         }
+
+        // Writing zone information to file
+        /* vertex size, cell size, boundary vertex size (always zero for structured grids) */
+        std::array<cgsize_t, 3> isize {n_nodes_in_proc,
+                                       N_elements[i],
+                                       0};
+        std::stringstream ss;
+        ss << "Zone " << i + 1;
+        int index_out_zone = 0;
+        cg_zone_write(index_out_file, index_out_base, ss.str().c_str(), isize.data(), ZoneType_t::Unstructured, &index_out_zone);
     }
 
     const int close_out_error = cg_close(index_out_file);
