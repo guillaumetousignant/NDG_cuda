@@ -397,8 +397,9 @@ auto main(int argc, char* argv[]) -> int {
         // Writing zone information to file
         /* vertex size, cell size, boundary vertex size (always zero for structured grids) */
         std::array<cgsize_t, 3> isize {n_nodes_in_proc,
-                                       N_elements[i],
+                                       n_elements_total_in_proc, // CHECK this is wrong! add n boundary elements
                                        0};
+
         std::stringstream ss;
         ss << "Zone " << i + 1;
         int index_out_zone = 0;
