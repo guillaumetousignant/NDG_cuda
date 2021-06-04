@@ -403,6 +403,11 @@ auto main(int argc, char* argv[]) -> int {
         ss << "Zone " << i + 1;
         int index_out_zone = 0;
         cg_zone_write(index_out_file, index_out_base, ss.str().c_str(), isize.data(), ZoneType_t::Unstructured, &index_out_zone);
+
+        /* write grid coordinates (user must use SIDS-standard names here) */
+        int index_out_coord = 0;
+        cg_coord_write(index_out_file, index_out_base, index_out_zone, DataType_t::RealDouble, coord_names[0].data(), xy_in_proc[0].data(), &index_out_coord);
+        cg_coord_write(index_out_file, index_out_base, index_out_zone, DataType_t::RealDouble, coord_names[1].data(), xy_in_proc[1].data(), &index_out_coord);
     }
 
     const int close_out_error = cg_close(index_out_file);
