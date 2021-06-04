@@ -240,7 +240,7 @@ auto main(int argc, char* argv[]) -> int {
         elements[i * n_sides + 3] = y_node_res * xy[0] + xy[1] + 1;
     }
 
-    /* write HEX_8 element connectivity (user can give any name) */
+    /* write QUAD_4 element connectivity (user can give any name) */
     const std::string elements_name("Elements");
     int index_section = 0;
     const int nelem_start = 1;
