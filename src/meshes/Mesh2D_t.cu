@@ -253,7 +253,11 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
         cg_boco_read(index_file, index_base, index_zone, index_boundary, boundary_elements[index_boundary - 1].data(), boundary_normals[index_boundary - 1].data());
     }
 
-    cg_close(index_file);
+    const int close_error = cg_close(index_file);
+    if (close_error != CG_OK) {
+        std::cerr << "Error: file '" << filename << "' could not be closed with error '" << cg_get_error() << "'. Exiting." << std::endl;
+        exit(44);
+    }
 
     // Putting nodes in the format used by the mesh
     std::vector<Vec2<deviceFloat>> host_nodes(n_nodes);

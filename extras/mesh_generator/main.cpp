@@ -381,7 +381,11 @@ auto main(int argc, char* argv[]) -> int {
     }
 
     /* close CGNS file */
-    cg_close(index_file);
+    const int close_error = cg_close(index_file);
+    if (close_error != CG_OK) {
+        std::cerr << "Error: file '" << save_file << "' could not be closed with error '" << cg_get_error() << "'. Exiting." << std::endl;
+        exit(43);
+    }
     std::cout << "Successfully wrote grid to file " <<  save_file << std::endl;
     
     return 0;

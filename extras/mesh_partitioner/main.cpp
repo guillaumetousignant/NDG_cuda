@@ -68,16 +68,16 @@ auto main(int argc, char* argv[]) -> int {
     const size_t n_proc = (input_n_proc.empty()) ? 4 : std::stoi(input_n_proc);
 
     // CGNS input
-    int index_file = 0;
-    const int open_error = cg_open(in_file.string().c_str(), CG_MODE_READ, &index_file);
+    int index_in_file = 0;
+    const int open_error = cg_open(in_file.string().c_str(), CG_MODE_READ, &index_in_file);
     if (open_error != CG_OK) {
-        std::cerr << "Error: file '" << in_file << "' could not be opened with error '" << cg_get_error() << "'. Exiting." << std::endl;
+        std::cerr << "Error: input file '" << in_file << "' could not be opened with error '" << cg_get_error() << "'. Exiting." << std::endl;
         exit(16);
     }
 
     // Getting base information
     int n_bases = 0;
-    cg_nbases(index_file, &n_bases);
+    cg_nbases(index_in_file, &n_bases);
     if (n_bases != 1) {
         std::cerr << "Error: CGNS mesh has " << n_bases << " base(s), but for now only a single base is supported. Exiting." << std::endl;
         exit(17);
@@ -87,7 +87,7 @@ auto main(int argc, char* argv[]) -> int {
     std::array<char, CGIO_MAX_NAME_LENGTH> base_name; // Oh yeah cause it's the 80s still
     int dim = 0;
     int physDim = 0;
-    cg_base_read(index_file, index_base, base_name.data(), &dim, &physDim);
+    cg_base_read(index_in_file, index_base, base_name.data(), &dim, &physDim);
     if (dim != 2) {
         std::cerr << "Error: CGNS mesh, base " << index_base << " has " << dim << " dimensions, but the program only supports 2 dimensions. Exiting." << std::endl;
         exit(18);
@@ -99,7 +99,7 @@ auto main(int argc, char* argv[]) -> int {
 
     // Getting zone information
     int n_zones = 0;
-    cg_nzones(index_file, index_base, &n_zones);
+    cg_nzones(index_in_file, index_base, &n_zones);
     if (n_bases != 1) {
         std::cerr << "Error: CGNS mesh, base " << index_base << " has " << n_zones << " zone(s), but for now only a single zone is supported. Exiting." << std::endl;
         exit(20);
@@ -107,7 +107,7 @@ auto main(int argc, char* argv[]) -> int {
     constexpr int index_zone = 1;
 
     ZoneType_t zone_type = ZoneType_t::ZoneTypeNull;
-    cg_zone_type(index_file, index_base, index_zone, &zone_type);
+    cg_zone_type(index_in_file, index_base, index_zone, &zone_type);
     if (zone_type != ZoneType_t::Unstructured) {
         std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << " is not an unstructured zone. For now only unstructured zones are supported. Exiting." << std::endl;
         exit(21);
@@ -115,7 +115,7 @@ auto main(int argc, char* argv[]) -> int {
 
     std::array<char, CGIO_MAX_NAME_LENGTH> zone_name; // Oh yeah cause it's the 80s still
     std::array<cgsize_t, 3> isize{0, 0, 0};
-    cg_zone_read(index_file, index_base, index_zone, zone_name.data(), isize.data());
+    cg_zone_read(index_in_file, index_base, index_zone, zone_name.data(), isize.data());
     if (isize[2] != 0) {
         std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << " has " << isize[2] << " boundary vertices, but to be honest I'm not sure how to deal with them. Exiting." << std::endl;
         exit(22);
@@ -125,7 +125,7 @@ auto main(int argc, char* argv[]) -> int {
 
     // Getting nodes
     int n_coords = 0;
-    cg_ncoords(index_file, index_base, index_zone, &n_coords);
+    cg_ncoords(index_in_file, index_base, index_zone, &n_coords);
     if (n_coords != 2) {
         std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << " has " << n_coords << " sets of coordinates, but for now only two are supported. Exiting." << std::endl;
         exit(23);
@@ -134,19 +134,19 @@ auto main(int argc, char* argv[]) -> int {
     std::array<std::array<char, CGIO_MAX_NAME_LENGTH>, 2> coord_names; // Oh yeah cause it's the 80s still
     std::array<DataType_t, 2> coord_data_types {DataType_t::DataTypeNull, DataType_t::DataTypeNull};
     for (int index_coord = 1; index_coord <= n_coords; ++index_coord) {
-        cg_coord_info(index_file, index_base, index_zone, index_coord, &coord_data_types[index_coord - 1], coord_names[index_coord - 1].data());
+        cg_coord_info(index_in_file, index_base, index_zone, index_coord, &coord_data_types[index_coord - 1], coord_names[index_coord - 1].data());
     }
 
     std::array<std::vector<double>, 2> xy{std::vector<double>(n_nodes), std::vector<double>(n_nodes)};
 
     for (int index_coord = 1; index_coord <= n_coords; ++index_coord) {
         const cgsize_t index_coord_start = 1;
-        cg_coord_read(index_file, index_base, index_zone, coord_names[index_coord - 1].data(), DataType_t::RealDouble, &index_coord_start, &n_nodes, xy[index_coord - 1].data());
+        cg_coord_read(index_in_file, index_base, index_zone, coord_names[index_coord - 1].data(), DataType_t::RealDouble, &index_coord_start, &n_nodes, xy[index_coord - 1].data());
     }
     
     // Getting connectivity
     int n_sections = 0;
-    cg_nsections(index_file, index_base, index_zone, &n_sections);
+    cg_nsections(index_in_file, index_base, index_zone, &n_sections);
 
     std::vector<cgsize_t> section_data_size(n_sections);
     std::vector<std::array<char, CGIO_MAX_NAME_LENGTH>> section_names(n_sections); // Oh yeah cause it's the 80s still
@@ -155,8 +155,8 @@ auto main(int argc, char* argv[]) -> int {
     std::vector<int> section_n_boundaries(n_sections);
     std::vector<int> section_parent_flags(n_sections);
     for (int index_section = 1; index_section <= n_sections; ++index_section) {
-        cg_ElementDataSize(index_file, index_base, index_zone, index_section, &section_data_size[index_section - 1]);
-        cg_section_read(index_file, index_base, index_zone, index_section, section_names[index_section - 1].data(), &section_type[index_section - 1], &section_ranges[index_section - 1][0], &section_ranges[index_section - 1][1], &section_n_boundaries[index_section - 1], &section_parent_flags[index_section - 1]);
+        cg_ElementDataSize(index_in_file, index_base, index_zone, index_section, &section_data_size[index_section - 1]);
+        cg_section_read(index_in_file, index_base, index_zone, index_section, section_names[index_section - 1].data(), &section_type[index_section - 1], &section_ranges[index_section - 1][0], &section_ranges[index_section - 1][1], &section_n_boundaries[index_section - 1], &section_parent_flags[index_section - 1]);
         if (section_n_boundaries[index_section - 1] != 0) {
             std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", section " << index_section << " has " << section_n_boundaries[index_section - 1] << " boundary elements, but to be honest I'm not sure how to deal with them. Exiting." << std::endl;
             exit(24);
@@ -169,12 +169,12 @@ auto main(int argc, char* argv[]) -> int {
         connectivity[index_section - 1] = std::vector<cgsize_t>(section_data_size[index_section - 1]);
         parent_data[index_section - 1] = std::vector<cgsize_t>(section_ranges[index_section - 1][1] - section_ranges[index_section - 1][0]);
 
-        cg_elements_read(index_file, index_base, index_zone, index_section, connectivity[index_section - 1].data(), parent_data[index_section - 1].data());
+        cg_elements_read(index_in_file, index_base, index_zone, index_section, connectivity[index_section - 1].data(), parent_data[index_section - 1].data());
     }
 
     // Interfaces
     int n_connectivity = 0;
-    cg_nconns(index_file, index_base, index_zone, &n_connectivity);
+    cg_nconns(index_in_file, index_base, index_zone, &n_connectivity);
 
     std::vector<std::array<char, CGIO_MAX_NAME_LENGTH>> connectivity_names(n_connectivity); // Oh yeah cause it's the 80s still
     std::vector<GridLocation_t> connectivity_grid_locations(n_connectivity);
@@ -187,7 +187,7 @@ auto main(int argc, char* argv[]) -> int {
     std::vector<DataType_t> connectivity_donor_data_types(n_connectivity);
     std::vector<cgsize_t> connectivity_donor_sizes(n_connectivity);
     for (int index_connectivity = 1; index_connectivity <= n_connectivity; ++index_connectivity) {
-        cg_conn_info(index_file, index_base, index_zone, index_connectivity, connectivity_names[index_connectivity - 1].data(),
+        cg_conn_info(index_in_file, index_base, index_zone, index_connectivity, connectivity_names[index_connectivity - 1].data(),
             &connectivity_grid_locations[index_connectivity - 1], &connectivity_types[index_connectivity - 1],
             &connectivity_point_set_types[index_connectivity - 1], &connectivity_sizes[index_connectivity - 1], connectivity_donor_names[index_connectivity - 1].data(),
             &connectivity_donor_zone_types[index_connectivity - 1], &connectivity_donor_point_set_types[index_connectivity - 1],
@@ -227,13 +227,13 @@ auto main(int argc, char* argv[]) -> int {
     for (int index_connectivity = 1; index_connectivity <= n_connectivity; ++index_connectivity) {
         interface_elements[index_connectivity - 1] = std::vector<int>(connectivity_sizes[index_connectivity - 1]);
         interface_donor_elements[index_connectivity - 1] = std::vector<int>(connectivity_donor_sizes[index_connectivity - 1]);
-        cg_conn_read(index_file, index_base, index_zone, index_connectivity, interface_elements[index_connectivity - 1].data(),
+        cg_conn_read(index_in_file, index_base, index_zone, index_connectivity, interface_elements[index_connectivity - 1].data(),
             DataType_t::Integer, interface_donor_elements[index_connectivity - 1].data());
     }
 
     // Boundary conditions
     int n_boundaries = 0;
-    cg_nbocos(index_file, index_base, index_zone, &n_boundaries);
+    cg_nbocos(index_in_file, index_base, index_zone, &n_boundaries);
 
     std::vector<std::array<char, CGIO_MAX_NAME_LENGTH>> boundary_names(n_boundaries); // Oh yeah cause it's the 80s still
     std::vector<BCType_t> boundary_types(n_boundaries);
@@ -245,7 +245,7 @@ auto main(int argc, char* argv[]) -> int {
     std::vector<int> boundary_n_datasets(n_boundaries);
     std::vector<GridLocation_t> boundary_grid_locations(n_boundaries);
     for (int index_boundary = 1; index_boundary <= n_boundaries; ++index_boundary) {
-        cg_boco_info(index_file, index_base, index_zone, index_boundary, boundary_names[index_boundary - 1].data(),
+        cg_boco_info(index_in_file, index_base, index_zone, index_boundary, boundary_names[index_boundary - 1].data(),
             &boundary_types[index_boundary - 1], &boundary_point_set_types[index_boundary - 1], &boundary_sizes[index_boundary - 1],
             &boundary_normal_indices[index_boundary - 1], &boundary_normal_list_sizes[index_boundary - 1],
             &boundary_normal_data_types[index_boundary - 1], &boundary_n_datasets[index_boundary - 1]);
@@ -255,7 +255,7 @@ auto main(int argc, char* argv[]) -> int {
             exit(31);
         }
 
-        cg_boco_gridlocation_read(index_file, index_base, index_zone, index_boundary, &boundary_grid_locations[index_boundary - 1]);
+        cg_boco_gridlocation_read(index_in_file, index_base, index_zone, index_boundary, &boundary_grid_locations[index_boundary - 1]);
 
         if (boundary_grid_locations[index_boundary - 1] != GridLocation_t::EdgeCenter) {
             std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", boundary " << index_boundary << " has a grid location that isn't EdgeCenter. For now only EdgeCenter grid locations are supported. Exiting." << std::endl;
@@ -268,10 +268,14 @@ auto main(int argc, char* argv[]) -> int {
     for (int index_boundary = 1; index_boundary <= n_boundaries; ++index_boundary) {
         boundary_elements[index_boundary - 1] = std::vector<cgsize_t>(boundary_sizes[index_boundary - 1]);
         boundary_normals[index_boundary - 1] = std::vector<cgsize_t>(boundary_normal_list_sizes[index_boundary - 1]);
-        cg_boco_read(index_file, index_base, index_zone, index_boundary, boundary_elements[index_boundary - 1].data(), boundary_normals[index_boundary - 1].data());
+        cg_boco_read(index_in_file, index_base, index_zone, index_boundary, boundary_elements[index_boundary - 1].data(), boundary_normals[index_boundary - 1].data());
     }
 
-    cg_close(index_file);
+    const int close_error = cg_close(index_in_file);
+    if (close_error != CG_OK) {
+        std::cerr << "Error: input file '" << in_file << "' could not be closed with error '" << cg_get_error() << "'. Exiting." << std::endl;
+        exit(41);
+    }
 
     // Partitioning
     // Figuring out which sections are the domain and which are ghost cells
@@ -338,6 +342,14 @@ auto main(int argc, char* argv[]) -> int {
         }
     }
 
+    // Creating output file
+    int index_out_file = 0;
+    const int open_out_error = cg_open(out_file.string().c_str(), CG_MODE_READ, &index_out_file);
+    if (open_out_error != CG_OK) {
+        std::cerr << "Error: output file '" << out_file << "' could not be opened with error '" << cg_get_error() << "'. Exiting." << std::endl;
+        exit(40);
+    }
+
     // Getting relevant points
     for (size_t i = 0; i = n_proc; ++i) {
         std::vector<cgsize_t> elements_in_proc(4 * N_elements[i]);
@@ -378,6 +390,12 @@ auto main(int argc, char* argv[]) -> int {
                 }
             }
         }
+    }
+
+    const int close_out_error = cg_close(index_out_file);
+    if (close_out_error != CG_OK) {
+        std::cerr << "Error: output file '" << out_file << "' could not be closed with error '" << cg_get_error() << "'. Exiting." << std::endl;
+        exit(42);
     }
 
     return 0;
