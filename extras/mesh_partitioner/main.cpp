@@ -305,7 +305,33 @@ auto main(int argc, char* argv[]) -> int {
     const size_t N_elements_per_process = (n_elements_domain + n_proc - 1)/n_proc;
     std::vector<size_t> N_elements(n_proc);
     for (size_t i = 0; i < n_proc; ++i) {
-        N_elements[i] = = (i == n_proc - 1) ? N_elements_per_process + n_elements_domain - N_elements_per_process * n_proc : N_elements_per_process;
+        N_elements[i] = (i == n_proc - 1) ? N_elements_per_process + n_elements_domain - N_elements_per_process * n_proc : N_elements_per_process;
+    }
+
+    // Putting connectivity data together
+    std::vector<cgsize_t> elements(4 * n_elements_domain + 2 * n_elements_ghost);
+    std::vector<size_t> section_start_indices(n_sections);
+    size_t element_domain_index = 0;
+    size_t element_ghost_index = 4 * n_elements_domain;
+    for (int i = 0; i < n_sections; ++i) {
+        if (section_is_domain[i]) {
+            section_start_indices[i] = element_domain_index;
+            for (cgsize_t j = 0; j < section_ranges[i][1] - section_ranges[i][0] + 1; ++j) {
+                elements[section_start_indices[i] + 4 * j] = connectivity[i][4 * j];
+                elements[section_start_indices[i] + 4 * j + 1] = connectivity[i][4 * j + 1];
+                elements[section_start_indices[i] + 4 * j + 2] = connectivity[i][4 * j + 2];
+                elements[section_start_indices[i] + 4 * j + 3] = connectivity[i][4 * j + 3];
+            }
+            element_domain_index += 4 * (section_ranges[i][1] - section_ranges[i][0] + 1);
+        }
+        else {
+            section_start_indices[i] = element_ghost_index;
+            for (cgsize_t j = 0; j < section_ranges[i][1] - section_ranges[i][0] + 1; ++j) {
+                elements[section_start_indices[i] + 2 * j] = connectivity[i][2 * j];
+                elements[section_start_indices[i] + 2 * j + 1] = connectivity[i][2 * j + 1];
+            }
+            element_ghost_index += 2 * (section_ranges[i][1] - section_ranges[i][0] + 1);
+        }
     }
 
     return 0;
