@@ -408,6 +408,14 @@ auto main(int argc, char* argv[]) -> int {
         int index_out_coord = 0;
         cg_coord_write(index_out_file, index_out_base, index_out_zone, DataType_t::RealDouble, coord_names[0].data(), xy_in_proc[0].data(), &index_out_coord);
         cg_coord_write(index_out_file, index_out_base, index_out_zone, DataType_t::RealDouble, coord_names[1].data(), xy_in_proc[1].data(), &index_out_coord);
+
+        /* write QUAD_4 element connectivity (user can give any name) */
+        const std::string elements_name("Elements");
+        int index_out_section = 0;
+        const int nelem_start = 1;
+        const int nelem_end = N_elements[i];
+        const int n_boundary_elem = 0; // No boundaries yet
+        cg_section_write(index_out_file, index_out_base, index_out_zone, elements_name.c_str(), ElementType_t::QUAD_4, nelem_start, nelem_end, n_boundary_elem, elements_in_proc.data(), &index_out_section);
     }
 
     const int close_out_error = cg_close(index_out_file);
