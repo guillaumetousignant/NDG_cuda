@@ -45,6 +45,33 @@ auto get_output_file(const SEM::Helpers::InputParser_t& input_parser) -> fs::pat
     }
 }
 
+auto build_node_to_element(cgsize_t n_nodes, const std::vector<cgsize_t>& elements, cgsize_t n_elements_domain, cgsize_t n_elements_ghost) -> std::vector<std::vector<cgsize_t>> {
+    std::vector<std::vector<cgsize_t>> node_to_element(n_nodes);
+
+    for (size_t j = 0; j < elements.size(); ++j) {
+        for (auto node_index: elements[j].nodes_) {
+            if (std::find(node_to_element[node_index].begin(), node_to_element[node_index].end(), j) == node_to_element[node_index].end()) { // This will be slower, but is needed because boundaries have 4 sides and not 2. Remove when variable geometry elements are added.
+                node_to_element[node_index].push_back(j);
+            }
+        }
+    }
+
+    for (cgsize_t j = 0; j < n_elements_domain; ++j) {
+        for (cgsize_t side_index = 0; side_index < 4; ++side_index) {
+            const size_t node_index = elements[4 * j + side_index];
+            node_to_element[node_index].push_back(j); // Doesn't work if elements have the same node multiple times. Shouldn't happen with correct meshes I think, otherwise do as in Mesh2D_t.
+        }
+    }
+    for (cgsize_t j = 0; j < n_elements_ghost; ++j) {
+        for (cgsize_t side_index = 0; side_index < 2; ++side_index) {
+            const size_t node_index = elements[4 * n_elements_domain + 2 * j + side_index];
+            node_to_element[node_index].push_back(j); // Doesn't work if elements have the same node multiple times. Shouldn't happen with correct meshes I think, otherwise do as in Mesh2D_t.
+        }
+    }
+
+    return node_to_element;
+}
+
 auto main(int argc, char* argv[]) -> int {
     const SEM::Helpers::InputParser_t input_parser(argc, argv);
     if (input_parser.cmdOptionExists("--help") || input_parser.cmdOptionExists("-h")) {
@@ -342,6 +369,9 @@ auto main(int argc, char* argv[]) -> int {
         }
     }
 
+    // Computing nodes to elements
+    const std::vector<std::vector<cgsize_t>> node_to_element = build_node_to_element(n_nodes, elements, n_elements_domain, n_elements_ghost);
+
     // Creating output file
     int index_out_file = 0;
     const int open_out_error = cg_open(out_file.string().c_str(), CG_MODE_WRITE, &index_out_file);
@@ -353,8 +383,9 @@ auto main(int argc, char* argv[]) -> int {
     int index_out_base = 0;
     cg_base_write(index_out_file, base_name.data(), dim, physDim, &index_out_base);
 
-    // Getting relevant points
+    // Building the different sections
     for (cgsize_t i = 0; i < n_proc; ++i) {
+        // Getting section elements
         std::vector<cgsize_t> elements_in_proc(4 * N_elements[i]);
         for (cgsize_t element_index = 0; element_index < N_elements[i]; ++element_index) {
             for (cgsize_t side_index = 0; side_index < 4; ++side_index) {
@@ -362,6 +393,7 @@ auto main(int argc, char* argv[]) -> int {
             }
         }
 
+        // Getting relevant points
         std::vector<bool> is_point_needed(n_nodes);
         for (cgsize_t element_index = 0; element_index < N_elements[i]; ++element_index) {
             for (cgsize_t side_index = 0; side_index < 4; ++side_index) {
@@ -394,10 +426,16 @@ auto main(int argc, char* argv[]) -> int {
             }
         }
 
+        // Getting relevant boundaries
+        for (int j = 0; j < n_boundaries; ++j) {
+
+        }
+        
+
         // Writing zone information to file
         /* vertex size, cell size, boundary vertex size (always zero for structured grids) */
         std::array<cgsize_t, 3> isize {n_nodes_in_proc,
-                                       n_elements_total_in_proc, // CHECK this is wrong! add n boundary elements
+                                       N_elements[i], //n_elements_total_in_proc, // CHECK this is wrong! add n boundary elements
                                        0};
 
         std::stringstream ss;
