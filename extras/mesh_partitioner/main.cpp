@@ -48,28 +48,97 @@ auto get_output_file(const SEM::Helpers::InputParser_t& input_parser) -> fs::pat
 auto build_node_to_element(cgsize_t n_nodes, const std::vector<cgsize_t>& elements, cgsize_t n_elements_domain, cgsize_t n_elements_ghost) -> std::vector<std::vector<cgsize_t>> {
     std::vector<std::vector<cgsize_t>> node_to_element(n_nodes);
 
-    for (size_t j = 0; j < elements.size(); ++j) {
-        for (auto node_index: elements[j].nodes_) {
-            if (std::find(node_to_element[node_index].begin(), node_to_element[node_index].end(), j) == node_to_element[node_index].end()) { // This will be slower, but is needed because boundaries have 4 sides and not 2. Remove when variable geometry elements are added.
-                node_to_element[node_index].push_back(j);
-            }
-        }
-    }
-
     for (cgsize_t j = 0; j < n_elements_domain; ++j) {
         for (cgsize_t side_index = 0; side_index < 4; ++side_index) {
-            const size_t node_index = elements[4 * j + side_index];
+            const size_t node_index = elements[4 * j + side_index] - 1;
             node_to_element[node_index].push_back(j); // Doesn't work if elements have the same node multiple times. Shouldn't happen with correct meshes I think, otherwise do as in Mesh2D_t.
         }
     }
     for (cgsize_t j = 0; j < n_elements_ghost; ++j) {
         for (cgsize_t side_index = 0; side_index < 2; ++side_index) {
-            const size_t node_index = elements[4 * n_elements_domain + 2 * j + side_index];
+            const size_t node_index = elements[4 * n_elements_domain + 2 * j + side_index] - 1;
             node_to_element[node_index].push_back(j); // Doesn't work if elements have the same node multiple times. Shouldn't happen with correct meshes I think, otherwise do as in Mesh2D_t.
         }
     }
 
     return node_to_element;
+}
+
+auto build_element_to_element(const std::vector<cgsize_t>& elements, const std::vector<std::vector<cgsize_t>>& node_to_element, cgsize_t n_elements_domain, cgsize_t n_elements_ghost) -> std::vector<cgsize_t> {
+    std::vector<cgsize_t> element_to_element(4 * n_elements_domain + n_elements_ghost);
+
+    for (cgsize_t i = 0; i < n_elements_domain; ++i) {
+        for (cgsize_t j = 0; j < 4; ++j) {
+            const cgsize_t node_index = elements[4 * i + j];
+            const cgsize_t node_index_next = (j < 3) ? elements[4 * i + j + 1] : elements[4 * i];
+
+            for (auto element_index : node_to_element[node_index - 1]) {
+                if (element_index != i) {
+                    const auto iterator_begin = (element_index < n_elements_domain) ? elements.begin() + 4 * element_index : elements.begin() + 4 * n_elements_domain + 2 * (element_index - n_elements_domain);
+                    const auto iterator_end = (element_index < n_elements_domain) ? elements.begin() + 4 * element_index + 4 : elements.begin() + 4 * n_elements_domain + 2 * (element_index - n_elements_domain) + 2;
+
+                    auto it = std::find(iterator_begin, iterator_end, node_index);
+                    if (it != iterator_end) {
+                        const cgsize_t node_element_index = it - elements.begin();
+                        const cgsize_t node_element_index_start = (element_index < n_elements_domain) ? 4 * element_index : 4 * n_elements_domain + 2 * (element_index - n_elements_domain);
+                        const cgsize_t node_element_index_end = (element_index < n_elements_domain) ? 4 * element_index + 4 : 4 * n_elements_domain + 2 * (element_index - n_elements_domain) + 2;
+                        
+                        for (cgsize_t node_element_index_next = node_element_index_start; node_element_index_next < node_element_index; ++node_element_index_next) {
+                            if (elements[node_element_index_next] == node_index_next) {
+                                element_to_element[4 * i + j] = element_index;
+                                goto endloop; // I hate this too don't worry
+                            }
+                        }
+
+                        for (size_t node_element_index_next = node_element_index + 1; node_element_index_next < node_element_index_end; ++node_element_index_next) {
+                            if (elements[node_element_index_next] == node_index_next) {
+                                element_to_element[4 * i + j] = element_index;
+                                goto endloop; // I hate this too don't worry
+                            }
+                        }
+                    }
+                }
+            }
+            endloop: ;
+        }
+    }
+
+    for (cgsize_t i = 0; i < n_elements_domain; ++i) {
+        const cgsize_t node_index = elements[4 * n_elements_domain + 2 * i];
+        const cgsize_t node_index_next = elements[4 * n_elements_domain + 2 * i + 1];
+
+        for (auto element_index : node_to_element[node_index - 1]) {
+            if (element_index != i) {
+                const auto iterator_begin = (element_index < n_elements_domain) ? elements.begin() + 4 * element_index : elements.begin() + 4 * n_elements_domain + 2 * (element_index - n_elements_domain);
+                const auto iterator_end = (element_index < n_elements_domain) ? elements.begin() + 4 * element_index + 4 : elements.begin() + 4 * n_elements_domain + 2 * (element_index - n_elements_domain) + 2;
+
+                auto it = std::find(iterator_begin, iterator_end, node_index);
+                if (it != iterator_end) {
+                    const cgsize_t node_element_index = it - elements.begin();
+                    const cgsize_t node_element_index_start = (element_index < n_elements_domain) ? 4 * element_index : 4 * n_elements_domain + 2 * (element_index - n_elements_domain);
+                    const cgsize_t node_element_index_end = (element_index < n_elements_domain) ? 4 * element_index + 4 : 4 * n_elements_domain + 2 * (element_index - n_elements_domain) + 2;
+                    
+                    for (cgsize_t node_element_index_next = node_element_index_start; node_element_index_next < node_element_index; ++node_element_index_next) {
+                        if (elements[node_element_index_next] == node_index_next) {
+                            element_to_element[4 * n_elements_domain + i] = element_index;
+                            goto endloop2; // I hate this too don't worry
+                        }
+                    }
+
+                    for (size_t node_element_index_next = node_element_index + 1; node_element_index_next < node_element_index_end; ++node_element_index_next) {
+                        if (elements[node_element_index_next] == node_index_next) {
+                            element_to_element[4 * n_elements_domain + i] = element_index;
+                            goto endloop2; // I hate this too don't worry
+                        }
+                    }
+                }
+            }
+        }
+        endloop2: ;
+    }
+    
+ 
+    return element_to_element;
 }
 
 auto main(int argc, char* argv[]) -> int {
@@ -371,6 +440,9 @@ auto main(int argc, char* argv[]) -> int {
 
     // Computing nodes to elements
     const std::vector<std::vector<cgsize_t>> node_to_element = build_node_to_element(n_nodes, elements, n_elements_domain, n_elements_ghost);
+
+    // Computing element to elements
+    const std::vector<cgsize_t> element_to_element = build_element_to_element(elements, node_to_element, n_elements_domain, n_elements_ghost);
 
     // Creating output file
     int index_out_file = 0;
