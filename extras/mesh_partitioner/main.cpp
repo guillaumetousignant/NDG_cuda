@@ -103,12 +103,12 @@ auto build_element_to_element(const std::vector<cgsize_t>& elements, const std::
         }
     }
 
-    for (cgsize_t i = 0; i < n_elements_domain; ++i) {
+    for (cgsize_t i = 0; i < n_elements_ghost; ++i) {
         const cgsize_t node_index = elements[4 * n_elements_domain + 2 * i];
         const cgsize_t node_index_next = elements[4 * n_elements_domain + 2 * i + 1];
 
         for (auto element_index : node_to_element[node_index - 1]) {
-            if (element_index != i) {
+            if (element_index != i + n_elements_domain) {
                 const auto iterator_begin = (element_index < n_elements_domain) ? elements.begin() + 4 * element_index : elements.begin() + 4 * n_elements_domain + 2 * (element_index - n_elements_domain);
                 const auto iterator_end = (element_index < n_elements_domain) ? elements.begin() + 4 * element_index + 4 : elements.begin() + 4 * n_elements_domain + 2 * (element_index - n_elements_domain) + 2;
 
