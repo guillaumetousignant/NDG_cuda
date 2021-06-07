@@ -65,7 +65,7 @@ auto main(int argc, char* argv[]) -> int {
     const fs::path out_file = get_output_file(input_parser);
 
     const std::string input_n_proc = input_parser.getCmdOption("--n");
-    const size_t n_proc = (input_n_proc.empty()) ? 4 : std::stoi(input_n_proc);
+    const cgsize_t n_proc = (input_n_proc.empty()) ? 4 : std::stoi(input_n_proc);
 
     // CGNS input
     int index_in_file = 0;
@@ -306,11 +306,11 @@ auto main(int argc, char* argv[]) -> int {
     }
 
     // Splitting elements
-    const size_t N_elements_per_process = (n_elements_domain + n_proc - 1)/n_proc;
-    std::vector<size_t> N_elements(n_proc);
-    std::vector<size_t> starting_elements(n_proc);
-    size_t starting_element = 0;
-    for (size_t i = 0; i < n_proc; ++i) {
+    const cgsize_t N_elements_per_process = (n_elements_domain + n_proc - 1)/n_proc;
+    std::vector<cgsize_t> N_elements(n_proc);
+    std::vector<cgsize_t> starting_elements(n_proc);
+    cgsize_t starting_element = 0;
+    for (cgsize_t i = 0; i < n_proc; ++i) {
         N_elements[i] = (i == n_proc - 1) ? N_elements_per_process + n_elements_domain - N_elements_per_process * n_proc : N_elements_per_process;
         starting_elements[i] = starting_element;
         starting_element += N_elements[i];
@@ -318,9 +318,9 @@ auto main(int argc, char* argv[]) -> int {
 
     // Putting connectivity data together
     std::vector<cgsize_t> elements(4 * n_elements_domain + 2 * n_elements_ghost);
-    std::vector<size_t> section_start_indices(n_sections);
-    size_t element_domain_index = 0;
-    size_t element_ghost_index = 4 * n_elements_domain;
+    std::vector<cgsize_t> section_start_indices(n_sections);
+    cgsize_t element_domain_index = 0;
+    cgsize_t element_ghost_index = 4 * n_elements_domain;
     for (int i = 0; i < n_sections; ++i) {
         if (section_is_domain[i]) {
             section_start_indices[i] = element_domain_index;
@@ -354,22 +354,22 @@ auto main(int argc, char* argv[]) -> int {
     cg_base_write(index_out_file, base_name.data(), dim, physDim, &index_out_base);
 
     // Getting relevant points
-    for (size_t i = 0; i < n_proc; ++i) {
+    for (cgsize_t i = 0; i < n_proc; ++i) {
         std::vector<cgsize_t> elements_in_proc(4 * N_elements[i]);
-        for (size_t element_index = 0; element_index < N_elements[i]; ++element_index) {
-            for (size_t side_index = 0; side_index < 4; ++side_index) {
+        for (cgsize_t element_index = 0; element_index < N_elements[i]; ++element_index) {
+            for (cgsize_t side_index = 0; side_index < 4; ++side_index) {
                 elements_in_proc[4 * element_index + side_index] = elements[4 * (element_index + starting_elements[i]) + side_index];
             }
         }
 
         std::vector<bool> is_point_needed(n_nodes);
-        for (size_t element_index = 0; element_index < N_elements[i]; ++element_index) {
-            for (size_t side_index = 0; side_index < 4; ++side_index) {
+        for (cgsize_t element_index = 0; element_index < N_elements[i]; ++element_index) {
+            for (cgsize_t side_index = 0; side_index < 4; ++side_index) {
                 is_point_needed[elements_in_proc[4 * element_index + side_index] - 1] = true;
             }
         }
 
-        size_t n_nodes_in_proc = 0;
+        cgsize_t n_nodes_in_proc = 0;
         for (auto needed : is_point_needed) {
             n_nodes_in_proc += needed;
         }
@@ -378,14 +378,14 @@ auto main(int argc, char* argv[]) -> int {
         xy_in_proc[0].reserve(n_nodes_in_proc);
         xy_in_proc[1].reserve(n_nodes_in_proc);
 
-        for (size_t node_index = 0; node_index < n_nodes; ++node_index) {
+        for (cgsize_t node_index = 0; node_index < n_nodes; ++node_index) {
             if (is_point_needed[node_index]) {
                 xy_in_proc[0].push_back(xy[0][node_index]);
                 xy_in_proc[1].push_back(xy[1][node_index]);
 
                 // Replacing point indices
-                for (size_t element_index = 0; element_index < N_elements[i]; ++element_index) {
-                    for (size_t side_index = 0; side_index < 4; ++side_index) {
+                for (cgsize_t element_index = 0; element_index < N_elements[i]; ++element_index) {
+                    for (cgsize_t side_index = 0; side_index < 4; ++side_index) {
                         if (elements_in_proc[4 * element_index + side_index] == node_index + 1) {
                             elements_in_proc[4 * element_index + side_index] = xy_in_proc[0].size();
                         }
