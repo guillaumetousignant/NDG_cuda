@@ -231,7 +231,7 @@ auto main(int argc, char* argv[]) -> int {
     std::vector<std::vector<cgsize_t>> parent_data(n_sections);
     for (int index_section = 1; index_section <= n_sections; ++index_section) {
         connectivity[index_section - 1] = std::vector<cgsize_t>(section_data_size[index_section - 1]);
-        parent_data[index_section - 1] = std::vector<cgsize_t>(section_ranges[index_section - 1][1] - section_ranges[index_section - 1][0]);
+        parent_data[index_section - 1] = std::vector<cgsize_t>(section_ranges[index_section - 1][1] - section_ranges[index_section - 1][0] + 1);
 
         cg_elements_read(index_in_file, index_in_base, index_in_zone, index_section, connectivity[index_section - 1].data(), parent_data[index_section - 1].data());
     }
@@ -425,6 +425,8 @@ auto main(int argc, char* argv[]) -> int {
 
     // Building the different sections
     for (cgsize_t i = 0; i < n_proc; ++i) {
+        cgsize_t n_elements_in_proc = N_elements[i];
+
         // Getting section elements
         std::vector<cgsize_t> elements_in_proc(4 * N_elements[i]);
         for (cgsize_t element_index = 0; element_index < N_elements[i]; ++element_index) {
@@ -466,8 +468,37 @@ auto main(int argc, char* argv[]) -> int {
             }
         }
 
-        // Getting relevant boundaries
-        for (int j = 0; j < n_boundaries; ++j) {
+        // Getting relevant zones
+        for (int k = 0; k < n_sections; ++k) {
+            if (!section_is_domain[k]) {
+                for (cgsize_t j = 0; j < section_ranges[k][1] - section_ranges[k][0] + 1; ++j) {
+
+                }
+            }
+        }
+
+        // Finding which elements are boundary condition elements
+        for (int index_boundary = 0; index_boundary < n_boundaries; ++index_boundary) {
+            cgsize_t n_boundary_elements_in_proc = 0;
+            for (cgsize_t j = 0; j < boundary_sizes[index_boundary]; ++j) {
+                int section_index = -1;
+                for (int k = 0; k < n_sections; ++k) {
+                    if ((boundary_elements[index_boundary][j] >= section_ranges[k][0]) && (boundary_elements[index_boundary][j] <= section_ranges[k][1])) {
+                        section_index = k;
+                        break;
+                    }
+                }
+                if (section_index == -1) {
+                    std::cerr << "Error: CGNS mesh, base " << index_in_base << ", zone " << index_in_zone << ", boundary " << i << " contains element " << boundary_elements[i][j] << " but it is not found in any mesh section. Exiting." << std::endl;
+                    exit(45);
+                }
+
+                const cgsize_t element_index = section_start_indices[section_index] + boundary_elements[index_boundary][j] - section_ranges[section_index][0];
+                if (element_index >= starting_elements[i] && element_index < starting_elements[i] + N_elements[i]) {
+                    ++n_boundary_elements_in_proc;
+                }
+            }
+
 
         }
         
@@ -475,7 +506,7 @@ auto main(int argc, char* argv[]) -> int {
         // Writing zone information to file
         /* vertex size, cell size, boundary vertex size (always zero for structured grids) */
         std::array<cgsize_t, 3> isize {n_nodes_in_proc,
-                                       N_elements[i], //n_elements_total_in_proc, // CHECK this is wrong! add n boundary elements
+                                       n_elements_in_proc,
                                        0};
 
         std::stringstream ss;
@@ -488,13 +519,36 @@ auto main(int argc, char* argv[]) -> int {
         cg_coord_write(index_out_file, index_out_base, index_out_zone, DataType_t::RealDouble, coord_names[0].data(), xy_in_proc[0].data(), &index_out_coord);
         cg_coord_write(index_out_file, index_out_base, index_out_zone, DataType_t::RealDouble, coord_names[1].data(), xy_in_proc[1].data(), &index_out_coord);
 
-        /* write QUAD_4 element connectivity (user can give any name) */
-        const std::string elements_name("Elements");
-        int index_out_section = 0;
-        const int nelem_start = 1;
-        const int nelem_end = N_elements[i];
-        const int n_boundary_elem = 0; // No boundaries yet
-        cg_section_write(index_out_file, index_out_base, index_out_zone, elements_name.c_str(), ElementType_t::QUAD_4, nelem_start, nelem_end, n_boundary_elem, elements_in_proc.data(), &index_out_section);
+        cgsize_t section_start = 0;
+        cgsize_t section_end = 0;
+        cgsize_t element_index = starting_elements[i];
+        cgsize_t remaining_elements = N_elements[i];
+        for (int k = 0; k < n_sections; ++k) {
+            if (section_is_domain[k]) {
+                section_end += section_ranges[k][1] - section_ranges[k][0] + 1;
+
+                if (element_index >= section_start && element_index < section_end) {
+                    const cgsize_t section_offset = element_index - section_start;
+                    const cgsize_t n_elements_in_this_section = section_ranges[k][1] - section_ranges[k][0] + 1;
+                    const cgsize_t section_end_offset = (n_elements_in_this_section - section_offset > remaining_elements) ? n_elements_in_this_section - section_offset - remaining_elements: 0;
+                    const cgsize_t n_elements_from_this_section = n_elements_in_this_section - section_offset - section_end_offset;
+
+                    int index_out_section = 0;
+                    const int nelem_start = element_index + 1;
+                    const int nelem_end = nelem_start + n_elements_from_this_section - 1;
+                    const int n_boundary_elem = 0; // No boundaries yet
+                    cg_section_write(index_out_file, index_out_base, index_out_zone, section_names[k].data(), ElementType_t::QUAD_4, nelem_start, nelem_end, n_boundary_elem, elements_in_proc.data() + element_index - starting_elements[i], &index_out_section);
+
+                    element_index += n_elements_from_this_section;
+                    remaining_elements -= n_elements_from_this_section;
+                    if (remaining_elements <= 0) {
+                        break;
+                    }
+                }
+
+                section_start = section_end;
+            }
+        }
     }
 
     const int close_out_error = cg_close(index_out_file);
