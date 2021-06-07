@@ -77,29 +77,13 @@ auto build_element_to_element(const std::vector<cgsize_t>& elements, const std::
                     const auto iterator_begin = (element_index < n_elements_domain) ? elements.begin() + 4 * element_index : elements.begin() + 4 * n_elements_domain + 2 * (element_index - n_elements_domain);
                     const auto iterator_end = (element_index < n_elements_domain) ? elements.begin() + 4 * element_index + 4 : elements.begin() + 4 * n_elements_domain + 2 * (element_index - n_elements_domain) + 2;
 
-                    auto it = std::find(iterator_begin, iterator_end, node_index);
+                    auto it = std::find(iterator_begin, iterator_end, node_index_next);
                     if (it != iterator_end) {
-                        const cgsize_t node_element_index = it - elements.begin();
-                        const cgsize_t node_element_index_start = (element_index < n_elements_domain) ? 4 * element_index : 4 * n_elements_domain + 2 * (element_index - n_elements_domain);
-                        const cgsize_t node_element_index_end = (element_index < n_elements_domain) ? 4 * element_index + 4 : 4 * n_elements_domain + 2 * (element_index - n_elements_domain) + 2;
-                        
-                        for (cgsize_t node_element_index_next = node_element_index_start; node_element_index_next < node_element_index; ++node_element_index_next) {
-                            if (elements[node_element_index_next] == node_index_next) {
-                                element_to_element[4 * i + j] = element_index;
-                                goto endloop; // I hate this too don't worry
-                            }
-                        }
-
-                        for (size_t node_element_index_next = node_element_index + 1; node_element_index_next < node_element_index_end; ++node_element_index_next) {
-                            if (elements[node_element_index_next] == node_index_next) {
-                                element_to_element[4 * i + j] = element_index;
-                                goto endloop; // I hate this too don't worry
-                            }
-                        }
+                        element_to_element[4 * i + j] = element_index;
+                        break;
                     }
                 }
             }
-            endloop: ;
         }
     }
 
@@ -112,29 +96,13 @@ auto build_element_to_element(const std::vector<cgsize_t>& elements, const std::
                 const auto iterator_begin = (element_index < n_elements_domain) ? elements.begin() + 4 * element_index : elements.begin() + 4 * n_elements_domain + 2 * (element_index - n_elements_domain);
                 const auto iterator_end = (element_index < n_elements_domain) ? elements.begin() + 4 * element_index + 4 : elements.begin() + 4 * n_elements_domain + 2 * (element_index - n_elements_domain) + 2;
 
-                auto it = std::find(iterator_begin, iterator_end, node_index);
+                auto it = std::find(iterator_begin, iterator_end, node_index_next);
                 if (it != iterator_end) {
-                    const cgsize_t node_element_index = it - elements.begin();
-                    const cgsize_t node_element_index_start = (element_index < n_elements_domain) ? 4 * element_index : 4 * n_elements_domain + 2 * (element_index - n_elements_domain);
-                    const cgsize_t node_element_index_end = (element_index < n_elements_domain) ? 4 * element_index + 4 : 4 * n_elements_domain + 2 * (element_index - n_elements_domain) + 2;
-                    
-                    for (cgsize_t node_element_index_next = node_element_index_start; node_element_index_next < node_element_index; ++node_element_index_next) {
-                        if (elements[node_element_index_next] == node_index_next) {
-                            element_to_element[4 * n_elements_domain + i] = element_index;
-                            goto endloop2; // I hate this too don't worry
-                        }
-                    }
-
-                    for (size_t node_element_index_next = node_element_index + 1; node_element_index_next < node_element_index_end; ++node_element_index_next) {
-                        if (elements[node_element_index_next] == node_index_next) {
-                            element_to_element[4 * n_elements_domain + i] = element_index;
-                            goto endloop2; // I hate this too don't worry
-                        }
-                    }
+                    element_to_element[4 * n_elements_domain + i] = element_index;
+                    break;
                 }
             }
         }
-        endloop2: ;
     }
     
  
