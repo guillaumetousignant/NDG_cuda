@@ -57,7 +57,7 @@ auto build_node_to_element(cgsize_t n_nodes, const std::vector<cgsize_t>& elemen
     for (cgsize_t j = 0; j < n_elements_ghost; ++j) {
         for (cgsize_t side_index = 0; side_index < 2; ++side_index) {
             const size_t node_index = elements[4 * n_elements_domain + 2 * j + side_index] - 1;
-            node_to_element[node_index].push_back(j); // Doesn't work if elements have the same node multiple times. Shouldn't happen with correct meshes I think, otherwise do as in Mesh2D_t.
+            node_to_element[node_index].push_back(n_elements_domain + j); // Doesn't work if elements have the same node multiple times. Shouldn't happen with correct meshes I think, otherwise do as in Mesh2D_t.
         }
     }
 
