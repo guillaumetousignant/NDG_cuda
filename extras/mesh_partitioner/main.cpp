@@ -344,7 +344,7 @@ auto main(int argc, char* argv[]) -> int {
 
     // Creating output file
     int index_out_file = 0;
-    const int open_out_error = cg_open(out_file.string().c_str(), CG_MODE_READ, &index_out_file);
+    const int open_out_error = cg_open(out_file.string().c_str(), CG_MODE_WRITE, &index_out_file);
     if (open_out_error != CG_OK) {
         std::cerr << "Error: output file '" << out_file << "' could not be opened with error '" << cg_get_error() << "'. Exiting." << std::endl;
         exit(40);
