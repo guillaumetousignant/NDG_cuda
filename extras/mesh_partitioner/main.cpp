@@ -649,7 +649,7 @@ auto main(int argc, char* argv[]) -> int {
             }
         }
 
-        // Writing boundary conditions to file
+        // Writing ghost sections to file
         cgsize_t boundary_index_start = N_elements[i];
         cgsize_t boundary_index_end = N_elements[i];
         for (int k = 0; k < n_sections; ++k) {
