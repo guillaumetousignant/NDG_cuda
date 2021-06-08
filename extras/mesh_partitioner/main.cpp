@@ -486,6 +486,23 @@ auto main(int argc, char* argv[]) -> int {
             }
         }
 
+        // Adding elements for connectivity
+        std::vector<std::array<cgsize_t, 2>> cotton_eyed_joe; // [Where did he come from; where did he go]
+        std::vector<
+        std::vector<cgsize_t> connectivity_elements;
+        for (cgsize_t j = 0; j < N_elements[i]; ++j) {
+            const cgsize_t element_index = j + starting_elements[i];
+            for (cgsize_t side_index = 0; side_index < 4; ++side_index) {
+                const cgsize_t neighbour_element_index = element_to_element[4 * j + side_index];
+                if (neighbour_element_index < n_elements_domain && !(neighbour_element_index >= starting_elements[i] && neighbour_element_index < starting_elements[i] + N_elements[i])) {
+                    const cgsize_t destination_proc = neighbour_element_index/N_elements_per_process;
+                    const cgsize_t element_index_in_destination = neighbour_element_index - destination_proc * N_elements_per_process;
+
+                }
+
+            }
+        }
+
         // Finding which elements are boundary condition elements
         for (int index_boundary = 0; index_boundary < n_boundaries; ++index_boundary) {
             cgsize_t n_boundary_elements_in_proc = 0;
