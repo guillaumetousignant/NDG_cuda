@@ -498,7 +498,7 @@ auto main(int argc, char* argv[]) -> int {
         for (cgsize_t j = 0; j < N_elements[i]; ++j) {
             const cgsize_t element_index = j + starting_elements[i];
             for (cgsize_t side_index = 0; side_index < 4; ++side_index) {
-                const cgsize_t neighbour_element_index = element_to_element[4 * j + side_index];
+                const cgsize_t neighbour_element_index = element_to_element[4 * element_index + side_index];
                 if (neighbour_element_index < n_elements_domain && !(neighbour_element_index >= starting_elements[i] && neighbour_element_index < starting_elements[i] + N_elements[i])) {
                     const cgsize_t destination_proc = neighbour_element_index/N_elements_per_process;
                     const cgsize_t element_index_in_destination = neighbour_element_index - destination_proc * N_elements_per_process;
@@ -506,8 +506,8 @@ auto main(int argc, char* argv[]) -> int {
                     cotton_eyed_joe[i][destination_proc].push_back({j, element_index_in_destination});
                     origin_and_destination_ghosts[i][destination_proc].push_back({n_elements_in_proc + n_connectivity_elements, static_cast<cgsize_t>(-1)});
 
-                    connectivity_elements.push_back((side_index < 3) ? elements_in_proc[j + side_index + 1] : elements_in_proc[j]);
-                    connectivity_elements.push_back(elements_in_proc[j + side_index]);
+                    connectivity_elements.push_back((side_index < 3) ? elements_in_proc[4 * j + side_index + 1] : elements_in_proc[4 * j]);
+                    connectivity_elements.push_back(elements_in_proc[4 * j + side_index]);
                     ++n_connectivity_elements;
                 }
             }
