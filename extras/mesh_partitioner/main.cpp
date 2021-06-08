@@ -718,8 +718,35 @@ auto main(int argc, char* argv[]) -> int {
                 }
 
                 const cgsize_t new_element_index = new_boundary_indices[section_index][element_index - section_ranges[section_index][0]];
+
+                section_index = -1;
+                for (int k = 0; k < n_sections; ++k) {
+                    if ((element_donor_index >= section_ranges[k][0]) && (element_donor_index <= section_ranges[k][1])) {
+                        section_index = k;
+                        break;
+                    }
+                }
+                if (section_index == -1) {
+                    std::cerr << "Error: CGNS mesh, base " << index_in_base << ", zone " << index_in_zone << ", connectivity " << index_connectivity << " contains donor element " << element_donor_index << " but it is not found in any mesh section. Exiting." << std::endl;
+                    exit(47);
+                }
+
+                const cgsize_t new_element_donor_index = new_boundary_indices[section_index][element_donor_index - section_ranges[section_index][0]];
+
                 if (new_element_index != 0) {
-                    ++n_boundary_elements_in_proc;
+                    if (new_element_donor_index != 0) {
+                        ++n_connectivity_elements_in_proc;
+                    }
+                    else {
+                        const cgsize_t domain_element = element_to_element[4 * n_elements_domain + element_index - n_elements_domain - 1];
+                        const cgsize_t donor_domain_element = element_to_element[4 * n_elements_domain + element_donor_index - n_elements_domain - 1];
+                        const cgsize_t destination_proc = donor_domain_element/N_elements_per_process;
+                        const cgsize_t element_index_in_proc = domain_element - i * N_elements_per_process;
+                        const cgsize_t element_index_in_destination = donor_domain_element - destination_proc * N_elements_per_process;
+
+                        cotton_eyed_joe[i][destination_proc].push_back({element_index_in_proc, element_index_in_destination});
+                        origin_and_destination_ghosts[i][destination_proc].push_back({new_element_index, static_cast<cgsize_t>(-1)});
+                    }
                 }
             }
 
