@@ -153,22 +153,22 @@ auto main(int argc, char* argv[]) -> int {
 
     // Mesh resolution input
     const std::string input_res = input_parser.getCmdOption("--resolution");
-    const int res = (input_res.empty()) ? 4 : std::stoi(input_res);
+    const cgsize_t res = (input_res.empty()) ? 4 : std::stoi(input_res);
 
     if (!SEM::is_power_of_two(res)) {
         std::cerr << "Error, grid resolution should be a power of two for the Hillbert curve to work. Input resolution: " << res << "'. Exiting." << std::endl;
         exit(3);
     }
 
-    const int x_res = res;
-    const int y_res = res;
+    const cgsize_t x_res = res;
+    const cgsize_t y_res = res;
 
-    const int x_node_res = x_res + 1;
-    const int y_node_res = y_res + 1;
+    const cgsize_t x_node_res = x_res + 1;
+    const cgsize_t y_node_res = y_res + 1;
 
-    const int n_elements = x_res * y_res;
-    const int n_elements_total = n_elements + 2 * x_res + 2 * y_res;
-    const int n_nodes = x_node_res * y_node_res;
+    const cgsize_t n_elements = x_res * y_res;
+    const cgsize_t n_elements_total = n_elements + 2 * x_res + 2 * y_res;
+    const cgsize_t n_nodes = x_node_res * y_node_res;
 
     // Mesh span input
     const std::string input_x_min = input_parser.getCmdOption("--x_min");
@@ -191,8 +191,8 @@ auto main(int argc, char* argv[]) -> int {
     std::vector<double> x(n_nodes);
     std::vector<double> y(n_nodes);
 
-    for (int i = 0; i < x_node_res; ++i) {
-        for (int j = 0; j < y_node_res; ++j) {
+    for (cgsize_t i = 0; i < x_node_res; ++i) {
+        for (cgsize_t j = 0; j < y_node_res; ++j) {
             x[i * y_node_res + j] = x_min + i * (x_max - x_min)/(x_node_res - 1);
             y[i * y_node_res + j] = y_min + j * (y_max - y_min)/(y_node_res - 1);
         }
@@ -229,10 +229,10 @@ auto main(int argc, char* argv[]) -> int {
     cg_coord_write(index_file, index_base, index_zone, DataType_t::RealDouble, "CoordinateY", y.data(), &index_coord);
 
     /* set element connectivity */
-    constexpr int n_sides = 4;
-    std::vector<int> elements(n_sides * n_elements);
+    constexpr cgsize_t n_sides = 4;
+    std::vector<cgsize_t> elements(n_sides * n_elements);
 
-    for (int i = 0; i < n_elements; ++i) {
+    for (cgsize_t i = 0; i < n_elements; ++i) {
         const std::array<int, 2> xy = SEM::Hilbert::d2xy(res, i);
         elements[i * n_sides]     = y_node_res * (xy[0] + 1) + xy[1] + 1;
         elements[i * n_sides + 1] = y_node_res * (xy[0] + 1) + xy[1] + 2;
@@ -243,27 +243,27 @@ auto main(int argc, char* argv[]) -> int {
     /* write QUAD_4 element connectivity (user can give any name) */
     const std::string elements_name("Elements");
     int index_section = 0;
-    const int nelem_start = 1;
-    const int nelem_end = n_elements;
-    const int n_boundary_elem = 0; // No boundaries yet
+    const cgsize_t nelem_start = 1;
+    const cgsize_t nelem_end = n_elements;
+    const cgsize_t n_boundary_elem = 0; // No boundaries yet
     cg_section_write(index_file, index_base, index_zone, elements_name.c_str(), ElementType_t::QUAD_4, nelem_start, nelem_end, n_boundary_elem, elements.data(), &index_section);
 
     /* create boundary (BAR) elements */
-    constexpr int boundary_n_sides = 2;
-    const int bottom_start_index = n_elements + 1;
-    const int bottom_end_index   = n_elements + x_res;
-    const int right_start_index  = n_elements + x_res + 1;
-    const int right_end_index    = n_elements + x_res + y_res;
-    const int top_start_index    = n_elements + x_res + y_res + 1;
-    const int top_end_index      = n_elements + 2 * x_res + y_res;
-    const int left_start_index   = n_elements + 2 * x_res + y_res + 1;
-    const int left_end_index     = n_elements + 2 * x_res + 2 * y_res;
+    constexpr cgsize_t boundary_n_sides = 2;
+    const cgsize_t bottom_start_index = n_elements + 1;
+    const cgsize_t bottom_end_index   = n_elements + x_res;
+    const cgsize_t right_start_index  = n_elements + x_res + 1;
+    const cgsize_t right_end_index    = n_elements + x_res + y_res;
+    const cgsize_t top_start_index    = n_elements + x_res + y_res + 1;
+    const cgsize_t top_end_index      = n_elements + 2 * x_res + y_res;
+    const cgsize_t left_start_index   = n_elements + 2 * x_res + y_res + 1;
+    const cgsize_t left_end_index     = n_elements + 2 * x_res + 2 * y_res;
 
     int bottom_index_section = 0;
     const std::string bottom_boundary_name("BottomElements");
-    std::vector<int> bottom_elements(boundary_n_sides * x_res);
+    std::vector<cgsize_t> bottom_elements(boundary_n_sides * x_res);
 
-    for (int i = 0; i < x_res; ++i) {
+    for (cgsize_t i = 0; i < x_res; ++i) {
         bottom_elements[i * boundary_n_sides]     = (i + 1) * y_node_res + 1;
         bottom_elements[i * boundary_n_sides + 1] = i * y_node_res + 1;
     }
@@ -272,9 +272,9 @@ auto main(int argc, char* argv[]) -> int {
 
     int right_index_section = 0;
     const std::string right_boundary_name("RightElements");
-    std::vector<int> right_elements(boundary_n_sides * y_res);
+    std::vector<cgsize_t> right_elements(boundary_n_sides * y_res);
 
-    for (int j = 0; j < y_res; ++j) {
+    for (cgsize_t j = 0; j < y_res; ++j) {
         right_elements[j * boundary_n_sides]     = y_node_res * (x_node_res - 1) + j + 2;
         right_elements[j * boundary_n_sides + 1] = y_node_res * (x_node_res - 1) + j + 1;
     }
@@ -283,9 +283,9 @@ auto main(int argc, char* argv[]) -> int {
 
     int top_index_section = 0;
     const std::string top_boundary_name("TopElements");
-    std::vector<int> top_elements(boundary_n_sides * x_res);
+    std::vector<cgsize_t> top_elements(boundary_n_sides * x_res);
 
-    for (int i = 0; i < x_res; ++i) {
+    for (cgsize_t i = 0; i < x_res; ++i) {
         top_elements[i * boundary_n_sides]     = (x_res - i) * y_node_res;
         top_elements[i * boundary_n_sides + 1] = (x_res - i + 1) * y_node_res;
     }
@@ -294,9 +294,9 @@ auto main(int argc, char* argv[]) -> int {
 
     int left_index_section = 0;
     const std::string left_boundary_name("LeftElements");
-    std::vector<int> left_elements(boundary_n_sides * y_res);
+    std::vector<cgsize_t> left_elements(boundary_n_sides * y_res);
 
-    for (int j = 0; j < y_res; ++j) {
+    for (cgsize_t j = 0; j < y_res; ++j) {
         left_elements[j * boundary_n_sides]     = y_res - j;
         left_elements[j * boundary_n_sides + 1] = y_res - j + 1;
     }
@@ -307,9 +307,9 @@ auto main(int argc, char* argv[]) -> int {
     /* the above are all face-center locations for the BCs - must indicate this, otherwise Vertices will be assumed! */
     if (!y_periodic) {
         int bottom_index_boundary = 0;
-        std::vector<int> bottom_boundary(x_res);
+        std::vector<cgsize_t> bottom_boundary(x_res);
 
-        for (int i = 0; i < x_res; ++i) {
+        for (cgsize_t i = 0; i < x_res; ++i) {
             bottom_boundary[i] = bottom_start_index + i;
         }
 
@@ -317,9 +317,9 @@ auto main(int argc, char* argv[]) -> int {
         cg_boco_gridlocation_write(index_file, index_base, index_zone, bottom_index_boundary, GridLocation_t::EdgeCenter);
 
         int top_index_boundary = 0;
-        std::vector<int> top_boundary(x_res);
+        std::vector<cgsize_t> top_boundary(x_res);
 
-        for (int i = 0; i < x_res; ++i) {
+        for (cgsize_t i = 0; i < x_res; ++i) {
             top_boundary[i] = top_start_index + i;
         }
 
@@ -329,9 +329,9 @@ auto main(int argc, char* argv[]) -> int {
 
     if (!x_periodic) {
         int right_index_boundary = 0;
-        std::vector<int> right_boundary(y_res);
+        std::vector<cgsize_t> right_boundary(y_res);
 
-        for (int i = 0; i < y_res; ++i) {
+        for (cgsize_t i = 0; i < y_res; ++i) {
             right_boundary[i] = right_start_index + i;
         }
 
@@ -339,9 +339,9 @@ auto main(int argc, char* argv[]) -> int {
         cg_boco_gridlocation_write(index_file, index_base, index_zone, right_index_boundary, GridLocation_t::EdgeCenter);
         
         int left_index_boundary = 0;
-        std::vector<int> left_boundary(y_res);
+        std::vector<cgsize_t> left_boundary(y_res);
 
-        for (int i = 0; i < y_res; ++i) {
+        for (cgsize_t i = 0; i < y_res; ++i) {
             left_boundary[i] = left_start_index + i;
         }
 
@@ -353,10 +353,10 @@ auto main(int argc, char* argv[]) -> int {
     if (y_periodic) {
         int y_periodic_bottom_index = 0;
         int y_periodic_top_index = 0;
-        std::vector<int> elements_bottom(x_res);
-        std::vector<int> elements_top(x_res);
+        std::vector<cgsize_t> elements_bottom(x_res);
+        std::vector<cgsize_t> elements_top(x_res);
 
-        for (int i = 0; i < x_res; ++i) {
+        for (cgsize_t i = 0; i < x_res; ++i) {
             elements_bottom[i] = bottom_start_index + i;
             elements_top[i] = top_end_index - i;
         }
@@ -368,10 +368,10 @@ auto main(int argc, char* argv[]) -> int {
     if (x_periodic) {
         int x_periodic_right_index = 0;
         int x_periodic_left_index = 0;
-        std::vector<int> elements_right(y_res);
-        std::vector<int> elements_left(y_res);
+        std::vector<cgsize_t> elements_right(y_res);
+        std::vector<cgsize_t> elements_left(y_res);
 
-        for (int j = 0; j < y_res; ++j) {
+        for (cgsize_t j = 0; j < y_res; ++j) {
             elements_right[j] = right_start_index + j;
             elements_left[j] = left_end_index - j;
         }
