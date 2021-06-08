@@ -289,8 +289,8 @@ auto main(int argc, char* argv[]) -> int {
     std::vector<std::vector<cgsize_t>> interface_elements(n_connectivity);
     std::vector<std::vector<cgsize_t>> interface_donor_elements(n_connectivity);
     for (int index_connectivity = 1; index_connectivity <= n_connectivity; ++index_connectivity) {
-        interface_elements[index_connectivity - 1] = std::vector<int>(connectivity_sizes[index_connectivity - 1]);
-        interface_donor_elements[index_connectivity - 1] = std::vector<int>(connectivity_donor_sizes[index_connectivity - 1]);
+        interface_elements[index_connectivity - 1] = std::vector<cgsize_t>(connectivity_sizes[index_connectivity - 1]);
+        interface_donor_elements[index_connectivity - 1] = std::vector<cgsize_t>(connectivity_donor_sizes[index_connectivity - 1]);
         cg_conn_read(index_in_file, index_in_base, index_in_zone, index_connectivity, interface_elements[index_connectivity - 1].data(),
             DataType_t::Integer, interface_donor_elements[index_connectivity - 1].data());
     }
@@ -682,7 +682,7 @@ auto main(int argc, char* argv[]) -> int {
                         }
                     }
                     if (section_index == -1) {
-                        std::cerr << "Error: CGNS mesh, base " << index_in_base << ", zone " << index_in_zone << ", boundary " << i << " contains element " << boundary_elements[i][j] << " but it is not found in any mesh section. Exiting." << std::endl;
+                        std::cerr << "Error: CGNS mesh, base " << index_in_base << ", zone " << index_in_zone << ", boundary " << index_boundary << " contains element " << boundary_elements[index_boundary][j] << " but it is not found in any mesh section. Exiting." << std::endl;
                         exit(45);
                     }
 
@@ -697,6 +697,36 @@ auto main(int argc, char* argv[]) -> int {
                 cg_boco_gridlocation_write(index_out_file, index_out_base, index_out_zone[i], index_out_boundary, boundary_grid_locations[index_boundary]);
             }
         }
+
+        // Self interfaces
+        for (int index_connectivity = 0; index_connectivity < n_connectivity; ++index_connectivity) {
+            cgsize_t n_connectivity_elements_in_proc = 0;
+            for (cgsize_t j = 0; j < connectivity_sizes[index_connectivity]; ++j) {
+                const cgsize_t element_index = interface_elements[index_connectivity][j];
+                const cgsize_t element_donor_index = interface_donor_elements[index_connectivity][j];
+                
+                int section_index = -1;
+                for (int k = 0; k < n_sections; ++k) {
+                    if ((element_index >= section_ranges[k][0]) && (element_index <= section_ranges[k][1])) {
+                        section_index = k;
+                        break;
+                    }
+                }
+                if (section_index == -1) {
+                    std::cerr << "Error: CGNS mesh, base " << index_in_base << ", zone " << index_in_zone << ", connectivity " << index_connectivity << " contains element " << element_index << " but it is not found in any mesh section. Exiting." << std::endl;
+                    exit(46);
+                }
+
+                const cgsize_t new_element_index = new_boundary_indices[section_index][element_index - section_ranges[section_index][0]];
+                if (new_element_index != 0) {
+                    ++n_boundary_elements_in_proc;
+                }
+            }
+
+            
+
+        }
+
     }
 
     const int close_out_error = cg_close(index_out_file);
