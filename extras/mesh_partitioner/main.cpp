@@ -424,6 +424,10 @@ auto main(int argc, char* argv[]) -> int {
     cg_base_write(index_out_file, base_name.data(), dim, physDim, &index_out_base);
 
     // Building the different sections
+    std::vector<int> index_out_zone(n_proc);
+    std::vector<std::vector<std::vector<std::array<cgsize_t, 2>>>> cotton_eyed_joe(n_proc); // [Where did he come from; where did he go]
+    std::vector<std::vector<std::vector<std::array<cgsize_t, 2>>>> origin_and_destination_ghosts(n_proc); // [origin; destination]
+
     for (cgsize_t i = 0; i < n_proc; ++i) {
         cgsize_t n_elements_in_proc = N_elements[i];
 
@@ -487,9 +491,10 @@ auto main(int argc, char* argv[]) -> int {
         }
 
         // Adding elements for connectivity
-        std::vector<std::array<cgsize_t, 2>> cotton_eyed_joe; // [Where did he come from; where did he go]
-        std::vector<
+        cotton_eyed_joe[i] = std::vector<std::vector<std::array<cgsize_t, 2>>>(n_proc); // [Where did he come from; where did he go]
+        origin_and_destination_ghosts[i] = std::vector<std::vector<std::array<cgsize_t, 2>>>(n_proc); // [origin; destination]
         std::vector<cgsize_t> connectivity_elements;
+        cgsize_t n_connectivity_elements = 0;
         for (cgsize_t j = 0; j < N_elements[i]; ++j) {
             const cgsize_t element_index = j + starting_elements[i];
             for (cgsize_t side_index = 0; side_index < 4; ++side_index) {
@@ -498,10 +503,16 @@ auto main(int argc, char* argv[]) -> int {
                     const cgsize_t destination_proc = neighbour_element_index/N_elements_per_process;
                     const cgsize_t element_index_in_destination = neighbour_element_index - destination_proc * N_elements_per_process;
 
+                    cotton_eyed_joe[i][destination_proc].push_back({j, element_index_in_destination});
+                    origin_and_destination_ghosts[i][destination_proc].push_back({n_elements_in_proc + n_connectivity_elements, static_cast<cgsize_t>(-1)});
+
+                    connectivity_elements.push_back((side_index < 3) ? elements_in_proc[j + side_index + 1] : elements_in_proc[j]);
+                    connectivity_elements.push_back(elements_in_proc[j + side_index]);
                 }
 
             }
         }
+        n_elements_in_proc += n_connectivity_elements;
 
         // Finding which elements are boundary condition elements
         for (int index_boundary = 0; index_boundary < n_boundaries; ++index_boundary) {
@@ -541,6 +552,10 @@ auto main(int argc, char* argv[]) -> int {
                 is_point_needed[boundaries_in_proc[k][2 * j + 1] - 1] = true;
             }
         }
+        for (cgsize_t connectivity_index = 0; connectivity_index < n_connectivity_elements; ++connectivity_index) {
+            is_point_needed[connectivity_elements[2 * connectivity_index] - 1] = true;
+            is_point_needed[connectivity_elements[2 * connectivity_index + 1] - 1] = true;
+        }
 
         cgsize_t n_nodes_in_proc = 0;
         for (auto needed : is_point_needed) {
@@ -574,10 +589,17 @@ auto main(int argc, char* argv[]) -> int {
                         }
                     }
                 }
+                for (cgsize_t connectivity_index = 0; connectivity_index < n_connectivity_elements; ++connectivity_index) {
+                    if (connectivity_elements[2 * connectivity_index] == node_index + 1) {
+                        connectivity_elements[2 * connectivity_index] = xy_in_proc[0].size();
+                    }
+                    if (connectivity_elements[2 * connectivity_index + 1] == node_index + 1) {
+                        connectivity_elements[2 * connectivity_index + 1] = xy_in_proc[0].size();
+                    }
+                }
             }
         }
         
-
         // Writing zone information to file
         /* vertex size, cell size, boundary vertex size (always zero for structured grids) */
         std::array<cgsize_t, 3> isize {n_nodes_in_proc,
@@ -586,13 +608,12 @@ auto main(int argc, char* argv[]) -> int {
 
         std::stringstream ss;
         ss << "Zone " << i + 1;
-        int index_out_zone = 0;
-        cg_zone_write(index_out_file, index_out_base, ss.str().c_str(), isize.data(), ZoneType_t::Unstructured, &index_out_zone);
+        cg_zone_write(index_out_file, index_out_base, ss.str().c_str(), isize.data(), ZoneType_t::Unstructured, &index_out_zone[i]);
 
         /* write grid coordinates (user must use SIDS-standard names here) */
         int index_out_coord = 0;
-        cg_coord_write(index_out_file, index_out_base, index_out_zone, DataType_t::RealDouble, coord_names[0].data(), xy_in_proc[0].data(), &index_out_coord);
-        cg_coord_write(index_out_file, index_out_base, index_out_zone, DataType_t::RealDouble, coord_names[1].data(), xy_in_proc[1].data(), &index_out_coord);
+        cg_coord_write(index_out_file, index_out_base, index_out_zone[i], DataType_t::RealDouble, coord_names[0].data(), xy_in_proc[0].data(), &index_out_coord);
+        cg_coord_write(index_out_file, index_out_base, index_out_zone[i], DataType_t::RealDouble, coord_names[1].data(), xy_in_proc[1].data(), &index_out_coord);
 
         // Writing domain sections to file
         cgsize_t section_start = 0;
@@ -614,7 +635,7 @@ auto main(int argc, char* argv[]) -> int {
                     int index_out_section = 0;
                     domain_index_end += n_elements_from_this_section;
                     const cgsize_t n_boundary_elem = 0; // No boundaries yet
-                    cg_section_write(index_out_file, index_out_base, index_out_zone, section_names[k].data(), ElementType_t::QUAD_4, domain_index_start + 1, domain_index_end, n_boundary_elem, elements_in_proc.data() + element_index - starting_elements[i], &index_out_section);
+                    cg_section_write(index_out_file, index_out_base, index_out_zone[i], section_names[k].data(), ElementType_t::QUAD_4, domain_index_start + 1, domain_index_end, n_boundary_elem, elements_in_proc.data() + element_index - starting_elements[i], &index_out_section);
                     domain_index_start = domain_index_end;
 
                     element_index += n_elements_from_this_section;
@@ -628,6 +649,7 @@ auto main(int argc, char* argv[]) -> int {
             }
         }
 
+        // Writing boundary conditions to file
         cgsize_t boundary_index_start = N_elements[i];
         cgsize_t boundary_index_end = N_elements[i];
         for (int k = 0; k < n_sections; ++k) {
@@ -635,11 +657,18 @@ auto main(int argc, char* argv[]) -> int {
                 if (n_boundaries_in_proc[k] > 0) {
                     boundary_index_end += n_boundaries_in_proc[k];
                     int index_out_section = 0;
-                    cg_section_write(index_out_file, index_out_base, index_out_zone, section_names[k].data(), ElementType_t::BAR_2, boundary_index_start + 1, boundary_index_end, n_boundaries_in_proc[k], boundaries_in_proc[k].data(), &index_out_section);
+                    cg_section_write(index_out_file, index_out_base, index_out_zone[i], section_names[k].data(), ElementType_t::BAR_2, boundary_index_start + 1, boundary_index_end, n_boundaries_in_proc[k], boundaries_in_proc[k].data(), &index_out_section);
                     boundary_index_start = boundary_index_end;
                 }
             }
         }
+
+        // Writing connectivity elements to file
+        const std::string connectivity_elements_name("ConnectivityElements");
+        const cgsize_t connectivity_index_start = boundary_index_end;
+        const cgsize_t connectivity_index_end = connectivity_index_start + n_connectivity_elements;
+        int connectivity_out_section = 0;
+        cg_section_write(index_out_file, index_out_base, index_out_zone[i], connectivity_elements_name.c_str(), ElementType_t::BAR_2, connectivity_index_start + 1, connectivity_index_end, n_connectivity_elements, connectivity_elements.data(), &connectivity_out_section);
     }
 
     const int close_out_error = cg_close(index_out_file);
