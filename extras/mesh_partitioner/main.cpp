@@ -583,7 +583,7 @@ auto main(int argc, char* argv[]) -> int {
 
         std::stringstream ss;
         ss << "Zone " << i + 1;
-        cg_zone_write(index_out_file, index_out_base, ss.str().c_str(), isize.data(), ZoneType_t::Unstructured, &index_out_zone[i]);
+        cg_zone_write(index_out_file, index_out_base, ss.str().c_str(), isize.data(), zone_type, &index_out_zone[i]);
 
         /* write grid coordinates (user must use SIDS-standard names here) */
         int index_out_coord = 0;
@@ -750,10 +750,54 @@ auto main(int argc, char* argv[]) -> int {
                 }
             }
 
-            
+            if (n_connectivity_elements_in_proc > 0) {
+                std::vector<cgsize_t> local_connectivity_elements;
+                local_connectivity_elements.reserve(n_connectivity_elements_in_proc);
+                std::vector<cgsize_t> local_connectivity_donor_elements;
+                local_connectivity_donor_elements.reserve(n_connectivity_elements_in_proc);
 
+                for (cgsize_t j = 0; j < connectivity_sizes[index_connectivity]; ++j) {
+                    const cgsize_t element_index = interface_elements[index_connectivity][j];
+                    const cgsize_t element_donor_index = interface_donor_elements[index_connectivity][j];
+                    
+                    int section_index = -1;
+                    for (int k = 0; k < n_sections; ++k) {
+                        if ((element_index >= section_ranges[k][0]) && (element_index <= section_ranges[k][1])) {
+                            section_index = k;
+                            break;
+                        }
+                    }
+                    if (section_index == -1) {
+                        std::cerr << "Error: CGNS mesh, base " << index_in_base << ", zone " << index_in_zone << ", connectivity " << index_connectivity << " contains element " << element_index << " but it is not found in any mesh section. Exiting." << std::endl;
+                        exit(46);
+                    }
+
+                    const cgsize_t new_element_index = new_boundary_indices[section_index][element_index - section_ranges[section_index][0]];
+
+                    section_index = -1;
+                    for (int k = 0; k < n_sections; ++k) {
+                        if ((element_donor_index >= section_ranges[k][0]) && (element_donor_index <= section_ranges[k][1])) {
+                            section_index = k;
+                            break;
+                        }
+                    }
+                    if (section_index == -1) {
+                        std::cerr << "Error: CGNS mesh, base " << index_in_base << ", zone " << index_in_zone << ", connectivity " << index_connectivity << " contains donor element " << element_donor_index << " but it is not found in any mesh section. Exiting." << std::endl;
+                        exit(47);
+                    }
+
+                    const cgsize_t new_element_donor_index = new_boundary_indices[section_index][element_donor_index - section_ranges[section_index][0]];
+
+                    if (new_element_index != 0 && new_element_donor_index != 0) {
+                        local_connectivity_elements.push_back(new_element_index + 1);
+                        local_connectivity_donor_elements.push_back(new_element_donor_index + 1);
+                    }
+                }
+
+                int index_out_connectivity = 0;
+                cg_conn_write(index_out_file, index_out_base, index_out_zone[i], connectivity_names[index_connectivity].data(), connectivity_grid_locations[index_connectivity], connectivity_types[index_connectivity], connectivity_point_set_types[index_connectivity], n_connectivity_elements_in_proc, local_connectivity_elements.data(), ss.str().c_str(), connectivity_donor_zone_types[index_connectivity], connectivity_donor_point_set_types[index_connectivity], connectivity_donor_data_types[index_connectivity], n_connectivity_elements_in_proc, local_connectivity_donor_elements.data(), &index_out_connectivity);
+            }
         }
-
     }
 
     const int close_out_error = cg_close(index_out_file);
