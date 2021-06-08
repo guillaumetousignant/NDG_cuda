@@ -514,31 +514,6 @@ auto main(int argc, char* argv[]) -> int {
         }
         n_elements_in_proc += n_connectivity_elements;
 
-        // Finding which elements are boundary condition elements
-        for (int index_boundary = 0; index_boundary < n_boundaries; ++index_boundary) {
-            cgsize_t n_boundary_elements_in_proc = 0;
-            for (cgsize_t j = 0; j < boundary_sizes[index_boundary]; ++j) {
-                int section_index = -1;
-                for (int k = 0; k < n_sections; ++k) {
-                    if ((boundary_elements[index_boundary][j] >= section_ranges[k][0]) && (boundary_elements[index_boundary][j] <= section_ranges[k][1])) {
-                        section_index = k;
-                        break;
-                    }
-                }
-                if (section_index == -1) {
-                    std::cerr << "Error: CGNS mesh, base " << index_in_base << ", zone " << index_in_zone << ", boundary " << i << " contains element " << boundary_elements[i][j] << " but it is not found in any mesh section. Exiting." << std::endl;
-                    exit(45);
-                }
-
-                const cgsize_t element_index = section_start_indices[section_index] + boundary_elements[index_boundary][j] - section_ranges[section_index][0];
-                if (element_index >= starting_elements[i] && element_index < starting_elements[i] + N_elements[i]) {
-                    ++n_boundary_elements_in_proc;
-                }
-            }
-
-
-        }
-
         // Getting relevant points
         std::vector<bool> is_point_needed(n_nodes);
         for (cgsize_t element_index = 0; element_index < N_elements[i]; ++element_index) {
@@ -664,11 +639,64 @@ auto main(int argc, char* argv[]) -> int {
         }
 
         // Writing connectivity elements to file
-        const std::string connectivity_elements_name("ConnectivityElements");
-        const cgsize_t connectivity_index_start = boundary_index_end;
-        const cgsize_t connectivity_index_end = connectivity_index_start + n_connectivity_elements;
-        int connectivity_out_section = 0;
-        cg_section_write(index_out_file, index_out_base, index_out_zone[i], connectivity_elements_name.c_str(), ElementType_t::BAR_2, connectivity_index_start + 1, connectivity_index_end, n_connectivity_elements, connectivity_elements.data(), &connectivity_out_section);
+        if (n_connectivity_elements > 0) {
+            const std::string connectivity_elements_name("ConnectivityElements");
+            const cgsize_t connectivity_index_start = boundary_index_end;
+            const cgsize_t connectivity_index_end = connectivity_index_start + n_connectivity_elements;
+            int connectivity_out_section = 0;
+            cg_section_write(index_out_file, index_out_base, index_out_zone[i], connectivity_elements_name.c_str(), ElementType_t::BAR_2, connectivity_index_start + 1, connectivity_index_end, n_connectivity_elements, connectivity_elements.data(), &connectivity_out_section);
+        }
+
+        // Finding which elements are boundary condition elements
+        for (int index_boundary = 0; index_boundary < n_boundaries; ++index_boundary) {
+            cgsize_t n_boundary_elements_in_proc = 0;
+            for (cgsize_t j = 0; j < boundary_sizes[index_boundary]; ++j) {
+                int section_index = -1;
+                for (int k = 0; k < n_sections; ++k) {
+                    if ((boundary_elements[index_boundary][j] >= section_ranges[k][0]) && (boundary_elements[index_boundary][j] <= section_ranges[k][1])) {
+                        section_index = k;
+                        break;
+                    }
+                }
+                if (section_index == -1) {
+                    std::cerr << "Error: CGNS mesh, base " << index_in_base << ", zone " << index_in_zone << ", boundary " << i << " contains element " << boundary_elements[i][j] << " but it is not found in any mesh section. Exiting." << std::endl;
+                    exit(45);
+                }
+
+                const cgsize_t new_element_index = new_boundary_indices[section_index][boundary_elements[index_boundary][j] - section_ranges[section_index][0]];
+                if (new_element_index != 0) {
+                    ++n_boundary_elements_in_proc;
+                }
+            }
+
+            if (n_boundary_elements_in_proc > 0) {
+                std::vector<cgsize_t> boundary_conditions;
+                boundary_conditions.reserve(n_boundary_elements_in_proc);
+
+                for (cgsize_t j = 0; j < boundary_sizes[index_boundary]; ++j) {
+                    int section_index = -1;
+                    for (int k = 0; k < n_sections; ++k) {
+                        if ((boundary_elements[index_boundary][j] >= section_ranges[k][0]) && (boundary_elements[index_boundary][j] <= section_ranges[k][1])) {
+                            section_index = k;
+                            break;
+                        }
+                    }
+                    if (section_index == -1) {
+                        std::cerr << "Error: CGNS mesh, base " << index_in_base << ", zone " << index_in_zone << ", boundary " << i << " contains element " << boundary_elements[i][j] << " but it is not found in any mesh section. Exiting." << std::endl;
+                        exit(45);
+                    }
+
+                    const cgsize_t new_element_index = new_boundary_indices[section_index][boundary_elements[index_boundary][j] - section_ranges[section_index][0]];
+                    if (new_element_index != 0) {
+                        boundary_conditions.push_back(new_element_index + 1);
+                    }
+                }
+
+                int index_out_boundary = 0;
+                cg_boco_write(index_out_file, index_out_base, index_out_zone[i], boundary_names[index_boundary].data(), boundary_types[index_boundary], boundary_point_set_types[index_boundary], n_boundary_elements_in_proc, boundary_conditions.data(), &index_out_boundary);
+                cg_boco_gridlocation_write(index_out_file, index_out_base, index_out_zone[i], index_out_boundary, boundary_grid_locations[index_boundary]);
+            }
+        }
     }
 
     const int close_out_error = cg_close(index_out_file);
