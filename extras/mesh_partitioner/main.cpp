@@ -6,6 +6,8 @@
 #include <array>
 #include <vector>
 
+// I think this was the most annoying thing to write yet.
+
 namespace fs = std::filesystem;
 
 constexpr int CGIO_MAX_NAME_LENGTH = 33; // Includes the null terminator
