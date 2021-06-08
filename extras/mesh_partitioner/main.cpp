@@ -508,8 +508,8 @@ auto main(int argc, char* argv[]) -> int {
 
                     connectivity_elements.push_back((side_index < 3) ? elements_in_proc[j + side_index + 1] : elements_in_proc[j]);
                     connectivity_elements.push_back(elements_in_proc[j + side_index]);
+                    ++n_connectivity_elements;
                 }
-
             }
         }
         n_elements_in_proc += n_connectivity_elements;
