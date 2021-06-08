@@ -800,6 +800,27 @@ auto main(int argc, char* argv[]) -> int {
         }
     }
 
+    // Adding cross-zone interfaces
+    for (cgsize_t i = 0; i < n_proc; ++i) {
+        for (cgsize_t j = 0; j < n_proc; ++j) {
+            for (cgsize_t k = 0; k < cotton_eyed_joe[j][i].size(); ++k) {
+                const cgsize_t domain_element_in_this_proc = cotton_eyed_joe[j][i][k][1];
+                const cgsize_t domain_element_in_other_proc = cotton_eyed_joe[j][i][k][0];
+
+                for (cgsize_t m = 0; m < cotton_eyed_joe[i][j].size(); ++m) {
+                    if (cotton_eyed_joe[i][j][m][0] == domain_element_in_this_proc && cotton_eyed_joe[i][j][m][1] == domain_element_in_other_proc) {
+                        origin_and_destination_ghosts[j][i][k][1] = origin_and_destination_ghosts[i][j][m][0];
+                    }
+                }
+            } 
+        }
+    }
+
+    // Writing cross-zone interfaces to file
+    for (cgsize_t i = 0; i < n_proc; ++i) {
+
+    }
+
     const int close_out_error = cg_close(index_out_file);
     if (close_out_error != CG_OK) {
         std::cerr << "Error: output file '" << out_file << "' could not be closed with error '" << cg_get_error() << "'. Exiting." << std::endl;
