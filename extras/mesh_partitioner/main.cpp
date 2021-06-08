@@ -435,44 +435,53 @@ auto main(int argc, char* argv[]) -> int {
             }
         }
 
-        // Getting relevant points
-        std::vector<bool> is_point_needed(n_nodes);
-        for (cgsize_t element_index = 0; element_index < N_elements[i]; ++element_index) {
-            for (cgsize_t side_index = 0; side_index < 4; ++side_index) {
-                is_point_needed[elements_in_proc[4 * element_index + side_index] - 1] = true;
-            }
-        }
-
-        cgsize_t n_nodes_in_proc = 0;
-        for (auto needed : is_point_needed) {
-            n_nodes_in_proc += needed;
-        }
-
-        std::array<std::vector<double>, 2> xy_in_proc{std::vector<double>(), std::vector<double>()};
-        xy_in_proc[0].reserve(n_nodes_in_proc);
-        xy_in_proc[1].reserve(n_nodes_in_proc);
-
-        for (cgsize_t node_index = 0; node_index < n_nodes; ++node_index) {
-            if (is_point_needed[node_index]) {
-                xy_in_proc[0].push_back(xy[0][node_index]);
-                xy_in_proc[1].push_back(xy[1][node_index]);
-
-                // Replacing point indices
-                for (cgsize_t element_index = 0; element_index < N_elements[i]; ++element_index) {
-                    for (cgsize_t side_index = 0; side_index < 4; ++side_index) {
-                        if (elements_in_proc[4 * element_index + side_index] == node_index + 1) {
-                            elements_in_proc[4 * element_index + side_index] = xy_in_proc[0].size();
+        // Getting relevant zones
+        std::vector<std::vector<cgsize_t>> new_boundary_indices(n_sections);
+        for (int k = 0; k < n_sections; ++k) {
+            if (!section_is_domain[k]) {
+                new_boundary_indices[k] = std::vector<cgsize_t>(section_ranges[k][1] - section_ranges[k][0] + 1);
+                for (cgsize_t j = 0; j < section_ranges[k][1] - section_ranges[k][0] + 1; ++j) {
+                    cgsize_t ghost_index = j;
+                    for (cgsize_t zone_loop = 0; zone_loop < k; ++zone_loop) {
+                        if (!section_is_domain[zone_loop]) {
+                            ghost_index += section_ranges[k][1] - section_ranges[k][0] + 1;
                         }
+                    }
+
+                    const cgsize_t domain_element_index = element_to_element[4 * n_elements_domain + ghost_index];
+                    if (domain_element_index >= starting_elements[i] && domain_element_index < starting_elements[i] + N_elements[i]) {
+                        new_boundary_indices[k][j] = 1;
                     }
                 }
             }
         }
-
-        // Getting relevant zones
+        std::vector<cgsize_t> n_boundaries_in_proc(n_sections);
+        cgsize_t n_total_boundaries_in_proc = 0;
         for (int k = 0; k < n_sections; ++k) {
             if (!section_is_domain[k]) {
                 for (cgsize_t j = 0; j < section_ranges[k][1] - section_ranges[k][0] + 1; ++j) {
+                    if (new_boundary_indices[k][j]) {
+                        new_boundary_indices[k][j] = N_elements[i] + n_total_boundaries_in_proc;
+                        ++n_boundaries_in_proc[k];
+                        ++n_total_boundaries_in_proc;
+                    }
+                }
+            }
+        }
+        std::vector<std::vector<cgsize_t>> boundaries_in_proc(n_sections);
+        for (int k = 0; k < n_sections; ++k) {
+            if (!section_is_domain[k]) {
+                if (n_boundaries_in_proc[k] > 0) {
+                    boundaries_in_proc[k].reserve(n_boundaries_in_proc[k] * 2);
+                    n_elements_in_proc += n_boundaries_in_proc[k];
 
+                    for (cgsize_t j = 0; j < section_ranges[k][1] - section_ranges[k][0] + 1; ++j) {
+                        if (new_boundary_indices[k][j]) {
+                            const cgsize_t ghost_index = 2 * j + section_start_indices[k];
+                            boundaries_in_proc[k].push_back(elements[ghost_index]);
+                            boundaries_in_proc[k].push_back(elements[ghost_index + 1]);
+                        }
+                    }
                 }
             }
         }
@@ -501,6 +510,55 @@ auto main(int argc, char* argv[]) -> int {
 
 
         }
+
+        // Getting relevant points
+        std::vector<bool> is_point_needed(n_nodes);
+        for (cgsize_t element_index = 0; element_index < N_elements[i]; ++element_index) {
+            for (cgsize_t side_index = 0; side_index < 4; ++side_index) {
+                is_point_needed[elements_in_proc[4 * element_index + side_index] - 1] = true;
+            }
+        }
+        for (int k = 0; k < n_sections; ++k) {
+            for (cgsize_t j = 0; j < n_boundaries_in_proc[k]; ++j) {
+                is_point_needed[boundaries_in_proc[k][2 * j] - 1] = true;
+                is_point_needed[boundaries_in_proc[k][2 * j + 1] - 1] = true;
+            }
+        }
+
+        cgsize_t n_nodes_in_proc = 0;
+        for (auto needed : is_point_needed) {
+            n_nodes_in_proc += needed;
+        }
+
+        std::array<std::vector<double>, 2> xy_in_proc{std::vector<double>(), std::vector<double>()};
+        xy_in_proc[0].reserve(n_nodes_in_proc);
+        xy_in_proc[1].reserve(n_nodes_in_proc);
+
+        for (cgsize_t node_index = 0; node_index < n_nodes; ++node_index) {
+            if (is_point_needed[node_index]) {
+                xy_in_proc[0].push_back(xy[0][node_index]);
+                xy_in_proc[1].push_back(xy[1][node_index]);
+
+                // Replacing point indices
+                for (cgsize_t element_index = 0; element_index < N_elements[i]; ++element_index) {
+                    for (cgsize_t side_index = 0; side_index < 4; ++side_index) {
+                        if (elements_in_proc[4 * element_index + side_index] == node_index + 1) {
+                            elements_in_proc[4 * element_index + side_index] = xy_in_proc[0].size();
+                        }
+                    }
+                }
+                for (int k = 0; k < n_sections; ++k) {
+                    for (cgsize_t boundary_index = 0; boundary_index < n_boundaries_in_proc[k]; ++boundary_index) {
+                        if (boundaries_in_proc[k][2 * boundary_index] == node_index + 1) {
+                            boundaries_in_proc[k][2 * boundary_index] = xy_in_proc[0].size();
+                        }
+                        if (boundaries_in_proc[k][2 * boundary_index + 1] == node_index + 1) {
+                            boundaries_in_proc[k][2 * boundary_index + 1] = xy_in_proc[0].size();
+                        }
+                    }
+                }
+            }
+        }
         
 
         // Writing zone information to file
@@ -519,10 +577,13 @@ auto main(int argc, char* argv[]) -> int {
         cg_coord_write(index_out_file, index_out_base, index_out_zone, DataType_t::RealDouble, coord_names[0].data(), xy_in_proc[0].data(), &index_out_coord);
         cg_coord_write(index_out_file, index_out_base, index_out_zone, DataType_t::RealDouble, coord_names[1].data(), xy_in_proc[1].data(), &index_out_coord);
 
+        // Writing domain sections to file
         cgsize_t section_start = 0;
         cgsize_t section_end = 0;
         cgsize_t element_index = starting_elements[i];
         cgsize_t remaining_elements = N_elements[i];
+        cgsize_t domain_index_start = 0;
+        cgsize_t domain_index_end = 0;
         for (int k = 0; k < n_sections; ++k) {
             if (section_is_domain[k]) {
                 section_end += section_ranges[k][1] - section_ranges[k][0] + 1;
@@ -534,10 +595,10 @@ auto main(int argc, char* argv[]) -> int {
                     const cgsize_t n_elements_from_this_section = n_elements_in_this_section - section_offset - section_end_offset;
 
                     int index_out_section = 0;
-                    const int nelem_start = element_index + 1;
-                    const int nelem_end = nelem_start + n_elements_from_this_section - 1;
-                    const int n_boundary_elem = 0; // No boundaries yet
-                    cg_section_write(index_out_file, index_out_base, index_out_zone, section_names[k].data(), ElementType_t::QUAD_4, nelem_start, nelem_end, n_boundary_elem, elements_in_proc.data() + element_index - starting_elements[i], &index_out_section);
+                    domain_index_end += n_elements_from_this_section;
+                    const cgsize_t n_boundary_elem = 0; // No boundaries yet
+                    cg_section_write(index_out_file, index_out_base, index_out_zone, section_names[k].data(), ElementType_t::QUAD_4, domain_index_start + 1, domain_index_end, n_boundary_elem, elements_in_proc.data() + element_index - starting_elements[i], &index_out_section);
+                    domain_index_start = domain_index_end;
 
                     element_index += n_elements_from_this_section;
                     remaining_elements -= n_elements_from_this_section;
@@ -547,6 +608,19 @@ auto main(int argc, char* argv[]) -> int {
                 }
 
                 section_start = section_end;
+            }
+        }
+
+        cgsize_t boundary_index_start = N_elements[i];
+        cgsize_t boundary_index_end = N_elements[i];
+        for (int k = 0; k < n_sections; ++k) {
+            if (!section_is_domain[k]) {
+                if (n_boundaries_in_proc[k] > 0) {
+                    boundary_index_end += n_boundaries_in_proc[k];
+                    int index_out_section = 0;
+                    cg_section_write(index_out_file, index_out_base, index_out_zone, section_names[k].data(), ElementType_t::BAR_2, boundary_index_start + 1, boundary_index_end, n_boundaries_in_proc[k], boundaries_in_proc[k].data(), &index_out_section);
+                    boundary_index_start = boundary_index_end;
+                }
             }
         }
     }
