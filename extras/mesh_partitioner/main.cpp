@@ -818,7 +818,23 @@ auto main(int argc, char* argv[]) -> int {
 
     // Writing cross-zone interfaces to file
     for (cgsize_t i = 0; i < n_proc; ++i) {
+        for (cgsize_t j = 0; j < n_proc; ++j) {
+            if (origin_and_destination_ghosts[i][j].size() != 0) {
+                std::vector<cgsize_t> connectivity_elements(origin_and_destination_ghosts[i][j].size());
+                std::vector<cgsize_t> connectivity_donor_elements(origin_and_destination_ghosts[i][j].size());
+                for (cgsize_t k = 0; k < origin_and_destination_ghosts[i][j].size(); ++k) {
+                    connectivity_elements[k] = origin_and_destination_ghosts[i][j][k][0] + 1;
+                    connectivity_donor_elements[k] = origin_and_destination_ghosts[i][j][k][1] + 1;
+                }
 
+                int index_out_connectivity = 0;
+                std::stringstream ss2;
+                ss2 << "Connectivity" << i + 1 << "to" << j + 1;
+                std::stringstream ss3;
+                ss3 << "Zone " << j + 1;
+                cg_conn_write(index_out_file, index_out_base, index_out_zone[i], ss2.str().c_str(), GridLocation_t::FaceCenter, GridConnectivityType_t::Abutting1to1, PointSetType_t::PointList, connectivity_elements.size(), connectivity_elements.data(), ss3.str().c_str(), ZoneType_t::Unstructured, PointSetType_t::PointListDonor, DataType_t::Integer, connectivity_donor_elements.size(), connectivity_donor_elements.data(), &index_out_connectivity);
+            }
+        }
     }
 
     const int close_out_error = cg_close(index_out_file);
