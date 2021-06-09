@@ -15,7 +15,7 @@ namespace SEM { namespace Helpers {
             auto cmdOptionExists(const std::string &option) const -> bool;
 
             template<typename T>
-            auto getCmdOptionOr(const std::string &option, T default) const -> T {
+            auto getCmdOptionOr(const std::string &option, const T &default) const -> T {
                 std::stringstream sstream(getCmdOption(option));
                 if (sstream.eof()) {
                     return default;
