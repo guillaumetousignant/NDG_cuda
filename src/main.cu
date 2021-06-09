@@ -11,6 +11,7 @@
 #include <chrono>
 #include <vector>
 #include <array>
+#include <cmath>
 #include <mpi.h>
 
 namespace fs = std::filesystem;
@@ -57,38 +58,97 @@ auto get_output_file(const SEM::Helpers::InputParser_t& input_parser) -> fs::pat
     }
 }
 
+auto get_output_times(const SEM::Helpers::InputParser_t& input_parser) -> std::vector<deviceFloat> {
+    const std::string input_t_max = input_parser.getCmdOption("--t");
+    const deviceFloat t_max = (input_t_max.empty()) ? 1 : std::stod(input_t_max);
+
+    long int n_t = 11;
+    deviceFloat t_interval = t_max/(n_t - 1);
+
+    const std::string input_t_interval = input_parser.getCmdOption("--t_interval");
+    if (!input_t_interval.empty()) {
+        t_interval = std::stod(input_t_interval);
+        n_t = std::lround(t_max/t_interval + 0.5);
+    }
+    else {
+        const std::string input_n_t = input_parser.getCmdOption("--n_t");
+        if (!input_n_t.empty()) {
+            n_t = std::stol(input_n_t);
+            t_interval = t_max/(n_t - 1);
+        }
+    }
+
+    std::vector<deviceFloat> output_times(n_t);
+    for (long int i = 0; i < n_t - 1; ++i) {
+        output_times[i] = i * t_interval;
+    }
+
+    output_times.back() = t_max;
+    return output_times;
+}
+
 auto main(int argc, char* argv[]) -> int {
     const SEM::Helpers::InputParser_t input_parser(argc, argv);
     if (input_parser.cmdOptionExists("--help") || input_parser.cmdOptionExists("-h")) {
         std::cout << "Spectral element method 2D unstructured solver" << std::endl;
         std::cout << '\t' <<  "Solves the 2D wave equation on 2D unstructured meshes. The meshes use the CGNS HDF5 format, and output uses the VTK format." << std::endl << std::endl;
         std::cout << "Available options:" << std::endl;
-        std::cout << '\t' <<  "--mesh"             <<  '\t' <<  "Full path of the input mesh file. Overrides mesh_filename and mesh_directory if set." << std::endl;
-        std::cout << '\t' <<  "--mesh_filename"    <<  '\t' <<  "File name of the input mesh file. Defaults to [mesh.cgns]" << std::endl;
-        std::cout << '\t' <<  "--mesh_directory"   <<  '\t' <<  "Directory of the input mesh file. Defaults to [./meshes/]" << std::endl;
-        std::cout << '\t' <<  "--output"           <<  '\t' <<  "Full path of the output data file. Overrides output_filename and output_directory if set." << std::endl;
-        std::cout << '\t' <<  "--output_filename"  <<  '\t' <<  "File name of the output data file. Defaults to [output.pvtu]" << std::endl;
-        std::cout << '\t' <<  "--output_directory" <<  '\t' <<  "Directory of the output data file. Defaults to [./data/]" << std::endl;
+        std::cout << '\t' <<  "--mesh"                <<  '\t' <<  "Full path of the input mesh file. Overrides mesh_filename and mesh_directory if set." << std::endl;
+        std::cout << '\t' <<  "--mesh_filename"       <<  '\t' <<  "File name of the input mesh file. Defaults to [mesh.cgns]" << std::endl;
+        std::cout << '\t' <<  "--mesh_directory"      <<  '\t' <<  "Directory of the input mesh file. Defaults to [./meshes/]" << std::endl;
+        std::cout << '\t' <<  "--output"              <<  '\t' <<  "Full path of the output data file. Overrides output_filename and output_directory if set." << std::endl;
+        std::cout << '\t' <<  "--output_filename"     <<  '\t' <<  "File name of the output data file. Defaults to [output.pvtu]" << std::endl;
+        std::cout << '\t' <<  "--output_directory"    <<  '\t' <<  "Directory of the output data file. Defaults to [./data/]" << std::endl;
+        std::cout << '\t' <<  "--n"                   <<  '\t' <<  "Initial polynomial order in elements. Defaults to [8]" << std::endl;
+        std::cout << '\t' <<  "--n_max"               <<  '\t' <<  "Maximum polynomial order in elements. Defaults to [16]" << std::endl;
+        std::cout << '\t' <<  "--max_splits"          <<  '\t' <<  "Maximum number of times an elements can split. Defaults to [3]" << std::endl;
+        std::cout << '\t' <<  "--n_points"            <<  '\t' <<  "Number of interpolation points in elements. Defaults to [n_max²]" << std::endl;
+        std::cout << '\t' <<  "--adaptivity_interval" <<  '\t' <<  "Number of iterations between adapting the mesh. Defaults to [100]" << std::endl;
+        std::cout << '\t' <<  "--cfl"                 <<  '\t' <<  "CFL used for the simulation. Defaults to [0.5]" << std::endl;
+        std::cout << '\t' <<  "--viscosity"           <<  '\t' <<  "Viscosity used for the simulation. Defaults to [0.1/π]" << std::endl;
+        std::cout << '\t' <<  "--t"                   <<  '\t' <<  "End time of the simulation. Defaults to [1]" << std::endl;
+        std::cout << '\t' <<  "--n_t"                 <<  '\t' <<  "Number of times to output. Defaults to [11]" << std::endl;
+        std::cout << '\t' <<  "--t_interval"          <<  '\t' <<  "Time interval between output. Overrides n_t if set." << std::endl;
         exit(0);
     }
 
     MPI_Init(&argc, &argv);
 
+    // Argument parsing
     const fs::path mesh_file = get_input_file(input_parser);
     const fs::path output_file = get_output_file(input_parser);
 
-    const size_t N_elements = 128;
-    const int N_max = 8;
-    const std::array<deviceFloat, 2> x{-1.0, 1.0};
-    const deviceFloat max_splits = 3;
-    const deviceFloat delta_x_min = (x[1] - x[0])/(N_elements * std::pow(2, max_splits));
-    const int adaptivity_interval = 100;
-    const deviceFloat CFL = 0.2f;
-    const deviceFloat viscosity = 0.1/pi;
-    std::vector<deviceFloat> output_times{0.0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00};
+    const std::string input_N_max = input_parser.getCmdOption("--n_max");
+    const int N_max = (input_N_max.empty()) ? 16 : std::stoi(input_N_max);
 
-    const int initial_N = 8;
-    const size_t N_interpolation_points = std::pow(N_max, 2);
+    const std::string input_N_initial = input_parser.getCmdOption("--n");
+    const int N_initial = (input_N_initial.empty()) ? 8 : std::stoi(input_N_initial);
+
+    const std::string input_max_splits = input_parser.getCmdOption("--max_splits");
+    const int max_splits = (input_max_splits.empty()) ? 3 : std::stoi(input_max_splits);
+
+    const std::string input_n_points = input_parser.getCmdOption("--n_points");
+    const size_t N_interpolation_points = (input_n_points.empty()) ? std::pow(N_max, 2) : std::stoull(input_n_points);
+
+    const std::string input_adaptivity_interval = input_parser.getCmdOption("--adaptivity_interval");
+    const int adaptivity_interval = (input_adaptivity_interval.empty()) ? 100 : std::stoi(input_adaptivity_interval);
+
+    const std::string input_cfl = input_parser.getCmdOption("--cfl");
+    const deviceFloat CFL = (input_cfl.empty()) ? 0.5 : std::stod(input_cfl);
+
+    const std::string input_viscosity = input_parser.getCmdOption("--viscosity");
+    const deviceFloat viscosity = (input_viscosity.empty()) ? 0.1/pi : std::stod(input_viscosity);
+
+    const std::vector<deviceFloat> output_times = get_output_times(input_parser);
+
+    if (N_initial > N_max) {
+        std::cerr << "Error: Initial N (" << N_initial << ") is greater than maximum N (" << N_max << "). Exiting." << std::endl;
+        exit(49);
+    }
+
+    const size_t N_elements = 128;
+    const std::array<deviceFloat, 2> x{-1.0, 1.0};
+    const deviceFloat delta_x_min = (x[1] - x[0])/(N_elements * std::pow(2, max_splits));
 
     // MPI ranks
     MPI_Comm node_communicator;
@@ -169,7 +229,7 @@ auto main(int argc, char* argv[]) -> int {
     auto t_start_init = std::chrono::high_resolution_clock::now();
 
     SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> NDG(N_max, N_interpolation_points, stream);
-    SEM::Meshes::Mesh2D_t mesh(mesh_file, initial_N, NDG.nodes_, stream);
+    SEM::Meshes::Mesh2D_t mesh(mesh_file, N_initial, NDG.nodes_, stream);
     SEM::Solvers::Solver2D_t solver(CFL, output_times, viscosity);
     SEM::Helpers::DataWriter_t data_writer(output_file);
     mesh.initial_conditions(NDG.nodes_.data());
