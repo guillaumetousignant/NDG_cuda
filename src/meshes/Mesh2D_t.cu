@@ -207,8 +207,8 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     std::vector<std::vector<cgsize_t>> interface_elements(n_connectivity);
     std::vector<std::vector<cgsize_t>> interface_donor_elements(n_connectivity);
     for (int index_connectivity = 1; index_connectivity <= n_connectivity; ++index_connectivity) {
-        interface_elements[index_connectivity - 1] = std::vector<int>(connectivity_sizes[index_connectivity - 1]);
-        interface_donor_elements[index_connectivity - 1] = std::vector<int>(connectivity_donor_sizes[index_connectivity - 1]);
+        interface_elements[index_connectivity - 1] = std::vector<cgsize_t>(connectivity_sizes[index_connectivity - 1]);
+        interface_donor_elements[index_connectivity - 1] = std::vector<cgsize_t>(connectivity_donor_sizes[index_connectivity - 1]);
         cg_conn_read(index_file, index_base, index_zone, index_connectivity, interface_elements[index_connectivity - 1].data(),
             DataType_t::Integer, interface_donor_elements[index_connectivity - 1].data());
     }
