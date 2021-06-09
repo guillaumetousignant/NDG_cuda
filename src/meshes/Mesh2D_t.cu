@@ -5,7 +5,7 @@
 #include "functions/Utilities.h"
 #include "functions/quad_map.cuh"
 #include "functions/quad_metrics.cuh"
-#include "cgnslib.h"
+#include "pcgnslib.h"
 #include <iostream>
 #include <fstream>
 #include <sstream> 
