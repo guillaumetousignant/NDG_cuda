@@ -82,11 +82,18 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     // Getting zone information
     int n_zones = 0;
     cg_nzones(index_file, index_base, &n_zones);
-    if (n_bases != 1) {
-        std::cerr << "Error: CGNS mesh, base " << index_base << " has " << n_zones << " zone(s), but for now only a single zone is supported. Exiting." << std::endl;
-        exit(20);
+
+    int global_rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
+    int global_size;
+    MPI_Comm_size(MPI_COMM_WORLD, &global_size);
+
+    if (n_zones != global_size) {
+        std::cerr << "Error: CGNS mesh, base " << index_base << " has " << n_zones << " zone(s), but the program has been run with " << global_size << " process(es). For now only a single zone per process is supported. Exiting." << std::endl;
+        exit(48);
     }
-    constexpr int index_zone = 1;
+
+    const int index_zone = global_rank + 1;
 
     ZoneType_t zone_type = ZoneType_t::ZoneTypeNull;
     cg_zone_type(index_file, index_base, index_zone, &zone_type);
