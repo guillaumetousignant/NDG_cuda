@@ -18,11 +18,8 @@ auto get_input_file(const SEM::Helpers::InputParser_t& input_parser) -> fs::path
         return input_path;
     }
     else {
-        const std::string input_filename = input_parser.getCmdOption("--in_filename");
-        const std::string save_filename = (input_filename.empty()) ? "mesh.cgns" : input_filename;
-
-        const std::string input_save_dir = input_parser.getCmdOption("--in_directory");
-        const fs::path save_dir = (input_save_dir.empty()) ? fs::current_path() / "meshes" : input_save_dir;
+        const std::string save_filename = input_parser.getCmdOptionOr("--in_filename", std::string("mesh.cgns"));
+        const fs::path save_dir = input_parser.getCmdOptionOr("--in_directory", fs::current_path() / "meshes");
 
         return save_dir / save_filename;
     }
@@ -36,11 +33,8 @@ auto get_output_file(const SEM::Helpers::InputParser_t& input_parser) -> fs::pat
         return out_file;
     }
     else {
-        const std::string output_filename = input_parser.getCmdOption("--out_filename");
-        const std::string save_filename = (output_filename.empty()) ? "mesh_partitioned.cgns" : output_filename;
-
-        const std::string output_save_dir = input_parser.getCmdOption("--out_directory");
-        const fs::path save_dir = (output_save_dir.empty()) ? fs::current_path() / "meshes" : output_save_dir;
+        const std::string save_filename = input_parser.getCmdOptionOr("--out_filename", std::string("mesh_partitioned.cgns"));
+        const fs::path save_dir = input_parser.getCmdOptionOr("--out_directory", fs::current_path() / "meshes"); 
 
         fs::create_directory(save_dir);
         return save_dir / save_filename;
@@ -127,11 +121,10 @@ auto main(int argc, char* argv[]) -> int {
         exit(0);
     }
 
+    // Argument parsing
     const fs::path in_file = get_input_file(input_parser);
     const fs::path out_file = get_output_file(input_parser);
-
-    const std::string input_n_proc = input_parser.getCmdOption("--n");
-    const cgsize_t n_proc = (input_n_proc.empty()) ? 4 : std::stoi(input_n_proc);
+    const cgsize_t n_proc = input_parser.getCmdOptionOr("--n", static_cast<cgsize_t>(4));
 
     // CGNS input
     int index_in_file = 0;

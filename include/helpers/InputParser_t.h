@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <sstream>
 
 namespace SEM { namespace Helpers {
     class InputParser_t {
@@ -12,6 +13,19 @@ namespace SEM { namespace Helpers {
             auto getCmdOption(const std::string &option) const -> std::string;
 
             auto cmdOptionExists(const std::string &option) const -> bool;
+
+            template<typename T>
+            auto getCmdOptionOr(const std::string &option, T default) const -> T {
+                std::stringstream sstream(getCmdOption(option));
+                if (sstream.eof()) {
+                    return default;
+                }
+                else {
+                    T result;
+                    sstream >> result;
+                    return result;
+                }
+            }
 
         private:
             std::vector <std::string> tokens_;

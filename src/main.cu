@@ -26,11 +26,8 @@ auto get_input_file(const SEM::Helpers::InputParser_t& input_parser) -> fs::path
         return (mesh_file.extension().empty()) ? mesh_file / ".cgns" : mesh_file;
     }
     else {
-        const std::string input_filename = input_parser.getCmdOption("--mesh_filename");
-        const std::string mesh_filename = (input_filename.empty()) ? "mesh.cgns" : input_filename;
-
-        const std::string input_mesh_dir = input_parser.getCmdOption("--mesh_directory");
-        const fs::path mesh_dir = (input_mesh_dir.empty()) ? fs::current_path() / "meshes" : fs::path(input_mesh_dir);
+        const std::string mesh_filename = input_parser.getCmdOptionOr("--mesh_filename", std::string("mesh.cgns"));
+        const fs::path mesh_dir = input_parser.getCmdOptionOr("--mesh_directory", fs::current_path() / "meshes");
 
         fs::create_directory(mesh_dir);
         const fs::path mesh_file = mesh_dir / mesh_filename;
@@ -46,11 +43,8 @@ auto get_output_file(const SEM::Helpers::InputParser_t& input_parser) -> fs::pat
         return (save_file.extension().empty()) ? save_file / ".pvtu" : save_file;
     }
     else {
-        const std::string input_filename = input_parser.getCmdOption("--output_filename");
-        const std::string save_filename = (input_filename.empty()) ? "output.pvtu" : input_filename;
-
-        const std::string input_save_dir = input_parser.getCmdOption("--output_directory");
-        const fs::path save_dir = (input_save_dir.empty()) ? fs::current_path() / "data" : fs::path(input_save_dir);
+        const std::string save_filename = input_parser.getCmdOptionOr("--output_filename", std::string("output.pvtu"));
+        const fs::path save_dir = input_parser.getCmdOptionOr("--output_directory", fs::current_path() / "data");
 
         fs::create_directory(save_dir);
         const fs::path save_file = save_dir / save_filename;
@@ -59,27 +53,25 @@ auto get_output_file(const SEM::Helpers::InputParser_t& input_parser) -> fs::pat
 }
 
 auto get_output_times(const SEM::Helpers::InputParser_t& input_parser) -> std::vector<deviceFloat> {
-    const std::string input_t_max = input_parser.getCmdOption("--t");
-    const deviceFloat t_max = (input_t_max.empty()) ? 1 : std::stod(input_t_max);
+    const deviceFloat t_max = input_parser.getCmdOptionOr("--t", static_cast<deviceFloat>(1));
 
-    long int n_t = 11;
+    int n_t = 11;
     deviceFloat t_interval = t_max/(n_t - 1);
 
-    const std::string input_t_interval = input_parser.getCmdOption("--t_interval");
-    if (!input_t_interval.empty()) {
-        t_interval = std::stod(input_t_interval);
+    if (input_parser.cmdOptionExists("--t_interval")) {
+        t_interval = input_parser.getCmdOptionOr("--t_interval", t_interval);
         n_t = std::lround(t_max/t_interval + 0.5);
     }
     else {
         const std::string input_n_t = input_parser.getCmdOption("--n_t");
-        if (!input_n_t.empty()) {
-            n_t = std::stol(input_n_t);
+        if (input_parser.cmdOptionExists("--n_t")) {
+            n_t = input_parser.getCmdOptionOr("--t_interval", n_t);
             t_interval = t_max/(n_t - 1);
         }
     }
 
     std::vector<deviceFloat> output_times(n_t);
-    for (long int i = 0; i < n_t - 1; ++i) {
+    for (int i = 0; i < n_t - 1; ++i) {
         output_times[i] = i * t_interval;
     }
 
@@ -117,28 +109,13 @@ auto main(int argc, char* argv[]) -> int {
     // Argument parsing
     const fs::path mesh_file = get_input_file(input_parser);
     const fs::path output_file = get_output_file(input_parser);
-
-    const std::string input_N_max = input_parser.getCmdOption("--n_max");
-    const int N_max = (input_N_max.empty()) ? 16 : std::stoi(input_N_max);
-
-    const std::string input_N_initial = input_parser.getCmdOption("--n");
-    const int N_initial = (input_N_initial.empty()) ? 8 : std::stoi(input_N_initial);
-
-    const std::string input_max_splits = input_parser.getCmdOption("--max_splits");
-    const int max_splits = (input_max_splits.empty()) ? 3 : std::stoi(input_max_splits);
-
-    const std::string input_n_points = input_parser.getCmdOption("--n_points");
-    const size_t N_interpolation_points = (input_n_points.empty()) ? std::pow(N_max, 2) : std::stoull(input_n_points);
-
-    const std::string input_adaptivity_interval = input_parser.getCmdOption("--adaptivity_interval");
-    const int adaptivity_interval = (input_adaptivity_interval.empty()) ? 100 : std::stoi(input_adaptivity_interval);
-
-    const std::string input_cfl = input_parser.getCmdOption("--cfl");
-    const deviceFloat CFL = (input_cfl.empty()) ? 0.5 : std::stod(input_cfl);
-
-    const std::string input_viscosity = input_parser.getCmdOption("--viscosity");
-    const deviceFloat viscosity = (input_viscosity.empty()) ? 0.1/pi : std::stod(input_viscosity);
-
+    const int N_max = input_parser.getCmdOptionOr("--n_max", 16);
+    const int N_initial = input_parser.getCmdOptionOr("--n", 8);
+    const int max_splits = input_parser.getCmdOptionOr("--max_splits", 3);
+    const size_t N_interpolation_points = input_parser.getCmdOptionOr("--n_points", static_cast<size_t>(std::pow(N_max, 2)));
+    const int adaptivity_interval = input_parser.getCmdOptionOr("--adaptivity_interval", 100);
+    const deviceFloat CFL = input_parser.getCmdOptionOr("--cfl", static_cast<deviceFloat>(0.5));
+    const deviceFloat viscosity = input_parser.getCmdOptionOr("--viscosity", static_cast<deviceFloat>(0.1/pi));
     const std::vector<deviceFloat> output_times = get_output_times(input_parser);
 
     if (N_initial > N_max) {

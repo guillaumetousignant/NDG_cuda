@@ -19,11 +19,8 @@ auto get_save_file(const SEM::Helpers::InputParser_t& input_parser) -> fs::path 
         return (save_file.extension().empty()) ? save_file / ".cgns" : save_file;
     }
     else {
-        const std::string input_filename = input_parser.getCmdOption("--filename");
-        const std::string save_filename = (input_filename.empty()) ? "mesh.cgns" : input_filename;
-
-        const std::string input_save_dir = input_parser.getCmdOption("--directory");
-        const fs::path save_dir = (input_save_dir.empty()) ? fs::current_path() / "meshes" : input_save_dir;
+        const std::string save_filename = input_parser.getCmdOptionOr("--filename", std::string("mesh.cgns"));
+        const fs::path save_dir = input_parser.getCmdOptionOr("--directory", fs::current_path() / "meshes");
 
         fs::create_directory(save_dir);
         const fs::path save_file = save_dir / save_filename;
@@ -152,8 +149,7 @@ auto main(int argc, char* argv[]) -> int {
     const fs::path save_file = get_save_file(input_parser);
 
     // Mesh resolution input
-    const std::string input_res = input_parser.getCmdOption("--resolution");
-    const cgsize_t res = (input_res.empty()) ? 4 : std::stoi(input_res);
+    const cgsize_t res = input_parser.getCmdOptionOr("--resolution", static_cast<cgsize_t>(4)); 
 
     if (!SEM::is_power_of_two(res)) {
         std::cerr << "Error, grid resolution should be a power of two for the Hillbert curve to work. Input resolution: " << res << "'. Exiting." << std::endl;
@@ -171,14 +167,10 @@ auto main(int argc, char* argv[]) -> int {
     const cgsize_t n_nodes = x_node_res * y_node_res;
 
     // Mesh span input
-    const std::string input_x_min = input_parser.getCmdOption("--x_min");
-    const std::string input_x_max = input_parser.getCmdOption("--x_max");
-    const std::string input_y_min = input_parser.getCmdOption("--y_min");
-    const std::string input_y_max = input_parser.getCmdOption("--y_max");
-    const double x_min = (input_x_min.empty()) ? 0 : std::stod(input_x_min);
-    const double x_max = (input_x_max.empty()) ? 1 : std::stod(input_x_max);
-    const double y_min = (input_y_min.empty()) ? 0 : std::stod(input_y_min);
-    const double y_max = (input_y_max.empty()) ? 1 : std::stod(input_y_max);
+    const double x_min = input_parser.getCmdOptionOr("--x_min", 0.0);
+    const double x_max = input_parser.getCmdOptionOr("--x_max", 1.0);
+    const double y_min = input_parser.getCmdOptionOr("--y_min", 0.0);
+    const double y_max = input_parser.getCmdOptionOr("--y_max", 1.0);
 
     // Boundary conditions input
     const auto [bottom_boundary_type, right_boundary_type, top_boundary_type, left_boundary_type] = get_boundary_conditions(input_parser);
