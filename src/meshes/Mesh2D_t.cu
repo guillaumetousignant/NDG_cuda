@@ -468,6 +468,25 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     }
 
     // Building MPI interfaces
+    size_t n_mpi_interfaces = 0;
+    size_t n_mpi_interface_elements = 0;
+    std::vector<size_t> mpi_interface_indices(n_connectivity);
+    std::vector<size_t> mpi_interface_offsets(n_connectivity);
+    for (int i = 0; i < n_connectivity; ++i) {
+        if (strncmp(zone_name, connectivity_donor_names[i], CGIO_MAX_NAME_LENGTH) != 0) {
+            mpi_interface_indices[i] = n_mpi_interfaces;
+            ++n_mpi_interfaces;
+            mpi_interface_offsets[i] = n_mpi_interface_elements;
+            n_mpi_interface_elements += connectivity_sizes[i];
+        }
+    }
+    std::vector<size_t> mpi_interfaces_size(n_mpi_interfaces);
+    std::vector<size_t> mpi_interfaces_offset(n_mpi_interfaces);
+    std::vector<size_t> mpi_interfaces_process(n_mpi_interfaces);
+    std::vector<size_t> mpi_interfaces_origin(n_mpi_interface_elements);
+    std::vector<size_t> mpi_interfaces_origin_side(n_mpi_interface_elements);
+    std::vector<size_t> mpi_interfaces_destination(n_mpi_interface_elements);
+
     for (int i = 0; i < n_connectivity; ++i) {
         if (strncmp(zone_name, connectivity_donor_names[i], CGIO_MAX_NAME_LENGTH) != 0) {
             int zone_index = i;
@@ -482,7 +501,14 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
                 exit(39);
             }
 
-            
+            mpi_interfaces_process[mpi_interface_indices[i]] = zone_index;
+            mpi_interfaces_size[mpi_interface_indices[i]] = connectivity_sizes[i];
+            mpi_interfaces_offset[mpi_interface_indices[i]] = mpi_interface_offsets[i];
+
+            for (size_t j = 0; j < connectivity_sizes[i]; ++j) {
+                //mpi_interfaces_origin[mpi_interface_offsets[i] + j] = 
+            }
+
         }
     }
 
