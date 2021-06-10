@@ -30,13 +30,12 @@ namespace SEM { namespace Meshes {
             SEM::Entities::device_vector<size_t> interfaces_origin_;
             SEM::Entities::device_vector<size_t> interfaces_origin_side_;
             SEM::Entities::device_vector<size_t> interfaces_destination_;
-            SEM::Entities::device_vector<size_t> mpi_interfaces_size_;
-            SEM::Entities::device_vector<size_t> mpi_interfaces_offset_;
-            SEM::Entities::device_vector<size_t> mpi_interfaces_process_;
+            std::vector<size_t> mpi_interfaces_size_;  // Those are only needed on the CPU... right?
+            std::vector<size_t> mpi_interfaces_offset_; // Those are only needed on the CPU... right?
+            std::vector<size_t> mpi_interfaces_process_; // Those are only needed on the CPU... right?
             SEM::Entities::device_vector<size_t> mpi_interfaces_origin_;
             SEM::Entities::device_vector<size_t> mpi_interfaces_origin_side_;
             SEM::Entities::device_vector<size_t> mpi_interfaces_destination_;
-            SEM::Entities::device_vector<size_t> mpi_interfaces_N_;
 
             SEM::Entities::device_vector<deviceFloat> device_interfaces_p_;
             SEM::Entities::device_vector<deviceFloat> device_interfaces_u_;
@@ -44,6 +43,9 @@ namespace SEM { namespace Meshes {
             std::vector<deviceFloat> host_interfaces_p_;
             std::vector<deviceFloat> host_interfaces_u_;
             std::vector<deviceFloat> host_interfaces_v_;
+            std::vector<deviceFloat> host_receiving_interfaces_p_;
+            std::vector<deviceFloat> host_receiving_interfaces_u_;
+            std::vector<deviceFloat> host_receiving_interfaces_v_;
             
             
 
@@ -136,10 +138,10 @@ namespace SEM { namespace Meshes {
 
     template<typename Polynomial>
     __global__
-    void estimate_error(size_t N_elements, SEM::Entities::Element2D_t* elements, const deviceFloat* polynomial_nodes, const deviceFloat* weights);
+    auto estimate_error(size_t N_elements, SEM::Entities::Element2D_t* elements, const deviceFloat* polynomial_nodes, const deviceFloat* weights) -> void;
 
     __global__
-    void interpolate_to_boundaries(size_t N_elements, SEM::Entities::Element2D_t* elements, const deviceFloat* lagrange_interpolant_minus, const deviceFloat* lagrange_interpolant_plus);
+    auto interpolate_to_boundaries(size_t N_elements, SEM::Entities::Element2D_t* elements, const deviceFloat* lagrange_interpolant_minus, const deviceFloat* lagrange_interpolant_plus) -> void;
 
     __global__
     auto project_to_faces(size_t N_faces, SEM::Entities::Face2D_t* faces, const SEM::Entities::Element2D_t* elements) -> void;
@@ -148,10 +150,13 @@ namespace SEM { namespace Meshes {
     auto project_to_elements(size_t N_elements, const SEM::Entities::Face2D_t* faces, SEM::Entities::Element2D_t* elements) -> void;
 
     __global__
-    void local_interfaces(size_t N_local_interfaces, SEM::Entities::Element2D_t* elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_origin_side, const size_t* local_interfaces_destination);
+    auto local_interfaces(size_t N_local_interfaces, SEM::Entities::Element2D_t* elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_origin_side, const size_t* local_interfaces_destination) -> void;
 
     __global__
-    void get_MPI_interfaces(size_t N_MPI_interfaces, const SEM::Entities::Element2D_t* elements, const size_t* MPI_interfaces_origin, const size_t* MPI_interfaces_origin_side, int maximum_N, deviceFloat* p_, deviceFloat* u_, deviceFloat* v_);
+    auto get_MPI_interfaces(size_t N_MPI_interface_elements, const SEM::Entities::Element2D_t* elements, const size_t* MPI_interfaces_origin, const size_t* MPI_interfaces_origin_side, int maximum_N, deviceFloat* p_, deviceFloat* u_, deviceFloat* v_) -> void;
+
+    __global__
+    auto put_MPI_interfaces(size_t N_MPI_interface_elements, SEM::Entities::Element2D_t* elements, const size_t* MPI_interfaces_destination, int maximum_N, const deviceFloat* p_, const deviceFloat* u_, const deviceFloat* v_) -> void;
 }}
 
 #endif
