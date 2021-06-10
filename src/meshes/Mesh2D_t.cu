@@ -417,7 +417,7 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     size_t n_interface_elements = 0;
     std::vector<size_t> interface_start_index(n_connectivity);
     for (int i = 0; i < n_connectivity; ++i) {
-        if (strncmp(zone_name, connectivity_donor_names[i], CGIO_MAX_NAME_LENGTH) == 0) {
+        if (strncmp(zone_name.data(), connectivity_donor_names[i].data(), CGIO_MAX_NAME_LENGTH) == 0) {
             interface_start_index[i] = n_interface_elements;
             n_interface_elements += connectivity_sizes[i];
         }
@@ -427,7 +427,7 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     std::vector<size_t> interfaces_destination(n_interface_elements);
 
     for (int i = 0; i < n_connectivity; ++i) {
-        if (strncmp(zone_name, connectivity_donor_names[i], CGIO_MAX_NAME_LENGTH) == 0) {
+        if (strncmp(zone_name.data(), connectivity_donor_names[i].data(), CGIO_MAX_NAME_LENGTH) == 0) {
             for (cgsize_t j = 0; j < connectivity_sizes[i]; ++j) {
                 int origin_section_index = -1;
                 for (int k = 0; k < n_sections; ++k) {
@@ -473,17 +473,17 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     std::vector<bool> process_used_in_interface(n_zones);
     size_t n_mpi_interface_elements = 0;
     for (int i = 0; i < n_connectivity; ++i) {
-        if (strncmp(zone_name, connectivity_donor_names[i], CGIO_MAX_NAME_LENGTH) != 0) {
+        if (strncmp(zone_name.data(), connectivity_donor_names[i].data(), CGIO_MAX_NAME_LENGTH) != 0) {
             int zone_index = i;
             for (int j = 0; j < n_zones; ++j) {
-                if (strncmp(connectivity_donor_names[i], zone_names[j], CGIO_MAX_NAME_LENGTH) == 0) {
+                if (strncmp(connectivity_donor_names[i].data(), zone_names[j].data(), CGIO_MAX_NAME_LENGTH) == 0) {
                     mpi_interface_process[i] = j;
                     process_used_in_interface[j] = true;
                     break;
                 }
             }
             if (zone_index == i) {
-                std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", connectivity " << i << " links to zone \"" << interface_donor_elements[i][j] << " but it is not found in any mesh section. Exiting." << std::endl;
+                std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", connectivity " << i << " links to zone \"" << connectivity_donor_names[i].data() << "\" but it is not found in any mesh section. Exiting." << std::endl;
                 exit(50);
             }
             n_mpi_interface_elements += connectivity_sizes[i];
@@ -535,7 +535,7 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
                         mpi_interfaces_destination[mpi_interface_offset + k] = interface_donor_elements[i][k]; // Still in local referential, will have to exchange info to know.
                     }
 
-                    mpi_interface_offset += connectivity_sizes[i]
+                    mpi_interface_offset += connectivity_sizes[i];
                 }
             }
 
@@ -567,7 +567,7 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
             }
 
             if (donor_section_index == -1) {
-                std::cerr << "Error: Process " << mpi_interfaces_process[i] << " sent element " << mpi_interfaces_destination_in_this_proc[mpi_interfaces_offset[i] + j] << " to process " << global_rank << " but it is not found in any mesh section. Exiting." std::endl;
+                std::cerr << "Error: Process " << mpi_interfaces_process[i] << " sent element " << mpi_interfaces_destination_in_this_proc[mpi_interfaces_offset[i] + j] << " to process " << global_rank << " but it is not found in any mesh section. Exiting." << std::endl;
                 exit(51);
             }
 
