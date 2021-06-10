@@ -474,6 +474,7 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
             for (int j = 0; j < n_zones; ++j) {
                 if (strncmp(connectivity_donor_names[i], zone_names[j], CGIO_MAX_NAME_LENGTH) == 0) {
                     zone_index = j;
+                    break;
                 }
             }
             if (zone_index == i) {
