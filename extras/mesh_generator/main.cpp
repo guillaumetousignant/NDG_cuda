@@ -19,7 +19,8 @@ auto get_save_file(const SEM::Helpers::InputParser_t& input_parser) -> fs::path 
         return (save_file.extension().empty()) ? save_file / ".cgns" : save_file;
     }
     else {
-        const std::string save_filename = input_parser.getCmdOptionOr("--filename", std::string("mesh.cgns"));
+        const std::string filename_default("mesh.cgns");
+        const std::string save_filename = input_parser.getCmdOptionOr("--filename", filename_default);
         const fs::path save_dir = input_parser.getCmdOptionOr("--directory", fs::current_path() / "meshes");
 
         fs::create_directory(save_dir);
