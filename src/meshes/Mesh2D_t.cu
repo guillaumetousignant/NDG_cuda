@@ -406,53 +406,64 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
         }
     }
 
-    // Building interfaces
+    // Building self interfaces
     size_t n_interface_elements = 0;
     std::vector<size_t> interface_start_index(n_connectivity);
     for (int i = 0; i < n_connectivity; ++i) {
-        interface_start_index[i] = n_interface_elements;
-        n_interface_elements += connectivity_sizes[i];
+        if (strncmp(zone_name, section_names[n_connectivity], CGIO_MAX_NAME_LENGTH) == 0) {
+            interface_start_index[i] = n_interface_elements;
+            n_interface_elements += connectivity_sizes[i];
+        }
     }
     std::vector<size_t> interfaces_origin(n_interface_elements);
     std::vector<size_t> interfaces_origin_side(n_interface_elements);
     std::vector<size_t> interfaces_destination(n_interface_elements);
 
     for (int i = 0; i < n_connectivity; ++i) {
-        for (cgsize_t j = 0; j < connectivity_sizes[i]; ++j) {
-            int origin_section_index = -1;
-            for (int k = 0; k < n_sections; ++k) {
-                if ((interface_elements[i][j] >= section_ranges[k][0]) && (interface_elements[i][j] <= section_ranges[k][1])) {
-                    origin_section_index = k;
-                    break;
+        if (strncmp(zone_name, section_names[n_connectivity], CGIO_MAX_NAME_LENGTH) == 0) {
+            for (cgsize_t j = 0; j < connectivity_sizes[i]; ++j) {
+                int origin_section_index = -1;
+                for (int k = 0; k < n_sections; ++k) {
+                    if ((interface_elements[i][j] >= section_ranges[k][0]) && (interface_elements[i][j] <= section_ranges[k][1])) {
+                        origin_section_index = k;
+                        break;
+                    }
                 }
-            }
 
-            if (origin_section_index == -1) {
-                std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", connectivity " << i << " contains element " << interface_elements[i][j] << " but it is not found in any mesh section. Exiting." << std::endl;
-                exit(38);
-            }
-
-            int donor_section_index = -1;
-            for (int k = 0; k < n_sections; ++k) {
-                if ((interface_donor_elements[i][j] >= section_ranges[k][0]) && (interface_donor_elements[i][j] <= section_ranges[k][1])) {
-                    donor_section_index = k;
-                    break;
+                if (origin_section_index == -1) {
+                    std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", connectivity " << i << " contains element " << interface_elements[i][j] << " but it is not found in any mesh section. Exiting." << std::endl;
+                    exit(38);
                 }
-            }
 
-            if (donor_section_index == -1) {
-                std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", connectivity " << i << " contains donor element " << interface_donor_elements[i][j] << " but it is not found in any mesh section. Exiting." << std::endl;
-                exit(39);
-            }
+                int donor_section_index = -1;
+                for (int k = 0; k < n_sections; ++k) {
+                    if ((interface_donor_elements[i][j] >= section_ranges[k][0]) && (interface_donor_elements[i][j] <= section_ranges[k][1])) {
+                        donor_section_index = k;
+                        break;
+                    }
+                }
 
-            const size_t donor_boundary_element_index = section_start_indices[donor_section_index] + interface_donor_elements[i][j] - section_ranges[donor_section_index][0];
-            const size_t face_index = element_to_face[donor_boundary_element_index][0];
-            const size_t face_side_index = host_faces[face_index].elements_[0] == donor_boundary_element_index;
-            const size_t donor_domain_element_index = host_faces[face_index].elements_[face_side_index];
+                if (donor_section_index == -1) {
+                    std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", connectivity " << i << " contains donor element " << interface_donor_elements[i][j] << " but it is not found in any mesh section. Exiting." << std::endl;
+                    exit(39);
+                }
+
+                const size_t donor_boundary_element_index = section_start_indices[donor_section_index] + interface_donor_elements[i][j] - section_ranges[donor_section_index][0];
+                const size_t face_index = element_to_face[donor_boundary_element_index][0];
+                const size_t face_side_index = host_faces[face_index].elements_[0] == donor_boundary_element_index;
+                const size_t donor_domain_element_index = host_faces[face_index].elements_[face_side_index];
+                
+                interfaces_origin[interface_start_index[i] + j] = donor_domain_element_index;
+                interfaces_origin_side[interface_start_index[i] + j] = host_faces[face_index].elements_side_[face_side_index];
+                interfaces_destination[interface_start_index[i] + j] = section_start_indices[origin_section_index] + interface_elements[i][j] - section_ranges[origin_section_index][0];
+            }
+        }
+    }
+
+    // Building MPI interfaces
+    for (int i = 0; i < n_connectivity; ++i) {
+        if (strncmp(zone_name, section_names[n_connectivity], CGIO_MAX_NAME_LENGTH) != 0) {
             
-            interfaces_origin[interface_start_index[i] + j] = donor_domain_element_index;
-            interfaces_origin_side[interface_start_index[i] + j] = host_faces[face_index].elements_side_[face_side_index];
-            interfaces_destination[interface_start_index[i] + j] = section_start_indices[origin_section_index] + interface_elements[i][j] - section_ranges[origin_section_index][0];
         }
     }
 
@@ -460,20 +471,20 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     nodes_ = host_nodes;
     elements_ = host_elements;
     faces_ = host_faces;
+    wall_boundaries_ = wall_boundaries;
+    symmetry_boundaries_ = symmetry_boundaries;
     interfaces_origin_ = interfaces_origin;
     interfaces_origin_side_ = interfaces_origin_side;
     interfaces_destination_ = interfaces_destination;
-    wall_boundaries_ = wall_boundaries;
-    symmetry_boundaries_ = symmetry_boundaries;
 
     // Setting sizes
     N_elements_ = n_elements_domain;
     elements_numBlocks_ = (N_elements_ + elements_blockSize_ - 1) / elements_blockSize_;
     faces_numBlocks_ = (faces_.size() + faces_blockSize_ - 1) / faces_blockSize_;
-    interfaces_numBlocks_ = (interfaces_origin_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
     wall_boundaries_numBlocks_ = (wall_boundaries_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
     symmetry_boundaries_numBlocks_ = (symmetry_boundaries_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
     all_boundaries_numBlocks_ = (interfaces_origin_.size() + wall_boundaries_.size() + symmetry_boundaries_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+    interfaces_numBlocks_ = (interfaces_origin_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
 
     host_delta_t_array_ = std::vector<deviceFloat>(elements_numBlocks_);
     device_delta_t_array_ = device_vector<deviceFloat>(elements_numBlocks_);
@@ -615,28 +626,28 @@ auto SEM::Meshes::Mesh2D_t::print() const -> void {
     std::vector<Face2D_t> host_faces(faces_.size());
     std::vector<Element2D_t> host_elements(elements_.size());
     std::vector<Vec2<deviceFloat>> host_nodes(nodes_.size());
+    std::vector<size_t> host_wall_boundaries(wall_boundaries_.size());
+    std::vector<size_t> host_symmetry_boundaries(symmetry_boundaries_.size());
     std::vector<size_t> host_interfaces_origin(interfaces_origin_.size());
     std::vector<size_t> host_interfaces_origin_side(interfaces_origin_side_.size());
     std::vector<size_t> host_interfaces_destination(interfaces_destination_.size());
-    std::vector<size_t> host_wall_boundaries(wall_boundaries_.size());
-    std::vector<size_t> host_symmetry_boundaries(symmetry_boundaries_.size());
     
     faces_.copy_to(host_faces);
     elements_.copy_to(host_elements);
     nodes_.copy_to(host_nodes);
+    wall_boundaries_.copy_to(host_wall_boundaries);
+    symmetry_boundaries_.copy_to(host_symmetry_boundaries);
     interfaces_origin_.copy_to(host_interfaces_origin);
     interfaces_origin_side_.copy_to(host_interfaces_origin_side);
     interfaces_destination_.copy_to(host_interfaces_destination);
-    wall_boundaries_.copy_to(host_wall_boundaries);
-    symmetry_boundaries_.copy_to(host_symmetry_boundaries);
-
+    
     std::cout << "N elements: " << N_elements_ << std::endl;
     std::cout << "N elements and ghosts: " << elements_.size() << std::endl;
     std::cout << "N faces: " << faces_.size() << std::endl;
     std::cout << "N nodes: " << nodes_.size() << std::endl;
-    std::cout << "N interfaces: " << interfaces_origin_.size() << std::endl;
     std::cout << "N wall boundaries: " << wall_boundaries_.size() << std::endl;
     std::cout << "N symmetry boundaries: " << symmetry_boundaries_.size() << std::endl;
+    std::cout << "N interfaces: " << interfaces_origin_.size() << std::endl;
     std::cout << "Initial N: " << initial_N_ << std::endl;
 
     std::cout << std::endl <<  "Connectivity" << std::endl;

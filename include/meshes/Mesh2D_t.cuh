@@ -25,11 +25,11 @@ namespace SEM { namespace Meshes {
             SEM::Entities::device_vector<SEM::Entities::Vec2<deviceFloat>> nodes_;
             SEM::Entities::device_vector<SEM::Entities::Element2D_t> elements_;
             SEM::Entities::device_vector<SEM::Entities::Face2D_t> faces_;
+            SEM::Entities::device_vector<size_t> wall_boundaries_;
+            SEM::Entities::device_vector<size_t> symmetry_boundaries_;
             SEM::Entities::device_vector<size_t> interfaces_origin_;
             SEM::Entities::device_vector<size_t> interfaces_origin_side_;
             SEM::Entities::device_vector<size_t> interfaces_destination_;
-            SEM::Entities::device_vector<size_t> wall_boundaries_;
-            SEM::Entities::device_vector<size_t> symmetry_boundaries_;
             
             
 
