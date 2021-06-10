@@ -36,6 +36,7 @@ namespace SEM { namespace Meshes {
             SEM::Entities::device_vector<size_t> mpi_interfaces_origin_;
             SEM::Entities::device_vector<size_t> mpi_interfaces_origin_side_;
             SEM::Entities::device_vector<size_t> mpi_interfaces_destination_;
+            SEM::Entities::device_vector<size_t> mpi_interfaces_N_;
             
             
 
@@ -140,6 +141,9 @@ namespace SEM { namespace Meshes {
 
     __global__
     void local_interfaces(size_t N_local_interfaces, SEM::Entities::Element2D_t* elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_origin_side, const size_t* local_interfaces_destination);
+
+    __global__
+    void MPI_interfaces(size_t N_local_interfaces, SEM::Entities::Element2D_t* elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_origin_side, const size_t* local_interfaces_destination);
 }}
 
 #endif
