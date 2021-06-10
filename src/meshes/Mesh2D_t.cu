@@ -468,31 +468,16 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     }
 
     // Building MPI interfaces
-    size_t n_mpi_interfaces = 0;
+    std::vector<size_t> mpi_interface_process(n_connectivity);
+    std::vector<bool> process_used_in_interface(n_zones);
     size_t n_mpi_interface_elements = 0;
-    std::vector<size_t> mpi_interface_indices(n_connectivity);
-    std::vector<size_t> mpi_interface_offsets(n_connectivity);
-    for (int i = 0; i < n_connectivity; ++i) {
-        if (strncmp(zone_name, connectivity_donor_names[i], CGIO_MAX_NAME_LENGTH) != 0) {
-            mpi_interface_indices[i] = n_mpi_interfaces;
-            ++n_mpi_interfaces;
-            mpi_interface_offsets[i] = n_mpi_interface_elements;
-            n_mpi_interface_elements += connectivity_sizes[i];
-        }
-    }
-    std::vector<size_t> mpi_interfaces_size(n_mpi_interfaces);
-    std::vector<size_t> mpi_interfaces_offset(n_mpi_interfaces);
-    std::vector<size_t> mpi_interfaces_process(n_mpi_interfaces);
-    std::vector<size_t> mpi_interfaces_origin(n_mpi_interface_elements);
-    std::vector<size_t> mpi_interfaces_origin_side(n_mpi_interface_elements);
-    std::vector<size_t> mpi_interfaces_destination(n_mpi_interface_elements);
-
     for (int i = 0; i < n_connectivity; ++i) {
         if (strncmp(zone_name, connectivity_donor_names[i], CGIO_MAX_NAME_LENGTH) != 0) {
             int zone_index = i;
             for (int j = 0; j < n_zones; ++j) {
                 if (strncmp(connectivity_donor_names[i], zone_names[j], CGIO_MAX_NAME_LENGTH) == 0) {
-                    zone_index = j;
+                    mpi_interface_process[i] = j;
+                    process_used_in_interface[j] = true;
                     break;
                 }
             }
@@ -500,15 +485,42 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
                 std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", connectivity " << i << " links to zone \"" << interface_donor_elements[i][j] << " but it is not found in any mesh section. Exiting." << std::endl;
                 exit(50);
             }
+            n_mpi_interface_elements += connectivity_sizes[i];
+        }
+    }
 
-            mpi_interfaces_process[mpi_interface_indices[i]] = zone_index;
-            mpi_interfaces_size[mpi_interface_indices[i]] = connectivity_sizes[i];
-            mpi_interfaces_offset[mpi_interface_indices[i]] = mpi_interface_offsets[i];
+    size_t n_mpi_interfaces = 0;
+    for (int j = 0; j < n_zones; ++j) {
+        n_mpi_interfaces += process_used_in_interface[j];
+    }
 
-            for (size_t j = 0; j < connectivity_sizes[i]; ++j) {
-                //mpi_interfaces_origin[mpi_interface_offsets[i] + j] = 
+    std::vector<size_t> mpi_interfaces_size(n_mpi_interfaces);
+    std::vector<size_t> mpi_interfaces_offset(n_mpi_interfaces);
+    std::vector<size_t> mpi_interfaces_process(n_mpi_interfaces);
+    std::vector<size_t> mpi_interfaces_origin(n_mpi_interface_elements);
+    std::vector<size_t> mpi_interfaces_origin_side(n_mpi_interface_elements);
+    std::vector<size_t> mpi_interfaces_destination(n_mpi_interface_elements);
+
+    size_t mpi_interface_offset = 0;
+    size_t mpi_interface_index = 0;
+    for (int j = 0; j < n_zones; ++j) {
+        if (process_used_in_interface[j]) {
+            mpi_interfaces_offset[mpi_interface_index] = mpi_interface_offset;
+            mpi_interfaces_process[mpi_interface_index] = j;
+            for (int i = 0; i < n_connectivity; ++i) {
+                if (mpi_interface_process[i] == j) {
+                    mpi_interfaces_size[mpi_interface_index] += connectivity_sizes[i];
+                    for (size_t k = 0; k < connectivity_sizes[i]; ++k) {
+                        //mpi_interfaces_origin[mpi_interface_offset + k] = interface_elements[i][k];// CHECK get domain element
+                        //mpi_interfaces_origin_side[mpi_interface_offset + k] = 
+                        //mpi_interfaces_destination[mpi_interface_offset + k] = interface_donor_elements[i][k]; // CHECK what to do here
+                    }
+
+                    mpi_interface_offset += connectivity_sizes[i]
+                }
             }
 
+            ++mpi_interface_index;
         }
     }
 
