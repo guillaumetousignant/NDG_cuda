@@ -468,6 +468,7 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     }
 
     // Building MPI interfaces
+    // These will be backwards due to how I did the element_side thing. Shouldn't affect much.
     std::vector<size_t> mpi_interface_process(n_connectivity);
     std::vector<bool> process_used_in_interface(n_zones);
     size_t n_mpi_interface_elements = 0;
@@ -511,9 +512,32 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
                 if (mpi_interface_process[i] == j) {
                     mpi_interfaces_size[mpi_interface_index] += connectivity_sizes[i];
                     for (size_t k = 0; k < connectivity_sizes[i]; ++k) {
-                        //mpi_interfaces_origin[mpi_interface_offset + k] = interface_elements[i][k];// CHECK get domain element
-                        //mpi_interfaces_origin_side[mpi_interface_offset + k] = 
-                        //mpi_interfaces_destination[mpi_interface_offset + k] = interface_donor_elements[i][k]; // CHECK what to do here
+                        int origin_section_index = -1;
+                        for (int m = 0; m < n_sections; ++m) {
+                            if ((interface_elements[i][k] >= section_ranges[m][0]) && (interface_elements[i][k] <= section_ranges[m][1])) {
+                                origin_section_index = m;
+                                break;
+                            }
+                        }
+
+                        if (origin_section_index == -1) {
+                            std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", connectivity " << i << " contains element " << interface_elements[i][k] << " but it is not found in any mesh section. Exiting." << std::endl;
+                            exit(38);
+                        }
+
+                        // Starts to be backwards here
+                        const size_t boundary_element_index = section_start_indices[origin_section_index] + interface_elements[i][k] - section_ranges[origin_section_index][0];
+                        const size_t face_index = element_to_face[boundary_element_index][0];
+                        const size_t face_side_index = host_faces[face_index].elements_[0] == boundary_element_index;
+                        const size_t domain_element_index = host_faces[face_index].elements_[face_side_index];
+                        
+                        interfaces_origin[interface_start_index[i] + j] = donor_domain_element_index;
+                        interfaces_origin_side[interface_start_index[i] + j] = host_faces[face_index].elements_side_[face_side_index];
+
+
+                        mpi_interfaces_origin[mpi_interface_offset + k] = domain_element_index
+                        mpi_interfaces_origin_side[mpi_interface_offset + k] = host_faces[face_index].elements_side_[face_side_index];
+                        mpi_interfaces_destination[mpi_interface_offset + k] = interface_donor_elements[i][k]; // Still in local referential, will have to exchange info to know.
                     }
 
                     mpi_interface_offset += connectivity_sizes[i]
@@ -523,6 +547,8 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
             ++mpi_interface_index;
         }
     }
+
+    // Exchanging mpi interfaces destination
 
     // Transferring onto the GPU
     nodes_ = host_nodes;
