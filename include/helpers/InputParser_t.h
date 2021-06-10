@@ -16,11 +16,12 @@ namespace SEM { namespace Helpers {
 
             template<typename T>
             auto getCmdOptionOr(const std::string &option, const T &default) const -> T {
-                std::stringstream sstream(getCmdOption(option));
-                if (sstream.eof()) {
+                const std::string result = getCmdOption(option);
+                if (result.empty()) {
                     return default;
                 }
                 else {
+                    std::stringstream sstream(result);
                     T result;
                     sstream >> result;
                     return result;
