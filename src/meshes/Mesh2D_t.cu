@@ -498,7 +498,7 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
             }
             if (zone_index == i) {
                 std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", connectivity " << i << " links to zone \"" << interface_donor_elements[i][j] << " but it is not found in any mesh section. Exiting." << std::endl;
-                exit(39);
+                exit(50);
             }
 
             mpi_interfaces_process[mpi_interface_indices[i]] = zone_index;
