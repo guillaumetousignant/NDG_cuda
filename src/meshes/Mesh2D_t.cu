@@ -93,6 +93,13 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
         exit(48);
     }
 
+    // Getting all zone names
+    std::vector<std::array<char, CGIO_MAX_NAME_LENGTH>> zone_names(n_zones);
+    for (int i = 0; i < n_zones; ++i) {
+        std::array<cgsize_t, 3> temp{0, 0, 0};
+        cg_zone_read(index_file, index_base, i + 1, zone_names[i].data(), temp.data());
+    }
+
     const int index_zone = global_rank + 1;
 
     ZoneType_t zone_type = ZoneType_t::ZoneTypeNull;
@@ -410,7 +417,7 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     size_t n_interface_elements = 0;
     std::vector<size_t> interface_start_index(n_connectivity);
     for (int i = 0; i < n_connectivity; ++i) {
-        if (strncmp(zone_name, section_names[n_connectivity], CGIO_MAX_NAME_LENGTH) == 0) {
+        if (strncmp(zone_name, connectivity_donor_names[i], CGIO_MAX_NAME_LENGTH) == 0) {
             interface_start_index[i] = n_interface_elements;
             n_interface_elements += connectivity_sizes[i];
         }
@@ -420,7 +427,7 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     std::vector<size_t> interfaces_destination(n_interface_elements);
 
     for (int i = 0; i < n_connectivity; ++i) {
-        if (strncmp(zone_name, section_names[n_connectivity], CGIO_MAX_NAME_LENGTH) == 0) {
+        if (strncmp(zone_name, connectivity_donor_names[i], CGIO_MAX_NAME_LENGTH) == 0) {
             for (cgsize_t j = 0; j < connectivity_sizes[i]; ++j) {
                 int origin_section_index = -1;
                 for (int k = 0; k < n_sections; ++k) {
@@ -462,7 +469,18 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
 
     // Building MPI interfaces
     for (int i = 0; i < n_connectivity; ++i) {
-        if (strncmp(zone_name, section_names[n_connectivity], CGIO_MAX_NAME_LENGTH) != 0) {
+        if (strncmp(zone_name, connectivity_donor_names[i], CGIO_MAX_NAME_LENGTH) != 0) {
+            int zone_index = i;
+            for (int j = 0; j < n_zones; ++j) {
+                if (strncmp(connectivity_donor_names[i], zone_names[j], CGIO_MAX_NAME_LENGTH) == 0) {
+                    zone_index = j;
+                }
+            }
+            if (zone_index == i) {
+                std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", connectivity " << i << " links to zone \"" << interface_donor_elements[i][j] << " but it is not found in any mesh section. Exiting." << std::endl;
+                exit(39);
+            }
+
             
         }
     }
