@@ -63,6 +63,7 @@ namespace SEM { namespace Meshes {
             size_t global_element_offset_;
             size_t N_elements_per_process_;
             int initial_N_;
+            int maximum_N_;
             deviceFloat delta_x_min_;
             int adaptivity_interval_;
 
@@ -71,7 +72,7 @@ namespace SEM { namespace Meshes {
             cudaStream_t &stream_;
 
             auto read_su2(std::filesystem::path filename) -> void;
-            auto read_cgns(std::filesystem::path filename, int maximum_N) -> void;
+            auto read_cgns(std::filesystem::path filename) -> void;
             auto initial_conditions(const deviceFloat* polynomial_nodes) -> void;
             auto boundary_conditions() -> void;
             auto interpolate_to_boundaries(const SEM::Entities::device_vector<deviceFloat>& lagrange_interpolant_left, const SEM::Entities::device_vector<deviceFloat>& lagrange_interpolant_right) -> void;

@@ -23,14 +23,15 @@ using SEM::Entities::Face2D_t;
 constexpr int CGIO_MAX_NAME_LENGTH = 33; // Includes the null terminator
 
 SEM::Meshes::Mesh2D_t::Mesh2D_t(std::filesystem::path filename, int initial_N, int maximum_N, const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes, cudaStream_t &stream) :       
-        initial_N_(initial_N),        
+        initial_N_(initial_N),  
+        maximum_N_(maximum_N),      
         stream_(stream) {
 
     std::string extension = filename.extension().string();
     SEM::to_lower(extension);
 
     if (extension == ".cgns") {
-        read_cgns(filename, maximum_N);
+        read_cgns(filename);
     }
     else if (extension == ".su2") {
         read_su2(filename);
@@ -49,7 +50,7 @@ auto SEM::Meshes::Mesh2D_t::read_su2(std::filesystem::path filename) -> void {
     exit(15);
 }
 
-auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename, int maximum_N) -> void {
+auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     int index_file = 0;
     const int open_error = cgp_open(filename.string().c_str(), CG_MODE_READ, &index_file);
     if (open_error != CG_OK) {
@@ -609,12 +610,12 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename, int maximu
     host_delta_t_array_ = std::vector<deviceFloat>(elements_numBlocks_);
     device_delta_t_array_ = device_vector<deviceFloat>(elements_numBlocks_);
 
-    device_interfaces_p_ = device_vector<deviceFloat>(mpi_interfaces_origin.size() * maximum_N);
-    device_interfaces_u_ = device_vector<deviceFloat>(mpi_interfaces_origin.size() * maximum_N);
-    device_interfaces_v_ = device_vector<deviceFloat>(mpi_interfaces_origin.size() * maximum_N);
-    host_interfaces_p_ = std::vector<deviceFloat>(mpi_interfaces_origin.size() * maximum_N);
-    host_interfaces_u_ = std::vector<deviceFloat>(mpi_interfaces_origin.size() * maximum_N);
-    host_interfaces_v_ = std::vector<deviceFloat>(mpi_interfaces_origin.size() * maximum_N);
+    device_interfaces_p_ = device_vector<deviceFloat>(mpi_interfaces_origin.size() * maximum_N_);
+    device_interfaces_u_ = device_vector<deviceFloat>(mpi_interfaces_origin.size() * maximum_N_);
+    device_interfaces_v_ = device_vector<deviceFloat>(mpi_interfaces_origin.size() * maximum_N_);
+    host_interfaces_p_ = std::vector<deviceFloat>(mpi_interfaces_origin.size() * maximum_N_);
+    host_interfaces_u_ = std::vector<deviceFloat>(mpi_interfaces_origin.size() * maximum_N_);
+    host_interfaces_v_ = std::vector<deviceFloat>(mpi_interfaces_origin.size() * maximum_N_);
 
     allocate_element_storage<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data());
     allocate_boundary_storage<<<all_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(N_elements_, elements_.size(), elements_.data());
@@ -913,7 +914,7 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const deviceFloat* nodes, const dev
 
 auto SEM::Meshes::Mesh2D_t::boundary_conditions() -> void {
     SEM::Meshes::local_interfaces<<<interfaces_numBlocks_, boundaries_blockSize_, 0, stream_>>>(interfaces_origin_.size(), elements_.data(), interfaces_origin_.data(), interfaces_origin_side_.data(), interfaces_destination_.data());
-    SEM::Meshes::get_MPI_interfaces<<<mpi_interfaces_numBlocks_, boundaries_blockSize_, 0, stream_>>>(interfaces_origin_.size(), elements_.data(), mpi_interfaces_origin_.data(), mpi_interfaces_origin_side_.data(), maximum_N, device_interfaces_p_.data(), device_interfaces_u_.data(), device_interfaces_v_.data());
+    SEM::Meshes::get_MPI_interfaces<<<mpi_interfaces_numBlocks_, boundaries_blockSize_, 0, stream_>>>(interfaces_origin_.size(), elements_.data(), mpi_interfaces_origin_.data(), mpi_interfaces_origin_side_.data(), maximum_N_, device_interfaces_p_.data(), device_interfaces_u_.data(), device_interfaces_v_.data());
 
 
 }
