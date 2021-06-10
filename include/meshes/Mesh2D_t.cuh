@@ -30,6 +30,12 @@ namespace SEM { namespace Meshes {
             SEM::Entities::device_vector<size_t> interfaces_origin_;
             SEM::Entities::device_vector<size_t> interfaces_origin_side_;
             SEM::Entities::device_vector<size_t> interfaces_destination_;
+            SEM::Entities::device_vector<size_t> mpi_interfaces_size_;
+            SEM::Entities::device_vector<size_t> mpi_interfaces_offset_;
+            SEM::Entities::device_vector<size_t> mpi_interfaces_process_;
+            SEM::Entities::device_vector<size_t> mpi_interfaces_origin_;
+            SEM::Entities::device_vector<size_t> mpi_interfaces_origin_side_;
+            SEM::Entities::device_vector<size_t> mpi_interfaces_destination_;
             
             
 
@@ -38,10 +44,11 @@ namespace SEM { namespace Meshes {
             constexpr static int boundaries_blockSize_ = 32;
             int elements_numBlocks_;
             int faces_numBlocks_;
-            int interfaces_numBlocks_;
             int wall_boundaries_numBlocks_;
             int symmetry_boundaries_numBlocks_;
             int all_boundaries_numBlocks_;
+            int interfaces_numBlocks_;
+            int mpi_interfaces_numBlocks_;
             
             size_t N_elements_global_;
             size_t N_elements_;

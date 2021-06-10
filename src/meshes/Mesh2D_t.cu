@@ -468,7 +468,7 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     }
 
     // Building MPI interfaces
-    // These will be backwards due to how I did the element_side thing. Shouldn't affect much.
+    // These will be backwards due to how I did the element_side thing. Shouldn't affect much. If it does, just MPI transmit 
     std::vector<size_t> mpi_interface_process(n_connectivity);
     std::vector<bool> process_used_in_interface(n_zones);
     size_t n_mpi_interface_elements = 0;
@@ -529,13 +529,8 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
                         const size_t boundary_element_index = section_start_indices[origin_section_index] + interface_elements[i][k] - section_ranges[origin_section_index][0];
                         const size_t face_index = element_to_face[boundary_element_index][0];
                         const size_t face_side_index = host_faces[face_index].elements_[0] == boundary_element_index;
-                        const size_t domain_element_index = host_faces[face_index].elements_[face_side_index];
-                        
-                        interfaces_origin[interface_start_index[i] + j] = donor_domain_element_index;
-                        interfaces_origin_side[interface_start_index[i] + j] = host_faces[face_index].elements_side_[face_side_index];
 
-
-                        mpi_interfaces_origin[mpi_interface_offset + k] = domain_element_index
+                        mpi_interfaces_origin[mpi_interface_offset + k]      = host_faces[face_index].elements_[face_side_index];;
                         mpi_interfaces_origin_side[mpi_interface_offset + k] = host_faces[face_index].elements_side_[face_side_index];
                         mpi_interfaces_destination[mpi_interface_offset + k] = interface_donor_elements[i][k]; // Still in local referential, will have to exchange info to know.
                     }
@@ -549,6 +544,38 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     }
 
     // Exchanging mpi interfaces destination
+    std::vector<MPI_Request> adaptivity_requests(2 * n_mpi_interfaces);
+    std::vector<MPI_Status> adaptivity_statuses(2 * n_mpi_interfaces);
+    constexpr MPI_Datatype data_type = (sizeof(size_t) == sizeof(unsigned long long)) ? MPI_UNSIGNED_LONG_LONG : (sizeof(size_t) == sizeof(unsigned long)) ? MPI_UNSIGNED_LONG : MPI_UNSIGNED; // CHECK this is a bad way of doing this
+    std::vector<size_t> mpi_interfaces_destination_in_this_proc(n_mpi_interface_elements);
+
+    for (size_t i = 0; i < n_mpi_interfaces; ++i) {
+        MPI_Isend(mpi_interfaces_destination.data() + mpi_interfaces_offset[i], mpi_interfaces_size[i], data_type, mpi_interfaces_process[i], global_size * global_rank + mpi_interfaces_process[i], MPI_COMM_WORLD, &adaptivity_requests[n_mpi_interfaces + i]);
+        MPI_Irecv(mpi_interfaces_destination_in_this_proc.data() + mpi_interfaces_offset[i], mpi_interfaces_size[i], data_type, mpi_interfaces_process[i],  global_size * mpi_interfaces_process[i] + global_rank, MPI_COMM_WORLD, &adaptivity_requests[i]);
+    }
+
+    MPI_Waitall(n_mpi_interfaces, adaptivity_requests.data(), adaptivity_statuses.data());
+
+    for (size_t i = 0; i < n_mpi_interfaces; ++i) {
+        for (size_t j = 0; j < mpi_interfaces_size[i]; ++j) {
+            int donor_section_index = -1;
+            for (int k = 0; k < n_sections; ++k) {
+                if ((mpi_interfaces_destination_in_this_proc[mpi_interfaces_offset[i] + j] >= section_ranges[k][0]) && (mpi_interfaces_destination_in_this_proc[mpi_interfaces_offset[i] + j] <= section_ranges[k][1])) {
+                    donor_section_index = k;
+                    break;
+                }
+            }
+
+            if (donor_section_index == -1) {
+                std::cerr << "Error: Process " << mpi_interfaces_process[i] << " sent element " << mpi_interfaces_destination_in_this_proc[mpi_interfaces_offset[i] + j] << " to process " << global_rank << " but it is not found in any mesh section. Exiting." std::endl;
+                exit(51);
+            }
+
+            mpi_interfaces_destination_in_this_proc[mpi_interfaces_offset[i] + j] = section_start_indices[donor_section_index] + mpi_interfaces_destination_in_this_proc[mpi_interfaces_offset[i] + j] - section_ranges[donor_section_index][0];
+        }
+    }
+
+    MPI_Waitall(n_mpi_interfaces, adaptivity_requests.data() + n_mpi_interfaces, adaptivity_statuses.data() + n_mpi_interfaces);
 
     // Transferring onto the GPU
     nodes_ = host_nodes;
@@ -559,6 +586,12 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     interfaces_origin_ = interfaces_origin;
     interfaces_origin_side_ = interfaces_origin_side;
     interfaces_destination_ = interfaces_destination;
+    mpi_interfaces_size_ = mpi_interfaces_size;
+    mpi_interfaces_offset_ = mpi_interfaces_offset;
+    mpi_interfaces_process_ = mpi_interfaces_process;
+    mpi_interfaces_origin_ = mpi_interfaces_origin;
+    mpi_interfaces_origin_side_ = mpi_interfaces_origin_side;
+    mpi_interfaces_destination_ = mpi_interfaces_destination_in_this_proc;
 
     // Setting sizes
     N_elements_ = n_elements_domain;
@@ -568,6 +601,7 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     symmetry_boundaries_numBlocks_ = (symmetry_boundaries_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
     all_boundaries_numBlocks_ = (interfaces_origin_.size() + wall_boundaries_.size() + symmetry_boundaries_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
     interfaces_numBlocks_ = (interfaces_origin_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+    mpi_interfaces_numBlocks_ = (mpi_interfaces_origin_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
 
     host_delta_t_array_ = std::vector<deviceFloat>(elements_numBlocks_);
     device_delta_t_array_ = device_vector<deviceFloat>(elements_numBlocks_);
