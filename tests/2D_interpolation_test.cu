@@ -19,7 +19,7 @@ __device__ const std::array<Vec2<deviceFloat>, 4> points {Vec2<deviceFloat>{1, -
                                                               Vec2<deviceFloat>{-1, -1}};
 
 __global__
-auto elements_init(size_t n_elements, size_t N_interpolation_points, SEM::Entities::Element2D_t* elements, const deviceFloat* NDG_nodes, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v) -> void {
+auto elements_init(size_t n_elements, size_t N_interpolation_points, SEM::Entities::Element2D_t* elements, const deviceFloat* NDG_nodes, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v, deviceFloat* dp_dt, deviceFloat* du_dt, deviceFloat* dv_dt) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -45,7 +45,7 @@ auto elements_init(size_t n_elements, size_t N_interpolation_points, SEM::Entiti
             }
         }
 
-        element.interpolate_solution(N_interpolation_points, points, interpolation_matrices + offset_interp, x + offset_interp_2D, y + offset_interp_2D, p + offset_interp_2D, u + offset_interp_2D, v + offset_interp_2D);
+        element.interpolate_solution(N_interpolation_points, points, interpolation_matrices + offset_interp, x + offset_interp_2D, y + offset_interp_2D, p + offset_interp_2D, u + offset_interp_2D, v + offset_interp_2D, dp_dt + offset_interp_2D, du_dt + offset_interp_2D, dv_dt + offset_interp_2D);
     }
 }
 
@@ -73,8 +73,11 @@ TEST_CASE("2D interpolation test", "Checks the interpolated value of the solutio
     SEM::Entities::device_vector<deviceFloat> p(N_interpolation_points * N_interpolation_points);
     SEM::Entities::device_vector<deviceFloat> u(N_interpolation_points * N_interpolation_points);
     SEM::Entities::device_vector<deviceFloat> v(N_interpolation_points * N_interpolation_points);
+    SEM::Entities::device_vector<deviceFloat> dp_dt(N_interpolation_points * N_interpolation_points);
+    SEM::Entities::device_vector<deviceFloat> du_dt(N_interpolation_points * N_interpolation_points);
+    SEM::Entities::device_vector<deviceFloat> dv_dt(N_interpolation_points * N_interpolation_points);
 
-    elements_init<<<1, 1, 0, stream>>>(1, N_interpolation_points, device_elements.data(), NDG.nodes_.data(), NDG.interpolation_matrices_.data(), x.data(), y.data(), p.data(), u.data(), v.data());
+    elements_init<<<1, 1, 0, stream>>>(1, N_interpolation_points, device_elements.data(), NDG.nodes_.data(), NDG.interpolation_matrices_.data(), x.data(), y.data(), p.data(), u.data(), v.data(), dp_dt.data(), dp_dt.data(), dp_dt.data());
 
     std::vector<deviceFloat> x_host(N_interpolation_points * N_interpolation_points);
     std::vector<deviceFloat> y_host(N_interpolation_points * N_interpolation_points);
