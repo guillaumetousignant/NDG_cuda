@@ -20,7 +20,7 @@
 namespace SEM { namespace Meshes {
     class Mesh2D_t {
         public:
-            Mesh2D_t(std::filesystem::path filename, int initial_N, const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes, cudaStream_t &stream);
+            Mesh2D_t(std::filesystem::path filename, int initial_N, int maximum_N, const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes, cudaStream_t &stream);
 
             SEM::Entities::device_vector<SEM::Entities::Vec2<deviceFloat>> nodes_;
             SEM::Entities::device_vector<SEM::Entities::Element2D_t> elements_;
@@ -37,6 +37,13 @@ namespace SEM { namespace Meshes {
             SEM::Entities::device_vector<size_t> mpi_interfaces_origin_side_;
             SEM::Entities::device_vector<size_t> mpi_interfaces_destination_;
             SEM::Entities::device_vector<size_t> mpi_interfaces_N_;
+
+            SEM::Entities::device_vector<deviceFloat> device_interfaces_p_;
+            SEM::Entities::device_vector<deviceFloat> device_interfaces_u_;
+            SEM::Entities::device_vector<deviceFloat> device_interfaces_v_;
+            std::vector<deviceFloat> host_interfaces_p_;
+            std::vector<deviceFloat> host_interfaces_u_;
+            std::vector<deviceFloat> host_interfaces_v_;
             
             
 
@@ -64,7 +71,7 @@ namespace SEM { namespace Meshes {
             cudaStream_t &stream_;
 
             auto read_su2(std::filesystem::path filename) -> void;
-            auto read_cgns(std::filesystem::path filename) -> void;
+            auto read_cgns(std::filesystem::path filename, int maximum_N) -> void;
             auto initial_conditions(const deviceFloat* polynomial_nodes) -> void;
             auto boundary_conditions() -> void;
             auto interpolate_to_boundaries(const SEM::Entities::device_vector<deviceFloat>& lagrange_interpolant_left, const SEM::Entities::device_vector<deviceFloat>& lagrange_interpolant_right) -> void;
@@ -143,7 +150,7 @@ namespace SEM { namespace Meshes {
     void local_interfaces(size_t N_local_interfaces, SEM::Entities::Element2D_t* elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_origin_side, const size_t* local_interfaces_destination);
 
     __global__
-    void MPI_interfaces(size_t N_local_interfaces, SEM::Entities::Element2D_t* elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_origin_side, const size_t* local_interfaces_destination);
+    void get_MPI_interfaces(size_t N_MPI_interfaces, const SEM::Entities::Element2D_t* elements, const size_t* MPI_interfaces_origin, const size_t* MPI_interfaces_origin_side, int maximum_N, deviceFloat* p_, deviceFloat* u_, deviceFloat* v_);
 }}
 
 #endif
