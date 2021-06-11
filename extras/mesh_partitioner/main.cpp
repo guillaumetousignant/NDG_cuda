@@ -559,7 +559,7 @@ auto main(int argc, char* argv[]) -> int {
                     else {
                         int section_index = -1;
                         for (int k = 0; k < n_sections; ++k) {
-                            if (element_index >= section_ranges[k][0] && element_index <= section_ranges[k][1]) {
+                            if (element_index + 1 >= section_ranges[k][0] && element_index + 1 <= section_ranges[k][1]) {
                                 section_index = k;
                                 break;
                             }
@@ -569,7 +569,7 @@ auto main(int argc, char* argv[]) -> int {
                             exit(52);
                         }
 
-                        const cgsize_t element_section_index = element_index - section_ranges[section_index][0];
+                        const cgsize_t element_section_index = element_index + 1 - section_ranges[section_index][0];
                         const cgsize_t new_element_index = new_boundary_indices[section_index][element_section_index];
                         if (new_element_index != 0) {
                             const cgsize_t boundary_element_index = new_element_index - boundaries_start_index[section_index];
@@ -586,8 +586,8 @@ auto main(int argc, char* argv[]) -> int {
 
                 // Nothing to do fot this one I'm afraid.
                 for (cgsize_t connectivity_index = 0; connectivity_index < 2 * n_connectivity_elements; ++connectivity_index) {
-                    if (connectivity_elements[2 * connectivity_index] == node_index + 1) {
-                        connectivity_elements[2 * connectivity_index] = xy_in_proc[0].size();
+                    if (connectivity_elements[connectivity_index] == node_index + 1) {
+                        connectivity_elements[connectivity_index] = xy_in_proc[0].size();
                     }
                 }
             }
