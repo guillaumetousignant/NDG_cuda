@@ -15,17 +15,15 @@ namespace SEM { namespace Helpers {
             auto cmdOptionExists(const std::string &option) const -> bool;
 
             template<typename T>
-            auto getCmdOptionOr(const std::string &option, const T &default) const -> T {
-                const std::string result = getCmdOption(option);
-                if (result.empty()) {
-                    return default;
+            auto getCmdOptionOr(const std::string &option, const T &default_value) const -> T {
+                auto itr = std::find(tokens_.begin(), tokens_.end(), option);
+                if (itr != tokens_.end() && ++itr != tokens_.end()){
+                    std::stringstream sstream(*itr);
+                    T result_value;
+                    sstream >> result_value;
+                    return result_value;
                 }
-                else {
-                    std::stringstream sstream(result);
-                    T result;
-                    sstream >> result;
-                    return result;
-                }
+                return default_value;
             }
 
         private:
