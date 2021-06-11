@@ -457,9 +457,11 @@ auto main(int argc, char* argv[]) -> int {
             }
         }
         std::vector<cgsize_t> n_boundaries_in_proc(n_sections);
+        std::vector<cgsize_t> boundaries_start_index(n_sections);
         cgsize_t n_total_boundaries_in_proc = 0;
         for (int k = 0; k < n_sections; ++k) {
             if (!section_is_domain[k]) {
+                boundaries_start_index[k] = N_elements[i] + n_total_boundaries_in_proc;
                 for (cgsize_t j = 0; j < section_ranges[k][1] - section_ranges[k][0] + 1; ++j) {
                     if (new_boundary_indices[k][j]) {
                         new_boundary_indices[k][j] = N_elements[i] + n_total_boundaries_in_proc;
@@ -543,30 +545,49 @@ auto main(int argc, char* argv[]) -> int {
                 xy_in_proc[0].push_back(xy[0][node_index]);
                 xy_in_proc[1].push_back(xy[1][node_index]);
 
-                // Replacing point indices
-                for (cgsize_t element_index = 0; element_index < N_elements[i]; ++element_index) {
-                    for (cgsize_t side_index = 0; side_index < 4; ++side_index) {
-                        if (elements_in_proc[4 * element_index + side_index] == node_index + 1) {
-                            elements_in_proc[4 * element_index + side_index] = xy_in_proc[0].size();
+                // Replacing point indices CHECK do with node_to_elem
+                for (auto element_index : node_to_element[node_index]) {
+                    if (element_index < n_elements_domain ) {
+                        if (element_index >= starting_elements[i] && element_index < starting_elements[i] + N_elements[i]) {
+                            for (cgsize_t side_index = 0; side_index < 4; ++side_index) {
+                                if (elements_in_proc[4 * (element_index - starting_elements[i]) + side_index] == node_index + 1) {
+                                    elements_in_proc[4 * (element_index - starting_elements[i]) + side_index] = xy_in_proc[0].size();
+                                }
+                            }
+                        }
+                    }
+                    else {
+                        int section_index = -1;
+                        for (int k = 0; k < n_sections; ++k) {
+                            if (element_index >= section_ranges[k][0] && element_index <= section_ranges[k][1]) {
+                                section_index = k;
+                                break;
+                            }
+                        }
+                        if (section_index == -1) {
+                            std::cerr << "Error: CGNS mesh, base " << index_in_base << ", zone " << index_in_zone << ", node to elements of point " << node_index << " contains element " << element_index << " but it is not found in any mesh section. Exiting." << std::endl;
+                            exit(52);
+                        }
+
+                        const cgsize_t element_section_index = element_index - section_ranges[section_index][0];
+                        const cgsize_t new_element_index = new_boundary_indices[section_index][element_section_index];
+                        if (new_element_index != 0) {
+                            const cgsize_t boundary_element_index = new_element_index - boundaries_start_index[section_index];
+
+                            if (boundaries_in_proc[section_index][2 * boundary_element_index] == node_index + 1) {
+                                boundaries_in_proc[section_index][2 * boundary_element_index] = xy_in_proc[0].size();
+                            }
+                            if (boundaries_in_proc[section_index][2 * boundary_element_index + 1] == node_index + 1) {
+                                boundaries_in_proc[section_index][2 * boundary_element_index + 1] = xy_in_proc[0].size();
+                            }
                         }
                     }
                 }
-                for (int k = 0; k < n_sections; ++k) {
-                    for (cgsize_t boundary_index = 0; boundary_index < n_boundaries_in_proc[k]; ++boundary_index) {
-                        if (boundaries_in_proc[k][2 * boundary_index] == node_index + 1) {
-                            boundaries_in_proc[k][2 * boundary_index] = xy_in_proc[0].size();
-                        }
-                        if (boundaries_in_proc[k][2 * boundary_index + 1] == node_index + 1) {
-                            boundaries_in_proc[k][2 * boundary_index + 1] = xy_in_proc[0].size();
-                        }
-                    }
-                }
-                for (cgsize_t connectivity_index = 0; connectivity_index < n_connectivity_elements; ++connectivity_index) {
+
+                // Nothing to do fot this one I'm afraid.
+                for (cgsize_t connectivity_index = 0; connectivity_index < 2 * n_connectivity_elements; ++connectivity_index) {
                     if (connectivity_elements[2 * connectivity_index] == node_index + 1) {
                         connectivity_elements[2 * connectivity_index] = xy_in_proc[0].size();
-                    }
-                    if (connectivity_elements[2 * connectivity_index + 1] == node_index + 1) {
-                        connectivity_elements[2 * connectivity_index + 1] = xy_in_proc[0].size();
                     }
                 }
             }
@@ -656,7 +677,7 @@ auto main(int argc, char* argv[]) -> int {
                     }
                 }
                 if (section_index == -1) {
-                    std::cerr << "Error: CGNS mesh, base " << index_in_base << ", zone " << index_in_zone << ", boundary " << i << " contains element " << boundary_elements[i][j] << " but it is not found in any mesh section. Exiting." << std::endl;
+                    std::cerr << "Error: CGNS mesh, base " << index_in_base << ", zone " << index_in_zone << ", boundary " << index_boundary << " contains element " << boundary_elements[index_boundary][j] << " but it is not found in any mesh section. Exiting." << std::endl;
                     exit(45);
                 }
 
