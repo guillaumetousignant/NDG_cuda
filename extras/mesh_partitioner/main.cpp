@@ -627,7 +627,7 @@ auto main(int argc, char* argv[]) -> int {
 
                     int index_out_section = 0;
                     domain_index_end += n_elements_from_this_section;
-                    const cgsize_t n_boundary_elem = 0; // No boundaries yet
+                    const cgsize_t n_boundary_elem = 0; // No boundary elements yet
                     cg_section_write(index_out_file, index_out_base, index_out_zone[i], section_names[k].data(), ElementType_t::QUAD_4, domain_index_start + 1, domain_index_end, n_boundary_elem, elements_in_proc.data() + element_index - starting_elements[i], &index_out_section);
                     domain_index_start = domain_index_end;
 
@@ -650,7 +650,8 @@ auto main(int argc, char* argv[]) -> int {
                 if (n_boundaries_in_proc[k] > 0) {
                     boundary_index_end += n_boundaries_in_proc[k];
                     int index_out_section = 0;
-                    cg_section_write(index_out_file, index_out_base, index_out_zone[i], section_names[k].data(), ElementType_t::BAR_2, boundary_index_start + 1, boundary_index_end, n_boundaries_in_proc[k], boundaries_in_proc[k].data(), &index_out_section);
+                    const cgsize_t n_boundary_elem = 0; // No boundary elements yet
+                    cg_section_write(index_out_file, index_out_base, index_out_zone[i], section_names[k].data(), ElementType_t::BAR_2, boundary_index_start + 1, boundary_index_end, n_boundary_elem, boundaries_in_proc[k].data(), &index_out_section);
                     boundary_index_start = boundary_index_end;
                 }
             }
@@ -662,7 +663,8 @@ auto main(int argc, char* argv[]) -> int {
             const cgsize_t connectivity_index_start = boundary_index_end;
             const cgsize_t connectivity_index_end = connectivity_index_start + n_connectivity_elements;
             int connectivity_out_section = 0;
-            cg_section_write(index_out_file, index_out_base, index_out_zone[i], connectivity_elements_name.c_str(), ElementType_t::BAR_2, connectivity_index_start + 1, connectivity_index_end, n_connectivity_elements, connectivity_elements.data(), &connectivity_out_section);
+            const cgsize_t n_boundary_elem = 0; // No boundary elements yet
+            cg_section_write(index_out_file, index_out_base, index_out_zone[i], connectivity_elements_name.c_str(), ElementType_t::BAR_2, connectivity_index_start + 1, connectivity_index_end, n_boundary_elem, connectivity_elements.data(), &connectivity_out_section);
         }
 
         // Finding which elements are boundary condition elements
