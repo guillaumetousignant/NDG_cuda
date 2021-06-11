@@ -475,7 +475,7 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     size_t n_mpi_interface_elements = 0;
     for (int i = 0; i < n_connectivity; ++i) {
         if (strncmp(zone_name.data(), connectivity_donor_names[i].data(), CGIO_MAX_NAME_LENGTH) != 0) {
-            mpi_interface_process[i] = i;
+            mpi_interface_process[i] = global_rank;
             for (int j = 0; j < n_zones; ++j) {
                 if (strncmp(connectivity_donor_names[i].data(), zone_names[j].data(), CGIO_MAX_NAME_LENGTH) == 0) {
                     mpi_interface_process[i] = j;
@@ -483,7 +483,7 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
                     break;
                 }
             }
-            if (mpi_interface_process[i] == i) {
+            if (mpi_interface_process[i] == global_rank) {
                 std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", connectivity " << i << " links to zone \"" << connectivity_donor_names[i].data() << "\" but it is not found in any mesh section. Exiting." << std::endl;
                 exit(50);
             }
