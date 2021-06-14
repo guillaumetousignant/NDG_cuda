@@ -144,12 +144,12 @@ auto main(int argc, char* argv[]) -> int {
 
     std::vector<int> local_ranks(global_size);
     MPI_Allgather(&local_rank, 1, MPI_INT, local_ranks.data(), 1, MPI_INT, MPI_COMM_WORLD);
-    int node_rank = 0;
+    int node_rank = -1;
     int node_size = 0;
     for (int i = 0; i < global_size; ++i) {
         if (local_ranks[i] == 0) {
             ++node_size;
-            if (i < global_rank) {
+            if (i <= global_rank) {
                 ++node_rank;
             }
         }
@@ -198,7 +198,7 @@ auto main(int argc, char* argv[]) -> int {
 
     cudaStream_t stream;
     cudaStreamCreate(&stream); 
-    std::cout << "Process with global id " << global_rank << "/" << global_size << " on node " << node_rank << "/" << node_size << " and local id " << local_rank << "/" << local_size << " picked GPU " << device << "/" << deviceCount << " with stream " << device_rank << "/" << device_size << "." << std::endl;
+    std::cout << "Process with global id " << global_rank + 1 << "/" << global_size << " on node " << node_rank + 1 << "/" << node_size << " and local id " << local_rank + 1 << "/" << local_size << " picked GPU " << device + 1 << "/" << deviceCount << " with stream " << device_rank + 1 << "/" << device_size << "." << std::endl;
 
     if (global_rank == 0) {
         std::cout << "CFL is: " << CFL << std::endl;
