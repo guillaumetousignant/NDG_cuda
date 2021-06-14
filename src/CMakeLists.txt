@@ -41,7 +41,8 @@ find_package(VTK COMPONENTS
                     CommonCore
                     FiltersCore
                     FiltersSources
-                    IOParallelXML)
+                    IOParallelXML
+                    ParallelMPI)
 
 target_link_libraries(SEM PUBLIC 
                         ${VTK_LIBRARIES})

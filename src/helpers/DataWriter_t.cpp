@@ -3,7 +3,6 @@
 #include <array>
 #include <fstream>
 #include <mpi.h>
-#include <vtkNew.h>
 #include <vtkDoubleArray.h>
 #include <vtkPoints.h>
 #include <vtkPointData.h>
@@ -13,10 +12,16 @@
 namespace fs = std::filesystem;
 using json = nlohmann::json;
 
-SEM::Helpers::DataWriter_t::DataWriter_t (fs::path output_filename) : filename_(output_filename) {
-    series_filename_ = filename_;
-    series_filename_+= ".series";
+SEM::Helpers::DataWriter_t::DataWriter_t(fs::path output_filename) : 
+        directory_(output_filename.parent_path()),
+        filename_(output_filename.stem().string()),
+        extension_(output_filename.extension().string()) {
+
+    series_filename_ = output_filename;
+    series_filename_ += ".series";
     create_time_series_file();
+
+    mpi_controller_->Initialize(nullptr, nullptr, 1);
 }
 
 auto SEM::Helpers::DataWriter_t::write_data(size_t N_interpolation_points, 
@@ -32,10 +37,6 @@ auto SEM::Helpers::DataWriter_t::write_data(size_t N_interpolation_points,
                                             const std::vector<deviceFloat>& dp_dt, 
                                             const std::vector<deviceFloat>& du_dt, 
                                             const std::vector<deviceFloat>& dv_dt) const -> void {
-    int global_rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
-    int global_size;
-    MPI_Comm_size(MPI_COMM_WORLD, &global_size);
 
     // Creating points
     vtkNew<vtkPoints> points; // Should bt vtkPoints2D, but unstructured meshes can't take 2D points.
@@ -177,16 +178,17 @@ auto SEM::Helpers::DataWriter_t::write_data(size_t N_interpolation_points,
     std::string time_string = ss.str();
     std::replace(time_string.begin(), time_string.end(), '.', '_');
     std::stringstream ss2;
-    ss2 << filename_.stem().string() << time_string << filename_.extension().string();
-    const fs::path output_filename = filename_.parent_path() / ss2.str(); // It would be better to store all timesteps in the same file
+    ss2 << filename_ << time_string << extension_;
+    const fs::path output_filename = directory_ / ss2.str();
 
     // Writing to the file
     vtkNew<vtkXMLPUnstructuredGridWriter> writer;
+    writer->SetController(mpi_controller_);
     writer->SetInputData(grid);
     writer->SetFileName(output_filename.string().c_str());
-    writer->SetNumberOfPieces(global_size);
-    writer->SetStartPiece(0);
-    writer->SetEndPiece(global_size - 1);
+    writer->SetNumberOfPieces(mpi_controller_->GetNumberOfProcesses());
+    writer->SetStartPiece(mpi_controller_->GetLocalProcessId());
+    writer->SetEndPiece(mpi_controller_->GetLocalProcessId());
     writer->Update();
 
     add_time_series_to_file(ss2.str(), time);
