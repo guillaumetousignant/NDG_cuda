@@ -5,7 +5,7 @@
 #include "functions/Utilities.h"
 #include "functions/quad_map.cuh"
 #include "functions/quad_metrics.cuh"
-#include "pcgnslib.h"
+#include "cgnslib.h"
 #include <iostream>
 #include <fstream>
 #include <sstream> 
@@ -52,7 +52,7 @@ auto SEM::Meshes::Mesh2D_t::read_su2(std::filesystem::path filename) -> void {
 
 auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     int index_file = 0;
-    const int open_error = cgp_open(filename.string().c_str(), CG_MODE_READ, &index_file);
+    const int open_error = cg_open(filename.string().c_str(), CG_MODE_READ, &index_file);
     if (open_error != CG_OK) {
         std::cerr << "Error: file '" << filename << "' could not be opened with error '" << cg_get_error() << "'. Exiting." << std::endl;
         exit(16);
@@ -268,7 +268,7 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
         cg_boco_read(index_file, index_base, index_zone, index_boundary, boundary_elements[index_boundary - 1].data(), boundary_normals[index_boundary - 1].data());
     }
 
-    const int close_error = cgp_close(index_file);
+    const int close_error = cg_close(index_file);
     if (close_error != CG_OK) {
         std::cerr << "Error: file '" << filename << "' could not be closed with error '" << cg_get_error() << "'. Exiting." << std::endl;
         exit(44);
