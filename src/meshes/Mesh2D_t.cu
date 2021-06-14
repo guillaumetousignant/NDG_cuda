@@ -424,8 +424,8 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
         }
     }
     std::vector<size_t> interfaces_origin(n_interface_elements);
-    std::vector<size_t> interfaces_origin_side_(n_interface_elements);
-    std::vector<size_t> interfaces_destination_(n_interface_elements);
+    std::vector<size_t> interfaces_origin_side(n_interface_elements);
+    std::vector<size_t> interfaces_destination(n_interface_elements);
 
     for (int i = 0; i < n_connectivity; ++i) {
         if (strncmp(zone_name.data(), connectivity_donor_names[i].data(), CGIO_MAX_NAME_LENGTH) == 0) {
@@ -462,15 +462,15 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
                 const size_t donor_domain_element_index = host_faces[face_index].elements_[face_side_index];
                 
                 interfaces_origin[interface_start_index[i] + j] = donor_domain_element_index;
-                interfaces_origin_side_[interface_start_index[i] + j] = host_faces[face_index].elements_side_[face_side_index];
-                interfaces_destination_[interface_start_index[i] + j] = section_start_indices[origin_section_index] + interface_elements[i][j] - section_ranges[origin_section_index][0];
+                interfaces_origin_side[interface_start_index[i] + j] = host_faces[face_index].elements_side_[face_side_index];
+                interfaces_destination[interface_start_index[i] + j] = section_start_indices[origin_section_index] + interface_elements[i][j] - section_ranges[origin_section_index][0];
             }
         }
     }
 
     // Building MPI interfaces
     // These will be backwards due to how I did the element_side thing. Shouldn't affect much. If it does, just MPI transmit 
-    std::vector<size_t> mpi_interface_process(n_connectivity);
+    std::vector<size_t> mpi_interface_process(n_connectivity, global_rank);
     std::vector<bool> process_used_in_interface(n_zones);
     size_t n_mpi_interface_elements = 0;
     for (int i = 0; i < n_connectivity; ++i) {
@@ -497,8 +497,8 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     }
 
     std::vector<size_t> mpi_interfaces_size_(n_mpi_interfaces);
-    std::vector<size_t> mpi_interfaces_offset(n_mpi_interfaces);
-    std::vector<size_t> mpi_interfaces_process(n_mpi_interfaces);
+    std::vector<size_t> mpi_interfaces_offset_(n_mpi_interfaces);
+    std::vector<size_t> mpi_interfaces_process_(n_mpi_interfaces);
     std::vector<size_t> mpi_interfaces_origin(n_mpi_interface_elements);
     std::vector<size_t> mpi_interfaces_origin_side(n_mpi_interface_elements);
     std::vector<size_t> mpi_interfaces_destination(n_mpi_interface_elements);
@@ -507,8 +507,8 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     size_t mpi_interface_index = 0;
     for (int j = 0; j < n_zones; ++j) {
         if (process_used_in_interface[j]) {
-            mpi_interfaces_offset[mpi_interface_index] = mpi_interface_offset;
-            mpi_interfaces_process[mpi_interface_index] = j;
+            mpi_interfaces_offset_[mpi_interface_index] = mpi_interface_offset;
+            mpi_interfaces_process_[mpi_interface_index] = j;
             for (int i = 0; i < n_connectivity; ++i) {
                 if (mpi_interface_process[i] == j) {
                     mpi_interfaces_size_[mpi_interface_index] += connectivity_sizes[i];
@@ -551,8 +551,8 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     std::vector<size_t> mpi_interfaces_destination_in_this_proc(n_mpi_interface_elements);
 
     for (size_t i = 0; i < n_mpi_interfaces; ++i) {
-        MPI_Isend(mpi_interfaces_destination.data() + mpi_interfaces_offset[i], mpi_interfaces_size_[i], data_type, mpi_interfaces_process[i], global_size * global_rank + mpi_interfaces_process[i], MPI_COMM_WORLD, &adaptivity_requests[n_mpi_interfaces + i]);
-        MPI_Irecv(mpi_interfaces_destination_in_this_proc.data() + mpi_interfaces_offset[i], mpi_interfaces_size_[i], data_type, mpi_interfaces_process[i],  global_size * mpi_interfaces_process[i] + global_rank, MPI_COMM_WORLD, &adaptivity_requests[i]);
+        MPI_Isend(mpi_interfaces_destination.data() + mpi_interfaces_offset_[i], mpi_interfaces_size_[i], data_type, mpi_interfaces_process_[i], global_size * global_rank + mpi_interfaces_process_[i], MPI_COMM_WORLD, &adaptivity_requests[n_mpi_interfaces + i]);
+        MPI_Irecv(mpi_interfaces_destination_in_this_proc.data() + mpi_interfaces_offset_[i], mpi_interfaces_size_[i], data_type, mpi_interfaces_process_[i],  global_size * mpi_interfaces_process_[i] + global_rank, MPI_COMM_WORLD, &adaptivity_requests[i]);
     }
 
     MPI_Waitall(n_mpi_interfaces, adaptivity_requests.data(), adaptivity_statuses.data());
@@ -561,18 +561,18 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
         for (size_t j = 0; j < mpi_interfaces_size_[i]; ++j) {
             int donor_section_index = -1;
             for (int k = 0; k < n_sections; ++k) {
-                if ((mpi_interfaces_destination_in_this_proc[mpi_interfaces_offset[i] + j] >= section_ranges[k][0]) && (mpi_interfaces_destination_in_this_proc[mpi_interfaces_offset[i] + j] <= section_ranges[k][1])) {
+                if ((mpi_interfaces_destination_in_this_proc[mpi_interfaces_offset_[i] + j] >= section_ranges[k][0]) && (mpi_interfaces_destination_in_this_proc[mpi_interfaces_offset_[i] + j] <= section_ranges[k][1])) {
                     donor_section_index = k;
                     break;
                 }
             }
 
             if (donor_section_index == -1) {
-                std::cerr << "Error: Process " << mpi_interfaces_process[i] << " sent element " << mpi_interfaces_destination_in_this_proc[mpi_interfaces_offset[i] + j] << " to process " << global_rank << " but it is not found in any mesh section. Exiting." << std::endl;
+                std::cerr << "Error: Process " << mpi_interfaces_process_[i] << " sent element " << mpi_interfaces_destination_in_this_proc[mpi_interfaces_offset_[i] + j] << " to process " << global_rank << " but it is not found in any mesh section. Exiting." << std::endl;
                 exit(51);
             }
 
-            mpi_interfaces_destination_in_this_proc[mpi_interfaces_offset[i] + j] = section_start_indices[donor_section_index] + mpi_interfaces_destination_in_this_proc[mpi_interfaces_offset[i] + j] - section_ranges[donor_section_index][0];
+            mpi_interfaces_destination_in_this_proc[mpi_interfaces_offset_[i] + j] = section_start_indices[donor_section_index] + mpi_interfaces_destination_in_this_proc[mpi_interfaces_offset_[i] + j] - section_ranges[donor_section_index][0];
         }
     }
 
@@ -585,8 +585,8 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     wall_boundaries_ = wall_boundaries;
     symmetry_boundaries_ = symmetry_boundaries;
     interfaces_origin_ = interfaces_origin;
-    mpi_interfaces_offset_ = mpi_interfaces_offset;
-    mpi_interfaces_process_ = mpi_interfaces_process;
+    interfaces_origin_side_ = interfaces_origin_side;
+    interfaces_destination_ = interfaces_destination;
     mpi_interfaces_origin_ = mpi_interfaces_origin;
     mpi_interfaces_origin_side_ = mpi_interfaces_origin_side;
     mpi_interfaces_destination_ = mpi_interfaces_destination_in_this_proc;
