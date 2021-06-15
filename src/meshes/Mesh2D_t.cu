@@ -496,9 +496,9 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
         n_mpi_interfaces += process_used_in_interface[j];
     }
 
-    std::vector<size_t> mpi_interfaces_size_(n_mpi_interfaces);
-    std::vector<size_t> mpi_interfaces_offset_(n_mpi_interfaces);
-    std::vector<size_t> mpi_interfaces_process_(n_mpi_interfaces);
+    mpi_interfaces_size_ = std::vector<size_t>(n_mpi_interfaces);
+    mpi_interfaces_offset_ = std::vector<size_t>(n_mpi_interfaces);
+    mpi_interfaces_process_ = std::vector<size_t>(n_mpi_interfaces);
     std::vector<size_t> mpi_interfaces_origin(n_mpi_interface_elements);
     std::vector<size_t> mpi_interfaces_origin_side(n_mpi_interface_elements);
     std::vector<size_t> mpi_interfaces_destination(n_mpi_interface_elements);
@@ -604,15 +604,15 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     host_delta_t_array_ = std::vector<deviceFloat>(elements_numBlocks_);
     device_delta_t_array_ = device_vector<deviceFloat>(elements_numBlocks_);
 
-    device_interfaces_p_ = device_vector<deviceFloat>(mpi_interfaces_origin.size() * maximum_N_);
-    device_interfaces_u_ = device_vector<deviceFloat>(mpi_interfaces_origin.size() * maximum_N_);
-    device_interfaces_v_ = device_vector<deviceFloat>(mpi_interfaces_origin.size() * maximum_N_);
-    host_interfaces_p_ = std::vector<deviceFloat>(mpi_interfaces_origin.size() * maximum_N_);
-    host_interfaces_u_ = std::vector<deviceFloat>(mpi_interfaces_origin.size() * maximum_N_);
-    host_interfaces_v_ = std::vector<deviceFloat>(mpi_interfaces_origin.size() * maximum_N_);
-    host_receiving_interfaces_p_ = std::vector<deviceFloat>(mpi_interfaces_origin.size() * maximum_N_);
-    host_receiving_interfaces_u_ = std::vector<deviceFloat>(mpi_interfaces_origin.size() * maximum_N_);
-    host_receiving_interfaces_v_ = std::vector<deviceFloat>(mpi_interfaces_origin.size() * maximum_N_);
+    device_interfaces_p_ = device_vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
+    device_interfaces_u_ = device_vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
+    device_interfaces_v_ = device_vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
+    host_interfaces_p_ = std::vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
+    host_interfaces_u_ = std::vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
+    host_interfaces_v_ = std::vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
+    host_receiving_interfaces_p_ = std::vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
+    host_receiving_interfaces_u_ = std::vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
+    host_receiving_interfaces_v_ = std::vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
 
     requests_ = std::vector<MPI_Request>(n_mpi_interfaces * 6);
     statuses_ = std::vector<MPI_Status>(n_mpi_interfaces * 6);
@@ -915,7 +915,7 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const deviceFloat* nodes, const dev
 auto SEM::Meshes::Mesh2D_t::boundary_conditions() -> void {
     SEM::Meshes::local_interfaces<<<interfaces_numBlocks_, boundaries_blockSize_, 0, stream_>>>(interfaces_origin_.size(), elements_.data(), interfaces_origin_.data(), interfaces_origin_side_.data(), interfaces_destination_.data());
     
-    SEM::Meshes::get_MPI_interfaces<<<mpi_interfaces_numBlocks_, boundaries_blockSize_, 0, stream_>>>(interfaces_origin_.size(), elements_.data(), mpi_interfaces_origin_.data(), mpi_interfaces_origin_side_.data(), maximum_N_, device_interfaces_p_.data(), device_interfaces_u_.data(), device_interfaces_v_.data());
+    SEM::Meshes::get_MPI_interfaces<<<mpi_interfaces_numBlocks_, boundaries_blockSize_, 0, stream_>>>(mpi_interfaces_origin_.size(), elements_.data(), mpi_interfaces_origin_.data(), mpi_interfaces_origin_side_.data(), maximum_N_, device_interfaces_p_.data(), device_interfaces_u_.data(), device_interfaces_v_.data());
 
     device_interfaces_p_.copy_to(host_interfaces_p_);
     device_interfaces_u_.copy_to(host_interfaces_u_);
