@@ -1272,8 +1272,8 @@ auto SEM::Meshes::put_MPI_interfaces(size_t N_MPI_interface_elements, Element2D_
 
         for (int k = 0; k <= destination_element.N_; ++k) {
             destination_element.p_extrapolated_[0][k] = p_[boundary_offset + k];
-            destination_element.u_extrapolated_[0][k] = p_[boundary_offset + k];
-            destination_element.v_extrapolated_[0][k] = p_[boundary_offset + k];
+            destination_element.u_extrapolated_[0][k] = u_[boundary_offset + k];
+            destination_element.v_extrapolated_[0][k] = v_[boundary_offset + k];
         }
     }
 }
