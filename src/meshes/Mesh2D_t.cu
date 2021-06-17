@@ -901,7 +901,7 @@ auto SEM::Meshes::Mesh2D_t::write_data(deviceFloat time, size_t N_interpolation_
 
 __host__ __device__
 auto SEM::Meshes::Mesh2D_t::g(Vec2<deviceFloat> xy, deviceFloat t) -> std::array<deviceFloat, 3> {    
-    const deviceFloat p = std::exp(-std::pow(SEM::Constants::k.x() * (xy.x() - SEM::Constants::xy0.x()) + SEM::Constants::k.y() * (xy.y() - SEM::Constants::xy0.y()) - SEM::Constants::c * t, 2) / (SEM::Constants::d * SEM::Constants::d));
+    const deviceFloat p = std::exp(-(SEM::Constants::k.x() * (xy.x() - SEM::Constants::xy0.x()) + SEM::Constants::k.y() * (xy.y() - SEM::Constants::xy0.y()) * (SEM::Constants::k.x() * (xy.x() - SEM::Constants::xy0.x()) + SEM::Constants::k.y() * (xy.y() - SEM::Constants::xy0.y()) - SEM::Constants::c * t, 2) - SEM::Constants::c * t, 2) / (SEM::Constants::d * SEM::Constants::d));
 
     return {p,
             p * SEM::Constants::k.x() / SEM::Constants::c,
@@ -1015,10 +1015,10 @@ auto SEM::Meshes::compute_element_geometry(size_t n_elements, Element2D_t* eleme
             const std::array<Vec2<deviceFloat>, 2> metrics_top    = SEM::quad_metrics(coordinates_top, points);
             const std::array<Vec2<deviceFloat>, 2> metrics_left   = SEM::quad_metrics(coordinates_left, points);
 
-            element.scaling_factor_[0][i] = std::sqrt(std::pow(metrics_bottom[0].x(), 2) + std::pow(metrics_bottom[1].x(), 2));
-            element.scaling_factor_[1][i] = std::sqrt(std::pow(metrics_right[0].y(), 2) + std::pow(metrics_right[1].y(), 2));
-            element.scaling_factor_[2][i] = std::sqrt(std::pow(metrics_top[0].x(), 2) + std::pow(metrics_top[1].x(), 2));
-            element.scaling_factor_[3][i] = std::sqrt(std::pow(metrics_left[0].y(), 2) + std::pow(metrics_left[1].y(), 2));
+            element.scaling_factor_[0][i] = std::sqrt(metrics_bottom[0].x() * metrics_bottom[0].x() + metrics_bottom[1].x() * metrics_bottom[1].x());
+            element.scaling_factor_[1][i] = std::sqrt(metrics_right[0].y() * metrics_right[0].y() + metrics_right[1].y() * metrics_right[1].y());
+            element.scaling_factor_[2][i] = std::sqrt(metrics_top[0].x() * metrics_top[0].x() + metrics_top[1].x() * metrics_top[1].x());
+            element.scaling_factor_[3][i] = std::sqrt(metrics_left[0].y() * metrics_left[0].y() + metrics_left[1].y() * metrics_left[1].y());
         }    
     }
 }
