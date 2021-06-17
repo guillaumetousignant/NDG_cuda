@@ -56,7 +56,7 @@ namespace SEM { namespace Meshes {
             int faces_numBlocks_;
             int wall_boundaries_numBlocks_;
             int symmetry_boundaries_numBlocks_;
-            int all_boundaries_numBlocks_;
+            int ghosts_numBlocks_;
             int interfaces_numBlocks_;
             int mpi_interfaces_numBlocks_;
             
