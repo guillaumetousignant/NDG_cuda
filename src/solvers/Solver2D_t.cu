@@ -5,6 +5,7 @@
 #include "helpers/constants.h"
 #include <mpi.h>
 #include <limits>
+#include <sstream>
 
 using SEM::Entities::device_vector;
 using SEM::Entities::Vec2;
