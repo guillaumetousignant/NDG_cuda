@@ -903,7 +903,7 @@ auto SEM::Meshes::Mesh2D_t::write_data(deviceFloat time, size_t N_interpolation_
 
 __host__ __device__
 auto SEM::Meshes::Mesh2D_t::g(Vec2<deviceFloat> xy, deviceFloat t) -> std::array<deviceFloat, 3> {    
-    const deviceFloat p = std::exp(-(SEM::Constants::k.x() * (xy.x() - SEM::Constants::xy0.x()) + SEM::Constants::k.y() * (xy.y() - SEM::Constants::xy0.y()) * (SEM::Constants::k.x() * (xy.x() - SEM::Constants::xy0.x()) + SEM::Constants::k.y() * (xy.y() - SEM::Constants::xy0.y()) - SEM::Constants::c * t, 2) - SEM::Constants::c * t, 2) / (SEM::Constants::d * SEM::Constants::d));
+    const deviceFloat p = std::exp(-(SEM::Constants::k.x() * (xy.x() - SEM::Constants::xy0.x()) + SEM::Constants::k.y() * (xy.y() - SEM::Constants::xy0.y()) - SEM::Constants::c * t) * (SEM::Constants::k.x() * (xy.x() - SEM::Constants::xy0.x()) + SEM::Constants::k.y() * (xy.y() - SEM::Constants::xy0.y()) - SEM::Constants::c * t) / (SEM::Constants::d * SEM::Constants::d));
 
     return {p,
             p * SEM::Constants::k.x() / SEM::Constants::c,
