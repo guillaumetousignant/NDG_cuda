@@ -103,6 +103,7 @@ auto main(int argc, char* argv[]) -> int {
         std::cout << '\t' <<  "--t"                   <<  '\t' <<  "End time of the simulation. Defaults to [1]" << std::endl;
         std::cout << '\t' <<  "--n_t"                 <<  '\t' <<  "Number of times to output. Defaults to [11]" << std::endl;
         std::cout << '\t' <<  "--t_interval"          <<  '\t' <<  "Time interval between output. Overrides n_t if set." << std::endl;
+        std::cout << '\t' <<  "--memory"              <<  '\t' <<  "Fraction of the GPu memory requested, from 0 to 1. Defaults to [0.5]" << std::endl;
         exit(0);
     }
 
@@ -119,6 +120,7 @@ auto main(int argc, char* argv[]) -> int {
     const deviceFloat CFL = input_parser.getCmdOptionOr("--cfl", static_cast<deviceFloat>(0.5));
     const deviceFloat viscosity = input_parser.getCmdOptionOr("--viscosity", static_cast<deviceFloat>(0.1/pi));
     const std::vector<deviceFloat> output_times = get_output_times(input_parser);
+    const deviceFloat memory_fraction = input_parser.getCmdOptionOr("--memory", 0.5);
 
     if (N_initial > N_max) {
         std::cerr << "Error: Initial N (" << N_initial << ") is greater than maximum N (" << N_max << "). Exiting." << std::endl;
@@ -186,14 +188,14 @@ auto main(int argc, char* argv[]) -> int {
     if (device_rank == 0) {
         cudaDeviceProp deviceProp;
         cudaGetDeviceProperties(&deviceProp, device);
-        const cudaError_t code = cudaDeviceSetLimit(cudaLimitMallocHeapSize, deviceProp.totalGlobalMem/2);
+        const cudaError_t code = cudaDeviceSetLimit(cudaLimitMallocHeapSize, static_cast<size_t>(deviceProp.totalGlobalMem * memory_fraction));
         if (code != cudaSuccess) {
             std::cerr << "GPU memory request failed: " << cudaGetErrorString(code) << std::endl;
             exit(1);
         }
         size_t device_heap_limit = 0;
         cudaDeviceGetLimit(&device_heap_limit, cudaLimitMallocHeapSize);
-        std::cout << "Node " << node_rank << ", device " << device << " requested " << deviceProp.totalGlobalMem/2 << " bytes and got " << device_heap_limit << " bytes." << std::endl;
+        std::cout << "Node " << node_rank << ", device " << device << " requested " <<  static_cast<size_t>(deviceProp.totalGlobalMem * memory_fraction) << " bytes and got " << device_heap_limit << " bytes." << std::endl;
     }
 
     cudaStream_t stream;
