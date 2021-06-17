@@ -502,81 +502,83 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     std::vector<size_t> mpi_interfaces_origin(n_mpi_interface_elements);
     std::vector<size_t> mpi_interfaces_origin_side(n_mpi_interface_elements);
     std::vector<size_t> mpi_interfaces_destination(n_mpi_interface_elements);
-
-    size_t mpi_interface_offset = 0;
-    size_t mpi_interface_index = 0;
-    for (int j = 0; j < n_zones; ++j) {
-        if (process_used_in_interface[j]) {
-            mpi_interfaces_offset_[mpi_interface_index] = mpi_interface_offset;
-            mpi_interfaces_process_[mpi_interface_index] = j;
-            for (int i = 0; i < n_connectivity; ++i) {
-                if (mpi_interface_process[i] == j) {
-                    mpi_interfaces_size_[mpi_interface_index] += connectivity_sizes[i];
-                    for (size_t k = 0; k < connectivity_sizes[i]; ++k) {
-                        int origin_section_index = -1;
-                        for (int m = 0; m < n_sections; ++m) {
-                            if ((interface_elements[i][k] >= section_ranges[m][0]) && (interface_elements[i][k] <= section_ranges[m][1])) {
-                                origin_section_index = m;
-                                break;
-                            }
-                        }
-
-                        if (origin_section_index == -1) {
-                            std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", connectivity " << i << " contains element " << interface_elements[i][k] << " but it is not found in any mesh section. Exiting." << std::endl;
-                            exit(38);
-                        }
-
-                        // Starts to be backwards here
-                        const size_t boundary_element_index = section_start_indices[origin_section_index] + interface_elements[i][k] - section_ranges[origin_section_index][0];
-                        const size_t face_index = element_to_face[boundary_element_index][0];
-                        const size_t face_side_index = host_faces[face_index].elements_[0] == boundary_element_index;
-
-                        mpi_interfaces_origin[mpi_interface_offset + k]      = host_faces[face_index].elements_[face_side_index];;
-                        mpi_interfaces_origin_side[mpi_interface_offset + k] = host_faces[face_index].elements_side_[face_side_index];
-                        mpi_interfaces_destination[mpi_interface_offset + k] = interface_donor_elements[i][k]; // Still in local referential, will have to exchange info to know.
-                    }
-
-                    mpi_interface_offset += connectivity_sizes[i];
-                }
-            }
-
-            ++mpi_interface_index;
-        }
-    }
-
-    // Exchanging mpi interfaces destination
-    std::vector<MPI_Request> adaptivity_requests(2 * n_mpi_interfaces);
-    std::vector<MPI_Status> adaptivity_statuses(2 * n_mpi_interfaces);
-    constexpr MPI_Datatype data_type = (sizeof(size_t) == sizeof(unsigned long long)) ? MPI_UNSIGNED_LONG_LONG : (sizeof(size_t) == sizeof(unsigned long)) ? MPI_UNSIGNED_LONG : MPI_UNSIGNED; // CHECK this is a bad way of doing this
     std::vector<size_t> mpi_interfaces_destination_in_this_proc(n_mpi_interface_elements);
 
-    for (size_t i = 0; i < n_mpi_interfaces; ++i) {
-        MPI_Isend(mpi_interfaces_destination.data() + mpi_interfaces_offset_[i], mpi_interfaces_size_[i], data_type, mpi_interfaces_process_[i], global_size * global_rank + mpi_interfaces_process_[i], MPI_COMM_WORLD, &adaptivity_requests[n_mpi_interfaces + i]);
-        MPI_Irecv(mpi_interfaces_destination_in_this_proc.data() + mpi_interfaces_offset_[i], mpi_interfaces_size_[i], data_type, mpi_interfaces_process_[i],  global_size * mpi_interfaces_process_[i] + global_rank, MPI_COMM_WORLD, &adaptivity_requests[i]);
-    }
+    if (n_mpi_interfaces > 0) {
+        size_t mpi_interface_offset = 0;
+        size_t mpi_interface_index = 0;
+        for (int j = 0; j < n_zones; ++j) {
+            if (process_used_in_interface[j]) {
+                mpi_interfaces_offset_[mpi_interface_index] = mpi_interface_offset;
+                mpi_interfaces_process_[mpi_interface_index] = j;
+                for (int i = 0; i < n_connectivity; ++i) {
+                    if (mpi_interface_process[i] == j) {
+                        mpi_interfaces_size_[mpi_interface_index] += connectivity_sizes[i];
+                        for (size_t k = 0; k < connectivity_sizes[i]; ++k) {
+                            int origin_section_index = -1;
+                            for (int m = 0; m < n_sections; ++m) {
+                                if ((interface_elements[i][k] >= section_ranges[m][0]) && (interface_elements[i][k] <= section_ranges[m][1])) {
+                                    origin_section_index = m;
+                                    break;
+                                }
+                            }
 
-    MPI_Waitall(n_mpi_interfaces, adaptivity_requests.data(), adaptivity_statuses.data());
+                            if (origin_section_index == -1) {
+                                std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", connectivity " << i << " contains element " << interface_elements[i][k] << " but it is not found in any mesh section. Exiting." << std::endl;
+                                exit(38);
+                            }
 
-    for (size_t i = 0; i < n_mpi_interfaces; ++i) {
-        for (size_t j = 0; j < mpi_interfaces_size_[i]; ++j) {
-            int donor_section_index = -1;
-            for (int k = 0; k < n_sections; ++k) {
-                if ((mpi_interfaces_destination_in_this_proc[mpi_interfaces_offset_[i] + j] >= section_ranges[k][0]) && (mpi_interfaces_destination_in_this_proc[mpi_interfaces_offset_[i] + j] <= section_ranges[k][1])) {
-                    donor_section_index = k;
-                    break;
+                            // Starts to be backwards here
+                            const size_t boundary_element_index = section_start_indices[origin_section_index] + interface_elements[i][k] - section_ranges[origin_section_index][0];
+                            const size_t face_index = element_to_face[boundary_element_index][0];
+                            const size_t face_side_index = host_faces[face_index].elements_[0] == boundary_element_index;
+
+                            mpi_interfaces_origin[mpi_interface_offset + k]      = host_faces[face_index].elements_[face_side_index];;
+                            mpi_interfaces_origin_side[mpi_interface_offset + k] = host_faces[face_index].elements_side_[face_side_index];
+                            mpi_interfaces_destination[mpi_interface_offset + k] = interface_donor_elements[i][k]; // Still in local referential, will have to exchange info to know.
+                        }
+
+                        mpi_interface_offset += connectivity_sizes[i];
+                    }
                 }
-            }
 
-            if (donor_section_index == -1) {
-                std::cerr << "Error: Process " << mpi_interfaces_process_[i] << " sent element " << mpi_interfaces_destination_in_this_proc[mpi_interfaces_offset_[i] + j] << " to process " << global_rank << " but it is not found in any mesh section. Exiting." << std::endl;
-                exit(51);
+                ++mpi_interface_index;
             }
-
-            mpi_interfaces_destination_in_this_proc[mpi_interfaces_offset_[i] + j] = section_start_indices[donor_section_index] + mpi_interfaces_destination_in_this_proc[mpi_interfaces_offset_[i] + j] - section_ranges[donor_section_index][0];
         }
-    }
 
-    MPI_Waitall(n_mpi_interfaces, adaptivity_requests.data() + n_mpi_interfaces, adaptivity_statuses.data() + n_mpi_interfaces);
+        // Exchanging mpi interfaces destination
+        std::vector<MPI_Request> adaptivity_requests(2 * n_mpi_interfaces);
+        std::vector<MPI_Status> adaptivity_statuses(2 * n_mpi_interfaces);
+        constexpr MPI_Datatype data_type = (sizeof(size_t) == sizeof(unsigned long long)) ? MPI_UNSIGNED_LONG_LONG : (sizeof(size_t) == sizeof(unsigned long)) ? MPI_UNSIGNED_LONG : MPI_UNSIGNED; // CHECK this is a bad way of doing this
+
+        for (size_t i = 0; i < n_mpi_interfaces; ++i) {
+            MPI_Isend(mpi_interfaces_destination.data() + mpi_interfaces_offset_[i], mpi_interfaces_size_[i], data_type, mpi_interfaces_process_[i], global_size * global_rank + mpi_interfaces_process_[i], MPI_COMM_WORLD, &adaptivity_requests[n_mpi_interfaces + i]);
+            MPI_Irecv(mpi_interfaces_destination_in_this_proc.data() + mpi_interfaces_offset_[i], mpi_interfaces_size_[i], data_type, mpi_interfaces_process_[i],  global_size * mpi_interfaces_process_[i] + global_rank, MPI_COMM_WORLD, &adaptivity_requests[i]);
+        }
+
+        MPI_Waitall(n_mpi_interfaces, adaptivity_requests.data(), adaptivity_statuses.data());
+
+        for (size_t i = 0; i < n_mpi_interfaces; ++i) {
+            for (size_t j = 0; j < mpi_interfaces_size_[i]; ++j) {
+                int donor_section_index = -1;
+                for (int k = 0; k < n_sections; ++k) {
+                    if ((mpi_interfaces_destination_in_this_proc[mpi_interfaces_offset_[i] + j] >= section_ranges[k][0]) && (mpi_interfaces_destination_in_this_proc[mpi_interfaces_offset_[i] + j] <= section_ranges[k][1])) {
+                        donor_section_index = k;
+                        break;
+                    }
+                }
+
+                if (donor_section_index == -1) {
+                    std::cerr << "Error: Process " << mpi_interfaces_process_[i] << " sent element " << mpi_interfaces_destination_in_this_proc[mpi_interfaces_offset_[i] + j] << " to process " << global_rank << " but it is not found in any mesh section. Exiting." << std::endl;
+                    exit(51);
+                }
+
+                mpi_interfaces_destination_in_this_proc[mpi_interfaces_offset_[i] + j] = section_start_indices[donor_section_index] + mpi_interfaces_destination_in_this_proc[mpi_interfaces_offset_[i] + j] - section_ranges[donor_section_index][0];
+            }
+        }
+
+        MPI_Waitall(n_mpi_interfaces, adaptivity_requests.data() + n_mpi_interfaces, adaptivity_statuses.data() + n_mpi_interfaces);
+    }
 
     // Transferring onto the GPU
     nodes_ = host_nodes;
