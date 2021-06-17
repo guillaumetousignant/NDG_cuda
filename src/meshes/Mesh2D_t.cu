@@ -281,6 +281,9 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
         host_nodes[i].y() = xy[1][i];
     }
 
+    // Transferring onto the GPU
+    nodes_ = host_nodes;
+
     // Figuring out which sections are the domain and which are ghost cells
     std::vector<bool> section_is_domain(n_sections);
     cgsize_t n_elements_domain = 0;
@@ -358,6 +361,10 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     // Computing faces and filling element faces
     auto [host_faces, node_to_face, element_to_face] = build_faces(n_elements_domain, n_nodes, initial_N_, host_elements);
 
+    // Transferring onto the GPU
+    elements_ = host_elements;
+    faces_ = host_faces;
+
     // Building boundaries
     std::vector<size_t> wall_boundaries;
     std::vector<size_t> symmetry_boundaries;
@@ -414,6 +421,14 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
         }
     }
 
+    // Transferring onto the GPU
+    if (wall_boundaries.size() > 0) {
+        wall_boundaries_ = wall_boundaries;
+    }
+    if (symmetry_boundaries.size() > 0) {
+        symmetry_boundaries_ = symmetry_boundaries;
+    }
+
     // Building self interfaces
     size_t n_interface_elements = 0;
     std::vector<size_t> interface_start_index(n_connectivity);
@@ -423,49 +438,57 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
             n_interface_elements += connectivity_sizes[i];
         }
     }
-    std::vector<size_t> interfaces_origin(n_interface_elements);
-    std::vector<size_t> interfaces_origin_side(n_interface_elements);
-    std::vector<size_t> interfaces_destination(n_interface_elements);
 
-    for (int i = 0; i < n_connectivity; ++i) {
-        if (strncmp(zone_name.data(), connectivity_donor_names[i].data(), CGIO_MAX_NAME_LENGTH) == 0) {
-            for (cgsize_t j = 0; j < connectivity_sizes[i]; ++j) {
-                int origin_section_index = -1;
-                for (int k = 0; k < n_sections; ++k) {
-                    if ((interface_elements[i][j] >= section_ranges[k][0]) && (interface_elements[i][j] <= section_ranges[k][1])) {
-                        origin_section_index = k;
-                        break;
+    if (n_interface_elements > 0) {
+        std::vector<size_t> interfaces_origin(n_interface_elements);
+        std::vector<size_t> interfaces_origin_side(n_interface_elements);
+        std::vector<size_t> interfaces_destination(n_interface_elements);
+
+        for (int i = 0; i < n_connectivity; ++i) {
+            if (strncmp(zone_name.data(), connectivity_donor_names[i].data(), CGIO_MAX_NAME_LENGTH) == 0) {
+                for (cgsize_t j = 0; j < connectivity_sizes[i]; ++j) {
+                    int origin_section_index = -1;
+                    for (int k = 0; k < n_sections; ++k) {
+                        if ((interface_elements[i][j] >= section_ranges[k][0]) && (interface_elements[i][j] <= section_ranges[k][1])) {
+                            origin_section_index = k;
+                            break;
+                        }
                     }
-                }
 
-                if (origin_section_index == -1) {
-                    std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", connectivity " << i << " contains element " << interface_elements[i][j] << " but it is not found in any mesh section. Exiting." << std::endl;
-                    exit(38);
-                }
-
-                int donor_section_index = -1;
-                for (int k = 0; k < n_sections; ++k) {
-                    if ((interface_donor_elements[i][j] >= section_ranges[k][0]) && (interface_donor_elements[i][j] <= section_ranges[k][1])) {
-                        donor_section_index = k;
-                        break;
+                    if (origin_section_index == -1) {
+                        std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", connectivity " << i << " contains element " << interface_elements[i][j] << " but it is not found in any mesh section. Exiting." << std::endl;
+                        exit(38);
                     }
-                }
 
-                if (donor_section_index == -1) {
-                    std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", connectivity " << i << " contains donor element " << interface_donor_elements[i][j] << " but it is not found in any mesh section. Exiting." << std::endl;
-                    exit(39);
-                }
+                    int donor_section_index = -1;
+                    for (int k = 0; k < n_sections; ++k) {
+                        if ((interface_donor_elements[i][j] >= section_ranges[k][0]) && (interface_donor_elements[i][j] <= section_ranges[k][1])) {
+                            donor_section_index = k;
+                            break;
+                        }
+                    }
 
-                const size_t donor_boundary_element_index = section_start_indices[donor_section_index] + interface_donor_elements[i][j] - section_ranges[donor_section_index][0];
-                const size_t face_index = element_to_face[donor_boundary_element_index][0];
-                const size_t face_side_index = host_faces[face_index].elements_[0] == donor_boundary_element_index;
-                const size_t donor_domain_element_index = host_faces[face_index].elements_[face_side_index];
-                
-                interfaces_origin[interface_start_index[i] + j] = donor_domain_element_index;
-                interfaces_origin_side[interface_start_index[i] + j] = host_faces[face_index].elements_side_[face_side_index];
-                interfaces_destination[interface_start_index[i] + j] = section_start_indices[origin_section_index] + interface_elements[i][j] - section_ranges[origin_section_index][0];
+                    if (donor_section_index == -1) {
+                        std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", connectivity " << i << " contains donor element " << interface_donor_elements[i][j] << " but it is not found in any mesh section. Exiting." << std::endl;
+                        exit(39);
+                    }
+
+                    const size_t donor_boundary_element_index = section_start_indices[donor_section_index] + interface_donor_elements[i][j] - section_ranges[donor_section_index][0];
+                    const size_t face_index = element_to_face[donor_boundary_element_index][0];
+                    const size_t face_side_index = host_faces[face_index].elements_[0] == donor_boundary_element_index;
+                    const size_t donor_domain_element_index = host_faces[face_index].elements_[face_side_index];
+                    
+                    interfaces_origin[interface_start_index[i] + j] = donor_domain_element_index;
+                    interfaces_origin_side[interface_start_index[i] + j] = host_faces[face_index].elements_side_[face_side_index];
+                    interfaces_destination[interface_start_index[i] + j] = section_start_indices[origin_section_index] + interface_elements[i][j] - section_ranges[origin_section_index][0];
+                }
             }
         }
+
+        // Transferring onto the GPU
+        interfaces_origin_ = interfaces_origin;
+        interfaces_origin_side_ = interfaces_origin_side;
+        interfaces_destination_ = interfaces_destination;
     }
 
     // Building MPI interfaces
@@ -491,20 +514,20 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
         }
     }
 
-    size_t n_mpi_interfaces = 0;
-    for (int j = 0; j < n_zones; ++j) {
-        n_mpi_interfaces += process_used_in_interface[j];
-    }
+    if (n_mpi_interface_elements > 0) {
+        size_t n_mpi_interfaces = 0;
+        for (int j = 0; j < n_zones; ++j) {
+            n_mpi_interfaces += process_used_in_interface[j];
+        }
 
-    mpi_interfaces_size_ = std::vector<size_t>(n_mpi_interfaces);
-    mpi_interfaces_offset_ = std::vector<size_t>(n_mpi_interfaces);
-    mpi_interfaces_process_ = std::vector<size_t>(n_mpi_interfaces);
-    std::vector<size_t> mpi_interfaces_origin(n_mpi_interface_elements);
-    std::vector<size_t> mpi_interfaces_origin_side(n_mpi_interface_elements);
-    std::vector<size_t> mpi_interfaces_destination(n_mpi_interface_elements);
-    std::vector<size_t> mpi_interfaces_destination_in_this_proc(n_mpi_interface_elements);
+        mpi_interfaces_size_ = std::vector<size_t>(n_mpi_interfaces);
+        mpi_interfaces_offset_ = std::vector<size_t>(n_mpi_interfaces);
+        mpi_interfaces_process_ = std::vector<size_t>(n_mpi_interfaces);
+        std::vector<size_t> mpi_interfaces_origin(n_mpi_interface_elements);
+        std::vector<size_t> mpi_interfaces_origin_side(n_mpi_interface_elements);
+        std::vector<size_t> mpi_interfaces_destination(n_mpi_interface_elements);
+        std::vector<size_t> mpi_interfaces_destination_in_this_proc(n_mpi_interface_elements);
 
-    if (n_mpi_interfaces > 0) {
         size_t mpi_interface_offset = 0;
         size_t mpi_interface_index = 0;
         for (int j = 0; j < n_zones; ++j) {
@@ -578,20 +601,25 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
         }
 
         MPI_Waitall(n_mpi_interfaces, adaptivity_requests.data() + n_mpi_interfaces, adaptivity_statuses.data() + n_mpi_interfaces);
-    }
 
-    // Transferring onto the GPU
-    nodes_ = host_nodes;
-    elements_ = host_elements;
-    faces_ = host_faces;
-    wall_boundaries_ = wall_boundaries;
-    symmetry_boundaries_ = symmetry_boundaries;
-    interfaces_origin_ = interfaces_origin;
-    interfaces_origin_side_ = interfaces_origin_side;
-    interfaces_destination_ = interfaces_destination;
-    mpi_interfaces_origin_ = mpi_interfaces_origin;
-    mpi_interfaces_origin_side_ = mpi_interfaces_origin_side;
-    mpi_interfaces_destination_ = mpi_interfaces_destination_in_this_proc;
+        // Transferring onto the GPU
+        mpi_interfaces_origin_ = mpi_interfaces_origin;
+        mpi_interfaces_origin_side_ = mpi_interfaces_origin_side;
+        mpi_interfaces_destination_ = mpi_interfaces_destination_in_this_proc;
+
+        device_interfaces_p_ = device_vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
+        device_interfaces_u_ = device_vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
+        device_interfaces_v_ = device_vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
+        host_interfaces_p_ = std::vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
+        host_interfaces_u_ = std::vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
+        host_interfaces_v_ = std::vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
+        host_receiving_interfaces_p_ = std::vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
+        host_receiving_interfaces_u_ = std::vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
+        host_receiving_interfaces_v_ = std::vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
+
+        requests_ = std::vector<MPI_Request>(n_mpi_interfaces * 6);
+        statuses_ = std::vector<MPI_Status>(n_mpi_interfaces * 6);
+    }
 
     // Setting sizes
     N_elements_ = n_elements_domain;
@@ -605,19 +633,6 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
 
     host_delta_t_array_ = std::vector<deviceFloat>(elements_numBlocks_);
     device_delta_t_array_ = device_vector<deviceFloat>(elements_numBlocks_);
-
-    device_interfaces_p_ = device_vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
-    device_interfaces_u_ = device_vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
-    device_interfaces_v_ = device_vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
-    host_interfaces_p_ = std::vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
-    host_interfaces_u_ = std::vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
-    host_interfaces_v_ = std::vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
-    host_receiving_interfaces_p_ = std::vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
-    host_receiving_interfaces_u_ = std::vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
-    host_receiving_interfaces_v_ = std::vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
-
-    requests_ = std::vector<MPI_Request>(n_mpi_interfaces * 6);
-    statuses_ = std::vector<MPI_Status>(n_mpi_interfaces * 6);
 
     allocate_element_storage<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data());
     allocate_boundary_storage<<<all_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(N_elements_, elements_.size(), elements_.data());
