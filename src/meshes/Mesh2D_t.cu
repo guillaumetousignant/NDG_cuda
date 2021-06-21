@@ -940,7 +940,7 @@ auto SEM::Meshes::Mesh2D_t::boundary_conditions() -> void {
         int global_size;
         MPI_Comm_size(MPI_COMM_WORLD, &global_size);
 
-        SEM::Meshes::get_MPI_interfaces<<<mpi_interfaces_numBlocks_, boundaries_blockSize_, 0, stream_>>>(global_rank, mpi_interfaces_origin_.size(), elements_.data(), mpi_interfaces_origin_.data(), mpi_interfaces_origin_side_.data(), maximum_N_, device_interfaces_p_.data(), device_interfaces_u_.data(), device_interfaces_v_.data());
+        SEM::Meshes::get_MPI_interfaces<<<mpi_interfaces_numBlocks_, boundaries_blockSize_, 0, stream_>>>(mpi_interfaces_origin_.size(), elements_.data(), mpi_interfaces_origin_.data(), mpi_interfaces_origin_side_.data(), maximum_N_, device_interfaces_p_.data(), device_interfaces_u_.data(), device_interfaces_v_.data());
 
         device_interfaces_p_.copy_to(host_interfaces_p_);
         device_interfaces_u_.copy_to(host_interfaces_u_);
