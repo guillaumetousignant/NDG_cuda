@@ -171,7 +171,7 @@ auto SEM::Entities::Element2D_t::estimate_error<Polynomial>(const deviceFloat* p
     if(p_error_ > SEM::Constants::tolerance_min) {	// need refinement
         refine_ = true;
     }
-    else if(p_error_ > SEM::Constants::tolerance_max ) {	// need coarsening
+    else if(p_error_ > SEM::Constants::tolerance_max) {	// need coarsening
         coarsen_ = false;
     }
 
@@ -217,7 +217,7 @@ auto SEM::Entities::Element2D_t::estimate_error<Polynomial>(const deviceFloat* p
     if(u_error_ > SEM::Constants::tolerance_min) {	// need refinement
         refine_ = true;
     }
-    else if(u_error_ > SEM::Constants::tolerance_max ) {	// need coarsening
+    else if(u_error_ > SEM::Constants::tolerance_max) {	// need coarsening
         coarsen_ = false;
     }
 
@@ -263,7 +263,7 @@ auto SEM::Entities::Element2D_t::estimate_error<Polynomial>(const deviceFloat* p
     if(v_error_ > SEM::Constants::tolerance_min) {	// need refinement
         refine_ = true;
     }
-    else if(v_error_ > SEM::Constants::tolerance_max ) {	// need coarsening
+    else if(v_error_ > SEM::Constants::tolerance_max) {	// need coarsening
         coarsen_ = false;
     }
 }
