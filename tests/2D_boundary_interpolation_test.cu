@@ -83,16 +83,24 @@ TEST_CASE("2D boundary interpolation test", "Checks the interpolated value of th
     std::vector<SEM::Entities::Element2D_t> host_elements(1);
     host_elements[0].N_ = N_test;
 
-    device_vector<SEM::Entities::Element2D_t> device_elements;
-    device_elements = host_elements;
+    device_vector<SEM::Entities::Element2D_t> device_elements(host_elements, stream);
 
     elements_init<<<1, 1, 0, stream>>>(1, device_elements.data(), NDG.nodes_.data());
 
     SEM::Meshes::interpolate_to_boundaries<<<1, 1, 0, stream>>>(1, device_elements.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
 
-    std::array<device_vector<deviceFloat>, 4> p {N_test + 1, N_test + 1, N_test + 1, N_test + 1};
-    std::array<device_vector<deviceFloat>, 4> u {N_test + 1, N_test + 1, N_test + 1, N_test + 1};
-    std::array<device_vector<deviceFloat>, 4> v {N_test + 1, N_test + 1, N_test + 1, N_test + 1};
+    std::array<device_vector<deviceFloat>, 4> p {device_vector<deviceFloat>(N_test + 1, stream), 
+                                                 device_vector<deviceFloat>(N_test + 1, stream), 
+                                                 device_vector<deviceFloat>(N_test + 1, stream), 
+                                                 device_vector<deviceFloat>(N_test + 1, stream)};
+    std::array<device_vector<deviceFloat>, 4> u {device_vector<deviceFloat>(N_test + 1, stream), 
+                                                 device_vector<deviceFloat>(N_test + 1, stream), 
+                                                 device_vector<deviceFloat>(N_test + 1, stream), 
+                                                 device_vector<deviceFloat>(N_test + 1, stream)};
+    std::array<device_vector<deviceFloat>, 4> v {device_vector<deviceFloat>(N_test + 1, stream), 
+                                                 device_vector<deviceFloat>(N_test + 1, stream), 
+                                                 device_vector<deviceFloat>(N_test + 1, stream), 
+                                                 device_vector<deviceFloat>(N_test + 1, stream)};
     get_boundary_solution<<<1, 1, 0, stream>>>(1, device_elements.data(), {p[0].data(), p[1].data(), p[2].data(), p[3].data()}, 
                                                                           {u[0].data(), u[1].data(), u[2].data(), u[3].data()}, 
                                                                           {v[0].data(), v[1].data(), v[2].data(), v[3].data()});
@@ -102,14 +110,14 @@ TEST_CASE("2D boundary interpolation test", "Checks the interpolated value of th
     std::array<std::vector<deviceFloat>, 4> u_host {std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1)};
     std::array<std::vector<deviceFloat>, 4> v_host {std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1)};
     for (size_t k = 0; k < p_host.size(); ++k) {
-        p[k].copy_to(p_host[k]);
-        u[k].copy_to(u_host[k]);
-        v[k].copy_to(v_host[k]);
+        p[k].copy_to(p_host[k], stream);
+        u[k].copy_to(u_host[k], stream);
+        v[k].copy_to(v_host[k], stream);
     }
 
     // Generating target values
     std::vector<deviceFloat> polynomial_nodes_host(NDG.nodes_.size());
-    NDG.nodes_.copy_to(polynomial_nodes_host);
+    NDG.nodes_.copy_to(polynomial_nodes_host, stream);
     const size_t offset_1D = N_test * (N_test + 1) /2;
 
     std::array<std::vector<deviceFloat>, 4> p_target {std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1)};

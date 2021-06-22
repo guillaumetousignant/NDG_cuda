@@ -282,7 +282,7 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     }
 
     // Transferring onto the GPU
-    nodes_ = host_nodes;
+    nodes_ = device_vector<Vec2<deviceFloat>>(host_nodes, stream_);
 
     // Figuring out which sections are the domain and which are ghost cells
     std::vector<bool> section_is_domain(n_sections);
@@ -362,8 +362,8 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     auto [host_faces, node_to_face, element_to_face] = build_faces(n_elements_domain, n_nodes, initial_N_, host_elements);
 
     // Transferring onto the GPU
-    elements_ = host_elements;
-    faces_ = host_faces;
+    elements_ = device_vector<Element2D_t>(host_elements, stream_);
+    faces_ = device_vector<Face2D_t>(host_faces, stream_);
 
     // Building boundaries
     std::vector<size_t> wall_boundaries;
@@ -423,10 +423,10 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
 
     // Transferring onto the GPU
     if (wall_boundaries.size() > 0) {
-        wall_boundaries_ = wall_boundaries;
+        wall_boundaries_ = device_vector<size_t>(wall_boundaries, stream_);
     }
     if (symmetry_boundaries.size() > 0) {
-        symmetry_boundaries_ = symmetry_boundaries;
+        symmetry_boundaries_ = device_vector<size_t>(symmetry_boundaries, stream_);
     }
 
     // Building self interfaces
@@ -486,9 +486,9 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
         }
 
         // Transferring onto the GPU
-        interfaces_origin_ = interfaces_origin;
-        interfaces_origin_side_ = interfaces_origin_side;
-        interfaces_destination_ = interfaces_destination;
+        interfaces_origin_ = device_vector<size_t>(interfaces_origin, stream_);
+        interfaces_origin_side_ = device_vector<size_t>(interfaces_origin_side, stream_);
+        interfaces_destination_ = device_vector<size_t>(interfaces_destination, stream_);
     }
 
     // Building MPI interfaces
@@ -603,13 +603,13 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
         MPI_Waitall(n_mpi_interfaces, adaptivity_requests.data() + n_mpi_interfaces, adaptivity_statuses.data() + n_mpi_interfaces);
 
         // Transferring onto the GPU
-        mpi_interfaces_origin_ = mpi_interfaces_origin;
-        mpi_interfaces_origin_side_ = mpi_interfaces_origin_side;
-        mpi_interfaces_destination_ = mpi_interfaces_destination_in_this_proc;
+        mpi_interfaces_origin_ = device_vector<size_t>(mpi_interfaces_origin, stream_);
+        mpi_interfaces_origin_side_ = device_vector<size_t>(mpi_interfaces_origin_side, stream_);
+        mpi_interfaces_destination_ = device_vector<size_t>(mpi_interfaces_destination_in_this_proc, stream_);
 
-        device_interfaces_p_ = device_vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
-        device_interfaces_u_ = device_vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
-        device_interfaces_v_ = device_vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
+        device_interfaces_p_ = device_vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1), stream_);
+        device_interfaces_u_ = device_vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1), stream_);
+        device_interfaces_v_ = device_vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1), stream_);
         host_interfaces_p_ = std::vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
         host_interfaces_u_ = std::vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
         host_interfaces_v_ = std::vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
@@ -632,13 +632,13 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     mpi_interfaces_numBlocks_ = (mpi_interfaces_origin_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
 
     host_delta_t_array_ = std::vector<deviceFloat>(elements_numBlocks_);
-    device_delta_t_array_ = device_vector<deviceFloat>(elements_numBlocks_);
+    device_delta_t_array_ = device_vector<deviceFloat>(elements_numBlocks_, stream_);
 
     allocate_element_storage<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data());
     allocate_boundary_storage<<<ghosts_numBlocks_, boundaries_blockSize_, 0, stream_>>>(N_elements_, elements_.size(), elements_.data());
     allocate_face_storage<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces_.size(), faces_.data());
 
-    const SEM::Entities::device_vector<std::array<size_t, 4>> device_element_to_face(element_to_face);
+    const SEM::Entities::device_vector<std::array<size_t, 4>> device_element_to_face(element_to_face, stream_);
     fill_element_faces<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(elements_.size(), elements_.data(), device_element_to_face.data());
 }
 
@@ -777,14 +777,14 @@ auto SEM::Meshes::Mesh2D_t::print() const -> void {
     std::vector<size_t> host_interfaces_origin_side(interfaces_origin_side_.size());
     std::vector<size_t> host_interfaces_destination(interfaces_destination_.size());
     
-    faces_.copy_to(host_faces);
-    elements_.copy_to(host_elements);
-    nodes_.copy_to(host_nodes);
-    wall_boundaries_.copy_to(host_wall_boundaries);
-    symmetry_boundaries_.copy_to(host_symmetry_boundaries);
-    interfaces_origin_.copy_to(host_interfaces_origin);
-    interfaces_origin_side_.copy_to(host_interfaces_origin_side);
-    interfaces_destination_.copy_to(host_interfaces_destination);
+    faces_.copy_to(host_faces, stream_);
+    elements_.copy_to(host_elements, stream_);
+    nodes_.copy_to(host_nodes, stream_);
+    wall_boundaries_.copy_to(host_wall_boundaries, stream_);
+    symmetry_boundaries_.copy_to(host_symmetry_boundaries, stream_);
+    interfaces_origin_.copy_to(host_interfaces_origin, stream_);
+    interfaces_origin_side_.copy_to(host_interfaces_origin_side, stream_);
+    interfaces_destination_.copy_to(host_interfaces_destination, stream_);
     
     std::cout << "N elements: " << N_elements_ << std::endl;
     std::cout << "N elements and ghosts: " << elements_.size() << std::endl;
@@ -878,15 +878,15 @@ auto SEM::Meshes::Mesh2D_t::print() const -> void {
 }
 
 auto SEM::Meshes::Mesh2D_t::write_data(deviceFloat time, size_t N_interpolation_points, const deviceFloat* interpolation_matrices, const SEM::Helpers::DataWriter_t& data_writer) const -> void {
-    device_vector<deviceFloat> x(N_elements_ * N_interpolation_points * N_interpolation_points);
-    device_vector<deviceFloat> y(N_elements_ * N_interpolation_points * N_interpolation_points);
-    device_vector<deviceFloat> p(N_elements_ * N_interpolation_points * N_interpolation_points);
-    device_vector<deviceFloat> u(N_elements_ * N_interpolation_points * N_interpolation_points);
-    device_vector<deviceFloat> v(N_elements_ * N_interpolation_points * N_interpolation_points);
-    device_vector<deviceFloat> dp_dt(N_elements_ * N_interpolation_points * N_interpolation_points);
-    device_vector<deviceFloat> du_dt(N_elements_ * N_interpolation_points * N_interpolation_points);
-    device_vector<deviceFloat> dv_dt(N_elements_ * N_interpolation_points * N_interpolation_points);
-    device_vector<int> N(N_elements_);
+    device_vector<deviceFloat> x(N_elements_ * N_interpolation_points * N_interpolation_points, stream_);
+    device_vector<deviceFloat> y(N_elements_ * N_interpolation_points * N_interpolation_points, stream_);
+    device_vector<deviceFloat> p(N_elements_ * N_interpolation_points * N_interpolation_points, stream_);
+    device_vector<deviceFloat> u(N_elements_ * N_interpolation_points * N_interpolation_points, stream_);
+    device_vector<deviceFloat> v(N_elements_ * N_interpolation_points * N_interpolation_points, stream_);
+    device_vector<deviceFloat> dp_dt(N_elements_ * N_interpolation_points * N_interpolation_points, stream_);
+    device_vector<deviceFloat> du_dt(N_elements_ * N_interpolation_points * N_interpolation_points, stream_);
+    device_vector<deviceFloat> dv_dt(N_elements_ * N_interpolation_points * N_interpolation_points, stream_);
+    device_vector<int> N(N_elements_, stream_);
 
     SEM::Meshes::get_solution<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, N_interpolation_points, elements_.data(), nodes_.data(), interpolation_matrices, x.data(), y.data(), p.data(), u.data(), v.data(), N.data(), dp_dt.data(), du_dt.data(), dv_dt.data());
     
@@ -900,15 +900,15 @@ auto SEM::Meshes::Mesh2D_t::write_data(deviceFloat time, size_t N_interpolation_
     std::vector<deviceFloat> dv_dt_host(N_elements_ * N_interpolation_points * N_interpolation_points);
     std::vector<int> N_host(N_elements_);
 
-    x.copy_to(x_host);
-    y.copy_to(y_host);
-    p.copy_to(p_host);
-    u.copy_to(u_host);
-    v.copy_to(v_host);
-    dp_dt.copy_to(dp_dt_host);
-    du_dt.copy_to(du_dt_host);
-    dv_dt.copy_to(dv_dt_host);
-    N.copy_to(N_host);
+    x.copy_to(x_host, stream_);
+    y.copy_to(y_host, stream_);
+    p.copy_to(p_host, stream_);
+    u.copy_to(u_host, stream_);
+    v.copy_to(v_host, stream_);
+    dp_dt.copy_to(dp_dt_host, stream_);
+    du_dt.copy_to(du_dt_host, stream_);
+    dv_dt.copy_to(dv_dt_host, stream_);
+    N.copy_to(N_host, stream_);
 
     data_writer.write_data(N_interpolation_points, N_elements_, time, x_host, y_host, p_host, u_host, v_host, N_host, dp_dt_host, du_dt_host, dv_dt_host);
 }
@@ -939,9 +939,9 @@ auto SEM::Meshes::Mesh2D_t::boundary_conditions() -> void {
 
         SEM::Meshes::get_MPI_interfaces<<<mpi_interfaces_numBlocks_, boundaries_blockSize_, 0, stream_>>>(mpi_interfaces_origin_.size(), elements_.data(), mpi_interfaces_origin_.data(), mpi_interfaces_origin_side_.data(), maximum_N_, device_interfaces_p_.data(), device_interfaces_u_.data(), device_interfaces_v_.data());
 
-        device_interfaces_p_.copy_to(host_interfaces_p_);
-        device_interfaces_u_.copy_to(host_interfaces_u_);
-        device_interfaces_v_.copy_to(host_interfaces_v_);
+        device_interfaces_p_.copy_to(host_interfaces_p_, stream_);
+        device_interfaces_u_.copy_to(host_interfaces_u_, stream_);
+        device_interfaces_v_.copy_to(host_interfaces_v_, stream_);
 
         
         constexpr MPI_Datatype data_type = (sizeof(deviceFloat) == sizeof(float)) ? MPI_FLOAT : MPI_DOUBLE;
@@ -958,9 +958,9 @@ auto SEM::Meshes::Mesh2D_t::boundary_conditions() -> void {
 
         MPI_Waitall(3 * mpi_interfaces_size_.size(), requests_.data(), statuses_.data());
 
-        device_interfaces_p_.copy_from(host_receiving_interfaces_p_);
-        device_interfaces_u_.copy_from(host_receiving_interfaces_u_);
-        device_interfaces_v_.copy_from(host_receiving_interfaces_v_);
+        device_interfaces_p_.copy_from(host_receiving_interfaces_p_, stream_);
+        device_interfaces_u_.copy_from(host_receiving_interfaces_u_, stream_);
+        device_interfaces_v_.copy_from(host_receiving_interfaces_v_, stream_);
 
         SEM::Meshes::put_MPI_interfaces<<<mpi_interfaces_numBlocks_, boundaries_blockSize_, 0, stream_>>>(mpi_interfaces_destination_.size(), elements_.data(), mpi_interfaces_destination_.data(), maximum_N_, device_interfaces_p_.data(), device_interfaces_u_.data(), device_interfaces_v_.data());
 

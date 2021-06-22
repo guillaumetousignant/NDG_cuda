@@ -33,17 +33,17 @@ TEST_CASE("ChebyshevPolynomials_CPU_GPU", "Compares the Chebyshev polynomials be
     std::vector<deviceFloat> host_derivative_matrices_hat(NDG.matrix_length_);
     std::vector<deviceFloat> host_interpolation_matrices(NDG.interpolation_length_);
 
-    NDG.nodes_.copy_to(host_nodes);
-    NDG.weights_.copy_to(host_weights);
-    NDG.barycentric_weights_.copy_to(host_barycentric_weights);
-    NDG.lagrange_interpolant_left_.copy_to(host_lagrange_interpolant_left);
-    NDG.lagrange_interpolant_right_.copy_to(host_lagrange_interpolant_right);
-    NDG.lagrange_interpolant_derivative_left_.copy_to(host_lagrange_interpolant_derivative_left);
-    NDG.lagrange_interpolant_derivative_right_.copy_to(host_lagrange_interpolant_derivative_right);
-    NDG.derivative_matrices_.copy_to(host_derivative_matrices);
-    NDG.g_hat_derivative_matrices_.copy_to(host_g_hat_derivative_matrices);
-    NDG.derivative_matrices_hat_.copy_to(host_derivative_matrices_hat);
-    NDG.interpolation_matrices_.copy_to(host_interpolation_matrices);
+    NDG.nodes_.copy_to(host_nodes, stream);
+    NDG.weights_.copy_to(host_weights, stream);
+    NDG.barycentric_weights_.copy_to(host_barycentric_weights, stream);
+    NDG.lagrange_interpolant_left_.copy_to(host_lagrange_interpolant_left, stream);
+    NDG.lagrange_interpolant_right_.copy_to(host_lagrange_interpolant_right, stream);
+    NDG.lagrange_interpolant_derivative_left_.copy_to(host_lagrange_interpolant_derivative_left, stream);
+    NDG.lagrange_interpolant_derivative_right_.copy_to(host_lagrange_interpolant_derivative_right, stream);
+    NDG.derivative_matrices_.copy_to(host_derivative_matrices, stream);
+    NDG.g_hat_derivative_matrices_.copy_to(host_g_hat_derivative_matrices, stream);
+    NDG.derivative_matrices_hat_.copy_to(host_derivative_matrices_hat, stream);
+    NDG.interpolation_matrices_.copy_to(host_interpolation_matrices, stream);
 
     for (int N_test = 0; N_test <= N_max; ++N_test) {
         const size_t offset_1D = N_test * (N_test + 1) /2;
@@ -121,17 +121,17 @@ TEST_CASE("LegendrePolynomials_CPU_GPU", "Compares the Legendre polynomials betw
     std::vector<deviceFloat> host_derivative_matrices_hat(NDG.matrix_length_);
     std::vector<deviceFloat> host_interpolation_matrices(NDG.interpolation_length_);
 
-    NDG.nodes_.copy_to(host_nodes);
-    NDG.weights_.copy_to(host_weights);
-    NDG.barycentric_weights_.copy_to(host_barycentric_weights);
-    NDG.lagrange_interpolant_left_.copy_to(host_lagrange_interpolant_left);
-    NDG.lagrange_interpolant_right_.copy_to(host_lagrange_interpolant_right);
-    NDG.lagrange_interpolant_derivative_left_.copy_to(host_lagrange_interpolant_derivative_left);
-    NDG.lagrange_interpolant_derivative_right_.copy_to(host_lagrange_interpolant_derivative_right);
-    NDG.derivative_matrices_.copy_to(host_derivative_matrices);
-    NDG.g_hat_derivative_matrices_.copy_to(host_g_hat_derivative_matrices);
-    NDG.derivative_matrices_hat_.copy_to(host_derivative_matrices_hat);
-    NDG.interpolation_matrices_.copy_to(host_interpolation_matrices);
+    NDG.nodes_.copy_to(host_nodes, stream);
+    NDG.weights_.copy_to(host_weights, stream);
+    NDG.barycentric_weights_.copy_to(host_barycentric_weights, stream);
+    NDG.lagrange_interpolant_left_.copy_to(host_lagrange_interpolant_left, stream);
+    NDG.lagrange_interpolant_right_.copy_to(host_lagrange_interpolant_right, stream);
+    NDG.lagrange_interpolant_derivative_left_.copy_to(host_lagrange_interpolant_derivative_left, stream);
+    NDG.lagrange_interpolant_derivative_right_.copy_to(host_lagrange_interpolant_derivative_right, stream);
+    NDG.derivative_matrices_.copy_to(host_derivative_matrices, stream);
+    NDG.g_hat_derivative_matrices_.copy_to(host_g_hat_derivative_matrices, stream);
+    NDG.derivative_matrices_hat_.copy_to(host_derivative_matrices_hat, stream);
+    NDG.interpolation_matrices_.copy_to(host_interpolation_matrices, stream);
 
     for (int N_test = 0; N_test <= N_max; ++N_test) {
         const size_t offset_1D = N_test * (N_test + 1) /2;

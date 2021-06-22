@@ -36,17 +36,17 @@ TEST_CASE("ChebyshevPolynomials", "Checks the Chebyshev polynomials"){
     std::vector<deviceFloat> host_derivative_matrices_hat(NDG.matrix_length_);
     std::vector<deviceFloat> host_interpolation_matrices(NDG.interpolation_length_);
 
-    NDG.nodes_.copy_to(host_nodes);
-    NDG.weights_.copy_to(host_weights);
-    NDG.barycentric_weights_.copy_to(host_barycentric_weights);
-    NDG.lagrange_interpolant_left_.copy_to(host_lagrange_interpolant_left);
-    NDG.lagrange_interpolant_right_.copy_to(host_lagrange_interpolant_right);
-    NDG.lagrange_interpolant_derivative_left_.copy_to(host_lagrange_interpolant_derivative_left);
-    NDG.lagrange_interpolant_derivative_right_.copy_to(host_lagrange_interpolant_derivative_right);
-    NDG.derivative_matrices_.copy_to(host_derivative_matrices);
-    NDG.g_hat_derivative_matrices_.copy_to(host_g_hat_derivative_matrices);
-    NDG.derivative_matrices_hat_.copy_to(host_derivative_matrices_hat);
-    NDG.interpolation_matrices_.copy_to(host_interpolation_matrices);
+    NDG.nodes_.copy_to(host_nodes, stream);
+    NDG.weights_.copy_to(host_weights, stream);
+    NDG.barycentric_weights_.copy_to(host_barycentric_weights, stream);
+    NDG.lagrange_interpolant_left_.copy_to(host_lagrange_interpolant_left, stream);
+    NDG.lagrange_interpolant_right_.copy_to(host_lagrange_interpolant_right, stream);
+    NDG.lagrange_interpolant_derivative_left_.copy_to(host_lagrange_interpolant_derivative_left, stream);
+    NDG.lagrange_interpolant_derivative_right_.copy_to(host_lagrange_interpolant_derivative_right, stream);
+    NDG.derivative_matrices_.copy_to(host_derivative_matrices, stream);
+    NDG.g_hat_derivative_matrices_.copy_to(host_g_hat_derivative_matrices, stream);
+    NDG.derivative_matrices_hat_.copy_to(host_derivative_matrices_hat, stream);
+    NDG.interpolation_matrices_.copy_to(host_interpolation_matrices, stream);
 
     const std::array<double, N_test+1> nodes {-0.9957341762950345218712,
                                                 -0.9618256431728190704088,
@@ -170,17 +170,17 @@ TEST_CASE("LegendrePolynomials", "Checks the Legendre polynomials"){
     std::vector<deviceFloat> host_derivative_matrices_hat(NDG.matrix_length_);
     std::vector<deviceFloat> host_interpolation_matrices(NDG.interpolation_length_);
 
-    NDG.nodes_.copy_to(host_nodes);
-    NDG.weights_.copy_to(host_weights);
-    NDG.barycentric_weights_.copy_to(host_barycentric_weights);
-    NDG.lagrange_interpolant_left_.copy_to(host_lagrange_interpolant_left);
-    NDG.lagrange_interpolant_right_.copy_to(host_lagrange_interpolant_right);
-    NDG.lagrange_interpolant_derivative_left_.copy_to(host_lagrange_interpolant_derivative_left);
-    NDG.lagrange_interpolant_derivative_right_.copy_to(host_lagrange_interpolant_derivative_right);
-    NDG.derivative_matrices_.copy_to(host_derivative_matrices);
-    NDG.g_hat_derivative_matrices_.copy_to(host_g_hat_derivative_matrices);
-    NDG.derivative_matrices_hat_.copy_to(host_derivative_matrices_hat);
-    NDG.interpolation_matrices_.copy_to(host_interpolation_matrices);
+    NDG.nodes_.copy_to(host_nodes, stream);
+    NDG.weights_.copy_to(host_weights, stream);
+    NDG.barycentric_weights_.copy_to(host_barycentric_weights, stream);
+    NDG.lagrange_interpolant_left_.copy_to(host_lagrange_interpolant_left, stream);
+    NDG.lagrange_interpolant_right_.copy_to(host_lagrange_interpolant_right, stream);
+    NDG.lagrange_interpolant_derivative_left_.copy_to(host_lagrange_interpolant_derivative_left, stream);
+    NDG.lagrange_interpolant_derivative_right_.copy_to(host_lagrange_interpolant_derivative_right, stream);
+    NDG.derivative_matrices_.copy_to(host_derivative_matrices, stream);
+    NDG.g_hat_derivative_matrices_.copy_to(host_g_hat_derivative_matrices, stream);
+    NDG.derivative_matrices_hat_.copy_to(host_derivative_matrices_hat, stream);
+    NDG.interpolation_matrices_.copy_to(host_interpolation_matrices, stream);
 
     const std::array<double, N_test+1> nodes {-0.9905754753144173356754,
                                                 -0.9506755217687677612227,

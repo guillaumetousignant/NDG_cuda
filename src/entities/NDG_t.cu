@@ -13,8 +13,6 @@ constexpr int poly_blockSize = 16; // Small number of threads per block because 
 constexpr int interpolation_blockSize = 32;
 const dim3 matrix_blockSize(16, 16); // Small number of threads per block because N will never be huge
 
-using SEM::Entities::device_vector;
-
 template class SEM::Entities::NDG_t<SEM::Polynomials::ChebyshevPolynomial_t>; // Like, I understand why I need this, but man is it crap.
 template class SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t>;
 
@@ -25,17 +23,17 @@ SEM::Entities::NDG_t<Polynomial>::NDG_t(int N_max, size_t N_interpolation_points
         vector_length_((N_max_ + 1) * (N_max_ + 2)/2), 
         matrix_length_((N_max_ + 1) * (N_max_ + 2) * (2 * N_max_ + 3)/6),
         interpolation_length_((N_max_ + 1) * (N_max_ + 2) * N_interpolation_points_/2),
-        nodes_(vector_length_),
-        weights_(vector_length_),
-        barycentric_weights_(vector_length_),
-        lagrange_interpolant_left_(vector_length_),
-        lagrange_interpolant_right_(vector_length_),
-        lagrange_interpolant_derivative_left_(vector_length_),
-        lagrange_interpolant_derivative_right_(vector_length_),
-        derivative_matrices_(matrix_length_),
-        g_hat_derivative_matrices_(matrix_length_),
-        derivative_matrices_hat_(matrix_length_),
-        interpolation_matrices_(interpolation_length_) {
+        nodes_{vector_length_, stream},
+        weights_{vector_length_, stream},
+        barycentric_weights_{vector_length_, stream},
+        lagrange_interpolant_left_{vector_length_, stream},
+        lagrange_interpolant_right_{vector_length_, stream},
+        lagrange_interpolant_derivative_left_{vector_length_, stream},
+        lagrange_interpolant_derivative_right_{vector_length_, stream},
+        derivative_matrices_{matrix_length_, stream},
+        g_hat_derivative_matrices_{matrix_length_, stream},
+        derivative_matrices_hat_{matrix_length_, stream},
+        interpolation_matrices_{interpolation_length_, stream} {
 
     Polynomial::nodes_and_weights(N_max_, poly_blockSize, nodes_.data(), weights_.data(), stream);
 

@@ -65,17 +65,16 @@ TEST_CASE("2D interpolation test", "Checks the interpolated value of the solutio
     std::vector<SEM::Entities::Element2D_t> host_elements(1);
     host_elements[0].N_ = N_test;
 
-    SEM::Entities::device_vector<SEM::Entities::Element2D_t> device_elements;
-    device_elements = host_elements;
+    SEM::Entities::device_vector<SEM::Entities::Element2D_t> device_elements(host_elements, stream);
 
-    SEM::Entities::device_vector<deviceFloat> x(N_interpolation_points * N_interpolation_points);
-    SEM::Entities::device_vector<deviceFloat> y(N_interpolation_points * N_interpolation_points);
-    SEM::Entities::device_vector<deviceFloat> p(N_interpolation_points * N_interpolation_points);
-    SEM::Entities::device_vector<deviceFloat> u(N_interpolation_points * N_interpolation_points);
-    SEM::Entities::device_vector<deviceFloat> v(N_interpolation_points * N_interpolation_points);
-    SEM::Entities::device_vector<deviceFloat> dp_dt(N_interpolation_points * N_interpolation_points);
-    SEM::Entities::device_vector<deviceFloat> du_dt(N_interpolation_points * N_interpolation_points);
-    SEM::Entities::device_vector<deviceFloat> dv_dt(N_interpolation_points * N_interpolation_points);
+    SEM::Entities::device_vector<deviceFloat> x(N_interpolation_points * N_interpolation_points, stream);
+    SEM::Entities::device_vector<deviceFloat> y(N_interpolation_points * N_interpolation_points, stream);
+    SEM::Entities::device_vector<deviceFloat> p(N_interpolation_points * N_interpolation_points, stream);
+    SEM::Entities::device_vector<deviceFloat> u(N_interpolation_points * N_interpolation_points, stream);
+    SEM::Entities::device_vector<deviceFloat> v(N_interpolation_points * N_interpolation_points, stream);
+    SEM::Entities::device_vector<deviceFloat> dp_dt(N_interpolation_points * N_interpolation_points, stream);
+    SEM::Entities::device_vector<deviceFloat> du_dt(N_interpolation_points * N_interpolation_points, stream);
+    SEM::Entities::device_vector<deviceFloat> dv_dt(N_interpolation_points * N_interpolation_points, stream);
 
     elements_init<<<1, 1, 0, stream>>>(1, N_interpolation_points, device_elements.data(), NDG.nodes_.data(), NDG.interpolation_matrices_.data(), x.data(), y.data(), p.data(), u.data(), v.data(), dp_dt.data(), dp_dt.data(), dp_dt.data());
 
@@ -85,11 +84,11 @@ TEST_CASE("2D interpolation test", "Checks the interpolated value of the solutio
     std::vector<deviceFloat> u_host(N_interpolation_points * N_interpolation_points);
     std::vector<deviceFloat> v_host(N_interpolation_points * N_interpolation_points);
 
-    x.copy_to(x_host);
-    y.copy_to(y_host);
-    p.copy_to(p_host);
-    u.copy_to(u_host);
-    v.copy_to(v_host);
+    x.copy_to(x_host, stream);
+    y.copy_to(y_host, stream);
+    p.copy_to(p_host, stream);
+    u.copy_to(u_host, stream);
+    v.copy_to(v_host, stream);
 
     for (size_t i = 0; i < N_interpolation_points; ++i) {
         for (size_t j = 0; j < N_interpolation_points; ++j) {

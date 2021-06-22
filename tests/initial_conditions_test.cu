@@ -56,18 +56,18 @@ TEST_CASE("Initial conditions solution value", "Checks the node values are corre
     bool* host_coarsen = new bool[mesh.N_elements_]; // Like they won't be an array of bools but packed in integers, in which case getting them from Cuda will fail.
     std::vector<deviceFloat> host_error(mesh.N_elements_);
     std::vector<deviceFloat> host_delta_x(mesh.N_elements_);
-    cudaMalloc(&x, mesh.N_elements_ * N_interpolation_points * sizeof(deviceFloat));
-    cudaMalloc(&phi, mesh.N_elements_ * N_interpolation_points * sizeof(deviceFloat));
-    cudaMalloc(&phi_prime, mesh.N_elements_ * N_interpolation_points * sizeof(deviceFloat));
-    cudaMalloc(&intermediate, mesh.N_elements_ * N_interpolation_points * sizeof(deviceFloat));
-    cudaMalloc(&x_L, mesh.N_elements_ * sizeof(deviceFloat));
-    cudaMalloc(&x_R, mesh.N_elements_ * sizeof(deviceFloat));
-    cudaMalloc(&N, mesh.N_elements_ * sizeof(int));
-    cudaMalloc(&sigma, mesh.N_elements_ * sizeof(deviceFloat));
-    cudaMalloc(&refine, mesh.N_elements_ * sizeof(bool));
-    cudaMalloc(&coarsen, mesh.N_elements_ * sizeof(bool));
-    cudaMalloc(&error, mesh.N_elements_ * sizeof(deviceFloat));
-    cudaMalloc(&delta_x, mesh.N_elements_ * sizeof(deviceFloat));
+    cudaMallocAsync(&x, mesh.N_elements_ * N_interpolation_points * sizeof(deviceFloat), stream);
+    cudaMallocAsync(&phi, mesh.N_elements_ * N_interpolation_points * sizeof(deviceFloat), stream);
+    cudaMallocAsync(&phi_prime, mesh.N_elements_ * N_interpolation_points * sizeof(deviceFloat), stream);
+    cudaMallocAsync(&intermediate, mesh.N_elements_ * N_interpolation_points * sizeof(deviceFloat), stream);
+    cudaMallocAsync(&x_L, mesh.N_elements_ * sizeof(deviceFloat), stream);
+    cudaMallocAsync(&x_R, mesh.N_elements_ * sizeof(deviceFloat), stream);
+    cudaMallocAsync(&N, mesh.N_elements_ * sizeof(int), stream);
+    cudaMallocAsync(&sigma, mesh.N_elements_ * sizeof(deviceFloat), stream);
+    cudaMallocAsync(&refine, mesh.N_elements_ * sizeof(bool), stream);
+    cudaMallocAsync(&coarsen, mesh.N_elements_ * sizeof(bool), stream);
+    cudaMallocAsync(&error, mesh.N_elements_ * sizeof(deviceFloat), stream);
+    cudaMallocAsync(&delta_x, mesh.N_elements_ * sizeof(deviceFloat), stream);
 
     SEM::Entities::get_solution<<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, stream>>>(mesh.N_elements_, N_interpolation_points, mesh.elements_, NDG.interpolation_matrices_.data(), x, phi, phi_prime, intermediate, x_L, x_R, N, sigma, refine, coarsen, error, delta_x);
     
@@ -91,18 +91,20 @@ TEST_CASE("Initial conditions solution value", "Checks the node values are corre
 
     delete[] host_refine;
     delete[] host_coarsen;
-    cudaFree(x);
-    cudaFree(phi);
-    cudaFree(phi_prime);
-    cudaFree(intermediate);
-    cudaFree(x_L);
-    cudaFree(x_R);
-    cudaFree(N);
-    cudaFree(sigma);
-    cudaFree(refine);
-    cudaFree(coarsen);
-    cudaFree(error);
-    cudaFree(delta_x);
+    cudaFreeAsync(x, stream);
+    cudaFreeAsync(phi, stream);
+    cudaFreeAsync(phi_prime, stream);
+    cudaFreeAsync(intermediate, stream);
+    cudaFreeAsync(x_L, stream);
+    cudaFreeAsync(x_R, stream);
+    cudaFreeAsync(N, stream);
+    cudaFreeAsync(sigma, stream);
+    cudaFreeAsync(refine, stream);
+    cudaFreeAsync(coarsen, stream);
+    cudaFreeAsync(error, stream);
+    cudaFreeAsync(delta_x, stream);
+
+    cudaStreamDestroy(stream);
 }
 
 TEST_CASE("Initial conditions boundary values", "Checks the extrapolated boundary values are correct after initial conditions.") {   
@@ -161,4 +163,6 @@ TEST_CASE("Initial conditions boundary values", "Checks the extrapolated boundar
         REQUIRE(std::abs(phi_prime_L_expected + host_elements[i].phi_prime_L_) < max_error);
         REQUIRE(std::abs(phi_prime_R_expected + host_elements[i].phi_prime_R_) < max_error);
     }
+
+    cudaStreamDestroy(stream);
 }
