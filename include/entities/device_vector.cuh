@@ -11,6 +11,10 @@ namespace SEM { namespace Entities {
             __host__ __device__
             device_vector(TI size);
 
+            template<typename TI>
+            __host__ __device__
+            device_vector(TI size, const cudaStream_t& stream);
+
             __host__ __device__
             device_vector();
 

@@ -9,6 +9,13 @@ SEM::Entities::device_vector<T>::device_vector(TI size) : size_(size) {
 }
 
 template <typename T>
+template<typename TI>
+__host__ __device__
+SEM::Entities::device_vector<T>::device_vector(TI size, const cudaStream_t& stream) : size_(size) {
+    cudaMallocAsync(&data_, size_ * sizeof(T), stream);
+}
+
+template <typename T>
 __host__ __device__
 SEM::Entities::device_vector<T>::device_vector() : size_(0) {
     data_ = nullptr;
@@ -34,7 +41,7 @@ SEM::Entities::device_vector<T>::device_vector(const device_vector<T>& other) : 
 template <typename T>
 __host__ __device__
 SEM::Entities::device_vector<T>::device_vector(const device_vector<T>& other, const cudaStream_t& stream) : size_(other.size()) { // copy constructor
-    cudaMalloc(&data_, size_ * sizeof(T));
+    cudaMallocAsync(&data_, size_ * sizeof(T), stream);
     #ifdef  __CUDA_ARCH__
     memcpy(data_, other.data(), size_ * sizeof(T));
     #else
@@ -52,7 +59,7 @@ SEM::Entities::device_vector<T>::device_vector(const std::vector<T>& other) : si
 template <typename T>
 __host__
 SEM::Entities::device_vector<T>::device_vector(const std::vector<T>& other, const cudaStream_t& stream) : size_(other.size()) { // copy constructor
-    cudaMalloc(&data_, size_ * sizeof(T));
+    cudaMallocAsync(&data_, size_ * sizeof(T), stream);
     cudaMemcpyAsync(data_, other.data(), size_ * sizeof(T), cudaMemcpyHostToDevice, stream);
 }
 
