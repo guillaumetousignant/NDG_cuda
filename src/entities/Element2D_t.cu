@@ -2,7 +2,9 @@
 #include "polynomials/ChebyshevPolynomial_t.cuh"
 #include "polynomials/LegendrePolynomial_t.cuh"
 #include "functions/quad_map.cuh"
+#include "helpers/constants.h"
 #include <cmath>
+#include <limits>
 
 using SEM::Entities::cuda_vector;
 
@@ -39,10 +41,12 @@ SEM::Entities::Element2D_t::Element2D_t(int N, std::array<cuda_vector<size_t>, 4
         p_intermediate_((N_ + 1) * (N_ + 1)),
         u_intermediate_((N_ + 1) * (N_ + 1)),
         v_intermediate_((N_ + 1) * (N_ + 1)),
-        sigma_(0.0),
+        spectrum_(N_ + 1),
         refine_(false),
         coarsen_(false),
-        error_(0.0) {}
+        p_error_(0.0),
+        u_error_(0.0),
+        v_error_(0.0) {}
 
 __host__ __device__
 SEM::Entities::Element2D_t::Element2D_t() :
@@ -57,10 +61,11 @@ SEM::Entities::Element2D_t::Element2D_t() :
         p_flux_extrapolated_{},
         u_flux_extrapolated_{},
         v_flux_extrapolated_{},
-        sigma_(0.0),
         refine_(false),
         coarsen_(false),
-        error_(0.0) {};
+        p_error_(0.0),
+        u_error_(0.0),
+        v_error_(0.0) {};
 
 // Algorithm 61
 __device__
@@ -113,19 +118,184 @@ auto SEM::Entities::Element2D_t::interpolate_q_to_boundaries(const deviceFloat* 
     printf("Warning, SEM::Entities::Element2D_t::interpolate_q_to_boundaries is not implemented.\n");
 }
 
-template __device__ auto SEM::Entities::Element2D_t::estimate_error<SEM::Polynomials::ChebyshevPolynomial_t>(const deviceFloat* nodes, const deviceFloat* weights) -> void;
-template __device__ auto SEM::Entities::Element2D_t::estimate_error<SEM::Polynomials::LegendrePolynomial_t>(const deviceFloat* nodes, const deviceFloat* weights) -> void;
+template __device__ auto SEM::Entities::Element2D_t::estimate_error<SEM::Polynomials::ChebyshevPolynomial_t>(const deviceFloat* polynomial_nodes, const deviceFloat* weights) -> void;
+template __device__ auto SEM::Entities::Element2D_t::estimate_error<SEM::Polynomials::LegendrePolynomial_t>(const deviceFloat* polynomial_nodes, const deviceFloat* weights) -> void;
 
 template<typename Polynomial>
 __device__
 auto SEM::Entities::Element2D_t::estimate_error<Polynomial>(const deviceFloat* polynomial_nodes, const deviceFloat* weights) -> void {
-    printf("Warning, SEM::Entities::Element2D_t::estimate_error is not implemented.\n");
+    const int offset_1D = N_ * (N_ + 1) /2;
+
+    refine_ = false;
+    coarsen_ = true;
+
+    // Pressure
+    p_error_ = -std::numeric_limits<float>::infinity();
+
+    // x direction
+    for (int j = 0; j <= N_; ++j) {
+        for (int k = 0; k <= N_; ++k) {
+            spectrum_[k] = 0.0;
+            for (int i = 0; i <= N_; ++i) {
+                const deviceFloat L_N = Polynomial::polynomial(k, polynomial_nodes[offset_1D + i]);
+
+                spectrum_[k] += (2 * k + 1) * 0.5 * p_[i * (N_ + 1) + j] * L_N * weights[offset_1D + i];
+            }
+            spectrum_[k] = std::abs(spectrum_[k]);
+        }
+
+        const auto [C, sigma] = exponential_decay();
+
+        // max error
+        p_error_ = std::max(std::sqrt(C * C * 0.5/sigma) * std::exp(-sigma * (N_ + 1)), p_error_);
+    }
+
+    // y direction
+    for (int j = 0; j <= N_; ++j) {
+        for (int k = 0; k <= N_; ++k) {
+            spectrum_[k] = 0.0;
+            for (int i = 0; i <= N_; ++i) {
+                const deviceFloat L_N = Polynomial::polynomial(k, polynomial_nodes[offset_1D + i]);
+
+                spectrum_[k] += (2 * k + 1) * 0.5 * p_[j * (N_ + 1) + i] * L_N * weights[offset_1D + i];
+            }
+            spectrum_[k] = std::abs(spectrum_[k]);
+        }
+
+        const auto [C, sigma] = exponential_decay();
+
+        // max error
+        p_error_ = std::max(std::sqrt(C * C * 0.5/sigma) * std::exp(-sigma * (N_ + 1)), p_error_);
+    }
+
+    if(p_error_ > SEM::Constants::tolerance_min) {	// need refinement
+        refine_ = true;
+    }
+    else if(p_error_ > SEM::Constants::tolerance_max ) {	// need coarsening
+        coarsen_ = false;
+    }
+
+    // u
+    u_error_ = -std::numeric_limits<float>::infinity();
+
+    // x direction
+    for (int j = 0; j <= N_; ++j) {
+        for (int k = 0; k <= N_; ++k) {
+            spectrum_[k] = 0.0;
+            for (int i = 0; i <= N_; ++i) {
+                const deviceFloat L_N = Polynomial::polynomial(k, polynomial_nodes[offset_1D + i]);
+
+                spectrum_[k] += (2 * k + 1) * 0.5 * u_[i * (N_ + 1) + j] * L_N * weights[offset_1D + i];
+            }
+            spectrum_[k] = std::abs(spectrum_[k]);
+        }
+
+        const auto [C, sigma] = exponential_decay();
+
+        // max error
+        u_error_ = std::max(std::sqrt(C * C * 0.5/sigma) * std::exp(-sigma * (N_ + 1)), u_error_);
+    }
+
+    // y direction
+    for (int j = 0; j <= N_; ++j) {
+        for (int k = 0; k <= N_; ++k) {
+            spectrum_[k] = 0.0;
+            for (int i = 0; i <= N_; ++i) {
+                const deviceFloat L_N = Polynomial::polynomial(k, polynomial_nodes[offset_1D + i]);
+
+                spectrum_[k] += (2 * k + 1) * 0.5 * u_[j * (N_ + 1) + i] * L_N * weights[offset_1D + i];
+            }
+            spectrum_[k] = std::abs(spectrum_[k]);
+        }
+
+        const auto [C, sigma] = exponential_decay();
+
+        // max error
+        u_error_ = std::max(std::sqrt(C * C * 0.5/sigma) * std::exp(-sigma * (N_ + 1)), u_error_);
+    }
+
+    if(u_error_ > SEM::Constants::tolerance_min) {	// need refinement
+        refine_ = true;
+    }
+    else if(u_error_ > SEM::Constants::tolerance_max ) {	// need coarsening
+        coarsen_ = false;
+    }
+
+    // v
+    v_error_ = -std::numeric_limits<float>::infinity();
+
+    // x direction
+    for (int j = 0; j <= N_; ++j) {
+        for (int k = 0; k <= N_; ++k) {
+            spectrum_[k] = 0.0;
+            for (int i = 0; i <= N_; ++i) {
+                const deviceFloat L_N = Polynomial::polynomial(k, polynomial_nodes[offset_1D + i]);
+
+                spectrum_[k] += (2 * k + 1) * 0.5 * v_[i * (N_ + 1) + j] * L_N * weights[offset_1D + i];
+            }
+            spectrum_[k] = std::abs(spectrum_[k]);
+        }
+
+        const auto [C, sigma] = exponential_decay();
+
+        // max error
+        v_error_ = std::max(std::sqrt(C * C * 0.5/sigma) * std::exp(-sigma * (N_ + 1)), v_error_);
+    }
+
+    // y direction
+    for (int j = 0; j <= N_; ++j) {
+        for (int k = 0; k <= N_; ++k) {
+            spectrum_[k] = 0.0;
+            for (int i = 0; i <= N_; ++i) {
+                const deviceFloat L_N = Polynomial::polynomial(k, polynomial_nodes[offset_1D + i]);
+
+                spectrum_[k] += (2 * k + 1) * 0.5 * v_[j * (N_ + 1) + i] * L_N * weights[offset_1D + i];
+            }
+            spectrum_[k] = std::abs(spectrum_[k]);
+        }
+
+        const auto [C, sigma] = exponential_decay();
+
+        // max error
+        v_error_ = std::max(std::sqrt(C * C * 0.5/sigma) * std::exp(-sigma * (N_ + 1)), v_error_);
+    }
+
+    if(v_error_ > SEM::Constants::tolerance_min) {	// need refinement
+        refine_ = true;
+    }
+    else if(v_error_ > SEM::Constants::tolerance_max ) {	// need coarsening
+        coarsen_ = false;
+    }
 }
 
 __device__
-auto SEM::Entities::Element2D_t::exponential_decay() -> deviceFloat {
-    printf("Warning, SEM::Entities::Element2D_t::exponential_decay is not implemented.\n");
-    return 0.0;
+auto SEM::Entities::Element2D_t::exponential_decay() -> std::array<deviceFloat, 2> {
+    const int n_points_least_squares = min(N_, 4); // Number of points to use for thew least squares reduction, but don't go above N.
+
+    deviceFloat x_avg = 0.0;
+    deviceFloat y_avg = 0.0;
+
+    for (int i = 0; i < n_points_least_squares; ++i) {
+        x_avg += N_ - i;
+        y_avg += std::log(spectrum_[N_ - i]);
+    }
+
+    x_avg /= n_points_least_squares;
+    y_avg /= n_points_least_squares;
+
+    deviceFloat numerator = 0.0;
+    deviceFloat denominator = 0.0;
+
+    for (int i = 0; i < n_points_least_squares; ++i) {
+        numerator += (N_ - i - x_avg) * (std::log(spectrum_[N_ - i]) - y_avg);
+        denominator += (N_ - i - x_avg) * (N_ - i - x_avg);
+    }
+
+    deviceFloat sigma = numerator/denominator;
+
+    const deviceFloat C = std::exp(y_avg - sigma * x_avg);
+    sigma = std::abs(sigma);
+    return {C, sigma};
 }
 
 __device__
@@ -226,6 +396,7 @@ auto SEM::Entities::Element2D_t::allocate_storage() -> void {
     p_intermediate_ = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
     u_intermediate_ = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
     v_intermediate_ = cuda_vector<deviceFloat>((N_ + 1) * (N_ + 1));
+    spectrum_ = cuda_vector<deviceFloat>(N_ + 1);
 }
 
 __device__

@@ -52,11 +52,13 @@ namespace SEM { namespace Entities {
             SEM::Entities::cuda_vector<deviceFloat> p_intermediate_;
             SEM::Entities::cuda_vector<deviceFloat> u_intermediate_;
             SEM::Entities::cuda_vector<deviceFloat> v_intermediate_;
+            SEM::Entities::cuda_vector<deviceFloat> spectrum_;
 
-            deviceFloat sigma_;
             bool refine_;
             bool coarsen_;
-            deviceFloat error_;
+            deviceFloat p_error_;
+            deviceFloat u_error_;
+            deviceFloat v_error_;
 
             // Algorithm 61
             __device__
@@ -84,7 +86,7 @@ namespace SEM { namespace Entities {
 
         private:
             __device__
-            auto exponential_decay() -> deviceFloat;
+            auto exponential_decay() -> std::array<deviceFloat, 2>;
     };
 }}
 

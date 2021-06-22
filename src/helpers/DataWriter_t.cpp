@@ -38,7 +38,12 @@ auto SEM::Helpers::DataWriter_t::write_data(size_t N_interpolation_points,
                                             const std::vector<int>& N,
                                             const std::vector<deviceFloat>& dp_dt, 
                                             const std::vector<deviceFloat>& du_dt, 
-                                            const std::vector<deviceFloat>& dv_dt) const -> void {
+                                            const std::vector<deviceFloat>& dv_dt, 
+                                            const std::vector<deviceFloat>& p_error, 
+                                            const std::vector<deviceFloat>& u_error, 
+                                            const std::vector<deviceFloat>& v_error, 
+                                            const std::vector<int>& refine, 
+                                            const std::vector<int>& coarsen) const -> void {
 
     // Creating points
     vtkNew<vtkPoints> points; // Should bt vtkPoints2D, but unstructured meshes can't take 2D points.
@@ -173,6 +178,75 @@ auto SEM::Helpers::DataWriter_t::write_data(size_t N_interpolation_points,
     }
 
     grid->GetPointData()->AddArray(velocity_derivative);
+
+    // Add p_error to each point
+    vtkNew<vtkDoubleArray> p_error_output;
+    p_error_output->SetNumberOfComponents(1);
+    p_error_output->Allocate(N_elements * N_interpolation_points * N_interpolation_points);
+    p_error_output->SetName("PressureError");
+
+    for (size_t element_index = 0; element_index < N_elements; ++element_index) {
+        const size_t offset = element_index * N_interpolation_points * N_interpolation_points;
+        for (size_t i = 0; i < N_interpolation_points; ++i) {
+            for (size_t j = 0; j < N_interpolation_points; ++j) {
+                p_error_output->InsertNextValue(p_error[element_index]);
+            }
+        }
+    }
+
+    grid->GetPointData()->AddArray(p_error_output);
+
+    // Add velocity error to each point
+    vtkNew<vtkDoubleArray> velocity_error;
+    velocity_error->SetNumberOfComponents(2);
+    velocity_error->Allocate(N_elements * N_interpolation_points * N_interpolation_points * 2);
+    velocity_error->SetName("VelocityError");
+
+    for (size_t element_index = 0; element_index < N_elements; ++element_index) {
+        const size_t offset = element_index * N_interpolation_points * N_interpolation_points;
+        for (size_t i = 0; i < N_interpolation_points; ++i) {
+            for (size_t j = 0; j < N_interpolation_points; ++j) {
+                velocity_error->InsertNextValue(u_error[element_index]);
+                velocity_error->InsertNextValue(v_error[element_index]);
+            }
+        }
+    }
+
+    grid->GetPointData()->AddArray(velocity_error);
+
+    // Add refine to each point
+    vtkNew<vtkDoubleArray> refine_output;
+    refine_output->SetNumberOfComponents(1);
+    refine_output->Allocate(N_elements * N_interpolation_points * N_interpolation_points);
+    refine_output->SetName("Refine");
+
+    for (size_t element_index = 0; element_index < N_elements; ++element_index) {
+        const size_t offset = element_index * N_interpolation_points * N_interpolation_points;
+        for (size_t i = 0; i < N_interpolation_points; ++i) {
+            for (size_t j = 0; j < N_interpolation_points; ++j) {
+                refine_output->InsertNextValue(refine[element_index]);
+            }
+        }
+    }
+
+    grid->GetPointData()->AddArray(refine_output);
+
+    // Add coarsen to each point
+    vtkNew<vtkDoubleArray> coarsen_output;
+    coarsen_output->SetNumberOfComponents(1);
+    coarsen_output->Allocate(N_elements * N_interpolation_points * N_interpolation_points);
+    coarsen_output->SetName("Coarsen");
+
+    for (size_t element_index = 0; element_index < N_elements; ++element_index) {
+        const size_t offset = element_index * N_interpolation_points * N_interpolation_points;
+        for (size_t i = 0; i < N_interpolation_points; ++i) {
+            for (size_t j = 0; j < N_interpolation_points; ++j) {
+                coarsen_output->InsertNextValue(coarsen[element_index]);
+            }
+        }
+    }
+
+    grid->GetPointData()->AddArray(coarsen_output);
 
     // Filename
     std::stringstream ss;

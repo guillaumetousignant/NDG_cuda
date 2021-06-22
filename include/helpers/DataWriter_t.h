@@ -15,7 +15,7 @@ namespace SEM { namespace Helpers {
         public:
             DataWriter_t(fs::path output_filename);
 
-            auto write_data(size_t N_interpolation_points, size_t N_elements, deviceFloat time, const std::vector<deviceFloat>& x, const std::vector<deviceFloat>& y, const std::vector<deviceFloat>& p, const std::vector<deviceFloat>& u, const std::vector<deviceFloat>& v, const std::vector<int>& N, const std::vector<deviceFloat>& dp_dt, const std::vector<deviceFloat>& du_dt, const std::vector<deviceFloat>& dv_dt) const -> void;
+            auto write_data(size_t N_interpolation_points, size_t N_elements, deviceFloat time, const std::vector<deviceFloat>& x, const std::vector<deviceFloat>& y, const std::vector<deviceFloat>& p, const std::vector<deviceFloat>& u, const std::vector<deviceFloat>& v, const std::vector<int>& N, const std::vector<deviceFloat>& dp_dt, const std::vector<deviceFloat>& du_dt, const std::vector<deviceFloat>& dv_dt, const std::vector<deviceFloat>& p_error, const std::vector<deviceFloat>& u_error, const std::vector<deviceFloat>& v_error, const std::vector<int>& refine, const std::vector<int>& coarsen) const -> void;
 
         private:
             fs::path directory_;

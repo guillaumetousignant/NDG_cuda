@@ -80,7 +80,7 @@ auto SEM::Solvers::Solver2D_t::solve(const SEM::Entities::NDG_t<Polynomial> &NDG
         time += delta_t;
         for (auto const& e : std::as_const(output_times_)) {
             if ((time >= e) && (time < e + delta_t)) {
-                //SEM::Meshes::estimate_error<Polynomial><<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, mesh.stream_>>>(mesh.N_elements_, mesh.elements_.data(), NDG.nodes_.data(), NDG.weights_.data());
+                SEM::Meshes::estimate_error<Polynomial><<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, mesh.stream_>>>(mesh.N_elements_, mesh.elements_.data(), NDG.nodes_.data(), NDG.weights_.data());
                 if (global_rank == 0) {
                     bar.set_status_text("Writing solution");
                     bar.update(time/t_end);
@@ -97,7 +97,7 @@ auto SEM::Solvers::Solver2D_t::solve(const SEM::Entities::NDG_t<Polynomial> &NDG
         }
 
         if (timestep % mesh.adaptivity_interval_ == 0) {
-            //SEM::Meshes::estimate_error<Polynomial><<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, mesh.stream_>>>(mesh.N_elements_, mesh.elements_.data(), NDG.nodes_.data(), NDG.weights_.data());
+            SEM::Meshes::estimate_error<Polynomial><<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, mesh.stream_>>>(mesh.N_elements_, mesh.elements_.data(), NDG.nodes_.data(), NDG.weights_.data());
             mesh.adapt(NDG.N_max_, NDG.nodes_.data(), NDG.barycentric_weights_.data());
         }
     }
@@ -111,7 +111,7 @@ auto SEM::Solvers::Solver2D_t::solve(const SEM::Entities::NDG_t<Polynomial> &NDG
     }
 
     if (!did_write) {
-        //SEM::Meshes::estimate_error<Polynomial><<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, mesh.stream_>>>(mesh.N_elements_, mesh.elements_.data(), NDG.nodes_.data(), NDG.weights_.data());
+        SEM::Meshes::estimate_error<Polynomial><<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, mesh.stream_>>>(mesh.N_elements_, mesh.elements_.data(), NDG.nodes_.data(), NDG.weights_.data());
         if (global_rank == 0) {
             bar.set_status_text("Writing solution");
             bar.update(1.0);
