@@ -20,7 +20,7 @@
 namespace SEM { namespace Meshes {
     class Mesh2D_t {
         public:
-            Mesh2D_t(std::filesystem::path filename, int initial_N, int maximum_N, const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes, cudaStream_t &stream);
+            Mesh2D_t(std::filesystem::path filename, int initial_N, int maximum_N, const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes, const cudaStream_t &stream);
 
             SEM::Entities::device_vector<SEM::Entities::Vec2<deviceFloat>> nodes_;
             SEM::Entities::device_vector<SEM::Entities::Element2D_t> elements_;
@@ -71,7 +71,7 @@ namespace SEM { namespace Meshes {
 
             SEM::Entities::device_vector<deviceFloat> device_delta_t_array_;
             std::vector<deviceFloat> host_delta_t_array_;
-            cudaStream_t &stream_;
+            const cudaStream_t &stream_;
 
             auto read_su2(std::filesystem::path filename) -> void;
             auto read_cgns(std::filesystem::path filename) -> void;

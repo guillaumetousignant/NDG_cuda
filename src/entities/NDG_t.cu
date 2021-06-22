@@ -19,7 +19,7 @@ template class SEM::Entities::NDG_t<SEM::Polynomials::ChebyshevPolynomial_t>; //
 template class SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t>;
 
 template<typename Polynomial>
-SEM::Entities::NDG_t<Polynomial>::NDG_t(int N_max, size_t N_interpolation_points, cudaStream_t &stream) : 
+SEM::Entities::NDG_t<Polynomial>::NDG_t(int N_max, size_t N_interpolation_points, const cudaStream_t &stream) : 
         N_max_(N_max), 
         N_interpolation_points_(N_interpolation_points),
         vector_length_((N_max_ + 1) * (N_max_ + 2)/2), 
