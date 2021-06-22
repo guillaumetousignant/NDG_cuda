@@ -17,17 +17,19 @@ SEM::Helpers::DataWriter_t::DataWriter_t(fs::path output_filename) :
         filename_(output_filename.stem().string()),
         extension_(output_filename.extension().string()) {
 
+    mpi_controller_->Initialize(nullptr, nullptr, 1);
+
     series_filename_ = output_filename;
     series_filename_ += ".series";
-    create_time_series_file();
 
-    mpi_controller_->Initialize(nullptr, nullptr, 1);
+    if (mpi_controller_->GetLocalProcessId() == 0) {
+        create_time_series_file();
+    }
 }
 
 auto SEM::Helpers::DataWriter_t::write_data(size_t N_interpolation_points, 
                                             size_t N_elements, 
-                                            deviceFloat time, 
-                                            int rank, 
+                                            deviceFloat time,
                                             const std::vector<deviceFloat>& x, 
                                             const std::vector<deviceFloat>& y, 
                                             const std::vector<deviceFloat>& p, 
@@ -191,7 +193,9 @@ auto SEM::Helpers::DataWriter_t::write_data(size_t N_interpolation_points,
     writer->SetEndPiece(mpi_controller_->GetLocalProcessId());
     writer->Update();
 
-    add_time_series_to_file(ss2.str(), time);
+    if (mpi_controller_->GetLocalProcessId() == 0) {
+        add_time_series_to_file(ss2.str(), time);
+    }
 }
 
 auto SEM::Helpers::DataWriter_t::create_time_series_file() const -> void {

@@ -910,10 +910,7 @@ auto SEM::Meshes::Mesh2D_t::write_data(deviceFloat time, size_t N_interpolation_
     dv_dt.copy_to(dv_dt_host);
     N.copy_to(N_host);
 
-    int global_rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
-
-    data_writer.write_data(N_interpolation_points, N_elements_, time, global_rank, x_host, y_host, p_host, u_host, v_host, N_host, dp_dt_host, du_dt_host, dv_dt_host);
+    data_writer.write_data(N_interpolation_points, N_elements_, time, x_host, y_host, p_host, u_host, v_host, N_host, dp_dt_host, du_dt_host, dv_dt_host);
 }
 
 __host__ __device__
