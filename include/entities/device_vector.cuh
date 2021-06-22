@@ -19,9 +19,15 @@ namespace SEM { namespace Entities {
 
             __host__ __device__
             device_vector(const device_vector<T>& other); // copy constructor
+
+            __host__ __device__
+            device_vector(const device_vector<T>& other, const cudaStream_t& stream); // copy constructor
             
             __host__ 
             device_vector(const std::vector<T>& other); // copy constructor
+            
+            __host__ 
+            device_vector(const std::vector<T>& other, const cudaStream_t& stream); // copy constructor
 
             __host__ __device__
             device_vector(device_vector<T>&& other) noexcept; // move constructor
@@ -59,13 +65,25 @@ namespace SEM { namespace Entities {
             auto copy_from(const std::vector<T>& host_vector) -> void;
 
             __host__
+            auto copy_from(const std::vector<T>& host_vector, const cudaStream_t& stream) -> void;
+
+            __host__
             auto copy_to(std::vector<T>& host_vector) const -> void;
+
+            __host__
+            auto copy_to(std::vector<T>& host_vector, const cudaStream_t& stream) const -> void;
 
             __host__
             auto copy_from(const device_vector<T>& device_vector) -> void;
 
             __host__
+            auto copy_from(const device_vector<T>& device_vector, const cudaStream_t& stream) -> void;
+
+            __host__
             auto copy_to(device_vector<T>& device_vector) const -> void;
+
+            __host__
+            auto copy_to(device_vector<T>& device_vector, const cudaStream_t& stream) const -> void;
     };
 }}
 

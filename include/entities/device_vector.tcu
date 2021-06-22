@@ -32,10 +32,28 @@ SEM::Entities::device_vector<T>::device_vector(const device_vector<T>& other) : 
 }
 
 template <typename T>
+__host__ __device__
+SEM::Entities::device_vector<T>::device_vector(const device_vector<T>& other, const cudaStream_t& stream) : size_(other.size()) { // copy constructor
+    cudaMalloc(&data_, size_ * sizeof(T));
+    #ifdef  __CUDA_ARCH__
+    memcpy(data_, other.data(), size_ * sizeof(T));
+    #else
+    cudaMemcpyAsync(data_, other.data(), size_ * sizeof(T), cudaMemcpyDeviceToDevice, stream); // Apparently slower than using a kernel
+    #endif
+}
+
+template <typename T>
 __host__
 SEM::Entities::device_vector<T>::device_vector(const std::vector<T>& other) : size_(other.size()) { // copy constructor
     cudaMalloc(&data_, size_ * sizeof(T));
     cudaMemcpy(data_, other.data(), size_ * sizeof(T), cudaMemcpyHostToDevice);
+}
+
+template <typename T>
+__host__
+SEM::Entities::device_vector<T>::device_vector(const std::vector<T>& other, const cudaStream_t& stream) : size_(other.size()) { // copy constructor
+    cudaMalloc(&data_, size_ * sizeof(T));
+    cudaMemcpyAsync(data_, other.data(), size_ * sizeof(T), cudaMemcpyHostToDevice, stream);
 }
 
 template <typename T>
@@ -138,12 +156,32 @@ auto SEM::Entities::device_vector<T>::copy_from(const std::vector<T>& host_vecto
 
 template <typename T>
 __host__
+auto SEM::Entities::device_vector<T>::copy_from(const std::vector<T>& host_vector, const cudaStream_t& stream) -> void {
+    if (size_ != host_vector.size()) {
+        throw std::length_error("Host and device vectors must have the same length.");
+    }
+
+    cudaMemcpyAsync(data_, host_vector.data(), size_ * sizeof(T), cudaMemcpyHostToDevice, stream);
+}
+
+template <typename T>
+__host__
 auto SEM::Entities::device_vector<T>::copy_to(std::vector<T>& host_vector) const -> void {
     if (size_ != host_vector.size()) {
         throw std::length_error("Host and device vectors must have the same length.");
     }
 
     cudaMemcpy(host_vector.data(), data_, size_ * sizeof(T), cudaMemcpyDeviceToHost);
+}
+
+template <typename T>
+__host__
+auto SEM::Entities::device_vector<T>::copy_to(std::vector<T>& host_vector, const cudaStream_t& stream) const -> void {
+    if (size_ != host_vector.size()) {
+        throw std::length_error("Host and device vectors must have the same length.");
+    }
+
+    cudaMemcpyAsync(host_vector.data(), data_, size_ * sizeof(T), cudaMemcpyDeviceToHost, stream);
 }
 
 template <typename T>
@@ -158,10 +196,30 @@ auto SEM::Entities::device_vector<T>::copy_from(const device_vector<T>& device_v
 
 template <typename T>
 __host__
+auto SEM::Entities::device_vector<T>::copy_from(const device_vector<T>& device_vector, const cudaStream_t& stream) -> void {
+    if (size_ != device_vector.size()) {
+        throw std::length_error("Both vectors must have the same length.");
+    }
+
+    cudaMemcpyAsync(data_, device_vector.data(), size_ * sizeof(T), cudaMemcpyDeviceToDevice, stream); // Apparently slower than using a kernel
+}
+
+template <typename T>
+__host__
 auto SEM::Entities::device_vector<T>::copy_to(device_vector<T>& device_vector) const -> void {
     if (size_ != device_vector.size()) {
         throw std::length_error("Both vectors must have the same length.");
     }
 
     cudaMemcpy(device_vector.data(), data_, size_ * sizeof(T), cudaMemcpyDeviceToDevice); // Apparently slower than using a kernel
+}
+
+template <typename T>
+__host__
+auto SEM::Entities::device_vector<T>::copy_to(device_vector<T>& device_vector, const cudaStream_t& stream) const -> void {
+    if (size_ != device_vector.size()) {
+        throw std::length_error("Both vectors must have the same length.");
+    }
+
+    cudaMemcpyAsync(device_vector.data(), data_, size_ * sizeof(T), cudaMemcpyDeviceToDevice, stream); // Apparently slower than using a kernel
 }
