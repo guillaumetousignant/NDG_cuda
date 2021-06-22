@@ -22,9 +22,10 @@ using SEM::Entities::Face2D_t;
 
 constexpr int CGIO_MAX_NAME_LENGTH = 33; // Includes the null terminator
 
-SEM::Meshes::Mesh2D_t::Mesh2D_t(std::filesystem::path filename, int initial_N, int maximum_N, const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes, const cudaStream_t &stream) :       
+SEM::Meshes::Mesh2D_t::Mesh2D_t(std::filesystem::path filename, int initial_N, int maximum_N, int adaptivity_interval, const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes, const cudaStream_t &stream) :       
         initial_N_(initial_N),  
-        maximum_N_(maximum_N),      
+        maximum_N_(maximum_N),
+        adaptivity_interval_(adaptivity_interval),     
         stream_(stream) {
 
     std::string extension = filename.extension().string();
