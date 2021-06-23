@@ -21,8 +21,8 @@ namespace SEM { namespace Entities {
             std::array<size_t, 2> nodes_; /**< @brief Nodes making up the face. [left, right]*/
             std::array<size_t, 2> elements_; /**< @brief Elements connecting to the face. [left, right]*/
             std::array<size_t, 2> elements_side_; /**< @brief Side of the elements the face connects to. [left, right]*/
-            std::array<size_t, 2> offset_; /**< @brief Offset from the elements. [left, right]*/
-            std::array<size_t, 2> scale_; /**< @brief Scaling from the elements. [left, right]*/
+            std::array<deviceFloat, 2> offset_; /**< @brief Offset from the elements. [left, right]*/
+            std::array<deviceFloat, 2> scale_; /**< @brief Scaling from the elements. [left, right]*/
 
             // Geometry
             SEM::Entities::Vec2<deviceFloat> normal_; /**< @brief Normal vector of the face. Points from the first to the second element. Normalised.*/
