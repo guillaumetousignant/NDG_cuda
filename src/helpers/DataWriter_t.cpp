@@ -265,7 +265,7 @@ auto SEM::Helpers::DataWriter_t::write_data(size_t N_interpolation_points,
     writer->SetNumberOfPieces(mpi_controller_->GetNumberOfProcesses());
     writer->SetStartPiece(mpi_controller_->GetLocalProcessId());
     writer->SetEndPiece(mpi_controller_->GetLocalProcessId());
-    writer->SetCompressorTypeToNone();
+    //writer->SetCompressorTypeToNone();
     writer->Update();
 
     if (mpi_controller_->GetLocalProcessId() == 0) {
