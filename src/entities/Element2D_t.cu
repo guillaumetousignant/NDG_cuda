@@ -453,14 +453,3 @@ auto SEM::Entities::Element2D_t::allocate_boundary_storage() -> void {
                        cuda_vector<deviceFloat>(),
                        cuda_vector<deviceFloat>()};
 }
-
-// From cppreference.com
-__device__
-bool SEM::Entities::Element2D_t::almost_equal(deviceFloat x, deviceFloat y) {
-    constexpr int ulp = 2; // ULP
-    // the machine epsilon has to be scaled to the magnitude of the values used
-    // and multiplied by the desired precision in ULPs (units in the last place)
-    return std::abs(x-y) <= std::numeric_limits<deviceFloat>::epsilon() * std::abs(x+y) * ulp
-        // unless the result is subnormal
-        || std::abs(x-y) < std::numeric_limits<deviceFloat>::min();
-}

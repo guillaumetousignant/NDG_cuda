@@ -84,10 +84,6 @@ namespace SEM { namespace Entities {
             __device__
             auto allocate_boundary_storage() -> void;
 
-            // From cppreference.com
-            __device__
-            static bool almost_equal(deviceFloat x, deviceFloat y);
-
         private:
             __device__
             auto exponential_decay(int n_points_least_squares) -> std::array<deviceFloat, 2>;

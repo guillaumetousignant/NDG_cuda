@@ -984,6 +984,17 @@ auto SEM::Meshes::Mesh2D_t::boundary_conditions() -> void {
     }
 }
 
+// From cppreference.com
+__device__
+auto SEM::Entities::Mesh2D_t::almost_equal(deviceFloat x, deviceFloat y) -> bool {
+    constexpr int ulp = 2; // ULP
+    // the machine epsilon has to be scaled to the magnitude of the values used
+    // and multiplied by the desired precision in ULPs (units in the last place)
+    return std::abs(x-y) <= std::numeric_limits<deviceFloat>::epsilon() * std::abs(x+y) * ulp
+        // unless the result is subnormal
+        || std::abs(x-y) < std::numeric_limits<deviceFloat>::min();
+}
+
 auto SEM::Meshes::Mesh2D_t::interpolate_to_boundaries(const device_vector<deviceFloat>& lagrange_interpolant_left, const device_vector<deviceFloat>& lagrange_interpolant_right) -> void {
     SEM::Meshes::interpolate_to_boundaries<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data(), lagrange_interpolant_left.data(), lagrange_interpolant_right.data());
 }
