@@ -15,25 +15,27 @@ namespace SEM { namespace Entities {
             __host__ __device__
             Face2D_t();
 
-            int N_;
+            int N_; /**< @brief Polynomial order of the face.*/
 
             // Connectivity
-            std::array<size_t, 2> nodes_; // left, right
-            std::array<size_t, 2> elements_; // left, right
-            std::array<size_t, 2> elements_side_; // left, right
+            std::array<size_t, 2> nodes_; /**< @brief Nodes making up the face. [left, right]*/
+            std::array<size_t, 2> elements_; /**< @brief Elements connecting to the face. [left, right]*/
+            std::array<size_t, 2> elements_side_; /**< @brief Side of the elements the face connects to. [left, right]*/
+            std::array<size_t, 2> offset_; /**< @brief Offset from the elements. [left, right]*/
+            std::array<size_t, 2> scale_; /**< @brief Scaling from the elements. [left, right]*/
 
             // Geometry
-            SEM::Entities::Vec2<deviceFloat> normal_;
-            SEM::Entities::Vec2<deviceFloat> tangent_;
-            deviceFloat length_;
+            SEM::Entities::Vec2<deviceFloat> normal_; /**< @brief Normal vector of the face. Points from the first to the second element. Normalised.*/
+            SEM::Entities::Vec2<deviceFloat> tangent_; /**< @brief Tangent vector of the face. Points from the first to the second node. Normalised. */
+            deviceFloat length_; /**< @brief Length of the face.*/
 
             // Solution
-            std::array<SEM::Entities::cuda_vector<deviceFloat>, 2> p_;
-            std::array<SEM::Entities::cuda_vector<deviceFloat>, 2> u_;
-            std::array<SEM::Entities::cuda_vector<deviceFloat>, 2> v_;
-            SEM::Entities::cuda_vector<deviceFloat> p_flux_;
-            SEM::Entities::cuda_vector<deviceFloat> u_flux_;
-            SEM::Entities::cuda_vector<deviceFloat> v_flux_;
+            std::array<SEM::Entities::cuda_vector<deviceFloat>, 2> p_; /**< @brief Pressure in the element. Sized N + 1 by N + 1, index with i * (N + 1) + j.*/
+            std::array<SEM::Entities::cuda_vector<deviceFloat>, 2> u_; /**< @brief x velocity in the element. Sized N + 1 by N + 1, index with i * (N + 1) + j.*/
+            std::array<SEM::Entities::cuda_vector<deviceFloat>, 2> v_; /**< @brief y velocity in the element. Sized N + 1 by N + 1, index with i * (N + 1) + j.*/
+            SEM::Entities::cuda_vector<deviceFloat> p_flux_; /**< @brief Pressure flux in the element, used to extrapolate line by line to boundaries. Sized N + 1.*/
+            SEM::Entities::cuda_vector<deviceFloat> u_flux_; /**< @brief x velocity flux in the element, used to extrapolate line by line to boundaries. Sized N + 1.*/
+            SEM::Entities::cuda_vector<deviceFloat> v_flux_; /**< @brief y velocity flux in the element, used to extrapolate line by line to boundaries. Sized N + 1.*/
 
             __device__
             auto allocate_storage() -> void;
