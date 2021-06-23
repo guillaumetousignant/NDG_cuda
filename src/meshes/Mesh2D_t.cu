@@ -1104,6 +1104,9 @@ auto SEM::Meshes::compute_face_geometry(size_t n_faces, Face2D_t* faces, const E
         const double sign = std::copysign(1.0, face.normal_.dot(delta));
         face.normal_ *= sign;
         face.tangent_ *= sign;
+
+        face.offset_ = {0.0, 0.0};
+        face.scale_ = {1.0, 1.0};
     }
 }
 
