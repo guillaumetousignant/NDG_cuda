@@ -7,6 +7,7 @@
 #include <fstream>
 #include <sstream> 
 #include <iomanip>
+#include <limits>
 
 template class SEM::Entities::NDG_host_t<SEM::Polynomials::ChebyshevPolynomial_host_t>; // Like, I understand why I need this, but man is it crap.
 template class SEM::Entities::NDG_host_t<SEM::Polynomials::LegendrePolynomial_host_t>;
@@ -189,9 +190,9 @@ bool SEM::Entities::NDG_host_t<Polynomial>::almost_equal(hostFloat x, hostFloat 
     constexpr int ulp = 2; // ULP
     // the machine epsilon has to be scaled to the magnitude of the values used
     // and multiplied by the desired precision in ULPs (units in the last place)
-    return std::abs(x-y) <= FLT_EPSILON * std::abs(x+y) * ulp // CHECK change this to double equivalent if using double instead of float
+    return std::abs(x-y) <= std::numeric_limits<hostFloat>::epsilon() * std::abs(x+y) * ulp
         // unless the result is subnormal
-        || std::abs(x-y) < FLT_MIN; // CHECK change this to 64F if using double instead of float
+        || std::abs(x-y) < std::numeric_limits<hostFloat>::min();
 }
 
 // This will not work if we are on a node, or at least be pretty inefficient

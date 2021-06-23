@@ -8,6 +8,7 @@
 #include <sstream> 
 #include <iomanip>
 #include <vector>
+#include <limits>
 
 constexpr int poly_blockSize = 16; // Small number of threads per block because N will never be huge
 constexpr int interpolation_blockSize = 32;
@@ -275,9 +276,9 @@ bool SEM::Entities::almost_equal(deviceFloat x, deviceFloat y) {
     constexpr int ulp = 2; // ULP
     // the machine epsilon has to be scaled to the magnitude of the values used
     // and multiplied by the desired precision in ULPs (units in the last place)
-    return std::abs(x-y) <= FLT_EPSILON * std::abs(x+y) * ulp // CHECK change this to double equivalent if using double instead of float
+    return std::abs(x-y) <= std::numeric_limits<deviceFloat>::epsilon() * std::abs(x+y) * ulp
         // unless the result is subnormal
-        || std::abs(x-y) < FLT_MIN; // CHECK change this to 64F if using double instead of float
+        || std::abs(x-y) < std::numeric_limits<deviceFloat>::min(); 
 }
 
 // This will not work if we are on a node, or at least be pretty inefficient
