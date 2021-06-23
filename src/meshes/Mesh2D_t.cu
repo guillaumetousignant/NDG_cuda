@@ -986,7 +986,7 @@ auto SEM::Meshes::Mesh2D_t::boundary_conditions() -> void {
 
 // From cppreference.com
 __device__
-auto SEM::Entities::Mesh2D_t::almost_equal(deviceFloat x, deviceFloat y) -> bool {
+auto SEM::Meshes::Mesh2D_t::almost_equal(deviceFloat x, deviceFloat y) -> bool {
     constexpr int ulp = 2; // ULP
     // the machine epsilon has to be scaled to the magnitude of the values used
     // and multiplied by the desired precision in ULPs (units in the last place)
@@ -1225,9 +1225,7 @@ auto SEM::Meshes::project_to_faces(size_t N_faces, Face2D_t* faces, const Elemen
                 const deviceFloat coordinate = (polynomial_nodes[offset_1D + i] - face.offset_[0]) / face.scale_[0];
 
                 deviceFloat p_numerator = 0.0;
-                deviceFloat p_denominator = 0.0;
                 deviceFloat u_numerator = 0.0;
-                deviceFloat u_denominator = 0.0;
                 deviceFloat v_numerator = 0.0;
                 deviceFloat denominator = 0.0;
 
@@ -1271,9 +1269,7 @@ auto SEM::Meshes::project_to_faces(size_t N_faces, Face2D_t* faces, const Elemen
                 const deviceFloat coordinate = (polynomial_nodes[offset_1D + face.N_ - i] - face.offset_[1]) / face.scale_[1];
 
                 deviceFloat p_numerator = 0.0;
-                deviceFloat p_denominator = 0.0;
                 deviceFloat u_numerator = 0.0;
-                deviceFloat u_denominator = 0.0;
                 deviceFloat v_numerator = 0.0;
                 deviceFloat denominator = 0.0;
 
@@ -1338,8 +1334,8 @@ auto SEM::Meshes::project_to_elements(size_t N_elements, const Face2D_t* faces, 
             else { // We need to interpolate
                 const size_t offset_1D = element.N_ * (element.N_ + 1) /2;
 
-                for (auto face_index : element.faces_[side_index]) {
-                    const Face2D_t& face = faces[face_index];
+                for (size_t face_index = 0; face_index < element.faces_[side_index].size(); ++face_index) {
+                    const Face2D_t& face = faces[element.faces_[side_index][face_index]];
                     const size_t offset_1D_other = face.N_ * (face.N_ + 1) /2;
 
                     const deviceFloat coordinate = (element_index == face.elements_[1]) ? 0.0 : 1.0;
