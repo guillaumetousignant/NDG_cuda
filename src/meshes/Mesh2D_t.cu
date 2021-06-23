@@ -1334,6 +1334,12 @@ auto SEM::Meshes::project_to_elements(size_t N_elements, const Face2D_t* faces, 
             else { // We need to interpolate
                 const size_t offset_1D = element.N_ * (element.N_ + 1) /2;
 
+                for (int j = 0; j <= element.N_; ++j) {
+                    element.p_flux_extrapolated_[side_index][j] = 0.0;
+                    element.u_flux_extrapolated_[side_index][j] = 0.0;
+                    element.v_flux_extrapolated_[side_index][j] = 0.0;
+                }
+
                 for (size_t face_index = 0; face_index < element.faces_[side_index].size(); ++face_index) {
                     const Face2D_t& face = faces[element.faces_[side_index][face_index]];
                     const size_t offset_1D_other = face.N_ * (face.N_ + 1) /2;
