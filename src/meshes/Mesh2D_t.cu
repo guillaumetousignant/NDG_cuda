@@ -1338,8 +1338,14 @@ auto SEM::Meshes::project_to_elements(size_t N_elements, const Face2D_t* faces, 
                     const Face2D_t& face = faces[element.faces_[side_index][face_index]];
                     const size_t offset_1D_other = face.N_ * (face.N_ + 1) /2;
 
-                    const deviceFloat coordinate = (element_index == face.elements_[1]) ? 0.0 : 1.0;
+                    // Non-conforming, forward
+                    if (element_index == face.elements_[0]) {
 
+                    }
+                    // Non-conforming, backwards
+                    else {
+
+                    }
                 }
             }
         }
