@@ -4,7 +4,6 @@
 #include "functions/quad_map.cuh"
 #include "helpers/constants.h"
 #include <cmath>
-#include <limits>
 
 using SEM::Entities::cuda_vector;
 
@@ -125,48 +124,61 @@ template<typename Polynomial>
 __device__
 auto SEM::Entities::Element2D_t::estimate_error<Polynomial>(const deviceFloat* polynomial_nodes, const deviceFloat* weights) -> void {
     const int offset_1D = N_ * (N_ + 1) /2;
+    const int n_points_least_squares = min(N_ + 1, SEM::Constants::n_points_least_squares_max); // Number of points to use for thew least squares reduction, but don't go above N.
 
     refine_ = false;
     coarsen_ = true;
 
     // Pressure
-    p_error_ = -std::numeric_limits<float>::infinity();
+    for (int node_index = 0; node_index < n_points_least_squares; ++node_index) {
+        spectrum_[node_index] = 0.0;
+        const deviceFloat p = N_ + node_index + 1 - n_points_least_squares;
 
-    // x direction
-    for (int j = 0; j <= N_; ++j) {
-        for (int k = 0; k <= N_; ++k) {
-            spectrum_[k] = 0.0;
-            for (int i = 0; i <= N_; ++i) {
-                const deviceFloat L_N = Polynomial::polynomial(k, polynomial_nodes[offset_1D + i]);
+        // x direction
+        for (int i = 0; i <= p; ++i) {
+            deviceFloat local_spectrum = 0.0;
 
-                spectrum_[k] += (2 * k + 1) * 0.5 * p_[i * (N_ + 1) + j] * L_N * weights[offset_1D + i];
+            for (int k = 0; k <= N_; ++k) {
+                const deviceFloat L_N_x = Polynomial::polynomial(i, polynomial_nodes[offset_1D + k]);
+
+                for (int l = 0; l <= N_; ++l) {
+                    const deviceFloat L_N_y = Polynomial::polynomial(p, polynomial_nodes[offset_1D + l]);
+
+                    local_spectrum += (2 * i + 1) * (2 * p + 1) * static_cast<deviceFloat>(0.25) *
+                                      p_[k * (N_ + 1) + l] *
+                                      L_N_x * L_N_y * 
+                                      weights[offset_1D + k] * weights[offset_1D + l];
+                }
+
             }
-            spectrum_[k] = std::abs(spectrum_[k]);
+            spectrum_[node_index] += std::abs(local_spectrum);
         }
 
-        const auto [C, sigma] = exponential_decay();
+        // y direction
+        for (int j = 0; j < p; ++j) { // No need to include the last point here
+            deviceFloat local_spectrum = 0.0;
 
-        // max error
-        p_error_ = std::max(std::sqrt(C * C * 0.5/sigma) * std::exp(-sigma * (N_ + 1)), p_error_);
-    }
+            for (int k = 0; k <= N_; ++k) {
+                const deviceFloat L_N_x = Polynomial::polynomial(p, polynomial_nodes[offset_1D + k]);
 
-    // y direction
-    for (int j = 0; j <= N_; ++j) {
-        for (int k = 0; k <= N_; ++k) {
-            spectrum_[k] = 0.0;
-            for (int i = 0; i <= N_; ++i) {
-                const deviceFloat L_N = Polynomial::polynomial(k, polynomial_nodes[offset_1D + i]);
+                for (int l = 0; l <= N_; ++l) {
+                    const deviceFloat L_N_y = Polynomial::polynomial(j, polynomial_nodes[offset_1D + l]);
 
-                spectrum_[k] += (2 * k + 1) * 0.5 * p_[j * (N_ + 1) + i] * L_N * weights[offset_1D + i];
+                    local_spectrum += (2 * j + 1) * (2 * (double)p + 1.0) * static_cast<deviceFloat>(0.25) *
+                                      p_[k * (N_ + 1) + l] *
+                                      L_N_x * L_N_y * 
+                                      weights[offset_1D + k] * weights[offset_1D + l];
+                }
             }
-            spectrum_[k] = std::abs(spectrum_[k]);
+            spectrum_[node_index] += std::abs(local_spectrum);
         }
-
-        const auto [C, sigma] = exponential_decay();
-
-        // max error
-        p_error_ = std::max(std::sqrt(C * C * 0.5/sigma) * std::exp(-sigma * (N_ + 1)), p_error_);
     }
+
+    const auto [C_p, sigma_p] = exponential_decay(n_points_least_squares);
+
+    // Sum of error
+    p_error_ = std::sqrt(spectrum_[n_points_least_squares - 1] * spectrum_[n_points_least_squares - 1] // Why this part?
+                         + C_p * C_p * 0.5 / sigma_p * std::exp(-2 * sigma_p * (N_ + 1)));
 
     if(p_error_ > SEM::Constants::tolerance_min) {	// need refinement
         refine_ = true;
@@ -175,44 +187,56 @@ auto SEM::Entities::Element2D_t::estimate_error<Polynomial>(const deviceFloat* p
         coarsen_ = false;
     }
 
-    // u
-    u_error_ = -std::numeric_limits<float>::infinity();
+    // Velocity x
+    for (int node_index = 0; node_index < n_points_least_squares; ++node_index) {
+        spectrum_[node_index] = 0.0;
+        const deviceFloat p = N_ + node_index + 1 - n_points_least_squares;
 
-    // x direction
-    for (int j = 0; j <= N_; ++j) {
-        for (int k = 0; k <= N_; ++k) {
-            spectrum_[k] = 0.0;
-            for (int i = 0; i <= N_; ++i) {
-                const deviceFloat L_N = Polynomial::polynomial(k, polynomial_nodes[offset_1D + i]);
+        // x direction
+        for (int i = 0; i <= p; ++i) {
+            deviceFloat local_spectrum = 0.0;
 
-                spectrum_[k] += (2 * k + 1) * 0.5 * u_[i * (N_ + 1) + j] * L_N * weights[offset_1D + i];
+            for (int k = 0; k <= N_; ++k) {
+                const deviceFloat L_N_x = Polynomial::polynomial(i, polynomial_nodes[offset_1D + k]);
+
+                for (int l = 0; l <= N_; ++l) {
+                    const deviceFloat L_N_y = Polynomial::polynomial(p, polynomial_nodes[offset_1D + l]);
+
+                    local_spectrum += (2 * i + 1) * (2 * p + 1) * static_cast<deviceFloat>(0.25) *
+                                      u_[k * (N_ + 1) + l] *
+                                      L_N_x * L_N_y * 
+                                      weights[offset_1D + k] * weights[offset_1D + l];
+                }
+
             }
-            spectrum_[k] = std::abs(spectrum_[k]);
+            spectrum_[node_index] += std::abs(local_spectrum);
         }
 
-        const auto [C, sigma] = exponential_decay();
+        // y direction
+        for (int j = 0; j < p; ++j) { // No need to include the last point here
+            deviceFloat local_spectrum = 0.0;
 
-        // max error
-        u_error_ = std::max(std::sqrt(C * C * 0.5/sigma) * std::exp(-sigma * (N_ + 1)), u_error_);
-    }
+            for (int k = 0; k <= N_; ++k) {
+                const deviceFloat L_N_x = Polynomial::polynomial(p, polynomial_nodes[offset_1D + k]);
 
-    // y direction
-    for (int j = 0; j <= N_; ++j) {
-        for (int k = 0; k <= N_; ++k) {
-            spectrum_[k] = 0.0;
-            for (int i = 0; i <= N_; ++i) {
-                const deviceFloat L_N = Polynomial::polynomial(k, polynomial_nodes[offset_1D + i]);
+                for (int l = 0; l <= N_; ++l) {
+                    const deviceFloat L_N_y = Polynomial::polynomial(j, polynomial_nodes[offset_1D + l]);
 
-                spectrum_[k] += (2 * k + 1) * 0.5 * u_[j * (N_ + 1) + i] * L_N * weights[offset_1D + i];
+                    local_spectrum += (2 * j + 1) * (2 * (double)p + 1.0) * static_cast<deviceFloat>(0.25) *
+                                      u_[k * (N_ + 1) + l] *
+                                      L_N_x * L_N_y * 
+                                      weights[offset_1D + k] * weights[offset_1D + l];
+                }
             }
-            spectrum_[k] = std::abs(spectrum_[k]);
+            spectrum_[node_index] += std::abs(local_spectrum);
         }
-
-        const auto [C, sigma] = exponential_decay();
-
-        // max error
-        u_error_ = std::max(std::sqrt(C * C * 0.5/sigma) * std::exp(-sigma * (N_ + 1)), u_error_);
     }
+
+    const auto [C_u, sigma_u] = exponential_decay(n_points_least_squares);
+
+    // Sum of error
+    u_error_ = std::sqrt(spectrum_[n_points_least_squares - 1] * spectrum_[n_points_least_squares - 1] // Why this part?
+                         + C_u * C_u * 0.5 / sigma_u * std::exp(-2 * sigma_u * (N_ + 1)));
 
     if(u_error_ > SEM::Constants::tolerance_min) {	// need refinement
         refine_ = true;
@@ -221,44 +245,56 @@ auto SEM::Entities::Element2D_t::estimate_error<Polynomial>(const deviceFloat* p
         coarsen_ = false;
     }
 
-    // v
-    v_error_ = -std::numeric_limits<float>::infinity();
+    // Velocity y
+    for (int node_index = 0; node_index < n_points_least_squares; ++node_index) {
+        spectrum_[node_index] = 0.0;
+        const deviceFloat p = N_ + node_index + 1 - n_points_least_squares;
 
-    // x direction
-    for (int j = 0; j <= N_; ++j) {
-        for (int k = 0; k <= N_; ++k) {
-            spectrum_[k] = 0.0;
-            for (int i = 0; i <= N_; ++i) {
-                const deviceFloat L_N = Polynomial::polynomial(k, polynomial_nodes[offset_1D + i]);
+        // x direction
+        for (int i = 0; i <= p; ++i) {
+            deviceFloat local_spectrum = 0.0;
 
-                spectrum_[k] += (2 * k + 1) * 0.5 * v_[i * (N_ + 1) + j] * L_N * weights[offset_1D + i];
+            for (int k = 0; k <= N_; ++k) {
+                const deviceFloat L_N_x = Polynomial::polynomial(i, polynomial_nodes[offset_1D + k]);
+
+                for (int l = 0; l <= N_; ++l) {
+                    const deviceFloat L_N_y = Polynomial::polynomial(p, polynomial_nodes[offset_1D + l]);
+
+                    local_spectrum += (2 * i + 1) * (2 * p + 1) * static_cast<deviceFloat>(0.25) *
+                                      v_[k * (N_ + 1) + l] *
+                                      L_N_x * L_N_y * 
+                                      weights[offset_1D + k] * weights[offset_1D + l];
+                }
+
             }
-            spectrum_[k] = std::abs(spectrum_[k]);
+            spectrum_[node_index] += std::abs(local_spectrum);
         }
 
-        const auto [C, sigma] = exponential_decay();
+        // y direction
+        for (int j = 0; j < p; ++j) { // No need to include the last point here
+            deviceFloat local_spectrum = 0.0;
 
-        // max error
-        v_error_ = std::max(std::sqrt(C * C * 0.5/sigma) * std::exp(-sigma * (N_ + 1)), v_error_);
-    }
+            for (int k = 0; k <= N_; ++k) {
+                const deviceFloat L_N_x = Polynomial::polynomial(p, polynomial_nodes[offset_1D + k]);
 
-    // y direction
-    for (int j = 0; j <= N_; ++j) {
-        for (int k = 0; k <= N_; ++k) {
-            spectrum_[k] = 0.0;
-            for (int i = 0; i <= N_; ++i) {
-                const deviceFloat L_N = Polynomial::polynomial(k, polynomial_nodes[offset_1D + i]);
+                for (int l = 0; l <= N_; ++l) {
+                    const deviceFloat L_N_y = Polynomial::polynomial(j, polynomial_nodes[offset_1D + l]);
 
-                spectrum_[k] += (2 * k + 1) * 0.5 * v_[j * (N_ + 1) + i] * L_N * weights[offset_1D + i];
+                    local_spectrum += (2 * j + 1) * (2 * (double)p + 1.0) * static_cast<deviceFloat>(0.25) *
+                                      v_[k * (N_ + 1) + l] *
+                                      L_N_x * L_N_y * 
+                                      weights[offset_1D + k] * weights[offset_1D + l];
+                }
             }
-            spectrum_[k] = std::abs(spectrum_[k]);
+            spectrum_[node_index] += std::abs(local_spectrum);
         }
-
-        const auto [C, sigma] = exponential_decay();
-
-        // max error
-        v_error_ = std::max(std::sqrt(C * C * 0.5/sigma) * std::exp(-sigma * (N_ + 1)), v_error_);
     }
+
+    const auto [C_v, sigma_v] = exponential_decay(n_points_least_squares);
+
+    // Sum of error
+    v_error_ = std::sqrt(spectrum_[n_points_least_squares - 1] * spectrum_[n_points_least_squares - 1] // Why this part?
+                         + C_v * C_v * 0.5 / sigma_v * std::exp(-2 * sigma_v * (N_ + 1)));
 
     if(v_error_ > SEM::Constants::tolerance_min) {	// need refinement
         refine_ = true;
@@ -269,15 +305,13 @@ auto SEM::Entities::Element2D_t::estimate_error<Polynomial>(const deviceFloat* p
 }
 
 __device__
-auto SEM::Entities::Element2D_t::exponential_decay() -> std::array<deviceFloat, 2> {
-    const int n_points_least_squares = min(N_, 4); // Number of points to use for thew least squares reduction, but don't go above N.
-
+auto SEM::Entities::Element2D_t::exponential_decay(int n_points_least_squares) -> std::array<deviceFloat, 2> {
     deviceFloat x_avg = 0.0;
     deviceFloat y_avg = 0.0;
 
     for (int i = 0; i < n_points_least_squares; ++i) {
-        x_avg += N_ - i;
-        y_avg += std::log(spectrum_[N_ - i]);
+        x_avg += N_ + i + 1 - n_points_least_squares;
+        y_avg += std::log(spectrum_[i]);
     }
 
     x_avg /= n_points_least_squares;
@@ -287,15 +321,14 @@ auto SEM::Entities::Element2D_t::exponential_decay() -> std::array<deviceFloat, 
     deviceFloat denominator = 0.0;
 
     for (int i = 0; i < n_points_least_squares; ++i) {
-        numerator += (N_ - i - x_avg) * (std::log(spectrum_[N_ - i]) - y_avg);
-        denominator += (N_ - i - x_avg) * (N_ - i - x_avg);
+        const int p = N_ + i + 1 - n_points_least_squares;
+        numerator += (p - x_avg) * (std::log(spectrum_[i]) - y_avg);
+        denominator += (p - x_avg) * (p - x_avg);
     }
 
-    deviceFloat sigma = numerator/denominator;
-
+    const deviceFloat sigma = numerator/denominator;
     const deviceFloat C = std::exp(y_avg - sigma * x_avg);
-    sigma = std::abs(sigma);
-    return {C, sigma};
+    return {C, std::abs(sigma)};
 }
 
 __device__

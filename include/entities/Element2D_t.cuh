@@ -86,7 +86,7 @@ namespace SEM { namespace Entities {
 
         private:
             __device__
-            auto exponential_decay() -> std::array<deviceFloat, 2>;
+            auto exponential_decay(int n_points_least_squares) -> std::array<deviceFloat, 2>;
     };
 }}
 
