@@ -999,8 +999,8 @@ auto SEM::Meshes::Mesh2D_t::interpolate_to_boundaries(const device_vector<device
     SEM::Meshes::interpolate_to_boundaries<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data(), lagrange_interpolant_left.data(), lagrange_interpolant_right.data());
 }
 
-auto SEM::Meshes::Mesh2D_t::project_to_faces() -> void {
-    SEM::Meshes::project_to_faces<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces_.size(), faces_.data(), elements_.data());
+auto SEM::Meshes::Mesh2D_t::project_to_faces(const device_vector<deviceFloat>& polynomial_nodes, const device_vector<deviceFloat>& barycentric_weights) -> void {
+    SEM::Meshes::project_to_faces<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces_.size(), faces_.data(), elements_.data(), polynomial_nodes.data(), barycentric_weights.data());
 }
 
 auto SEM::Meshes::Mesh2D_t::project_to_elements() -> void {
@@ -1198,7 +1198,7 @@ auto SEM::Meshes::interpolate_to_boundaries(size_t N_elements, Element2D_t* elem
 }
 
 __global__
-auto SEM::Meshes::project_to_faces(size_t N_faces, Face2D_t* faces, const Element2D_t* elements) -> void {
+auto SEM::Meshes::project_to_faces(size_t N_faces, Face2D_t* faces, const Element2D_t* elements, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -1218,7 +1218,38 @@ auto SEM::Meshes::project_to_faces(size_t N_faces, Face2D_t* faces, const Elemen
             }
         }
         else { // We need to interpolate
-            printf("Warning, non-conforming surfaces are not implemented yet to project to boundaries.\n");
+            const size_t offset_1D = face.N_ * (face.N_ + 1) /2;
+            const size_t offset_1D_other = element_L.N_ * (element_L.N_ + 1) /2;
+
+            for (int i = 0; i <= face.N_; ++i) {
+                const deviceFloat coordinate = (polynomial_nodes[offset_1D + i] - face.offset_[0]) / face.scale_[0];
+
+                deviceFloat p_numerator = 0.0;
+                deviceFloat p_denominator = 0.0;
+                deviceFloat u_numerator = 0.0;
+                deviceFloat u_denominator = 0.0;
+                deviceFloat v_numerator = 0.0;
+                deviceFloat denominator = 0.0;
+
+                for (int j = 0; j <= element_L.N_; ++j) {
+                    if (SEM::Meshes::Mesh2D_t::almost_equal(coordinate, polynomial_nodes[offset_1D_other + j])) {
+                        p_numerator = element_L.p_extrapolated_[face.elements_side_[0]][j];
+                        u_numerator = element_L.u_extrapolated_[face.elements_side_[0]][j];
+                        v_numerator = element_L.v_extrapolated_[face.elements_side_[0]][j];
+                        denominator = 1.0;
+                        break;
+                    }
+
+                    const deviceFloat t = barycentric_weights[offset_1D_other + j]/(coordinate - polynomial_nodes[offset_1D_other + j]);
+                    p_numerator += t * element_L.p_extrapolated_[face.elements_side_[0]][j];
+                    u_numerator += t * element_L.u_extrapolated_[face.elements_side_[0]][j];
+                    v_numerator += t * element_L.v_extrapolated_[face.elements_side_[0]][j];
+                    denominator += t;
+                }
+                face.p_[0][i] = p_numerator/denominator;
+                face.u_[0][i] = u_numerator/denominator;
+                face.v_[0][i] = v_numerator/denominator;
+            }
         }
 
         const Element2D_t& element_R = elements[face.elements_[1]];
@@ -1233,7 +1264,38 @@ auto SEM::Meshes::project_to_faces(size_t N_faces, Face2D_t* faces, const Elemen
             }
         }
         else { // We need to interpolate
-            printf("Warning, non-conforming surfaces are not implemented yet to project to boundaries.\n");
+            const size_t offset_1D = face.N_ * (face.N_ + 1) /2;
+            const size_t offset_1D_other = element_R.N_ * (element_R.N_ + 1) /2;
+
+            for (int i = 0; i <= face.N_; ++i) {
+                const deviceFloat coordinate = (polynomial_nodes[offset_1D + face.N_ - i] - face.offset_[1]) / face.scale_[1];
+
+                deviceFloat p_numerator = 0.0;
+                deviceFloat p_denominator = 0.0;
+                deviceFloat u_numerator = 0.0;
+                deviceFloat u_denominator = 0.0;
+                deviceFloat v_numerator = 0.0;
+                deviceFloat denominator = 0.0;
+
+                for (int j = 0; j <= element_R.N_; ++j) {
+                    if (SEM::Meshes::Mesh2D_t::almost_equal(coordinate, polynomial_nodes[offset_1D_other + j])) {
+                        p_numerator = element_R.p_extrapolated_[face.elements_side_[1]][j];
+                        u_numerator = element_R.u_extrapolated_[face.elements_side_[1]][j];
+                        v_numerator = element_R.v_extrapolated_[face.elements_side_[1]][j];
+                        denominator = 1.0;
+                        break;
+                    }
+
+                    const deviceFloat t = barycentric_weights[offset_1D_other + j]/(coordinate - polynomial_nodes[offset_1D_other + j]);
+                    p_numerator += t * element_R.p_extrapolated_[face.elements_side_[1]][j];
+                    u_numerator += t * element_R.u_extrapolated_[face.elements_side_[1]][j];
+                    v_numerator += t * element_R.v_extrapolated_[face.elements_side_[1]][j];
+                    denominator += t;
+                }
+                face.p_[1][i] = p_numerator/denominator;
+                face.u_[1][i] = u_numerator/denominator;
+                face.v_[1][i] = v_numerator/denominator;
+            }
         }
     }
 }
