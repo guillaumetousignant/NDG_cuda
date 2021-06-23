@@ -1336,7 +1336,15 @@ auto SEM::Meshes::project_to_elements(size_t N_elements, const Face2D_t* faces, 
                 }
             }
             else { // We need to interpolate
-                printf("Warning, non-conforming surfaces are not implemented yet to project to elements.\n");
+                const size_t offset_1D = element.N_ * (element.N_ + 1) /2;
+
+                for (auto face_index : element.faces_[side_index]) {
+                    const Face2D_t& face = faces[face_index];
+                    const size_t offset_1D_other = face.N_ * (face.N_ + 1) /2;
+
+                    const deviceFloat coordinate = (element_index == face.elements_[1]) ? 0.0 : 1.0;
+
+                }
             }
         }
     }
