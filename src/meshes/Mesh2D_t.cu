@@ -1222,7 +1222,7 @@ auto SEM::Meshes::project_to_faces(size_t N_faces, Face2D_t* faces, const Elemen
             const size_t offset_1D_other = element_L.N_ * (element_L.N_ + 1) /2;
 
             for (int i = 0; i <= face.N_; ++i) {
-                const deviceFloat coordinate = (polynomial_nodes[offset_1D + i] - face.offset_[0]) / face.scale_[0];
+                const deviceFloat coordinate = face.offset_[0] + polynomial_nodes[offset_1D + i] * face.scale_[0];
 
                 deviceFloat p_numerator = 0.0;
                 deviceFloat u_numerator = 0.0;
@@ -1266,7 +1266,7 @@ auto SEM::Meshes::project_to_faces(size_t N_faces, Face2D_t* faces, const Elemen
             const size_t offset_1D_other = element_R.N_ * (element_R.N_ + 1) /2;
 
             for (int i = 0; i <= face.N_; ++i) {
-                const deviceFloat coordinate = (polynomial_nodes[offset_1D + face.N_ - i] - face.offset_[1]) / face.scale_[1];
+                const deviceFloat coordinate = face.offset_[1] + polynomial_nodes[offset_1D + face.N_ - i] * face.scale_[1];
 
                 deviceFloat p_numerator = 0.0;
                 deviceFloat u_numerator = 0.0;
@@ -1346,11 +1346,65 @@ auto SEM::Meshes::project_to_elements(size_t N_elements, const Face2D_t* faces, 
 
                     // Non-conforming, forward
                     if (element_index == face.elements_[0]) {
+                        for (int i = 0; i <= element.N_; ++i) {
+                            const deviceFloat coordinate = (polynomial_nodes[offset_1D + i] - face.offset_[0]) / face.scale_[0];
 
+                            deviceFloat p_numerator = 0.0;
+                            deviceFloat u_numerator = 0.0;
+                            deviceFloat v_numerator = 0.0;
+                            deviceFloat denominator = 0.0;
+
+                            for (int j = 0; j <= face.N_; ++j) {
+                                if (SEM::Meshes::Mesh2D_t::almost_equal(coordinate, polynomial_nodes[offset_1D_other + j])) {
+                                    p_numerator = face.p_flux_[j];
+                                    u_numerator = face.p_flux_[j];
+                                    v_numerator = face.p_flux_[j];
+                                    denominator = 1.0;
+                                    break;
+                                }
+            
+                                const deviceFloat t = barycentric_weights[offset_1D_other + j]/(coordinate - polynomial_nodes[offset_1D_other + j]);
+                                p_numerator += t * face.p_flux_[j];
+                                u_numerator += t * face.u_flux_[j];
+                                v_numerator += t * face.v_flux_[j];
+                                denominator += t;
+                            }
+
+                            element.p_flux_extrapolated_[side_index][i] = p_numerator/denominator * element.scaling_factor_[side_index][i];
+                            element.u_flux_extrapolated_[side_index][i] = u_numerator/denominator * element.scaling_factor_[side_index][i];
+                            element.v_flux_extrapolated_[side_index][i] = v_numerator/denominator * element.scaling_factor_[side_index][i];
+                        }
                     }
                     // Non-conforming, backwards
                     else {
+                        for (int i = 0; i <= element.N_; ++i) {
+                            const deviceFloat coordinate = (polynomial_nodes[offset_1D + element.N_ - i] - face.offset_[1]) / face.scale_[1];
 
+                            deviceFloat p_numerator = 0.0;
+                            deviceFloat u_numerator = 0.0;
+                            deviceFloat v_numerator = 0.0;
+                            deviceFloat denominator = 0.0;
+
+                            for (int j = 0; j <= face.N_; ++j) {
+                                if (SEM::Meshes::Mesh2D_t::almost_equal(coordinate, polynomial_nodes[offset_1D_other + j])) {
+                                    p_numerator = face.p_flux_[j];
+                                    u_numerator = face.p_flux_[j];
+                                    v_numerator = face.p_flux_[j];
+                                    denominator = 1.0;
+                                    break;
+                                }
+            
+                                const deviceFloat t = barycentric_weights[offset_1D_other + j]/(coordinate - polynomial_nodes[offset_1D_other + j]);
+                                p_numerator += t * face.p_flux_[j];
+                                u_numerator += t * face.u_flux_[j];
+                                v_numerator += t * face.v_flux_[j];
+                                denominator += t;
+                            }
+
+                            element.p_flux_extrapolated_[side_index][i] = -p_numerator/denominator * element.scaling_factor_[side_index][i];
+                            element.u_flux_extrapolated_[side_index][i] = -u_numerator/denominator * element.scaling_factor_[side_index][i];
+                            element.v_flux_extrapolated_[side_index][i] = -v_numerator/denominator * element.scaling_factor_[side_index][i];
+                        }
                     }
                 }
             }
