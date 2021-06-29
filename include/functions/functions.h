@@ -11,6 +11,7 @@ namespace SEM {
 }
 
 #include "Hilbert.h"
+#include "inverse_quad_map.cuh"
 #include "quad_map.cuh"
 #include "quad_metrics.cuh"
 #include "Utilities.h"
