@@ -33,6 +33,9 @@ auto elements_init(size_t n_elements, size_t N_interpolation_points, SEM::Entiti
         element.p_ = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
         element.u_ = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
         element.v_ = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
+        element.G_p_ = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
+        element.G_u_ = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
+        element.G_v_ = SEM::Entities::cuda_vector<deviceFloat>((N + 1) * (N + 1));
 
         for (int i = 0; i <= element.N_; ++i) {
             for (int j = 0; j <= element.N_; ++j) {
@@ -76,7 +79,7 @@ TEST_CASE("2D interpolation test", "Checks the interpolated value of the solutio
     SEM::Entities::device_vector<deviceFloat> du_dt(N_interpolation_points * N_interpolation_points, stream);
     SEM::Entities::device_vector<deviceFloat> dv_dt(N_interpolation_points * N_interpolation_points, stream);
 
-    elements_init<<<1, 1, 0, stream>>>(1, N_interpolation_points, device_elements.data(), NDG.nodes_.data(), NDG.interpolation_matrices_.data(), x.data(), y.data(), p.data(), u.data(), v.data(), dp_dt.data(), dp_dt.data(), dp_dt.data());
+    elements_init<<<1, 1, 0, stream>>>(1, N_interpolation_points, device_elements.data(), NDG.nodes_.data(), NDG.interpolation_matrices_.data(), x.data(), y.data(), p.data(), u.data(), v.data(), dp_dt.data(), du_dt.data(), dv_dt.data());
 
     std::vector<deviceFloat> x_host(N_interpolation_points * N_interpolation_points);
     std::vector<deviceFloat> y_host(N_interpolation_points * N_interpolation_points);
