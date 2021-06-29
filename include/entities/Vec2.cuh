@@ -415,11 +415,26 @@ namespace SEM { namespace Entities {
              * Returns v1.v2
              * 
              * @param other Vector to dot with this one.
-             * @return double Dot product of the two vectors.
+             * @return T Dot product of the two vectors.
              */
             template <class T2>
             __host__ __device__
             constexpr auto dot(const Vec2<T2> &other) const -> T;
+
+            /**
+             * @brief Computes the cross product of this vector and another.
+             * 
+             * The cross product is not defined in 2D, this returns the norm 
+             * the resulting vector would have in the case of a real dot product,
+             * its z component.
+             * Returns x1*y2 - y1*x2
+             * 
+             * @param other Vector to cross with this one.
+             * @return T Cross product of the two vectors.
+             */
+             template <class T2>
+             __host__ __device__
+             constexpr auto cross(const Vec2<T2> &other) const -> T;
 
             /**
              * @brief Changes the vector in-place to polar coordinates.

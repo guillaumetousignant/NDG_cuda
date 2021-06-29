@@ -267,6 +267,13 @@ constexpr auto SEM::Entities::Vec2<T>::dot(const Vec2<T2> &other) const -> T {
 }
 
 template <typename T>
+template <class T2>
+__host__ __device__
+constexpr auto SEM::Entities::Vec2<T>::cross(const Vec2<T2> &other) const -> T {
+    return v_[0] * other[1] - v_[1] * other[0];
+}
+
+template <typename T>
 __host__ __device__
 auto SEM::Entities::Vec2<T>::to_sph() -> const Vec2<T>& {
     // [r, phi]
