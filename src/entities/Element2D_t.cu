@@ -333,8 +333,37 @@ auto SEM::Entities::Element2D_t::exponential_decay(int n_points_least_squares) -
 }
 
 __device__
-auto SEM::Entities::Element2D_t::interpolate_from(const SEM::Entities::Element2D_t& other, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void {
+auto SEM::Entities::Element2D_t::interpolate_from(const std::array<Vec2<deviceFloat>, 4>& points, const std::array<Vec2<deviceFloat>, 4>& points_other, const SEM::Entities::Element2D_t& other, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void {
     printf("Warning, SEM::Entities::Element2D_t::interpolate_from is not implemented.\n");
+    const int offset_1D = N_ * (N_ + 1) /2;
+    const int offset_1D_other = other.N_ * (other.N_ + 1) /2;
+
+    for (int i = 0; i <= N_; ++i) {
+        for (int j = 0; j <= N_; ++j) {
+            // x and y
+            const Vec2<deviceFloat> coordinates {polynomial_nodes[offset_1D + i], polynomial_nodes[offset_1D + j]};
+            const Vec2<deviceFloat> global_coordinates = SEM::quad_map(coordinates, points);
+
+        }
+
+        
+        const deviceFloat x = (x_[1] - x_[0]) * (nodes[offset_1D + i] + 1) * 0.5 + x_[0];
+        const deviceFloat node = (2 * x - other.x_[0] - other.x_[1])/(other.x_[1] - other.x_[0]);
+        deviceFloat numerator = 0.0;
+        deviceFloat denominator = 0.0;
+        for (int m = 0; m <= other.N_; ++m) {
+            if (SEM::Entities::almost_equal2(node, nodes[offset_1D_other + m])) {
+                numerator = other.phi_[m];
+                denominator = 1.0;
+                break;
+            }
+            const deviceFloat t = barycentric_weights[offset_1D_other + m]/(node - nodes[offset_1D_other + m]);
+            numerator += t * other.phi_[m];
+            denominator += t;
+        }
+        phi_[i] = numerator/denominator;
+    }
+
 }
 
 __device__
