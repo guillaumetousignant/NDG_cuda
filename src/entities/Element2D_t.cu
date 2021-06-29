@@ -347,7 +347,7 @@ auto SEM::Entities::Element2D_t::interpolate_from(const std::array<Vec2<deviceFl
         }
 
         
-        const deviceFloat x = (x_[1] - x_[0]) * (nodes[offset_1D + i] + 1) * 0.5 + x_[0];
+        /*const deviceFloat x = (x_[1] - x_[0]) * (nodes[offset_1D + i] + 1) * 0.5 + x_[0];
         const deviceFloat node = (2 * x - other.x_[0] - other.x_[1])/(other.x_[1] - other.x_[0]);
         deviceFloat numerator = 0.0;
         deviceFloat denominator = 0.0;
@@ -361,7 +361,7 @@ auto SEM::Entities::Element2D_t::interpolate_from(const std::array<Vec2<deviceFl
             numerator += t * other.phi_[m];
             denominator += t;
         }
-        phi_[i] = numerator/denominator;
+        phi_[i] = numerator/denominator;*/
     }
 
 }

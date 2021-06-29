@@ -1003,8 +1003,8 @@ auto SEM::Meshes::Mesh2D_t::project_to_faces(const device_vector<deviceFloat>& p
     SEM::Meshes::project_to_faces<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces_.size(), faces_.data(), elements_.data(), polynomial_nodes.data(), barycentric_weights.data());
 }
 
-auto SEM::Meshes::Mesh2D_t::project_to_elements() -> void {
-    SEM::Meshes::project_to_elements<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, faces_.data(), elements_.data());
+auto SEM::Meshes::Mesh2D_t::project_to_elements(const device_vector<deviceFloat>& polynomial_nodes, const device_vector<deviceFloat>& barycentric_weights) -> void {
+    SEM::Meshes::project_to_elements<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, faces_.data(), elements_.data(), polynomial_nodes.data(), barycentric_weights.data());
 }
 
 __global__
@@ -1297,7 +1297,7 @@ auto SEM::Meshes::project_to_faces(size_t N_faces, Face2D_t* faces, const Elemen
 }
 
 __global__
-auto SEM::Meshes::project_to_elements(size_t N_elements, const Face2D_t* faces, Element2D_t* elements) -> void {
+auto SEM::Meshes::project_to_elements(size_t N_elements, const Face2D_t* faces, Element2D_t* elements, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
