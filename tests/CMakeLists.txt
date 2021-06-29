@@ -18,7 +18,8 @@ add_executable(unit_tests
     reduce_test.cu
     initial_conditions_test.cu
     cpu_gpu_test.cu
-    quad_mapping_test.cu)
+    quad_mapping_test.cu
+    inverse_quad_mapping_test.cu)
     
 target_link_libraries(unit_tests PRIVATE 
     Catch2::Catch2
