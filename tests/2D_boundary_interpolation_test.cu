@@ -133,11 +133,21 @@ TEST_CASE("2D boundary interpolation test", "Checks the interpolated value of th
                                                                    SEM::quad_map(coordinates[2], points),
                                                                    SEM::quad_map(coordinates[3], points)};
                                                                 
-        for (size_t k = 0; k < coordinates.size(); ++k) {
-            p_target[k][i] = std::sin(global_coordinates[k][0]) * std::cos(global_coordinates[k][1]);
-            u_target[k][i] = global_coordinates[k][0];
-            v_target[k][i] = global_coordinates[k][1];
-        }
+        p_target[0][i] = std::sin(global_coordinates[0][0]) * std::cos(global_coordinates[0][1]);
+        u_target[0][i] = global_coordinates[0][0];
+        v_target[0][i] = global_coordinates[0][1];
+
+        p_target[1][i] = std::sin(global_coordinates[1][0]) * std::cos(global_coordinates[1][1]);
+        u_target[1][i] = global_coordinates[1][0];
+        v_target[1][i] = global_coordinates[1][1];
+
+        p_target[2][N_test - i] = std::sin(global_coordinates[2][0]) * std::cos(global_coordinates[2][1]);
+        u_target[2][N_test - i] = global_coordinates[2][0];
+        v_target[2][N_test - i] = global_coordinates[2][1];
+
+        p_target[3][N_test - i] = std::sin(global_coordinates[3][0]) * std::cos(global_coordinates[3][1]);
+        u_target[3][N_test - i] = global_coordinates[3][0];
+        v_target[3][N_test - i] = global_coordinates[3][1];
     }
 
     // Verifying values
