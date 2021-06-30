@@ -345,37 +345,83 @@ auto SEM::Entities::Element2D_t::interpolate_from(const std::array<Vec2<deviceFl
             const Vec2<deviceFloat> global_coordinates = SEM::quad_map(local_coordinates, points);
             const Vec2<deviceFloat> local_coordinates_in_other = SEM::inverse_quad_map(global_coordinates, points_other);
 
-            deviceFloat p_numerator = 0.0;
-            deviceFloat u_numerator = 0.0;
-            deviceFloat v_numerator = 0.0;
-            deviceFloat denominator = 0.0;
-
+            int row_found = -1;
+            int column_found = -1;
             for (int m = 0; m <= other.N_; ++m) {
-                for (int n = 0; n <= other.N_; ++n) {
-                    // CHECK what if only ont of the coordinates is the same??
-                    if (SEM::Entities::Element2D_t::almost_equal(local_coordinates_in_other.y(), polynomial_nodes[offset_1D_other + n])
-                        && SEM::Entities::Element2D_t::almost_equal(local_coordinates_in_other.x(), polynomial_nodes[offset_1D_other + m])) {
-
-                        p_numerator = other.p_[m * (other.N_ + 1) + n];
-                        u_numerator = other.u_[m * (other.N_ + 1) + n];
-                        v_numerator = other.v_[m * (other.N_ + 1) + n];
-                        denominator = 1.0;
-                        goto endloop; // I hate this too don't worry
-                    }
-
-                    const deviceFloat t = barycentric_weights[offset_1D_other + n]/(local_coordinates_in_other.y() - polynomial_nodes[offset_1D_other + n])
-                                          * barycentric_weights[offset_1D_other + m]/(local_coordinates_in_other.x() - polynomial_nodes[offset_1D_other + m]);
-                    p_numerator += t * other.p_[m * (other.N_ + 1) + n];
-                    u_numerator += t * other.u_[m * (other.N_ + 1) + n];
-                    v_numerator += t * other.v_[m * (other.N_ + 1) + n];
-                    denominator += t;
+                if (SEM::Entities::Element2D_t::almost_equal(local_coordinates_in_other.x(), polynomial_nodes[offset_1D_other + m]) {
+                    column_found = m;
+                }
+                if (SEM::Entities::Element2D_t::almost_equal(local_coordinates_in_other.y(), polynomial_nodes[offset_1D_other + m]) {
+                    row_found = m;
                 }
             }
-            endloop: ;
 
-            p[i * (N_ + 1) + j] = p_numerator/denominator;
-            u[i * (N_ + 1) + j] = u_numerator/denominator;
-            v[i * (N_ + 1) + j] = v_numerator/denominator;   
+            // A point fits exactly
+            if (row_found != -1 && column_found != -1) {
+                p[i * (N_ + 1) + j] = other.p_[column_found * (other.N_ + 1) + row_found];
+                u[i * (N_ + 1) + j] = other.u_[column_found * (other.N_ + 1) + row_found];
+                v[i * (N_ + 1) + j] = other.v_[column_found * (other.N_ + 1) + row_found]; 
+            }
+            // A row fits exactly
+            else if (row_found != -1) {
+                deviceFloat p_numerator = 0.0;
+                deviceFloat u_numerator = 0.0;
+                deviceFloat v_numerator = 0.0;
+                deviceFloat denominator = 0.0;
+
+                for (int m = 0; m <= other.N_; ++m) {
+                    const deviceFloat t = barycentric_weights[offset_1D_other + m]/(local_coordinates_in_other.x() - polynomial_nodes[offset_1D_other + m]);
+                    p_numerator += t * other.p_[m * (other.N_ + 1) + row_found];
+                    u_numerator += t * other.u_[m * (other.N_ + 1) + row_found];
+                    v_numerator += t * other.v_[m * (other.N_ + 1) + row_found];
+                    denominator += t;
+                }
+
+                face.p_[0][i] = p_numerator/denominator;
+                face.u_[0][i] = u_numerator/denominator;
+                face.v_[0][i] = v_numerator/denominator;
+            }
+            // A column fits exactly
+            else if (column_found != -1) {
+                deviceFloat p_numerator = 0.0;
+                deviceFloat u_numerator = 0.0;
+                deviceFloat v_numerator = 0.0;
+                deviceFloat denominator = 0.0;
+
+                for (int n = 0; n <= other.N_; ++n) {
+                    const deviceFloat t = barycentric_weights[offset_1D_other + n]/(local_coordinates_in_other.y() - polynomial_nodes[offset_1D_other + n]);
+                    p_numerator += t * other.p_[column_found * (other.N_ + 1) + n];
+                    u_numerator += t * other.u_[column_found * (other.N_ + 1) + n];
+                    v_numerator += t * other.v_[column_found * (other.N_ + 1) + n];
+                    denominator += t;
+                }
+                
+                face.p_[0][i] = p_numerator/denominator;
+                face.u_[0][i] = u_numerator/denominator;
+                face.v_[0][i] = v_numerator/denominator;
+            }
+            // Complete interpolation
+            else {
+                deviceFloat p_numerator = 0.0;
+                deviceFloat u_numerator = 0.0;
+                deviceFloat v_numerator = 0.0;
+                deviceFloat denominator = 0.0;
+
+                for (int m = 0; m <= other.N_; ++m) {
+                    for (int n = 0; n <= other.N_; ++n) {
+                        const deviceFloat t = barycentric_weights[offset_1D_other + n]/(local_coordinates_in_other.y() - polynomial_nodes[offset_1D_other + n])
+                                            * barycentric_weights[offset_1D_other + m]/(local_coordinates_in_other.x() - polynomial_nodes[offset_1D_other + m]);
+                        p_numerator += t * other.p_[m * (other.N_ + 1) + n];
+                        u_numerator += t * other.u_[m * (other.N_ + 1) + n];
+                        v_numerator += t * other.v_[m * (other.N_ + 1) + n];
+                        denominator += t;
+                    }
+                }
+
+                p[i * (N_ + 1) + j] = p_numerator/denominator;
+                u[i * (N_ + 1) + j] = u_numerator/denominator;
+                v[i * (N_ + 1) + j] = v_numerator/denominator; 
+            }  
         }
     }
 
