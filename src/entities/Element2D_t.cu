@@ -348,19 +348,19 @@ auto SEM::Entities::Element2D_t::interpolate_from(const std::array<Vec2<deviceFl
             int row_found = -1;
             int column_found = -1;
             for (int m = 0; m <= other.N_; ++m) {
-                if (SEM::Entities::Element2D_t::almost_equal(local_coordinates_in_other.x(), polynomial_nodes[offset_1D_other + m]) {
+                if (SEM::Entities::Element2D_t::almost_equal(local_coordinates_in_other.x(), polynomial_nodes[offset_1D_other + m])) {
                     column_found = m;
                 }
-                if (SEM::Entities::Element2D_t::almost_equal(local_coordinates_in_other.y(), polynomial_nodes[offset_1D_other + m]) {
+                if (SEM::Entities::Element2D_t::almost_equal(local_coordinates_in_other.y(), polynomial_nodes[offset_1D_other + m])) {
                     row_found = m;
                 }
             }
 
             // A point fits exactly
             if (row_found != -1 && column_found != -1) {
-                p[i * (N_ + 1) + j] = other.p_[column_found * (other.N_ + 1) + row_found];
-                u[i * (N_ + 1) + j] = other.u_[column_found * (other.N_ + 1) + row_found];
-                v[i * (N_ + 1) + j] = other.v_[column_found * (other.N_ + 1) + row_found]; 
+                p_[i * (N_ + 1) + j] = other.p_[column_found * (other.N_ + 1) + row_found];
+                u_[i * (N_ + 1) + j] = other.u_[column_found * (other.N_ + 1) + row_found];
+                v_[i * (N_ + 1) + j] = other.v_[column_found * (other.N_ + 1) + row_found]; 
             }
             // A row fits exactly
             else if (row_found != -1) {
@@ -377,9 +377,9 @@ auto SEM::Entities::Element2D_t::interpolate_from(const std::array<Vec2<deviceFl
                     denominator += t;
                 }
 
-                face.p_[0][i] = p_numerator/denominator;
-                face.u_[0][i] = u_numerator/denominator;
-                face.v_[0][i] = v_numerator/denominator;
+                p_[i * (N_ + 1) + j] = p_numerator/denominator;
+                u_[i * (N_ + 1) + j] = u_numerator/denominator;
+                v_[i * (N_ + 1) + j] = v_numerator/denominator;
             }
             // A column fits exactly
             else if (column_found != -1) {
@@ -396,9 +396,9 @@ auto SEM::Entities::Element2D_t::interpolate_from(const std::array<Vec2<deviceFl
                     denominator += t;
                 }
                 
-                face.p_[0][i] = p_numerator/denominator;
-                face.u_[0][i] = u_numerator/denominator;
-                face.v_[0][i] = v_numerator/denominator;
+                p_[i * (N_ + 1) + j] = p_numerator/denominator;
+                u_[i * (N_ + 1) + j] = u_numerator/denominator;
+                v_[i * (N_ + 1) + j] = v_numerator/denominator;
             }
             // Complete interpolation
             else {
@@ -418,9 +418,9 @@ auto SEM::Entities::Element2D_t::interpolate_from(const std::array<Vec2<deviceFl
                     }
                 }
 
-                p[i * (N_ + 1) + j] = p_numerator/denominator;
-                u[i * (N_ + 1) + j] = u_numerator/denominator;
-                v[i * (N_ + 1) + j] = v_numerator/denominator; 
+                p_[i * (N_ + 1) + j] = p_numerator/denominator;
+                u_[i * (N_ + 1) + j] = u_numerator/denominator;
+                v_[i * (N_ + 1) + j] = v_numerator/denominator; 
             }  
         }
     }
@@ -546,7 +546,7 @@ auto SEM::Entities::Element2D_t::allocate_boundary_storage() -> void {
 
 // From cppreference.com
 __device__
-auto SEM::Meshes::Element2D_t::almost_equal(deviceFloat x, deviceFloat y) -> bool {
+auto SEM::Entities::Element2D_t::almost_equal(deviceFloat x, deviceFloat y) -> bool {
     constexpr int ulp = 2; // ULP
     // the machine epsilon has to be scaled to the magnitude of the values used
     // and multiplied by the desired precision in ULPs (units in the last place)
