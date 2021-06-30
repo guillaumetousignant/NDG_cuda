@@ -70,6 +70,9 @@ TEST_CASE("Inverse quad mapping", "Checks the inverse quad mapping returns the r
 
     for (int i = 0; i < local_coordinates_computed.size(); ++i) {
         local_coordinates_computed[i] = SEM::inverse_quad_map(global_coordinates[i], points);
+    }
+
+    for (int i = 0; i < local_coordinates_computed.size(); ++i) {
         REQUIRE(std::abs(local_coordinates_computed[i].x() - local_coordinates[i].x()) < error);
         REQUIRE(std::abs(local_coordinates_computed[i].y() - local_coordinates[i].y()) < error);
     }

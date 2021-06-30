@@ -70,6 +70,9 @@ TEST_CASE("Quad mapping", "Checks the quad mapping returns the right result.") {
 
     for (int i = 0; i < global_coordinates_computed.size(); ++i) {
         global_coordinates_computed[i] = SEM::quad_map(local_coordinates[i], points);
+    }
+
+    for (int i = 0; i < global_coordinates_computed.size(); ++i) {
         REQUIRE(std::abs(global_coordinates_computed[i].x() - global_coordinates[i].x()) < error);
         REQUIRE(std::abs(global_coordinates_computed[i].y() - global_coordinates[i].y()) < error);
     }
