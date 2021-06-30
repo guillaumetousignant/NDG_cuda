@@ -335,7 +335,6 @@ auto SEM::Entities::Element2D_t::exponential_decay(int n_points_least_squares) -
 
 __device__
 auto SEM::Entities::Element2D_t::interpolate_from(const std::array<Vec2<deviceFloat>, 4>& points, const std::array<Vec2<deviceFloat>, 4>& points_other, const SEM::Entities::Element2D_t& other, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void {
-    printf("Warning, SEM::Entities::Element2D_t::interpolate_from is not implemented.\n");
     const int offset_1D = N_ * (N_ + 1) /2;
     const int offset_1D_other = other.N_ * (other.N_ + 1) /2;
 
@@ -346,39 +345,38 @@ auto SEM::Entities::Element2D_t::interpolate_from(const std::array<Vec2<deviceFl
             const Vec2<deviceFloat> global_coordinates = SEM::quad_map(local_coordinates, points);
             const Vec2<deviceFloat> local_coordinates_in_other = SEM::inverse_quad_map(global_coordinates, points_other);
 
-            p[i * N_ + j] = 0.0;
-            u[i * N_ + j] = 0.0;
-            v[i * N_ + j] = 0.0;
-            dp_dt[i * N_ + j] = 0.0;
-            du_dt[i * N_ + j] = 0.0;
-            dv_dt[i * N_ + j] = 0.0;
+            deviceFloat p_numerator = 0.0;
+            deviceFloat u_numerator = 0.0;
+            deviceFloat v_numerator = 0.0;
+            deviceFloat denominator = 0.0;
+
             for (int m = 0; m <= other.N_; ++m) {
                 for (int n = 0; n <= other.N_; ++n) {
+                    // CHECK what if only ont of the coordinates is the same??
+                    if (SEM::Entities::Element2D_t::almost_equal(local_coordinates_in_other.y(), polynomial_nodes[offset_1D_other + n])
+                        && SEM::Entities::Element2D_t::almost_equal(local_coordinates_in_other.x(), polynomial_nodes[offset_1D_other + m])) {
 
-                    
+                        p_numerator = other.p_[m * (other.N_ + 1) + n];
+                        u_numerator = other.u_[m * (other.N_ + 1) + n];
+                        v_numerator = other.v_[m * (other.N_ + 1) + n];
+                        denominator = 1.0;
+                        goto endloop; // I hate this too don't worry
+                    }
+
+                    const deviceFloat t = barycentric_weights[offset_1D_other + n]/(local_coordinates_in_other.y() - polynomial_nodes[offset_1D_other + n])
+                                          * barycentric_weights[offset_1D_other + m]/(local_coordinates_in_other.x() - polynomial_nodes[offset_1D_other + m]);
+                    p_numerator += t * other.p_[m * (other.N_ + 1) + n];
+                    u_numerator += t * other.u_[m * (other.N_ + 1) + n];
+                    v_numerator += t * other.v_[m * (other.N_ + 1) + n];
+                    denominator += t;
                 }
             }
+            endloop: ;
 
-
-            
+            p[i * (N_ + 1) + j] = p_numerator/denominator;
+            u[i * (N_ + 1) + j] = u_numerator/denominator;
+            v[i * (N_ + 1) + j] = v_numerator/denominator;   
         }
-
-        
-        /*const deviceFloat x = (x_[1] - x_[0]) * (nodes[offset_1D + i] + 1) * 0.5 + x_[0];
-        const deviceFloat node = (2 * x - other.x_[0] - other.x_[1])/(other.x_[1] - other.x_[0]);
-        deviceFloat numerator = 0.0;
-        deviceFloat denominator = 0.0;
-        for (int m = 0; m <= other.N_; ++m) {
-            if (SEM::Entities::almost_equal2(node, nodes[offset_1D_other + m])) {
-                numerator = other.phi_[m];
-                denominator = 1.0;
-                break;
-            }
-            const deviceFloat t = barycentric_weights[offset_1D_other + m]/(node - nodes[offset_1D_other + m]);
-            numerator += t * other.phi_[m];
-            denominator += t;
-        }
-        phi_[i] = numerator/denominator;*/
     }
 
 }
@@ -498,4 +496,15 @@ auto SEM::Entities::Element2D_t::allocate_boundary_storage() -> void {
                        cuda_vector<deviceFloat>(),
                        cuda_vector<deviceFloat>(),
                        cuda_vector<deviceFloat>()};
+}
+
+// From cppreference.com
+__device__
+auto SEM::Meshes::Element2D_t::almost_equal(deviceFloat x, deviceFloat y) -> bool {
+    constexpr int ulp = 2; // ULP
+    // the machine epsilon has to be scaled to the magnitude of the values used
+    // and multiplied by the desired precision in ULPs (units in the last place)
+    return std::abs(x-y) <= std::numeric_limits<deviceFloat>::epsilon() * std::abs(x+y) * ulp
+        // unless the result is subnormal
+        || std::abs(x-y) < std::numeric_limits<deviceFloat>::min();
 }
