@@ -2,6 +2,7 @@
 #include "polynomials/ChebyshevPolynomial_t.cuh"
 #include "polynomials/LegendrePolynomial_t.cuh"
 #include "functions/quad_map.cuh"
+#include "functions/inverse_quad_map.cuh"
 #include "helpers/constants.h"
 #include <cmath>
 #include <limits>
@@ -341,9 +342,25 @@ auto SEM::Entities::Element2D_t::interpolate_from(const std::array<Vec2<deviceFl
     for (int i = 0; i <= N_; ++i) {
         for (int j = 0; j <= N_; ++j) {
             // x and y
-            const Vec2<deviceFloat> coordinates {polynomial_nodes[offset_1D + i], polynomial_nodes[offset_1D + j]};
-            const Vec2<deviceFloat> global_coordinates = SEM::quad_map(coordinates, points);
+            const Vec2<deviceFloat> local_coordinates {polynomial_nodes[offset_1D + i], polynomial_nodes[offset_1D + j]};
+            const Vec2<deviceFloat> global_coordinates = SEM::quad_map(local_coordinates, points);
+            const Vec2<deviceFloat> local_coordinates_in_other = SEM::inverse_quad_map(global_coordinates, points_other);
 
+            p[i * N_ + j] = 0.0;
+            u[i * N_ + j] = 0.0;
+            v[i * N_ + j] = 0.0;
+            dp_dt[i * N_ + j] = 0.0;
+            du_dt[i * N_ + j] = 0.0;
+            dv_dt[i * N_ + j] = 0.0;
+            for (int m = 0; m <= other.N_; ++m) {
+                for (int n = 0; n <= other.N_; ++n) {
+
+                    
+                }
+            }
+
+
+            
         }
 
         
