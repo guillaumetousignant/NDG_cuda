@@ -31,9 +31,9 @@ namespace SEM { namespace Entities {
             std::array<SEM::Entities::cuda_vector<deviceFloat>, 4> scaling_factor_;
 
             // Solution
-            SEM::Entities::cuda_vector<deviceFloat> p_;
-            SEM::Entities::cuda_vector<deviceFloat> u_;
-            SEM::Entities::cuda_vector<deviceFloat> v_;
+            SEM::Entities::cuda_vector<deviceFloat> p_; /**< @brief Pressure in the element. Sized N + 1 by N + 1, index with i * (N + 1) + j.*/
+            SEM::Entities::cuda_vector<deviceFloat> u_; /**< @brief x velocity in the element. Sized N + 1 by N + 1, index with i * (N + 1) + j.*/
+            SEM::Entities::cuda_vector<deviceFloat> v_; /**< @brief y velocity in the element. Sized N + 1 by N + 1, index with i * (N + 1) + j.*/
             SEM::Entities::cuda_vector<deviceFloat> G_p_;
             SEM::Entities::cuda_vector<deviceFloat> G_u_;
             SEM::Entities::cuda_vector<deviceFloat> G_v_;
@@ -46,9 +46,9 @@ namespace SEM { namespace Entities {
             SEM::Entities::cuda_vector<deviceFloat> p_flux_derivative_;
             SEM::Entities::cuda_vector<deviceFloat> u_flux_derivative_;
             SEM::Entities::cuda_vector<deviceFloat> v_flux_derivative_;
-            std::array<SEM::Entities::cuda_vector<deviceFloat>, 4> p_flux_extrapolated_;
-            std::array<SEM::Entities::cuda_vector<deviceFloat>, 4> u_flux_extrapolated_;
-            std::array<SEM::Entities::cuda_vector<deviceFloat>, 4> v_flux_extrapolated_;
+            std::array<SEM::Entities::cuda_vector<deviceFloat>, 4> p_flux_extrapolated_; /**< @brief Pressure flux on the element edges, projected from the faces. One vector per side, sized N + 1.*/
+            std::array<SEM::Entities::cuda_vector<deviceFloat>, 4> u_flux_extrapolated_; /**< @brief x velocity flux on the element edges, projected from the faces. One vector per side, sized N + 1.*/
+            std::array<SEM::Entities::cuda_vector<deviceFloat>, 4> v_flux_extrapolated_; /**< @brief y velocity flux on the element edges, projected from the faces. One vector per side, sized N + 1.*/
             SEM::Entities::cuda_vector<deviceFloat> p_intermediate_;
             SEM::Entities::cuda_vector<deviceFloat> u_intermediate_;
             SEM::Entities::cuda_vector<deviceFloat> v_intermediate_;
