@@ -40,9 +40,9 @@ namespace SEM { namespace Entities {
             std::array<SEM::Entities::cuda_vector<deviceFloat>, 4> p_extrapolated_;
             std::array<SEM::Entities::cuda_vector<deviceFloat>, 4> u_extrapolated_;
             std::array<SEM::Entities::cuda_vector<deviceFloat>, 4> v_extrapolated_;
-            SEM::Entities::cuda_vector<deviceFloat> p_flux_;
-            SEM::Entities::cuda_vector<deviceFloat> u_flux_;
-            SEM::Entities::cuda_vector<deviceFloat> v_flux_;
+            SEM::Entities::cuda_vector<deviceFloat> p_flux_; /**< @brief Pressure flux in the element, used to extrapolate line by line to boundaries. Sized N + 1.*/
+            SEM::Entities::cuda_vector<deviceFloat> u_flux_; /**< @brief x velocity flux in the element, used to extrapolate line by line to boundaries. Sized N + 1.*/
+            SEM::Entities::cuda_vector<deviceFloat> v_flux_; /**< @brief y velocity flux in the element, used to extrapolate line by line to boundaries. Sized N + 1.*/
             SEM::Entities::cuda_vector<deviceFloat> p_flux_derivative_;
             SEM::Entities::cuda_vector<deviceFloat> u_flux_derivative_;
             SEM::Entities::cuda_vector<deviceFloat> v_flux_derivative_;
