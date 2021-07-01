@@ -27,6 +27,6 @@ auto retrieve_element_projected_solution(int N, size_t n_elements, const SEM::En
 
 }
 
-TEST_CASE("Face to element projects test", "Projects the face flux solution of a face to its elements and checks the values match.") {   
+TEST_CASE("Face to element projection test", "Projects the face flux solution of a face to its elements and checks the values match.") {   
 
 }
