@@ -10,7 +10,7 @@ namespace SEM { namespace Entities {
     class Face2D_t {
         public:
             __device__ 
-            Face2D_t(int N, std::array<size_t, 2> nodes, std::array<size_t, 2> elements, std::array<size_t, 2> elements_size);
+            Face2D_t(int N, std::array<size_t, 2> nodes, std::array<size_t, 2> elements, std::array<size_t, 2> elements_side);
 
             __host__ __device__
             Face2D_t();
