@@ -95,7 +95,7 @@ auto retrieve_face_projected_solution(int N, size_t n_elements, const SEM::Entit
     }
 }
 
-TEST_CASE("Element to face projects test", "Projects the edge interpolated solution of an element to a face and checks the values match.") {   
+TEST_CASE("Element to face projection test", "Projects the edge interpolated solution of an element to a face and checks the values match.") {   
     const int N_max = 16;
     const int N_test = 16;
     const size_t N_interpolation_points = N_max;
