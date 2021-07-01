@@ -9,6 +9,7 @@
 #include "entities/Element2D_t.cuh"
 #include "meshes/Mesh2D_t.cuh"
 #include "entities/device_vector.cuh"
+#include "functions/quad_map.cuh"
 
 using SEM::Entities::Vec2;
 
@@ -23,12 +24,12 @@ auto element_to_face_projection_init(int N, size_t n_elements, SEM::Entities::El
     const int stride = blockDim.x * gridDim.x;
 
     for (size_t i = index; i < n_elements; i += stride) {
-        faces[4 * i] = SEM::Entities::Face2D_t(N, {points[4 * i], points[4 * i + 1]}, {i, i}, {0, 2});
-        faces[4 * i + 1] = SEM::Entities::Face2D_t(N, {points[4 * i + 1], points[4 * i + 2]}, {i, i}, {1, 3});
-        faces[4 * i + 2] = SEM::Entities::Face2D_t(N, {points[4 * i + 3], points[4 * i +  + 2]}, {i, i}, {0, 2});
-        faces[4 * i + 3] = SEM::Entities::Face2D_t(N, {points[4 * i], points[4 * i + 3]}, {3, 1}, 1, 3});
+        faces[4 * i] = SEM::Entities::Face2D_t(N, std::array<size_t, 2>{4 * i, 4 * i + 1}, std::array<size_t, 2>{i, i}, std::array<size_t, 2>{0, 2});
+        faces[4 * i + 1] = SEM::Entities::Face2D_t(N, std::array<size_t, 2>{4 * i + 1, 4 * i + 2}, std::array<size_t, 2>{i, i}, std::array<size_t, 2>{1, 3});
+        faces[4 * i + 2] = SEM::Entities::Face2D_t(N, std::array<size_t, 2>{4 * i + 3, 4 * i +  + 2}, std::array<size_t, 2>{i, i}, std::array<size_t, 2>{0, 2});
+        faces[4 * i + 3] = SEM::Entities::Face2D_t(N, std::array<size_t, 2>{4 * i, 4 * i + 3}, std::array<size_t, 2>{i, i}, std::array<size_t, 2>{1, 3});
 
-        elements[i] = SEM::Entities::Element2D_t({4 * i, 4 * i + 1, 4 * i + 2, 4 * i + 3}, {points[4 * i], points[4 * i + 1], points[4 * i + 2], points[4 * i + 3]});
+        elements[i] = SEM::Entities::Element2D_t(N, std::array<SEM::Entities::cuda_vector<size_t>, 4>{4 * i, 4 * i + 1, 4 * i + 2, 4 * i + 3}, std::array<size_t, 4>{4 * i, 4 * i + 1, 4 * i + 2, 4 * i + 3});
 
         SEM::Entities::Element2D_t& element = elements[i];
         const size_t offset_1D = element.N_ * (element.N_ + 1) /2;
@@ -39,10 +40,10 @@ auto element_to_face_projection_init(int N, size_t n_elements, SEM::Entities::El
                                                                 Vec2<deviceFloat>{NDG_nodes[offset_1D + element.N_ - i], 1},
                                                                 Vec2<deviceFloat>{-1, NDG_nodes[offset_1D + element.N_ - i]}};
 
-            const td::array<Vec2<deviceFloat>, 4> global_coordinates = {SEM::quad_map(coordinates[0], points),
-                                                                        SEM::quad_map(coordinates[1], points),
-                                                                        SEM::quad_map(coordinates[2], points),
-                                                                        SEM::quad_map(coordinates[3], points)};
+            const std::array<Vec2<deviceFloat>, 4> global_coordinates = {SEM::quad_map(coordinates[0], points),
+                                                                         SEM::quad_map(coordinates[1], points),
+                                                                         SEM::quad_map(coordinates[2], points),
+                                                                         SEM::quad_map(coordinates[3], points)};
 
             element.p_extrapolated_[0][i] = std::sin(global_coordinates[0].x()) * std::cos(global_coordinates[0].y());
             element.u_extrapolated_[0][i] = global_coordinates[0].x();
@@ -71,10 +72,10 @@ auto retrieve_face_projected_solution(int N, size_t n_elements, const SEM::Entit
     for (size_t i = index; i < n_elements; i += stride) {
         const size_t offset_results = 4 * i * (N + 1);
         const SEM::Entities::Element2D_t& element = elements[i];
-        const SEM::Entities::Face2D_t& face_bottom = faces[element.faces_[0]];
-        const SEM::Entities::Face2D_t& face_right = faces[element.faces_[1]];
-        const SEM::Entities::Face2D_t& face_top = faces[element.faces_[2]];
-        const SEM::Entities::Face2D_t& face_left = faces[element.faces_[3]];
+        const SEM::Entities::Face2D_t& face_bottom = faces[element.faces_[0][0]];
+        const SEM::Entities::Face2D_t& face_right = faces[element.faces_[1][0]];
+        const SEM::Entities::Face2D_t& face_top = faces[element.faces_[2][0]];
+        const SEM::Entities::Face2D_t& face_left = faces[element.faces_[3][0]];
         
         for (int j = 0; j <= N; ++j) {
             p[offset_results + j] = face_bottom.p_[0][j];
@@ -113,11 +114,11 @@ TEST_CASE("Element to face projection test", "Projects the edge interpolated sol
 
     constexpr int elements_blockSize = 32;
     constexpr int elements_numBlocks = (n_elements + elements_blockSize - 1) / elements_blockSize;
-    element_to_face_projection_init<<<elements_numBlocks, elements_blockSize, 0, stream>>>(N_test, n_elements, elements.data(), faces.data(), NDG.nodes_.data()) -> void {
+    element_to_face_projection_init<<<elements_numBlocks, elements_blockSize, 0, stream>>>(N_test, n_elements, elements.data(), faces.data(), NDG.nodes_.data());
 
     constexpr int faces_blockSize = 32;
     constexpr int faces_numBlocks = (n_elements * 4 + faces_blockSize - 1) / faces_blockSize;
-    SEM::Meshes::project_to_faces<<<faces_numBlocks, faces_blockSize, 0, stream>>>(n_elements * 4, Face2D_t* faces, const Element2D_t* elements, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void {
+    SEM::Meshes::project_to_faces<<<faces_numBlocks, faces_blockSize, 0, stream>>>(n_elements * 4, faces.data(), elements.data(), NDG.nodes_.data(), NDG.barycentric_weights_.data());
     
     std::vector<deviceFloat> polynomial_nodes_host(NDG.nodes_.size());
 
@@ -134,7 +135,7 @@ TEST_CASE("Element to face projection test", "Projects the edge interpolated sol
     
         for (int j = 0; j <= N_test; ++j) {
             const deviceFloat interp = (polynomial_nodes_host[offset_1D + j] + 1)/2;
-            const td::array<Vec2<deviceFloat>, 4> global_coordinates = {points[4 * i + 1] * interp + points[4 * i] * (1 - interp),
+            const std::array<Vec2<deviceFloat>, 4> global_coordinates = {points[4 * i + 1] * interp + points[4 * i] * (1 - interp),
                                                                         points[4 * i + 2] * interp + points[4 * i + 1] * (1 - interp),
                                                                         points[4 * i + 3] * interp + points[4 * i + 2] * (1 - interp),
                                                                         points[4 * i] * interp + points[4 * i + 3] * (1 - interp)};
@@ -161,7 +162,7 @@ TEST_CASE("Element to face projection test", "Projects the edge interpolated sol
     SEM::Entities::device_vector<deviceFloat> u(n_elements * 4 * (N_test + 1), stream);
     SEM::Entities::device_vector<deviceFloat> v(n_elements * 4 * (N_test + 1), stream);
 
-    retrieve_face_projected_solution<<<elements_numBlocks, elements_blockSize, 0, stream>>>(iN_test, n_elements, elements.data(), faces.data(), p.data(), u.data(), v.data());
+    retrieve_face_projected_solution<<<elements_numBlocks, elements_blockSize, 0, stream>>>(N_test, n_elements, elements.data(), faces.data(), p.data(), u.data(), v.data());
 
     std::vector<deviceFloat> p_host(n_elements * 4 * (N_test + 1));
     std::vector<deviceFloat> u_host(n_elements * 4 * (N_test + 1));
@@ -172,25 +173,24 @@ TEST_CASE("Element to face projection test", "Projects the edge interpolated sol
     v.copy_to(v_host, stream);
 
     for (size_t i = 0; i < n_elements; ++i) {
-        const size_t offset_results = 4 * i * (N + 1);
+        const size_t offset_results = 4 * i * (N_test + 1);
 
         for (int j = 0; j <= N_test; ++j) {
             REQUIRE(std::abs(p_expected[i][0][j] - p_host[offset_results + j]) < max_error);
             REQUIRE(std::abs(u_expected[i][0][j] - u_host[offset_results + j]) < max_error);
             REQUIRE(std::abs(v_expected[i][0][j] - v_host[offset_results + j]) < max_error);
 
-            REQUIRE(std::abs(p_expected[i][1][j] - p_host[offset_results + N + 1 + j]) < max_error);
-            REQUIRE(std::abs(u_expected[i][1][j] - u_host[offset_results + N + 1 + j]) < max_error);
-            REQUIRE(std::abs(v_expected[i][1][j] - v_host[offset_results + N + 1 + j]) < max_error);
+            REQUIRE(std::abs(p_expected[i][1][j] - p_host[offset_results + N_test + 1 + j]) < max_error);
+            REQUIRE(std::abs(u_expected[i][1][j] - u_host[offset_results + N_test + 1 + j]) < max_error);
+            REQUIRE(std::abs(v_expected[i][1][j] - v_host[offset_results + N_test + 1 + j]) < max_error);
 
-            REQUIRE(std::abs(p_expected[i][2][j] - p_host[offset_results + 2 * (N + 1) + j]) < max_error);
-            REQUIRE(std::abs(u_expected[i][2][j] - u_host[offset_results + 2 * (N + 1) + j]) < max_error);
-            REQUIRE(std::abs(v_expected[i][2][j] - v_host[offset_results + 2 * (N + 1) + j]) < max_error);
+            REQUIRE(std::abs(p_expected[i][2][j] - p_host[offset_results + 2 * (N_test + 1) + j]) < max_error);
+            REQUIRE(std::abs(u_expected[i][2][j] - u_host[offset_results + 2 * (N_test + 1) + j]) < max_error);
+            REQUIRE(std::abs(v_expected[i][2][j] - v_host[offset_results + 2 * (N_test + 1) + j]) < max_error);
 
-            REQUIRE(std::abs(p_expected[i][3][j] - p_host[offset_results + 3 * (N + 1) + j]) < max_error);
-            REQUIRE(std::abs(u_expected[i][3][j] - u_host[offset_results + 3 * (N + 1) + j]) < max_error);
-            REQUIRE(std::abs(v_expected[i][3][j] - v_host[offset_results + 3 * (N + 1) + j]) < max_error);
-
+            REQUIRE(std::abs(p_expected[i][3][j] - p_host[offset_results + 3 * (N_test + 1) + j]) < max_error);
+            REQUIRE(std::abs(u_expected[i][3][j] - u_host[offset_results + 3 * (N_test + 1) + j]) < max_error);
+            REQUIRE(std::abs(v_expected[i][3][j] - v_host[offset_results + 3 * (N_test + 1) + j]) < max_error);
         }
     }
 
