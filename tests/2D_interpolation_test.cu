@@ -1,6 +1,4 @@
 #include <catch2/catch.hpp>
-#include <iostream>
-#include <iomanip>
 #include <cmath>
 #include <array>
 #include <vector>
@@ -9,7 +7,7 @@
 #include "entities/NDG_t.cuh"
 #include "entities/Element2D_t.cuh"
 #include "entities/device_vector.cuh"
-#include "polynomials/ChebyshevPolynomial_t.cuh"
+#include "polynomials/LegendrePolynomial_t.cuh"
 
 using SEM::Entities::Vec2;
 
@@ -63,7 +61,7 @@ TEST_CASE("2D interpolation test", "Checks the interpolated value of the solutio
     cudaStream_t stream;
     cudaStreamCreate(&stream); 
     
-    SEM::Entities::NDG_t<SEM::Polynomials::ChebyshevPolynomial_t> NDG(N_max, N_interpolation_points, stream);
+    SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> NDG(N_max, N_interpolation_points, stream);
 
     std::vector<SEM::Entities::Element2D_t> host_elements(1);
     host_elements[0].N_ = N_test;
