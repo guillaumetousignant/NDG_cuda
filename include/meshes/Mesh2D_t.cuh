@@ -47,8 +47,6 @@ namespace SEM { namespace Meshes {
             std::vector<deviceFloat> host_receiving_interfaces_u_;
             std::vector<deviceFloat> host_receiving_interfaces_v_;
             
-            
-
             constexpr static int elements_blockSize_ = 32;
             constexpr static int faces_blockSize_ = 32; // Same number of faces as elements for periodic BC
             constexpr static int boundaries_blockSize_ = 32;
