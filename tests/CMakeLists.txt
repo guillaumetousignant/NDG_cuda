@@ -19,7 +19,10 @@ add_executable(unit_tests
     initial_conditions_test.cu
     cpu_gpu_test.cu
     quad_mapping_test.cu
-    inverse_quad_mapping_test.cu)
+    inverse_quad_mapping_test.cu
+    element_to_element_interpolation_test.cu
+    face_to_element_projection_test.cu
+    element_to_face_projection_test.cu)
     
 target_link_libraries(unit_tests PRIVATE 
     Catch2::Catch2
