@@ -18,7 +18,7 @@ SEM::Entities::cuda_vector<T>::~cuda_vector() {
 
 template <typename T>
 __device__
-SEM::Entities::cuda_vector<T>::cuda_vector(const cuda_vector<T>& other) : size_(other.size()), data_(new T[size_]) { // copy constructor
+SEM::Entities::cuda_vector<T>::cuda_vector(const cuda_vector<T>& other) : size_(other.size()), data_(new T[other.size()]) { // copy constructor
     for (size_t i = 0; i < size_; ++i) {
         data_[i] = other.data_[i];
     }
