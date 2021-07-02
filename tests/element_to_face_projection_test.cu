@@ -169,18 +169,18 @@ auto retrieve_face_projected_solution(int N, size_t n_elements, const SEM::Entit
         const SEM::Entities::Face2D_t& face_left = faces[element.faces_[3][0]];
         
         for (int j = 0; j <= N; ++j) {
-            p[offset_results + j] = face_bottom.p_[0][j];
-            p[offset_results + (N + 1) + j] = face_right.p_[0][j];
+            p[offset_results + j]               = face_bottom.p_[0][j];
+            p[offset_results + (N + 1) + j]     = face_right.p_[0][j];
             p[offset_results + 2 * (N + 1) + j] = face_top.p_[1][j];
             p[offset_results + 3 * (N + 1) + j] = face_left.p_[1][j];
 
-            u[offset_results + j] = face_bottom.u_[0][j];
-            u[offset_results + (N + 1) + j] = face_right.u_[0][j];
+            u[offset_results + j]               = face_bottom.u_[0][j];
+            u[offset_results + (N + 1) + j]     = face_right.u_[0][j];
             u[offset_results + 2 * (N + 1) + j] = face_top.u_[1][j];
             u[offset_results + 3 * (N + 1) + j] = face_left.u_[1][j];
 
-            v[offset_results + j] = face_bottom.v_[0][j];
-            v[offset_results + (N + 1) + j] = face_right.v_[0][j];
+            v[offset_results + j]               = face_bottom.v_[0][j];
+            v[offset_results + (N + 1) + j]     = face_right.v_[0][j];
             v[offset_results + 2 * (N + 1) + j] = face_top.v_[1][j];
             v[offset_results + 3 * (N + 1) + j] = face_left.v_[1][j];
         }
