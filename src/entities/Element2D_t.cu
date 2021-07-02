@@ -10,7 +10,7 @@
 using SEM::Entities::cuda_vector;
 
 __device__ 
-SEM::Entities::Element2D_t::Element2D_t(int N, std::array<cuda_vector<size_t>, 4> faces, std::array<size_t, 4> nodes) : 
+SEM::Entities::Element2D_t::Element2D_t(int N, const std::array<cuda_vector<size_t>, 4>& faces, std::array<size_t, 4> nodes) : 
         N_(N),
         faces_{faces},
         nodes_{nodes},

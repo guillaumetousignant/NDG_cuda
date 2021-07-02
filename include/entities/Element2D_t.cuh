@@ -10,7 +10,7 @@ namespace SEM { namespace Entities {
     class Element2D_t { // Turn this into separate vectors, because cache exists
         public:
             __device__ 
-            Element2D_t(int N, std::array<SEM::Entities::cuda_vector<size_t>, 4> faces, std::array<size_t, 4> nodes);
+            Element2D_t(int N, const std::array<SEM::Entities::cuda_vector<size_t>, 4>& faces, std::array<size_t, 4> nodes);
 
             __host__ __device__
             Element2D_t();
