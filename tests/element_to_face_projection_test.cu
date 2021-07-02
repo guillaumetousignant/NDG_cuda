@@ -38,6 +38,15 @@ auto element_to_face_projection_init(int N, size_t n_elements, SEM::Entities::El
         faces[4 * i + 2] = SEM::Entities::Face2D_t(N, std::array<size_t, 2>{4 * i + 3, 4 * i + 2}, std::array<size_t, 2>{i, i}, std::array<size_t, 2>{0, 2});
         faces[4 * i + 3] = SEM::Entities::Face2D_t(N, std::array<size_t, 2>{4 * i, 4 * i + 3}, std::array<size_t, 2>{i, i}, std::array<size_t, 2>{1, 3});
 
+        faces[4 * i].offset_     = {0.0, 0.0};
+        faces[4 * i].scale_      = {1.0, 1.0};
+        faces[4 * i + 1].offset_ = {0.0, 0.0};
+        faces[4 * i + 1].scale_  = {1.0, 1.0};
+        faces[4 * i + 2].offset_ = {0.0, 0.0};
+        faces[4 * i + 2].scale_  = {1.0, 1.0};
+        faces[4 * i + 3].offset_ = {0.0, 0.0};
+        faces[4 * i + 3].scale_  = {1.0, 1.0};
+
         std::array<SEM::Entities::cuda_vector<size_t>, 4> element_faces {SEM::Entities::cuda_vector<size_t>(1),
                                                                          SEM::Entities::cuda_vector<size_t>(1),
                                                                          SEM::Entities::cuda_vector<size_t>(1),
@@ -101,6 +110,23 @@ auto element_to_faces_projection_init(int N, size_t n_elements, SEM::Entities::E
         faces[8 * i + 5] = SEM::Entities::Face2D_t(N, std::array<size_t, 2>{8 * i + 5, 8 * i + 4}, std::array<size_t, 2>{i, i}, std::array<size_t, 2>{0, 2});
         faces[8 * i + 6] = SEM::Entities::Face2D_t(N, std::array<size_t, 2>{8 * i, 8 * i + 7},     std::array<size_t, 2>{i, i}, std::array<size_t, 2>{1, 3});
         faces[8 * i + 7] = SEM::Entities::Face2D_t(N, std::array<size_t, 2>{8 * i + 7, 8 * i + 6}, std::array<size_t, 2>{i, i}, std::array<size_t, 2>{1, 3});
+
+        faces[8 * i].offset_     = {0.0, 0.5};
+        faces[8 * i].scale_      = {0.5, 0.5};
+        faces[8 * i + 1].offset_ = {0.5, 0.0};
+        faces[8 * i + 1].scale_  = {0.5, 0.5};
+        faces[8 * i + 2].offset_ = {0.0, 0.5};
+        faces[8 * i + 2].scale_  = {0.5, 0.5};
+        faces[8 * i + 3].offset_ = {0.5, 0.0};
+        faces[8 * i + 3].scale_  = {0.5, 0.5};
+        faces[8 * i + 4].offset_ = {0.0, 0.5};
+        faces[8 * i + 4].scale_  = {0.5, 0.5};
+        faces[8 * i + 5].offset_ = {0.5, 0.0};
+        faces[8 * i + 5].scale_  = {0.5, 0.5};
+        faces[8 * i + 6].offset_ = {0.0, 0.5};
+        faces[8 * i + 6].scale_  = {0.5, 0.5};
+        faces[8 * i + 7].offset_ = {0.5, 0.0};
+        faces[8 * i + 7].scale_  = {0.5, 0.5};
 
         std::array<SEM::Entities::cuda_vector<size_t>, 4> element_faces {SEM::Entities::cuda_vector<size_t>(2),
                                                                          SEM::Entities::cuda_vector<size_t>(2),
@@ -379,10 +405,10 @@ TEST_CASE("Element to two faces projection test", "Projects the edge interpolate
                                                                          faces_points[8 * i + 2] * interp + faces_points[8 * i + 1] * (1 - interp),
                                                                          faces_points[8 * i + 3] * interp + faces_points[8 * i + 2] * (1 - interp),
                                                                          faces_points[8 * i + 4] * interp + faces_points[8 * i + 3] * (1 - interp),
-                                                                         faces_points[8 * i + 6] * interp + faces_points[8 * i + 5] * (1 - interp),
-                                                                         faces_points[8 * i + 5] * interp + faces_points[8 * i + 4] * (1 - interp),
-                                                                         faces_points[8 * i]     * interp + faces_points[8 * i + 7] * (1 - interp),
-                                                                         faces_points[8 * i + 7] * interp + faces_points[8 * i + 6] * (1 - interp)}; // The last four faces are backwards, as if the element is the face's second element. 
+                                                                         faces_points[8 * i + 5] * interp + faces_points[8 * i + 6] * (1 - interp),
+                                                                         faces_points[8 * i + 4] * interp + faces_points[8 * i + 5] * (1 - interp),
+                                                                         faces_points[8 * i + 7] * interp + faces_points[8 * i] * (1 - interp),
+                                                                         faces_points[8 * i + 6] * interp + faces_points[8 * i + 7] * (1 - interp)}; // The last four faces are backwards, as if the element is the face's second element. 
 
             p_expected[i][0][j] = std::sin(global_coordinates[0].x()) * std::cos(global_coordinates[0].y());
             u_expected[i][0][j] = global_coordinates[0].x();
