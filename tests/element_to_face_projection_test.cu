@@ -146,8 +146,8 @@ TEST_CASE("Element to face projection test", "Projects the edge interpolated sol
             const deviceFloat interp = (polynomial_nodes_host[offset_1D + j] + 1)/2;
             const std::array<Vec2<deviceFloat>, 4> global_coordinates = {points[4 * i + 1] * interp + points[4 * i] * (1 - interp),
                                                                         points[4 * i + 2] * interp + points[4 * i + 1] * (1 - interp),
-                                                                        points[4 * i + 3] * interp + points[4 * i + 2] * (1 - interp),
-                                                                        points[4 * i] * interp + points[4 * i + 3] * (1 - interp)};
+                                                                        points[4 * i + 2] * interp + points[4 * i + 3] * (1 - interp),
+                                                                        points[4 * i + 3] * interp + points[4 * i] * (1 - interp)}; // The last two faces are backwards, as if the element is the face's second element. 
 
             p_expected[i][0][j] = std::sin(global_coordinates[0].x()) * std::cos(global_coordinates[0].y());
             u_expected[i][0][j] = global_coordinates[0].x();
