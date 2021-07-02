@@ -29,7 +29,16 @@ auto element_to_face_projection_init(int N, size_t n_elements, SEM::Entities::El
         faces[4 * i + 2] = SEM::Entities::Face2D_t(N, std::array<size_t, 2>{4 * i + 3, 4 * i +  + 2}, std::array<size_t, 2>{i, i}, std::array<size_t, 2>{0, 2});
         faces[4 * i + 3] = SEM::Entities::Face2D_t(N, std::array<size_t, 2>{4 * i, 4 * i + 3}, std::array<size_t, 2>{i, i}, std::array<size_t, 2>{1, 3});
 
-        elements[i] = SEM::Entities::Element2D_t(N, std::array<SEM::Entities::cuda_vector<size_t>, 4>{4 * i, 4 * i + 1, 4 * i + 2, 4 * i + 3}, std::array<size_t, 4>{4 * i, 4 * i + 1, 4 * i + 2, 4 * i + 3});
+        std::array<SEM::Entities::cuda_vector<size_t>, 4> element_faces {SEM::Entities::cuda_vector<size_t>(1),
+                                                                         SEM::Entities::cuda_vector<size_t>(1),
+                                                                         SEM::Entities::cuda_vector<size_t>(1),
+                                                                         SEM::Entities::cuda_vector<size_t>(1)};
+        element_faces[0][0] = 4 * i;
+        element_faces[1][0] = 4 * i + 1;
+        element_faces[2][0] = 4 * i + 2;
+        element_faces[3][0] = 4 * i + 3;
+
+        elements[i] = SEM::Entities::Element2D_t(N, element_faces, std::array<size_t, 4>{4 * i, 4 * i + 1, 4 * i + 2, 4 * i + 3});
 
         SEM::Entities::Element2D_t& element = elements[i];
         const size_t offset_1D = element.N_ * (element.N_ + 1) /2;
