@@ -134,9 +134,9 @@ TEST_CASE("Face to element projection test", "Projects the face flux solution of
             u_expected[i][0][j] = global_coordinates.y() * global_coordinates.y();
             v_expected[i][0][j] = global_coordinates.y();
 
-            p_expected[i][1][N_test - j] = std::cos(global_coordinates.y());
-            u_expected[i][1][N_test - j] = global_coordinates.y() * global_coordinates.y();
-            v_expected[i][1][N_test - j] = global_coordinates.y();
+            p_expected[i][1][N_test - j] = -std::cos(global_coordinates.y());
+            u_expected[i][1][N_test - j] = -global_coordinates.y() * global_coordinates.y();
+            v_expected[i][1][N_test - j] = -global_coordinates.y();
         }
     }
 
