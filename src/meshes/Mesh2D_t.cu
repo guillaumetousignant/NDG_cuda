@@ -1365,8 +1365,8 @@ auto SEM::Meshes::project_to_elements(size_t N_elements, const Face2D_t* faces, 
                                     s += barycentric_weights[offset_1D + i]/(coordinate - polynomial_nodes[offset_1D + i]);
                                 }
                                 for (int i = 0; i <= element.N_; ++i) {
-                                    const deviceFloat T = barycentric_weights[offset_1D + i]/((coordinate - polynomial_nodes[offset_1D + i]) / s);
-
+                                    const deviceFloat T = barycentric_weights[offset_1D + i]/((coordinate - polynomial_nodes[offset_1D + i]) * s);
+                                    
                                     element.p_flux_extrapolated_[side_index][i] += T * barycentric_weights[offset_1D_other + j]/barycentric_weights[offset_1D + i] * face.p_flux_[j] / face.scale_[0];
                                     element.u_flux_extrapolated_[side_index][i] += T * barycentric_weights[offset_1D_other + j]/barycentric_weights[offset_1D + i] * face.u_flux_[j] / face.scale_[0];
                                     element.v_flux_extrapolated_[side_index][i] += T * barycentric_weights[offset_1D_other + j]/barycentric_weights[offset_1D + i] * face.v_flux_[j] / face.scale_[0];
@@ -1395,7 +1395,7 @@ auto SEM::Meshes::project_to_elements(size_t N_elements, const Face2D_t* faces, 
                                     s += barycentric_weights[offset_1D + i]/(coordinate - polynomial_nodes[offset_1D + i]);
                                 }
                                 for (int i = 0; i <= element.N_; ++i) {
-                                    const deviceFloat T = barycentric_weights[offset_1D + i]/((coordinate - polynomial_nodes[offset_1D + i]) / s);
+                                    const deviceFloat T = barycentric_weights[offset_1D + i]/((coordinate - polynomial_nodes[offset_1D + i]) * s);
 
                                     element.p_flux_extrapolated_[side_index][i] += -T * barycentric_weights[offset_1D_other + j]/barycentric_weights[offset_1D + i] * face.p_flux_[j] / face.scale_[0];
                                     element.u_flux_extrapolated_[side_index][i] += -T * barycentric_weights[offset_1D_other + j]/barycentric_weights[offset_1D + i] * face.u_flux_[j] / face.scale_[0];
