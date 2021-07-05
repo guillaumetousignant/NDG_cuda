@@ -1334,10 +1334,10 @@ auto SEM::Meshes::project_to_elements(size_t N_elements, const Face2D_t* faces, 
             else { // We need to interpolate
                 const size_t offset_1D = element.N_ * (element.N_ + 1) /2;
 
-                for (int j = 0; j <= element.N_; ++j) {
-                    element.p_flux_extrapolated_[side_index][j] = 0.0;
-                    element.u_flux_extrapolated_[side_index][j] = 0.0;
-                    element.v_flux_extrapolated_[side_index][j] = 0.0;
+                for (int i = 0; i <= element.N_; ++i) {
+                    element.p_flux_extrapolated_[side_index][i] = 0.0;
+                    element.u_flux_extrapolated_[side_index][i] = 0.0;
+                    element.v_flux_extrapolated_[side_index][i] = 0.0;
                 }
 
                 for (size_t face_index = 0; face_index < element.faces_[side_index].size(); ++face_index) {
@@ -1347,7 +1347,7 @@ auto SEM::Meshes::project_to_elements(size_t N_elements, const Face2D_t* faces, 
                     // Non-conforming, forward
                     if (element_index == face.elements_[0]) {
                         for (int i = 0; i <= element.N_; ++i) {
-                            const deviceFloat coordinate = (polynomial_nodes[offset_1D + i] - face.offset_[0]) / face.scale_[0];
+                            const deviceFloat coordinate = (polynomial_nodes[offset_1D + i] + face.scale_[0] - 2 * face.offset_[0]) / face.scale_[0];
 
                             deviceFloat p_numerator = 0.0;
                             deviceFloat u_numerator = 0.0;
@@ -1370,15 +1370,17 @@ auto SEM::Meshes::project_to_elements(size_t N_elements, const Face2D_t* faces, 
                                 denominator += t;
                             }
 
-                            element.p_flux_extrapolated_[side_index][i] = p_numerator/denominator * element.scaling_factor_[side_index][i];
-                            element.u_flux_extrapolated_[side_index][i] = u_numerator/denominator * element.scaling_factor_[side_index][i];
-                            element.v_flux_extrapolated_[side_index][i] = v_numerator/denominator * element.scaling_factor_[side_index][i];
+                            element.p_flux_extrapolated_[side_index][i] += p_numerator/denominator * element.scaling_factor_[side_index][i];
+                            element.u_flux_extrapolated_[side_index][i] += u_numerator/denominator * element.scaling_factor_[side_index][i];
+                            element.v_flux_extrapolated_[side_index][i] += v_numerator/denominator * element.scaling_factor_[side_index][i];
+
+                            
                         }
                     }
                     // Non-conforming, backwards
                     else {
                         for (int i = 0; i <= element.N_; ++i) {
-                            const deviceFloat coordinate = (polynomial_nodes[offset_1D + element.N_ - i] - face.offset_[1]) / face.scale_[1];
+                            const deviceFloat coordinate = (polynomial_nodes[offset_1D + element.N_ - i] + face.scale_[1] - 2 * face.offset_[1]) / face.scale_[1];
 
                             deviceFloat p_numerator = 0.0;
                             deviceFloat u_numerator = 0.0;
@@ -1393,7 +1395,7 @@ auto SEM::Meshes::project_to_elements(size_t N_elements, const Face2D_t* faces, 
                                     denominator = 1.0;
                                     break;
                                 }
-            
+
                                 const deviceFloat t = barycentric_weights[offset_1D_other + j]/(coordinate - polynomial_nodes[offset_1D_other + j]);
                                 p_numerator += t * face.p_flux_[j];
                                 u_numerator += t * face.u_flux_[j];
@@ -1401,9 +1403,9 @@ auto SEM::Meshes::project_to_elements(size_t N_elements, const Face2D_t* faces, 
                                 denominator += t;
                             }
 
-                            element.p_flux_extrapolated_[side_index][i] = -p_numerator/denominator * element.scaling_factor_[side_index][i];
-                            element.u_flux_extrapolated_[side_index][i] = -u_numerator/denominator * element.scaling_factor_[side_index][i];
-                            element.v_flux_extrapolated_[side_index][i] = -v_numerator/denominator * element.scaling_factor_[side_index][i];
+                            element.p_flux_extrapolated_[side_index][i] += -p_numerator/denominator * element.scaling_factor_[side_index][i];
+                            element.u_flux_extrapolated_[side_index][i] += -u_numerator/denominator * element.scaling_factor_[side_index][i];
+                            element.v_flux_extrapolated_[side_index][i] += -v_numerator/denominator * element.scaling_factor_[side_index][i];
                         }
                     }
                 }
