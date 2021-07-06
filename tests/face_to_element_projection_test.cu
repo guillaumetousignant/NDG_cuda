@@ -163,7 +163,7 @@ TEST_CASE("Face to element projection test", "Projects the face flux solution of
     const size_t N_interpolation_points = N_max;
     constexpr size_t n_faces = 1;
     constexpr size_t n_elements = 2 * n_faces;
-    const double max_error = 1e-6;
+    const double max_error = 1e-9;
 
     REQUIRE(N_test <= N_max);
 
@@ -258,7 +258,7 @@ TEST_CASE("Faces to element projection test", "Projects the face flux solution o
     const size_t N_interpolation_points = N_max;
     constexpr size_t n_faces = 2;
     constexpr size_t n_elements = n_faces;
-    const double max_error = 1e-6;
+    const double max_error = 1e-9;
 
     REQUIRE(N_test <= N_max);
 
