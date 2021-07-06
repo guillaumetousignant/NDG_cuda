@@ -191,7 +191,7 @@ TEST_CASE("Face to element projection test", "Projects the face flux solution of
 
     SEM::Meshes::compute_element_geometry<<<elements_blockSize, elements_numBlocks, 0, stream>>>(n_elements, elements.data(), nodes.data(), NDG.nodes_.data());
 
-    SEM::Meshes::project_to_elements<<<elements_blockSize, elements_numBlocks, 0, stream>>>(n_elements, faces.data(), elements.data(), NDG.nodes_.data(), NDG.barycentric_weights_.data());
+    SEM::Meshes::project_to_elements<<<elements_blockSize, elements_numBlocks, 0, stream>>>(n_elements, faces.data(), elements.data(), NDG.nodes_.data(), NDG.weights_.data(), NDG.barycentric_weights_.data());
     
     std::vector<deviceFloat> polynomial_nodes_host(NDG.nodes_.size());
 
@@ -287,7 +287,7 @@ TEST_CASE("Faces to element projection test", "Projects the face flux solution o
 
     SEM::Meshes::compute_element_geometry<<<elements_blockSize, elements_numBlocks, 0, stream>>>(n_elements, elements.data(), nodes.data(), NDG.nodes_.data());
 
-    SEM::Meshes::project_to_elements<<<elements_blockSize, elements_numBlocks, 0, stream>>>(n_elements, faces.data(), elements.data(), NDG.nodes_.data(), NDG.barycentric_weights_.data());
+    SEM::Meshes::project_to_elements<<<elements_blockSize, elements_numBlocks, 0, stream>>>(n_elements, faces.data(), elements.data(), NDG.nodes_.data(), NDG.weights_.data(), NDG.barycentric_weights_.data());
     
     std::vector<deviceFloat> polynomial_nodes_host(NDG.nodes_.size());
 
