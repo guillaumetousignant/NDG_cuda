@@ -424,7 +424,6 @@ auto SEM::Entities::Element2D_t::interpolate_from(const std::array<Vec2<deviceFl
             }  
         }
     }
-
 }
 
 __device__
