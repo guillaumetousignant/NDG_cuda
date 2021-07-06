@@ -266,7 +266,7 @@ TEST_CASE("Element to face projection test", "Projects the edge interpolated sol
     const int N_test = 16;
     const size_t N_interpolation_points = N_max;
     constexpr size_t n_elements = 1;
-    const double max_error = 1e-6;
+    const double max_error = 1e-9;
 
     REQUIRE(N_test <= N_max);
 
@@ -367,7 +367,7 @@ TEST_CASE("Element to two faces projection test", "Projects the edge interpolate
     const int N_test = 16;
     const size_t N_interpolation_points = N_max;
     constexpr size_t n_elements = 1;
-    const double max_error = 1e-6;
+    const double max_error = 1e-9;
 
     REQUIRE(N_test <= N_max);
 
