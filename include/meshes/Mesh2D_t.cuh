@@ -91,21 +91,9 @@ namespace SEM { namespace Meshes {
             static auto almost_equal(deviceFloat x, deviceFloat y) -> bool;
 
         private:
-            unsigned long* device_refine_array_;
-            std::vector<unsigned long> host_refine_array_;
-            deviceFloat* device_boundary_phi_L_;
-            std::vector<deviceFloat> host_boundary_phi_L_;
-            deviceFloat* device_boundary_phi_R_;
-            std::vector<deviceFloat> host_boundary_phi_R_;
-            deviceFloat* device_boundary_phi_prime_L_;
-            std::vector<deviceFloat> host_boundary_phi_prime_L_;
-            deviceFloat* device_boundary_phi_prime_R_;
-            std::vector<deviceFloat> host_boundary_phi_prime_R_;
-            std::vector<size_t> host_MPI_boundary_to_element_;
-            std::vector<size_t> host_MPI_boundary_from_element_;
+            SEM::Entities::device_vector<size_t> device_refine_array_;
+            std::vector<size_t> host_refine_array_;
 
-            std::vector<std::array<double, 4>> send_buffers_;
-            std::vector<std::array<double, 4>> receive_buffers_;
             std::vector<MPI_Request> requests_;
             std::vector<MPI_Status> statuses_;
 
@@ -163,7 +151,7 @@ namespace SEM { namespace Meshes {
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>
     __device__ 
-    void warp_reduce_refine_2D(volatile unsigned long *sdata, unsigned int tid) {
+    void warp_reduce_refine_2D(volatile size_t *sdata, unsigned int tid) {
         if (blockSize >= 64) sdata[tid] += sdata[tid + 32];
         if (blockSize >= 32) sdata[tid] += sdata[tid + 16];
         if (blockSize >= 16) sdata[tid] += sdata[tid + 8];
@@ -175,8 +163,8 @@ namespace SEM { namespace Meshes {
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>
     __global__ 
-    void reduce_refine_2D(size_t N_elements, int max_split_level, const SEM::Entities::Element2D_t* elements, unsigned long *g_odata) {
-        __shared__ unsigned long sdata[(blockSize >= 64) ? blockSize : blockSize + blockSize/2]; // Because within a warp there is no branching and this is read up until blockSize + blockSize/2
+    void reduce_refine_2D(size_t N_elements, int max_split_level, const SEM::Entities::Element2D_t* elements, size_t* g_odata) {
+        __shared__ size_t sdata[(blockSize >= 64) ? blockSize : blockSize + blockSize/2]; // Because within a warp there is no branching and this is read up until blockSize + blockSize/2
         unsigned int tid = threadIdx.x;
         size_t i = blockIdx.x*(blockSize*2) + tid;
         unsigned int gridSize = blockSize*2*gridDim.x;

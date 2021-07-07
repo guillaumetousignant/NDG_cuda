@@ -635,6 +635,8 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
 
     host_delta_t_array_ = std::vector<deviceFloat>(elements_numBlocks_);
     device_delta_t_array_ = device_vector<deviceFloat>(elements_numBlocks_, stream_);
+    host_refine_array_ = std::vector<size_t>(elements_numBlocks_);
+    device_refine_array_ = device_vector<size_t>(elements_numBlocks_, stream_);
 
     allocate_element_storage<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data());
     allocate_boundary_storage<<<ghosts_numBlocks_, boundaries_blockSize_, 0, stream_>>>(N_elements_, elements_.size(), elements_.data());
@@ -943,7 +945,25 @@ auto SEM::Meshes::Mesh2D_t::g(Vec2<deviceFloat> xy, deviceFloat t) -> std::array
 }
 
 auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights) -> void {
-    std::cout << "Warning, SEM::Meshes::Mesh2D_t::adapt is not implemented." << std::endl;
+    SEM::Meshes::reduce_refine_2D<elements_blockSize_/2><<<elements_numBlocks_, elements_blockSize_/2, 0, stream_>>>(N_elements_, max_split_level_, elements_.data(), device_refine_array_.data());
+    device_refine_array_.copy_to(host_refine_array_, stream_);
+
+    size_t additional_elements = 0;
+    for (int i = 0; i < elements_numBlocks_; ++i) {
+        additional_elements += host_refine_array_[i];
+        host_refine_array_[i] = additional_elements - host_refine_array_[i]; // Current block offset
+    }
+
+    int global_rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
+    int global_size;
+    MPI_Comm_size(MPI_COMM_WORLD, &global_size);
+
+    std::vector<size_t> additional_elements_global(global_size);
+    constexpr MPI_Datatype data_type = (sizeof(size_t) == sizeof(unsigned long long)) ? MPI_UNSIGNED_LONG_LONG : (sizeof(size_t) == sizeof(unsigned long)) ? MPI_UNSIGNED_LONG : MPI_UNSIGNED; // CHECK this is a bad way of doing this
+
+    MPI_Allgather(&additional_elements, 1, data_type, additional_elements_global.data(), 1, data_type, MPI_COMM_WORLD);
+
 }
 
 auto SEM::Meshes::Mesh2D_t::boundary_conditions() -> void {
