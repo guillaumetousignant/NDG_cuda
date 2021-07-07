@@ -39,9 +39,9 @@ auto element_to_element_projection_init(int N, size_t n_elements, SEM::Entities:
 
         elements[element_index] = SEM::Entities::Element2D_t(N, element_faces, std::array<size_t, 4>{4 * element_index, 4 * element_index + 1, 4 * element_index + 2, 4 * element_index + 3});
         elements_small[element_index] = SEM::Entities::Element2D_t(N, element_faces, std::array<size_t, 4>{4 * element_index, 4 * element_index + 1, 4 * element_index + 2, 4 * element_index + 3});
-
+        
         SEM::Entities::Element2D_t& element = elements[element_index];
-        SEM::Entities::Element2D_t& element_small = elements[element_index];
+        SEM::Entities::Element2D_t& element_small = elements_small[element_index];
         const size_t offset_1D = element.N_ * (element.N_ + 1) /2;
 
         for (int i = 0; i <= element.N_; ++i) {
