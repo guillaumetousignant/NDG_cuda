@@ -4,6 +4,8 @@
 #include <fstream>
 #include <mpi.h>
 #include <vtkDoubleArray.h>
+#include <vtkIntArray.h>
+#include <vtkUnsignedLongLongArray.h>
 #include <vtkPoints.h>
 #include <vtkPointData.h>
 #include <vtkUnstructuredGrid.h>
@@ -43,7 +45,8 @@ auto SEM::Helpers::DataWriter_t::write_data(size_t N_interpolation_points,
                                             const std::vector<deviceFloat>& u_error, 
                                             const std::vector<deviceFloat>& v_error, 
                                             const std::vector<int>& refine, 
-                                            const std::vector<int>& coarsen) const -> void {
+                                            const std::vector<int>& coarsen,
+                                            const std::vector<int>& split_level) const -> void {
 
     // Creating points
     vtkNew<vtkPoints> points; // Should bt vtkPoints2D, but unstructured meshes can't take 2D points.
@@ -111,7 +114,7 @@ auto SEM::Helpers::DataWriter_t::write_data(size_t N_interpolation_points,
     grid->GetPointData()->AddArray(velocity);
 
     // Add N to each point
-    vtkNew<vtkDoubleArray> N_output;
+    vtkNew<vtkIntArray> N_output;
     N_output->SetNumberOfComponents(1);
     N_output->Allocate(N_elements * N_interpolation_points * N_interpolation_points);
     N_output->SetName("N");
@@ -128,7 +131,7 @@ auto SEM::Helpers::DataWriter_t::write_data(size_t N_interpolation_points,
     grid->GetPointData()->AddArray(N_output);
 
     // Add index to each point
-    vtkNew<vtkDoubleArray> index;
+    vtkNew<vtkUnsignedLongLongArray> index;
     index->SetNumberOfComponents(1);
     index->Allocate(N_elements * N_interpolation_points * N_interpolation_points);
     index->SetName("index");
@@ -215,7 +218,7 @@ auto SEM::Helpers::DataWriter_t::write_data(size_t N_interpolation_points,
     grid->GetPointData()->AddArray(velocity_error);
 
     // Add refine to each point
-    vtkNew<vtkDoubleArray> refine_output;
+    vtkNew<vtkIntArray> refine_output;
     refine_output->SetNumberOfComponents(1);
     refine_output->Allocate(N_elements * N_interpolation_points * N_interpolation_points);
     refine_output->SetName("Refine");
@@ -232,7 +235,7 @@ auto SEM::Helpers::DataWriter_t::write_data(size_t N_interpolation_points,
     grid->GetPointData()->AddArray(refine_output);
 
     // Add coarsen to each point
-    vtkNew<vtkDoubleArray> coarsen_output;
+    vtkNew<vtkIntArray> coarsen_output;
     coarsen_output->SetNumberOfComponents(1);
     coarsen_output->Allocate(N_elements * N_interpolation_points * N_interpolation_points);
     coarsen_output->SetName("Coarsen");
@@ -247,6 +250,23 @@ auto SEM::Helpers::DataWriter_t::write_data(size_t N_interpolation_points,
     }
 
     grid->GetPointData()->AddArray(coarsen_output);
+
+    // Add split level to each point
+    vtkNew<vtkIntArray> split_level_output;
+    split_level_output->SetNumberOfComponents(1);
+    split_level_output->Allocate(N_elements * N_interpolation_points * N_interpolation_points);
+    split_level_output->SetName("SplitLevel");
+
+    for (size_t element_index = 0; element_index < N_elements; ++element_index) {
+        const size_t offset = element_index * N_interpolation_points * N_interpolation_points;
+        for (size_t i = 0; i < N_interpolation_points; ++i) {
+            for (size_t j = 0; j < N_interpolation_points; ++j) {
+                split_level_output->InsertNextValue(split_level[element_index]);
+            }
+        }
+    }
+
+    grid->GetPointData()->AddArray(split_level_output);
 
     // Filename
     std::stringstream ss;

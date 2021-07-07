@@ -10,7 +10,7 @@
 using SEM::Entities::cuda_vector;
 
 __device__ 
-SEM::Entities::Element2D_t::Element2D_t(int N, const std::array<cuda_vector<size_t>, 4>& faces, std::array<size_t, 4> nodes) : 
+SEM::Entities::Element2D_t::Element2D_t(int N, int split_level, const std::array<cuda_vector<size_t>, 4>& faces, std::array<size_t, 4> nodes) : 
         N_{N},
         faces_{faces},
         nodes_{nodes},
@@ -47,7 +47,11 @@ SEM::Entities::Element2D_t::Element2D_t(int N, const std::array<cuda_vector<size
         coarsen_{false},
         p_error_{0.0},
         u_error_{0.0},
-        v_error_{0.0} {}
+        v_error_{0.0},
+        p_sigma_{0.0},
+        u_sigma_{0.0},
+        v_sigma_{0.0},
+        split_level_{split_level} {}
 
 __host__ __device__
 SEM::Entities::Element2D_t::Element2D_t() :
@@ -64,9 +68,10 @@ SEM::Entities::Element2D_t::Element2D_t() :
         v_flux_extrapolated_{},
         refine_{false},
         coarsen_{false},
-        p_error_{0.0},
-        u_error_{0.0},
-        v_error_{0.0} {};
+        p_sigma_{0.0},
+        u_sigma_{0.0},
+        v_sigma_{0.0},
+        split_level_{0} {};
 
 // Algorithm 61
 __device__
@@ -177,6 +182,7 @@ auto SEM::Entities::Element2D_t::estimate_error<Polynomial>(const deviceFloat* p
     }
 
     const auto [C_p, sigma_p] = exponential_decay(n_points_least_squares);
+    p_sigma_ = sigma_p;
 
     // Sum of error
     p_error_ = std::sqrt(spectrum_[n_points_least_squares - 1] * spectrum_[n_points_least_squares - 1] // Why this part?
@@ -235,6 +241,7 @@ auto SEM::Entities::Element2D_t::estimate_error<Polynomial>(const deviceFloat* p
     }
 
     const auto [C_u, sigma_u] = exponential_decay(n_points_least_squares);
+    u_sigma_ = sigma_u;
 
     // Sum of error
     u_error_ = std::sqrt(spectrum_[n_points_least_squares - 1] * spectrum_[n_points_least_squares - 1] // Why this part?
@@ -293,6 +300,7 @@ auto SEM::Entities::Element2D_t::estimate_error<Polynomial>(const deviceFloat* p
     }
 
     const auto [C_v, sigma_v] = exponential_decay(n_points_least_squares);
+    v_sigma_ = sigma_v;
 
     // Sum of error
     v_error_ = std::sqrt(spectrum_[n_points_least_squares - 1] * spectrum_[n_points_least_squares - 1] // Why this part?

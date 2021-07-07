@@ -37,8 +37,8 @@ auto element_to_element_projection_init(int N, size_t n_elements, SEM::Entities:
         element_faces[2][0] = element_index;
         element_faces[3][0] = element_index;
 
-        elements[element_index] = SEM::Entities::Element2D_t(N, element_faces, std::array<size_t, 4>{4 * element_index, 4 * element_index + 1, 4 * element_index + 2, 4 * element_index + 3});
-        elements_small[element_index] = SEM::Entities::Element2D_t(N, element_faces, std::array<size_t, 4>{4 * element_index, 4 * element_index + 1, 4 * element_index + 2, 4 * element_index + 3});
+        elements[element_index] = SEM::Entities::Element2D_t(N, 0, element_faces, std::array<size_t, 4>{4 * element_index, 4 * element_index + 1, 4 * element_index + 2, 4 * element_index + 3});
+        elements_small[element_index] = SEM::Entities::Element2D_t(N, 1, element_faces, std::array<size_t, 4>{4 * element_index, 4 * element_index + 1, 4 * element_index + 2, 4 * element_index + 3});
         
         SEM::Entities::Element2D_t& element = elements[element_index];
         SEM::Entities::Element2D_t& element_small = elements_small[element_index];

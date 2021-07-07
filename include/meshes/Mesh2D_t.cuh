@@ -20,7 +20,7 @@
 namespace SEM { namespace Meshes {
     class Mesh2D_t {
         public:
-            Mesh2D_t(std::filesystem::path filename, int initial_N, int maximum_N, int adaptivity_interval, const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes, const cudaStream_t &stream);
+            Mesh2D_t(std::filesystem::path filename, int initial_N, int maximum_N, int max_split_level, int adaptivity_interval, const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes, const cudaStream_t &stream);
 
             SEM::Entities::device_vector<SEM::Entities::Vec2<deviceFloat>> nodes_;
             SEM::Entities::device_vector<SEM::Entities::Element2D_t> elements_;
@@ -64,7 +64,7 @@ namespace SEM { namespace Meshes {
             size_t N_elements_per_process_;
             int initial_N_;
             int maximum_N_;
-            deviceFloat delta_x_min_;
+            int max_split_level_;
             int adaptivity_interval_;
 
             SEM::Entities::device_vector<deviceFloat> device_delta_t_array_;
@@ -136,7 +136,7 @@ namespace SEM { namespace Meshes {
     auto initial_conditions_2D(size_t n_elements, SEM::Entities::Element2D_t* elements, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes) -> void;
 
     __global__
-    auto get_solution(size_t N_elements, size_t N_interpolation_points, const SEM::Entities::Element2D_t* elements, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v, int* N, deviceFloat* dp_dt, deviceFloat* du_dt, deviceFloat* dv_dt, deviceFloat* p_error, deviceFloat* u_error, deviceFloat* v_error, int* refine, int* coarsen) -> void;
+    auto get_solution(size_t N_elements, size_t N_interpolation_points, const SEM::Entities::Element2D_t* elements, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v, int* N, deviceFloat* dp_dt, deviceFloat* du_dt, deviceFloat* dv_dt, deviceFloat* p_error, deviceFloat* u_error, deviceFloat* v_error, int* refine, int* coarsen, int* split_level) -> void;
 
     template<typename Polynomial>
     __global__
@@ -159,6 +159,49 @@ namespace SEM { namespace Meshes {
 
     __global__
     auto put_MPI_interfaces(size_t N_MPI_interface_elements, SEM::Entities::Element2D_t* elements, const size_t* MPI_interfaces_destination, int maximum_N, const deviceFloat* p_, const deviceFloat* u_, const deviceFloat* v_) -> void;
+
+    // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
+    template <unsigned int blockSize>
+    __device__ 
+    void warp_reduce_refine_2D(volatile unsigned long *sdata, unsigned int tid) {
+        if (blockSize >= 64) sdata[tid] += sdata[tid + 32];
+        if (blockSize >= 32) sdata[tid] += sdata[tid + 16];
+        if (blockSize >= 16) sdata[tid] += sdata[tid + 8];
+        if (blockSize >= 8) sdata[tid] += sdata[tid + 4];
+        if (blockSize >= 4) sdata[tid] += sdata[tid + 2];
+        if (blockSize >= 2) sdata[tid] += sdata[tid + 1];
+    }
+
+    // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
+    template <unsigned int blockSize>
+    __global__ 
+    void reduce_refine_2D(size_t N_elements, int max_split_level, const SEM::Entities::Element2D_t* elements, unsigned long *g_odata) {
+        __shared__ unsigned long sdata[(blockSize >= 64) ? blockSize : blockSize + blockSize/2]; // Because within a warp there is no branching and this is read up until blockSize + blockSize/2
+        unsigned int tid = threadIdx.x;
+        size_t i = blockIdx.x*(blockSize*2) + tid;
+        unsigned int gridSize = blockSize*2*gridDim.x;
+        sdata[tid] = 0;
+
+        while (i < N_elements) { 
+            sdata[tid] += elements[i].refine_ * ((elements[i].p_sigma_ + elements[i].u_sigma_ + elements[i].v_sigma_)/3 < static_cast<deviceFloat>(1)) * (elements[i].split_level_ < max_split_level);
+            if (i+blockSize < N_elements) {
+                sdata[tid] += elements[i+blockSize].refine_ * ((elements[i+blockSize].p_sigma_ + elements[i+blockSize].u_sigma_ + elements[i+blockSize].v_sigma_)/3 < static_cast<deviceFloat>(1)) * (elements[i+blockSize].split_level_ < max_split_level);
+            }
+            i += gridSize; 
+        }
+        __syncthreads();
+
+        if (blockSize >= 8192) { if (tid < 4096) { sdata[tid] += sdata[tid + 4096]; } __syncthreads(); }
+        if (blockSize >= 4096) { if (tid < 2048) { sdata[tid] += sdata[tid + 2048]; } __syncthreads(); }
+        if (blockSize >= 2048) { if (tid < 1024) { sdata[tid] += sdata[tid + 1024]; } __syncthreads(); }
+        if (blockSize >= 1024) { if (tid < 512) { sdata[tid] += sdata[tid + 512]; } __syncthreads(); }
+        if (blockSize >= 512) { if (tid < 256) { sdata[tid] += sdata[tid + 256]; } __syncthreads(); }
+        if (blockSize >= 256) { if (tid < 128) { sdata[tid] += sdata[tid + 128]; } __syncthreads(); }
+        if (blockSize >= 128) { if (tid < 64) { sdata[tid] += sdata[tid + 64]; } __syncthreads(); }
+
+        if (tid < 32) warp_reduce_refine_2D<blockSize>(sdata, tid);
+        if (tid == 0) g_odata[blockIdx.x] = sdata[0];
+    }
 }}
 
 #endif

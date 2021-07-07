@@ -56,7 +56,7 @@ auto element_to_face_projection_init(int N, size_t n_elements, SEM::Entities::El
         element_faces[2][0] = 4 * i + 2;
         element_faces[3][0] = 4 * i + 3;
 
-        elements[i] = SEM::Entities::Element2D_t(N, element_faces, std::array<size_t, 4>{4 * i, 4 * i + 1, 4 * i + 2, 4 * i + 3});
+        elements[i] = SEM::Entities::Element2D_t(N, 0, element_faces, std::array<size_t, 4>{4 * i, 4 * i + 1, 4 * i + 2, 4 * i + 3});
 
         SEM::Entities::Element2D_t& element = elements[i];
         const size_t offset_1D = element.N_ * (element.N_ + 1) /2;
@@ -141,7 +141,7 @@ auto element_to_faces_projection_init(int N, size_t n_elements, SEM::Entities::E
         element_faces[3][0] = 8 * i + 6;
         element_faces[3][1] = 8 * i + 7;
 
-        elements[i] = SEM::Entities::Element2D_t(N, element_faces, std::array<size_t, 4>{8 * i, 8 * i + 2, 8 * i + 4, 8 * i + 6});
+        elements[i] = SEM::Entities::Element2D_t(N, 0, element_faces, std::array<size_t, 4>{8 * i, 8 * i + 2, 8 * i + 4, 8 * i + 6});
 
         SEM::Entities::Element2D_t& element = elements[i];
         const size_t offset_1D = element.N_ * (element.N_ + 1) /2;
