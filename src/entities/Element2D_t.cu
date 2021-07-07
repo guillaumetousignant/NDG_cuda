@@ -11,47 +11,47 @@ using SEM::Entities::cuda_vector;
 
 __device__ 
 SEM::Entities::Element2D_t::Element2D_t(int N, const std::array<cuda_vector<size_t>, 4>& faces, std::array<size_t, 4> nodes) : 
-        N_(N),
+        N_{N},
         faces_{faces},
         nodes_{nodes},
         delta_xy_min_{0.0},
-        dxi_dx_((N_ + 1) * (N_ + 1)),
-        deta_dx_((N_ + 1) * (N_ + 1)),
-        dxi_dy_((N_ + 1) * (N_ + 1)),
-        deta_dy_((N_ + 1) * (N_ + 1)),
-        jacobian_((N_ + 1) * (N_ + 1)),
+        dxi_dx_{(N_ + 1) * (N_ + 1)},
+        deta_dx_{(N_ + 1) * (N_ + 1)},
+        dxi_dy_{(N_ + 1) * (N_ + 1)},
+        deta_dy_{(N_ + 1) * (N_ + 1)},
+        jacobian_{(N_ + 1) * (N_ + 1)},
         scaling_factor_{N_ + 1, N_ + 1, N_ + 1, N_ + 1},
-        p_((N_ + 1) * (N_ + 1)),
-        u_((N_ + 1) * (N_ + 1)),
-        v_((N_ + 1) * (N_ + 1)),
-        G_p_((N_ + 1) * (N_ + 1)),
-        G_u_((N_ + 1) * (N_ + 1)),
-        G_v_((N_ + 1) * (N_ + 1)),
+        p_{(N_ + 1) * (N_ + 1)},
+        u_{(N_ + 1) * (N_ + 1)},
+        v_{(N_ + 1) * (N_ + 1)},
+        G_p_{(N_ + 1) * (N_ + 1)},
+        G_u_{(N_ + 1) * (N_ + 1)},
+        G_v_{(N_ + 1) * (N_ + 1)},
         p_extrapolated_{N_ + 1, N_ + 1, N_ + 1, N_ + 1},
         u_extrapolated_{N_ + 1, N_ + 1, N_ + 1, N_ + 1},
         v_extrapolated_{N_ + 1, N_ + 1, N_ + 1, N_ + 1},
-        p_flux_(N_ + 1),
-        u_flux_(N_ + 1),
-        v_flux_(N_ + 1),
-        p_flux_derivative_(N_ + 1),
-        u_flux_derivative_(N_ + 1),
-        v_flux_derivative_(N_ + 1),
+        p_flux_{N_ + 1},
+        u_flux_{N_ + 1},
+        v_flux_{N_ + 1},
+        p_flux_derivative_{N_ + 1},
+        u_flux_derivative_{N_ + 1},
+        v_flux_derivative_{N_ + 1},
         p_flux_extrapolated_{N_ + 1, N_ + 1, N_ + 1, N_ + 1},
         u_flux_extrapolated_{N_ + 1, N_ + 1, N_ + 1, N_ + 1},
         v_flux_extrapolated_{N_ + 1, N_ + 1, N_ + 1, N_ + 1},
-        p_intermediate_((N_ + 1) * (N_ + 1)),
-        u_intermediate_((N_ + 1) * (N_ + 1)),
-        v_intermediate_((N_ + 1) * (N_ + 1)),
-        spectrum_(N_ + 1),
-        refine_(false),
-        coarsen_(false),
-        p_error_(0.0),
-        u_error_(0.0),
-        v_error_(0.0) {}
+        p_intermediate_{(N_ + 1) * (N_ + 1)},
+        u_intermediate_{(N_ + 1) * (N_ + 1)},
+        v_intermediate_{(N_ + 1) * (N_ + 1)},
+        spectrum_{N_ + 1},
+        refine_{false},
+        coarsen_{false},
+        p_error_{0.0},
+        u_error_{0.0},
+        v_error_{0.0} {}
 
 __host__ __device__
 SEM::Entities::Element2D_t::Element2D_t() :
-        N_(0),
+        N_{0},
         faces_{},
         nodes_{0, 0, 0, 0},
         delta_xy_min_{0.0},
@@ -62,11 +62,11 @@ SEM::Entities::Element2D_t::Element2D_t() :
         p_flux_extrapolated_{},
         u_flux_extrapolated_{},
         v_flux_extrapolated_{},
-        refine_(false),
-        coarsen_(false),
-        p_error_(0.0),
-        u_error_(0.0),
-        v_error_(0.0) {};
+        refine_{false},
+        coarsen_{false},
+        p_error_{0.0},
+        u_error_{0.0},
+        v_error_{0.0} {};
 
 // Algorithm 61
 __device__
@@ -402,25 +402,24 @@ auto SEM::Entities::Element2D_t::interpolate_from(const std::array<Vec2<deviceFl
             }
             // Complete interpolation
             else {
-                deviceFloat p_numerator = 0.0;
-                deviceFloat u_numerator = 0.0;
-                deviceFloat v_numerator = 0.0;
-                deviceFloat denominator = 0.0;
+                deviceFloat denominator_x = 0.0;
+                deviceFloat denominator_y = 0.0;
 
-                for (int m = 0; m <= other.N_; ++m) {
-                    for (int n = 0; n <= other.N_; ++n) {
-                        const deviceFloat t = barycentric_weights[offset_1D_other + n]/(local_coordinates_in_other.y() - polynomial_nodes[offset_1D_other + n])
-                                            * barycentric_weights[offset_1D_other + m]/(local_coordinates_in_other.x() - polynomial_nodes[offset_1D_other + m]);
-                        p_numerator += t * other.p_[m * (other.N_ + 1) + n];
-                        u_numerator += t * other.u_[m * (other.N_ + 1) + n];
-                        v_numerator += t * other.v_[m * (other.N_ + 1) + n];
-                        denominator += t;
-                    }
+                for (int k = 0; k <= other.N_; ++k) {
+                    denominator_x += barycentric_weights[offset_1D_other + k]/(local_coordinates_in_other.x() - polynomial_nodes[offset_1D_other + k]);
+                    denominator_y += barycentric_weights[offset_1D_other + k]/(local_coordinates_in_other.y() - polynomial_nodes[offset_1D_other + k]);
                 }
 
-                p_[i * (N_ + 1) + j] = p_numerator/denominator;
-                u_[i * (N_ + 1) + j] = u_numerator/denominator;
-                v_[i * (N_ + 1) + j] = v_numerator/denominator; 
+                for (int m = 0; m <= other.N_; ++m) {
+                    const deviceFloat t_x = barycentric_weights[offset_1D_other + m]/((local_coordinates_in_other.x() - polynomial_nodes[offset_1D_other + m]) * denominator_x);
+                    for (int n = 0; n <= other.N_; ++n) {
+                        const deviceFloat t_y = barycentric_weights[offset_1D_other + n]/((local_coordinates_in_other.y() - polynomial_nodes[offset_1D_other + n]) * denominator_y);
+
+                        p_[i * (N_ + 1) + j] += other.p_[m * (other.N_ + 1) + n] * t_x * t_y;
+                        u_[i * (N_ + 1) + j] += other.u_[m * (other.N_ + 1) + n] * t_x * t_y;
+                        v_[i * (N_ + 1) + j] += other.v_[m * (other.N_ + 1) + n] * t_x * t_y;
+                    }
+                }
             }  
         }
     }
