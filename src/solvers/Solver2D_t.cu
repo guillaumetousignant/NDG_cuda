@@ -36,7 +36,7 @@ auto SEM::Solvers::Solver2D_t::solve(const SEM::Entities::NDG_t<Polynomial> &NDG
         bar.set_status_text("Writing solution");
         bar.update(0.0);
     }
-    mesh.write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_.data(), data_writer);
+    mesh.write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_, data_writer);
     if (global_rank == 0) {
         bar.set_status_text("Iteration 0");
         bar.update(0.0);

@@ -997,7 +997,7 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
     const size_t global_element_offset_end = std::min(global_element_offset_ + n_elements_per_process - 1, N_elements_global_ - 1);
 
     if ((splitting_elements == 0) && (global_element_offset_ == global_element_offset_current) && (global_element_offset_end == global_element_offset_end_current)) {
-        SEM::Meshes::p_adapt<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, N_max, polynomial_nodes.data(), barycentric_weights.data());
+        SEM::Meshes::p_adapt<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data(), N_max, polynomial_nodes.data(), barycentric_weights.data());
 
         // We need to adjust the boundaries in all cases, or check if of our neighbours have to change
 
