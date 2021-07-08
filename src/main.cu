@@ -65,9 +65,8 @@ auto get_output_times(const SEM::Helpers::InputParser_t& input_parser) -> std::v
         n_t = std::lround(t_max/t_interval + 0.5);
     }
     else {
-        const std::string input_n_t = input_parser.getCmdOption("--n_t");
         if (input_parser.cmdOptionExists("--n_t")) {
-            n_t = input_parser.getCmdOptionOr("--t_interval", n_t);
+            n_t = input_parser.getCmdOptionOr("--n_t", n_t);
             t_interval = t_max/(n_t - 1);
         }
     }
