@@ -61,7 +61,6 @@ namespace SEM { namespace Meshes {
             size_t N_elements_global_;
             size_t N_elements_;
             size_t global_element_offset_;
-            size_t N_elements_per_process_;
             int initial_N_;
             int maximum_N_;
             int max_split_level_;

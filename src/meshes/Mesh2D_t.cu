@@ -633,6 +633,22 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     interfaces_numBlocks_ = (interfaces_origin_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
     mpi_interfaces_numBlocks_ = (mpi_interfaces_origin_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
 
+    // Sharing number of elements to calculate offset
+    std::vector<size_t> n_elements_per_process(global_size);
+    constexpr MPI_Datatype size_t_data_type = (sizeof(size_t) == sizeof(unsigned long long)) ? MPI_UNSIGNED_LONG_LONG : (sizeof(size_t) == sizeof(unsigned long)) ? MPI_UNSIGNED_LONG : MPI_UNSIGNED; // CHECK this is a bad way of doing this
+    MPI_Allgather(&N_elements_, 1, size_t_data_type, n_elements_per_process.data(), 1, size_t_data_type, MPI_COMM_WORLD);
+
+    size_t n_elements_global = 0;
+    for (int i = 0; i < global_rank; ++i) {
+        n_elements_global += n_elements_per_process[i];
+    }
+    global_element_offset_ = n_elements_global;
+    for (int i = global_rank; i < global_size`++i) {
+        n_elements_global += n_elements_per_process[i];
+    }
+    N_elements_global_ = n_elements_global;
+
+    // Transfer arrays
     host_delta_t_array_ = std::vector<deviceFloat>(elements_numBlocks_);
     device_delta_t_array_ = device_vector<deviceFloat>(elements_numBlocks_, stream_);
     host_refine_array_ = std::vector<size_t>(elements_numBlocks_);
