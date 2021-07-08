@@ -72,18 +72,18 @@ namespace SEM { namespace Meshes {
 
             auto read_su2(std::filesystem::path filename) -> void;
             auto read_cgns(std::filesystem::path filename) -> void;
-            auto initial_conditions(const deviceFloat* polynomial_nodes) -> void;
+            auto initial_conditions(const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes) -> void;
             auto boundary_conditions() -> void;
             auto interpolate_to_boundaries(const SEM::Entities::device_vector<deviceFloat>& lagrange_interpolant_left, const SEM::Entities::device_vector<deviceFloat>& lagrange_interpolant_right) -> void;
             auto project_to_faces(const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes, const SEM::Entities::device_vector<deviceFloat>& barycentric_weights) -> void;
             auto project_to_elements(const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes, const SEM::Entities::device_vector<deviceFloat>& weights, const SEM::Entities::device_vector<deviceFloat>& barycentric_weights) -> void;
             auto print() const -> void;
-            auto write_data(deviceFloat time, size_t N_interpolation_points, const deviceFloat* interpolation_matrices, const SEM::Helpers::DataWriter_t& data_writer) const -> void;
+            auto write_data(deviceFloat time, size_t N_interpolation_points, const SEM::Entities::device_vector<deviceFloat>& interpolation_matrices, const SEM::Helpers::DataWriter_t& data_writer) const -> void;
 
             __host__ __device__
             static auto g(SEM::Entities::Vec2<deviceFloat> xy, deviceFloat t) -> std::array<deviceFloat, 3>;
 
-            auto adapt(int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights) -> void;
+            auto adapt(int N_max, const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes, const SEM::Entities::device_vector<deviceFloat>& barycentric_weights) -> void;
 
             // From cppreference.com
             __device__
@@ -146,6 +146,9 @@ namespace SEM { namespace Meshes {
 
     __global__
     auto put_MPI_interfaces(size_t N_MPI_interface_elements, SEM::Entities::Element2D_t* elements, const size_t* MPI_interfaces_destination, int maximum_N, const deviceFloat* p_, const deviceFloat* u_, const deviceFloat* v_) -> void;
+
+    __global__
+    void p_adapt(size_t N_elements, SEM::Entities::Element2D_t* elements, int N_max, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights);
 
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>

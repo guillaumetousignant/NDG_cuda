@@ -783,8 +783,8 @@ auto SEM::Meshes::Mesh2D_t::build_faces(size_t n_elements_domain, size_t n_nodes
     return {std::move(faces), std::move(node_to_face), std::move(element_to_face)};
 }
 
-auto SEM::Meshes::Mesh2D_t::initial_conditions(const deviceFloat* polynomial_nodes) -> void {
-    initial_conditions_2D<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data(), nodes_.data(), polynomial_nodes);
+auto SEM::Meshes::Mesh2D_t::initial_conditions(const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes) -> void {
+    initial_conditions_2D<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data(), nodes_.data(), polynomial_nodes.data());
 }
 
 auto SEM::Meshes::Mesh2D_t::print() const -> void {
@@ -897,7 +897,7 @@ auto SEM::Meshes::Mesh2D_t::print() const -> void {
     std::cout << std::endl;
 }
 
-auto SEM::Meshes::Mesh2D_t::write_data(deviceFloat time, size_t N_interpolation_points, const deviceFloat* interpolation_matrices, const SEM::Helpers::DataWriter_t& data_writer) const -> void {
+auto SEM::Meshes::Mesh2D_t::write_data(deviceFloat time, size_t N_interpolation_points, const device_vector<deviceFloat>& interpolation_matrices, const SEM::Helpers::DataWriter_t& data_writer) const -> void {
     device_vector<deviceFloat> x(N_elements_ * N_interpolation_points * N_interpolation_points, stream_);
     device_vector<deviceFloat> y(N_elements_ * N_interpolation_points * N_interpolation_points, stream_);
     device_vector<deviceFloat> p(N_elements_ * N_interpolation_points * N_interpolation_points, stream_);
@@ -914,7 +914,7 @@ auto SEM::Meshes::Mesh2D_t::write_data(deviceFloat time, size_t N_interpolation_
     device_vector<int> coarsen(N_elements_, stream_);
     device_vector<int> split_level(N_elements_, stream_);
 
-    SEM::Meshes::get_solution<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, N_interpolation_points, elements_.data(), nodes_.data(), interpolation_matrices, x.data(), y.data(), p.data(), u.data(), v.data(), N.data(), dp_dt.data(), du_dt.data(), dv_dt.data(), p_error.data(), u_error.data(), v_error.data(), refine.data(), coarsen.data(), split_level.data());
+    SEM::Meshes::get_solution<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, N_interpolation_points, elements_.data(), nodes_.data(), interpolation_matrices.data(), x.data(), y.data(), p.data(), u.data(), v.data(), N.data(), dp_dt.data(), du_dt.data(), dv_dt.data(), p_error.data(), u_error.data(), v_error.data(), refine.data(), coarsen.data(), split_level.data());
     
     std::vector<deviceFloat> x_host(N_elements_ * N_interpolation_points * N_interpolation_points);
     std::vector<deviceFloat> y_host(N_elements_ * N_interpolation_points * N_interpolation_points);
@@ -960,7 +960,7 @@ auto SEM::Meshes::Mesh2D_t::g(Vec2<deviceFloat> xy, deviceFloat t) -> std::array
             p * SEM::Constants::k.y() / SEM::Constants::c};
 }
 
-auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights) -> void {
+auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& polynomial_nodes, const device_vector<deviceFloat>& barycentric_weights) -> void {
     SEM::Meshes::reduce_refine_2D<elements_blockSize_/2><<<elements_numBlocks_, elements_blockSize_/2, 0, stream_>>>(N_elements_, max_split_level_, elements_.data(), device_refine_array_.data());
     device_refine_array_.copy_to(host_refine_array_, stream_);
 
@@ -992,7 +992,23 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const deviceFloat* nodes, const dev
     N_elements_global_ += 3 * N_splitting_elements_global;
     const size_t global_element_offset_end_current = global_element_offset_current + N_elements_ + 3 * splitting_elements - 1;
 
-    std::cout << "Process " << global_rank << "/" << global_size << " had offset start " << global_element_offset_ << ", offset end " << global_element_offset_ + N_elements_ - 1 << " and n_elements " << N_elements_ << ". It would now have offset start " << global_element_offset_current << ", offset end " << global_element_offset_end_current << " and n_elements " << N_elements_ + 3 * splitting_elements << std::endl;
+    const size_t n_elements_per_process = (N_elements_global_ + global_size - 1)/global_size;
+    global_element_offset_ = global_rank * n_elements_per_process;
+    const size_t global_element_offset_end = std::min(global_element_offset_ + n_elements_per_process - 1, N_elements_global_ - 1);
+
+    if ((splitting_elements == 0) && (global_element_offset_ == global_element_offset_current) && (global_element_offset_end == global_element_offset_end_current)) {
+        SEM::Meshes::p_adapt<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, N_max, polynomial_nodes.data(), barycentric_weights.data());
+
+        // We need to adjust the boundaries in all cases, or check if of our neighbours have to change
+
+        /*if (N_additional_elements_previous > 0 || ((global_element_offset_ == 0) && (N_additional_elements_global > 0))) {
+            SEM::Entities::adjust_boundaries<<<boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(N_elements_, N_elements_global_, N_MPI_boundaries_, global_element_offset_, MPI_boundary_to_element_, MPI_boundary_from_element_);
+            cudaMemcpy(host_MPI_boundary_to_element_.data(), MPI_boundary_to_element_, N_MPI_boundaries_ * sizeof(size_t), cudaMemcpyDeviceToHost);
+            cudaMemcpy(host_MPI_boundary_from_element_.data(), MPI_boundary_from_element_, N_MPI_boundaries_ * sizeof(size_t), cudaMemcpyDeviceToHost);
+        }*/
+
+        return;
+    }
 }
 
 auto SEM::Meshes::Mesh2D_t::boundary_conditions() -> void {
@@ -1515,6 +1531,21 @@ auto SEM::Meshes::put_MPI_interfaces(size_t N_MPI_interface_elements, Element2D_
             destination_element.p_extrapolated_[0][k] = p_[boundary_offset + k];
             destination_element.u_extrapolated_[0][k] = u_[boundary_offset + k];
             destination_element.v_extrapolated_[0][k] = v_[boundary_offset + k];
+        }
+    }
+}
+
+__global__
+void SEM::Meshes::p_adapt(size_t N_elements, Element2D_t* elements, int N_max, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+    
+    for (size_t i = index; i < N_elements; i += stride) {
+        if (elements[i].refine_ && (elements[i].p_sigma_ + elements[i].u_sigma_ + elements[i].v_sigma_)/3 >= static_cast<deviceFloat>(1) && elements[i].N_ + 2 <= N_max) {
+            Element2D_t new_element(elements[i].N_ + 2, elements[i].split_level_, elements[i].faces_, elements[i].nodes_);
+
+            new_element.interpolate_from(elements[i], polynomial_nodes, barycentric_weights);
+            elements[i] = std::move(new_element);
         }
     }
 }

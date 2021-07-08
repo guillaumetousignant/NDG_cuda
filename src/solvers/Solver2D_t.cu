@@ -85,7 +85,7 @@ auto SEM::Solvers::Solver2D_t::solve(const SEM::Entities::NDG_t<Polynomial> &NDG
                     bar.set_status_text("Writing solution");
                     bar.update(time/t_end);
                 }
-                mesh.write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_.data(), data_writer);
+                mesh.write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_, data_writer);
                 break;
             }
         }
@@ -98,7 +98,7 @@ auto SEM::Solvers::Solver2D_t::solve(const SEM::Entities::NDG_t<Polynomial> &NDG
 
         if (timestep % mesh.adaptivity_interval_ == 0) {
             SEM::Meshes::estimate_error<Polynomial><<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, mesh.stream_>>>(mesh.N_elements_, mesh.elements_.data(), NDG.nodes_.data(), NDG.weights_.data());
-            mesh.adapt(NDG.N_max_, NDG.nodes_.data(), NDG.barycentric_weights_.data());
+            mesh.adapt(NDG.N_max_, NDG.nodes_, NDG.barycentric_weights_);
         }
     }
 
@@ -116,7 +116,7 @@ auto SEM::Solvers::Solver2D_t::solve(const SEM::Entities::NDG_t<Polynomial> &NDG
             bar.set_status_text("Writing solution");
             bar.update(1.0);
         }
-        mesh.write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_.data(), data_writer);
+        mesh.write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_, data_writer);
     }
     if (global_rank == 0) {
         bar.set_status_text("Done");
