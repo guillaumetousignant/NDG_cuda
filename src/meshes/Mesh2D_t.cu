@@ -643,7 +643,7 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
         n_elements_global += n_elements_per_process[i];
     }
     global_element_offset_ = n_elements_global;
-    for (int i = global_rank; i < global_size`++i) {
+    for (int i = global_rank; i < global_size; ++i) {
         n_elements_global += n_elements_per_process[i];
     }
     N_elements_global_ = n_elements_global;
@@ -964,10 +964,10 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const deviceFloat* nodes, const dev
     SEM::Meshes::reduce_refine_2D<elements_blockSize_/2><<<elements_numBlocks_, elements_blockSize_/2, 0, stream_>>>(N_elements_, max_split_level_, elements_.data(), device_refine_array_.data());
     device_refine_array_.copy_to(host_refine_array_, stream_);
 
-    size_t additional_elements = 0;
+    size_t splitting_elements = 0;
     for (int i = 0; i < elements_numBlocks_; ++i) {
-        additional_elements += host_refine_array_[i];
-        host_refine_array_[i] = additional_elements - host_refine_array_[i]; // Current block offset
+        splitting_elements += host_refine_array_[i];
+        host_refine_array_[i] = 3 * (splitting_elements - host_refine_array_[i]); // Current block offset
     }
 
     int global_rank;
@@ -975,11 +975,24 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const deviceFloat* nodes, const dev
     int global_size;
     MPI_Comm_size(MPI_COMM_WORLD, &global_size);
 
-    std::vector<size_t> additional_elements_global(global_size);
+    std::vector<size_t> splitting_elements_global(global_size);
     constexpr MPI_Datatype data_type = (sizeof(size_t) == sizeof(unsigned long long)) ? MPI_UNSIGNED_LONG_LONG : (sizeof(size_t) == sizeof(unsigned long)) ? MPI_UNSIGNED_LONG : MPI_UNSIGNED; // CHECK this is a bad way of doing this
 
-    MPI_Allgather(&additional_elements, 1, data_type, additional_elements_global.data(), 1, data_type, MPI_COMM_WORLD);
+    MPI_Allgather(&splitting_elements, 1, data_type, splitting_elements_global.data(), 1, data_type, MPI_COMM_WORLD);
 
+    size_t N_splitting_elements_previous = 0;
+    for (int i = 0; i < global_rank; ++i) {
+        N_splitting_elements_previous += splitting_elements_global[i];
+    }
+    const size_t global_element_offset_current = global_element_offset_ + 3 * N_splitting_elements_previous;
+    size_t N_splitting_elements_global = 0;
+    for (int i = 0; i < global_size; ++i) {
+        N_splitting_elements_global += splitting_elements_global[i];
+    }
+    N_elements_global_ += 3 * N_splitting_elements_global;
+    const size_t global_element_offset_end_current = global_element_offset_current + N_elements_ + 3 * splitting_elements - 1;
+
+    std::cout << "Process " << global_rank << "/" << global_size << " had offset start " << global_element_offset_ << ", offset end " << global_element_offset_ + N_elements_ - 1 << " and n_elements " << N_elements_ << ". It would now have offset start " << global_element_offset_current << ", offset end " << global_element_offset_end_current << " and n_elements " << N_elements_ + 3 * splitting_elements << std::endl;
 }
 
 auto SEM::Meshes::Mesh2D_t::boundary_conditions() -> void {
