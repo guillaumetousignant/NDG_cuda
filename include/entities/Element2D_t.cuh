@@ -76,8 +76,13 @@ namespace SEM { namespace Entities {
             __device__
             auto estimate_error(const deviceFloat* polynomial_nodes, const deviceFloat* weights) -> void;
 
+            // This is used when the elements have different points
             __device__
             auto interpolate_from(const std::array<Vec2<deviceFloat>, 4>& points, const std::array<Vec2<deviceFloat>, 4>& points_other, const Element2D_t& other, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void;
+
+            // This is used when the elements have the same points
+            __device__
+            auto interpolate_from(const Element2D_t& other, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void;
 
             __device__
             auto interpolate_solution(size_t N_interpolation_points, const std::array<Vec2<deviceFloat>, 4>& points, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v, deviceFloat* dp_dt, deviceFloat* du_dt, deviceFloat* dv_dt) const -> void;

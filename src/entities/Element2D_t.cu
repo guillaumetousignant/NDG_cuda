@@ -434,6 +434,96 @@ auto SEM::Entities::Element2D_t::interpolate_from(const std::array<Vec2<deviceFl
 }
 
 __device__
+auto SEM::Entities::Element2D_t::interpolate_from(const SEM::Entities::Element2D_t& other, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void {
+    const int offset_1D = N_ * (N_ + 1) /2;
+    const int offset_1D_other = other.N_ * (other.N_ + 1) /2;
+
+    for (int i = 0; i <= N_; ++i) {
+        for (int j = 0; j <= N_; ++j) {
+            // x and y
+            const Vec2<deviceFloat> local_coordinates_in_other = {polynomial_nodes[offset_1D + i], polynomial_nodes[offset_1D + j]};
+
+            int row_found = -1;
+            int column_found = -1;
+            for (int m = 0; m <= other.N_; ++m) {
+                if (SEM::Entities::Element2D_t::almost_equal(local_coordinates_in_other.x(), polynomial_nodes[offset_1D_other + m])) {
+                    column_found = m;
+                }
+                if (SEM::Entities::Element2D_t::almost_equal(local_coordinates_in_other.y(), polynomial_nodes[offset_1D_other + m])) {
+                    row_found = m;
+                }
+            }
+
+            // A point fits exactly
+            if (row_found != -1 && column_found != -1) {
+                p_[i * (N_ + 1) + j] = other.p_[column_found * (other.N_ + 1) + row_found];
+                u_[i * (N_ + 1) + j] = other.u_[column_found * (other.N_ + 1) + row_found];
+                v_[i * (N_ + 1) + j] = other.v_[column_found * (other.N_ + 1) + row_found]; 
+            }
+            // A row fits exactly
+            else if (row_found != -1) {
+                deviceFloat p_numerator = 0.0;
+                deviceFloat u_numerator = 0.0;
+                deviceFloat v_numerator = 0.0;
+                deviceFloat denominator = 0.0;
+
+                for (int m = 0; m <= other.N_; ++m) {
+                    const deviceFloat t = barycentric_weights[offset_1D_other + m]/(local_coordinates_in_other.x() - polynomial_nodes[offset_1D_other + m]);
+                    p_numerator += t * other.p_[m * (other.N_ + 1) + row_found];
+                    u_numerator += t * other.u_[m * (other.N_ + 1) + row_found];
+                    v_numerator += t * other.v_[m * (other.N_ + 1) + row_found];
+                    denominator += t;
+                }
+
+                p_[i * (N_ + 1) + j] = p_numerator/denominator;
+                u_[i * (N_ + 1) + j] = u_numerator/denominator;
+                v_[i * (N_ + 1) + j] = v_numerator/denominator;
+            }
+            // A column fits exactly
+            else if (column_found != -1) {
+                deviceFloat p_numerator = 0.0;
+                deviceFloat u_numerator = 0.0;
+                deviceFloat v_numerator = 0.0;
+                deviceFloat denominator = 0.0;
+
+                for (int n = 0; n <= other.N_; ++n) {
+                    const deviceFloat t = barycentric_weights[offset_1D_other + n]/(local_coordinates_in_other.y() - polynomial_nodes[offset_1D_other + n]);
+                    p_numerator += t * other.p_[column_found * (other.N_ + 1) + n];
+                    u_numerator += t * other.u_[column_found * (other.N_ + 1) + n];
+                    v_numerator += t * other.v_[column_found * (other.N_ + 1) + n];
+                    denominator += t;
+                }
+                
+                p_[i * (N_ + 1) + j] = p_numerator/denominator;
+                u_[i * (N_ + 1) + j] = u_numerator/denominator;
+                v_[i * (N_ + 1) + j] = v_numerator/denominator;
+            }
+            // Complete interpolation
+            else {
+                deviceFloat denominator_x = 0.0;
+                deviceFloat denominator_y = 0.0;
+
+                for (int k = 0; k <= other.N_; ++k) {
+                    denominator_x += barycentric_weights[offset_1D_other + k]/(local_coordinates_in_other.x() - polynomial_nodes[offset_1D_other + k]);
+                    denominator_y += barycentric_weights[offset_1D_other + k]/(local_coordinates_in_other.y() - polynomial_nodes[offset_1D_other + k]);
+                }
+
+                for (int m = 0; m <= other.N_; ++m) {
+                    const deviceFloat t_x = barycentric_weights[offset_1D_other + m]/((local_coordinates_in_other.x() - polynomial_nodes[offset_1D_other + m]) * denominator_x);
+                    for (int n = 0; n <= other.N_; ++n) {
+                        const deviceFloat t_y = barycentric_weights[offset_1D_other + n]/((local_coordinates_in_other.y() - polynomial_nodes[offset_1D_other + n]) * denominator_y);
+
+                        p_[i * (N_ + 1) + j] += other.p_[m * (other.N_ + 1) + n] * t_x * t_y;
+                        u_[i * (N_ + 1) + j] += other.u_[m * (other.N_ + 1) + n] * t_x * t_y;
+                        v_[i * (N_ + 1) + j] += other.v_[m * (other.N_ + 1) + n] * t_x * t_y;
+                    }
+                }
+            }  
+        }
+    }
+}
+
+__device__
 auto SEM::Entities::Element2D_t::interpolate_solution(size_t N_interpolation_points, const std::array<Vec2<deviceFloat>, 4>& points, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v, deviceFloat* dp_dt, deviceFloat* du_dt, deviceFloat* dv_dt) const -> void {
     for (size_t i = 0; i < N_interpolation_points; ++i) {
         for (size_t j = 0; j < N_interpolation_points; ++j) {
