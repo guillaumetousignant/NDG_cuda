@@ -500,6 +500,10 @@ auto SEM::Entities::Element2D_t::interpolate_from(const SEM::Entities::Element2D
             }
             // Complete interpolation
             else {
+                p_[i * (N_ + 1) + j] = 0;
+                u_[i * (N_ + 1) + j] = 0;
+                v_[i * (N_ + 1) + j] = 0;
+
                 deviceFloat denominator_x = 0.0;
                 deviceFloat denominator_y = 0.0;
 
