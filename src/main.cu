@@ -8,6 +8,8 @@
 #include "polynomials/LegendrePolynomial_t.cuh"
 #include <filesystem>
 #include <iostream>
+#include <string>
+#include <sstream>
 #include <chrono>
 #include <vector>
 #include <array>
@@ -55,6 +57,26 @@ auto get_output_file(const SEM::Helpers::InputParser_t& input_parser) -> fs::pat
 }
 
 auto get_output_times(const SEM::Helpers::InputParser_t& input_parser) -> std::vector<deviceFloat> {
+    if (input_parser.cmdOptionExists("--times")) {
+        const std::string default_times{"1"};
+        const std::string times = input_parser.getCmdOptionOr("--times", default_times);
+        std::vector<deviceFloat> output_times;
+
+        std::stringstream ss(times);
+        while(ss.good()) {
+            std::string time;
+            std::getline(ss, time, ',');
+
+            std::stringstream ss2(time); // Could use stod, but doesn't work for all deviceFloat possible types
+            deviceFloat t = 0;
+            ss2 >> t;
+
+            output_times.push_back(t);
+        }
+
+        return output_times;
+    }
+
     const deviceFloat t_max = input_parser.getCmdOptionOr("--t", static_cast<deviceFloat>(1));
 
     int n_t = 11;
@@ -99,6 +121,7 @@ auto main(int argc, char* argv[]) -> int {
         std::cout << '\t' <<  "--adaptivity_interval" <<  '\t' <<  "Number of iterations between adapting the mesh. Defaults to [100]" << std::endl;
         std::cout << '\t' <<  "--cfl"                 <<  '\t' <<  "CFL used for the simulation. Defaults to [0.5]" << std::endl;
         std::cout << '\t' <<  "--viscosity"           <<  '\t' <<  "Viscosity used for the simulation. Defaults to [0.1/π]" << std::endl;
+        std::cout << '\t' <<  "--times"               <<  '\t' <<  "Comma separated list of times to output at. The last time determines the simulation length. Overrides t, n_t, and t_interval." << std::endl;
         std::cout << '\t' <<  "--t"                   <<  '\t' <<  "End time of the simulation. Defaults to [1]" << std::endl;
         std::cout << '\t' <<  "--n_t"                 <<  '\t' <<  "Number of times to output. Defaults to [11]" << std::endl;
         std::cout << '\t' <<  "--t_interval"          <<  '\t' <<  "Time interval between output. Overrides n_t if set." << std::endl;
