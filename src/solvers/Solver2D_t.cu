@@ -32,11 +32,17 @@ auto SEM::Solvers::Solver2D_t::solve(const SEM::Entities::NDG_t<Polynomial> &NDG
     constexpr std::array<deviceFloat, 3> gm {1.0/3.0, 15.0/16.0, 8.0/15.0};
 
     deviceFloat delta_t = get_delta_t(mesh);
-    if (global_rank == 0) {
-        bar.set_status_text("Writing solution");
-        bar.update(0.0);
+
+    for (auto const& e : std::as_const(output_times_)) {
+        if ((time >= e) && (time < e + delta_t)) {
+            if (global_rank == 0) {
+                bar.set_status_text("Writing solution");
+                bar.update(0.0);
+            }
+            mesh.write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_, data_writer);
+        }
     }
-    mesh.write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_, data_writer);
+    
     if (global_rank == 0) {
         bar.set_status_text("Iteration 0");
         bar.update(0.0);
