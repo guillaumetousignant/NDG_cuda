@@ -326,13 +326,7 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
                 element.nodes_ = {static_cast<size_t>(connectivity[i][4 * j] - 1),
                                   static_cast<size_t>(connectivity[i][4 * j + 1] - 1),
                                   static_cast<size_t>(connectivity[i][4 * j + 2] - 1),
-                                  static_cast<size_t>(connectivity[i][4 * j + 3] - 1)};
-                
-                // Calculating min element length, from left and right sides, top and bottom sides, and finally both diagonals                                                    
-                element.delta_xy_min_ = std::min(std::min(
-                    std::min((host_nodes[element.nodes_[1]] - host_nodes[element.nodes_[0]]).magnitude(), (host_nodes[element.nodes_[2]] - host_nodes[element.nodes_[3]]).magnitude()), 
-                    std::min((host_nodes[element.nodes_[1]] - host_nodes[element.nodes_[2]]).magnitude(), (host_nodes[element.nodes_[0]] - host_nodes[element.nodes_[3]]).magnitude())), 
-                    std::min((host_nodes[element.nodes_[1]] - host_nodes[element.nodes_[3]]).magnitude(), (host_nodes[element.nodes_[2]] - host_nodes[element.nodes_[0]]).magnitude()));
+                                  static_cast<size_t>(connectivity[i][4 * j + 3] - 1)};       
             }
             element_domain_index += section_ranges[i][1] - section_ranges[i][0] + 1;
         }
@@ -345,9 +339,6 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
                                   static_cast<size_t>(connectivity[i][2 * j + 1] - 1),
                                   static_cast<size_t>(connectivity[i][2 * j + 1] - 1),
                                   static_cast<size_t>(connectivity[i][2 * j] - 1)};
-
-                // Calculating min element length from its (only) side                                                    
-                element.delta_xy_min_ = (host_nodes[element.nodes_[1]] - host_nodes[element.nodes_[0]]).magnitude();
             }
             element_ghost_index += section_ranges[i][1] - section_ranges[i][0] + 1;
         }

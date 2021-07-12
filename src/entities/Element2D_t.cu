@@ -675,6 +675,12 @@ auto SEM::Entities::Element2D_t::compute_element_geometry(const std::array<Vec2<
         scaling_factor_[1][i] = std::sqrt(metrics_right[0].y() * metrics_right[0].y() + metrics_right[1].y() * metrics_right[1].y());
         scaling_factor_[2][i] = std::sqrt(metrics_top[0].x() * metrics_top[0].x() + metrics_top[1].x() * metrics_top[1].x());
         scaling_factor_[3][i] = std::sqrt(metrics_left[0].y() * metrics_left[0].y() + metrics_left[1].y() * metrics_left[1].y());
+
+        delta_xy_min_ = std::min(std::min(
+            std::min((points[1] - points[0]).magnitude(), (points[2] - points[3]).magnitude()), 
+            std::min((points[1] - points[2]).magnitude(), (points[0] - points[3]).magnitude())), 
+            std::min((points[1] - points[3]).magnitude(), (points[2] - points[0]).magnitude()));
+
     }  
 }
 
