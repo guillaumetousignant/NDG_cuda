@@ -148,7 +148,7 @@ namespace SEM { namespace Meshes {
     auto put_MPI_interfaces(size_t N_MPI_interface_elements, SEM::Entities::Element2D_t* elements, const size_t* MPI_interfaces_destination, int maximum_N, const deviceFloat* p_, const deviceFloat* u_, const deviceFloat* v_) -> void;
 
     __global__
-    void p_adapt(size_t N_elements, SEM::Entities::Element2D_t* elements, int N_max, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights);
+    void p_adapt(size_t N_elements, SEM::Entities::Element2D_t* elements, int N_max, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights);
 
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>

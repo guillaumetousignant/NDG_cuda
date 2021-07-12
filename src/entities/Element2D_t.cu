@@ -3,6 +3,7 @@
 #include "polynomials/LegendrePolynomial_t.cuh"
 #include "functions/quad_map.cuh"
 #include "functions/inverse_quad_map.cuh"
+#include "functions/quad_metrics.cuh"
 #include "helpers/constants.h"
 #include <cmath>
 #include <limits>
@@ -642,6 +643,39 @@ auto SEM::Entities::Element2D_t::allocate_boundary_storage() -> void {
                        cuda_vector<deviceFloat>(),
                        cuda_vector<deviceFloat>(),
                        cuda_vector<deviceFloat>()};
+}
+
+__device__
+auto SEM::Entities::Element2D_t::compute_element_geometry(const std::array<Vec2<deviceFloat>, 4>& points, const deviceFloat* polynomial_nodes) -> void {
+    const size_t offset_1D = N_ * (N_ + 1) /2;
+
+    for (int i = 0; i <= N_; ++i) {
+        for (int j = 0; j <= N_; ++j) {
+            const Vec2<deviceFloat> coordinates {polynomial_nodes[offset_1D + i], polynomial_nodes[offset_1D + j]};
+            const std::array<Vec2<deviceFloat>, 2> metrics = SEM::quad_metrics(coordinates, points);
+
+            dxi_dx_[i * (N_ + 1) + j]  = metrics[0].x();
+            deta_dx_[i * (N_ + 1) + j] = metrics[0].y();
+            dxi_dy_[i * (N_ + 1) + j]  = metrics[1].x();
+            deta_dy_[i * (N_ + 1) + j] = metrics[1].y();
+            jacobian_[i * (N_ + 1) + j] = metrics[0].x() * metrics[1].y() - metrics[0].y() * metrics[1].x();
+        }
+
+        const Vec2<deviceFloat> coordinates_bottom {polynomial_nodes[offset_1D + i], -1};
+        const Vec2<deviceFloat> coordinates_right  {1, polynomial_nodes[offset_1D + i]};
+        const Vec2<deviceFloat> coordinates_top    {polynomial_nodes[offset_1D + i], 1};
+        const Vec2<deviceFloat> coordinates_left   {-1, polynomial_nodes[offset_1D + i]};
+
+        const std::array<Vec2<deviceFloat>, 2> metrics_bottom = SEM::quad_metrics(coordinates_bottom, points);
+        const std::array<Vec2<deviceFloat>, 2> metrics_right  = SEM::quad_metrics(coordinates_right, points);
+        const std::array<Vec2<deviceFloat>, 2> metrics_top    = SEM::quad_metrics(coordinates_top, points);
+        const std::array<Vec2<deviceFloat>, 2> metrics_left   = SEM::quad_metrics(coordinates_left, points);
+
+        scaling_factor_[0][i] = std::sqrt(metrics_bottom[0].x() * metrics_bottom[0].x() + metrics_bottom[1].x() * metrics_bottom[1].x());
+        scaling_factor_[1][i] = std::sqrt(metrics_right[0].y() * metrics_right[0].y() + metrics_right[1].y() * metrics_right[1].y());
+        scaling_factor_[2][i] = std::sqrt(metrics_top[0].x() * metrics_top[0].x() + metrics_top[1].x() * metrics_top[1].x());
+        scaling_factor_[3][i] = std::sqrt(metrics_left[0].y() * metrics_left[0].y() + metrics_left[1].y() * metrics_left[1].y());
+    }  
 }
 
 // From cppreference.com

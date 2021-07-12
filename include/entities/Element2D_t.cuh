@@ -93,6 +93,9 @@ namespace SEM { namespace Entities {
             __device__
             auto allocate_boundary_storage() -> void;
 
+            __device__
+            auto compute_element_geometry(const std::array<Vec2<deviceFloat>, 4>& points, const deviceFloat* polynomial_nodes) -> void;
+
             // From cppreference.com
             __device__
             static auto almost_equal(deviceFloat x, deviceFloat y) -> bool;

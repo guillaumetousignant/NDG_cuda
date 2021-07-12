@@ -4,7 +4,6 @@
 #include "helpers/constants.h"
 #include "functions/Utilities.h"
 #include "functions/quad_map.cuh"
-#include "functions/quad_metrics.cuh"
 #include "cgnslib.h"
 #include <iostream>
 #include <fstream>
@@ -997,7 +996,7 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
     const size_t global_element_offset_end = std::min(global_element_offset_ + n_elements_per_process - 1, N_elements_global_ - 1);
 
     if ((splitting_elements == 0) && (global_element_offset_ == global_element_offset_current) && (global_element_offset_end == global_element_offset_end_current)) {
-        SEM::Meshes::p_adapt<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data(), N_max, polynomial_nodes.data(), barycentric_weights.data());
+        SEM::Meshes::p_adapt<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data(), N_max, nodes_.data(), polynomial_nodes.data(), barycentric_weights.data());
 
         // We need to adjust the boundaries in all cases, or check if of our neighbours have to change
 
@@ -1102,40 +1101,11 @@ auto SEM::Meshes::compute_element_geometry(size_t n_elements, Element2D_t* eleme
     const int stride = blockDim.x * gridDim.x;
 
     for (size_t element_index = index; element_index < n_elements; element_index += stride) {
-        SEM::Entities::Element2D_t& element = elements[element_index];
-        const size_t offset_1D = element.N_ * (element.N_ + 1) /2;
-        const std::array<Vec2<deviceFloat>, 4> points {nodes[element.nodes_[0]],
-                                                       nodes[element.nodes_[1]],
-                                                       nodes[element.nodes_[2]],
-                                                       nodes[element.nodes_[3]]};
-
-        for (int i = 0; i <= element.N_; ++i) {
-            for (int j = 0; j <= element.N_; ++j) {
-                const Vec2<deviceFloat> coordinates {polynomial_nodes[offset_1D + i], polynomial_nodes[offset_1D + j]};
-                const std::array<Vec2<deviceFloat>, 2> metrics = SEM::quad_metrics(coordinates, points);
-
-                element.dxi_dx_[i * (element.N_ + 1) + j]  = metrics[0].x();
-                element.deta_dx_[i * (element.N_ + 1) + j] = metrics[0].y();
-                element.dxi_dy_[i * (element.N_ + 1) + j]  = metrics[1].x();
-                element.deta_dy_[i * (element.N_ + 1) + j] = metrics[1].y();
-                element.jacobian_[i * (element.N_ + 1) + j] = metrics[0].x() * metrics[1].y() - metrics[0].y() * metrics[1].x();
-            }
-
-            const Vec2<deviceFloat> coordinates_bottom {polynomial_nodes[offset_1D + i], -1};
-            const Vec2<deviceFloat> coordinates_right  {1, polynomial_nodes[offset_1D + i]};
-            const Vec2<deviceFloat> coordinates_top    {polynomial_nodes[offset_1D + i], 1};
-            const Vec2<deviceFloat> coordinates_left   {-1, polynomial_nodes[offset_1D + i]};
-
-            const std::array<Vec2<deviceFloat>, 2> metrics_bottom = SEM::quad_metrics(coordinates_bottom, points);
-            const std::array<Vec2<deviceFloat>, 2> metrics_right  = SEM::quad_metrics(coordinates_right, points);
-            const std::array<Vec2<deviceFloat>, 2> metrics_top    = SEM::quad_metrics(coordinates_top, points);
-            const std::array<Vec2<deviceFloat>, 2> metrics_left   = SEM::quad_metrics(coordinates_left, points);
-
-            element.scaling_factor_[0][i] = std::sqrt(metrics_bottom[0].x() * metrics_bottom[0].x() + metrics_bottom[1].x() * metrics_bottom[1].x());
-            element.scaling_factor_[1][i] = std::sqrt(metrics_right[0].y() * metrics_right[0].y() + metrics_right[1].y() * metrics_right[1].y());
-            element.scaling_factor_[2][i] = std::sqrt(metrics_top[0].x() * metrics_top[0].x() + metrics_top[1].x() * metrics_top[1].x());
-            element.scaling_factor_[3][i] = std::sqrt(metrics_left[0].y() * metrics_left[0].y() + metrics_left[1].y() * metrics_left[1].y());
-        }    
+        const std::array<Vec2<deviceFloat>, 4> points {nodes[elements[element_index].nodes_[0]],
+                                                       nodes[elements[element_index].nodes_[1]],
+                                                       nodes[elements[element_index].nodes_[2]],
+                                                       nodes[elements[element_index].nodes_[3]]};
+        elements[element_index].compute_element_geometry(points, polynomial_nodes);  
     }
 }
 
@@ -1536,7 +1506,7 @@ auto SEM::Meshes::put_MPI_interfaces(size_t N_MPI_interface_elements, Element2D_
 }
 
 __global__
-void SEM::Meshes::p_adapt(size_t N_elements, Element2D_t* elements, int N_max, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) {
+void SEM::Meshes::p_adapt(size_t N_elements, Element2D_t* elements, int N_max, const Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     
@@ -1545,6 +1515,13 @@ void SEM::Meshes::p_adapt(size_t N_elements, Element2D_t* elements, int N_max, c
             Element2D_t new_element(elements[i].N_ + 2, elements[i].split_level_, elements[i].faces_, elements[i].nodes_);
 
             new_element.interpolate_from(elements[i], polynomial_nodes, barycentric_weights);
+
+            const std::array<Vec2<deviceFloat>, 4> points {nodes[new_element.nodes_[0]],
+                                                           nodes[new_element.nodes_[1]],
+                                                           nodes[new_element.nodes_[2]],
+                                                           nodes[new_element.nodes_[3]]};
+            new_element.compute_element_geometry(points, polynomial_nodes); 
+
             elements[i] = std::move(new_element);
         }
     }
