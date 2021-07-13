@@ -148,12 +148,12 @@ namespace SEM { namespace Meshes {
     auto put_MPI_interfaces(size_t N_MPI_interface_elements, SEM::Entities::Element2D_t* elements, const size_t* MPI_interfaces_destination, int maximum_N, const deviceFloat* p_, const deviceFloat* u_, const deviceFloat* v_) -> void;
 
     __global__
-    void p_adapt(size_t N_elements, SEM::Entities::Element2D_t* elements, int N_max, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights);
+    auto p_adapt(size_t N_elements, SEM::Entities::Element2D_t* elements, int N_max, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void;
 
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>
     __device__ 
-    void warp_reduce_refine_2D(volatile size_t *sdata, unsigned int tid) {
+    auto warp_reduce_refine_2D(volatile size_t *sdata, unsigned int tid) -> void {
         if (blockSize >= 64) sdata[tid] += sdata[tid + 32];
         if (blockSize >= 32) sdata[tid] += sdata[tid + 16];
         if (blockSize >= 16) sdata[tid] += sdata[tid + 8];
@@ -165,7 +165,7 @@ namespace SEM { namespace Meshes {
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>
     __global__ 
-    void reduce_refine_2D(size_t N_elements, int max_split_level, const SEM::Entities::Element2D_t* elements, size_t* g_odata) {
+    auto reduce_refine_2D(size_t N_elements, int max_split_level, const SEM::Entities::Element2D_t* elements, size_t* g_odata) -> void {
         __shared__ size_t sdata[(blockSize >= 64) ? blockSize : blockSize + blockSize/2]; // Because within a warp there is no branching and this is read up until blockSize + blockSize/2
         unsigned int tid = threadIdx.x;
         size_t i = blockIdx.x*(blockSize*2) + tid;

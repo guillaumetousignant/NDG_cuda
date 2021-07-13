@@ -1497,7 +1497,7 @@ auto SEM::Meshes::put_MPI_interfaces(size_t N_MPI_interface_elements, Element2D_
 }
 
 __global__
-void SEM::Meshes::p_adapt(size_t N_elements, Element2D_t* elements, int N_max, const Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) {
+auto SEM::Meshes::p_adapt(size_t N_elements, Element2D_t* elements, int N_max, const Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     
