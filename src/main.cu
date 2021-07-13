@@ -206,7 +206,8 @@ auto main(int argc, char* argv[]) -> int {
     if (device_rank == 0) {
         cudaDeviceProp deviceProp;
         cudaGetDeviceProperties(&deviceProp, device);
-        const cudaError_t code = cudaDeviceSetLimit(cudaLimitMallocHeapSize, static_cast<size_t>(deviceProp.totalGlobalMem * memory_fraction));
+        const size_t memory_amount = deviceProp.totalGlobalMem * memory_fraction;
+        const cudaError_t code = cudaDeviceSetLimit(cudaLimitMallocHeapSize, memory_amount);
         if (code != cudaSuccess) {
             std::cerr << "GPU memory request failed: " << cudaGetErrorString(code) << std::endl;
             exit(1);
