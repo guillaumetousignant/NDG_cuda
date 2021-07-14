@@ -2,8 +2,17 @@
 #define NDG_DEVICE_VECTOR_H
 
 #include <vector>
+#include "entities/Element2D_t.cuh"
+#include "entities/Face2D_t.cuh"
 
 namespace SEM { namespace Entities {
+    template<typename T>
+    __global__
+    auto empty_device_vector(size_t size, T* data) -> void;
+
+    template __global__ auto empty_device_vector<SEM::Entities::Element2D_t>(size_t size, SEM::Entities::Element2D_t* data) -> void; // AAAAH why is this needed, for some reason it won't 
+    template __global__ auto empty_device_vector<SEM::Entities::Face2D_t>(size_t size, SEM::Entities::Face2D_t* data) -> void;       // automatically instantiate this when instantiating device vectors??
+
     template<typename T>
     class device_vector { 
         public: 
@@ -17,6 +26,44 @@ namespace SEM { namespace Entities {
 
             __host__ __device__
             device_vector();
+
+           template < class U = T,
+                    class std::enable_if<!std::is_trivially_destructible<U>::value, int>::type = 0>
+            __host__ __device__
+            auto destroy() -> void {
+                #ifdef  __CUDA_ARCH__
+                for (size_t i = 0; i < size_; ++i) {
+                    data_[i].~T();
+                }
+                #else
+                const int numBlocks = (size_ + blockSize_ - 1) / blockSize_;
+                SEM::Entities::empty_device_vector<T><<<numBlocks, blockSize_, 0>>>(size_, data_);
+                #endif
+            }
+
+            template<class U = T,
+                    class std::enable_if<std::is_trivially_destructible<U>::value, int>::type = 0>
+            __host__ __device__
+            auto destroy() -> void {}
+
+            template < class U = T,
+                    class std::enable_if<!std::is_trivially_destructible<U>::value, int>::type = 0>
+            __host__ __device__
+            auto destroy(const cudaStream_t& stream) -> void {
+                #ifdef  __CUDA_ARCH__
+                for (size_t i = 0; i < size_; ++i) {
+                    data_[i].~T();
+                }
+                #else
+                const int numBlocks = (size_ + blockSize_ - 1) / blockSize_;
+                SEM::Entities::empty_device_vector<T><<<numBlocks, blockSize_, 0, stream>>>(size_, data_);
+                #endif
+            }
+
+            template<class U = T,
+                    class std::enable_if<std::is_trivially_destructible<U>::value, int>::type = 0>
+            __host__ __device__
+            auto destroy(const cudaStream_t& stream) -> void {}
 
             __host__ __device__
             ~device_vector();
@@ -47,6 +94,7 @@ namespace SEM { namespace Entities {
 
             T* data_;
             size_t size_;
+            constexpr static int blockSize_ = 32;
 
             template<typename TI>
             __device__
@@ -88,6 +136,12 @@ namespace SEM { namespace Entities {
 
             __host__
             auto copy_to(device_vector<T>& device_vector, const cudaStream_t& stream) const -> void;
+
+            __host__ __device__
+            auto clear() -> void;
+
+            __host__ __device__
+            auto clear(const cudaStream_t& stream) -> void;
     };
 }}
 

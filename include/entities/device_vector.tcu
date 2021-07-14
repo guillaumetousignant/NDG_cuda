@@ -24,6 +24,9 @@ SEM::Entities::device_vector<T>::device_vector() : size_(0) {
 template <typename T>
 __host__ __device__
 SEM::Entities::device_vector<T>::~device_vector() {
+    if (data_ != nullptr) {
+        destroy();
+    }
     cudaFree(data_);
 }
 
@@ -104,12 +107,12 @@ auto SEM::Entities::device_vector<T>::operator=(const std::vector<T>& other) -> 
 template <typename T>
 __host__ __device__
 auto SEM::Entities::device_vector<T>::operator=(device_vector<T>&& other) noexcept -> device_vector& { // move assignment
-    size_ = other.size();
-    
     #ifdef  __CUDA_ARCH__
     thrust::swap(data_, other.data_);
+    thrust::swap(size_, other.size_);
     #else
     std::swap(data_, other.data_);
+    std::swap(size_, other.size_);
     #endif
 
     return *this;
@@ -225,4 +228,37 @@ auto SEM::Entities::device_vector<T>::copy_to(device_vector<T>& device_vector, c
     }
 
     cudaMemcpyAsync(device_vector.data(), data_, size_ * sizeof(T), cudaMemcpyDeviceToDevice, stream); // Apparently slower than using a kernel
+}
+
+template <typename T>
+__host__ __device__
+auto SEM::Entities::device_vector<T>::clear() -> void {
+    if (data_ != nullptr) {
+        destroy();
+    }
+    cudaFree(data_);
+    data_ = nullptr;
+    size_ = 0;
+}
+
+template <typename T>
+__host__ __device__
+auto SEM::Entities::device_vector<T>::clear(const cudaStream_t& stream) -> void {
+    if (data_ != nullptr) {
+        destroy(stream);
+    }
+    cudaFree(data_);
+    data_ = nullptr;
+    size_ = 0;
+}
+
+template<typename T>
+__global__
+auto SEM::Entities::empty_device_vector(size_t size, T* data) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t i = index; i < size; i += stride) {
+        data[i].~T();
+    }
 }
