@@ -648,8 +648,9 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     allocate_boundary_storage<<<ghosts_numBlocks_, boundaries_blockSize_, 0, stream_>>>(N_elements_, elements_.size(), elements_.data());
     allocate_face_storage<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces_.size(), faces_.data());
 
-    const SEM::Entities::device_vector<std::array<size_t, 4>> device_element_to_face(element_to_face, stream_);
+    SEM::Entities::device_vector<std::array<size_t, 4>> device_element_to_face(element_to_face, stream_);
     fill_element_faces<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(elements_.size(), elements_.data(), device_element_to_face.data());
+    device_element_to_face.clear(stream_);
 }
 
 auto SEM::Meshes::Mesh2D_t::build_node_to_element(size_t n_nodes, const std::vector<Element2D_t>& elements) -> std::vector<std::vector<size_t>> {
@@ -931,14 +932,30 @@ auto SEM::Meshes::Mesh2D_t::write_data(deviceFloat time, size_t N_interpolation_
     du_dt.copy_to(du_dt_host, stream_);
     dv_dt.copy_to(dv_dt_host, stream_);
     N.copy_to(N_host, stream_);
-    p_error.copy_to(p_error_host);
-    u_error.copy_to(u_error_host);
-    v_error.copy_to(v_error_host);
-    refine.copy_to(refine_host);
-    coarsen.copy_to(coarsen_host);
-    split_level.copy_to(split_level_host);
+    p_error.copy_to(p_error_host, stream_);
+    u_error.copy_to(u_error_host, stream_);
+    v_error.copy_to(v_error_host, stream_);
+    refine.copy_to(refine_host, stream_);
+    coarsen.copy_to(coarsen_host, stream_);
+    split_level.copy_to(split_level_host, stream_);
 
     data_writer.write_data(N_interpolation_points, N_elements_, time, x_host, y_host, p_host, u_host, v_host, N_host, dp_dt_host, du_dt_host, dv_dt_host, p_error_host, u_error_host, v_error_host, refine_host, coarsen_host, split_level_host);
+
+    x.clear(stream_);
+    y.clear(stream_);
+    p.clear(stream_);
+    u.clear(stream_);
+    v.clear(stream_);
+    dp_dt.clear(stream_);
+    du_dt.clear(stream_);
+    dv_dt.clear(stream_);
+    N.clear(stream_);
+    p_error.clear(stream_);
+    u_error.clear(stream_);
+    v_error.clear(stream_);
+    refine.clear(stream_);
+    coarsen.clear(stream_);
+    split_level.clear(stream_);
 }
 
 __host__ __device__
