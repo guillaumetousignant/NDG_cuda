@@ -242,7 +242,7 @@ auto SEM::Entities::device_vector<T>::clear() -> void {
 }
 
 template <typename T>
-__host__ __device__
+__host__
 auto SEM::Entities::device_vector<T>::clear(const cudaStream_t& stream) -> void {
     if (data_ != nullptr) {
         destroy(stream);

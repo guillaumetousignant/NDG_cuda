@@ -71,7 +71,7 @@ namespace SEM { namespace Entities {
             __host__ __device__
             device_vector(const device_vector<T>& other); // copy constructor
 
-            __host__ __device__
+            __host__
             device_vector(const device_vector<T>& other, const cudaStream_t& stream); // copy constructor
             
             __host__ 
@@ -140,7 +140,7 @@ namespace SEM { namespace Entities {
             __host__ __device__
             auto clear() -> void;
 
-            __host__ __device__
+            __host__
             auto clear(const cudaStream_t& stream) -> void;
     };
 }}
