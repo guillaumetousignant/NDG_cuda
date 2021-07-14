@@ -973,8 +973,8 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
 
     size_t splitting_elements = 0;
     for (int i = 0; i < elements_numBlocks_; ++i) {
+        host_refine_array_[i] = 3 * splitting_elements; // Current block offset
         splitting_elements += host_refine_array_[i];
-        host_refine_array_[i] = 3 * (splitting_elements - host_refine_array_[i]); // Current block offset
     }
 
     int global_rank;
