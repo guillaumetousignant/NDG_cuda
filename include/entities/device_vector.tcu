@@ -247,7 +247,7 @@ auto SEM::Entities::device_vector<T>::clear(const cudaStream_t& stream) -> void 
     if (data_ != nullptr) {
         destroy(stream);
     }
-    cudaFree(data_);
+    cudaFreeAsync(data_, stream);
     data_ = nullptr;
     size_ = 0;
 }
