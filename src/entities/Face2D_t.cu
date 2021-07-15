@@ -43,3 +43,14 @@ auto SEM::Entities::Face2D_t::allocate_storage() -> void {
     u_flux_ = cuda_vector<deviceFloat>(N_ + 1);
     v_flux_ = cuda_vector<deviceFloat>(N_ + 1);
 }
+
+__device__
+auto SEM::Entities::Face2D_t::resize_storage(int N) -> void {
+    N_ = N;
+    p_ = {cuda_vector<deviceFloat>(N_ + 1), cuda_vector<deviceFloat>(N_ + 1)};
+    u_ = {cuda_vector<deviceFloat>(N_ + 1), cuda_vector<deviceFloat>(N_ + 1)};
+    v_ = {cuda_vector<deviceFloat>(N_ + 1), cuda_vector<deviceFloat>(N_ + 1)};
+    p_flux_ = cuda_vector<deviceFloat>(N_ + 1);
+    u_flux_ = cuda_vector<deviceFloat>(N_ + 1);
+    v_flux_ = cuda_vector<deviceFloat>(N_ + 1);
+}

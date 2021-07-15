@@ -66,6 +66,13 @@ namespace SEM { namespace Entities {
              */
             __device__
             auto allocate_storage() -> void;
+
+            /**
+             * @brief Changes the polynomial order of the face and creates new vectors with the new size..
+             * .
+             */
+             __device__
+             auto resize_storage(int N) -> void;
     };
 }}
 
