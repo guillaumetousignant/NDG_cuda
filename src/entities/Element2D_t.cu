@@ -646,6 +646,14 @@ auto SEM::Entities::Element2D_t::allocate_boundary_storage() -> void {
 }
 
 __device__
+auto SEM::Entities::Element2D_t::resize_boundary_storage(int N) -> void {
+    N_ = N;
+    p_extrapolated_[0] = cuda_vector<deviceFloat>(N_ + 1);
+    u_extrapolated_[0] = cuda_vector<deviceFloat>(N_ + 1);
+    v_extrapolated_[0] = cuda_vector<deviceFloat>(N_ + 1);
+}
+
+__device__
 auto SEM::Entities::Element2D_t::compute_element_geometry(const std::array<Vec2<deviceFloat>, 4>& points, const deviceFloat* polynomial_nodes) -> void {
     const size_t offset_1D = N_ * (N_ + 1) /2;
 

@@ -94,6 +94,9 @@ namespace SEM { namespace Entities {
             auto allocate_boundary_storage() -> void;
 
             __device__
+            auto resize_boundary_storage(int N) -> void;
+
+            __device__
             auto compute_element_geometry(const std::array<Vec2<deviceFloat>, 4>& points, const deviceFloat* polynomial_nodes) -> void;
 
             // From cppreference.com
