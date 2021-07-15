@@ -101,6 +101,6 @@ auto SEM::Entities::cuda_vector<T>::clear() -> void {
 
 template <typename T>
 __device__
-auto SEM::Entities::cuda_vector<T>::empty() -> bool {
+auto SEM::Entities::cuda_vector<T>::empty() const -> bool {
     return size_ == 0;
 }
