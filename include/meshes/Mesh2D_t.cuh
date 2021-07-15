@@ -40,12 +40,15 @@ namespace SEM { namespace Meshes {
             SEM::Entities::device_vector<deviceFloat> device_interfaces_p_;
             SEM::Entities::device_vector<deviceFloat> device_interfaces_u_;
             SEM::Entities::device_vector<deviceFloat> device_interfaces_v_;
+            SEM::Entities::device_vector<int> device_interfaces_N_;
             std::vector<deviceFloat> host_interfaces_p_;
             std::vector<deviceFloat> host_interfaces_u_;
             std::vector<deviceFloat> host_interfaces_v_;
+            std::vector<int> host_interfaces_N_;
             std::vector<deviceFloat> host_receiving_interfaces_p_;
             std::vector<deviceFloat> host_receiving_interfaces_u_;
             std::vector<deviceFloat> host_receiving_interfaces_v_;
+            std::vector<int> host_receiving_interfaces_N_;
             
             constexpr static int elements_blockSize_ = 32;
             constexpr static int faces_blockSize_ = 32; // Same number of faces as elements for periodic BC
@@ -95,6 +98,8 @@ namespace SEM { namespace Meshes {
 
             std::vector<MPI_Request> requests_;
             std::vector<MPI_Status> statuses_;
+            std::vector<MPI_Request> requests_N_;
+            std::vector<MPI_Status> statuses_N_;
 
             static auto build_node_to_element(size_t n_nodes, const std::vector<SEM::Entities::Element2D_t>& elements) -> std::vector<std::vector<size_t>>;
             static auto build_element_to_element(const std::vector<SEM::Entities::Element2D_t>& elements, const std::vector<std::vector<size_t>>& node_to_element) -> std::vector<std::vector<size_t>>;
@@ -142,13 +147,28 @@ namespace SEM { namespace Meshes {
     auto local_interfaces(size_t N_local_interfaces, SEM::Entities::Element2D_t* elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_origin_side, const size_t* local_interfaces_destination) -> void;
 
     __global__
-    auto get_MPI_interfaces(size_t N_MPI_interface_elements, const SEM::Entities::Element2D_t* elements, const size_t* MPI_interfaces_origin, const size_t* MPI_interfaces_origin_side, int maximum_N, deviceFloat* p_, deviceFloat* u_, deviceFloat* v_) -> void;
+    auto get_MPI_interfaces(size_t N_MPI_interface_elements, const SEM::Entities::Element2D_t* elements, const size_t* MPI_interfaces_origin, const size_t* MPI_interfaces_origin_side, int maximum_N, deviceFloat* p, deviceFloat* u, deviceFloat* v) -> void;
 
     __global__
-    auto put_MPI_interfaces(size_t N_MPI_interface_elements, SEM::Entities::Element2D_t* elements, const size_t* MPI_interfaces_destination, int maximum_N, const deviceFloat* p_, const deviceFloat* u_, const deviceFloat* v_) -> void;
+    auto get_MPI_interfaces_N(size_t N_MPI_interface_elements, const SEM::Entities::Element2D_t* elements, const size_t* MPI_interfaces_origin, int* N) -> void;
+
+    __global__
+    auto put_MPI_interfaces(size_t N_MPI_interface_elements, SEM::Entities::Element2D_t* elements, const size_t* MPI_interfaces_destination, int maximum_N, const deviceFloat* p, const deviceFloat* u, const deviceFloat* v) -> void;
+
+    __global__
+    auto put_MPI_interfaces_N(size_t N_MPI_interface_elements, SEM::Entities::Element2D_t* elements, const size_t* MPI_interfaces_destination, const int* N) -> void;
 
     __global__
     auto p_adapt(size_t N_elements, SEM::Entities::Element2D_t* elements, int N_max, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void;
+
+    __global__
+    auto adjust_boundaries(size_t N_boundaries, SEM::Entities::Element2D_t* elements, const size_t* boundaries, const SEM::Entities::Face2D_t* faces) -> void;
+
+    __global__
+    auto adjust_interfaces(size_t N_local_interfaces, SEM::Entities::Element2D_t* elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_destination) -> void;
+
+    __global__
+    auto adjust_faces(size_t N_faces, SEM::Entities::Face2D_t* faces, const SEM::Entities::Element2D_t* elements) -> void;
 
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>
