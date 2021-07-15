@@ -46,6 +46,12 @@ namespace SEM { namespace Entities {
 
             __device__
             auto data() const -> const T*;
+
+            __device__
+            auto clear() -> void;
+
+            __device__
+            auto empty() const -> bool;
     };
 }}
 

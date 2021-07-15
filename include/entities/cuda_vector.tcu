@@ -90,3 +90,17 @@ __device__
 auto SEM::Entities::cuda_vector<T>::data() const -> const T* {
     return data_;
 }
+
+template <typename T>
+__device__
+auto SEM::Entities::cuda_vector<T>::clear() -> void {
+    delete[] data_;
+    data_ = nullptr;
+    size_ = 0;
+}
+
+template <typename T>
+__device__
+auto SEM::Entities::cuda_vector<T>::empty() -> bool {
+    return size_ == 0;
+}

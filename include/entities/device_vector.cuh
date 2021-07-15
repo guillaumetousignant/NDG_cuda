@@ -142,6 +142,9 @@ namespace SEM { namespace Entities {
 
             __host__
             auto clear(const cudaStream_t& stream) -> void;
+
+            __host__ __device__
+            auto empty() const -> bool;
     };
 }}
 

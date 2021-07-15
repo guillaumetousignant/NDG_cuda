@@ -252,6 +252,12 @@ auto SEM::Entities::device_vector<T>::clear(const cudaStream_t& stream) -> void 
     size_ = 0;
 }
 
+template <typename T>
+__host__ __device__
+auto SEM::Entities::device_vector<T>::empty() -> bool {
+    return size_ == 0;
+}
+
 template<typename T>
 __global__
 auto SEM::Entities::empty_device_vector(size_t size, T* data) -> void {
