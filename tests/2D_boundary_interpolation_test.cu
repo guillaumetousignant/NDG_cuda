@@ -159,5 +159,19 @@ TEST_CASE("2D boundary interpolation test", "Checks the interpolated value of th
         }
     }
 
+    device_elements.clear(stream);
+    p[0].clear(stream);
+    p[1].clear(stream);
+    p[2].clear(stream);
+    p[3].clear(stream);
+    u[0].clear(stream);
+    u[1].clear(stream);
+    u[2].clear(stream);
+    u[3].clear(stream);
+    v[0].clear(stream);
+    v[1].clear(stream);
+    v[2].clear(stream);
+    v[3].clear(stream);
+
     cudaStreamDestroy(stream);
 }

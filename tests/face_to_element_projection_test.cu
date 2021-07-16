@@ -249,6 +249,13 @@ TEST_CASE("Face to element projection test", "Projects the face flux solution of
         }
     }
 
+    elements.clear(stream);
+    faces.clear(stream);
+    nodes.clear(stream);
+    p.clear(stream);
+    u.clear(stream);
+    v.clear(stream);
+
     cudaStreamDestroy(stream);
 }
 
@@ -330,7 +337,7 @@ TEST_CASE("Faces to element projection test", "Projects the face flux solution o
     p.copy_to(p_host, stream);
     u.copy_to(u_host, stream);
     v.copy_to(v_host, stream);
-
+   
     for (size_t i = 0; i < n_faces/2; ++i) {
         const size_t offset_results = 2 * i * (N_test + 1);
 
@@ -344,6 +351,13 @@ TEST_CASE("Faces to element projection test", "Projects the face flux solution o
             REQUIRE(std::abs(v_expected[i][1][j] - v_host[offset_results + N_test + 1 + j]) < max_error);
         }
     }
+
+    elements.clear(stream);
+    faces.clear(stream);
+    nodes.clear(stream);
+    p.clear(stream);
+    u.clear(stream);
+    v.clear(stream);
 
     cudaStreamDestroy(stream);
 }

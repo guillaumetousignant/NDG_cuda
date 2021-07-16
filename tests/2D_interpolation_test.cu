@@ -108,5 +108,15 @@ TEST_CASE("2D interpolation test", "Checks the interpolated value of the solutio
         }
     }
 
+    device_elements.clear(stream);
+    x.clear(stream);
+    y.clear(stream);
+    p.clear(stream);
+    u.clear(stream);
+    v.clear(stream);
+    dp_dt.clear(stream);
+    du_dt.clear(stream);
+    dv_dt.clear(stream);
+
     cudaStreamDestroy(stream);
 }

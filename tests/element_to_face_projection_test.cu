@@ -428,6 +428,12 @@ TEST_CASE("Element to face projection test", "Projects the edge interpolated sol
         }
     }
 
+    elements.clear(stream);
+    faces.clear(stream);
+    p.clear(stream);
+    u.clear(stream);
+    v.clear(stream);
+
     cudaStreamDestroy(stream);
 }
 
@@ -528,6 +534,12 @@ TEST_CASE("Element to higher order face face projection test", "Projects the edg
             REQUIRE(std::abs(v_expected[i][3][j] - v_host[offset_results + 3 * (N_test + 1) + j]) < max_error);
         }
     }
+
+    elements.clear(stream);
+    faces.clear(stream);
+    p.clear(stream);
+    u.clear(stream);
+    v.clear(stream);
 
     cudaStreamDestroy(stream);
 }
@@ -665,6 +677,12 @@ TEST_CASE("Element to two faces projection test", "Projects the edge interpolate
             REQUIRE(std::abs(v_expected[i][7][j] - v_host[offset_results + 7 * (N_test + 1) + j]) < max_error);
         }
     }
+
+    elements.clear(stream);
+    faces.clear(stream);
+    p.clear(stream);
+    u.clear(stream);
+    v.clear(stream);
 
     cudaStreamDestroy(stream);
 }

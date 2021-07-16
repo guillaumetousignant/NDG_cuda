@@ -136,5 +136,11 @@ TEST_CASE("Element to element projection test", "Projects the solution from one 
         }
     }
 
+    elements.clear(stream);
+    elements_small.clear(stream);
+    p.clear(stream);
+    u.clear(stream);
+    v.clear(stream);
+
     cudaStreamDestroy(stream);
 }
