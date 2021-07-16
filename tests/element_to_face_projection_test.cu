@@ -97,7 +97,7 @@ auto element_to_face_projection_init(int N, size_t n_elements, SEM::Entities::El
 }
 
 __global__
-auto element_to_face_projection_init2(int N, size_t n_elements, SEM::Entities::Element2D_t* elements, SEM::Entities::Face2D_t* faces, const deviceFloat* NDG_nodes) -> void {
+auto element_to_face_projection_init_2(int N, size_t n_elements, SEM::Entities::Element2D_t* elements, SEM::Entities::Face2D_t* faces, const deviceFloat* NDG_nodes) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -455,7 +455,7 @@ TEST_CASE("Element to higher order face face projection test", "Projects the edg
 
     constexpr int elements_blockSize = 32;
     constexpr int elements_numBlocks = (n_elements + elements_blockSize - 1) / elements_blockSize;
-    element_to_face_projection_init2<<<elements_numBlocks, elements_blockSize, 0, stream>>>(N_test, n_elements, elements.data(), faces.data(), NDG.nodes_.data());
+    element_to_face_projection_init_2<<<elements_numBlocks, elements_blockSize, 0, stream>>>(N_test, n_elements, elements.data(), faces.data(), NDG.nodes_.data());
 
     constexpr int faces_blockSize = 32;
     constexpr int faces_numBlocks = (n_elements * 4 + faces_blockSize - 1) / faces_blockSize;
