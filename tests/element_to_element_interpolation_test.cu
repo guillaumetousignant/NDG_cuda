@@ -241,7 +241,7 @@ TEST_CASE("Element to higher order element projection test", "Projects the solut
         for (size_t i = 0; i <= N_test; ++i) {
             for (size_t j = 0; j <= N_test; ++j) {
                 const Vec2<deviceFloat> coordinates {polynomial_nodes_host[offset_1D + i], polynomial_nodes_host[offset_1D + j]};
-                const Vec2<deviceFloat> global_coordinates = SEM::quad_map(coordinates, points_small[element_index]);
+                const Vec2<deviceFloat> global_coordinates = SEM::quad_map(coordinates, points[element_index]);
 
                 p_expected[element_index][i * (N_test + 1) + j] = std::sin(global_coordinates[0]) * std::cos(global_coordinates[1]);
                 u_expected[element_index][i * (N_test + 1) + j] = global_coordinates[0];
