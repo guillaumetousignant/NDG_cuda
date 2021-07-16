@@ -1422,7 +1422,7 @@ auto SEM::Meshes::project_to_elements(size_t N_elements, const Face2D_t* faces, 
                     // Non-conforming, forward
                     if (element_index == face.elements_[0]) {
                         for (int j = 0; j <= face.N_; ++j) {
-                            const deviceFloat coordinate = ((2 * polynomial_nodes[offset_1D + i] - 1) * face.scale_[0] + face.offset_[0] + 1)/2;
+                            const deviceFloat coordinate = ((2 * polynomial_nodes[offset_1D_other + j] - 1) * face.scale_[0] + face.offset_[0] + 1)/2;
                             bool found_row = false;
                             
                             for (int i = 0; i <= element.N_; ++i) {
@@ -1453,7 +1453,7 @@ auto SEM::Meshes::project_to_elements(size_t N_elements, const Face2D_t* faces, 
                     // Non-conforming, backwards
                     else {
                         for (int j = 0; j <= face.N_; ++j) {
-                            const deviceFloat coordinate = ((2 * polynomial_nodes[offset_1D + i] - 1) * face.scale_[1] + face.offset_[1] + 1)/2;
+                            const deviceFloat coordinate = ((2 * polynomial_nodes[offset_1D_other + j] - 1) * face.scale_[1] + face.offset_[1] + 1)/2;
                             bool found_row = false;
                             
                             for (int i = 0; i <= element.N_; ++i) {
