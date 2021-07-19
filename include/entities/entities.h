@@ -21,5 +21,6 @@ namespace SEM {
 #include "NDG_host_t.h"
 #include "Vec2.cuh"
 #include "device_vector.cuh"
+#include "host_vector.cuh"
 
 #endif

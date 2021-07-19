@@ -2,6 +2,7 @@
 #define NDG_DEVICE_VECTOR_H
 
 #include <vector>
+#include "entities/host_vector.cuh"
 #include "entities/Element2D_t.cuh"
 #include "entities/Face2D_t.cuh"
 
@@ -80,6 +81,12 @@ namespace SEM { namespace Entities {
             __host__ 
             device_vector(const std::vector<T>& other, const cudaStream_t& stream); // copy constructor
 
+            __host__ 
+            device_vector(const host_vector<T>& other); // copy constructor
+            
+            __host__ 
+            device_vector(const host_vector<T>& other, const cudaStream_t& stream); // copy constructor
+
             __host__ __device__
             device_vector(device_vector<T>&& other) noexcept; // move constructor
 
@@ -88,6 +95,9 @@ namespace SEM { namespace Entities {
 
             __host__
             auto operator=(const std::vector<T>& other) -> device_vector&; // copy assignment
+
+            __host__
+            auto operator=(const host_vector<T>& other) -> device_vector&; // copy assignment
 
             __host__ __device__
             auto operator=(device_vector<T>&& other) noexcept -> device_vector&; // move assignment
@@ -124,6 +134,18 @@ namespace SEM { namespace Entities {
 
             __host__
             auto copy_to(std::vector<T>& host_vector, const cudaStream_t& stream) const -> void;
+
+            __host__
+            auto copy_from(const host_vector<T>& host_vector) -> void;
+
+            __host__
+            auto copy_from(const host_vector<T>& host_vector, const cudaStream_t& stream) -> void;
+
+            __host__
+            auto copy_to(host_vector<T>& host_vector) const -> void;
+
+            __host__
+            auto copy_to(host_vector<T>& host_vector, const cudaStream_t& stream) const -> void;
 
             __host__
             auto copy_from(const device_vector<T>& device_vector) -> void;

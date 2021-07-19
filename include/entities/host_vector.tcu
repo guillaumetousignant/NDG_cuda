@@ -1,0 +1,98 @@
+#include <stdexcept>
+
+template <typename T>
+template<typename TI>
+SEM::Entities::host_vector<T>::host_vector(TI size) : size_(size) {
+    cudaMallocHost(&data_, size_ * sizeof(T));
+}
+
+template <typename T>
+SEM::Entities::host_vector<T>::host_vector() : size_(0) {
+    data_ = nullptr;
+}
+
+template <typename T>
+SEM::Entities::host_vector<T>::~host_vector() {
+    if (data_ != nullptr) {
+        destroy();
+    }
+    cudaFreeHost(data_);
+}
+
+template <typename T>
+SEM::Entities::host_vector<T>::host_vector(const host_vector<T>& other) : size_(other.size()) { // copy constructor
+    cudaMallocHost(&data_, size_ * sizeof(T));
+    memcpy(data_, other.data(), size_ * sizeof(T));
+}
+
+template <typename T>
+SEM::Entities::host_vector<T>::host_vector(host_vector<T>&& other) noexcept : size_(other.size()) { // move constructor
+    data_ = other.data();
+    other.data_ = nullptr;
+}
+
+template <typename T>
+auto SEM::Entities::host_vector<T>::operator=(const host_vector<T>& other) -> host_vector& { // copy assignment
+    if (&other == this) {
+        return *this;
+    }
+    
+    if (size_ != other.size()) {
+        cudaFreeHost(data_);
+        size_ = other.size();
+        cudaMallocHost(&data_, size_ * sizeof(T));
+    }
+    memcpy(data_, other.data(), size_ * sizeof(T));
+
+    return *this;
+}
+
+template <typename T>
+auto SEM::Entities::host_vector<T>::operator=(host_vector<T>&& other) noexcept -> host_vector& { // move assignment
+    std::swap(data_, other.data_);
+    std::swap(size_, other.size_);
+
+    return *this;
+}
+
+template <typename T>
+template<typename TI>
+auto SEM::Entities::host_vector<T>::operator[](TI index) -> T& {
+    return data_[index];
+}
+
+template <typename T>
+template<typename TI>
+auto SEM::Entities::host_vector<T>::operator[](TI index) const -> const T& {
+    return data_[index];
+}
+
+template <typename T>
+auto SEM::Entities::host_vector<T>::size() const -> size_t {
+    return size_;
+}
+
+template <typename T>
+auto SEM::Entities::host_vector<T>::data() -> T* {
+    return data_;
+}
+
+template <typename T>
+auto SEM::Entities::host_vector<T>::data() const -> const T* {
+    return data_;
+}
+
+template <typename T>
+auto SEM::Entities::host_vector<T>::clear() -> void {
+    if (data_ != nullptr) {
+        destroy();
+    }
+    cudaFreeHost(data_);
+    data_ = nullptr;
+    size_ = 0;
+}
+
+template <typename T>
+auto SEM::Entities::host_vector<T>::empty() const -> bool {
+    return size_ == 0;
+}
