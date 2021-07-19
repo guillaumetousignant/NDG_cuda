@@ -529,7 +529,33 @@ auto SEM::Entities::Element2D_t::interpolate_from(const SEM::Entities::Element2D
 }
 
 __device__
-auto SEM::Entities::Element2D_t::interpolate_solution(size_t N_interpolation_points, const std::array<Vec2<deviceFloat>, 4>& points, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v, deviceFloat* dp_dt, deviceFloat* du_dt, deviceFloat* dv_dt) const -> void {
+auto SEM::Entities::Element2D_t::interpolate_solution(size_t N_interpolation_points, const std::array<Vec2<deviceFloat>, 4>& points, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v) const -> void {
+    for (size_t i = 0; i < N_interpolation_points; ++i) {
+        for (size_t j = 0; j < N_interpolation_points; ++j) {
+            // x and y
+            const Vec2<deviceFloat> coordinates {static_cast<deviceFloat>(i)/static_cast<deviceFloat>(N_interpolation_points - 1) * 2 - 1, static_cast<deviceFloat>(j)/static_cast<deviceFloat>(N_interpolation_points - 1) * 2 - 1};
+            const Vec2<deviceFloat> global_coordinates = SEM::quad_map(coordinates, points);
+
+            x[i * N_interpolation_points + j] = global_coordinates.x();
+            y[i * N_interpolation_points + j] = global_coordinates.y();
+
+            // Pressure, u, and v
+            p[i * N_interpolation_points + j] = 0.0;
+            u[i * N_interpolation_points + j] = 0.0;
+            v[i * N_interpolation_points + j] = 0.0;
+            for (int m = 0; m <= N_; ++m) {
+                for (int n = 0; n <= N_; ++n) {
+                    p[i * N_interpolation_points + j] += p_[m * (N_ + 1) + n] * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
+                    u[i * N_interpolation_points + j] += u_[m * (N_ + 1) + n] * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
+                    v[i * N_interpolation_points + j] += v_[m * (N_ + 1) + n] * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
+                }
+            }
+        }
+    }
+}
+
+__device__
+auto SEM::Entities::Element2D_t::interpolate_complete_solution(size_t N_interpolation_points, const std::array<Vec2<deviceFloat>, 4>& points, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v, deviceFloat* dp_dt, deviceFloat* du_dt, deviceFloat* dv_dt) const -> void {
     for (size_t i = 0; i < N_interpolation_points; ++i) {
         for (size_t j = 0; j < N_interpolation_points; ++j) {
             // x and y

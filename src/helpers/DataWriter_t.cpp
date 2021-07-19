@@ -36,17 +36,116 @@ auto SEM::Helpers::DataWriter_t::write_data(size_t N_interpolation_points,
                                             const std::vector<deviceFloat>& y, 
                                             const std::vector<deviceFloat>& p, 
                                             const std::vector<deviceFloat>& u, 
-                                            const std::vector<deviceFloat>& v, 
-                                            const std::vector<int>& N,
-                                            const std::vector<deviceFloat>& dp_dt, 
-                                            const std::vector<deviceFloat>& du_dt, 
-                                            const std::vector<deviceFloat>& dv_dt, 
-                                            const std::vector<deviceFloat>& p_error, 
-                                            const std::vector<deviceFloat>& u_error, 
-                                            const std::vector<deviceFloat>& v_error, 
-                                            const std::vector<int>& refine, 
-                                            const std::vector<int>& coarsen,
-                                            const std::vector<int>& split_level) const -> void {
+                                            const std::vector<deviceFloat>& v) const -> void {
+
+    // Creating points
+    vtkNew<vtkPoints> points; // Should bt vtkPoints2D, but unstructured meshes can't take 2D points.
+    points->Allocate(N_elements * N_interpolation_points * N_interpolation_points);
+    for (size_t element_index = 0; element_index < N_elements; ++element_index) {
+        const size_t offset = element_index * N_interpolation_points * N_interpolation_points;
+        for (size_t i = 0; i < N_interpolation_points; ++i) {
+            for (size_t j = 0; j < N_interpolation_points; ++j) {
+                points->InsertPoint(offset + i * N_interpolation_points + j, x[offset + i * N_interpolation_points + j], y[offset + i * N_interpolation_points + j], 0);
+            }
+        }
+    }
+
+    // Creating cells, currently as points (It seems like a bad idea)
+    vtkNew<vtkUnstructuredGrid> grid;
+    grid->AllocateExact(N_elements * N_interpolation_points * N_interpolation_points, 4);
+    for (size_t element_index = 0; element_index < N_elements; ++element_index) {
+        const size_t offset = element_index * N_interpolation_points * N_interpolation_points;
+        for (size_t i = 0; i < N_interpolation_points - 1; ++i) {
+            for (size_t j = 0; j < N_interpolation_points - 1; ++j) {
+                const std::array<vtkIdType, 4> index {static_cast<vtkIdType>(offset + (i + 1) * N_interpolation_points + j),
+                                                      static_cast<vtkIdType>(offset + (i + 1) * N_interpolation_points + j + 1),
+                                                      static_cast<vtkIdType>(offset + i * N_interpolation_points + j + 1),
+                                                      static_cast<vtkIdType>(offset + i * N_interpolation_points + j)};
+                grid->InsertNextCell(VTK_QUAD, 4, index.data());
+            }
+        }
+    }
+
+    grid->SetPoints(points);
+
+    // Add pressure to each point
+    vtkNew<vtkDoubleArray> pressure;
+    pressure->SetNumberOfComponents(1);
+    pressure->Allocate(N_elements * N_interpolation_points * N_interpolation_points);
+    pressure->SetName("Pressure");
+
+    for (size_t element_index = 0; element_index < N_elements; ++element_index) {
+        const size_t offset = element_index * N_interpolation_points * N_interpolation_points;
+        for (size_t i = 0; i < N_interpolation_points; ++i) {
+            for (size_t j = 0; j < N_interpolation_points; ++j) {
+                pressure->InsertNextValue(p[offset + i * N_interpolation_points + j]);
+            }
+        }
+    }
+
+    grid->GetPointData()->AddArray(pressure);
+
+    // Add velocity to each point
+    vtkNew<vtkDoubleArray> velocity;
+    velocity->SetNumberOfComponents(2);
+    velocity->Allocate(N_elements * N_interpolation_points * N_interpolation_points * 2);
+    velocity->SetName("Velocity");
+
+    for (size_t element_index = 0; element_index < N_elements; ++element_index) {
+        const size_t offset = element_index * N_interpolation_points * N_interpolation_points;
+        for (size_t i = 0; i < N_interpolation_points; ++i) {
+            for (size_t j = 0; j < N_interpolation_points; ++j) {
+                velocity->InsertNextValue(u[offset + i * N_interpolation_points + j]);
+                velocity->InsertNextValue(v[offset + i * N_interpolation_points + j]);
+            }
+        }
+    }
+
+    grid->GetPointData()->AddArray(velocity);
+
+    // Filename
+    std::stringstream ss;
+    ss << "_t" << std::setprecision(9) << std::fixed << time << "s";
+    std::string time_string = ss.str();
+    std::replace(time_string.begin(), time_string.end(), '.', '_');
+    std::stringstream ss2;
+    ss2 << filename_ << time_string << extension_;
+    const fs::path output_filename = directory_ / ss2.str();
+
+    // Writing to the file
+    vtkNew<vtkXMLPUnstructuredGridWriter> writer;
+    writer->SetController(mpi_controller_);
+    writer->SetInputData(grid);
+    writer->SetFileName(output_filename.string().c_str());
+    writer->SetNumberOfPieces(mpi_controller_->GetNumberOfProcesses());
+    writer->SetStartPiece(mpi_controller_->GetLocalProcessId());
+    writer->SetEndPiece(mpi_controller_->GetLocalProcessId());
+    //writer->SetCompressorTypeToNone();
+    writer->Update();
+
+    if (mpi_controller_->GetLocalProcessId() == 0) {
+        add_time_series_to_file(ss2.str(), time);
+    }
+}
+
+auto SEM::Helpers::DataWriter_t::write_complete_data(size_t N_interpolation_points, 
+                                                     size_t N_elements, 
+                                                     deviceFloat time,
+                                                     const std::vector<deviceFloat>& x, 
+                                                     const std::vector<deviceFloat>& y, 
+                                                     const std::vector<deviceFloat>& p, 
+                                                     const std::vector<deviceFloat>& u, 
+                                                     const std::vector<deviceFloat>& v, 
+                                                     const std::vector<int>& N,
+                                                     const std::vector<deviceFloat>& dp_dt, 
+                                                     const std::vector<deviceFloat>& du_dt, 
+                                                     const std::vector<deviceFloat>& dv_dt, 
+                                                     const std::vector<deviceFloat>& p_error, 
+                                                     const std::vector<deviceFloat>& u_error, 
+                                                     const std::vector<deviceFloat>& v_error, 
+                                                     const std::vector<int>& refine, 
+                                                     const std::vector<int>& coarsen,
+                                                     const std::vector<int>& split_level) const -> void {
 
     // Creating points
     vtkNew<vtkPoints> points; // Should bt vtkPoints2D, but unstructured meshes can't take 2D points.

@@ -5,6 +5,7 @@
 #include "entities/Face2D_t.cuh"
 #include "entities/NDG_t.cuh"
 #include "entities/device_vector.cuh"
+#include "entities/host_vector.cuh"
 #include "entities/Vec2.cuh"
 #include "helpers/float_types.h"
 #include "entities/NDG_t.cuh"
@@ -20,8 +21,9 @@
 namespace SEM { namespace Meshes {
     class Mesh2D_t {
         public:
-            Mesh2D_t(std::filesystem::path filename, int initial_N, int maximum_N, int max_split_level, int adaptivity_interval, const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes, const cudaStream_t &stream);
+            Mesh2D_t(std::filesystem::path filename, int initial_N, int maximum_N, size_t N_interpolation_points, int max_split_level, int adaptivity_interval, const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes, const cudaStream_t &stream);
 
+            // Geometry
             SEM::Entities::device_vector<SEM::Entities::Vec2<deviceFloat>> nodes_;
             SEM::Entities::device_vector<SEM::Entities::Element2D_t> elements_;
             SEM::Entities::device_vector<SEM::Entities::Face2D_t> faces_;
@@ -37,18 +39,31 @@ namespace SEM { namespace Meshes {
             SEM::Entities::device_vector<size_t> mpi_interfaces_origin_side_;
             SEM::Entities::device_vector<size_t> mpi_interfaces_destination_;
 
+            // Boundaries
             SEM::Entities::device_vector<deviceFloat> device_interfaces_p_;
             SEM::Entities::device_vector<deviceFloat> device_interfaces_u_;
             SEM::Entities::device_vector<deviceFloat> device_interfaces_v_;
             SEM::Entities::device_vector<int> device_interfaces_N_;
-            std::vector<deviceFloat> host_interfaces_p_;
-            std::vector<deviceFloat> host_interfaces_u_;
-            std::vector<deviceFloat> host_interfaces_v_;
+            SEM::Entities::host_vector<deviceFloat> host_interfaces_p_;
+            SEM::Entities::host_vector<deviceFloat> host_interfaces_u_;
+            SEM::Entities::host_vector<deviceFloat> host_interfaces_v_;
             std::vector<int> host_interfaces_N_;
-            std::vector<deviceFloat> host_receiving_interfaces_p_;
-            std::vector<deviceFloat> host_receiving_interfaces_u_;
-            std::vector<deviceFloat> host_receiving_interfaces_v_;
+            SEM::Entities::host_vector<deviceFloat> host_receiving_interfaces_p_;
+            SEM::Entities::host_vector<deviceFloat> host_receiving_interfaces_u_;
+            SEM::Entities::host_vector<deviceFloat> host_receiving_interfaces_v_;
             std::vector<int> host_receiving_interfaces_N_;
+
+            // Output
+            std::vector<deviceFloat> x_output_host_;
+            std::vector<deviceFloat> y_output_host_;
+            std::vector<deviceFloat> p_output_host_;
+            std::vector<deviceFloat> u_output_host_;
+            std::vector<deviceFloat> v_output_host_;
+            SEM::Entities::device_vector<deviceFloat> x_output_device_;
+            SEM::Entities::device_vector<deviceFloat> y_output_device_;
+            SEM::Entities::device_vector<deviceFloat> p_output_device_;
+            SEM::Entities::device_vector<deviceFloat> u_output_device_;
+            SEM::Entities::device_vector<deviceFloat> v_output_device_;
             
             constexpr static int elements_blockSize_ = 32;
             constexpr static int faces_blockSize_ = 32; // Same number of faces as elements for periodic BC
@@ -66,11 +81,12 @@ namespace SEM { namespace Meshes {
             size_t global_element_offset_;
             int initial_N_;
             int maximum_N_;
+            size_t N_interpolation_points_;
             int max_split_level_;
             int adaptivity_interval_;
 
             SEM::Entities::device_vector<deviceFloat> device_delta_t_array_;
-            std::vector<deviceFloat> host_delta_t_array_;
+            SEM::Entities::host_vector<deviceFloat> host_delta_t_array_;
             const cudaStream_t &stream_;
 
             auto read_su2(std::filesystem::path filename) -> void;
@@ -81,7 +97,8 @@ namespace SEM { namespace Meshes {
             auto project_to_faces(const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes, const SEM::Entities::device_vector<deviceFloat>& barycentric_weights) -> void;
             auto project_to_elements(const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes, const SEM::Entities::device_vector<deviceFloat>& weights, const SEM::Entities::device_vector<deviceFloat>& barycentric_weights) -> void;
             auto print() const -> void;
-            auto write_data(deviceFloat time, size_t N_interpolation_points, const SEM::Entities::device_vector<deviceFloat>& interpolation_matrices, const SEM::Helpers::DataWriter_t& data_writer) const -> void;
+            auto write_data(deviceFloat time, const SEM::Entities::device_vector<deviceFloat>& interpolation_matrices, const SEM::Helpers::DataWriter_t& data_writer) -> void;
+            auto write_complete_data(deviceFloat time, const SEM::Entities::device_vector<deviceFloat>& interpolation_matrices, const SEM::Helpers::DataWriter_t& data_writer) -> void;
 
             __host__ __device__
             static auto g(SEM::Entities::Vec2<deviceFloat> xy, deviceFloat t) -> std::array<deviceFloat, 3>;
@@ -128,7 +145,10 @@ namespace SEM { namespace Meshes {
     auto initial_conditions_2D(size_t n_elements, SEM::Entities::Element2D_t* elements, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes) -> void;
 
     __global__
-    auto get_solution(size_t N_elements, size_t N_interpolation_points, const SEM::Entities::Element2D_t* elements, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v, int* N, deviceFloat* dp_dt, deviceFloat* du_dt, deviceFloat* dv_dt, deviceFloat* p_error, deviceFloat* u_error, deviceFloat* v_error, int* refine, int* coarsen, int* split_level) -> void;
+    auto get_solution(size_t N_elements, size_t N_interpolation_points, const SEM::Entities::Element2D_t* elements, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v) -> void;
+
+    __global__
+    auto get_complete_solution(size_t N_elements, size_t N_interpolation_points, const SEM::Entities::Element2D_t* elements, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v, int* N, deviceFloat* dp_dt, deviceFloat* du_dt, deviceFloat* dv_dt, deviceFloat* p_error, deviceFloat* u_error, deviceFloat* v_error, int* refine, int* coarsen, int* split_level) -> void;
 
     template<typename Polynomial>
     __global__

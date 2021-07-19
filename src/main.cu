@@ -229,7 +229,7 @@ auto main(int argc, char* argv[]) -> int {
     auto t_start_init = std::chrono::high_resolution_clock::now();
 
     SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> NDG(N_max, N_interpolation_points, stream);
-    SEM::Meshes::Mesh2D_t mesh(mesh_file, N_initial, N_max, max_splits, adaptivity_interval, NDG.nodes_, stream);
+    SEM::Meshes::Mesh2D_t mesh(mesh_file, N_initial, N_max, N_interpolation_points, max_splits, adaptivity_interval, NDG.nodes_, stream);
     SEM::Solvers::Solver2D_t solver(CFL, output_times, viscosity);
     SEM::Helpers::DataWriter_t data_writer(output_file);
     mesh.initial_conditions(NDG.nodes_);
