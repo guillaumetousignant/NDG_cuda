@@ -106,7 +106,7 @@ namespace SEM { namespace Meshes {
             auto read_su2(std::filesystem::path filename) -> void;
             auto read_cgns(std::filesystem::path filename) -> void;
             auto initial_conditions(const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes) -> void;
-            auto boundary_conditions(deviceFloat t) -> void;
+            auto boundary_conditions(deviceFloat t, const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes) -> void;
             auto interpolate_to_boundaries(const SEM::Entities::device_vector<deviceFloat>& lagrange_interpolant_left, const SEM::Entities::device_vector<deviceFloat>& lagrange_interpolant_right) -> void;
             auto project_to_faces(const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes, const SEM::Entities::device_vector<deviceFloat>& barycentric_weights) -> void;
             auto project_to_elements(const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes, const SEM::Entities::device_vector<deviceFloat>& weights, const SEM::Entities::device_vector<deviceFloat>& barycentric_weights) -> void;
@@ -174,6 +174,18 @@ namespace SEM { namespace Meshes {
 
     __global__
     auto project_to_elements(size_t N_elements, const SEM::Entities::Face2D_t* faces, SEM::Entities::Element2D_t* elements, const deviceFloat* polynomial_nodes, const deviceFloat* weights, const deviceFloat* barycentric_weights) -> void;
+    
+    __global__
+    auto compute_wall_boundaries(size_t n_wall_boundaries, SEM::Entities::Element2D_t* elements, const size_t* wall_boundaries, const SEM::Entities::Face2D_t* faces) -> void;
+
+    __global__
+    auto compute_symmetry_boundaries(size_t n_symmetry_boundaries, SEM::Entities::Element2D_t* elements, const size_t* symmetry_boundaries, const SEM::Entities::Face2D_t* faces) -> void;
+
+    __global__
+    auto compute_inflow_boundaries(size_t n_inflow_boundaries, SEM::Entities::Element2D_t* elements, const size_t* inflow_boundaries, const SEM::Entities::Face2D_t* faces, deviceFloat t, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes) -> void;
+
+    __global__
+    auto compute_outflow_boundaries(size_t n_outflow_boundaries, SEM::Entities::Element2D_t* elements, const size_t* outflow_boundaries, const SEM::Entities::Face2D_t* faces) -> void;
 
     __global__
     auto local_interfaces(size_t N_local_interfaces, SEM::Entities::Element2D_t* elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_origin_side, const size_t* local_interfaces_destination) -> void;

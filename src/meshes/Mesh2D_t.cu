@@ -1146,7 +1146,22 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
     }
 }
 
-auto SEM::Meshes::Mesh2D_t::boundary_conditions(deviceFloat t) -> void {
+auto SEM::Meshes::Mesh2D_t::boundary_conditions(deviceFloat t, const device_vector<deviceFloat>& polynomial_nodes) -> void {
+    // Boundary conditions
+    if (!wall_boundaries_.empty()) {
+        SEM::Meshes::compute_wall_boundaries<<<wall_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(wall_boundaries_.size(), elements_.data(), wall_boundaries_.data(), faces_.data());
+    }
+    if (!symmetry_boundaries_.empty()) {
+        SEM::Meshes::compute_symmetry_boundaries<<<symmetry_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(symmetry_boundaries_.size(), elements_.data(), symmetry_boundaries_.data(), faces_.data());
+    }
+    if (!inflow_boundaries_.empty()) {
+        SEM::Meshes::compute_inflow_boundaries<<<inflow_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(inflow_boundaries_.size(), elements_.data(), inflow_boundaries_.data(), faces_.data(), t, nodes_.data(), polynomial_nodes.data());
+    }
+    if (!outflow_boundaries_.empty()) {
+        SEM::Meshes::compute_outflow_boundaries<<<outflow_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(outflow_boundaries_.size(), elements_.data(), outflow_boundaries_.data(), faces_.data());
+    }
+
+    // Interfaces
     if (!interfaces_origin_.empty()) {
         SEM::Meshes::local_interfaces<<<interfaces_numBlocks_, boundaries_blockSize_, 0, stream_>>>(interfaces_origin_.size(), elements_.data(), interfaces_origin_.data(), interfaces_origin_side_.data(), interfaces_destination_.data());
     }
@@ -1603,6 +1618,135 @@ auto SEM::Meshes::project_to_elements(size_t N_elements, const Face2D_t* faces, 
                     }
                 }
             }
+        }
+    }
+}
+
+__global__
+auto SEM::Meshes::compute_wall_boundaries(size_t n_wall_boundaries, Element2D_t* elements, const size_t* wall_boundaries, const Face2D_t* faces) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t boundary_index = index; boundary_index < n_wall_boundaries; boundary_index += stride) {
+        const size_t element_index = wall_boundaries[boundary_index];
+        Element2D_t& element = elements[element_index];
+
+        if (element.faces_[0].size() == 0) { // Only one neighbour
+            const Face2D_t& face = faces[element.faces_[0][0]];
+            const int face_side = face.elements_[0] == element_index;
+            const Element2D_t& neighbour = elements[face.elements_[face_side]];
+            const size_t neighbour_side = face.elements_side_[face_side];
+            const Vec2<deviceFloat> normal_inv {face.normal_.x(), face.tangent_.x()};
+            const Vec2<deviceFloat> tangent_inv {face.normal_.y(), face.tangent_.y()};
+
+            if (element.N_ == neighbour.N_) { // Conforming
+                for (int k = 0; k <= element.N_; ++k) {
+                    const Vec2<deviceFloat> neighbour_velocity {neighbour.u_extrapolated_[neighbour_side][neighbour.N_ - k], neighbour.v_extrapolated_[neighbour_side][neighbour.N_ - k]};
+                    const Vec2<deviceFloat> local_velocity {-(neighbour_velocity.dot(face.normal_)), neighbour_velocity.dot(face.tangent_)};
+                
+                    element.p_extrapolated_[0][k] = neighbour.p_extrapolated_[neighbour_side][neighbour.N_ - k];
+                    element.u_extrapolated_[0][k] = normal_inv.dot(local_velocity);
+                    element.v_extrapolated_[0][k] = tangent_inv.dot(local_velocity);
+                }
+            }
+            else {
+
+            }
+        }
+        else {
+
+        }
+    }
+}
+
+__global__
+auto SEM::Meshes::compute_symmetry_boundaries(size_t n_symmetry_boundaries, Element2D_t* elements, const size_t* symmetry_boundaries, const Face2D_t* faces) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t boundary_index = index; boundary_index < n_symmetry_boundaries; boundary_index += stride) {
+        const size_t element_index = symmetry_boundaries[boundary_index];
+        Element2D_t& element = elements[element_index];
+
+        if (element.faces_[0].size() == 0) { // Only one neighbour
+            const Face2D_t& face = faces[element.faces_[0][0]];
+            const int face_side = face.elements_[0] == element_index;
+            const Element2D_t& neighbour = elements[face.elements_[face_side]];
+            const size_t neighbour_side = face.elements_side_[face_side];
+            const Vec2<deviceFloat> normal_inv {face.normal_.x(), face.tangent_.x()};
+            const Vec2<deviceFloat> tangent_inv {face.normal_.y(), face.tangent_.y()};
+
+            if (element.N_ == neighbour.N_) { // Conforming
+                for (int k = 0; k <= element.N_; ++k) {
+                    const Vec2<deviceFloat> neighbour_velocity {neighbour.u_extrapolated_[neighbour_side][neighbour.N_ - k], neighbour.v_extrapolated_[neighbour_side][neighbour.N_ - k]};
+                    const Vec2<deviceFloat> local_velocity {-(neighbour_velocity.dot(face.normal_)), neighbour_velocity.dot(face.tangent_)};
+                
+                    element.p_extrapolated_[0][k] = neighbour.p_extrapolated_[neighbour_side][neighbour.N_ - k];
+                    element.u_extrapolated_[0][k] = normal_inv.dot(local_velocity);
+                    element.v_extrapolated_[0][k] = tangent_inv.dot(local_velocity);
+                }
+            }
+            else {
+
+            }
+        }
+        else {
+
+        }
+    }
+}
+
+__global__
+auto SEM::Meshes::compute_inflow_boundaries(size_t n_inflow_boundaries, Element2D_t* elements, const size_t* inflow_boundaries, const Face2D_t* faces, deviceFloat t, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t boundary_index = index; boundary_index < n_inflow_boundaries; boundary_index += stride) {
+        Element2D_t& element = elements[inflow_boundaries[boundary_index]];
+        const size_t offset_1D = element.N_ * (element.N_ + 1) /2;;
+        const std::array<Vec2<deviceFloat>, 2> points{nodes[element.nodes_[0]], nodes[element.nodes_[1]]};
+
+        for (int k = 0; k <= element.N_; ++k) {
+            const deviceFloat interp = (polynomial_nodes[offset_1D + k] + 1)/2;
+            const Vec2<deviceFloat> global_coordinates = points[1] * interp + points[0] * (1 - interp);
+
+            const std::array<deviceFloat, 3> state = SEM::Meshes::Mesh2D_t::g(global_coordinates, t);
+
+            element.p_extrapolated_[0][k] = state[0];
+            element.u_extrapolated_[0][k] = state[1];
+            element.v_extrapolated_[0][k] = state[2];
+        }
+    }
+}
+
+__global__
+auto SEM::Meshes::compute_outflow_boundaries(size_t n_outflow_boundaries, Element2D_t* elements, const size_t* outflow_boundaries, const Face2D_t* faces) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t boundary_index = index; boundary_index < n_outflow_boundaries; boundary_index += stride) {
+        const size_t element_index = outflow_boundaries[boundary_index];
+        Element2D_t& element = elements[element_index];
+
+        if (element.faces_[0].size() == 0) { // Only one neighbour
+            const Face2D_t& face = faces[element.faces_[0][0]];
+            const int face_side = face.elements_[0] == element_index;
+            const Element2D_t& neighbour = elements[face.elements_[face_side]];
+            const size_t neighbour_side = face.elements_side_[face_side];
+
+            if (element.N_ == neighbour.N_) { // Conforming
+                for (int k = 0; k <= element.N_; ++k) {
+                    element.p_extrapolated_[0][k] = neighbour.p_extrapolated_[neighbour_side][neighbour.N_ - k];
+                    element.u_extrapolated_[0][k] = neighbour.u_extrapolated_[neighbour_side][neighbour.N_ - k];
+                    element.v_extrapolated_[0][k] = neighbour.v_extrapolated_[neighbour_side][neighbour.N_ - k];
+                }
+            }
+            else {
+
+            }
+        }
+        else {
+
         }
     }
 }
