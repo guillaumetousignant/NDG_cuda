@@ -27,8 +27,14 @@ namespace SEM { namespace Meshes {
             SEM::Entities::device_vector<SEM::Entities::Vec2<deviceFloat>> nodes_;
             SEM::Entities::device_vector<SEM::Entities::Element2D_t> elements_;
             SEM::Entities::device_vector<SEM::Entities::Face2D_t> faces_;
+
+            // Boundaries
             SEM::Entities::device_vector<size_t> wall_boundaries_;
             SEM::Entities::device_vector<size_t> symmetry_boundaries_;
+            SEM::Entities::device_vector<size_t> inflow_boundaries_;
+            SEM::Entities::device_vector<size_t> outflow_boundaries_;
+
+            // Interfaces
             SEM::Entities::device_vector<size_t> interfaces_origin_;
             SEM::Entities::device_vector<size_t> interfaces_origin_side_;
             SEM::Entities::device_vector<size_t> interfaces_destination_;
@@ -39,7 +45,7 @@ namespace SEM { namespace Meshes {
             SEM::Entities::device_vector<size_t> mpi_interfaces_origin_side_;
             SEM::Entities::device_vector<size_t> mpi_interfaces_destination_;
 
-            // Boundaries
+            // Boundary solution exchange
             SEM::Entities::device_vector<deviceFloat> device_interfaces_p_;
             SEM::Entities::device_vector<deviceFloat> device_interfaces_u_;
             SEM::Entities::device_vector<deviceFloat> device_interfaces_v_;
@@ -65,6 +71,7 @@ namespace SEM { namespace Meshes {
             SEM::Entities::device_vector<deviceFloat> u_output_device_;
             SEM::Entities::device_vector<deviceFloat> v_output_device_;
             
+            // Parallel sizings
             constexpr static int elements_blockSize_ = 32;
             constexpr static int faces_blockSize_ = 32; // Same number of faces as elements for periodic BC
             constexpr static int boundaries_blockSize_ = 32;
@@ -72,10 +79,13 @@ namespace SEM { namespace Meshes {
             int faces_numBlocks_;
             int wall_boundaries_numBlocks_;
             int symmetry_boundaries_numBlocks_;
+            int inflow_boundaries_numBlocks_;
+            int outflow_boundaries_numBlocks_;
             int ghosts_numBlocks_;
             int interfaces_numBlocks_;
             int mpi_interfaces_numBlocks_;
             
+            // Counts
             size_t N_elements_global_;
             size_t N_elements_;
             size_t global_element_offset_;
@@ -85,14 +95,18 @@ namespace SEM { namespace Meshes {
             int max_split_level_;
             int adaptivity_interval_;
 
+            // GPU transfer arrays
             SEM::Entities::device_vector<deviceFloat> device_delta_t_array_;
             SEM::Entities::host_vector<deviceFloat> host_delta_t_array_;
+            SEM::Entities::device_vector<size_t> device_refine_array_;
+            std::vector<size_t> host_refine_array_;
+
             const cudaStream_t &stream_;
 
             auto read_su2(std::filesystem::path filename) -> void;
             auto read_cgns(std::filesystem::path filename) -> void;
             auto initial_conditions(const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes) -> void;
-            auto boundary_conditions() -> void;
+            auto boundary_conditions(deviceFloat t) -> void;
             auto interpolate_to_boundaries(const SEM::Entities::device_vector<deviceFloat>& lagrange_interpolant_left, const SEM::Entities::device_vector<deviceFloat>& lagrange_interpolant_right) -> void;
             auto project_to_faces(const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes, const SEM::Entities::device_vector<deviceFloat>& barycentric_weights) -> void;
             auto project_to_elements(const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes, const SEM::Entities::device_vector<deviceFloat>& weights, const SEM::Entities::device_vector<deviceFloat>& barycentric_weights) -> void;
@@ -110,9 +124,7 @@ namespace SEM { namespace Meshes {
             static auto almost_equal(deviceFloat x, deviceFloat y) -> bool;
 
         private:
-            SEM::Entities::device_vector<size_t> device_refine_array_;
-            std::vector<size_t> host_refine_array_;
-
+            // MPI exchange variables
             std::vector<MPI_Request> requests_;
             std::vector<MPI_Status> statuses_;
             std::vector<MPI_Request> requests_N_;

@@ -362,6 +362,8 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     // Building boundaries
     std::vector<size_t> wall_boundaries;
     std::vector<size_t> symmetry_boundaries;
+    std::vector<size_t> inflow_boundaries;
+    std::vector<size_t> outflow_boundaries;
 
     for (int i = 0; i < n_boundaries; ++i) {
         switch (boundary_types[i]) {
@@ -406,6 +408,48 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
                 
                 break;
 
+            case BCType_t::BCInflow:
+                inflow_boundaries.reserve(inflow_boundaries.size() + boundary_sizes[i]);
+                for (cgsize_t j = 0; j < boundary_sizes[i]; ++j) {
+                    int section_index = -1;
+                    for (int k = 0; k < n_sections; ++k) {
+                        if ((boundary_elements[i][j] >= section_ranges[k][0]) && (boundary_elements[i][j] <= section_ranges[k][1])) {
+                            section_index = k;
+                            break;
+                        }
+                    }
+
+                    if (section_index == -1) {
+                        std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", boundary " << i << " is an inflow boundary and contains element " << boundary_elements[i][j] << " but it is not found in any mesh section. Exiting." << std::endl;
+                        exit(36);
+                    }
+
+                    inflow_boundaries.push_back(section_start_indices[section_index] + boundary_elements[i][j] - section_ranges[section_index][0]);
+                }
+
+                break;
+            
+            case BCType_t::BCOutflow:
+                outflow_boundaries.reserve(outflow_boundaries.size() + boundary_sizes[i]);
+                for (cgsize_t j = 0; j < boundary_sizes[i]; ++j) {
+                    int section_index = -1;
+                    for (int k = 0; k < n_sections; ++k) {
+                        if ((boundary_elements[i][j] >= section_ranges[k][0]) && (boundary_elements[i][j] <= section_ranges[k][1])) {
+                            section_index = k;
+                            break;
+                        }
+                    }
+
+                    if (section_index == -1) {
+                        std::cerr << "Error: CGNS mesh, base " << index_base << ", zone " << index_zone << ", boundary " << i << " is an outflow boundary and contains element " << boundary_elements[i][j] << " but it is not found in any mesh section. Exiting." << std::endl;
+                        exit(36);
+                    }
+
+                    outflow_boundaries.push_back(section_start_indices[section_index] + boundary_elements[i][j] - section_ranges[section_index][0]);
+                }
+            
+                break;
+
             case BCType_t::BCTypeNull:
                 break;
 
@@ -421,6 +465,12 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     }
     if (!symmetry_boundaries.empty()) {
         symmetry_boundaries_ = device_vector<size_t>(symmetry_boundaries, stream_);
+    }
+    if (!inflow_boundaries.empty()) {
+        inflow_boundaries_ = device_vector<size_t>(inflow_boundaries, stream_);
+    }
+    if (!outflow_boundaries.empty()) {
+        outflow_boundaries_ = device_vector<size_t>(outflow_boundaries, stream_);
     }
 
     // Building self interfaces
@@ -626,6 +676,8 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     faces_numBlocks_ = (faces_.size() + faces_blockSize_ - 1) / faces_blockSize_;
     wall_boundaries_numBlocks_ = (wall_boundaries_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
     symmetry_boundaries_numBlocks_ = (symmetry_boundaries_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+    inflow_boundaries_numBlocks_ = (inflow_boundaries_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+    outflow_boundaries_numBlocks_ = (outflow_boundaries_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
     ghosts_numBlocks_ = (n_elements_ghost + boundaries_blockSize_ - 1) / boundaries_blockSize_;
     interfaces_numBlocks_ = (interfaces_origin_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
     mpi_interfaces_numBlocks_ = (mpi_interfaces_origin_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
@@ -803,6 +855,8 @@ auto SEM::Meshes::Mesh2D_t::print() const -> void {
     std::vector<Vec2<deviceFloat>> host_nodes(nodes_.size());
     std::vector<size_t> host_wall_boundaries(wall_boundaries_.size());
     std::vector<size_t> host_symmetry_boundaries(symmetry_boundaries_.size());
+    std::vector<size_t> host_inflow_boundaries(inflow_boundaries_.size());
+    std::vector<size_t> host_outflow_boundaries(outflow_boundaries_.size());
     std::vector<size_t> host_interfaces_origin(interfaces_origin_.size());
     std::vector<size_t> host_interfaces_origin_side(interfaces_origin_side_.size());
     std::vector<size_t> host_interfaces_destination(interfaces_destination_.size());
@@ -812,6 +866,8 @@ auto SEM::Meshes::Mesh2D_t::print() const -> void {
     nodes_.copy_to(host_nodes, stream_);
     wall_boundaries_.copy_to(host_wall_boundaries, stream_);
     symmetry_boundaries_.copy_to(host_symmetry_boundaries, stream_);
+    inflow_boundaries_.copy_to(host_inflow_boundaries, stream_);
+    outflow_boundaries_.copy_to(host_outflow_boundaries, stream_);
     interfaces_origin_.copy_to(host_interfaces_origin, stream_);
     interfaces_origin_side_.copy_to(host_interfaces_origin_side, stream_);
     interfaces_destination_.copy_to(host_interfaces_destination, stream_);
@@ -823,6 +879,8 @@ auto SEM::Meshes::Mesh2D_t::print() const -> void {
     std::cout << "N nodes: " << nodes_.size() << std::endl;
     std::cout << "N wall boundaries: " << wall_boundaries_.size() << std::endl;
     std::cout << "N symmetry boundaries: " << symmetry_boundaries_.size() << std::endl;
+    std::cout << "N inflow boundaries: " << inflow_boundaries_.size() << std::endl;
+    std::cout << "N outflow boundaries: " << outflow_boundaries_.size() << std::endl;
     std::cout << "N interfaces: " << interfaces_origin_.size() << std::endl;
     std::cout << "Initial N: " << initial_N_ << std::endl;
 
@@ -903,6 +961,26 @@ auto SEM::Meshes::Mesh2D_t::print() const -> void {
     std::cout << '\t' <<  "Interface destination, origin and origin side:" << std::endl;
     for (size_t i = 0; i < host_interfaces_origin.size(); ++i) {
         std::cout << '\t' << '\t' << "interface " << i << " : " << host_interfaces_destination[i] << " " << host_interfaces_origin[i] << " " << host_interfaces_origin_side[i] << std::endl;
+    }
+
+    std::cout << std::endl << '\t' <<  "Wall boundaries:" << std::endl;
+    for (size_t i = 0; i < host_wall_boundaries.size(); ++i) {
+        std::cout << '\t' << '\t' << "wall " << i << " : " << host_wall_boundaries[i] << std::endl;
+    }
+
+    std::cout << std::endl << '\t' <<  "Symmetry boundaries:" << std::endl;
+    for (size_t i = 0; i < host_symmetry_boundaries.size(); ++i) {
+        std::cout << '\t' << '\t' << "symmetry " << i << " : " << host_symmetry_boundaries[i] << std::endl;
+    }
+
+    std::cout << std::endl << '\t' <<  "Inflow boundaries:" << std::endl;
+    for (size_t i = 0; i < host_inflow_boundaries.size(); ++i) {
+        std::cout << '\t' << '\t' << "inflow " << i << " : " << host_inflow_boundaries[i] << std::endl;
+    }
+
+    std::cout << std::endl << '\t' <<  "Outflow boundaries:" << std::endl;
+    for (size_t i = 0; i < host_outflow_boundaries.size(); ++i) {
+        std::cout << '\t' << '\t' << "outflow " << i << " : " << host_outflow_boundaries[i] << std::endl;
     }
 
     std::cout << std::endl;
@@ -1033,6 +1111,12 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
         if (!symmetry_boundaries_.empty()) {
             SEM::Meshes::adjust_boundaries<<<symmetry_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(symmetry_boundaries_.size(), elements_.data(), symmetry_boundaries_.data(), faces_.data());
         }
+        if (!inflow_boundaries_.empty()) {
+            SEM::Meshes::adjust_boundaries<<<wall_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(inflow_boundaries_.size(), elements_.data(), inflow_boundaries_.data(), faces_.data());
+        }
+        if (!outflow_boundaries_.empty()) {
+            SEM::Meshes::adjust_boundaries<<<symmetry_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(outflow_boundaries_.size(), elements_.data(), outflow_boundaries_.data(), faces_.data());
+        }
         if (!interfaces_origin_.empty()) {
             SEM::Meshes::adjust_interfaces<<<interfaces_numBlocks_, boundaries_blockSize_, 0, stream_>>>(interfaces_origin_.size(), elements_.data(), interfaces_origin_.data(), interfaces_destination_.data());
         }
@@ -1062,7 +1146,7 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
     }
 }
 
-auto SEM::Meshes::Mesh2D_t::boundary_conditions() -> void {
+auto SEM::Meshes::Mesh2D_t::boundary_conditions(deviceFloat t) -> void {
     if (!interfaces_origin_.empty()) {
         SEM::Meshes::local_interfaces<<<interfaces_numBlocks_, boundaries_blockSize_, 0, stream_>>>(interfaces_origin_.size(), elements_.data(), interfaces_origin_.data(), interfaces_origin_side_.data(), interfaces_destination_.data());
     }
