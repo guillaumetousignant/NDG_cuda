@@ -151,6 +151,7 @@ TEST_CASE("Element to smaller element projection test", "Projects the solution f
     std::vector<std::vector<deviceFloat>> u_expected(n_elements);
     std::vector<std::vector<deviceFloat>> v_expected(n_elements);
 
+    cudaStreamSynchronize(stream);
     for (size_t element_index = 0; element_index < n_elements; ++element_index) {
         p_expected[element_index] = std::vector<deviceFloat>((N_test + 1) * (N_test + 1));
         u_expected[element_index] = std::vector<deviceFloat>((N_test + 1) * (N_test + 1));
@@ -232,6 +233,7 @@ TEST_CASE("Element to higher order element projection test", "Projects the solut
     std::vector<std::vector<deviceFloat>> u_expected(n_elements);
     std::vector<std::vector<deviceFloat>> v_expected(n_elements);
 
+    cudaStreamSynchronize(stream);
     for (size_t element_index = 0; element_index < n_elements; ++element_index) {
         p_expected[element_index] = std::vector<deviceFloat>((N_test + 1) * (N_test + 1));
         u_expected[element_index] = std::vector<deviceFloat>((N_test + 1) * (N_test + 1));

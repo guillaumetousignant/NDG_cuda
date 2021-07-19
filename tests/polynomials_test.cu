@@ -47,6 +47,7 @@ TEST_CASE("ChebyshevPolynomials", "Checks the Chebyshev polynomials"){
     NDG.g_hat_derivative_matrices_.copy_to(host_g_hat_derivative_matrices, stream);
     NDG.derivative_matrices_hat_.copy_to(host_derivative_matrices_hat, stream);
     NDG.interpolation_matrices_.copy_to(host_interpolation_matrices, stream);
+    cudaStreamSynchronize(stream);
 
     const std::array<double, N_test+1> nodes {-0.9957341762950345218712,
                                                 -0.9618256431728190704088,
@@ -181,6 +182,7 @@ TEST_CASE("LegendrePolynomials", "Checks the Legendre polynomials"){
     NDG.g_hat_derivative_matrices_.copy_to(host_g_hat_derivative_matrices, stream);
     NDG.derivative_matrices_hat_.copy_to(host_derivative_matrices_hat, stream);
     NDG.interpolation_matrices_.copy_to(host_interpolation_matrices, stream);
+    cudaStreamSynchronize(stream);
 
     const std::array<double, N_test+1> nodes {-0.9905754753144173356754,
                                                 -0.9506755217687677612227,

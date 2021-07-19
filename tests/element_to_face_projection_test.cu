@@ -294,6 +294,8 @@ TEST_CASE("Element to face projection test", "Projects the edge interpolated sol
     std::vector<std::array<std::vector<deviceFloat>, 4>> p_expected(n_elements);
     std::vector<std::array<std::vector<deviceFloat>, 4>> u_expected(n_elements);
     std::vector<std::array<std::vector<deviceFloat>, 4>> v_expected(n_elements);
+
+    cudaStreamSynchronize(stream);
     constexpr size_t offset_1D = N_test_faces * (N_test_faces + 1) /2;
     for (size_t i = 0; i < n_elements; ++i) {
         p_expected[i] = {std::vector<deviceFloat>(N_test_faces + 1), std::vector<deviceFloat>(N_test_faces + 1), std::vector<deviceFloat>(N_test_faces + 1), std::vector<deviceFloat>(N_test_faces + 1)};
@@ -338,6 +340,7 @@ TEST_CASE("Element to face projection test", "Projects the edge interpolated sol
     p.copy_to(p_host, stream);
     u.copy_to(u_host, stream);
     v.copy_to(v_host, stream);
+    cudaStreamSynchronize(stream);
 
     for (size_t i = 0; i < n_elements; ++i) {
         const size_t offset_results = 4 * i * (N_test_faces + 1);
@@ -403,6 +406,8 @@ TEST_CASE("Element to higher order face face projection test", "Projects the edg
     std::vector<std::array<std::vector<deviceFloat>, 4>> p_expected(n_elements);
     std::vector<std::array<std::vector<deviceFloat>, 4>> u_expected(n_elements);
     std::vector<std::array<std::vector<deviceFloat>, 4>> v_expected(n_elements);
+
+    cudaStreamSynchronize(stream);
     constexpr size_t offset_1D = N_test_faces * (N_test_faces + 1) /2;
     for (size_t i = 0; i < n_elements; ++i) {
         p_expected[i] = {std::vector<deviceFloat>(N_test_faces + 1), std::vector<deviceFloat>(N_test_faces + 1), std::vector<deviceFloat>(N_test_faces + 1), std::vector<deviceFloat>(N_test_faces + 1)};
@@ -447,6 +452,7 @@ TEST_CASE("Element to higher order face face projection test", "Projects the edg
     p.copy_to(p_host, stream);
     u.copy_to(u_host, stream);
     v.copy_to(v_host, stream);
+    cudaStreamSynchronize(stream);
 
     for (size_t i = 0; i < n_elements; ++i) {
         const size_t offset_results = 4 * i * (N_test_faces + 1);
@@ -510,6 +516,8 @@ TEST_CASE("Element to two faces projection test", "Projects the edge interpolate
     std::vector<std::array<std::vector<deviceFloat>, 8>> p_expected(n_elements);
     std::vector<std::array<std::vector<deviceFloat>, 8>> u_expected(n_elements);
     std::vector<std::array<std::vector<deviceFloat>, 8>> v_expected(n_elements);
+
+    cudaStreamSynchronize(stream);
     constexpr size_t offset_1D = N_test * (N_test + 1) /2;
     for (size_t i = 0; i < n_elements; ++i) {
         p_expected[i] = {std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1)};
@@ -574,6 +582,7 @@ TEST_CASE("Element to two faces projection test", "Projects the edge interpolate
     p.copy_to(p_host, stream);
     u.copy_to(u_host, stream);
     v.copy_to(v_host, stream);
+    cudaStreamSynchronize(stream);
 
     for (size_t i = 0; i < n_elements; ++i) {
         const size_t offset_results = 8 * i * (N_test + 1);

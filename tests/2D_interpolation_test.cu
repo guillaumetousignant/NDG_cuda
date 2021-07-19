@@ -90,6 +90,7 @@ TEST_CASE("2D interpolation test", "Checks the interpolated value of the solutio
     p.copy_to(p_host, stream);
     u.copy_to(u_host, stream);
     v.copy_to(v_host, stream);
+    cudaStreamSynchronize(stream);
 
     for (size_t i = 0; i < N_interpolation_points; ++i) {
         for (size_t j = 0; j < N_interpolation_points; ++j) {

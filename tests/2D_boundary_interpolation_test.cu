@@ -123,6 +123,8 @@ TEST_CASE("2D boundary interpolation test", "Checks the interpolated value of th
     std::array<std::vector<deviceFloat>, 4> p_target {std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1)};
     std::array<std::vector<deviceFloat>, 4> u_target {std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1)};
     std::array<std::vector<deviceFloat>, 4> v_target {std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1), std::vector<deviceFloat>(N_test + 1)};
+    
+    cudaStreamSynchronize(stream);
     for (int i = 0; i <= N_test; ++i) {
         const std::array<Vec2<deviceFloat>, 4> coordinates {Vec2<deviceFloat>{polynomial_nodes_host[offset_1D + i], -1},
                                                             Vec2<deviceFloat>{1, polynomial_nodes_host[offset_1D + i]},

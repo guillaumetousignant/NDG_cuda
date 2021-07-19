@@ -44,6 +44,7 @@ TEST_CASE("ChebyshevPolynomials_CPU_GPU", "Compares the Chebyshev polynomials be
     NDG.g_hat_derivative_matrices_.copy_to(host_g_hat_derivative_matrices, stream);
     NDG.derivative_matrices_hat_.copy_to(host_derivative_matrices_hat, stream);
     NDG.interpolation_matrices_.copy_to(host_interpolation_matrices, stream);
+    cudaStreamSynchronize(stream);
 
     for (int N_test = 0; N_test <= N_max; ++N_test) {
         const size_t offset_1D = N_test * (N_test + 1) /2;
@@ -132,6 +133,7 @@ TEST_CASE("LegendrePolynomials_CPU_GPU", "Compares the Legendre polynomials betw
     NDG.g_hat_derivative_matrices_.copy_to(host_g_hat_derivative_matrices, stream);
     NDG.derivative_matrices_hat_.copy_to(host_derivative_matrices_hat, stream);
     NDG.interpolation_matrices_.copy_to(host_interpolation_matrices, stream);
+    cudaStreamSynchronize(stream);
 
     for (int N_test = 0; N_test <= N_max; ++N_test) {
         const size_t offset_1D = N_test * (N_test + 1) /2;

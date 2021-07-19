@@ -136,6 +136,7 @@ auto SEM::Solvers::Solver2D_t::solve(const SEM::Entities::NDG_t<Polynomial> &NDG
 auto SEM::Solvers::Solver2D_t::get_delta_t(SEM::Meshes::Mesh2D_t& mesh) const -> deviceFloat {   
     SEM::Solvers::reduce_wave_delta_t<mesh.elements_blockSize_/2><<<mesh.elements_numBlocks_, mesh.elements_blockSize_/2, 0, mesh.stream_>>>(CFL_, mesh.N_elements_, mesh.elements_.data(), mesh.device_delta_t_array_.data());
     mesh.device_delta_t_array_.copy_to(mesh.host_delta_t_array_, mesh.stream_);
+    cudaStreamSynchronize(mesh.stream_);
 
     deviceFloat delta_t_min_local = std::numeric_limits<deviceFloat>::infinity();
     for (int i = 0; i < mesh.elements_numBlocks_; ++i) {

@@ -801,6 +801,7 @@ auto SEM::Meshes::Mesh2D_t::print() const -> void {
     interfaces_origin_.copy_to(host_interfaces_origin, stream_);
     interfaces_origin_side_.copy_to(host_interfaces_origin_side, stream_);
     interfaces_destination_.copy_to(host_interfaces_destination, stream_);
+    cudaStreamSynchronize(stream_);
     
     std::cout << "N elements: " << N_elements_ << std::endl;
     std::cout << "N elements and ghosts: " << elements_.size() << std::endl;
@@ -943,6 +944,7 @@ auto SEM::Meshes::Mesh2D_t::write_data(deviceFloat time, size_t N_interpolation_
     refine.copy_to(refine_host, stream_);
     coarsen.copy_to(coarsen_host, stream_);
     split_level.copy_to(split_level_host, stream_);
+    cudaStreamSynchronize(stream_);
 
     data_writer.write_data(N_interpolation_points, N_elements_, time, x_host, y_host, p_host, u_host, v_host, N_host, dp_dt_host, du_dt_host, dv_dt_host, p_error_host, u_error_host, v_error_host, refine_host, coarsen_host, split_level_host);
 
@@ -975,6 +977,7 @@ auto SEM::Meshes::Mesh2D_t::g(Vec2<deviceFloat> xy, deviceFloat t) -> std::array
 auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& polynomial_nodes, const device_vector<deviceFloat>& barycentric_weights) -> void {
     SEM::Meshes::reduce_refine_2D<elements_blockSize_/2><<<elements_numBlocks_, elements_blockSize_/2, 0, stream_>>>(N_elements_, max_split_level_, elements_.data(), device_refine_array_.data());
     device_refine_array_.copy_to(host_refine_array_, stream_);
+    cudaStreamSynchronize(stream_);
 
     size_t splitting_elements = 0;
     for (int i = 0; i < elements_numBlocks_; ++i) {
@@ -1025,6 +1028,7 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
             SEM::Meshes::get_MPI_interfaces_N<<<mpi_interfaces_numBlocks_, boundaries_blockSize_, 0, stream_>>>(mpi_interfaces_origin_.size(), elements_.data(), mpi_interfaces_origin_.data(), device_interfaces_N_.data());
 
             device_interfaces_N_.copy_to(host_interfaces_N_, stream_);
+            cudaStreamSynchronize(stream_);
 
             for (size_t i = 0; i < mpi_interfaces_size_.size(); ++i) {
                 MPI_Isend(host_interfaces_N_.data() + mpi_interfaces_offset_[i], mpi_interfaces_size_[i], MPI_INT, mpi_interfaces_process_[i], 3 * global_size * global_size + global_size * global_rank + mpi_interfaces_process_[i], MPI_COMM_WORLD, &requests_N_[mpi_interfaces_size_.size() + i]);
@@ -1062,6 +1066,7 @@ auto SEM::Meshes::Mesh2D_t::boundary_conditions() -> void {
         device_interfaces_p_.copy_to(host_interfaces_p_, stream_);
         device_interfaces_u_.copy_to(host_interfaces_u_, stream_);
         device_interfaces_v_.copy_to(host_interfaces_v_, stream_);
+        cudaStreamSynchronize(stream_);
         
         constexpr MPI_Datatype data_type = (sizeof(deviceFloat) == sizeof(float)) ? MPI_FLOAT : MPI_DOUBLE;
         for (size_t i = 0; i < mpi_interfaces_size_.size(); ++i) {
