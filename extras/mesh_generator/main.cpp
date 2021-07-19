@@ -38,6 +38,8 @@ auto get_boundary_conditions(const SEM::Helpers::InputParser_t& input_parser) ->
     const std::unordered_map<std::string, BCType_t> values {
         {"wall",     BCType_t::BCWall},
         {"symmetry", BCType_t::BCSymmetryPlane}, 
+        {"inflow", BCType_t::BCInflow}, 
+        {"outflow", BCType_t::BCOutflow}, 
         {"null",     BCType_t::BCTypeNull}
     };
 
@@ -47,7 +49,7 @@ auto get_boundary_conditions(const SEM::Helpers::InputParser_t& input_parser) ->
 
         const auto it = values.find(input_boundaries);
         if (it == values.end()) {
-            std::cerr << "Error, unknown boundary type '" << input_boundaries << "'. Implemented boundary types are: 'wall', 'symmetry'. Exiting." << std::endl;
+            std::cerr << "Error, unknown boundary type '" << input_boundaries << "'. Implemented boundary types are: 'wall', 'symmetry', 'inflow', 'outflow', 'null'. Exiting." << std::endl;
             exit(4);
         }
         else {
@@ -70,7 +72,7 @@ auto get_boundary_conditions(const SEM::Helpers::InputParser_t& input_parser) ->
 
         const auto it = values.find(input_bottom_boundary);
         if (it == values.end()) {
-            std::cerr << "Error, unknown bottom boundary type '" << input_bottom_boundary << "'. Implemented boundary types are: 'wall', 'symmetry'. Exiting." << std::endl;
+            std::cerr << "Error, unknown bottom boundary type '" << input_bottom_boundary << "'. Implemented boundary types are: 'wall', 'symmetry', 'inflow', 'outflow', 'null'. Exiting." << std::endl;
             exit(5);
         }
         else {
@@ -84,7 +86,7 @@ auto get_boundary_conditions(const SEM::Helpers::InputParser_t& input_parser) ->
 
         const auto it = values.find(input_right_boundary);
         if (it == values.end()) {
-            std::cerr << "Error, unknown right boundary type '" << input_right_boundary << "'. Implemented boundary types are: 'wall', 'symmetry'. Exiting." << std::endl;
+            std::cerr << "Error, unknown right boundary type '" << input_right_boundary << "'. Implemented boundary types are: 'wall', 'symmetry', 'inflow', 'outflow', 'null'. Exiting." << std::endl;
             exit(6);
         }
         else {
@@ -98,7 +100,7 @@ auto get_boundary_conditions(const SEM::Helpers::InputParser_t& input_parser) ->
 
         const auto it = values.find(input_top_boundary);
         if (it == values.end()) {
-            std::cerr << "Error, unknown top boundary type '" << input_top_boundary << "'. Implemented boundary types are: 'wall', 'symmetry'. Exiting." << std::endl;
+            std::cerr << "Error, unknown top boundary type '" << input_top_boundary << "'. Implemented boundary types are: 'wall', 'symmetry', 'inflow', 'outflow', 'null'. Exiting." << std::endl;
             exit(7);
         }
         else {
@@ -112,7 +114,7 @@ auto get_boundary_conditions(const SEM::Helpers::InputParser_t& input_parser) ->
 
         const auto it = values.find(input_left_boundary);
         if (it == values.end()) {
-            std::cerr << "Error, unknown left boundary type '" << input_left_boundary << "'. Implemented boundary types are: 'wall', 'symmetry'. Exiting." << std::endl;
+            std::cerr << "Error, unknown left boundary type '" << input_left_boundary << "'. Implemented boundary types are: 'wall', 'symmetry', 'inflow', 'outflow', 'null'. Exiting." << std::endl;
             exit(8);
         }
         else {
@@ -135,11 +137,11 @@ auto main(int argc, char* argv[]) -> int {
         std::cout << '\t' <<  "--resolution"      <<  '\t' <<  "Number of elements in the x and y directions. Must be a power of two. Defaults to [4]" << std::endl;
         std::cout << '\t' <<  "--x_periodic"      <<  '\t' <<  "Sets the mesh to be periodic in the x direction. Overrides left and right boundaries." << std::endl;
         std::cout << '\t' <<  "--y_periodic"      <<  '\t' <<  "Sets the mesh to be periodic in the y direction. Overrides top and bottom boundaries." << std::endl;
-        std::cout << '\t' <<  "--boundaries"      <<  '\t' <<  "Sets all four boundary conditions. Acceptable values are \"wall\", \"symmetry\" and \"null\". Defaults to [wall]" << std::endl;
-        std::cout << '\t' <<  "--bottom_boundary" <<  '\t' <<  "Sets the bottom boundary condition. Acceptable values are \"wall\", \"symmetry\" and \"null\". Overrides boundaries." << std::endl;
-        std::cout << '\t' <<  "--right_boundary"  <<  '\t' <<  "Sets the right boundary condition. Acceptable values are \"wall\", \"symmetry\" and \"null\". Overrides boundaries." << std::endl;
-        std::cout << '\t' <<  "--top_boundary"    <<  '\t' <<  "Sets the top boundary condition. Acceptable values are \"wall\", \"symmetry\" and \"null\". Overrides boundaries." << std::endl;
-        std::cout << '\t' <<  "--left_boundary"   <<  '\t' <<  "Sets the left boundary condition. Acceptable values are \"wall\", \"symmetry\" and \"null\". Overrides boundaries." << std::endl;
+        std::cout << '\t' <<  "--boundaries"      <<  '\t' <<  "Sets all four boundary conditions. Acceptable values are \"wall\", \"symmetry\", \"inflow\", \"outflow\" and \"null\". Defaults to [wall]" << std::endl;
+        std::cout << '\t' <<  "--bottom_boundary" <<  '\t' <<  "Sets the bottom boundary condition. Acceptable values are \"wall\", \"symmetry\", \"inflow\", \"outflow\" and \"null\". Overrides boundaries." << std::endl;
+        std::cout << '\t' <<  "--right_boundary"  <<  '\t' <<  "Sets the right boundary condition. Acceptable values are \"wall\", \"symmetry\", \"inflow\", \"outflow\" and \"null\". Overrides boundaries." << std::endl;
+        std::cout << '\t' <<  "--top_boundary"    <<  '\t' <<  "Sets the top boundary condition. Acceptable values are \"wall\", \"symmetry\", \"inflow\", \"outflow\" and \"null\". Overrides boundaries." << std::endl;
+        std::cout << '\t' <<  "--left_boundary"   <<  '\t' <<  "Sets the left boundary condition. Acceptable values are \"wall\", \"symmetry\", \"inflow\", \"outflow\" and \"null\". Overrides boundaries." << std::endl;
         std::cout << '\t' <<  "--x_min"           <<  '\t' <<  "x coordinate of the left side of the grid. Defaults to [0]" << std::endl;
         std::cout << '\t' <<  "--x_max"           <<  '\t' <<  "x coordinate of the right side of the grid. Defaults to [1]" << std::endl;
         std::cout << '\t' <<  "--y_min"           <<  '\t' <<  "y coordinate of the left side of the grid. Defaults to [0]" << std::endl;
