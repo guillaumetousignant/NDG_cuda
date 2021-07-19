@@ -30,7 +30,6 @@ TEST_CASE("Initial conditions solution value", "Checks the node values are corre
     SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> NDG(N_max, N_interpolation_points, stream);
     SEM::Meshes::Mesh_t mesh(N_elements, N_test, delta_x_min, x_span[0], x_span[1], adaptivity_interval, stream);
     mesh.set_initial_conditions(NDG.nodes_.data());
-    cudaDeviceSynchronize();
     
     deviceFloat* x;
     deviceFloat* phi;
@@ -126,13 +125,11 @@ TEST_CASE("Initial conditions boundary values", "Checks the extrapolated boundar
     SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> NDG(N_max, N_interpolation_points, stream);
     SEM::Meshes::Mesh_t mesh(N_elements, N_test, delta_x_min, x_span[0], x_span[1], adaptivity_interval, stream);
     mesh.set_initial_conditions(NDG.nodes_.data());
-    cudaDeviceSynchronize();
     SEM::Entities::interpolate_to_boundaries<<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, stream>>>(mesh.N_elements_, mesh.elements_, NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
     mesh.boundary_conditions();
     SEM::Meshes::calculate_fluxes<<<mesh.faces_numBlocks_, mesh.faces_blockSize_, 0, stream>>>(mesh.N_faces_, mesh.faces_, mesh.elements_);
     SEM::Meshes::compute_dg_derivative<<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, stream>>>(mesh.N_elements_, mesh.elements_, mesh.faces_, NDG.weights_.data(), NDG.derivative_matrices_hat_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
     SEM::Entities::interpolate_q_to_boundaries<<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, stream>>>(mesh.N_elements_, mesh.elements_, NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
-    cudaDeviceSynchronize();
 
     std::vector<SEM::Entities::Face_t> host_faces(mesh.N_faces_);
     std::vector<SEM::Entities::Element_t> host_elements(mesh.N_elements_ + mesh.N_local_boundaries_ + mesh.N_MPI_boundaries_);

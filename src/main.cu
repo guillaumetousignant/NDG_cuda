@@ -233,7 +233,7 @@ auto main(int argc, char* argv[]) -> int {
     SEM::Solvers::Solver2D_t solver(CFL, output_times, viscosity);
     SEM::Helpers::DataWriter_t data_writer(output_file);
     mesh.initial_conditions(NDG.nodes_);
-    cudaDeviceSynchronize();
+    cudaStreamSynchronize(stream);
 
     auto t_end_init = std::chrono::high_resolution_clock::now();
     std::cout << "Process " << global_rank << " GPU initialisation time: " 
@@ -246,7 +246,7 @@ auto main(int argc, char* argv[]) -> int {
     solver.solve(NDG, mesh, data_writer);
     //mesh.print();
     // Wait for GPU to finish before copying to host
-    cudaDeviceSynchronize();
+    cudaStreamSynchronize(stream);
 
     auto t_end = std::chrono::high_resolution_clock::now();
     std::cout << "Process " << global_rank << " GPU computation time: " 
