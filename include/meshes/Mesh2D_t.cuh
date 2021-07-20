@@ -204,6 +204,9 @@ namespace SEM { namespace Meshes {
 
     __global__
     auto put_MPI_interfaces_N(size_t N_MPI_interface_elements, SEM::Entities::Element2D_t* elements, const size_t* MPI_interfaces_destination, const int* N) -> void;
+    
+    __global__
+    auto put_MPI_interfaces_N_and_rebuild(size_t N_MPI_interface_elements, SEM::Entities::Element2D_t* elements, SEM::Entities::Element2D_t* new_elements, const size_t* MPI_interfaces_destination, const int* N) -> void;
 
     __global__
     auto p_adapt(size_t N_elements, SEM::Entities::Element2D_t* elements, int N_max, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void;
@@ -219,6 +222,9 @@ namespace SEM { namespace Meshes {
 
     __global__
     auto adjust_interfaces(size_t N_local_interfaces, SEM::Entities::Element2D_t* elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_destination) -> void;
+
+    __global__
+    auto rebuild_interfaces(size_t N_local_interfaces, SEM::Entities::Element2D_t* elements, SEM::Entities::Element2D_t* new_elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_destination) -> void;
 
     __global__
     auto adjust_faces(size_t N_faces, SEM::Entities::Face2D_t* faces, const SEM::Entities::Element2D_t* elements) -> void;
