@@ -1008,11 +1008,14 @@ auto SEM::Meshes::Mesh2D_t::write_complete_data(deviceFloat time, const device_v
     device_vector<deviceFloat> p_error(N_elements_, stream_);
     device_vector<deviceFloat> u_error(N_elements_, stream_);
     device_vector<deviceFloat> v_error(N_elements_, stream_);
+    device_vector<deviceFloat> p_sigma(N_elements_, stream_);
+    device_vector<deviceFloat> u_sigma(N_elements_, stream_);
+    device_vector<deviceFloat> v_sigma(N_elements_, stream_);
     device_vector<int> refine(N_elements_, stream_);
     device_vector<int> coarsen(N_elements_, stream_);
     device_vector<int> split_level(N_elements_, stream_);
 
-    SEM::Meshes::get_complete_solution<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, N_interpolation_points_, elements_.data(), nodes_.data(), interpolation_matrices.data(), x_output_device_.data(), y_output_device_.data(), p_output_device_.data(), u_output_device_.data(), v_output_device_.data(), N.data(), dp_dt.data(), du_dt.data(), dv_dt.data(), p_error.data(), u_error.data(), v_error.data(), refine.data(), coarsen.data(), split_level.data());
+    SEM::Meshes::get_complete_solution<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, N_interpolation_points_, elements_.data(), nodes_.data(), interpolation_matrices.data(), x_output_device_.data(), y_output_device_.data(), p_output_device_.data(), u_output_device_.data(), v_output_device_.data(), N.data(), dp_dt.data(), du_dt.data(), dv_dt.data(), p_error.data(), u_error.data(), v_error.data(), p_sigma.data(), u_sigma.data(), v_sigma.data(), refine.data(), coarsen.data(), split_level.data());
     
     std::vector<deviceFloat> dp_dt_host(N_elements_ * N_interpolation_points_ * N_interpolation_points_);
     std::vector<deviceFloat> du_dt_host(N_elements_ * N_interpolation_points_ * N_interpolation_points_);
@@ -1021,6 +1024,9 @@ auto SEM::Meshes::Mesh2D_t::write_complete_data(deviceFloat time, const device_v
     std::vector<deviceFloat> p_error_host(N_elements_);
     std::vector<deviceFloat> u_error_host(N_elements_);
     std::vector<deviceFloat> v_error_host(N_elements_);
+    std::vector<deviceFloat> p_sigma_host(N_elements_);
+    std::vector<deviceFloat> u_sigma_host(N_elements_);
+    std::vector<deviceFloat> v_sigma_host(N_elements_);
     std::vector<int> refine_host(N_elements_);
     std::vector<int> coarsen_host(N_elements_);
     std::vector<int> split_level_host(N_elements_);
@@ -1037,12 +1043,15 @@ auto SEM::Meshes::Mesh2D_t::write_complete_data(deviceFloat time, const device_v
     p_error.copy_to(p_error_host, stream_);
     u_error.copy_to(u_error_host, stream_);
     v_error.copy_to(v_error_host, stream_);
+    p_sigma.copy_to(p_sigma_host, stream_);
+    u_sigma.copy_to(u_sigma_host, stream_);
+    v_sigma.copy_to(v_sigma_host, stream_);
     refine.copy_to(refine_host, stream_);
     coarsen.copy_to(coarsen_host, stream_);
     split_level.copy_to(split_level_host, stream_);
     cudaStreamSynchronize(stream_);
 
-    data_writer.write_complete_data(N_interpolation_points_, N_elements_, time, x_output_host_, y_output_host_, p_output_host_, u_output_host_, v_output_host_, N_host, dp_dt_host, du_dt_host, dv_dt_host, p_error_host, u_error_host, v_error_host, refine_host, coarsen_host, split_level_host);
+    data_writer.write_complete_data(N_interpolation_points_, N_elements_, time, x_output_host_, y_output_host_, p_output_host_, u_output_host_, v_output_host_, N_host, dp_dt_host, du_dt_host, dv_dt_host, p_error_host, u_error_host, v_error_host, p_sigma_host, u_sigma_host, v_sigma_host, refine_host, coarsen_host, split_level_host);
 
     dp_dt.clear(stream_);
     du_dt.clear(stream_);
@@ -1051,6 +1060,9 @@ auto SEM::Meshes::Mesh2D_t::write_complete_data(deviceFloat time, const device_v
     p_error.clear(stream_);
     u_error.clear(stream_);
     v_error.clear(stream_);
+    p_sigma.clear(stream_);
+    u_sigma.clear(stream_);
+    v_sigma.clear(stream_);
     refine.clear(stream_);
     coarsen.clear(stream_);
     split_level.clear(stream_);
@@ -1382,7 +1394,7 @@ auto SEM::Meshes::get_solution(size_t N_elements, size_t N_interpolation_points,
 }
 
 __global__
-auto SEM::Meshes::get_complete_solution(size_t N_elements, size_t N_interpolation_points, const Element2D_t* elements, const Vec2<deviceFloat>* nodes, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v, int* N, deviceFloat* dp_dt, deviceFloat* du_dt, deviceFloat* dv_dt, deviceFloat* p_error, deviceFloat* u_error, deviceFloat* v_error, int* refine, int* coarsen, int* split_level) -> void {
+auto SEM::Meshes::get_complete_solution(size_t N_elements, size_t N_interpolation_points, const Element2D_t* elements, const Vec2<deviceFloat>* nodes, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v, int* N, deviceFloat* dp_dt, deviceFloat* du_dt, deviceFloat* dv_dt, deviceFloat* p_error, deviceFloat* u_error, deviceFloat* v_error, deviceFloat* p_sigma, deviceFloat* u_sigma, deviceFloat* v_sigma, int* refine, int* coarsen, int* split_level) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -1395,6 +1407,9 @@ auto SEM::Meshes::get_complete_solution(size_t N_elements, size_t N_interpolatio
         p_error[element_index] = element.p_error_;
         u_error[element_index] = element.u_error_;
         v_error[element_index] = element.v_error_;
+        p_sigma[element_index] = element.p_sigma_;
+        u_sigma[element_index] = element.u_sigma_;
+        v_sigma[element_index] = element.v_sigma_;
         refine[element_index] = element.refine_;
         coarsen[element_index] = element.coarsen_;
         split_level[element_index] = element.split_level_;

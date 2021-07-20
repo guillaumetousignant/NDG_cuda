@@ -143,6 +143,9 @@ auto SEM::Helpers::DataWriter_t::write_complete_data(size_t N_interpolation_poin
                                                      const std::vector<deviceFloat>& p_error, 
                                                      const std::vector<deviceFloat>& u_error, 
                                                      const std::vector<deviceFloat>& v_error, 
+                                                     const std::vector<deviceFloat>& p_sigma, 
+                                                     const std::vector<deviceFloat>& u_sigma, 
+                                                     const std::vector<deviceFloat>& v_sigma, 
                                                      const std::vector<int>& refine, 
                                                      const std::vector<int>& coarsen,
                                                      const std::vector<int>& split_level) const -> void {
@@ -315,6 +318,41 @@ auto SEM::Helpers::DataWriter_t::write_complete_data(size_t N_interpolation_poin
     }
 
     grid->GetPointData()->AddArray(velocity_error);
+
+    // Add p_sigma to each point
+    vtkNew<vtkDoubleArray> p_sigma_output;
+    p_sigma_output->SetNumberOfComponents(1);
+    p_sigma_output->Allocate(N_elements * N_interpolation_points * N_interpolation_points);
+    p_sigma_output->SetName("PressureSigma");
+
+    for (size_t element_index = 0; element_index < N_elements; ++element_index) {
+        const size_t offset = element_index * N_interpolation_points * N_interpolation_points;
+        for (size_t i = 0; i < N_interpolation_points; ++i) {
+            for (size_t j = 0; j < N_interpolation_points; ++j) {
+                p_sigma_output->InsertNextValue(p_sigma[element_index]);
+            }
+        }
+    }
+
+    grid->GetPointData()->AddArray(p_sigma_output);
+
+    // Add velocity sigma to each point
+    vtkNew<vtkDoubleArray> velocity_sigma;
+    velocity_sigma->SetNumberOfComponents(2);
+    velocity_sigma->Allocate(N_elements * N_interpolation_points * N_interpolation_points * 2);
+    velocity_sigma->SetName("VelocitySigma");
+
+    for (size_t element_index = 0; element_index < N_elements; ++element_index) {
+        const size_t offset = element_index * N_interpolation_points * N_interpolation_points;
+        for (size_t i = 0; i < N_interpolation_points; ++i) {
+            for (size_t j = 0; j < N_interpolation_points; ++j) {
+                velocity_sigma->InsertNextValue(u_sigma[element_index]);
+                velocity_sigma->InsertNextValue(v_sigma[element_index]);
+            }
+        }
+    }
+
+    grid->GetPointData()->AddArray(velocity_sigma);
 
     // Add refine to each point
     vtkNew<vtkIntArray> refine_output;
