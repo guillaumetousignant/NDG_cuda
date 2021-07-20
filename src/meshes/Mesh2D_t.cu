@@ -1160,7 +1160,7 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
 
     device_refine_array_.copy_from(host_refine_array_, stream_);
 
-    device_vector<SEM::Entities::Element2D_t> new_elements(N_elements_ + 3 * splitting_elements, stream_);
+    device_vector<SEM::Entities::Element2D_t> new_elements(elements_.size() + 3 * splitting_elements, stream_);
     SEM::Meshes::hp_adapt<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data(), new_elements.data(), device_refine_array_.data(), max_split_level_, N_max, nodes_.data(), polynomial_nodes.data(), barycentric_weights.data());
 
     if (!wall_boundaries_.empty()) {
