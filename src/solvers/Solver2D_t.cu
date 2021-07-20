@@ -39,7 +39,7 @@ auto SEM::Solvers::Solver2D_t::solve(const SEM::Entities::NDG_t<Polynomial> &NDG
                 bar.set_status_text("Writing solution");
                 bar.update(0.0);
             }
-            mesh.write_data(time, NDG.interpolation_matrices_, data_writer);
+            mesh.write_complete_data(time, NDG.interpolation_matrices_, data_writer);
         }
     }
     
@@ -91,7 +91,7 @@ auto SEM::Solvers::Solver2D_t::solve(const SEM::Entities::NDG_t<Polynomial> &NDG
                     bar.set_status_text("Writing solution");
                     bar.update(time/t_end);
                 }
-                mesh.write_data(time, NDG.interpolation_matrices_, data_writer);
+                mesh.write_complete_data(time, NDG.interpolation_matrices_, data_writer);
                 break;
             }
         }
@@ -122,7 +122,7 @@ auto SEM::Solvers::Solver2D_t::solve(const SEM::Entities::NDG_t<Polynomial> &NDG
             bar.set_status_text("Writing solution");
             bar.update(1.0);
         }
-        mesh.write_data(time, NDG.interpolation_matrices_, data_writer);
+        mesh.write_complete_data(time, NDG.interpolation_matrices_, data_writer);
     }
     if (global_rank == 0) {
         bar.set_status_text("Done");
