@@ -1152,6 +1152,8 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
     SEM::Meshes::hp_adapt<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data(), new_elements.data(), device_refine_array_.data(), max_split_level_, N_max, nodes_.data(), polynomial_nodes.data(), barycentric_weights.data());
 
 
+    elements_ = std::move(new_elements);
+
 }
 
 auto SEM::Meshes::Mesh2D_t::boundary_conditions(deviceFloat t, const device_vector<deviceFloat>& polynomial_nodes, const device_vector<deviceFloat>& weights, const device_vector<deviceFloat>& barycentric_weights) -> void {
@@ -2175,6 +2177,9 @@ auto SEM::Meshes::hp_adapt(size_t N_elements, Element2D_t* elements, Element2D_t
 
         // h refinement
         if (elements[i].refine_ && (elements[i].p_sigma_ + elements[i].u_sigma_ + elements[i].v_sigma_)/3 < static_cast<deviceFloat>(1) && elements[i].split_level_ < max_split_level) {
+            new_elements[element_index] = std::move(elements[i]); // REMOVE
+
+
 
         }
         // p refinement
