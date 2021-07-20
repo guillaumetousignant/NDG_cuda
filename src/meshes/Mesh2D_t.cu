@@ -1145,6 +1145,13 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
 
         return;
     }
+
+    device_refine_array_.copy_from(host_refine_array_, stream_);
+
+    device_vector<SEM::Entities::Element2D_t> new_elements(N_elements_ + 3 * splitting_elements, stream_);
+    SEM::Meshes::hp_adapt<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data(), new_elements.data(), device_refine_array_.data(), max_split_level_, N_max, nodes_.data(), polynomial_nodes.data(), barycentric_weights.data());
+
+
 }
 
 auto SEM::Meshes::Mesh2D_t::boundary_conditions(deviceFloat t, const device_vector<deviceFloat>& polynomial_nodes, const device_vector<deviceFloat>& weights, const device_vector<deviceFloat>& barycentric_weights) -> void {
@@ -2149,6 +2156,42 @@ auto SEM::Meshes::p_adapt(size_t N_elements, Element2D_t* elements, int N_max, c
             new_element.compute_element_geometry(points, polynomial_nodes); 
 
             elements[i] = std::move(new_element);
+        }
+    }
+}
+
+__global__
+auto SEM::Meshes::hp_adapt(size_t N_elements, Element2D_t* elements, Element2D_t* new_elements, const size_t* block_offsets, int max_split_level, int N_max, const Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+    const int thread_id = threadIdx.x;
+    const int block_id = blockIdx.x;
+    
+    for (size_t i = index; i < N_elements; i += stride) {
+        size_t element_index = i + block_offsets[block_id];
+        for (size_t j = i - thread_id; j < i; ++j) {
+            element_index += 3 * elements[j].refine_ * ((elements[i].p_sigma_ + elements[i].u_sigma_ + elements[i].v_sigma_)/3 < static_cast<deviceFloat>(1)) * (elements[i].split_level_ < max_split_level);
+        }
+
+        // h refinement
+        if (elements[i].refine_ && (elements[i].p_sigma_ + elements[i].u_sigma_ + elements[i].v_sigma_)/3 < static_cast<deviceFloat>(1) && elements[i].split_level_ < max_split_level) {
+
+        }
+        // p refinement
+        else if (elements[i].refine_ && (elements[i].p_sigma_ + elements[i].u_sigma_ + elements[i].v_sigma_)/3 >= static_cast<deviceFloat>(1) && elements[i].N_ + 2 <= N_max) {
+            new_elements[element_index] = Element2D_t{elements[i].N_ + 2, elements[i].split_level_, elements[i].faces_, elements[i].nodes_};
+
+            new_elements[element_index].interpolate_from(elements[i], polynomial_nodes, barycentric_weights);
+
+            const std::array<Vec2<deviceFloat>, 4> points {nodes[new_elements[element_index].nodes_[0]],
+                                                           nodes[new_elements[element_index].nodes_[1]],
+                                                           nodes[new_elements[element_index].nodes_[2]],
+                                                           nodes[new_elements[element_index].nodes_[3]]};
+            new_elements[element_index].compute_element_geometry(points, polynomial_nodes); 
+        }
+        // move
+        else {
+            new_elements[element_index] = std::move(elements[i]);
         }
     }
 }
