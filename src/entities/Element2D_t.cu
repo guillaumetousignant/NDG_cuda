@@ -669,6 +669,10 @@ auto SEM::Entities::Element2D_t::allocate_boundary_storage() -> void {
                        cuda_vector<deviceFloat>(),
                        cuda_vector<deviceFloat>(),
                        cuda_vector<deviceFloat>()};
+    scaling_factor_ = {cuda_vector<deviceFloat>(N_ + 1),
+                       cuda_vector<deviceFloat>(),
+                       cuda_vector<deviceFloat>(),
+                       cuda_vector<deviceFloat>()};
 }
 
 __device__
@@ -677,6 +681,7 @@ auto SEM::Entities::Element2D_t::resize_boundary_storage(int N) -> void {
     p_extrapolated_[0] = cuda_vector<deviceFloat>(N_ + 1);
     u_extrapolated_[0] = cuda_vector<deviceFloat>(N_ + 1);
     v_extrapolated_[0] = cuda_vector<deviceFloat>(N_ + 1);
+    scaling_factor_[0] = cuda_vector<deviceFloat>(N_ + 1);
 }
 
 __device__
@@ -715,7 +720,25 @@ auto SEM::Entities::Element2D_t::compute_element_geometry(const std::array<Vec2<
             std::min((points[1] - points[2]).magnitude(), (points[0] - points[3]).magnitude())), 
             std::min((points[1] - points[3]).magnitude(), (points[2] - points[0]).magnitude()));
 
-    }  
+    }
+}
+
+__device__
+auto SEM::Entities::Element2D_t::compute_boundary_geometry(const std::array<Vec2<deviceFloat>, 4>& points, const deviceFloat* polynomial_nodes) -> void {
+    const size_t offset_1D = N_ * (N_ + 1) /2;
+
+    for (int i = 0; i <= N_; ++i) {
+        const Vec2<deviceFloat> coordinates_bottom {polynomial_nodes[offset_1D + i], -1};
+        const Vec2<deviceFloat> coordinates_right  {1, polynomial_nodes[offset_1D + i]};
+        const Vec2<deviceFloat> coordinates_top    {polynomial_nodes[offset_1D + i], 1};
+        const Vec2<deviceFloat> coordinates_left   {-1, polynomial_nodes[offset_1D + i]};
+
+        const std::array<Vec2<deviceFloat>, 2> metrics_bottom = SEM::quad_metrics(coordinates_bottom, points);
+
+        scaling_factor_[0][i] = std::sqrt(metrics_bottom[0].x() * metrics_bottom[0].x() + metrics_bottom[1].x() * metrics_bottom[1].x());
+
+        delta_xy_min_ = (points[1] - points[0]).magnitude();
+    }
 }
 
 // From cppreference.com

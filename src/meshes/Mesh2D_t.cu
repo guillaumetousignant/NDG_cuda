@@ -44,7 +44,8 @@ SEM::Meshes::Mesh2D_t::Mesh2D_t(std::filesystem::path filename, int initial_N, i
         exit(14);
     }
 
-    compute_element_geometry<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(elements_.size(), elements_.data(), nodes_.data(), polynomial_nodes.data());
+    compute_element_geometry<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data(), nodes_.data(), polynomial_nodes.data());
+    compute_boundary_geometry<<<ghosts_numBlocks_, boundaries_blockSize_, 0, stream_>>>(N_elements_, elements_.size(), elements_.data(), nodes_.data(), polynomial_nodes.data());
     compute_face_geometry<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces_.size(), faces_.data(), elements_.data(), nodes_.data());
 }
 
@@ -1257,6 +1258,20 @@ auto SEM::Meshes::compute_element_geometry(size_t n_elements, Element2D_t* eleme
                                                        nodes[elements[element_index].nodes_[2]],
                                                        nodes[elements[element_index].nodes_[3]]};
         elements[element_index].compute_element_geometry(points, polynomial_nodes);  
+    }
+}
+
+__global__
+auto SEM::Meshes::compute_boundary_geometry(size_t n_domain_elements, size_t n_total_elements, Element2D_t* elements, const Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t element_index = index + n_domain_elements; element_index < n_total_elements; element_index += stride) {
+        const std::array<Vec2<deviceFloat>, 4> points {nodes[elements[element_index].nodes_[0]],
+                                                       nodes[elements[element_index].nodes_[1]],
+                                                       nodes[elements[element_index].nodes_[2]],
+                                                       nodes[elements[element_index].nodes_[3]]};
+        elements[element_index].compute_boundary_geometry(points, polynomial_nodes);  
     }
 }
 
