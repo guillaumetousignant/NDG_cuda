@@ -44,7 +44,7 @@ SEM::Meshes::Mesh2D_t::Mesh2D_t(std::filesystem::path filename, int initial_N, i
         exit(14);
     }
 
-    compute_element_geometry<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data(), nodes_.data(), polynomial_nodes.data());
+    compute_element_geometry<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(elements_.size(), elements_.data(), nodes_.data(), polynomial_nodes.data());
     compute_face_geometry<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces_.size(), faces_.data(), elements_.data(), nodes_.data());
 }
 
@@ -1146,19 +1146,19 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
     }
 }
 
-auto SEM::Meshes::Mesh2D_t::boundary_conditions(deviceFloat t, const device_vector<deviceFloat>& polynomial_nodes) -> void {
+auto SEM::Meshes::Mesh2D_t::boundary_conditions(deviceFloat t, const device_vector<deviceFloat>& polynomial_nodes, const device_vector<deviceFloat>& weights, const device_vector<deviceFloat>& barycentric_weights) -> void {
     // Boundary conditions
     if (!wall_boundaries_.empty()) {
-        SEM::Meshes::compute_wall_boundaries<<<wall_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(wall_boundaries_.size(), elements_.data(), wall_boundaries_.data(), faces_.data());
+        SEM::Meshes::compute_wall_boundaries<<<wall_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(wall_boundaries_.size(), elements_.data(), wall_boundaries_.data(), faces_.data(), polynomial_nodes.data(), weights.data(), barycentric_weights.data());
     }
     if (!symmetry_boundaries_.empty()) {
-        SEM::Meshes::compute_symmetry_boundaries<<<symmetry_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(symmetry_boundaries_.size(), elements_.data(), symmetry_boundaries_.data(), faces_.data());
+        SEM::Meshes::compute_symmetry_boundaries<<<symmetry_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(symmetry_boundaries_.size(), elements_.data(), symmetry_boundaries_.data(), faces_.data(), polynomial_nodes.data(), weights.data(), barycentric_weights.data());
     }
     if (!inflow_boundaries_.empty()) {
         SEM::Meshes::compute_inflow_boundaries<<<inflow_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(inflow_boundaries_.size(), elements_.data(), inflow_boundaries_.data(), faces_.data(), t, nodes_.data(), polynomial_nodes.data());
     }
     if (!outflow_boundaries_.empty()) {
-        SEM::Meshes::compute_outflow_boundaries<<<outflow_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(outflow_boundaries_.size(), elements_.data(), outflow_boundaries_.data(), faces_.data());
+        SEM::Meshes::compute_outflow_boundaries<<<outflow_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(outflow_boundaries_.size(), elements_.data(), outflow_boundaries_.data(), faces_.data(), polynomial_nodes.data(), weights.data(), barycentric_weights.data());
     }
 
     // Interfaces
@@ -1623,7 +1623,7 @@ auto SEM::Meshes::project_to_elements(size_t N_elements, const Face2D_t* faces, 
 }
 
 __global__
-auto SEM::Meshes::compute_wall_boundaries(size_t n_wall_boundaries, Element2D_t* elements, const size_t* wall_boundaries, const Face2D_t* faces) -> void {
+auto SEM::Meshes::compute_wall_boundaries(size_t n_wall_boundaries, Element2D_t* elements, const size_t* wall_boundaries, const Face2D_t* faces, const deviceFloat* polynomial_nodes, const deviceFloat* weights, const deviceFloat* barycentric_weights) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -1642,7 +1642,8 @@ auto SEM::Meshes::compute_wall_boundaries(size_t n_wall_boundaries, Element2D_t*
             if (element.N_ == neighbour.N_) { // Conforming
                 for (int k = 0; k <= element.N_; ++k) {
                     const Vec2<deviceFloat> neighbour_velocity {neighbour.u_extrapolated_[neighbour_side][neighbour.N_ - k], neighbour.v_extrapolated_[neighbour_side][neighbour.N_ - k]};
-                    const Vec2<deviceFloat> local_velocity {-(neighbour_velocity.dot(face.normal_)), neighbour_velocity.dot(face.tangent_)};
+                    Vec2<deviceFloat> local_velocity {neighbour_velocity.dot(face.normal_), neighbour_velocity.dot(face.tangent_)};
+                    local_velocity.x() = (2 * neighbour.p_extrapolated_[neighbour_side][neighbour.N_ - k] + SEM::Constants::c * local_velocity.x()) / SEM::Constants::c;
                 
                     element.p_extrapolated_[0][k] = neighbour.p_extrapolated_[neighbour_side][neighbour.N_ - k];
                     element.u_extrapolated_[0][k] = normal_inv.dot(local_velocity);
@@ -1650,17 +1651,121 @@ auto SEM::Meshes::compute_wall_boundaries(size_t n_wall_boundaries, Element2D_t*
                 }
             }
             else {
+                const size_t offset_1D = element.N_ * (element.N_ + 1) /2;
+                const size_t offset_1D_neighbour = neighbour.N_ * (neighbour.N_ + 1) /2;
 
+                for (int i = 0; i <= element.N_; ++i) {
+                    element.p_extrapolated_[0][i] = 0.0;
+                    element.u_extrapolated_[0][i] = 0.0;
+                    element.v_extrapolated_[0][i] = 0.0;
+                }
+
+                for (int j = 0; j <= neighbour.N_; ++j) {
+                    const deviceFloat coordinate = (polynomial_nodes[offset_1D_neighbour + neighbour.N_ - j] + 1) * face.scale_[face_side] + 2 * face.offset_[face_side] - 1;
+                    bool found_row = false;
+                    
+                    for (int i = 0; i <= element.N_; ++i) {
+                        if (SEM::Meshes::Mesh2D_t::almost_equal(coordinate, polynomial_nodes[offset_1D + i])) {
+                            element.p_extrapolated_[0][i] += weights[offset_1D_neighbour + j]/weights[offset_1D + i] * neighbour.p_extrapolated_[neighbour_side][j] * element.scaling_factor_[0][i];
+                            element.u_extrapolated_[0][i] += weights[offset_1D_neighbour + j]/weights[offset_1D + i] * neighbour.u_extrapolated_[neighbour_side][j] * element.scaling_factor_[0][i];
+                            element.v_extrapolated_[0][i] += weights[offset_1D_neighbour + j]/weights[offset_1D + i] * neighbour.v_extrapolated_[neighbour_side][j] * element.scaling_factor_[0][i];
+                            found_row = true;
+                            break;
+                        }
+                    }
+
+                    if (!found_row) {
+                        double s = 0.0;
+                        for (int i = 0; i <= element.N_; ++i) {
+                            s += barycentric_weights[offset_1D + i]/(coordinate - polynomial_nodes[offset_1D + i]);
+                        }
+                        for (int i = 0; i <= element.N_; ++i) {
+                            const deviceFloat T = barycentric_weights[offset_1D + i]/((coordinate - polynomial_nodes[offset_1D + i]) * s);
+
+                            element.p_extrapolated_[0][i] += T * weights[offset_1D_neighbour + j]/weights[offset_1D + i] * neighbour.p_extrapolated_[neighbour_side][j] * element.scaling_factor_[0][i];
+                            element.u_extrapolated_[0][i] += T * weights[offset_1D_neighbour + j]/weights[offset_1D + i] * neighbour.u_extrapolated_[neighbour_side][j] * element.scaling_factor_[0][i];
+                            element.v_extrapolated_[0][i] += T * weights[offset_1D_neighbour + j]/weights[offset_1D + i] * neighbour.v_extrapolated_[neighbour_side][j] * element.scaling_factor_[0][i];
+                        }
+                    }
+                }
+
+                for (int k = 0; k <= element.N_; ++k) {
+                    const Vec2<deviceFloat> neighbour_velocity {element.u_extrapolated_[0][k], element.v_extrapolated_[0][k]};
+                    Vec2<deviceFloat> local_velocity {neighbour_velocity.dot(face.normal_), neighbour_velocity.dot(face.tangent_)};
+                    local_velocity.x() = (2 * element.p_extrapolated_[0][k] + SEM::Constants::c * local_velocity.x()) / SEM::Constants::c;
+                
+                    //element.p_extrapolated_[0][k] = element.p_extrapolated_[0][k]; // Does nothing
+                    element.u_extrapolated_[0][k] = normal_inv.dot(local_velocity);
+                    element.v_extrapolated_[0][k] = tangent_inv.dot(local_velocity);
+                }
             }
         }
         else {
+            const size_t offset_1D = element.N_ * (element.N_ + 1) /2;
 
+            for (int i = 0; i <= element.N_; ++i) {
+                element.p_extrapolated_[0][i] = 0.0;
+                element.u_extrapolated_[0][i] = 0.0;
+                element.v_extrapolated_[0][i] = 0.0;
+            }
+
+            for (size_t face_index = 0; face_index < element.faces_[0].size(); ++face_index) {
+                const Face2D_t& face = faces[element.faces_[0][face_index]];
+                const int face_side = face.elements_[0] == element_index;
+                const Element2D_t& neighbour = elements[face.elements_[face_side]];
+                const size_t neighbour_side = face.elements_side_[face_side];
+                const Vec2<deviceFloat> normal_inv {face.normal_.x(), face.tangent_.x()};
+                const Vec2<deviceFloat> tangent_inv {face.normal_.y(), face.tangent_.y()};
+                const size_t offset_1D_neighbour = neighbour.N_ * (neighbour.N_ + 1) /2;
+
+                for (int j = 0; j <= neighbour.N_; ++j) {
+                    const deviceFloat coordinate = (polynomial_nodes[offset_1D_neighbour + neighbour.N_ - j] + 1) * face.scale_[face_side] + 2 * face.offset_[face_side] - 1;
+                    bool found_row = false;
+                    
+                    for (int i = 0; i <= element.N_; ++i) {
+                        if (SEM::Meshes::Mesh2D_t::almost_equal(coordinate, polynomial_nodes[offset_1D + i])) {
+                            element.p_extrapolated_[0][i] += weights[offset_1D_neighbour + j]/weights[offset_1D + i] * neighbour.p_extrapolated_[neighbour_side][j] * element.scaling_factor_[0][i];
+                            element.u_extrapolated_[0][i] += weights[offset_1D_neighbour + j]/weights[offset_1D + i] * neighbour.u_extrapolated_[neighbour_side][j] * element.scaling_factor_[0][i];
+                            element.v_extrapolated_[0][i] += weights[offset_1D_neighbour + j]/weights[offset_1D + i] * neighbour.v_extrapolated_[neighbour_side][j] * element.scaling_factor_[0][i];
+                            found_row = true;
+                            break;
+                        }
+                    }
+
+                    if (!found_row) {
+                        double s = 0.0;
+                        for (int i = 0; i <= element.N_; ++i) {
+                            s += barycentric_weights[offset_1D + i]/(coordinate - polynomial_nodes[offset_1D + i]);
+                        }
+                        for (int i = 0; i <= element.N_; ++i) {
+                            const deviceFloat T = barycentric_weights[offset_1D + i]/((coordinate - polynomial_nodes[offset_1D + i]) * s);
+
+                            element.p_extrapolated_[0][i] += T * weights[offset_1D_neighbour + j]/weights[offset_1D + i] * neighbour.p_extrapolated_[neighbour_side][j] * element.scaling_factor_[0][i];
+                            element.u_extrapolated_[0][i] += T * weights[offset_1D_neighbour + j]/weights[offset_1D + i] * neighbour.u_extrapolated_[neighbour_side][j] * element.scaling_factor_[0][i];
+                            element.v_extrapolated_[0][i] += T * weights[offset_1D_neighbour + j]/weights[offset_1D + i] * neighbour.v_extrapolated_[neighbour_side][j] * element.scaling_factor_[0][i];
+                        }
+                    }
+                }
+            }
+
+            const Face2D_t& face = faces[element.faces_[0][0]]; // CHECK this is kinda wrong, but we only use the normal and tangent so let's assume all the faces on a side have the same
+            const Vec2<deviceFloat> normal_inv {face.normal_.x(), face.tangent_.x()};
+            const Vec2<deviceFloat> tangent_inv {face.normal_.y(), face.tangent_.y()};
+            for (int k = 0; k <= element.N_; ++k) {
+                const Vec2<deviceFloat> neighbour_velocity {element.u_extrapolated_[0][k], element.v_extrapolated_[0][k]};
+                Vec2<deviceFloat> local_velocity {neighbour_velocity.dot(face.normal_), neighbour_velocity.dot(face.tangent_)};
+                local_velocity.x() = (2 * element.p_extrapolated_[0][k] + SEM::Constants::c * local_velocity.x()) / SEM::Constants::c;
+            
+                //element.p_extrapolated_[0][k] = element.p_extrapolated_[0][k]; // Does nothing
+                element.u_extrapolated_[0][k] = normal_inv.dot(local_velocity);
+                element.v_extrapolated_[0][k] = tangent_inv.dot(local_velocity);
+            }
         }
     }
 }
 
 __global__
-auto SEM::Meshes::compute_symmetry_boundaries(size_t n_symmetry_boundaries, Element2D_t* elements, const size_t* symmetry_boundaries, const Face2D_t* faces) -> void {
+auto SEM::Meshes::compute_symmetry_boundaries(size_t n_symmetry_boundaries, Element2D_t* elements, const size_t* symmetry_boundaries, const Face2D_t* faces, const deviceFloat* polynomial_nodes, const deviceFloat* weights, const deviceFloat* barycentric_weights) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -1687,11 +1792,113 @@ auto SEM::Meshes::compute_symmetry_boundaries(size_t n_symmetry_boundaries, Elem
                 }
             }
             else {
+                const size_t offset_1D = element.N_ * (element.N_ + 1) /2;
+                const size_t offset_1D_neighbour = neighbour.N_ * (neighbour.N_ + 1) /2;
 
+                for (int i = 0; i <= element.N_; ++i) {
+                    element.p_extrapolated_[0][i] = 0.0;
+                    element.u_extrapolated_[0][i] = 0.0;
+                    element.v_extrapolated_[0][i] = 0.0;
+                }
+
+                for (int j = 0; j <= neighbour.N_; ++j) {
+                    const deviceFloat coordinate = (polynomial_nodes[offset_1D_neighbour + neighbour.N_ - j] + 1) * face.scale_[face_side] + 2 * face.offset_[face_side] - 1;
+                    bool found_row = false;
+                    
+                    for (int i = 0; i <= element.N_; ++i) {
+                        if (SEM::Meshes::Mesh2D_t::almost_equal(coordinate, polynomial_nodes[offset_1D + i])) {
+                            element.p_extrapolated_[0][i] += weights[offset_1D_neighbour + j]/weights[offset_1D + i] * neighbour.p_extrapolated_[neighbour_side][j] * element.scaling_factor_[0][i];
+                            element.u_extrapolated_[0][i] += weights[offset_1D_neighbour + j]/weights[offset_1D + i] * neighbour.u_extrapolated_[neighbour_side][j] * element.scaling_factor_[0][i];
+                            element.v_extrapolated_[0][i] += weights[offset_1D_neighbour + j]/weights[offset_1D + i] * neighbour.v_extrapolated_[neighbour_side][j] * element.scaling_factor_[0][i];
+                            found_row = true;
+                            break;
+                        }
+                    }
+
+                    if (!found_row) {
+                        double s = 0.0;
+                        for (int i = 0; i <= element.N_; ++i) {
+                            s += barycentric_weights[offset_1D + i]/(coordinate - polynomial_nodes[offset_1D + i]);
+                        }
+                        for (int i = 0; i <= element.N_; ++i) {
+                            const deviceFloat T = barycentric_weights[offset_1D + i]/((coordinate - polynomial_nodes[offset_1D + i]) * s);
+
+                            element.p_extrapolated_[0][i] += T * weights[offset_1D_neighbour + j]/weights[offset_1D + i] * neighbour.p_extrapolated_[neighbour_side][j] * element.scaling_factor_[0][i];
+                            element.u_extrapolated_[0][i] += T * weights[offset_1D_neighbour + j]/weights[offset_1D + i] * neighbour.u_extrapolated_[neighbour_side][j] * element.scaling_factor_[0][i];
+                            element.v_extrapolated_[0][i] += T * weights[offset_1D_neighbour + j]/weights[offset_1D + i] * neighbour.v_extrapolated_[neighbour_side][j] * element.scaling_factor_[0][i];
+                        }
+                    }
+                }
+
+                for (int k = 0; k <= element.N_; ++k) {
+                    const Vec2<deviceFloat> neighbour_velocity {element.u_extrapolated_[0][k], element.v_extrapolated_[0][k]};
+                    const Vec2<deviceFloat> local_velocity {-(neighbour_velocity.dot(face.normal_)), neighbour_velocity.dot(face.tangent_)};
+                
+                    //element.p_extrapolated_[0][k] = element.p_extrapolated_[0][k]; // Does nothing
+                    element.u_extrapolated_[0][k] = normal_inv.dot(local_velocity);
+                    element.v_extrapolated_[0][k] = tangent_inv.dot(local_velocity);
+                }
             }
         }
         else {
+            const size_t offset_1D = element.N_ * (element.N_ + 1) /2;
 
+            for (int i = 0; i <= element.N_; ++i) {
+                element.p_extrapolated_[0][i] = 0.0;
+                element.u_extrapolated_[0][i] = 0.0;
+                element.v_extrapolated_[0][i] = 0.0;
+            }
+
+            for (size_t face_index = 0; face_index < element.faces_[0].size(); ++face_index) {
+                const Face2D_t& face = faces[element.faces_[0][face_index]];
+                const int face_side = face.elements_[0] == element_index;
+                const Element2D_t& neighbour = elements[face.elements_[face_side]];
+                const size_t neighbour_side = face.elements_side_[face_side];
+                const Vec2<deviceFloat> normal_inv {face.normal_.x(), face.tangent_.x()};
+                const Vec2<deviceFloat> tangent_inv {face.normal_.y(), face.tangent_.y()};
+                const size_t offset_1D_neighbour = neighbour.N_ * (neighbour.N_ + 1) /2;
+
+                for (int j = 0; j <= neighbour.N_; ++j) {
+                    const deviceFloat coordinate = (polynomial_nodes[offset_1D_neighbour + neighbour.N_ - j] + 1) * face.scale_[face_side] + 2 * face.offset_[face_side] - 1;
+                    bool found_row = false;
+                    
+                    for (int i = 0; i <= element.N_; ++i) {
+                        if (SEM::Meshes::Mesh2D_t::almost_equal(coordinate, polynomial_nodes[offset_1D + i])) {
+                            element.p_extrapolated_[0][i] += weights[offset_1D_neighbour + j]/weights[offset_1D + i] * neighbour.p_extrapolated_[neighbour_side][j] * element.scaling_factor_[0][i];
+                            element.u_extrapolated_[0][i] += weights[offset_1D_neighbour + j]/weights[offset_1D + i] * neighbour.u_extrapolated_[neighbour_side][j] * element.scaling_factor_[0][i];
+                            element.v_extrapolated_[0][i] += weights[offset_1D_neighbour + j]/weights[offset_1D + i] * neighbour.v_extrapolated_[neighbour_side][j] * element.scaling_factor_[0][i];
+                            found_row = true;
+                            break;
+                        }
+                    }
+
+                    if (!found_row) {
+                        double s = 0.0;
+                        for (int i = 0; i <= element.N_; ++i) {
+                            s += barycentric_weights[offset_1D + i]/(coordinate - polynomial_nodes[offset_1D + i]);
+                        }
+                        for (int i = 0; i <= element.N_; ++i) {
+                            const deviceFloat T = barycentric_weights[offset_1D + i]/((coordinate - polynomial_nodes[offset_1D + i]) * s);
+
+                            element.p_extrapolated_[0][i] += T * weights[offset_1D_neighbour + j]/weights[offset_1D + i] * neighbour.p_extrapolated_[neighbour_side][j] * element.scaling_factor_[0][i];
+                            element.u_extrapolated_[0][i] += T * weights[offset_1D_neighbour + j]/weights[offset_1D + i] * neighbour.u_extrapolated_[neighbour_side][j] * element.scaling_factor_[0][i];
+                            element.v_extrapolated_[0][i] += T * weights[offset_1D_neighbour + j]/weights[offset_1D + i] * neighbour.v_extrapolated_[neighbour_side][j] * element.scaling_factor_[0][i];
+                        }
+                    }
+                }
+            }
+
+            const Face2D_t& face = faces[element.faces_[0][0]]; // CHECK this is kinda wrong, but we only use the normal and tangent so let's assume all the faces on a side have the same
+            const Vec2<deviceFloat> normal_inv {face.normal_.x(), face.tangent_.x()};
+            const Vec2<deviceFloat> tangent_inv {face.normal_.y(), face.tangent_.y()};
+            for (int k = 0; k <= element.N_; ++k) {
+                const Vec2<deviceFloat> neighbour_velocity {element.u_extrapolated_[0][k], element.v_extrapolated_[0][k]};
+                const Vec2<deviceFloat> local_velocity {-(neighbour_velocity.dot(face.normal_)), neighbour_velocity.dot(face.tangent_)};
+            
+                //element.p_extrapolated_[0][k] = element.p_extrapolated_[0][k]; // Does nothing
+                element.u_extrapolated_[0][k] = normal_inv.dot(local_velocity);
+                element.v_extrapolated_[0][k] = tangent_inv.dot(local_velocity);
+            }
         }
     }
 }
@@ -1720,7 +1927,7 @@ auto SEM::Meshes::compute_inflow_boundaries(size_t n_inflow_boundaries, Element2
 }
 
 __global__
-auto SEM::Meshes::compute_outflow_boundaries(size_t n_outflow_boundaries, Element2D_t* elements, const size_t* outflow_boundaries, const Face2D_t* faces) -> void {
+auto SEM::Meshes::compute_outflow_boundaries(size_t n_outflow_boundaries, Element2D_t* elements, const size_t* outflow_boundaries, const Face2D_t* faces, const deviceFloat* polynomial_nodes, const deviceFloat* weights, const deviceFloat* barycentric_weights) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -1742,11 +1949,92 @@ auto SEM::Meshes::compute_outflow_boundaries(size_t n_outflow_boundaries, Elemen
                 }
             }
             else {
+                const size_t offset_1D = element.N_ * (element.N_ + 1) /2;
+                const size_t offset_1D_neighbour = neighbour.N_ * (neighbour.N_ + 1) /2;
 
+                for (int i = 0; i <= element.N_; ++i) {
+                    element.p_extrapolated_[0][i] = 0.0;
+                    element.u_extrapolated_[0][i] = 0.0;
+                    element.v_extrapolated_[0][i] = 0.0;
+                }
+
+                for (int j = 0; j <= neighbour.N_; ++j) {
+                    const deviceFloat coordinate = (polynomial_nodes[offset_1D_neighbour + neighbour.N_ - j] + 1) * face.scale_[face_side] + 2 * face.offset_[face_side] - 1;
+                    bool found_row = false;
+                    
+                    for (int i = 0; i <= element.N_; ++i) {
+                        if (SEM::Meshes::Mesh2D_t::almost_equal(coordinate, polynomial_nodes[offset_1D + i])) {
+                            element.p_extrapolated_[0][i] += weights[offset_1D_neighbour + j]/weights[offset_1D + i] * neighbour.p_extrapolated_[neighbour_side][j] * element.scaling_factor_[0][i];
+                            element.u_extrapolated_[0][i] += weights[offset_1D_neighbour + j]/weights[offset_1D + i] * neighbour.u_extrapolated_[neighbour_side][j] * element.scaling_factor_[0][i];
+                            element.v_extrapolated_[0][i] += weights[offset_1D_neighbour + j]/weights[offset_1D + i] * neighbour.v_extrapolated_[neighbour_side][j] * element.scaling_factor_[0][i];
+                            found_row = true;
+                            break;
+                        }
+                    }
+
+                    if (!found_row) {
+                        double s = 0.0;
+                        for (int i = 0; i <= element.N_; ++i) {
+                            s += barycentric_weights[offset_1D + i]/(coordinate - polynomial_nodes[offset_1D + i]);
+                        }
+                        for (int i = 0; i <= element.N_; ++i) {
+                            const deviceFloat T = barycentric_weights[offset_1D + i]/((coordinate - polynomial_nodes[offset_1D + i]) * s);
+
+                            element.p_extrapolated_[0][i] += T * weights[offset_1D_neighbour + j]/weights[offset_1D + i] * neighbour.p_extrapolated_[neighbour_side][j] * element.scaling_factor_[0][i];
+                            element.u_extrapolated_[0][i] += T * weights[offset_1D_neighbour + j]/weights[offset_1D + i] * neighbour.u_extrapolated_[neighbour_side][j] * element.scaling_factor_[0][i];
+                            element.v_extrapolated_[0][i] += T * weights[offset_1D_neighbour + j]/weights[offset_1D + i] * neighbour.v_extrapolated_[neighbour_side][j] * element.scaling_factor_[0][i];
+                        }
+                    }
+                }
             }
         }
         else {
+            const size_t offset_1D = element.N_ * (element.N_ + 1) /2;
 
+            for (int i = 0; i <= element.N_; ++i) {
+                element.p_extrapolated_[0][i] = 0.0;
+                element.u_extrapolated_[0][i] = 0.0;
+                element.v_extrapolated_[0][i] = 0.0;
+            }
+
+            for (size_t face_index = 0; face_index < element.faces_[0].size(); ++face_index) {
+                const Face2D_t& face = faces[element.faces_[0][face_index]];
+                const int face_side = face.elements_[0] == element_index;
+                const Element2D_t& neighbour = elements[face.elements_[face_side]];
+                const size_t neighbour_side = face.elements_side_[face_side];
+                const Vec2<deviceFloat> normal_inv {face.normal_.x(), face.tangent_.x()};
+                const Vec2<deviceFloat> tangent_inv {face.normal_.y(), face.tangent_.y()};
+                const size_t offset_1D_neighbour = neighbour.N_ * (neighbour.N_ + 1) /2;
+
+                for (int j = 0; j <= neighbour.N_; ++j) {
+                    const deviceFloat coordinate = (polynomial_nodes[offset_1D_neighbour + neighbour.N_ - j] + 1) * face.scale_[face_side] + 2 * face.offset_[face_side] - 1;
+                    bool found_row = false;
+                    
+                    for (int i = 0; i <= element.N_; ++i) {
+                        if (SEM::Meshes::Mesh2D_t::almost_equal(coordinate, polynomial_nodes[offset_1D + i])) {
+                            element.p_extrapolated_[0][i] += weights[offset_1D_neighbour + j]/weights[offset_1D + i] * neighbour.p_extrapolated_[neighbour_side][j] * element.scaling_factor_[0][i];
+                            element.u_extrapolated_[0][i] += weights[offset_1D_neighbour + j]/weights[offset_1D + i] * neighbour.u_extrapolated_[neighbour_side][j] * element.scaling_factor_[0][i];
+                            element.v_extrapolated_[0][i] += weights[offset_1D_neighbour + j]/weights[offset_1D + i] * neighbour.v_extrapolated_[neighbour_side][j] * element.scaling_factor_[0][i];
+                            found_row = true;
+                            break;
+                        }
+                    }
+
+                    if (!found_row) {
+                        double s = 0.0;
+                        for (int i = 0; i <= element.N_; ++i) {
+                            s += barycentric_weights[offset_1D + i]/(coordinate - polynomial_nodes[offset_1D + i]);
+                        }
+                        for (int i = 0; i <= element.N_; ++i) {
+                            const deviceFloat T = barycentric_weights[offset_1D + i]/((coordinate - polynomial_nodes[offset_1D + i]) * s);
+
+                            element.p_extrapolated_[0][i] += T * weights[offset_1D_neighbour + j]/weights[offset_1D + i] * neighbour.p_extrapolated_[neighbour_side][j] * element.scaling_factor_[0][i];
+                            element.u_extrapolated_[0][i] += T * weights[offset_1D_neighbour + j]/weights[offset_1D + i] * neighbour.u_extrapolated_[neighbour_side][j] * element.scaling_factor_[0][i];
+                            element.v_extrapolated_[0][i] += T * weights[offset_1D_neighbour + j]/weights[offset_1D + i] * neighbour.v_extrapolated_[neighbour_side][j] * element.scaling_factor_[0][i];
+                        }
+                    }
+                }
+            }
         }
     }
 }
