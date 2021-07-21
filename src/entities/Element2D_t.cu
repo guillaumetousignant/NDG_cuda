@@ -16,6 +16,7 @@ SEM::Entities::Element2D_t::Element2D_t(int N, int split_level, const std::array
         faces_{faces},
         nodes_{nodes},
         delta_xy_min_{0.0},
+        center_{0.0, 0.0},
         dxi_dx_{(N_ + 1) * (N_ + 1)},
         deta_dx_{(N_ + 1) * (N_ + 1)},
         dxi_dy_{(N_ + 1) * (N_ + 1)},
@@ -60,6 +61,7 @@ SEM::Entities::Element2D_t::Element2D_t() :
         faces_{},
         nodes_{0, 0, 0, 0},
         delta_xy_min_{0.0},
+        center_{0.0, 0.0},
         scaling_factor_{},
         p_extrapolated_{},
         u_extrapolated_{},
@@ -719,7 +721,7 @@ auto SEM::Entities::Element2D_t::compute_element_geometry(const std::array<Vec2<
             std::min((points[1] - points[0]).magnitude(), (points[2] - points[3]).magnitude()), 
             std::min((points[1] - points[2]).magnitude(), (points[0] - points[3]).magnitude())), 
             std::min((points[1] - points[3]).magnitude(), (points[2] - points[0]).magnitude()));
-
+        center_ = (points[0] + points[1] + points[2] + points[3])/4;
     }
 }
 
@@ -738,6 +740,7 @@ auto SEM::Entities::Element2D_t::compute_boundary_geometry(const std::array<Vec2
         scaling_factor_[0][i] = std::sqrt(metrics_bottom[0].x() * metrics_bottom[0].x() + metrics_bottom[1].x() * metrics_bottom[1].x());
 
         delta_xy_min_ = (points[1] - points[0]).magnitude();
+        center_ = (points[0] + points[1])/2;
     }
 }
 

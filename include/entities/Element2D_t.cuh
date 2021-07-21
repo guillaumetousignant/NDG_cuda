@@ -23,6 +23,7 @@ namespace SEM { namespace Entities {
 
             // Geometry
             deviceFloat delta_xy_min_;
+            Vec2<deviceFloat> center_;
             SEM::Entities::cuda_vector<deviceFloat> dxi_dx_;
             SEM::Entities::cuda_vector<deviceFloat> deta_dx_;
             SEM::Entities::cuda_vector<deviceFloat> dxi_dy_;
