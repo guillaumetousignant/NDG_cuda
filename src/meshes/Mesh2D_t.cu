@@ -2295,6 +2295,7 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
             const std::array<Vec2<deviceFloat>, 4> element_nodes = {nodes[element.nodes_[0]], nodes[element.nodes_[1]], nodes[element.nodes_[2]], nodes[element.nodes_[3]]}; // CHECK this won't work with elements with more than 4 sides
 
             size_t local_node_index = 1;
+            size_t local_face_index = 4;
             for (size_t side_index = 0; side_index < element.faces_.size(); ++side_index) {
                 new_center_node += element_nodes[side_index];
                 const std::array<Vec2<deviceFloat>, 2> side_nodes = {element_nodes[side_index], (side_index < element.faces_.size() - 1) ? element_nodes[side_index + 1] : element_nodes[0]};
