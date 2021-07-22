@@ -712,7 +712,7 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     allocate_boundary_storage<<<ghosts_numBlocks_, boundaries_blockSize_, 0, stream_>>>(n_elements_, elements_.size(), elements_.data());
     allocate_face_storage<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces_.size(), faces_.data());
 
-    SEM::Entities::device_vector<std::array<size_t, 4>> device_element_to_face(element_to_face, stream_);
+    device_vector<std::array<size_t, 4>> device_element_to_face(element_to_face, stream_);
     fill_element_faces<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(elements_.size(), elements_.data(), device_element_to_face.data());
     device_element_to_face.clear(stream_);
 
@@ -850,7 +850,7 @@ auto SEM::Meshes::Mesh2D_t::build_faces(size_t n_elements_domain, size_t n_nodes
     return {std::move(faces), std::move(node_to_face), std::move(element_to_face)};
 }
 
-auto SEM::Meshes::Mesh2D_t::initial_conditions(const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes) -> void {
+auto SEM::Meshes::Mesh2D_t::initial_conditions(const device_vector<deviceFloat>& polynomial_nodes) -> void {
     initial_conditions_2D<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, elements_.data(), nodes_.data(), polynomial_nodes.data());
 }
 
@@ -1167,9 +1167,11 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
     cudaStreamSynchronize(stream_);
     
     size_t n_additional_nodes = 0;
+    size_t n_additional_faces = 0;
     for (int i = 0; i < elements_numBlocks_; ++i) {
         host_nodes_refine_array_[i] = n_additional_nodes; // Current block offset
         n_additional_nodes += host_nodes_refine_array_[i];
+        n_additional_faces += host_nodes_refine_array_[i] + 3 * (host_nodes_refine_array_[i] > 0);
     }
 
     device_nodes_refine_array_.copy_from(host_nodes_refine_array_, stream_);
@@ -1178,7 +1180,9 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
     device_vector<Vec2<deviceFloat>> new_nodes(nodes_.size() + n_additional_nodes, stream_);
     cudaMemcpyAsync(new_nodes.data(), nodes_.data(), nodes_.size() * sizeof(Vec2<deviceFloat>), cudaMemcpyDeviceToDevice, stream_); // Apparently slower than using a kernel
     
-    device_vector<SEM::Entities::Element2D_t> new_elements(elements_.size() + 3 * splitting_elements, stream_);
+    device_vector<Face2D_t> new_faces(faces_.size() + n_additional_faces, stream_);
+
+    device_vector<Element2D_t> new_elements(elements_.size() + 3 * splitting_elements, stream_);
     SEM::Meshes::hp_adapt<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, faces_.size(), nodes_.size(), elements_.data(), new_elements.data(), faces_.data(), device_refine_array_.data(), device_nodes_refine_array_.data(), max_split_level_, N_max, new_nodes.data(), polynomial_nodes.data(), barycentric_weights.data());
 
     if (!wall_boundaries_.empty()) {
@@ -1388,7 +1392,7 @@ auto SEM::Meshes::compute_face_geometry(size_t n_faces, Face2D_t* faces, const E
     const int stride = blockDim.x * gridDim.x;
 
     for (size_t face_index = index; face_index < n_faces; face_index += stride) {
-        SEM::Entities::Face2D_t& face = faces[face_index];
+        Face2D_t& face = faces[face_index];
         face.tangent_ = nodes[face.nodes_[1]] - nodes[face.nodes_[0]]; 
         face.length_ = face.tangent_.magnitude();
         face.tangent_ /= face.length_; // CHECK should be normalized or not?
@@ -2007,7 +2011,7 @@ auto SEM::Meshes::compute_symmetry_boundaries(size_t n_symmetry_boundaries, Elem
 }
 
 __global__
-auto SEM::Meshes::compute_inflow_boundaries(size_t n_inflow_boundaries, Element2D_t* elements, const size_t* inflow_boundaries, const Face2D_t* faces, deviceFloat t, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes) -> void {
+auto SEM::Meshes::compute_inflow_boundaries(size_t n_inflow_boundaries, Element2D_t* elements, const size_t* inflow_boundaries, const Face2D_t* faces, deviceFloat t, const Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -2298,7 +2302,7 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
                 // Here we check if the new node already exists
                 bool found_node = false;
                 for (size_t face_index = 0; face_index < element.faces_[side_index].size(); ++face_index) {
-                    const SEM::Entities::Face2D_t& face = faces[element.faces_[side_index][face_index]];
+                    const Face2D_t& face = faces[element.faces_[side_index][face_index]];
                     if (nodes[face.nodes_[0]] == new_node) {
                         found_node = true;
                         new_nodes[side_index] = face.nodes_[0];
@@ -2314,10 +2318,10 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
                 // Here we check if another element would create the same node, and yield if its index is smaller
                 if (!found_node) {
                     for (size_t face_index = 0; face_index < element.faces_[side_index].size(); ++face_index) {
-                        const SEM::Entities::Face2D_t& face = faces[element.faces_[side_index][face_index]];
+                        const Face2D_t& face = faces[element.faces_[side_index][face_index]];
                         const int face_side = face.elements_[0] == i;
                         const size_t neighbour_element_index = face.elements_[face_side];
-                        const SEM::Entities::Element2D_t& neighbour = elements[neighbour_element_index];
+                        const Element2D_t& neighbour = elements[neighbour_element_index];
                         
                         if (neighbour.refine_ * ((neighbour.p_sigma_ + neighbour.u_sigma_ + neighbour.v_sigma_)/3 < static_cast<deviceFloat>(1)) * (neighbour.split_level_ < max_split_level)) {
                             const std::array<Vec2<deviceFloat>, 2> neighbour_nodes = {nodes[neighbour.nodes_[face.elements_side_[face_side]]], (face.elements_side_[face_side] < neighbour.faces_.size() - 1) ? nodes[neighbour.nodes_[face.elements_side_[face_side] + 1]] : nodes[neighbour.nodes_[0]]};
