@@ -21,7 +21,7 @@
 namespace SEM { namespace Meshes {
     class Mesh2D_t {
         public:
-            Mesh2D_t(std::filesystem::path filename, int initial_N, int maximum_N, size_t n_interpolation_points, int max_split_level, int adaptivity_interval, const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes, const cudaStream_t &stream);
+            Mesh2D_t(std::filesystem::path filename, int initial_N, int maximum_N, size_t n_interpolation_points, int max_split_level, int adaptivity_interval, deviceFloat tolerance_min, deviceFloat tolerance_max, const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes, const cudaStream_t &stream);
 
             // Geometry
             SEM::Entities::device_vector<SEM::Entities::Vec2<deviceFloat>> nodes_;
@@ -298,7 +298,6 @@ namespace SEM { namespace Meshes {
             if (element.refine_ * ((element.p_sigma_ + element.u_sigma_ + element.v_sigma_)/3 < static_cast<deviceFloat>(1)) * (element.split_level_ < max_split_level)) {
                 // This is the middle node, always needs to be created
                 ++sdata[tid];
-                ++element.n_additional_nodes_;
                 for (size_t side_index = 0; side_index < element.faces_.size(); ++side_index) {
                     const std::array<SEM::Entities::Vec2<deviceFloat>, 2> side_nodes = {nodes[element.nodes_[side_index]], (side_index < element.faces_.size() - 1) ? nodes[element.nodes_[side_index + 1]] : nodes[element.nodes_[0]]};
                     const SEM::Entities::Vec2<deviceFloat> new_node = (side_nodes[0] + side_nodes[1])/2;
@@ -334,7 +333,7 @@ namespace SEM { namespace Meshes {
 
                     if (!found_node) {
                         ++sdata[tid];
-                        ++element.n_additional_nodes_;
+                        element.additional_nodes_[side_index] = true;
                     }
                 }
             }
@@ -345,7 +344,6 @@ namespace SEM { namespace Meshes {
                 if (element.refine_ * ((element.p_sigma_ + element.u_sigma_ + element.v_sigma_)/3 < static_cast<deviceFloat>(1)) * (element.split_level_ < max_split_level)) {
                     // This is the middle node, always needs to be created
                     ++sdata[tid];
-                    ++element.n_additional_nodes_;
                     for (size_t side_index = 0; side_index < element.faces_.size(); ++side_index) {
                         const std::array<SEM::Entities::Vec2<deviceFloat>, 2> side_nodes = {nodes[element.nodes_[side_index]], (side_index < element.faces_.size() - 1) ? nodes[element.nodes_[side_index + 1]] : nodes[element.nodes_[0]]};
                         const SEM::Entities::Vec2<deviceFloat> new_node = (side_nodes[0] + side_nodes[1])/2;
@@ -380,7 +378,7 @@ namespace SEM { namespace Meshes {
     
                         if (!found_node) {
                             ++sdata[tid];
-                            ++element.n_additional_nodes_;
+                            element.additional_nodes_[side_index] = true;
                         }
                     }
                 }

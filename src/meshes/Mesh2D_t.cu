@@ -2268,11 +2268,14 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
     const int stride = blockDim.x * gridDim.x;
     const int thread_id = threadIdx.x;
     const int block_id = blockIdx.x;
+    const int block_dim = blockDim.x;
     
     for (size_t i = index; i < n_elements; i += stride) {
+        Element2D_t& element = elements[i];
+
         size_t element_index = i + block_offsets[block_id];
         for (size_t j = i - thread_id; j < i; ++j) {
-            element_index += 3 * elements[j].refine_ * ((elements[i].p_sigma_ + elements[i].u_sigma_ + elements[i].v_sigma_)/3 < static_cast<deviceFloat>(1)) * (elements[i].split_level_ < max_split_level);
+            element_index += 3 * elements[j].refine_ * ((element.p_sigma_ + element.u_sigma_ + element.v_sigma_)/3 < static_cast<deviceFloat>(1)) * (element.split_level_ < max_split_level);
         }
 
         // h refinement
@@ -2385,6 +2388,15 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
             new_elements[element_index + 2] = Element2D_t{element.N_, element.split_level_ + 1, element.faces_, {new_node_index, new_nodes[1], element.nodes_[2], new_nodes[2]}}; // CHECK faces are wrong
             new_elements[element_index + 3] = Element2D_t{element.N_, element.split_level_ + 1, element.faces_, {new_nodes[3], new_node_index, new_nodes[2], element.nodes_[3]}}; // CHECK faces are wrong
 
+            new_elements[element_index].interpolate_from(new_elements_nodes[0], element_nodes, element, polynomial_nodes, barycentric_weights);
+            new_elements[element_index + 1].interpolate_from(new_elements_nodes[1], element_nodes, element, polynomial_nodes, barycentric_weights);
+            new_elements[element_index + 2].interpolate_from(new_elements_nodes[2], element_nodes, element, polynomial_nodes, barycentric_weights);
+            new_elements[element_index + 3].interpolate_from(new_elements_nodes[3], element_nodes, element, polynomial_nodes, barycentric_weights);
+            
+            new_elements[element_index].compute_element_geometry(new_elements_nodes[0], polynomial_nodes);
+            new_elements[element_index + 1].compute_element_geometry(new_elements_nodes[1], polynomial_nodes);
+            new_elements[element_index + 2].compute_element_geometry(new_elements_nodes[2], polynomial_nodes);
+            new_elements[element_index + 3].compute_element_geometry(new_elements_nodes[3], polynomial_nodes);  
         }
         // p refinement
         else if (elements[i].refine_ && (elements[i].p_sigma_ + elements[i].u_sigma_ + elements[i].v_sigma_)/3 >= static_cast<deviceFloat>(1) && elements[i].N_ + 2 <= N_max) {
@@ -2400,7 +2412,7 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
         }
         // move
         else {
-            new_elements[element_index] = std::move(elements[i]);
+            new_elements[element_index] = std::move(element);
         }
     }
 }
