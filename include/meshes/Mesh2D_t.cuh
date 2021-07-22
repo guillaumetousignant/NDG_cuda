@@ -21,7 +21,7 @@
 namespace SEM { namespace Meshes {
     class Mesh2D_t {
         public:
-            Mesh2D_t(std::filesystem::path filename, int initial_N, int maximum_N, size_t N_interpolation_points, int max_split_level, int adaptivity_interval, deviceFloat tolerance_min, deviceFloat tolerance_max, const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes, const cudaStream_t &stream);
+            Mesh2D_t(std::filesystem::path filename, int initial_N, int maximum_N, size_t n_interpolation_points, int max_split_level, int adaptivity_interval, const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes, const cudaStream_t &stream);
 
             // Geometry
             SEM::Entities::device_vector<SEM::Entities::Vec2<deviceFloat>> nodes_;
@@ -86,14 +86,14 @@ namespace SEM { namespace Meshes {
             int mpi_interfaces_numBlocks_;
             
             // Counts
-            size_t N_elements_global_;
-            size_t N_elements_;
+            size_t n_elements_global_;
+            size_t n_elements_;
             size_t global_element_offset_;
 
             // Parameters
             int initial_N_;
             int maximum_N_;
-            size_t N_interpolation_points_;
+            size_t n_interpolation_points_;
             int max_split_level_;
             int adaptivity_interval_;
             deviceFloat tolerance_min_;
@@ -170,23 +170,23 @@ namespace SEM { namespace Meshes {
     auto initial_conditions_2D(size_t n_elements, SEM::Entities::Element2D_t* elements, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes) -> void;
 
     __global__
-    auto get_solution(size_t N_elements, size_t N_interpolation_points, const SEM::Entities::Element2D_t* elements, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v) -> void;
+    auto get_solution(size_t n_elements, size_t n_interpolation_points, const SEM::Entities::Element2D_t* elements, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v) -> void;
 
     __global__
-    auto get_complete_solution(size_t N_elements, size_t N_interpolation_points, const SEM::Entities::Element2D_t* elements, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v, int* N, deviceFloat* dp_dt, deviceFloat* du_dt, deviceFloat* dv_dt, deviceFloat* p_error, deviceFloat* u_error, deviceFloat* v_error, deviceFloat* p_sigma, deviceFloat* u_sigma, deviceFloat* v_sigma, int* refine, int* coarsen, int* split_level) -> void;
+    auto get_complete_solution(size_t n_elements, size_t n_interpolation_points, const SEM::Entities::Element2D_t* elements, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v, int* N, deviceFloat* dp_dt, deviceFloat* du_dt, deviceFloat* dv_dt, deviceFloat* p_error, deviceFloat* u_error, deviceFloat* v_error, deviceFloat* p_sigma, deviceFloat* u_sigma, deviceFloat* v_sigma, int* refine, int* coarsen, int* split_level) -> void;
 
     template<typename Polynomial>
     __global__
-    auto estimate_error(size_t N_elements, SEM::Entities::Element2D_t* elements, deviceFloat tolerance_min, deviceFloat tolerance_max, const deviceFloat* polynomial_nodes, const deviceFloat* weights) -> void;
+    auto estimate_error(size_t n_elements, SEM::Entities::Element2D_t* elements, deviceFloat tolerance_min, deviceFloat tolerance_max, const deviceFloat* polynomial_nodes, const deviceFloat* weights) -> void;
 
     __global__
-    auto interpolate_to_boundaries(size_t N_elements, SEM::Entities::Element2D_t* elements, const deviceFloat* lagrange_interpolant_minus, const deviceFloat* lagrange_interpolant_plus) -> void;
+    auto interpolate_to_boundaries(size_t n_elements, SEM::Entities::Element2D_t* elements, const deviceFloat* lagrange_interpolant_minus, const deviceFloat* lagrange_interpolant_plus) -> void;
 
     __global__
     auto project_to_faces(size_t N_faces, SEM::Entities::Face2D_t* faces, const SEM::Entities::Element2D_t* elements, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void;
 
     __global__
-    auto project_to_elements(size_t N_elements, const SEM::Entities::Face2D_t* faces, SEM::Entities::Element2D_t* elements, const deviceFloat* polynomial_nodes, const deviceFloat* weights, const deviceFloat* barycentric_weights) -> void;
+    auto project_to_elements(size_t n_elements, const SEM::Entities::Face2D_t* faces, SEM::Entities::Element2D_t* elements, const deviceFloat* polynomial_nodes, const deviceFloat* weights, const deviceFloat* barycentric_weights) -> void;
     
     __global__
     auto compute_wall_boundaries(size_t n_wall_boundaries, SEM::Entities::Element2D_t* elements, const size_t* wall_boundaries, const SEM::Entities::Face2D_t* faces, const deviceFloat* polynomial_nodes, const deviceFloat* weights, const deviceFloat* barycentric_weights) -> void;
@@ -219,10 +219,10 @@ namespace SEM { namespace Meshes {
     auto put_MPI_interfaces_N_and_rebuild(size_t N_MPI_interface_elements, SEM::Entities::Element2D_t* elements, SEM::Entities::Element2D_t* new_elements, const size_t* MPI_interfaces_destination, const int* N) -> void;
 
     __global__
-    auto p_adapt(size_t N_elements, SEM::Entities::Element2D_t* elements, int N_max, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void;
+    auto p_adapt(size_t n_elements, SEM::Entities::Element2D_t* elements, int N_max, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void;
     
     __global__
-    auto hp_adapt(size_t N_elements, SEM::Entities::Element2D_t* elements, SEM::Entities::Element2D_t* new_elements, const size_t* block_offsets, const size_t* nodes_block_offsets, int max_split_level, int N_max, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void;
+    auto hp_adapt(size_t n_elements, size_t n_nodes, SEM::Entities::Element2D_t* elements, SEM::Entities::Element2D_t* new_elements, const size_t* block_offsets, const size_t* nodes_block_offsets, int max_split_level, int N_max, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void;
 
     __global__
     auto adjust_boundaries(size_t N_boundaries, SEM::Entities::Element2D_t* elements, const size_t* boundaries, const SEM::Entities::Face2D_t* faces) -> void;
@@ -254,16 +254,16 @@ namespace SEM { namespace Meshes {
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>
     __global__ 
-    auto reduce_refine_2D(size_t N_elements, int max_split_level, const SEM::Entities::Element2D_t* elements, size_t* g_odata) -> void {
+    auto reduce_refine_2D(size_t n_elements, int max_split_level, const SEM::Entities::Element2D_t* elements, size_t* g_odata) -> void {
         __shared__ size_t sdata[(blockSize >= 64) ? blockSize : blockSize + blockSize/2]; // Because within a warp there is no branching and this is read up until blockSize + blockSize/2
         unsigned int tid = threadIdx.x;
         size_t i = blockIdx.x*(blockSize*2) + tid;
         unsigned int gridSize = blockSize*2*gridDim.x;
         sdata[tid] = 0;
 
-        while (i < N_elements) { 
+        while (i < n_elements) { 
             sdata[tid] += elements[i].refine_ * ((elements[i].p_sigma_ + elements[i].u_sigma_ + elements[i].v_sigma_)/3 < static_cast<deviceFloat>(1)) * (elements[i].split_level_ < max_split_level);
-            if (i+blockSize < N_elements) {
+            if (i+blockSize < n_elements) {
                 sdata[tid] += elements[i+blockSize].refine_ * ((elements[i+blockSize].p_sigma_ + elements[i+blockSize].u_sigma_ + elements[i+blockSize].v_sigma_)/3 < static_cast<deviceFloat>(1)) * (elements[i+blockSize].split_level_ < max_split_level);
             }
             i += gridSize; 
@@ -285,14 +285,14 @@ namespace SEM { namespace Meshes {
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>
     __global__ 
-    auto reduce_nodes_2D(size_t N_elements, int max_split_level, const SEM::Entities::Element2D_t* elements, const SEM::Entities::Face2D_t* faces, const SEM::Entities::Vec2<deviceFloat>* nodes, size_t* g_odata) -> void {
+    auto reduce_nodes_2D(size_t n_elements, int max_split_level, const SEM::Entities::Element2D_t* elements, const SEM::Entities::Face2D_t* faces, const SEM::Entities::Vec2<deviceFloat>* nodes, size_t* g_odata) -> void {
         __shared__ size_t sdata[(blockSize >= 64) ? blockSize : blockSize + blockSize/2]; // Because within a warp there is no branching and this is read up until blockSize + blockSize/2
         unsigned int tid = threadIdx.x;
         size_t i = blockIdx.x*(blockSize*2) + tid;
         unsigned int gridSize = blockSize*2*gridDim.x;
         sdata[tid] = 0;
 
-        while (i < N_elements) {
+        while (i < n_elements) {
             const SEM::Entities::Element2D_t& element = elements[i];
             if (element.refine_ * ((element.p_sigma_ + element.u_sigma_ + element.v_sigma_)/3 < static_cast<deviceFloat>(1)) * (element.split_level_ < max_split_level)) {
                 // This is the middle node, always needs to be created
@@ -335,7 +335,7 @@ namespace SEM { namespace Meshes {
                 }
             }
 
-            if (i+blockSize < N_elements) {
+            if (i+blockSize < n_elements) {
                 const SEM::Entities::Element2D_t& element = elements[i+blockSize];
                 if (element.refine_ * ((element.p_sigma_ + element.u_sigma_ + element.v_sigma_)/3 < static_cast<deviceFloat>(1)) * (element.split_level_ < max_split_level)) {
                     // This is the middle node, always needs to be created
