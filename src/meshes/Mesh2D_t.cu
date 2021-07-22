@@ -2277,15 +2277,15 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
 
         // h refinement
         if (element.refine_ && (element.p_sigma_ + element.u_sigma_ + element.v_sigma_)/3 < static_cast<deviceFloat>(1) && element.split_level_ < max_split_level) {
-            size_t node_index = n_nodes + nodes_block_offsets[block_id];
-            size_t face_index = n_faces + nodes_block_offsets[block_id] + block_offsets[block_id]; // Wow this just happens to work, we need to add 3 faces per splitting element to the number of additional nodes, and the element offset is 3 * n_splitting
+            size_t new_node_index = n_nodes + nodes_block_offsets[block_id];
+            size_t new_face_index = n_faces + nodes_block_offsets[block_id] + block_offsets[block_id]; // Wow this just happens to work, we need to add 3 faces per splitting element to the number of additional nodes, and the element offset is 3 * n_splitting
             for (size_t j = i - thread_id; j < i; ++j) {
                 if (elements[j].refine_ && (elements[j].p_sigma_ + elements[j].u_sigma_ + elements[j].v_sigma_)/3 < static_cast<deviceFloat>(1) && elements[j].split_level_ < max_split_level) {
-                    ++node_index;
-                    face_index += 4;
+                    ++new_node_index;
+                    new_face_index += 4;
                     for (size_t side_index = 0; side_index < elements[j].faces_.size(); ++side_index) {
-                        node_index += elements[j].additional_nodes_[side_index];
-                        face_index += elements[j].additional_nodes_[side_index];
+                        new_node_index += elements[j].additional_nodes_[side_index];
+                        new_face_index += elements[j].additional_nodes_[side_index];
                     }
                 }
             }
@@ -2294,7 +2294,7 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
             std::array<size_t, 4> new_nodes {static_cast<size_t>(-1), static_cast<size_t>(-1), static_cast<size_t>(-1), static_cast<size_t>(-1)}; // CHECK this won't work with elements with more than 4 sides
             const std::array<Vec2<deviceFloat>, 4> element_nodes = {nodes[element.nodes_[0]], nodes[element.nodes_[1]], nodes[element.nodes_[2]], nodes[element.nodes_[3]]}; // CHECK this won't work with elements with more than 4 sides
 
-            size_t new_node_index = 1;
+            size_t local_node_index = 1;
             for (size_t side_index = 0; side_index < element.faces_.size(); ++side_index) {
                 new_center_node += element_nodes[side_index];
                 const std::array<Vec2<deviceFloat>, 2> side_nodes = {element_nodes[side_index], (side_index < element.faces_.size() - 1) ? element_nodes[side_index + 1] : element_nodes[0]};
@@ -2357,23 +2357,27 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
                 }
 
                 if (!found_node) {
-                    new_nodes[side_index] = node_index + new_node_index;
+                    new_nodes[side_index] = new_node_index + local_node_index;
                     nodes[new_nodes[side_index]] = new_node;
-                    ++new_node_index;
+                    ++local_node_index;
                 }
             }
 
             new_center_node /= element.faces_.size();
-            nodes[node_index] = new_center_node;
+            nodes[new_node_index] = new_center_node;
 
             // CHECK add order
             // CHECK this won't work with anything other than quadrilaterals
-            const std::array<std::array<Vec2<deviceFloat>, 4>, 4> new_elements_nodes {std::array<Vec2<deviceFloat>, 4>{nodes[element.nodes_[0]], nodes[new_nodes[0]], nodes[node_index], nodes[new_nodes[3]]},
-                                                                                      std::array<Vec2<deviceFloat>, 4>{nodes[new_nodes[0]], nodes[element.nodes_[1]], nodes[new_nodes[1]], nodes[node_index]},
-                                                                                      std::array<Vec2<deviceFloat>, 4>{nodes[node_index], nodes[new_nodes[1]], nodes[element.nodes_[2]], nodes[new_nodes[2]]},
-                                                                                      std::array<Vec2<deviceFloat>, 4>{nodes[new_nodes[3]], nodes[node_index], nodes[new_nodes[2]], nodes[element.nodes_[3]]}};
+            const std::array<std::array<Vec2<deviceFloat>, 4>, 4> new_elements_nodes {std::array<Vec2<deviceFloat>, 4>{nodes[element.nodes_[0]], nodes[new_nodes[0]], nodes[new_node_index], nodes[new_nodes[3]]},
+                                                                                      std::array<Vec2<deviceFloat>, 4>{nodes[new_nodes[0]], nodes[element.nodes_[1]], nodes[new_nodes[1]], nodes[new_node_index]},
+                                                                                      std::array<Vec2<deviceFloat>, 4>{nodes[new_node_index], nodes[new_nodes[1]], nodes[element.nodes_[2]], nodes[new_nodes[2]]},
+                                                                                      std::array<Vec2<deviceFloat>, 4>{nodes[new_nodes[3]], nodes[new_node_index], nodes[new_nodes[2]], nodes[element.nodes_[3]]}};
 
 
+            new_elements[element_index]     = Element2D_t{element.N_, element.split_level_ + 1, element.faces_, {element.nodes_[0], new_nodes[0], new_node_index, new_nodes[3]}}; // CHECK faces are wrong
+            new_elements[element_index + 1] = Element2D_t{element.N_, element.split_level_ + 1, element.faces_, {new_nodes[0], element.nodes_[1], new_nodes[1], new_node_index}}; // CHECK faces are wrong
+            new_elements[element_index + 2] = Element2D_t{element.N_, element.split_level_ + 1, element.faces_, {new_node_index, new_nodes[1], element.nodes_[2], new_nodes[2]}}; // CHECK faces are wrong
+            new_elements[element_index + 3] = Element2D_t{element.N_, element.split_level_ + 1, element.faces_, {new_nodes[3], new_node_index, new_nodes[2], element.nodes_[3]}}; // CHECK faces are wrong
 
         }
         // p refinement
