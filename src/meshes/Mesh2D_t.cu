@@ -1179,7 +1179,7 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
     cudaMemcpyAsync(new_nodes.data(), nodes_.data(), nodes_.size() * sizeof(Vec2<deviceFloat>), cudaMemcpyDeviceToDevice, stream_); // Apparently slower than using a kernel
     
     device_vector<SEM::Entities::Element2D_t> new_elements(elements_.size() + 3 * splitting_elements, stream_);
-    SEM::Meshes::hp_adapt<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, nodes_.size(), elements_.data(), new_elements.data(), device_refine_array_.data(), device_nodes_refine_array_.data(), max_split_level_, N_max, new_nodes.data(), polynomial_nodes.data(), barycentric_weights.data());
+    SEM::Meshes::hp_adapt<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, nodes_.size(), elements_.data(), new_elements.data(), faces_.data(), device_refine_array_.data(), device_nodes_refine_array_.data(), max_split_level_, N_max, new_nodes.data(), polynomial_nodes.data(), barycentric_weights.data());
 
     if (!wall_boundaries_.empty()) {
         SEM::Meshes::rebuild_boundaries<<<wall_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(wall_boundaries_.size(), elements_.data(), elements_.data(), wall_boundaries_.data(), faces_.data());
@@ -2258,7 +2258,7 @@ auto SEM::Meshes::p_adapt(size_t n_elements, Element2D_t* elements, int N_max, c
 }
 
 __global__
-auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_nodes, Element2D_t* elements, Element2D_t* new_elements, const size_t* block_offsets, const size_t* nodes_block_offsets, int max_split_level, int N_max, const Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void {
+auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_nodes, Element2D_t* elements, Element2D_t* new_elements, const Face2D_t* faces, const size_t* block_offsets, const size_t* nodes_block_offsets, int max_split_level, int N_max, Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     const int thread_id = threadIdx.x;
@@ -2277,8 +2277,88 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_nodes, Element2D_t* eleme
                 node_index += elements[j].n_additional_nodes_;
             }
             
-            
-            new_elements[element_index] = std::move(elements[i]); // REMOVE
+            Vec2<deviceFloat> new_center_node {0};
+            std::array<size_t, 4> new_nodes {static_cast<size_t>(-1), static_cast<size_t>(-1), static_cast<size_t>(-1), static_cast<size_t>(-1)}; // CHECK this won't work with elements with more than 4 sides
+            const std::array<Vec2<deviceFloat>, 4> element_nodes = {nodes[element.nodes_[0]], nodes[element.nodes_[1]], nodes[element.nodes_[2]], nodes[element.nodes_[3]]}; // CHECK this won't work with elements with more than 4 sides
+
+            size_t new_node_index = 1;
+            for (size_t side_index = 0; side_index < element.faces_.size(); ++side_index) {
+                new_center_node += element_nodes[side_index];
+                const std::array<Vec2<deviceFloat>, 2> side_nodes = {element_nodes[side_index], (side_index < element.faces_.size() - 1) ? element_nodes[side_index + 1] : element_nodes[0]};
+                const Vec2<deviceFloat> new_node = (side_nodes[0] + side_nodes[1])/2;
+
+                // Here we check if the new node already exists
+                bool found_node = false;
+                for (size_t face_index = 0; face_index < element.faces_[side_index].size(); ++face_index) {
+                    const SEM::Entities::Face2D_t& face = faces[element.faces_[side_index][face_index]];
+                    if (nodes[face.nodes_[0]] == new_node) {
+                        found_node = true;
+                        new_nodes[side_index] = face.nodes_[0];
+                        break;
+                    }
+                    if (nodes[face.nodes_[1]] == new_node) {
+                        found_node = true;
+                        new_nodes[side_index] = face.nodes_[1];
+                        break;
+                    }
+                }
+
+                // Here we check if another element would create the same node, and yield if its index is smaller
+                if (!found_node) {
+                    for (size_t face_index = 0; face_index < element.faces_[side_index].size(); ++face_index) {
+                        const SEM::Entities::Face2D_t& face = faces[element.faces_[side_index][face_index]];
+                        const int face_side = face.elements_[0] == i;
+                        const size_t neighbour_element_index = face.elements_[face_side];
+                        const SEM::Entities::Element2D_t& neighbour = elements[neighbour_element_index];
+                        
+                        if (neighbour.refine_ * ((neighbour.p_sigma_ + neighbour.u_sigma_ + neighbour.v_sigma_)/3 < static_cast<deviceFloat>(1)) * (neighbour.split_level_ < max_split_level)) {
+                            const std::array<Vec2<deviceFloat>, 2> neighbour_nodes = {nodes[neighbour.nodes_[face.elements_side_[face_side]]], (face.elements_side_[face_side] < neighbour.faces_.size() - 1) ? nodes[neighbour.nodes_[face.elements_side_[face_side] + 1]] : nodes[neighbour.nodes_[0]]};
+                            const Vec2<deviceFloat> neighbour_new_node = (neighbour_nodes[0] + neighbour_nodes[1])/2;
+
+                            if (new_node.almost_equal(neighbour_new_node) && neighbour_element_index < i) {
+                                found_node = true;
+
+                                const int neighbour_block_id = neighbour_element_index/block_dim;
+                                const int neighbour_thread_id = neighbour_element_index%block_dim;
+
+                                size_t neighbour_new_node_offset = n_nodes + 1 + block_offsets[neighbour_block_id];
+                                for (size_t neighbour_side_index = 0; neighbour_side_index < face.elements_side_[face_side]; ++neighbour_side_index) {
+                                    neighbour_new_node_offset += neighbour.additional_nodes_[neighbour_side_index];
+                                }
+
+                                for (size_t j = neighbour_element_index - neighbour_thread_id; j < neighbour_element_index; ++j) {
+                                    if (elements[j].refine_ && (elements[j].p_sigma_ + elements[j].u_sigma_ + elements[j].v_sigma_)/3 < static_cast<deviceFloat>(1) && elements[j].split_level_ < max_split_level) {
+                                        ++neighbour_new_node_offset;
+                                        for (size_t side_index = 0; side_index < elements[j].faces_.size(); ++side_index) {
+                                            neighbour_new_node_offset += elements[j].additional_nodes_[side_index];
+                                        }
+                                    }
+                                }
+
+
+                                new_nodes[side_index] = neighbour_new_node_offset;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (!found_node) {
+                    new_nodes[side_index] = node_index + new_node_index;
+                    nodes[new_nodes[side_index]] = new_node;
+                    ++new_node_index;
+                }
+            }
+
+            new_center_node /= element.faces_.size();
+            nodes[node_index] = new_center_node;
+
+            // CHECK add order
+            // CHECK this won't work with anything other than quadrilaterals
+            const std::array<std::array<Vec2<deviceFloat>, 4>, 4> new_elements_nodes {std::array<Vec2<deviceFloat>, 4>{nodes[element.nodes_[0]], nodes[new_nodes[0]], nodes[node_index], nodes[new_nodes[3]]},
+                                                                                      std::array<Vec2<deviceFloat>, 4>{nodes[new_nodes[0]], nodes[element.nodes_[1]], nodes[new_nodes[1]], nodes[node_index]},
+                                                                                      std::array<Vec2<deviceFloat>, 4>{nodes[node_index], nodes[new_nodes[1]], nodes[element.nodes_[2]], nodes[new_nodes[2]]},
+                                                                                      std::array<Vec2<deviceFloat>, 4>{nodes[new_nodes[3]], nodes[node_index], nodes[new_nodes[2]], nodes[element.nodes_[3]]}};
 
 
 

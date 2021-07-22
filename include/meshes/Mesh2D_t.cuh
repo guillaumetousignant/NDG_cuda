@@ -222,7 +222,7 @@ namespace SEM { namespace Meshes {
     auto p_adapt(size_t n_elements, SEM::Entities::Element2D_t* elements, int N_max, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void;
     
     __global__
-    auto hp_adapt(size_t n_elements, size_t n_nodes, SEM::Entities::Element2D_t* elements, SEM::Entities::Element2D_t* new_elements, const size_t* block_offsets, const size_t* nodes_block_offsets, int max_split_level, int N_max, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void;
+    auto hp_adapt(size_t n_elements, size_t n_nodes, SEM::Entities::Element2D_t* elements, SEM::Entities::Element2D_t* new_elements, const SEM::Entities::Face2D_t* faces, const size_t* block_offsets, const size_t* nodes_block_offsets, int max_split_level, int N_max, SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void;
 
     __global__
     auto adjust_boundaries(size_t N_boundaries, SEM::Entities::Element2D_t* elements, const size_t* boundaries, const SEM::Entities::Face2D_t* faces) -> void;
@@ -285,7 +285,7 @@ namespace SEM { namespace Meshes {
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>
     __global__ 
-    auto reduce_nodes_2D(size_t n_elements, int max_split_level, const SEM::Entities::Element2D_t* elements, const SEM::Entities::Face2D_t* faces, const SEM::Entities::Vec2<deviceFloat>* nodes, size_t* g_odata) -> void {
+    auto reduce_nodes_2D(size_t n_elements, int max_split_level, SEM::Entities::Element2D_t* elements, const SEM::Entities::Face2D_t* faces, const SEM::Entities::Vec2<deviceFloat>* nodes, size_t* g_odata) -> void {
         __shared__ size_t sdata[(blockSize >= 64) ? blockSize : blockSize + blockSize/2]; // Because within a warp there is no branching and this is read up until blockSize + blockSize/2
         unsigned int tid = threadIdx.x;
         size_t i = blockIdx.x*(blockSize*2) + tid;
@@ -293,15 +293,15 @@ namespace SEM { namespace Meshes {
         sdata[tid] = 0;
 
         while (i < n_elements) {
-            const SEM::Entities::Element2D_t& element = elements[i];
-            element.n_additional_nodes_ = 0;
+            SEM::Entities::Element2D_t& element = elements[i];
+            element.additional_nodes_ = {false, false, false, false};
             if (element.refine_ * ((element.p_sigma_ + element.u_sigma_ + element.v_sigma_)/3 < static_cast<deviceFloat>(1)) * (element.split_level_ < max_split_level)) {
                 // This is the middle node, always needs to be created
                 ++sdata[tid];
                 ++element.n_additional_nodes_;
                 for (size_t side_index = 0; side_index < element.faces_.size(); ++side_index) {
-                    const std::array<Vec2<deviceFloat>, 2> side_nodes = {nodes[element.nodes_[side_index]], (side_index < element.faces_.size() - 1) ? nodes[element.nodes_[side_index + 1]] : nodes[element.nodes_[0]]};
-                    const Vec2<deviceFloat> new_node = (side_nodes[0] + side_nodes[1])/2;
+                    const std::array<SEM::Entities::Vec2<deviceFloat>, 2> side_nodes = {nodes[element.nodes_[side_index]], (side_index < element.faces_.size() - 1) ? nodes[element.nodes_[side_index + 1]] : nodes[element.nodes_[0]]};
+                    const SEM::Entities::Vec2<deviceFloat> new_node = (side_nodes[0] + side_nodes[1])/2;
 
                     // Here we check if the new node already exists
                     bool found_node = false;
@@ -321,8 +321,8 @@ namespace SEM { namespace Meshes {
                             const SEM::Entities::Element2D_t& neighbour = elements[face.elements_[face_side]];
                             
                             if (neighbour.refine_ * ((neighbour.p_sigma_ + neighbour.u_sigma_ + neighbour.v_sigma_)/3 < static_cast<deviceFloat>(1)) * (neighbour.split_level_ < max_split_level)) {
-                                const std::array<Vec2<deviceFloat>, 2> neighbour_nodes = {nodes[neighbour.nodes_[face.elements_side_[face_side]]], (face.elements_side_[face_side] < neighbour.faces_.size() - 1) ? nodes[neighbour.nodes_[face.elements_side_[face_side] + 1]] : nodes[neighbour.nodes_[0]]};
-                                const Vec2<deviceFloat> neighbour_new_node = (neighbour_nodes[0] + neighbour_nodes[1])/2;
+                                const std::array<SEM::Entities::Vec2<deviceFloat>, 2> neighbour_nodes = {nodes[neighbour.nodes_[face.elements_side_[face_side]]], (face.elements_side_[face_side] < neighbour.faces_.size() - 1) ? nodes[neighbour.nodes_[face.elements_side_[face_side] + 1]] : nodes[neighbour.nodes_[0]]};
+                                const SEM::Entities::Vec2<deviceFloat> neighbour_new_node = (neighbour_nodes[0] + neighbour_nodes[1])/2;
 
                                 if (new_node.almost_equal(neighbour_new_node) && face.elements_[face_side] < i) {
                                     found_node = true;
@@ -340,15 +340,15 @@ namespace SEM { namespace Meshes {
             }
 
             if (i+blockSize < n_elements) {
-                const SEM::Entities::Element2D_t& element = elements[i+blockSize];
-                element.n_additional_nodes_ = 0;
+                SEM::Entities::Element2D_t& element = elements[i+blockSize];
+                element.additional_nodes_ = {false, false, false, false};
                 if (element.refine_ * ((element.p_sigma_ + element.u_sigma_ + element.v_sigma_)/3 < static_cast<deviceFloat>(1)) * (element.split_level_ < max_split_level)) {
                     // This is the middle node, always needs to be created
                     ++sdata[tid];
                     ++element.n_additional_nodes_;
                     for (size_t side_index = 0; side_index < element.faces_.size(); ++side_index) {
-                        const std::array<Vec2<deviceFloat>, 2> side_nodes = {nodes[element.nodes_[side_index]], (side_index < element.faces_.size() - 1) ? nodes[element.nodes_[side_index + 1]] : nodes[element.nodes_[0]]};
-                        const Vec2<deviceFloat> new_node = (side_nodes[0] + side_nodes[1])/2;
+                        const std::array<SEM::Entities::Vec2<deviceFloat>, 2> side_nodes = {nodes[element.nodes_[side_index]], (side_index < element.faces_.size() - 1) ? nodes[element.nodes_[side_index + 1]] : nodes[element.nodes_[0]]};
+                        const SEM::Entities::Vec2<deviceFloat> new_node = (side_nodes[0] + side_nodes[1])/2;
     
                         // Here we check if the new node already exists
                         bool found_node = false;
@@ -367,8 +367,8 @@ namespace SEM { namespace Meshes {
                                 const SEM::Entities::Element2D_t& neighbour = elements[face.elements_[face_side]];
                                 
                                 if (neighbour.refine_ * ((neighbour.p_sigma_ + neighbour.u_sigma_ + neighbour.v_sigma_)/3 < static_cast<deviceFloat>(1)) * (neighbour.split_level_ < max_split_level)) {
-                                    const std::array<Vec2<deviceFloat>, 2> neighbour_nodes = {nodes[neighbour.nodes_[face.elements_side_[face_side]]], (face.elements_side_[face_side] < neighbour.faces_.size() - 1) ? nodes[neighbour.nodes_[face.elements_side_[face_side] + 1]] : nodes[neighbour.nodes_[0]]};
-                                    const Vec2<deviceFloat> neighbour_new_node = (neighbour_nodes[0] + neighbour_nodes[1])/2;
+                                    const std::array<SEM::Entities::Vec2<deviceFloat>, 2> neighbour_nodes = {nodes[neighbour.nodes_[face.elements_side_[face_side]]], (face.elements_side_[face_side] < neighbour.faces_.size() - 1) ? nodes[neighbour.nodes_[face.elements_side_[face_side] + 1]] : nodes[neighbour.nodes_[0]]};
+                                    const SEM::Entities::Vec2<deviceFloat> neighbour_new_node = (neighbour_nodes[0] + neighbour_nodes[1])/2;
     
                                     if (new_node.almost_equal(neighbour_new_node) && face.elements_[face_side] < i+blockSize) {
                                         found_node = true;
