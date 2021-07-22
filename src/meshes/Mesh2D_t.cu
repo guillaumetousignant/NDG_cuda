@@ -705,6 +705,8 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     device_delta_t_array_ = device_vector<deviceFloat>(elements_numBlocks_, stream_);
     host_refine_array_ = std::vector<size_t>(elements_numBlocks_);
     device_refine_array_ = device_vector<size_t>(elements_numBlocks_, stream_);
+    host_nodes_refine_array_ = std::vector<size_t>(elements_numBlocks_);
+    device_nodes_refine_array_ = device_vector<size_t>(elements_numBlocks_, stream_);
 
     allocate_element_storage<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data());
     allocate_boundary_storage<<<ghosts_numBlocks_, boundaries_blockSize_, 0, stream_>>>(N_elements_, elements_.size(), elements_.data());
@@ -1160,10 +1162,24 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
         return;
     }
 
+    SEM::Meshes::reduce_nodes_2D<elements_blockSize_/2><<<elements_numBlocks_, elements_blockSize_/2, 0, stream_>>>(N_elements_, max_split_level_, elements_.data(), faces_.data(), nodes_.data(), device_nodes_refine_array_.data());
+    device_nodes_refine_array_.copy_to(host_nodes_refine_array_, stream_);
+    cudaStreamSynchronize(stream_);
+    
+    size_t n_additional_nodes = 0;
+    for (int i = 0; i < elements_numBlocks_; ++i) {
+        host_nodes_refine_array_[i] = n_additional_nodes; // Current block offset
+        n_additional_nodes += host_nodes_refine_array_[i];
+    }
+
+    device_nodes_refine_array_.copy_from(host_nodes_refine_array_, stream_);
     device_refine_array_.copy_from(host_refine_array_, stream_);
 
+    device_vector<Vec2<deviceFloat>> new_nodes(nodes_.size() + n_additional_nodes, stream_);
+    cudaMemcpyAsync(new_nodes.data(), nodes_.data(), nodes_.size() * sizeof(Vec2<deviceFloat>), cudaMemcpyDeviceToDevice, stream_); // Apparently slower than using a kernel
+    
     device_vector<SEM::Entities::Element2D_t> new_elements(elements_.size() + 3 * splitting_elements, stream_);
-    SEM::Meshes::hp_adapt<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data(), new_elements.data(), device_refine_array_.data(), max_split_level_, N_max, nodes_.data(), polynomial_nodes.data(), barycentric_weights.data());
+    SEM::Meshes::hp_adapt<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data(), new_elements.data(), device_refine_array_.data(), device_nodes_refine_array_.data(), max_split_level_, N_max, new_nodes.data(), polynomial_nodes.data(), barycentric_weights.data());
 
     if (!wall_boundaries_.empty()) {
         SEM::Meshes::rebuild_boundaries<<<wall_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(wall_boundaries_.size(), elements_.data(), elements_.data(), wall_boundaries_.data(), faces_.data());
@@ -1201,7 +1217,7 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
     }
 
     elements_ = std::move(new_elements);
-
+    nodes_ = std::move(new_nodes);
 
 
 
@@ -2242,7 +2258,7 @@ auto SEM::Meshes::p_adapt(size_t N_elements, Element2D_t* elements, int N_max, c
 }
 
 __global__
-auto SEM::Meshes::hp_adapt(size_t N_elements, Element2D_t* elements, Element2D_t* new_elements, const size_t* block_offsets, int max_split_level, int N_max, const Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void {
+auto SEM::Meshes::hp_adapt(size_t N_elements, Element2D_t* elements, Element2D_t* new_elements, const size_t* block_offsets, const size_t* nodes_block_offsets, int max_split_level, int N_max, const Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     const int thread_id = threadIdx.x;
@@ -2256,6 +2272,9 @@ auto SEM::Meshes::hp_adapt(size_t N_elements, Element2D_t* elements, Element2D_t
 
         // h refinement
         if (elements[i].refine_ && (elements[i].p_sigma_ + elements[i].u_sigma_ + elements[i].v_sigma_)/3 < static_cast<deviceFloat>(1) && elements[i].split_level_ < max_split_level) {
+            
+            
+            
             new_elements[element_index] = std::move(elements[i]); // REMOVE
 
 
