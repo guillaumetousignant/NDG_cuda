@@ -294,9 +294,11 @@ namespace SEM { namespace Meshes {
 
         while (i < n_elements) {
             const SEM::Entities::Element2D_t& element = elements[i];
+            element.n_additional_nodes_ = 0;
             if (element.refine_ * ((element.p_sigma_ + element.u_sigma_ + element.v_sigma_)/3 < static_cast<deviceFloat>(1)) * (element.split_level_ < max_split_level)) {
                 // This is the middle node, always needs to be created
-                sdata[tid] += 1;
+                ++sdata[tid];
+                ++element.n_additional_nodes_;
                 for (size_t side_index = 0; side_index < element.faces_.size(); ++side_index) {
                     const std::array<Vec2<deviceFloat>, 2> side_nodes = {nodes[element.nodes_[side_index]], (side_index < element.faces_.size() - 1) ? nodes[element.nodes_[side_index + 1]] : nodes[element.nodes_[0]]};
                     const Vec2<deviceFloat> new_node = (side_nodes[0] + side_nodes[1])/2;
@@ -311,6 +313,7 @@ namespace SEM { namespace Meshes {
                         }
                     }
 
+                    // Here we check if another element would create the same node, and yield if its index is smaller
                     if (!found_node) {
                         for (size_t face_index = 0; face_index < element.faces_[side_index].size(); ++face_index) {
                             const SEM::Entities::Face2D_t& face = faces[element.faces_[side_index][face_index]];
@@ -330,16 +333,19 @@ namespace SEM { namespace Meshes {
                     }
 
                     if (!found_node) {
-                        sdata[tid] += 1;
+                        ++sdata[tid];
+                        ++element.n_additional_nodes_;
                     }
                 }
             }
 
             if (i+blockSize < n_elements) {
                 const SEM::Entities::Element2D_t& element = elements[i+blockSize];
+                element.n_additional_nodes_ = 0;
                 if (element.refine_ * ((element.p_sigma_ + element.u_sigma_ + element.v_sigma_)/3 < static_cast<deviceFloat>(1)) * (element.split_level_ < max_split_level)) {
                     // This is the middle node, always needs to be created
-                    sdata[tid] += 1;
+                    ++sdata[tid];
+                    ++element.n_additional_nodes_;
                     for (size_t side_index = 0; side_index < element.faces_.size(); ++side_index) {
                         const std::array<Vec2<deviceFloat>, 2> side_nodes = {nodes[element.nodes_[side_index]], (side_index < element.faces_.size() - 1) ? nodes[element.nodes_[side_index + 1]] : nodes[element.nodes_[0]]};
                         const Vec2<deviceFloat> new_node = (side_nodes[0] + side_nodes[1])/2;
@@ -373,7 +379,8 @@ namespace SEM { namespace Meshes {
                         }
     
                         if (!found_node) {
-                            sdata[tid] += 1;
+                            ++sdata[tid];
+                            ++element.n_additional_nodes_;
                         }
                     }
                 }

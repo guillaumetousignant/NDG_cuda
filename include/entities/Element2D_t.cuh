@@ -64,6 +64,7 @@ namespace SEM { namespace Entities {
             deviceFloat u_sigma_;
             deviceFloat v_sigma_;
             int split_level_;
+            int n_additional_nodes_;
 
             // Algorithm 61
             __device__

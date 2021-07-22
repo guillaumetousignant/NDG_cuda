@@ -53,7 +53,8 @@ SEM::Entities::Element2D_t::Element2D_t(int N, int split_level, const std::array
         p_sigma_{0.0},
         u_sigma_{0.0},
         v_sigma_{0.0},
-        split_level_{split_level} {}
+        split_level_{split_level},
+        n_additional_nodes_{0} {}
 
 __host__ __device__
 SEM::Entities::Element2D_t::Element2D_t() :
@@ -74,7 +75,8 @@ SEM::Entities::Element2D_t::Element2D_t() :
         p_sigma_{0.0},
         u_sigma_{0.0},
         v_sigma_{0.0},
-        split_level_{0} {};
+        split_level_{0},
+        n_additional_nodes_{0} {};
 
 // Algorithm 61
 __device__
