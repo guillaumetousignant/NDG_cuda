@@ -1183,7 +1183,7 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
     device_vector<Face2D_t> new_faces(faces_.size() + n_additional_faces, stream_);
 
     device_vector<Element2D_t> new_elements(elements_.size() + 3 * splitting_elements, stream_);
-    SEM::Meshes::hp_adapt<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, faces_.size(), nodes_.size(), elements_.data(), new_elements.data(), faces_.data(), device_refine_array_.data(), device_nodes_refine_array_.data(), max_split_level_, N_max, new_nodes.data(), polynomial_nodes.data(), barycentric_weights.data());
+    SEM::Meshes::hp_adapt<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, faces_.size(), nodes_.size(), elements_.data(), new_elements.data(), faces_.data(), new_faces.data(), device_refine_array_.data(), device_nodes_refine_array_.data(), max_split_level_, N_max, new_nodes.data(), polynomial_nodes.data(), barycentric_weights.data());
 
     if (!wall_boundaries_.empty()) {
         SEM::Meshes::rebuild_boundaries<<<wall_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(wall_boundaries_.size(), elements_.data(), elements_.data(), wall_boundaries_.data(), faces_.data());
@@ -1221,6 +1221,7 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
     }
 
     elements_ = std::move(new_elements);
+    faces_ = std::move(new_faces);
     nodes_ = std::move(new_nodes);
 
 
@@ -2262,7 +2263,7 @@ auto SEM::Meshes::p_adapt(size_t n_elements, Element2D_t* elements, int N_max, c
 }
 
 __global__
-auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, Element2D_t* elements, Element2D_t* new_elements, const Face2D_t* faces, const size_t* block_offsets, const size_t* nodes_block_offsets, int max_split_level, int N_max, Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void {
+auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, Element2D_t* elements, Element2D_t* new_elements, const Face2D_t* faces, Face2D_t* new_faces, const size_t* block_offsets, const size_t* nodes_block_offsets, int max_split_level, int N_max, Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     const int thread_id = threadIdx.x;
