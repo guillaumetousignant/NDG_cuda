@@ -618,16 +618,28 @@ namespace SEM { namespace Entities {
              * 
              * @return T& Const reference to the x component of the vector.
              */
-             __host__ __device__
-             constexpr auto x() const -> const T&;
+            __host__ __device__
+            constexpr auto x() const -> const T&;
              
              /**
               * @brief Returns a const reference to the y component of the vector
               * 
               * @return T& Const reference to the y component of the vector.
               */
-             __host__ __device__
-             constexpr auto y() const -> const T&;
+            __host__ __device__
+            constexpr auto y() const -> const T&;
+
+            /**
+             * @brief Tests approximate equality between two vectors.
+             *
+             * Tests equality to two significant digits.
+             * 
+             * @param other Vector used to test approximate equality.
+             * @return true All two components of the vectors are approximately equal.
+             * @return false At least one component of the vectors is not approximately equal.
+             */
+            __host__ __device__
+            constexpr auto almost_equal(const Vec2<T> &other) const -> bool;
     };
 }}
 
