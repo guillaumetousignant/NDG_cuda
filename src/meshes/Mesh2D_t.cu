@@ -1179,7 +1179,7 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
     cudaMemcpyAsync(new_nodes.data(), nodes_.data(), nodes_.size() * sizeof(Vec2<deviceFloat>), cudaMemcpyDeviceToDevice, stream_); // Apparently slower than using a kernel
     
     device_vector<SEM::Entities::Element2D_t> new_elements(elements_.size() + 3 * splitting_elements, stream_);
-    SEM::Meshes::hp_adapt<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, nodes_.size(), elements_.data(), new_elements.data(), faces_.data(), device_refine_array_.data(), device_nodes_refine_array_.data(), max_split_level_, N_max, new_nodes.data(), polynomial_nodes.data(), barycentric_weights.data());
+    SEM::Meshes::hp_adapt<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, faces_.size(), nodes_.size(), elements_.data(), new_elements.data(), faces_.data(), device_refine_array_.data(), device_nodes_refine_array_.data(), max_split_level_, N_max, new_nodes.data(), polynomial_nodes.data(), barycentric_weights.data());
 
     if (!wall_boundaries_.empty()) {
         SEM::Meshes::rebuild_boundaries<<<wall_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(wall_boundaries_.size(), elements_.data(), elements_.data(), wall_boundaries_.data(), faces_.data());
@@ -2258,7 +2258,7 @@ auto SEM::Meshes::p_adapt(size_t n_elements, Element2D_t* elements, int N_max, c
 }
 
 __global__
-auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_nodes, Element2D_t* elements, Element2D_t* new_elements, const Face2D_t* faces, const size_t* block_offsets, const size_t* nodes_block_offsets, int max_split_level, int N_max, Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void {
+auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, Element2D_t* elements, Element2D_t* new_elements, const Face2D_t* faces, const size_t* block_offsets, const size_t* nodes_block_offsets, int max_split_level, int N_max, Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     const int thread_id = threadIdx.x;
@@ -2271,10 +2271,18 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_nodes, Element2D_t* eleme
         }
 
         // h refinement
-        if (elements[i].refine_ && (elements[i].p_sigma_ + elements[i].u_sigma_ + elements[i].v_sigma_)/3 < static_cast<deviceFloat>(1) && elements[i].split_level_ < max_split_level) {
-            size_t node_index = n_nodes + block_offsets[block_id];
+        if (element.refine_ && (element.p_sigma_ + element.u_sigma_ + element.v_sigma_)/3 < static_cast<deviceFloat>(1) && element.split_level_ < max_split_level) {
+            size_t node_index = n_nodes + nodes_block_offsets[block_id];
+            size_t face_index = n_faces + nodes_block_offsets[block_id] + block_offsets[block_id]; // Wow this just happens to work, we need to add 3 faces per splitting element to the number of additional nodes, and the element offset is 3 * n_splitting
             for (size_t j = i - thread_id; j < i; ++j) {
-                node_index += elements[j].n_additional_nodes_;
+                if (elements[j].refine_ && (elements[j].p_sigma_ + elements[j].u_sigma_ + elements[j].v_sigma_)/3 < static_cast<deviceFloat>(1) && elements[j].split_level_ < max_split_level) {
+                    ++node_index;
+                    face_index += 4;
+                    for (size_t side_index = 0; side_index < elements[j].faces_.size(); ++side_index) {
+                        node_index += elements[j].additional_nodes_[side_index];
+                        face_index += elements[j].additional_nodes_[side_index];
+                    }
+                }
             }
             
             Vec2<deviceFloat> new_center_node {0};
