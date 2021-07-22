@@ -2366,6 +2366,11 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
             new_center_node /= element.faces_.size();
             nodes[new_node_index] = new_center_node;
 
+            new_faces[new_face_index]     = Face2D_t{element.N_, {new_nodes[0], new_node_index}, {element_index,     element_index + 1}, {0, 2}};
+            new_faces[new_face_index + 1] = Face2D_t{element.N_, {new_nodes[1], new_node_index}, {element_index + 1, element_index + 2}, {1, 3}};
+            new_faces[new_face_index + 2] = Face2D_t{element.N_, {new_nodes[2], new_node_index}, {element_index + 2, element_index + 3}, {2, 0}};
+            new_faces[new_face_index + 3] = Face2D_t{element.N_, {new_nodes[3], new_node_index}, {element_index + 3, element_index},     {3, 1}};
+
             // CHECK add order
             // CHECK this won't work with anything other than quadrilaterals
             const std::array<std::array<Vec2<deviceFloat>, 4>, 4> new_elements_nodes {std::array<Vec2<deviceFloat>, 4>{nodes[element.nodes_[0]], nodes[new_nodes[0]], nodes[new_node_index], nodes[new_nodes[3]]},
