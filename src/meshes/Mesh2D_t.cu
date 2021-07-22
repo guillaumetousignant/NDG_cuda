@@ -2399,10 +2399,10 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
             new_elements[element_index + 3].compute_element_geometry(new_elements_nodes[3], polynomial_nodes);  
         }
         // p refinement
-        else if (elements[i].refine_ && (elements[i].p_sigma_ + elements[i].u_sigma_ + elements[i].v_sigma_)/3 >= static_cast<deviceFloat>(1) && elements[i].N_ + 2 <= N_max) {
-            new_elements[element_index] = Element2D_t{elements[i].N_ + 2, elements[i].split_level_, elements[i].faces_, elements[i].nodes_};
+        else if (element.refine_ && (element.p_sigma_ + element.u_sigma_ + element.v_sigma_)/3 >= static_cast<deviceFloat>(1) && element.N_ + 2 <= N_max) {
+            new_elements[element_index] = Element2D_t{element.N_ + 2, element.split_level_, element.faces_, element.nodes_};
 
-            new_elements[element_index].interpolate_from(elements[i], polynomial_nodes, barycentric_weights);
+            new_elements[element_index].interpolate_from(element, polynomial_nodes, barycentric_weights);
 
             const std::array<Vec2<deviceFloat>, 4> points {nodes[new_elements[element_index].nodes_[0]],
                                                            nodes[new_elements[element_index].nodes_[1]],
