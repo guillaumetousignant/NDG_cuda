@@ -2270,14 +2270,12 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_nodes, Element2D_t* eleme
             element_index += 3 * elements[j].refine_ * ((elements[i].p_sigma_ + elements[i].u_sigma_ + elements[i].v_sigma_)/3 < static_cast<deviceFloat>(1)) * (elements[i].split_level_ < max_split_level);
         }
 
-        size_t node_index = n_nodes + block_offsets[block_id];
-        for (size_t j = i - thread_id; j < i; ++j) {
-            node_index += elements[j].n_additional_nodes_;
-        }
-
         // h refinement
         if (elements[i].refine_ && (elements[i].p_sigma_ + elements[i].u_sigma_ + elements[i].v_sigma_)/3 < static_cast<deviceFloat>(1) && elements[i].split_level_ < max_split_level) {
-            
+            size_t node_index = n_nodes + block_offsets[block_id];
+            for (size_t j = i - thread_id; j < i; ++j) {
+                node_index += elements[j].n_additional_nodes_;
+            }
             
             
             new_elements[element_index] = std::move(elements[i]); // REMOVE
