@@ -22,13 +22,15 @@ using SEM::Entities::Face2D_t;
 
 constexpr int CGIO_MAX_NAME_LENGTH = 33; // Includes the null terminator
 
-SEM::Meshes::Mesh2D_t::Mesh2D_t(std::filesystem::path filename, int initial_N, int maximum_N, size_t N_interpolation_points, int max_split_level, int adaptivity_interval, const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes, const cudaStream_t &stream) :       
-        initial_N_(initial_N),  
-        maximum_N_(maximum_N),
-        N_interpolation_points_(N_interpolation_points),
-        max_split_level_(max_split_level),
-        adaptivity_interval_(adaptivity_interval),     
-        stream_(stream) {
+SEM::Meshes::Mesh2D_t::Mesh2D_t(std::filesystem::path filename, int initial_N, int maximum_N, size_t N_interpolation_points, int max_split_level, int adaptivity_interval, deviceFloat tolerance_min, deviceFloat tolerance_max, const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes, const cudaStream_t &stream) :       
+        initial_N_{initial_N},  
+        maximum_N_{maximum_N},
+        N_interpolation_points_{N_interpolation_points},
+        max_split_level_{max_split_level},
+        adaptivity_interval_{adaptivity_interval},
+        tolerance_min_{tolerance_min},
+        tolerance_max_{tolerance_max},
+        stream_{stream} {
 
     std::string extension = filename.extension().string();
     SEM::to_lower(extension);
@@ -1286,6 +1288,14 @@ auto SEM::Meshes::Mesh2D_t::project_to_elements(const device_vector<deviceFloat>
     SEM::Meshes::project_to_elements<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, faces_.data(), elements_.data(), polynomial_nodes.data(), weights.data(), barycentric_weights.data());
 }
 
+template auto SEM::Meshes::Mesh2D_t::estimate_error<SEM::Polynomials::ChebyshevPolynomial_t>(const device_vector<deviceFloat>& polynomial_nodes, const device_vector<deviceFloat>& weights) -> void;
+template auto SEM::Meshes::Mesh2D_t::estimate_error<SEM::Polynomials::LegendrePolynomial_t>(const device_vector<deviceFloat>& polynomial_nodes, const device_vector<deviceFloat>& weights) -> void;
+
+template<typename Polynomial>
+auto SEM::Meshes::Mesh2D_t::estimate_error<Polynomial>(const device_vector<deviceFloat>& polynomial_nodes, const device_vector<deviceFloat>& weights) -> void {
+    SEM::Meshes::estimate_error<Polynomial><<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_.data(), tolerance_min_, tolerance_max_, polynomial_nodes.data(), weights.data());
+}
+
 __global__
 auto SEM::Meshes::allocate_element_storage(size_t n_elements, Element2D_t* elements) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
@@ -1460,17 +1470,17 @@ auto SEM::Meshes::get_complete_solution(size_t N_elements, size_t N_interpolatio
     }
 }
 
-template __global__ auto SEM::Meshes::estimate_error<SEM::Polynomials::ChebyshevPolynomial_t>(size_t N_elements, Element2D_t* elements, const deviceFloat* polynomial_nodes, const deviceFloat* weights) -> void;
-template __global__ auto SEM::Meshes::estimate_error<SEM::Polynomials::LegendrePolynomial_t>(size_t N_elements, Element2D_t* elements, const deviceFloat* polynomial_nodes, const deviceFloat* weights) -> void;
+template __global__ auto SEM::Meshes::estimate_error<SEM::Polynomials::ChebyshevPolynomial_t>(size_t N_elements, Element2D_t* elements, deviceFloat tolerance_min, deviceFloat tolerance_max, const deviceFloat* polynomial_nodes, const deviceFloat* weights) -> void;
+template __global__ auto SEM::Meshes::estimate_error<SEM::Polynomials::LegendrePolynomial_t>(size_t N_elements, Element2D_t* elements, deviceFloat tolerance_min, deviceFloat tolerance_max, const deviceFloat* polynomial_nodes, const deviceFloat* weights) -> void;
 
 template<typename Polynomial>
 __global__
-auto SEM::Meshes::estimate_error<Polynomial>(size_t N_elements, Element2D_t* elements, const deviceFloat* polynomial_nodes, const deviceFloat* weights) -> void {
+auto SEM::Meshes::estimate_error<Polynomial>(size_t N_elements, Element2D_t* elements, deviceFloat tolerance_min, deviceFloat tolerance_max, const deviceFloat* polynomial_nodes, const deviceFloat* weights) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
     for (size_t element_index = index; element_index < N_elements; element_index += stride) {
-        elements[element_index].estimate_error<Polynomial>(polynomial_nodes, weights);
+        elements[element_index].estimate_error<Polynomial>(tolerance_min, tolerance_max, polynomial_nodes, weights);
     }
 }
 

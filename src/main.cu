@@ -126,6 +126,8 @@ auto main(int argc, char* argv[]) -> int {
         std::cout << '\t' <<  "--n_t"                 <<  '\t' <<  "Number of times to output. Defaults to [11]" << std::endl;
         std::cout << '\t' <<  "--t_interval"          <<  '\t' <<  "Time interval between output. Overrides n_t if set." << std::endl;
         std::cout << '\t' <<  "--memory"              <<  '\t' <<  "Fraction of the GPu memory requested, from 0 to 1. Defaults to [0.5]" << std::endl;
+        std::cout << '\t' <<  "--tolerance_min"       <<  '\t' <<  "Estimated error above which elements will refine. Defaults to [1e-6]" << std::endl;
+        std::cout << '\t' <<  "--tolerance_max"        <<  '\t' <<  "Estimated error below which elements will coarsen. Defaults to [1e-14]" << std::endl;
         exit(0);
     }
 
@@ -142,7 +144,9 @@ auto main(int argc, char* argv[]) -> int {
     const deviceFloat CFL = input_parser.getCmdOptionOr("--cfl", static_cast<deviceFloat>(0.5));
     const deviceFloat viscosity = input_parser.getCmdOptionOr("--viscosity", static_cast<deviceFloat>(0.1/pi));
     const std::vector<deviceFloat> output_times = get_output_times(input_parser);
-    const deviceFloat memory_fraction = input_parser.getCmdOptionOr("--memory", 0.5);
+    const deviceFloat memory_fraction = input_parser.getCmdOptionOr("--memory", static_cast<deviceFloat>(0.5));
+    const deviceFloat tolerance_min = input_parser.getCmdOptionOr("--tolerance_min", static_cast<deviceFloat>(1e-6));
+    const deviceFloat tolerance_max = input_parser.getCmdOptionOr("--tolerance_max", static_cast<deviceFloat>(1e-14));
 
     if (N_initial > N_max) {
         std::cerr << "Error: Initial N (" << N_initial << ") is greater than maximum N (" << N_max << "). Exiting." << std::endl;
@@ -229,7 +233,7 @@ auto main(int argc, char* argv[]) -> int {
     auto t_start_init = std::chrono::high_resolution_clock::now();
 
     SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> NDG(N_max, N_interpolation_points, stream);
-    SEM::Meshes::Mesh2D_t mesh(mesh_file, N_initial, N_max, N_interpolation_points, max_splits, adaptivity_interval, NDG.nodes_, stream);
+    SEM::Meshes::Mesh2D_t mesh(mesh_file, N_initial, N_max, N_interpolation_points, max_splits, adaptivity_interval, tolerance_min, tolerance_max, NDG.nodes_, stream);
     SEM::Solvers::Solver2D_t solver(CFL, output_times, viscosity);
     SEM::Helpers::DataWriter_t data_writer(output_file);
     mesh.initial_conditions(NDG.nodes_);

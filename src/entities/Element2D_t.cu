@@ -125,12 +125,12 @@ auto SEM::Entities::Element2D_t::interpolate_q_to_boundaries(const deviceFloat* 
     printf("Warning, SEM::Entities::Element2D_t::interpolate_q_to_boundaries is not implemented.\n");
 }
 
-template __device__ auto SEM::Entities::Element2D_t::estimate_error<SEM::Polynomials::ChebyshevPolynomial_t>(const deviceFloat* polynomial_nodes, const deviceFloat* weights) -> void;
-template __device__ auto SEM::Entities::Element2D_t::estimate_error<SEM::Polynomials::LegendrePolynomial_t>(const deviceFloat* polynomial_nodes, const deviceFloat* weights) -> void;
+template __device__ auto SEM::Entities::Element2D_t::estimate_error<SEM::Polynomials::ChebyshevPolynomial_t>(deviceFloat tolerance_min, deviceFloat tolerance_max, const deviceFloat* polynomial_nodes, const deviceFloat* weights) -> void;
+template __device__ auto SEM::Entities::Element2D_t::estimate_error<SEM::Polynomials::LegendrePolynomial_t>(deviceFloat tolerance_min, deviceFloat tolerance_max, const deviceFloat* polynomial_nodes, const deviceFloat* weights) -> void;
 
 template<typename Polynomial>
 __device__
-auto SEM::Entities::Element2D_t::estimate_error<Polynomial>(const deviceFloat* polynomial_nodes, const deviceFloat* weights) -> void {
+auto SEM::Entities::Element2D_t::estimate_error<Polynomial>(deviceFloat tolerance_min, deviceFloat tolerance_max, const deviceFloat* polynomial_nodes, const deviceFloat* weights) -> void {
     const int offset_1D = N_ * (N_ + 1) /2;
     const int n_points_least_squares = min(N_ + 1, SEM::Constants::n_points_least_squares_max); // Number of points to use for thew least squares reduction, but don't go above N.
 
@@ -189,10 +189,10 @@ auto SEM::Entities::Element2D_t::estimate_error<Polynomial>(const deviceFloat* p
     p_error_ = std::sqrt(spectrum_[n_points_least_squares - 1] * spectrum_[n_points_least_squares - 1] // Why this part?
                          + C_p * C_p * 0.5 / sigma_p * std::exp(-2 * sigma_p * (N_ + 1)));
 
-    if(p_error_ > SEM::Constants::tolerance_min) {	// need refinement
+    if(p_error_ > tolerance_min) {	// need refinement
         refine_ = true;
     }
-    if(p_error_ > SEM::Constants::tolerance_max) {	// need coarsening
+    if(p_error_ > tolerance_max) {	// need coarsening
         coarsen_ = false;
     }
 
@@ -248,10 +248,10 @@ auto SEM::Entities::Element2D_t::estimate_error<Polynomial>(const deviceFloat* p
     u_error_ = std::sqrt(spectrum_[n_points_least_squares - 1] * spectrum_[n_points_least_squares - 1] // Why this part?
                          + C_u * C_u * 0.5 / sigma_u * std::exp(-2 * sigma_u * (N_ + 1)));
 
-    if(u_error_ > SEM::Constants::tolerance_min) {	// need refinement
+    if(u_error_ > tolerance_min) {	// need refinement
         refine_ = true;
     }
-    if(u_error_ > SEM::Constants::tolerance_max) {	// need coarsening
+    if(u_error_ > tolerance_max) {	// need coarsening
         coarsen_ = false;
     }
 
@@ -307,10 +307,10 @@ auto SEM::Entities::Element2D_t::estimate_error<Polynomial>(const deviceFloat* p
     v_error_ = std::sqrt(spectrum_[n_points_least_squares - 1] * spectrum_[n_points_least_squares - 1] // Why this part?
                          + C_v * C_v * 0.5 / sigma_v * std::exp(-2 * sigma_v * (N_ + 1)));
 
-    if(v_error_ > SEM::Constants::tolerance_min) {	// need refinement
+    if(v_error_ > tolerance_min) {	// need refinement
         refine_ = true;
     }
-    if(v_error_ > SEM::Constants::tolerance_max) {	// need coarsening
+    if(v_error_ > tolerance_max) {	// need coarsening
         coarsen_ = false;
     }
 }

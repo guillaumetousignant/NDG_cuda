@@ -21,7 +21,7 @@
 namespace SEM { namespace Meshes {
     class Mesh2D_t {
         public:
-            Mesh2D_t(std::filesystem::path filename, int initial_N, int maximum_N, size_t N_interpolation_points, int max_split_level, int adaptivity_interval, const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes, const cudaStream_t &stream);
+            Mesh2D_t(std::filesystem::path filename, int initial_N, int maximum_N, size_t N_interpolation_points, int max_split_level, int adaptivity_interval, deviceFloat tolerance_min, deviceFloat tolerance_max, const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes, const cudaStream_t &stream);
 
             // Geometry
             SEM::Entities::device_vector<SEM::Entities::Vec2<deviceFloat>> nodes_;
@@ -89,11 +89,15 @@ namespace SEM { namespace Meshes {
             size_t N_elements_global_;
             size_t N_elements_;
             size_t global_element_offset_;
+
+            // Parameters
             int initial_N_;
             int maximum_N_;
             size_t N_interpolation_points_;
             int max_split_level_;
             int adaptivity_interval_;
+            deviceFloat tolerance_min_;
+            deviceFloat tolerance_max_;
 
             // GPU transfer arrays
             SEM::Entities::device_vector<deviceFloat> device_delta_t_array_;
@@ -110,6 +114,10 @@ namespace SEM { namespace Meshes {
             auto interpolate_to_boundaries(const SEM::Entities::device_vector<deviceFloat>& lagrange_interpolant_left, const SEM::Entities::device_vector<deviceFloat>& lagrange_interpolant_right) -> void;
             auto project_to_faces(const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes, const SEM::Entities::device_vector<deviceFloat>& barycentric_weights) -> void;
             auto project_to_elements(const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes, const SEM::Entities::device_vector<deviceFloat>& weights, const SEM::Entities::device_vector<deviceFloat>& barycentric_weights) -> void;
+            
+            template<typename Polynomial>
+            auto estimate_error(const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes, const SEM::Entities::device_vector<deviceFloat>& weights) -> void;
+            
             auto print() const -> void;
             auto write_data(deviceFloat time, const SEM::Entities::device_vector<deviceFloat>& interpolation_matrices, const SEM::Helpers::DataWriter_t& data_writer) -> void;
             auto write_complete_data(deviceFloat time, const SEM::Entities::device_vector<deviceFloat>& interpolation_matrices, const SEM::Helpers::DataWriter_t& data_writer) -> void;
@@ -167,7 +175,7 @@ namespace SEM { namespace Meshes {
 
     template<typename Polynomial>
     __global__
-    auto estimate_error(size_t N_elements, SEM::Entities::Element2D_t* elements, const deviceFloat* polynomial_nodes, const deviceFloat* weights) -> void;
+    auto estimate_error(size_t N_elements, SEM::Entities::Element2D_t* elements, deviceFloat tolerance_min, deviceFloat tolerance_max, const deviceFloat* polynomial_nodes, const deviceFloat* weights) -> void;
 
     __global__
     auto interpolate_to_boundaries(size_t N_elements, SEM::Entities::Element2D_t* elements, const deviceFloat* lagrange_interpolant_minus, const deviceFloat* lagrange_interpolant_plus) -> void;
