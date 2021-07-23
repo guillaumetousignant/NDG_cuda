@@ -85,6 +85,11 @@ auto SEM::Entities::Face2D_t::compute_geometry(const SEM::Entities::Element2D_t*
 
     const SEM::Entities::Vec2<deviceFloat> delta = points[1] - points[0];
 
-    offset_ = {0.0, 0.0}; // CHECK change
+    const std::array<SEM::Entities::Vec2<deviceFloat>, 2> edge_delta {
+        points[0] - elements_nodes[0][0], 
+        points[1] - elements_nodes[1][0]
+    };
+
+    offset_ = {edge_delta[0].magnitude()/elements_delta[0].magnitude(), edge_delta[1].magnitude()/elements_delta[1].magnitude()};
     scale_ = {delta.magnitude()/elements_delta[0].magnitude(), delta.magnitude()/elements_delta[1].magnitude()};
 }
