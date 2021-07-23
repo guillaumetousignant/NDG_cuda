@@ -23,7 +23,7 @@ namespace SEM { namespace Entities {
 
             // Geometry
             deviceFloat delta_xy_min_;
-            Vec2<deviceFloat> center_;
+            SEM::Entities::Vec2<deviceFloat> center_;
             SEM::Entities::cuda_vector<deviceFloat> dxi_dx_;
             SEM::Entities::cuda_vector<deviceFloat> deta_dx_;
             SEM::Entities::cuda_vector<deviceFloat> dxi_dy_;
@@ -80,17 +80,17 @@ namespace SEM { namespace Entities {
 
             // This is used when the elements have different points
             __device__
-            auto interpolate_from(const std::array<Vec2<deviceFloat>, 4>& points, const std::array<Vec2<deviceFloat>, 4>& points_other, const Element2D_t& other, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void;
+            auto interpolate_from(const std::array<SEM::Entities::Vec2<deviceFloat>, 4>& points, const std::array<SEM::Entities::Vec2<deviceFloat>, 4>& points_other, const Element2D_t& other, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void;
 
             // This is used when the elements have the same points
             __device__
             auto interpolate_from(const Element2D_t& other, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void;
 
             __device__
-            auto interpolate_solution(size_t N_interpolation_points, const std::array<Vec2<deviceFloat>, 4>& points, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v) const -> void;
+            auto interpolate_solution(size_t N_interpolation_points, const std::array<SEM::Entities::Vec2<deviceFloat>, 4>& points, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v) const -> void;
 
             __device__
-            auto interpolate_complete_solution(size_t N_interpolation_points, const std::array<Vec2<deviceFloat>, 4>& points, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v, deviceFloat* dp_dt, deviceFloat* du_dt, deviceFloat* dv_dt) const -> void;
+            auto interpolate_complete_solution(size_t N_interpolation_points, const std::array<SEM::Entities::Vec2<deviceFloat>, 4>& points, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v, deviceFloat* dp_dt, deviceFloat* du_dt, deviceFloat* dv_dt) const -> void;
 
             __device__
             auto allocate_storage() -> void;
@@ -102,10 +102,10 @@ namespace SEM { namespace Entities {
             auto resize_boundary_storage(int N) -> void;
 
             __device__
-            auto compute_element_geometry(const std::array<Vec2<deviceFloat>, 4>& points, const deviceFloat* polynomial_nodes) -> void;
+            auto compute_geometry(const std::array<SEM::Entities::Vec2<deviceFloat>, 4>& points, const deviceFloat* polynomial_nodes) -> void;
 
             __device__
-            auto compute_boundary_geometry(const std::array<Vec2<deviceFloat>, 4>& points, const deviceFloat* polynomial_nodes) -> void;
+            auto compute_boundary_geometry(const std::array<SEM::Entities::Vec2<deviceFloat>, 4>& points, const deviceFloat* polynomial_nodes) -> void;
 
             // From cppreference.com
             __device__

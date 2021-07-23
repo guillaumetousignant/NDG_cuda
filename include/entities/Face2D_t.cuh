@@ -4,6 +4,7 @@
 #include "helpers/float_types.h"
 #include "entities/Vec2.cuh"
 #include "entities/cuda_vector.cuh"
+#include "entities/Element2D_t.cuh"
 #include <array>
 
 namespace SEM { namespace Entities {
@@ -42,13 +43,13 @@ namespace SEM { namespace Entities {
             std::array<size_t, 2> nodes_; /**< @brief Nodes making up the face. [first, second]*/
             std::array<size_t, 2> elements_; /**< @brief Elements connecting to the face. The left element has nodes in the same order as the face, the right one is reversed. [left, right]*/
             std::array<size_t, 2> elements_side_; /**< @brief Side of the elements the face connects to. [left, right]*/
-            std::array<deviceFloat, 2> offset_; /**< @brief Offset from the elements. 0 means the first node of the face coincides with the first node of the element side, 0.5 means it is in the middle, 1 means it coincides with the second node of the element side. [left, right]*/
-            std::array<deviceFloat, 2> scale_; /**< @brief Scaling from the elements. 1 is the same length as the element, 0.5 is half, etc. [left, right]*/
-
+            
             // Geometry
             SEM::Entities::Vec2<deviceFloat> normal_; /**< @brief Normal vector of the face. Points from the first to the second element. Normalised.*/
             SEM::Entities::Vec2<deviceFloat> tangent_; /**< @brief Tangent vector of the face. Points from the first to the second node. Normalised. */
             deviceFloat length_; /**< @brief Length of the face.*/
+            std::array<deviceFloat, 2> offset_; /**< @brief Offset from the elements. 0 means the first node of the face coincides with the first node of the element side, 0.5 means it is in the middle, 1 means it coincides with the second node of the element side. [left, right]*/
+            std::array<deviceFloat, 2> scale_; /**< @brief Scaling from the elements. 1 is the same length as the element, 0.5 is half, etc. [left, right]*/
 
             // Solution
             std::array<SEM::Entities::cuda_vector<deviceFloat>, 2> p_; /**< @brief Pressure projected from both elements. [left, right], both sized N + 1.*/
@@ -69,10 +70,20 @@ namespace SEM { namespace Entities {
 
             /**
              * @brief Changes the polynomial order of the face and creates new vectors with the new size..
-             * .
              */
-             __device__
-             auto resize_storage(int N) -> void;
+            __device__
+            auto resize_storage(int N) -> void;
+
+            /**
+             * @brief Computes the face's geometry from elements and nodes.
+             *
+             * Computes the face's normal, tangent, length, offset and scale, all from the first element to the second.
+             * 
+             * @param elements Array of elements, in which the face's elements are placed at their index.
+             * @param nodes Array of nodes, in which the face's nodes are placed at their index.
+             */
+            __device__
+            auto compute_geometry(const SEM::Entities::Element2D_t* elements, const SEM::Entities::Vec2<deviceFloat>* nodes) -> void;
     };
 }}
 

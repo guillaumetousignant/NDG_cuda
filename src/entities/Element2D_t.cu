@@ -689,7 +689,7 @@ auto SEM::Entities::Element2D_t::resize_boundary_storage(int N) -> void {
 }
 
 __device__
-auto SEM::Entities::Element2D_t::compute_element_geometry(const std::array<Vec2<deviceFloat>, 4>& points, const deviceFloat* polynomial_nodes) -> void {
+auto SEM::Entities::Element2D_t::compute_geometry(const std::array<Vec2<deviceFloat>, 4>& points, const deviceFloat* polynomial_nodes) -> void {
     const size_t offset_1D = N_ * (N_ + 1) /2;
 
     for (int i = 0; i <= N_; ++i) {

@@ -1347,7 +1347,7 @@ auto SEM::Meshes::compute_element_geometry(size_t n_elements, Element2D_t* eleme
                                                        nodes[elements[element_index].nodes_[1]],
                                                        nodes[elements[element_index].nodes_[2]],
                                                        nodes[elements[element_index].nodes_[3]]};
-        elements[element_index].compute_element_geometry(points, polynomial_nodes);  
+        elements[element_index].compute_geometry(points, polynomial_nodes);  
     }
 }
 
@@ -1393,26 +1393,7 @@ auto SEM::Meshes::compute_face_geometry(size_t n_faces, Face2D_t* faces, const E
     const int stride = blockDim.x * gridDim.x;
 
     for (size_t face_index = index; face_index < n_faces; face_index += stride) {
-        Face2D_t& face = faces[face_index];
-        face.tangent_ = nodes[face.nodes_[1]] - nodes[face.nodes_[0]]; 
-        face.length_ = face.tangent_.magnitude();
-        face.tangent_ /= face.length_; // CHECK should be normalized or not?
-        face.normal_ = Vec2<deviceFloat>(face.tangent_.y(), -face.tangent_.x());         
-
-        const Vec2<deviceFloat> center = (nodes[face.nodes_[0]] + nodes[face.nodes_[1]]) * 0.5;
-        Vec2<deviceFloat> element_center {0.0};
-        for (const auto node_index : elements[face.elements_[0]].nodes_) {
-            element_center += nodes[node_index];
-        }
-        element_center /= elements[face.elements_[0]].nodes_.size();
-
-        const Vec2<deviceFloat> delta = center - element_center; // CHECK doesn't work with ghost cells
-        const double sign = std::copysign(1.0, face.normal_.dot(delta));
-        face.normal_ *= sign;
-        face.tangent_ *= sign;
-
-        face.offset_ = {0.0, 0.0};
-        face.scale_ = {1.0, 1.0};
+        faces[face_index].compute_geometry(elements, nodes);
     }
 }
 
@@ -2255,7 +2236,7 @@ auto SEM::Meshes::p_adapt(size_t n_elements, Element2D_t* elements, int N_max, c
                                                            nodes[new_element.nodes_[1]],
                                                            nodes[new_element.nodes_[2]],
                                                            nodes[new_element.nodes_[3]]};
-            new_element.compute_element_geometry(points, polynomial_nodes); 
+            new_element.compute_geometry(points, polynomial_nodes); 
 
             elements[i] = std::move(new_element);
         }
@@ -2393,10 +2374,15 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
             new_elements[element_index + 2].interpolate_from(new_elements_nodes[2], element_nodes, element, polynomial_nodes, barycentric_weights);
             new_elements[element_index + 3].interpolate_from(new_elements_nodes[3], element_nodes, element, polynomial_nodes, barycentric_weights);
             
-            new_elements[element_index].compute_element_geometry(new_elements_nodes[0], polynomial_nodes);
-            new_elements[element_index + 1].compute_element_geometry(new_elements_nodes[1], polynomial_nodes);
-            new_elements[element_index + 2].compute_element_geometry(new_elements_nodes[2], polynomial_nodes);
-            new_elements[element_index + 3].compute_element_geometry(new_elements_nodes[3], polynomial_nodes);  
+            new_elements[element_index].compute_geometry(new_elements_nodes[0], polynomial_nodes);
+            new_elements[element_index + 1].compute_geometry(new_elements_nodes[1], polynomial_nodes);
+            new_elements[element_index + 2].compute_geometry(new_elements_nodes[2], polynomial_nodes);
+            new_elements[element_index + 3].compute_geometry(new_elements_nodes[3], polynomial_nodes); 
+            
+            new_faces[new_face_index].compute_geometry(new_elements, nodes);
+            new_faces[new_face_index + 1].compute_geometry(new_elements, nodes);
+            new_faces[new_face_index + 2].compute_geometry(new_elements, nodes);
+            new_faces[new_face_index + 3].compute_geometry(new_elements, nodes);
         }
         // p refinement
         else if (element.refine_ && (element.p_sigma_ + element.u_sigma_ + element.v_sigma_)/3 >= static_cast<deviceFloat>(1) && element.N_ + 2 <= N_max) {
@@ -2408,7 +2394,7 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
                                                            nodes[new_elements[element_index].nodes_[1]],
                                                            nodes[new_elements[element_index].nodes_[2]],
                                                            nodes[new_elements[element_index].nodes_[3]]};
-            new_elements[element_index].compute_element_geometry(points, polynomial_nodes); 
+            new_elements[element_index].compute_geometry(points, polynomial_nodes); 
         }
         // move
         else {
