@@ -68,6 +68,6 @@ auto SEM::Entities::Face2D_t::compute_geometry(const SEM::Entities::Element2D_t*
     normal_ *= sign;
     tangent_ *= sign;
 
-    offset_ = {0.0, 0.0};
+    offset_ = {0.0, 0.0}; // CHECK change
     scale_ = {1.0, 1.0};
 }
