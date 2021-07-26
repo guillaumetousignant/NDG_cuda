@@ -2227,7 +2227,7 @@ auto SEM::Meshes::p_adapt(size_t n_elements, Element2D_t* elements, int N_max, c
     const int stride = blockDim.x * gridDim.x;
     
     for (size_t i = index; i < n_elements; i += stride) {
-        if (elements[i].refine_ && (elements[i].p_sigma_ + elements[i].u_sigma_ + elements[i].v_sigma_)/3 >= static_cast<deviceFloat>(1) && elements[i].N_ + 2 <= N_max) {
+        if (elements[i].would_p_refine(N_max)) {
             Element2D_t new_element(elements[i].N_ + 2, elements[i].split_level_, elements[i].faces_, elements[i].nodes_);
 
             new_element.interpolate_from(elements[i], polynomial_nodes, barycentric_weights);
@@ -2256,15 +2256,15 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
 
         size_t element_index = i + block_offsets[block_id];
         for (size_t j = i - thread_id; j < i; ++j) {
-            element_index += 3 * elements[j].refine_ * ((element.p_sigma_ + element.u_sigma_ + element.v_sigma_)/3 < static_cast<deviceFloat>(1)) * (element.split_level_ < max_split_level);
+            element_index += 3 * elements[j].would_h_refine(max_split_level);
         }
 
         // h refinement
-        if (element.refine_ && (element.p_sigma_ + element.u_sigma_ + element.v_sigma_)/3 < static_cast<deviceFloat>(1) && element.split_level_ < max_split_level) {
+        if (element.would_h_refine(max_split_level)) {
             size_t new_node_index = n_nodes + nodes_block_offsets[block_id];
             size_t new_face_index = n_faces + nodes_block_offsets[block_id] + block_offsets[block_id]; // Wow this just happens to work, we need to add 3 faces per splitting element to the number of additional nodes, and the element offset is 3 * n_splitting
             for (size_t j = i - thread_id; j < i; ++j) {
-                if (elements[j].refine_ && (elements[j].p_sigma_ + elements[j].u_sigma_ + elements[j].v_sigma_)/3 < static_cast<deviceFloat>(1) && elements[j].split_level_ < max_split_level) {
+                if (elements[j].would_h_refine(max_split_level)) {
                     ++new_node_index;
                     new_face_index += 4;
                     for (size_t side_index = 0; side_index < elements[j].faces_.size(); ++side_index) {
@@ -2310,7 +2310,7 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
                         const size_t neighbour_element_index = face.elements_[face_side];
                         const Element2D_t& neighbour = elements[neighbour_element_index];
                         
-                        if (neighbour.refine_ * ((neighbour.p_sigma_ + neighbour.u_sigma_ + neighbour.v_sigma_)/3 < static_cast<deviceFloat>(1)) * (neighbour.split_level_ < max_split_level)) {
+                        if (neighbour.would_h_refine(max_split_level)) {
                             const std::array<Vec2<deviceFloat>, 2> neighbour_nodes = {nodes[neighbour.nodes_[face.elements_side_[face_side]]], (face.elements_side_[face_side] < neighbour.faces_.size() - 1) ? nodes[neighbour.nodes_[face.elements_side_[face_side] + 1]] : nodes[neighbour.nodes_[0]]};
                             const Vec2<deviceFloat> neighbour_new_node = (neighbour_nodes[0] + neighbour_nodes[1])/2;
 
@@ -2326,7 +2326,7 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
                                 }
 
                                 for (size_t j = neighbour_element_index - neighbour_thread_id; j < neighbour_element_index; ++j) {
-                                    if (elements[j].refine_ && (elements[j].p_sigma_ + elements[j].u_sigma_ + elements[j].v_sigma_)/3 < static_cast<deviceFloat>(1) && elements[j].split_level_ < max_split_level) {
+                                    if (elements[j].would_h_refine(max_split_level)) {
                                         ++neighbour_new_node_offset;
                                         for (size_t side_index = 0; side_index < elements[j].faces_.size(); ++side_index) {
                                             neighbour_new_node_offset += elements[j].additional_nodes_[side_index];
@@ -2346,6 +2346,26 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
                     new_nodes[side_index] = new_node_index + local_node_index;
                     nodes[new_nodes[side_index]] = new_node;
                     ++local_node_index;
+
+                    if (element.faces_[side_index].size() == 1) {
+                        const size_t neighbour_face_index = element.faces_[side_index][0];
+                        const Face2D_t& face = faces[neighbour_face_index];
+                        const int face_side = face.elements_[0] == i;
+                        const size_t neighbour_element_index = face.elements_[face_side];
+                        const Element2D_t& neighbour = elements[neighbour_element_index];
+
+                        // We find the max N, and to do this we need to take care and check if the neighbour would p-adapt
+                        const int neighbour_N = neighbour.N_ + 2 * neighbour.would_p_refine(N_max);
+
+                        //new_faces[neighbour_face_index] = 
+                        //new_faces[local_face_index] = 
+                        ++local_face_index;
+                    }
+                    else { // CHECK This shouldn't happen as is, with elements always splitting in the middle and nodes not moving.
+
+                    }
+
+                    
                 }
             }
 
@@ -2386,7 +2406,7 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
             new_faces[new_face_index + 3].compute_geometry(new_elements, nodes);
         }
         // p refinement
-        else if (element.refine_ && (element.p_sigma_ + element.u_sigma_ + element.v_sigma_)/3 >= static_cast<deviceFloat>(1) && element.N_ + 2 <= N_max) {
+        else if (element.would_p_refine(N_max)) {
             new_elements[element_index] = Element2D_t{element.N_ + 2, element.split_level_, element.faces_, element.nodes_};
 
             new_elements[element_index].interpolate_from(element, polynomial_nodes, barycentric_weights);

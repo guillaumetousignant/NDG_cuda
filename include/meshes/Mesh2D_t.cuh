@@ -262,9 +262,9 @@ namespace SEM { namespace Meshes {
         sdata[tid] = 0;
 
         while (i < n_elements) { 
-            sdata[tid] += elements[i].refine_ * ((elements[i].p_sigma_ + elements[i].u_sigma_ + elements[i].v_sigma_)/3 < static_cast<deviceFloat>(1)) * (elements[i].split_level_ < max_split_level);
+            sdata[tid] += elements[i].would_h_refine(max_split_level);
             if (i+blockSize < n_elements) {
-                sdata[tid] += elements[i+blockSize].refine_ * ((elements[i+blockSize].p_sigma_ + elements[i+blockSize].u_sigma_ + elements[i+blockSize].v_sigma_)/3 < static_cast<deviceFloat>(1)) * (elements[i+blockSize].split_level_ < max_split_level);
+                sdata[tid] += elements[i+blockSize].would_h_refine(max_split_level);
             }
             i += gridSize; 
         }
@@ -295,7 +295,7 @@ namespace SEM { namespace Meshes {
         while (i < n_elements) {
             SEM::Entities::Element2D_t& element = elements[i];
             element.additional_nodes_ = {false, false, false, false};
-            if (element.refine_ * ((element.p_sigma_ + element.u_sigma_ + element.v_sigma_)/3 < static_cast<deviceFloat>(1)) * (element.split_level_ < max_split_level)) {
+            if (element.would_h_refine(max_split_level)) {
                 // This is the middle node, always needs to be created
                 ++sdata[tid];
                 for (size_t side_index = 0; side_index < element.faces_.size(); ++side_index) {
@@ -319,7 +319,7 @@ namespace SEM { namespace Meshes {
                             const int face_side = face.elements_[0] == i;
                             const SEM::Entities::Element2D_t& neighbour = elements[face.elements_[face_side]];
                             
-                            if (neighbour.refine_ * ((neighbour.p_sigma_ + neighbour.u_sigma_ + neighbour.v_sigma_)/3 < static_cast<deviceFloat>(1)) * (neighbour.split_level_ < max_split_level)) {
+                            if (neighbour.would_h_refine(max_split_level)) {
                                 const std::array<SEM::Entities::Vec2<deviceFloat>, 2> neighbour_nodes = {nodes[neighbour.nodes_[face.elements_side_[face_side]]], (face.elements_side_[face_side] < neighbour.faces_.size() - 1) ? nodes[neighbour.nodes_[face.elements_side_[face_side] + 1]] : nodes[neighbour.nodes_[0]]};
                                 const SEM::Entities::Vec2<deviceFloat> neighbour_new_node = (neighbour_nodes[0] + neighbour_nodes[1])/2;
 
@@ -341,7 +341,7 @@ namespace SEM { namespace Meshes {
             if (i+blockSize < n_elements) {
                 SEM::Entities::Element2D_t& element = elements[i+blockSize];
                 element.additional_nodes_ = {false, false, false, false};
-                if (element.refine_ * ((element.p_sigma_ + element.u_sigma_ + element.v_sigma_)/3 < static_cast<deviceFloat>(1)) * (element.split_level_ < max_split_level)) {
+                if (element.would_h_refine(max_split_level)) {
                     // This is the middle node, always needs to be created
                     ++sdata[tid];
                     for (size_t side_index = 0; side_index < element.faces_.size(); ++side_index) {
@@ -364,7 +364,7 @@ namespace SEM { namespace Meshes {
                                 const int face_side = face.elements_[0] == i;
                                 const SEM::Entities::Element2D_t& neighbour = elements[face.elements_[face_side]];
                                 
-                                if (neighbour.refine_ * ((neighbour.p_sigma_ + neighbour.u_sigma_ + neighbour.v_sigma_)/3 < static_cast<deviceFloat>(1)) * (neighbour.split_level_ < max_split_level)) {
+                                if (neighbour.would_h_refine(max_split_level)) {
                                     const std::array<SEM::Entities::Vec2<deviceFloat>, 2> neighbour_nodes = {nodes[neighbour.nodes_[face.elements_side_[face_side]]], (face.elements_side_[face_side] < neighbour.faces_.size() - 1) ? nodes[neighbour.nodes_[face.elements_side_[face_side] + 1]] : nodes[neighbour.nodes_[0]]};
                                     const SEM::Entities::Vec2<deviceFloat> neighbour_new_node = (neighbour_nodes[0] + neighbour_nodes[1])/2;
     

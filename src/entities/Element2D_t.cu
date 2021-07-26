@@ -756,3 +756,17 @@ auto SEM::Entities::Element2D_t::almost_equal(deviceFloat x, deviceFloat y) -> b
         // unless the result is subnormal
         || std::abs(x-y) < std::numeric_limits<deviceFloat>::min();
 }
+
+__device__
+auto SEM::Entities::Element2D_t::would_p_refine(int max_N) const -> bool {
+    return refine_ 
+        && (p_sigma_ + u_sigma_ + v_sigma_)/3 >= static_cast<deviceFloat>(1) 
+        && N_ + 2 <= max_N;
+}
+
+__device__
+auto SEM::Entities::Element2D_t::would_h_refine(int max_split_level) const -> bool {
+    return refine_ 
+        && (p_sigma_ + u_sigma_ + v_sigma_)/3 < static_cast<deviceFloat>(1) 
+        && split_level_ < max_split_level;
+}

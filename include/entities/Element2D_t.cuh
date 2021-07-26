@@ -111,6 +111,12 @@ namespace SEM { namespace Entities {
             __device__
             static auto almost_equal(deviceFloat x, deviceFloat y) -> bool;
 
+            __device__
+            auto would_p_refine(int max_N) const -> bool;
+
+            __device__
+            auto would_h_refine(int max_split_level) const -> bool;
+
         private:
             __device__
             auto exponential_decay(int n_points_least_squares) -> std::array<deviceFloat, 2>;

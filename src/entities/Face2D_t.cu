@@ -69,7 +69,7 @@ auto SEM::Entities::Face2D_t::compute_geometry(const SEM::Entities::Element2D_t*
 
     const SEM::Entities::Vec2<deviceFloat> center = (points[0] + points[1])/2;
     const SEM::Entities::Vec2<deviceFloat> delta = center - element_L.center_; // CHECK doesn't work with ghost cells
-    const deviceFloat sign = std::copysign(static_cast<deviceFloat>(1.0), normal_.dot(delta));
+    const deviceFloat sign = std::copysign(static_cast<deviceFloat>(1), normal_.dot(delta));
     normal_ *= sign;
     tangent_ *= sign;
 
