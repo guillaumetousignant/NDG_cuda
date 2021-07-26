@@ -2304,7 +2304,8 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
                 // Here we check if another element would create the same node, and yield if its index is smaller
                 if (!found_node) {
                     for (size_t face_index = 0; face_index < element.faces_[side_index].size(); ++face_index) {
-                        const Face2D_t& face = faces[element.faces_[side_index][face_index]];
+                        const size_t neighbour_face_index = element.faces_[side_index][face_index];
+                        const Face2D_t& face = faces[neighbour_face_index];
                         const int face_side = face.elements_[0] == i;
                         const size_t neighbour_element_index = face.elements_[face_side];
                         const Element2D_t& neighbour = elements[neighbour_element_index];
