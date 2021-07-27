@@ -1186,7 +1186,7 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
     device_vector<Element2D_t> new_elements(elements_.size() + 3 * splitting_elements, stream_);
     SEM::Meshes::hp_adapt<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, faces_.size(), nodes_.size(), elements_.data(), new_elements.data(), faces_.data(), new_faces.data(), device_refine_array_.data(), device_nodes_refine_array_.data(), max_split_level_, N_max, new_nodes.data(), polynomial_nodes.data(), barycentric_weights.data());
 
-    SEM::Meshes::move_faces<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces_.size(), faces_.data(), new_faces.data(), new_elements.data());
+    SEM::Meshes::move_faces<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces_.size(), faces_.data(), new_faces.data(), elements_.data());
 
     if (!wall_boundaries_.empty()) {
         SEM::Meshes::rebuild_boundaries<<<wall_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(wall_boundaries_.size(), elements_.data(), elements_.data(), wall_boundaries_.data(), faces_.data());
@@ -2298,7 +2298,7 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
                         new_nodes[side_index] = face.nodes_[0];
                         break;
                     }
-                    if (nodes[face.nodes_[1]] == new_node) {
+                    else if (nodes[face.nodes_[1]] == new_node) {
                         found_node = true;
                         new_nodes[side_index] = face.nodes_[1];
                         break;
@@ -2372,7 +2372,7 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
                         }
 
                         std::array<size_t, 2> neighbour_element_new_indices = {neighbour_element_new_index, neighbour_element_new_index};
-                        if (neighbour.would_h_refine(max_split_level)) {
+                        if (neighbour.would_h_refine(max_split_level)) { // CHECK this does not work if the splitting element is much smaller
                             neighbour_element_new_indices[1] += neighbour_side;
                             if (neighbour_side < neighbour.faces_.size() - 1) {
                                 neighbour_element_new_indices[0] += neighbour_side + 1;
@@ -2389,8 +2389,6 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
                         fprintf(stderr, "Error: Splitting element %llu creating node and face on side %llu, but there are already %llu faces on that side. Exiting.\n", i, side_index, element.faces_[side_index].size());    
                         exit(53);
                     }
-
-                    
                 }
             }
 
@@ -2795,12 +2793,41 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
 }
 
 __global__
-auto SEM::Meshes::move_faces(size_t n_faces, Face2D_t* faces, Face2D_t* new_faces, Element2D_t* elements) -> void {
+auto SEM::Meshes::move_faces(size_t n_faces, Face2D_t* faces, Face2D_t* new_faces, Element2D_t* elements, const size_t* block_offsets, const size_t* nodes_block_offsets, int max_split_level, int N_max) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
     for (size_t face_index = index; face_index < n_faces; face_index += stride) {
+        Face2D_t& face = faces[face_index];
 
+        if (face.N_ == -1) { // Face has split
+            Face2D_t& new_face = new_faces[face_index];
+            const Element2D_t& element_L = elements[face.elements_[0]];
+            const Element2D_t& element_R = elements[face.elements_[1]];
+
+
+            // Compute geometry!
+        }
+        else {
+            const Element2D_t& element_L = elements[face.elements_[0]];
+            const Element2D_t& element_R = elements[face.elements_[1]];
+
+            const int N_max = std::max(element_L.N_ + 2 * element_L.would_p_refine(N_max), element_R.N_ + 2 * element_R.would_p_refine(N_max));
+
+            if (face.N_ != N_max) {
+                face.resize_storage(N_max);
+            }
+
+            if (element_L.would_h_refine(max_split_level)) {
+
+            }
+
+            if (element_R.would_h_refine(max_split_level)) {
+                
+            }
+
+            new_faces[face_index] = std::move(face);
+        }
     }
 }
 
