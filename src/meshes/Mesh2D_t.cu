@@ -2267,7 +2267,7 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
             size_t new_node_index = n_nodes + nodes_block_offsets[block_id];
             size_t new_face_index = n_faces + nodes_block_offsets[block_id] + block_offsets[block_id]; // Wow this just happens to work, we need to add 3 faces per splitting element to the number of additional nodes, and the element offset is 3 * n_splitting
             for (size_t j = i - thread_id; j < i; ++j) {
-                if (elements[j].would_h_refine(max_split_level)) {
+                if (elements[j].would_h_refine(max_split_level)) { 
                     ++new_node_index;
                     new_face_index += 4;
                     for (size_t side_index = 0; side_index < elements[j].faces_.size(); ++side_index) {
@@ -2371,7 +2371,6 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
                             neighbour_element_new_index += 3 * elements[j].would_h_refine(max_split_level);
                         }
 
-                        // CHECK this doesn't work if a much smaller element and a bigger element splits, we need to calculate the midpoint and check within which we are
                         std::array<size_t, 2> neighbour_element_new_indices = {neighbour_element_new_index, neighbour_element_new_index};
                         if (neighbour.would_h_refine(max_split_level)) {
                             std::array<size_t, 2> neighbour_element_new_side_indices = neighbour_element_new_indices;
@@ -2833,7 +2832,7 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
 }
 
 __global__
-auto SEM::Meshes::move_faces(size_t n_faces, Face2D_t* faces, Face2D_t* new_faces, Element2D_t* elements, const size_t* block_offsets, const size_t* nodes_block_offsets, int max_split_level, int N_max, int elements_blockSize) -> void {
+auto SEM::Meshes::move_faces(size_t n_faces, Face2D_t* faces, Face2D_t* new_faces, Element2D_t* elements, Element2D_t* new_elements, const Vec2<deviceFloat>* nodes, const size_t* block_offsets, const size_t* nodes_block_offsets, int max_split_level, int N_max, int elements_blockSize) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -2845,12 +2844,59 @@ auto SEM::Meshes::move_faces(size_t n_faces, Face2D_t* faces, Face2D_t* new_face
             const Element2D_t& element_L = elements[face.elements_[0]];
             const Element2D_t& element_R = elements[face.elements_[1]];
 
+            size_t min_element_index = static_cast<size_t>(-1);
+            size_t min_element_side = static_cast<size_t>(-1);
+            if (element_L.would_h_refine(max_split_level)) {
+                if (element_R.would_h_refine(max_split_level)) {
+                    if (face.elements_[0] < face.elements_[1]) {
+                        min_element_index = face.elements_[0];
+                        min_element_side = face.elements_side_[0];
+                    }
+                    else {
+                        min_element_index = face.elements_[1];
+                        min_element_side = face.elements_side_[1];
+                    }
+                }
+                else {
+                    min_element_index = face.elements_[0];
+                    min_element_side = face.elements_side_[0];
+                }
+            }
+            else if (element_R.would_h_refine(max_split_level)) {
+                min_element_index = face.elements_[1];
+                min_element_side = face.elements_side_[1];
+            }
+            else { // This should not happen
+                fprintf(stderr, "Error: Splitting face %llu has no elements (%llu, %llu) that would split. Exiting.\n", face_index, face.elements_[0], face.elements_[1]);    
+                exit(54);
+            }
 
-            // Compute geometry!
+            const int neighbour_block_id = min_element_index/elements_blockSize;
+            const int neighbour_thread_id = min_element_index%elements_blockSize;
+
+            size_t new_face_index = n_faces + nodes_block_offsets[neighbour_block_id] + block_offsets[neighbour_block_id]; // Wow this just happens to work, we need to add 3 faces per splitting element to the number of additional nodes, and the element offset is 3 * n_splitting
+            for (size_t neighbour_side_index = 0; neighbour_side_index < min_element_side; ++neighbour_side_index) {
+                new_face_index += elements[min_element_index].additional_nodes_[neighbour_side_index];
+            }
+            for (size_t j = min_element_index - neighbour_thread_id; j < min_element_index; ++j) {
+                if (elements[j].would_h_refine(max_split_level)) {
+                    new_face_index += 4;
+                    for (size_t side_index = 0; side_index < elements[j].faces_.size(); ++side_index) {
+                        new_face_index += elements[j].additional_nodes_[side_index];
+                    }
+                }
+            }
+
+            Face2D_t& new_face_2 = new_faces[new_face_index];
+
+            new_face.compute_geometry(new_elements, nodes);
+            new_face_2.compute_geometry(new_elements, nodes);
         }
         else {
             const size_t element_L_index = face.elements_[0];
             const size_t element_R_index = face.elements_[1];
+            const size_t element_L_side = face.elements_side_[0];
+            const size_t element_R_side = face.elements_side_[1];
             const Element2D_t& element_L = elements[element_L_index];
             const Element2D_t& element_R = elements[element_R_index];
 
@@ -2864,21 +2910,63 @@ auto SEM::Meshes::move_faces(size_t n_faces, Face2D_t* faces, Face2D_t* new_face
             const int element_L_thread_id = element_L_index%elements_blockSize;
 
             size_t element_L_new_index = element_L_index + block_offsets[element_L_block_id];
-            for (size_t j = i - thread_id; j < i; ++j) {
-                element_index += 3 * elements[j].would_h_refine(max_split_level);
+            for (size_t j = element_L_index - element_L_thread_id; j < element_L_index; ++j) {
+                element_L_new_index += 3 * elements[j].would_h_refine(max_split_level);
             }
 
-            size_t neighbour_new_node_offset = n_nodes + 1 + block_offsets[neighbour_block_id];
-            for (size_t neighbour_side_index = 0; neighbour_side_index < neighbour_side; ++neighbour_side_index) {
-                neighbour_new_node_offset += neighbour.additional_nodes_[neighbour_side_index];
+            const int element_R_block_id = element_R_index/elements_blockSize;
+            const int element_R_thread_id = element_R_index%elements_blockSize;
+
+            size_t element_R_new_index = element_R_index + block_offsets[element_R_block_id];
+            for (size_t j = element_R_index - element_R_thread_id; j < element_R_index; ++j) {
+                element_R_new_index += 3 * elements[j].would_h_refine(max_split_level);
             }
 
+            // CHECK the new indices thing won't use the Hilbert curve like this
             if (element_L.would_h_refine(max_split_level)) {
-
+                const std::array<size_t, 2> new_indices {element_L_new_index + element_L_side, (element_L_side < element_L.faces_.size() - 1) ? element_L_new_index + element_L_side + 1: element_L_new_index};
+                bool found_face = false;
+                for (size_t element_face_index = 0; element_face_index < new_elements[new_indices[0]].faces_[element_L_side].size(), ++element_face_index) {
+                    if (new_elements[new_indices[0]].faces_[element_L_side][element_face_index] == face_index) {
+                        face.elements_[0] = new_indices[0];
+                        found_face = true;
+                        break;
+                    }
+                }
+                if (!found_face) {
+                    for (size_t element_face_index = 0; element_face_index < new_elements[new_indices[1]].faces_[element_L_side].size(), ++element_face_index) {
+                        if (new_elements[new_indices[1]].faces_[element_L_side][element_face_index] == face_index) {
+                            face.elements_[0] = new_indices[1];
+                            break;
+                        }
+                    }
+                }
+            }
+            else {
+                face.elements_[0] = element_L_new_index;
             }
 
             if (element_R.would_h_refine(max_split_level)) {
-                
+                const std::array<size_t, 2> new_indices {element_R_new_index + element_R_side, (element_R_side < element_R.faces_.size() - 1) ? element_R_new_index + element_R_side + 1: element_R_new_index};
+                bool found_face = false;
+                for (size_t element_face_index = 0; element_face_index < new_elements[new_indices[0]].faces_[element_R_side].size(), ++element_face_index) {
+                    if (new_elements[new_indices[0]].faces_[element_R_side][element_face_index] == face_index) {
+                        face.elements_[1] = new_indices[0];
+                        found_face = true;
+                        break;
+                    }
+                }
+                if (!found_face) {
+                    for (size_t element_face_index = 0; element_face_index < new_elements[new_indices[1]].faces_[element_R_side].size(), ++element_face_index) {
+                        if (new_elements[new_indices[1]].faces_[element_R_side][element_face_index] == face_index) {
+                            face.elements_[1] = new_indices[1];
+                            break;
+                        }
+                    }
+                }
+            }
+            else {
+                face.elements_[1] = element_R_new_index;
             }
 
             new_faces[face_index] = std::move(face);
