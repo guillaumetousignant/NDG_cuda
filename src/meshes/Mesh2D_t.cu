@@ -2325,7 +2325,7 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
                                 const int neighbour_block_id = neighbour_element_index/block_dim;
                                 const int neighbour_thread_id = neighbour_element_index%block_dim;
 
-                                size_t neighbour_new_node_offset = n_nodes + 1 + block_offsets[neighbour_block_id];
+                                size_t neighbour_new_node_offset = n_nodes + 1 + nodes_block_offsets[neighbour_block_id];
                                 for (size_t neighbour_side_index = 0; neighbour_side_index < neighbour_side; ++neighbour_side_index) {
                                     neighbour_new_node_offset += neighbour.additional_nodes_[neighbour_side_index];
                                 }
@@ -2833,7 +2833,7 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
 }
 
 __global__
-auto SEM::Meshes::move_faces(size_t n_faces, Face2D_t* faces, Face2D_t* new_faces, Element2D_t* elements, const size_t* block_offsets, const size_t* nodes_block_offsets, int max_split_level, int N_max) -> void {
+auto SEM::Meshes::move_faces(size_t n_faces, Face2D_t* faces, Face2D_t* new_faces, Element2D_t* elements, const size_t* block_offsets, const size_t* nodes_block_offsets, int max_split_level, int N_max, int elements_blockSize) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -2849,13 +2849,28 @@ auto SEM::Meshes::move_faces(size_t n_faces, Face2D_t* faces, Face2D_t* new_face
             // Compute geometry!
         }
         else {
-            const Element2D_t& element_L = elements[face.elements_[0]];
-            const Element2D_t& element_R = elements[face.elements_[1]];
+            const size_t element_L_index = face.elements_[0];
+            const size_t element_R_index = face.elements_[1];
+            const Element2D_t& element_L = elements[element_L_index];
+            const Element2D_t& element_R = elements[element_R_index];
 
             const int N_max = std::max(element_L.N_ + 2 * element_L.would_p_refine(N_max), element_R.N_ + 2 * element_R.would_p_refine(N_max));
 
             if (face.N_ != N_max) {
                 face.resize_storage(N_max);
+            }
+
+            const int element_L_block_id = element_L_index/elements_blockSize;
+            const int element_L_thread_id = element_L_index%elements_blockSize;
+
+            size_t element_L_new_index = element_L_index + block_offsets[element_L_block_id];
+            for (size_t j = i - thread_id; j < i; ++j) {
+                element_index += 3 * elements[j].would_h_refine(max_split_level);
+            }
+
+            size_t neighbour_new_node_offset = n_nodes + 1 + block_offsets[neighbour_block_id];
+            for (size_t neighbour_side_index = 0; neighbour_side_index < neighbour_side; ++neighbour_side_index) {
+                neighbour_new_node_offset += neighbour.additional_nodes_[neighbour_side_index];
             }
 
             if (element_L.would_h_refine(max_split_level)) {
