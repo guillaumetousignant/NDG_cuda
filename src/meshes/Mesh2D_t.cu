@@ -11,6 +11,7 @@
 #include <iomanip>
 #include <filesystem>
 #include <algorithm>
+#include <limits>
 
 namespace fs = std::filesystem;
 
@@ -2431,10 +2432,79 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
                 new_elements_faces[1][0][0] = new_faces[0];
             }
             else {
-                for (size_t face_index = 0; face_index < element.faces_[0].size(); ++face_index) {
+                const std::array<std::array<Vec2<deviceFloat>, 2>, 2> element_side_nodes {{new_elements_nodes[0][0], new_elements_nodes[0][1]},
+                                                                                          {new_elements_nodes[1][0], new_elements_nodes[1][1]}};
+                const std::array<Vec2<deviceFloat>, 2> AB {element_side_nodes[0][1] - element_side_nodes[0][0],
+                                                           element_side_nodes[1][1] - element_side_nodes[1][0]};
+                const std::array<deviceFloat, 2> AB_dot_inv {1/AB[0].dot(AB[0]),
+                                                             1/AB[1].dot(AB[1])};
 
+                std::array<size_t, 2> side_n_faces {0, 0};
+                for (size_t face_index = 0; face_index < element.faces_[0].size(); ++face_index) {
+                    const Face2D_t& face = faces[element.faces_[0][face_index]];
+                    const std::array<Vec2<deviceFloat>, 2> face_nodes {nodes[face.nodes_[0]], nodes[face.nodes_[1]]};
+                    const std::array<Vec2<deviceFloat>, 2> AC {face_nodes[0] - element_side_nodes[0][0],
+                                                               face_nodes[0] - element_side_nodes[1][0]};
+                    const std::array<Vec2<deviceFloat>, 2> AD {face_nodes[1] - element_side_nodes[0][0],
+                                                               face_nodes[1] - element_side_nodes[1][0]};
+
+                    const std::array<deviceFloat, 2> C_proj {AC[0].dot(AB[0]) * AB_dot_inv[0],
+                                                             AC[1].dot(AB[1]) * AB_dot_inv[1]};
+                    const std::array<deviceFloat, 2> D_proj {AD[0].dot(AB[0]) * AB_dot_inv[0],
+                                                             AD[1].dot(AB[1]) * AB_dot_inv[1]};
+
+                    if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                        && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                        && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                        && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+
+                        ++side_n_faces[0];
+                    }
+                    
+                    if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                        && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                        && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                        && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+
+                        ++side_n_faces[1];
+                    }
                 }
 
+                new_elements_faces[0][0] = device_vector<deviceFloat>{side_n_faces[0]};
+                new_elements_faces[1][0] = device_vector<deviceFloat>{side_n_faces[1]};
+
+                std::array<size_t, 2> new_elements_side_face_index {0, 0};
+                for (size_t face_index = 0; face_index < element.faces_[0].size(); ++face_index) {
+                    const Face2D_t& face = faces[element.faces_[0][face_index]];
+                    const std::array<Vec2<deviceFloat>, 2> face_nodes {nodes[face.nodes_[0]], nodes[face.nodes_[1]]};
+                    const std::array<Vec2<deviceFloat>, 2> AC {face_nodes[0] - element_side_nodes[0][0],
+                                                               face_nodes[0] - element_side_nodes[1][0]};
+                    const std::array<Vec2<deviceFloat>, 2> AD {face_nodes[1] - element_side_nodes[0][0],
+                                                               face_nodes[1] - element_side_nodes[1][0]};
+
+                    const std::array<deviceFloat, 2> C_proj {AC[0].dot(AB[0]) * AB_dot_inv[0],
+                                                             AC[1].dot(AB[1]) * AB_dot_inv[1]};
+                    const std::array<deviceFloat, 2> D_proj {AD[0].dot(AB[0]) * AB_dot_inv[0],
+                                                             AD[1].dot(AB[1]) * AB_dot_inv[1]};
+
+                    if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                        && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                        && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                        && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+
+                        new_elements_faces[1][0][new_elements_side_face_index[0]] = element.faces_[0][face_index];
+                        ++new_elements_side_face_index[0];
+                    }
+                    
+                    if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                        && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                        && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                        && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+
+                        new_elements_faces[1][0][new_elements_side_face_index[1]] = element.faces_[0][face_index];
+                        ++new_elements_side_face_index[1];
+                    }
+                }
             }
 
             if (element.additional_nodes_[1]) {
@@ -2444,7 +2514,79 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
                 new_elements_faces[2][1][0] = new_faces[1];
             }
             else {
+                const std::array<std::array<Vec2<deviceFloat>, 2>, 2> element_side_nodes {{new_elements_nodes[1][1], new_elements_nodes[1][2]},
+                                                                                          {new_elements_nodes[2][1], new_elements_nodes[2][2]}};
+                const std::array<Vec2<deviceFloat>, 2> AB {element_side_nodes[0][1] - element_side_nodes[0][0],
+                                                           element_side_nodes[1][1] - element_side_nodes[1][0]};
+                const std::array<deviceFloat, 2> AB_dot_inv {1/AB[0].dot(AB[0]),
+                                                             1/AB[1].dot(AB[1])};
 
+                std::array<size_t, 2> side_n_faces {0, 0};
+                for (size_t face_index = 0; face_index < element.faces_[1].size(); ++face_index) {
+                    const Face2D_t& face = faces[element.faces_[1][face_index]];
+                    const std::array<Vec2<deviceFloat>, 2> face_nodes {nodes[face.nodes_[0]], nodes[face.nodes_[1]]};
+                    const std::array<Vec2<deviceFloat>, 2> AC {face_nodes[0] - element_side_nodes[0][0],
+                                                               face_nodes[0] - element_side_nodes[1][0]};
+                    const std::array<Vec2<deviceFloat>, 2> AD {face_nodes[1] - element_side_nodes[0][0],
+                                                               face_nodes[1] - element_side_nodes[1][0]};
+
+                    const std::array<deviceFloat, 2> C_proj {AC[0].dot(AB[0]) * AB_dot_inv[0],
+                                                             AC[1].dot(AB[1]) * AB_dot_inv[1]};
+                    const std::array<deviceFloat, 2> D_proj {AD[0].dot(AB[0]) * AB_dot_inv[0],
+                                                             AD[1].dot(AB[1]) * AB_dot_inv[1]};
+
+                    if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                        && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                        && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                        && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+
+                        ++side_n_faces[0];
+                    }
+                    
+                    if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                        && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                        && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                        && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+
+                        ++side_n_faces[1];
+                    }
+                }
+
+                new_elements_faces[1][1] = device_vector<deviceFloat>{side_n_faces[0]};
+                new_elements_faces[2][1] = device_vector<deviceFloat>{side_n_faces[1]};
+
+                std::array<size_t, 2> new_elements_side_face_index {0, 0};
+                for (size_t face_index = 0; face_index < element.faces_[1].size(); ++face_index) {
+                    const Face2D_t& face = faces[element.faces_[1][face_index]];
+                    const std::array<Vec2<deviceFloat>, 2> face_nodes {nodes[face.nodes_[0]], nodes[face.nodes_[1]]};
+                    const std::array<Vec2<deviceFloat>, 2> AC {face_nodes[0] - element_side_nodes[0][0],
+                                                               face_nodes[0] - element_side_nodes[1][0]};
+                    const std::array<Vec2<deviceFloat>, 2> AD {face_nodes[1] - element_side_nodes[0][0],
+                                                               face_nodes[1] - element_side_nodes[1][0]};
+
+                    const std::array<deviceFloat, 2> C_proj {AC[0].dot(AB[0]) * AB_dot_inv[0],
+                                                             AC[1].dot(AB[1]) * AB_dot_inv[1]};
+                    const std::array<deviceFloat, 2> D_proj {AD[0].dot(AB[0]) * AB_dot_inv[0],
+                                                             AD[1].dot(AB[1]) * AB_dot_inv[1]};
+
+                    if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                        && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                        && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                        && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+
+                        new_elements_faces[1][1][new_elements_side_face_index[0]] = element.faces_[1][face_index];
+                        ++new_elements_side_face_index[0];
+                    }
+                    
+                    if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                        && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                        && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                        && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+
+                        new_elements_faces[2][1][new_elements_side_face_index[1]] = element.faces_[1][face_index];
+                        ++new_elements_side_face_index[1];
+                    }
+                }
             }
 
             if (element.additional_nodes_[2]) {
@@ -2454,7 +2596,79 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
                 new_elements_faces[3][2][0] = new_faces[2];
             }
             else {
+                const std::array<std::array<Vec2<deviceFloat>, 2>, 2> element_side_nodes {{new_elements_nodes[2][2], new_elements_nodes[2][3]},
+                                                                                          {new_elements_nodes[3][2], new_elements_nodes[3][3]}};
+                const std::array<Vec2<deviceFloat>, 2> AB {element_side_nodes[0][1] - element_side_nodes[0][0],
+                                                           element_side_nodes[1][1] - element_side_nodes[1][0]};
+                const std::array<deviceFloat, 2> AB_dot_inv {1/AB[0].dot(AB[0]),
+                                                             1/AB[1].dot(AB[1])};
 
+                std::array<size_t, 2> side_n_faces {0, 0};
+                for (size_t face_index = 0; face_index < element.faces_[2].size(); ++face_index) {
+                    const Face2D_t& face = faces[element.faces_[2][face_index]];
+                    const std::array<Vec2<deviceFloat>, 2> face_nodes {nodes[face.nodes_[0]], nodes[face.nodes_[1]]};
+                    const std::array<Vec2<deviceFloat>, 2> AC {face_nodes[0] - element_side_nodes[0][0],
+                                                               face_nodes[0] - element_side_nodes[1][0]};
+                    const std::array<Vec2<deviceFloat>, 2> AD {face_nodes[1] - element_side_nodes[0][0],
+                                                               face_nodes[1] - element_side_nodes[1][0]};
+
+                    const std::array<deviceFloat, 2> C_proj {AC[0].dot(AB[0]) * AB_dot_inv[0],
+                                                             AC[1].dot(AB[1]) * AB_dot_inv[1]};
+                    const std::array<deviceFloat, 2> D_proj {AD[0].dot(AB[0]) * AB_dot_inv[0],
+                                                             AD[1].dot(AB[1]) * AB_dot_inv[1]};
+
+                    if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                        && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                        && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                        && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+
+                        ++side_n_faces[0];
+                    }
+                    
+                    if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                        && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                        && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                        && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+
+                        ++side_n_faces[1];
+                    }
+                }
+
+                new_elements_faces[2][2] = device_vector<deviceFloat>{side_n_faces[0]};
+                new_elements_faces[3][2] = device_vector<deviceFloat>{side_n_faces[1]};
+
+                std::array<size_t, 2> new_elements_side_face_index {0, 0};
+                for (size_t face_index = 0; face_index < element.faces_[2].size(); ++face_index) {
+                    const Face2D_t& face = faces[element.faces_[2][face_index]];
+                    const std::array<Vec2<deviceFloat>, 2> face_nodes {nodes[face.nodes_[0]], nodes[face.nodes_[1]]};
+                    const std::array<Vec2<deviceFloat>, 2> AC {face_nodes[0] - element_side_nodes[0][0],
+                                                               face_nodes[0] - element_side_nodes[1][0]};
+                    const std::array<Vec2<deviceFloat>, 2> AD {face_nodes[1] - element_side_nodes[0][0],
+                                                               face_nodes[1] - element_side_nodes[1][0]};
+
+                    const std::array<deviceFloat, 2> C_proj {AC[0].dot(AB[0]) * AB_dot_inv[0],
+                                                             AC[1].dot(AB[1]) * AB_dot_inv[1]};
+                    const std::array<deviceFloat, 2> D_proj {AD[0].dot(AB[0]) * AB_dot_inv[0],
+                                                             AD[1].dot(AB[1]) * AB_dot_inv[1]};
+
+                    if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                        && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                        && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                        && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+
+                        new_elements_faces[2][2][new_elements_side_face_index[0]] = element.faces_[2][face_index];
+                        ++new_elements_side_face_index[0];
+                    }
+                    
+                    if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                        && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                        && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                        && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+
+                        new_elements_faces[3][2][new_elements_side_face_index[1]] = element.faces_[2][face_index];
+                        ++new_elements_side_face_index[1];
+                    }
+                }
             }
 
             if (element.additional_nodes_[3]) {
@@ -2464,7 +2678,79 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
                 new_elements_faces[0][3][0] = new_faces[3];
             }
             else {
+                const std::array<std::array<Vec2<deviceFloat>, 2>, 2> element_side_nodes {{new_elements_nodes[3][3], new_elements_nodes[3][0]},
+                                                                                          {new_elements_nodes[0][3], new_elements_nodes[0][0]}};
+                const std::array<Vec2<deviceFloat>, 2> AB {element_side_nodes[0][1] - element_side_nodes[0][0],
+                                                           element_side_nodes[1][1] - element_side_nodes[1][0]};
+                const std::array<deviceFloat, 2> AB_dot_inv {1/AB[0].dot(AB[0]),
+                                                             1/AB[1].dot(AB[1])};
 
+                std::array<size_t, 2> side_n_faces {0, 0};
+                for (size_t face_index = 0; face_index < element.faces_[3].size(); ++face_index) {
+                    const Face2D_t& face = faces[element.faces_[3][face_index]];
+                    const std::array<Vec2<deviceFloat>, 2> face_nodes {nodes[face.nodes_[0]], nodes[face.nodes_[1]]};
+                    const std::array<Vec2<deviceFloat>, 2> AC {face_nodes[0] - element_side_nodes[0][0],
+                                                               face_nodes[0] - element_side_nodes[1][0]};
+                    const std::array<Vec2<deviceFloat>, 2> AD {face_nodes[1] - element_side_nodes[0][0],
+                                                               face_nodes[1] - element_side_nodes[1][0]};
+
+                    const std::array<deviceFloat, 2> C_proj {AC[0].dot(AB[0]) * AB_dot_inv[0],
+                                                             AC[1].dot(AB[1]) * AB_dot_inv[1]};
+                    const std::array<deviceFloat, 2> D_proj {AD[0].dot(AB[0]) * AB_dot_inv[0],
+                                                             AD[1].dot(AB[1]) * AB_dot_inv[1]};
+
+                    if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                        && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                        && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                        && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+
+                        ++side_n_faces[0];
+                    }
+                    
+                    if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                        && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                        && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                        && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+
+                        ++side_n_faces[1];
+                    }
+                }
+
+                new_elements_faces[3][3] = device_vector<deviceFloat>{side_n_faces[0]};
+                new_elements_faces[0][3] = device_vector<deviceFloat>{side_n_faces[1]};
+
+                std::array<size_t, 2> new_elements_side_face_index {0, 0};
+                for (size_t face_index = 0; face_index < element.faces_[3].size(); ++face_index) {
+                    const Face2D_t& face = faces[element.faces_[3][face_index]];
+                    const std::array<Vec2<deviceFloat>, 2> face_nodes {nodes[face.nodes_[0]], nodes[face.nodes_[1]]};
+                    const std::array<Vec2<deviceFloat>, 2> AC {face_nodes[0] - element_side_nodes[0][0],
+                                                               face_nodes[0] - element_side_nodes[1][0]};
+                    const std::array<Vec2<deviceFloat>, 2> AD {face_nodes[1] - element_side_nodes[0][0],
+                                                               face_nodes[1] - element_side_nodes[1][0]};
+
+                    const std::array<deviceFloat, 2> C_proj {AC[0].dot(AB[0]) * AB_dot_inv[0],
+                                                             AC[1].dot(AB[1]) * AB_dot_inv[1]};
+                    const std::array<deviceFloat, 2> D_proj {AD[0].dot(AB[0]) * AB_dot_inv[0],
+                                                             AD[1].dot(AB[1]) * AB_dot_inv[1]};
+
+                    if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                        && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                        && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                        && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+
+                        new_elements_faces[3][3][new_elements_side_face_index[0]] = element.faces_[3][face_index];
+                        ++new_elements_side_face_index[0];
+                    }
+                    
+                    if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                        && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                        && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                        && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+
+                        new_elements_faces[0][3][new_elements_side_face_index[1]] = element.faces_[3][face_index];
+                        ++new_elements_side_face_index[1];
+                    }
+                }
             }
 
             new_elements[element_index]     = Element2D_t{element.N_, element.split_level_ + 1, new_elements_faces[0], {element.nodes_[0], new_nodes[0], new_node_index, new_nodes[3]}};
