@@ -1186,6 +1186,8 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
     device_vector<Element2D_t> new_elements(elements_.size() + 3 * splitting_elements, stream_);
     SEM::Meshes::hp_adapt<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, faces_.size(), nodes_.size(), elements_.data(), new_elements.data(), faces_.data(), new_faces.data(), device_refine_array_.data(), device_nodes_refine_array_.data(), max_split_level_, N_max, new_nodes.data(), polynomial_nodes.data(), barycentric_weights.data());
 
+    SEM::Meshes::move_faces<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces_.size(), faces_.data(), new_faces.data(), new_elements.data());
+
     if (!wall_boundaries_.empty()) {
         SEM::Meshes::rebuild_boundaries<<<wall_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(wall_boundaries_.size(), elements_.data(), elements_.data(), wall_boundaries_.data(), faces_.data());
     }
@@ -1498,11 +1500,11 @@ auto SEM::Meshes::interpolate_to_boundaries(size_t n_elements, Element2D_t* elem
 }
 
 __global__
-auto SEM::Meshes::project_to_faces(size_t N_faces, Face2D_t* faces, const Element2D_t* elements, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void {
+auto SEM::Meshes::project_to_faces(size_t n_faces, Face2D_t* faces, const Element2D_t* elements, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (size_t face_index = index; face_index < N_faces; face_index += stride) {
+    for (size_t face_index = index; face_index < n_faces; face_index += stride) {
         Face2D_t& face = faces[face_index];
 
         // Getting element solution
@@ -2130,11 +2132,11 @@ auto SEM::Meshes::compute_outflow_boundaries(size_t n_outflow_boundaries, Elemen
 }
 
 __global__
-auto SEM::Meshes::local_interfaces(size_t N_local_interfaces, Element2D_t* elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_origin_side, const size_t* local_interfaces_destination) -> void {
+auto SEM::Meshes::local_interfaces(size_t n_local_interfaces, Element2D_t* elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_origin_side, const size_t* local_interfaces_destination) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (size_t interface_index = index; interface_index < N_local_interfaces; interface_index += stride) {
+    for (size_t interface_index = index; interface_index < n_local_interfaces; interface_index += stride) {
         const Element2D_t& source_element = elements[local_interfaces_origin[interface_index]];
         Element2D_t& destination_element = elements[local_interfaces_destination[interface_index]];
         const size_t element_side = local_interfaces_origin_side[interface_index];
@@ -2148,11 +2150,11 @@ auto SEM::Meshes::local_interfaces(size_t N_local_interfaces, Element2D_t* eleme
 }
 
 __global__
-auto SEM::Meshes::get_MPI_interfaces(size_t N_MPI_interface_elements, const Element2D_t* elements, const size_t* MPI_interfaces_origin, const size_t* MPI_interfaces_origin_side, int maximum_N, deviceFloat* p, deviceFloat* u, deviceFloat* v) -> void {
+auto SEM::Meshes::get_MPI_interfaces(size_t n_MPI_interface_elements, const Element2D_t* elements, const size_t* MPI_interfaces_origin, const size_t* MPI_interfaces_origin_side, int maximum_N, deviceFloat* p, deviceFloat* u, deviceFloat* v) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (size_t interface_index = index; interface_index < N_MPI_interface_elements; interface_index += stride) {
+    for (size_t interface_index = index; interface_index < n_MPI_interface_elements; interface_index += stride) {
         const Element2D_t& source_element = elements[MPI_interfaces_origin[interface_index]];
         const size_t element_side = MPI_interfaces_origin_side[interface_index];
         const size_t boundary_offset = interface_index * (maximum_N + 1);
@@ -2166,21 +2168,21 @@ auto SEM::Meshes::get_MPI_interfaces(size_t N_MPI_interface_elements, const Elem
 }
 
 __global__
-auto SEM::Meshes::get_MPI_interfaces_N(size_t N_MPI_interface_elements, const Element2D_t* elements, const size_t* MPI_interfaces_origin, int* N) -> void {
+auto SEM::Meshes::get_MPI_interfaces_N(size_t n_MPI_interface_elements, const Element2D_t* elements, const size_t* MPI_interfaces_origin, int* N) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (size_t interface_index = index; interface_index < N_MPI_interface_elements; interface_index += stride) {
+    for (size_t interface_index = index; interface_index < n_MPI_interface_elements; interface_index += stride) {
         N[interface_index] = elements[MPI_interfaces_origin[interface_index]].N_;
     }
 }
 
 __global__
-auto SEM::Meshes::put_MPI_interfaces(size_t N_MPI_interface_elements, Element2D_t* elements, const size_t* MPI_interfaces_destination, int maximum_N, const deviceFloat* p, const deviceFloat* u, const deviceFloat* v) -> void {
+auto SEM::Meshes::put_MPI_interfaces(size_t n_MPI_interface_elements, Element2D_t* elements, const size_t* MPI_interfaces_destination, int maximum_N, const deviceFloat* p, const deviceFloat* u, const deviceFloat* v) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (size_t interface_index = index; interface_index < N_MPI_interface_elements; interface_index += stride) {
+    for (size_t interface_index = index; interface_index < n_MPI_interface_elements; interface_index += stride) {
         Element2D_t& destination_element = elements[MPI_interfaces_destination[interface_index]];
         const size_t boundary_offset = interface_index * (maximum_N + 1);
 
@@ -2193,11 +2195,11 @@ auto SEM::Meshes::put_MPI_interfaces(size_t N_MPI_interface_elements, Element2D_
 }
 
 __global__
-auto SEM::Meshes::put_MPI_interfaces_N(size_t N_MPI_interface_elements, Element2D_t* elements, const size_t* MPI_interfaces_destination, const int* N) -> void {
+auto SEM::Meshes::put_MPI_interfaces_N(size_t n_MPI_interface_elements, Element2D_t* elements, const size_t* MPI_interfaces_destination, const int* N) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (size_t interface_index = index; interface_index < N_MPI_interface_elements; interface_index += stride) {
+    for (size_t interface_index = index; interface_index < n_MPI_interface_elements; interface_index += stride) {
         Element2D_t& destination_element = elements[MPI_interfaces_destination[interface_index]];
 
         if (destination_element.N_ != N[interface_index]) {
@@ -2207,11 +2209,11 @@ auto SEM::Meshes::put_MPI_interfaces_N(size_t N_MPI_interface_elements, Element2
 }
 
 __global__
-auto SEM::Meshes::put_MPI_interfaces_N_and_rebuild(size_t N_MPI_interface_elements, Element2D_t* elements, Element2D_t* new_elements, const size_t* MPI_interfaces_destination, const int* N) -> void {
+auto SEM::Meshes::put_MPI_interfaces_N_and_rebuild(size_t n_MPI_interface_elements, Element2D_t* elements, Element2D_t* new_elements, const size_t* MPI_interfaces_destination, const int* N) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (size_t interface_index = index; interface_index < N_MPI_interface_elements; interface_index += stride) {
+    for (size_t interface_index = index; interface_index < n_MPI_interface_elements; interface_index += stride) {
         Element2D_t& destination_element = elements[MPI_interfaces_destination[interface_index]];
 
         if (destination_element.N_ != N[interface_index]) {
@@ -2793,11 +2795,22 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
 }
 
 __global__
-auto SEM::Meshes::adjust_boundaries(size_t N_boundaries, Element2D_t* elements, const size_t* boundaries, const Face2D_t* faces) -> void {
+auto SEM::Meshes::move_faces(size_t n_faces, Face2D_t* faces, Face2D_t* new_faces, Element2D_t* elements) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (size_t boundary_index = index; boundary_index < N_boundaries; boundary_index += stride) {
+    for (size_t face_index = index; face_index < n_faces; face_index += stride) {
+
+    }
+}
+
+
+__global__
+auto SEM::Meshes::adjust_boundaries(size_t n_boundaries, Element2D_t* elements, const size_t* boundaries, const Face2D_t* faces) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t boundary_index = index; boundary_index < n_boundaries; boundary_index += stride) {
         Element2D_t& destination_element = elements[boundaries[boundary_index]];
         int N_max = destination_element.N_;
 
@@ -2816,11 +2829,11 @@ auto SEM::Meshes::adjust_boundaries(size_t N_boundaries, Element2D_t* elements, 
 }
 
 __global__
-auto SEM::Meshes::rebuild_boundaries(size_t N_boundaries, Element2D_t* elements, Element2D_t* new_elements, const size_t* boundaries, const Face2D_t* faces) -> void {
+auto SEM::Meshes::rebuild_boundaries(size_t n_boundaries, Element2D_t* elements, Element2D_t* new_elements, const size_t* boundaries, const Face2D_t* faces) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (size_t boundary_index = index; boundary_index < N_boundaries; boundary_index += stride) {
+    for (size_t boundary_index = index; boundary_index < n_boundaries; boundary_index += stride) {
         Element2D_t& destination_element = elements[boundaries[boundary_index]];
         int N_max = destination_element.N_;
 
@@ -2841,11 +2854,11 @@ auto SEM::Meshes::rebuild_boundaries(size_t N_boundaries, Element2D_t* elements,
 }
 
 __global__
-auto SEM::Meshes::adjust_interfaces(size_t N_local_interfaces, Element2D_t* elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_destination) -> void {
+auto SEM::Meshes::adjust_interfaces(size_t n_local_interfaces, Element2D_t* elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_destination) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (size_t interface_index = index; interface_index < N_local_interfaces; interface_index += stride) {
+    for (size_t interface_index = index; interface_index < n_local_interfaces; interface_index += stride) {
         const Element2D_t& source_element = elements[local_interfaces_origin[interface_index]];
         Element2D_t& destination_element = elements[local_interfaces_destination[interface_index]];
 
@@ -2856,11 +2869,11 @@ auto SEM::Meshes::adjust_interfaces(size_t N_local_interfaces, Element2D_t* elem
 }
 
 __global__
-auto SEM::Meshes::rebuild_interfaces(size_t N_local_interfaces, Element2D_t* elements, Element2D_t* new_elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_destination) -> void {
+auto SEM::Meshes::rebuild_interfaces(size_t n_local_interfaces, Element2D_t* elements, Element2D_t* new_elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_destination) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (size_t interface_index = index; interface_index < N_local_interfaces; interface_index += stride) {
+    for (size_t interface_index = index; interface_index < n_local_interfaces; interface_index += stride) {
         const Element2D_t& source_element = new_elements[local_interfaces_origin[interface_index]];
         Element2D_t& destination_element = elements[local_interfaces_destination[interface_index]];
 
@@ -2873,11 +2886,11 @@ auto SEM::Meshes::rebuild_interfaces(size_t N_local_interfaces, Element2D_t* ele
 }
 
 __global__
-auto SEM::Meshes::adjust_faces(size_t N_faces, Face2D_t* faces, const Element2D_t* elements) -> void {
+auto SEM::Meshes::adjust_faces(size_t n_faces, Face2D_t* faces, const Element2D_t* elements) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (size_t face_index = index; face_index < N_faces; face_index += stride) {
+    for (size_t face_index = index; face_index < n_faces; face_index += stride) {
         Face2D_t& face = faces[face_index];
         const Element2D_t& element_L = elements[face.elements_[0]];
         const Element2D_t& element_R = elements[face.elements_[1]];
