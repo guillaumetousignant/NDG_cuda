@@ -2277,6 +2277,7 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
             Vec2<deviceFloat> new_center_node {0};
             std::array<size_t, 4> new_nodes {static_cast<size_t>(-1), static_cast<size_t>(-1), static_cast<size_t>(-1), static_cast<size_t>(-1)}; // CHECK this won't work with elements with more than 4 sides
             const std::array<Vec2<deviceFloat>, 4> element_nodes = {nodes[element.nodes_[0]], nodes[element.nodes_[1]], nodes[element.nodes_[2]], nodes[element.nodes_[3]]}; // CHECK this won't work with elements with more than 4 sides
+            std::array<size_t, 4> new_faces {static_cast<size_t>(-1), static_cast<size_t>(-1), static_cast<size_t>(-1), static_cast<size_t>(-1)};
 
             size_t local_node_index = 1;
             size_t local_face_index = 4;
@@ -2378,6 +2379,7 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
                         new_faces[neighbour_face_index] = Face2D_t(face_N, {element.nodes_[side_index], new_nodes[side_index]}, {element_index + side_index, neighbour_element_new_indices[0]}, {side_index, neighbour_side});
                         new_faces[new_face_index + local_face_index] = Face2D_t(face_N, {new_nodes[side_index], (side_index < element.faces_.size() - 1) ? element.nodes_[size_index + 1] : element.nodes_[0]}, {(side_index < element.faces_.size() -1 ) ? element_index + side_index : element_index, neighbour_element_new_indices[1]}, {side_index, neighbour_side});
                         faces[neighbour_face_index].N_ = -1;
+                        new_faces[side_index] = new_face_index + local_face_index;
                         ++local_face_index;
                     }
                     else { // CHECK This shouldn't happen as is, with elements always splitting in the middle and nodes not moving.
@@ -2404,11 +2406,30 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
                                                                                       std::array<Vec2<deviceFloat>, 4>{nodes[new_node_index], nodes[new_nodes[1]], nodes[element.nodes_[2]], nodes[new_nodes[2]]},
                                                                                       std::array<Vec2<deviceFloat>, 4>{nodes[new_nodes[3]], nodes[new_node_index], nodes[new_nodes[2]], nodes[element.nodes_[3]]}};
 
+            std::array<std:array<cuda_vector<size_t>, 4>, 4> new_elements_faces {{device_vector<deviceFloat>{},  device_vector<deviceFloat>{1}, device_vector<deviceFloat>{1}, device_vector<deviceFloat>{}},
+                                                                                 {device_vector<deviceFloat>{},  device_vector<deviceFloat>{},  device_vector<deviceFloat>{1}, device_vector<deviceFloat>{1}},
+                                                                                 {device_vector<deviceFloat>{1}, device_vector<deviceFloat>{},  device_vector<deviceFloat>{},  device_vector<deviceFloat>{1}},
+                                                                                 {device_vector<deviceFloat>{1}, device_vector<deviceFloat>{1}, device_vector<deviceFloat>{},  device_vector<deviceFloat>{}}};
 
-            new_elements[element_index]     = Element2D_t{element.N_, element.split_level_ + 1, element.faces_, {element.nodes_[0], new_nodes[0], new_node_index, new_nodes[3]}}; // CHECK faces are wrong
-            new_elements[element_index + 1] = Element2D_t{element.N_, element.split_level_ + 1, element.faces_, {new_nodes[0], element.nodes_[1], new_nodes[1], new_node_index}}; // CHECK faces are wrong
-            new_elements[element_index + 2] = Element2D_t{element.N_, element.split_level_ + 1, element.faces_, {new_node_index, new_nodes[1], element.nodes_[2], new_nodes[2]}}; // CHECK faces are wrong
-            new_elements[element_index + 3] = Element2D_t{element.N_, element.split_level_ + 1, element.faces_, {new_nodes[3], new_node_index, new_nodes[2], element.nodes_[3]}}; // CHECK faces are wrong
+            // These are the newly created faces
+            new_elements_faces[0][1][0] = new_face_index;
+            new_elements_faces[0][2][0] = new_face_index + 3;
+
+            new_elements_faces[1][3][0] = new_face_index;
+            new_elements_faces[1][2][0] = new_face_index + 1;
+
+            new_elements_faces[2][0][0] = new_face_index + 1;
+            new_elements_faces[2][3][0] = new_face_index + 2;
+
+            new_elements_faces[3][1][0] = new_face_index + 2;
+            new_elements_faces[3][0][0] = new_face_index + 3;
+
+
+
+            new_elements[element_index]     = Element2D_t{element.N_, element.split_level_ + 1, new_elements_faces[0], {element.nodes_[0], new_nodes[0], new_node_index, new_nodes[3]}};
+            new_elements[element_index + 1] = Element2D_t{element.N_, element.split_level_ + 1, new_elements_faces[1], {new_nodes[0], element.nodes_[1], new_nodes[1], new_node_index}};
+            new_elements[element_index + 2] = Element2D_t{element.N_, element.split_level_ + 1, new_elements_faces[2], {new_node_index, new_nodes[1], element.nodes_[2], new_nodes[2]}};
+            new_elements[element_index + 3] = Element2D_t{element.N_, element.split_level_ + 1, new_elements_faces[3], {new_nodes[3], new_node_index, new_nodes[2], element.nodes_[3]}};
 
             new_elements[element_index].interpolate_from(new_elements_nodes[0], element_nodes, element, polynomial_nodes, barycentric_weights);
             new_elements[element_index + 1].interpolate_from(new_elements_nodes[1], element_nodes, element, polynomial_nodes, barycentric_weights);
