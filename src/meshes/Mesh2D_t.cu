@@ -2244,7 +2244,7 @@ auto SEM::Meshes::p_adapt(size_t n_elements, Element2D_t* elements, int N_max, c
 }
 
 __global__
-auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, Element2D_t* elements, Element2D_t* new_elements, const Face2D_t* faces, Face2D_t* new_faces, const size_t* block_offsets, const size_t* nodes_block_offsets, int max_split_level, int N_max, Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void {
+auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, Element2D_t* elements, Element2D_t* new_elements, Face2D_t* faces, Face2D_t* new_faces, const size_t* block_offsets, const size_t* nodes_block_offsets, int max_split_level, int N_max, Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     const int thread_id = threadIdx.x;
@@ -2376,7 +2376,8 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
                         }
 
                         new_faces[neighbour_face_index] = Face2D_t(face_N, {element.nodes_[side_index], new_nodes[side_index]}, {element_index + side_index, neighbour_element_new_indices[0]}, {side_index, neighbour_side});
-                        new_faces[local_face_index] = Face2D_t(face_N, {new_nodes[side_index], (side_index < element.faces_.size() - 1) ? element.nodes_[size_index + 1] : element.nodes_[0]}, {(side_index < element.faces_.size() -1 ) ? element_index + side_index : element_index, neighbour_element_new_indices[1]}, {side_index, neighbour_side});
+                        new_faces[new_face_index + local_face_index] = Face2D_t(face_N, {new_nodes[side_index], (side_index < element.faces_.size() - 1) ? element.nodes_[size_index + 1] : element.nodes_[0]}, {(side_index < element.faces_.size() -1 ) ? element_index + side_index : element_index, neighbour_element_new_indices[1]}, {side_index, neighbour_side});
+                        faces[neighbour_face_index].N_ = -1;
                         ++local_face_index;
                     }
                     else { // CHECK This shouldn't happen as is, with elements always splitting in the middle and nodes not moving.
