@@ -2371,12 +2371,52 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
                             neighbour_element_new_index += 3 * elements[j].would_h_refine(max_split_level);
                         }
 
+                        // CHECK this doesn't work if a much smaller element and a bigger element splits, we need to calculate the midpoint and check within which we are
                         std::array<size_t, 2> neighbour_element_new_indices = {neighbour_element_new_index, neighbour_element_new_index};
-                        if (neighbour.would_h_refine(max_split_level)) { // CHECK this does not work if the splitting element is much smaller
-                            neighbour_element_new_indices[1] += neighbour_side;
+                        if (neighbour.would_h_refine(max_split_level)) {
+                            std::array<size_t, 2> neighbour_element_new_side_indices = neighbour_element_new_indices;
+                            neighbour_element_new_side_indices[0] += neighbour_side;
                             if (neighbour_side < neighbour.faces_.size() - 1) {
-                                neighbour_element_new_indices[0] += neighbour_side + 1;
+                                neighbour_element_new_side_indices[1] += neighbour_side + 1;
                             }
+
+                            const Vec2<deviceFloat> neighbour_new_node = (nodes[neighbour.nodes_[neighbour_side]] + nodes[neighbour.nodes_[(neighbour_side < neighbour.faces_.size() - 1) ? neighbour_side + 1 : 0]]) /2;
+
+                            const std::array<Vec2<deviceFloat>, 2> element_side_nodes {neighbour_new_node, nodes[neighbour.nodes_[neighbour_side]]};
+                            const Vec2<deviceFloat> AB {element_side_nodes[1] - element_side_nodes[0]};
+                            const deviceFloat AB_dot_inv = 1/AB.dot(AB);
+
+                            const std::array<Vec2<deviceFloat>, 3> face_nodes {nodes[element.nodes_[side_index]], new_node, nodes[element.nodes_[(side_index < element.nodes_.size() - 1) ? side_index + 1 : 0]]};
+                            const Vec2<deviceFloat> AC {face_nodes[0] - element_side_nodes[0]};
+                            const Vec2<deviceFloat> AD {face_nodes[1] - element_side_nodes[0]};
+                            const Vec2<deviceFloat> AE {face_nodes[2] - element_side_nodes[0]};
+
+                            const deviceFloat C_proj = AC.dot(AB) * AB_dot_inv;
+                            const deviceFloat D_proj = AD.dot(AB) * AB_dot_inv;
+                            const deviceFloat E_proj = AE.dot(AB) * AB_dot_inv;
+
+                            if (C_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                                && C_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                                && D_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                                && D_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+
+                                neighbour_element_new_indices[0] = neighbour_element_new_side_indices[0];
+                            }
+                            else {
+                                neighbour_element_new_indices[0] = neighbour_element_new_side_indices[1];
+                            }
+                            
+                            if (D_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                                && D_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                                && E_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                                && E_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+
+                                neighbour_element_new_indices[1] = neighbour_element_new_side_indices[0];
+                            }
+                            else {
+                                neighbour_element_new_indices[1] = neighbour_element_new_side_indices[1];
+                            }
+
                         }
 
                         new_faces[neighbour_face_index] = Face2D_t(face_N, {element.nodes_[side_index], new_nodes[side_index]}, {element_index + side_index, neighbour_element_new_indices[0]}, {side_index, neighbour_side});
