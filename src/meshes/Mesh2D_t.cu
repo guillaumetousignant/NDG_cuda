@@ -2424,7 +2424,48 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
             new_elements_faces[3][1][0] = new_face_index + 2;
             new_elements_faces[3][0][0] = new_face_index + 3;
 
+            if (element.additional_nodes_[0]) {
+                new_elements_faces[0][0] = device_vector<deviceFloat>{1};
+                new_elements_faces[1][0] = device_vector<deviceFloat>{1};
+                new_elements_faces[0][0][0] = element.faces_[0][0]
+                new_elements_faces[1][0][0] = new_faces[0];
+            }
+            else {
+                for (size_t face_index = 0; face_index < element.faces_[0].size(); ++face_index) {
 
+                }
+
+            }
+
+            if (element.additional_nodes_[1]) {
+                new_elements_faces[1][1] = device_vector<deviceFloat>{1};
+                new_elements_faces[2][1] = device_vector<deviceFloat>{1};
+                new_elements_faces[1][1][0] = element.faces_[1][0]
+                new_elements_faces[2][1][0] = new_faces[1];
+            }
+            else {
+
+            }
+
+            if (element.additional_nodes_[2]) {
+                new_elements_faces[2][2] = device_vector<deviceFloat>{1};
+                new_elements_faces[3][2] = device_vector<deviceFloat>{1};
+                new_elements_faces[2][2][0] = element.faces_[2][0]
+                new_elements_faces[3][2][0] = new_faces[2];
+            }
+            else {
+
+            }
+
+            if (element.additional_nodes_[3]) {
+                new_elements_faces[3][3] = device_vector<deviceFloat>{1};
+                new_elements_faces[0][3] = device_vector<deviceFloat>{1};
+                new_elements_faces[3][3][0] = element.faces_[3][0]
+                new_elements_faces[0][3][0] = new_faces[3];
+            }
+            else {
+
+            }
 
             new_elements[element_index]     = Element2D_t{element.N_, element.split_level_ + 1, new_elements_faces[0], {element.nodes_[0], new_nodes[0], new_node_index, new_nodes[3]}};
             new_elements[element_index + 1] = Element2D_t{element.N_, element.split_level_ + 1, new_elements_faces[1], {new_nodes[0], element.nodes_[1], new_nodes[1], new_node_index}};
