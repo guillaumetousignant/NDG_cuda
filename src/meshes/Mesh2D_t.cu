@@ -2307,11 +2307,12 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
                         const size_t neighbour_face_index = element.faces_[side_index][face_index];
                         const Face2D_t& face = faces[neighbour_face_index];
                         const int face_side = face.elements_[0] == i;
+                        const size_t neighbour_side = face.elements_side_[face_side];
                         const size_t neighbour_element_index = face.elements_[face_side];
                         const Element2D_t& neighbour = elements[neighbour_element_index];
                         
                         if (neighbour.would_h_refine(max_split_level)) {
-                            const std::array<Vec2<deviceFloat>, 2> neighbour_nodes = {nodes[neighbour.nodes_[face.elements_side_[face_side]]], (face.elements_side_[face_side] < neighbour.faces_.size() - 1) ? nodes[neighbour.nodes_[face.elements_side_[face_side] + 1]] : nodes[neighbour.nodes_[0]]};
+                            const std::array<Vec2<deviceFloat>, 2> neighbour_nodes = {nodes[neighbour.nodes_[neighbour_side]], (neighbour_side < neighbour.faces_.size() - 1) ? nodes[neighbour.nodes_[neighbour_side + 1]] : nodes[neighbour.nodes_[0]]};
                             const Vec2<deviceFloat> neighbour_new_node = (neighbour_nodes[0] + neighbour_nodes[1])/2;
 
                             if (new_node.almost_equal(neighbour_new_node) && neighbour_element_index < i) {
@@ -2321,7 +2322,7 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
                                 const int neighbour_thread_id = neighbour_element_index%block_dim;
 
                                 size_t neighbour_new_node_offset = n_nodes + 1 + block_offsets[neighbour_block_id];
-                                for (size_t neighbour_side_index = 0; neighbour_side_index < face.elements_side_[face_side]; ++neighbour_side_index) {
+                                for (size_t neighbour_side_index = 0; neighbour_side_index < neighbour_side; ++neighbour_side_index) {
                                     neighbour_new_node_offset += neighbour.additional_nodes_[neighbour_side_index];
                                 }
 
@@ -2351,18 +2352,36 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
                         const size_t neighbour_face_index = element.faces_[side_index][0];
                         const Face2D_t& face = faces[neighbour_face_index];
                         const int face_side = face.elements_[0] == i;
+                        const size_t neighbour_side = face.elements_side_[face_side];
                         const size_t neighbour_element_index = face.elements_[face_side];
                         const Element2D_t& neighbour = elements[neighbour_element_index];
 
                         // We find the max N, and to do this we need to take care and check if the neighbour would p-adapt
                         const int neighbour_N = neighbour.N_ + 2 * neighbour.would_p_refine(N_max);
+                        const int face_N = std::max(element.N_, neighbour_N);
 
-                        //new_faces[neighbour_face_index] = 
-                        //new_faces[local_face_index] = 
+                        const int neighbour_block_id = neighbour_element_index/block_dim;
+                        const int neighbour_thread_id = neighbour_element_index%block_dim;
+                        size_t neighbour_element_new_index = neighbour_element_index + block_offsets[neighbour_block_id];
+                        for (size_t j = neighbour_element_index - neighbour_thread_id; j < neighbour_element_index; ++j) {
+                            neighbour_element_new_index += 3 * elements[j].would_h_refine(max_split_level);
+                        }
+
+                        std::array<size_t, 2> neighbour_element_new_indices = {neighbour_element_new_index, neighbour_element_new_index};
+                        if (neighbour.would_h_refine(max_split_level)) {
+                            neighbour_element_new_indices[1] += neighbour_side;
+                            if (neighbour_side < neighbour.faces_.size() - 1) {
+                                neighbour_element_new_indices[0] += neighbour_side + 1;
+                            }
+                        }
+
+                        new_faces[neighbour_face_index] = Face2D_t(face_N, {element.nodes_[side_index], new_nodes[side_index]}, {element_index + side_index, neighbour_element_new_indices[0]}, {side_index, neighbour_side});
+                        new_faces[local_face_index] = Face2D_t(face_N, {new_nodes[side_index], (side_index < element.faces_.size() - 1) ? element.nodes_[size_index + 1] : element.nodes_[0]}, {(side_index < element.faces_.size() -1 ) ? element_index + side_index : element_index, neighbour_element_new_indices[1]}, {side_index, neighbour_side});
                         ++local_face_index;
                     }
                     else { // CHECK This shouldn't happen as is, with elements always splitting in the middle and nodes not moving.
-
+                        fprintf(stderr, "Error: Splitting element %llu creating node and face on side %llu, but there are already %llu faces on that side. Exiting.\n", i, side_index, element.faces_[side_index].size());    
+                        exit(53);
                     }
 
                     
