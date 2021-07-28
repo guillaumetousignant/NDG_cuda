@@ -12,6 +12,7 @@ SEM::Entities::Face2D_t::Face2D_t(int N, std::array<size_t, 2> nodes, std::array
         length_{0},
         offset_{0.0, 0.0},
         scale_{0.0, 0.0},
+        refine_{false},
         p_{N_ + 1, N_ + 1},
         u_{N_ + 1, N_ + 1},
         v_{N_ + 1, N_ + 1},
@@ -30,6 +31,7 @@ SEM::Entities::Face2D_t::Face2D_t() :
         length_{0},
         offset_{0.0, 0.0},
         scale_{0.0, 0.0},
+        refine_{false},
         p_{},
         u_{},
         v_{} {}
@@ -74,8 +76,8 @@ auto SEM::Entities::Face2D_t::compute_geometry(const SEM::Entities::Element2D_t*
     tangent_ *= sign;
 
     const std::array<std::array<SEM::Entities::Vec2<deviceFloat>, 2>, 2> elements_nodes {
-        std::array<SEM::Entities::Vec2<deviceFloat>, 2>{nodes[element_L.nodes_[elements_side_[0]]], (elements_side_[0] < element_L.faces_.size() - 1) ? nodes[element_L.nodes_[elements_side_[0] + 1]] : nodes[element_L.nodes_[0]]},
-        std::array<SEM::Entities::Vec2<deviceFloat>, 2>{nodes[element_R.nodes_[elements_side_[1]]], (elements_side_[1] < element_R.faces_.size() - 1) ? nodes[element_R.nodes_[elements_side_[1] + 1]] : nodes[element_R.nodes_[0]]}
+        std::array<SEM::Entities::Vec2<deviceFloat>, 2>{nodes[element_L.nodes_[elements_side_[0]]], (elements_side_[0] + 1 < element_L.nodes_.size()) ? nodes[element_L.nodes_[elements_side_[0] + 1]] : nodes[element_L.nodes_[0]]},
+        std::array<SEM::Entities::Vec2<deviceFloat>, 2>{nodes[element_R.nodes_[elements_side_[1]]], (elements_side_[1] + 1 < element_R.nodes_.size()) ? nodes[element_R.nodes_[elements_side_[1] + 1]] : nodes[element_R.nodes_[0]]}
     };
 
     const std::array<SEM::Entities::Vec2<deviceFloat>, 2> elements_delta {

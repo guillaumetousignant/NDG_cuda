@@ -50,6 +50,7 @@ namespace SEM { namespace Entities {
             deviceFloat length_; /**< @brief Length of the face.*/
             std::array<deviceFloat, 2> offset_; /**< @brief Offset from the elements. 0 means the first node of the face coincides with the first node of the element side, 0.5 means it is in the middle, 1 means it coincides with the second node of the element side. [left, right]*/
             std::array<deviceFloat, 2> scale_; /**< @brief Scaling from the elements. 1 is the same length as the element, 0.5 is half, etc. [left, right]*/
+            bool refine_; /**< @brief Face needs to be split in two.*/
 
             // Solution
             std::array<SEM::Entities::cuda_vector<deviceFloat>, 2> p_; /**< @brief Pressure projected from both elements. [left, right], both sized N + 1.*/

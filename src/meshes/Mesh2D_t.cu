@@ -706,8 +706,8 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     device_delta_t_array_ = device_vector<deviceFloat>(elements_numBlocks_, stream_);
     host_refine_array_ = std::vector<size_t>(elements_numBlocks_);
     device_refine_array_ = device_vector<size_t>(elements_numBlocks_, stream_);
-    host_nodes_refine_array_ = std::vector<size_t>(elements_numBlocks_);
-    device_nodes_refine_array_ = device_vector<size_t>(elements_numBlocks_, stream_);
+    host_faces_refine_array_ = std::vector<size_t>(faces_numBlocks_);
+    device_faces_refine_array_ = device_vector<size_t>(faces_numBlocks_, stream_);
 
     allocate_element_storage<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, elements_.data());
     allocate_boundary_storage<<<ghosts_numBlocks_, boundaries_blockSize_, 0, stream_>>>(n_elements_, elements_.size(), elements_.data());
@@ -753,7 +753,7 @@ auto SEM::Meshes::Mesh2D_t::build_element_to_element(const std::vector<Element2D
 
         for (size_t j = 0; j < element.nodes_.size(); ++j) {
             const size_t node_index = element.nodes_[j];
-            const size_t node_index_next = (j < element.nodes_.size() - 1) ? element.nodes_[j + 1] : element.nodes_[0];
+            const size_t node_index_next = (j + 1 < element.nodes_.size()) ? element.nodes_[j + 1] : element.nodes_[0];
 
             for (auto element_index : node_to_element[node_index]) {
                 if (element_index != i) {
@@ -800,7 +800,7 @@ auto SEM::Meshes::Mesh2D_t::build_faces(size_t n_elements_domain, size_t n_nodes
 
     for (size_t i = 0; i < n_elements_domain; ++i) {
         for (size_t j = 0; j < elements[i].nodes_.size(); ++j) {
-            const std::array<size_t, 2> nodes{elements[i].nodes_[j], (j < elements[i].nodes_.size() - 1) ? elements[i].nodes_[j + 1] : elements[i].nodes_[0]};
+            const std::array<size_t, 2> nodes{elements[i].nodes_[j], (j + 1 < elements[i].nodes_.size()) ? elements[i].nodes_[j + 1] : elements[i].nodes_[0]};
 
             bool found = false;
             for (auto face_index: node_to_face[nodes[0]]) {
@@ -1087,10 +1087,10 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
     device_refine_array_.copy_to(host_refine_array_, stream_);
     cudaStreamSynchronize(stream_);
 
-    size_t splitting_elements = 0;
+    size_t n_splitting_elements = 0;
     for (int i = 0; i < elements_numBlocks_; ++i) {
-        host_refine_array_[i] = 3 * splitting_elements; // Current block offset
-        splitting_elements += host_refine_array_[i];
+        host_refine_array_[i] = n_splitting_elements; // Current block offset
+        n_splitting_elements += host_refine_array_[i];
     }
 
     int global_rank;
@@ -1101,25 +1101,25 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
     std::vector<size_t> splitting_elements_global(global_size);
     constexpr MPI_Datatype data_type = (sizeof(size_t) == sizeof(unsigned long long)) ? MPI_UNSIGNED_LONG_LONG : (sizeof(size_t) == sizeof(unsigned long)) ? MPI_UNSIGNED_LONG : MPI_UNSIGNED; // CHECK this is a bad way of doing this
 
-    MPI_Allgather(&splitting_elements, 1, data_type, splitting_elements_global.data(), 1, data_type, MPI_COMM_WORLD);
+    MPI_Allgather(&n_splitting_elements, 1, data_type, splitting_elements_global.data(), 1, data_type, MPI_COMM_WORLD);
 
-    size_t N_splitting_elements_previous = 0;
+    size_t n_splitting_elements_previous = 0;
     for (int i = 0; i < global_rank; ++i) {
-        N_splitting_elements_previous += splitting_elements_global[i];
+        n_splitting_elements_previous += splitting_elements_global[i];
     }
-    const size_t global_element_offset_current = global_element_offset_ + 3 * N_splitting_elements_previous;
-    size_t N_splitting_elements_global = 0;
+    const size_t global_element_offset_current = global_element_offset_ + 3 * n_splitting_elements_previous;
+    size_t n_splitting_elements_global = 0;
     for (int i = 0; i < global_size; ++i) {
-        N_splitting_elements_global += splitting_elements_global[i];
+        n_splitting_elements_global += splitting_elements_global[i];
     }
-    n_elements_global_ += 3 * N_splitting_elements_global;
-    const size_t global_element_offset_end_current = global_element_offset_current + n_elements_ + 3 * splitting_elements - 1;
+    n_elements_global_ += 3 * n_splitting_elements_global;
+    const size_t global_element_offset_end_current = global_element_offset_current + n_elements_ + 3 * n_splitting_elements - 1;
 
     const size_t n_elements_per_process = (n_elements_global_ + global_size - 1)/global_size;
     global_element_offset_ = global_rank * n_elements_per_process;
     const size_t global_element_offset_end = std::min(global_element_offset_ + n_elements_per_process - 1, n_elements_global_ - 1);
 
-    if ((splitting_elements == 0) && (global_element_offset_ == global_element_offset_current) && (global_element_offset_end == global_element_offset_end_current)) {
+    if ((n_splitting_elements == 0) && (global_element_offset_ == global_element_offset_current) && (global_element_offset_end == global_element_offset_end_current)) {
         SEM::Meshes::p_adapt<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, elements_.data(), N_max, nodes_.data(), polynomial_nodes.data(), barycentric_weights.data());
 
         // We need to adjust the boundaries in all cases, or check if of our neighbours have to change
@@ -1163,30 +1163,38 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
         return;
     }
 
-    SEM::Meshes::reduce_nodes_2D<elements_blockSize_/2><<<elements_numBlocks_, elements_blockSize_/2, 0, stream_>>>(n_elements_, max_split_level_, elements_.data(), faces_.data(), nodes_.data(), device_nodes_refine_array_.data());
-    device_nodes_refine_array_.copy_to(host_nodes_refine_array_, stream_);
-    cudaStreamSynchronize(stream_);
-    
-    size_t n_additional_nodes = 0;
-    size_t n_additional_faces = 0;
-    for (int i = 0; i < elements_numBlocks_; ++i) {
-        host_nodes_refine_array_[i] = n_additional_nodes; // Current block offset
-        n_additional_nodes += host_nodes_refine_array_[i];
-        n_additional_faces += host_nodes_refine_array_[i] + 3 * (host_nodes_refine_array_[i] > 0);
-    }
-
-    device_nodes_refine_array_.copy_from(host_nodes_refine_array_, stream_);
     device_refine_array_.copy_from(host_refine_array_, stream_);
 
-    device_vector<Vec2<deviceFloat>> new_nodes(nodes_.size() + n_additional_nodes, stream_);
-    cudaMemcpyAsync(new_nodes.data(), nodes_.data(), nodes_.size() * sizeof(Vec2<deviceFloat>), cudaMemcpyDeviceToDevice, stream_); // Apparently slower than using a kernel
+    device_vector<Element2D_t> new_elements(elements_.size() + 3 * n_splitting_elements, stream_);
+
+    SEM::Meshes::find_nodes<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, elements_.data(), faces_.data(), nodes.data(), max_split_level_);
     
-    device_vector<Face2D_t> new_faces(faces_.size() + n_additional_faces, stream_);
+    SEM::Meshes::reduce_faces_refine_2D<faces_blockSize_/2><<<faces_numBlocks_, faces_blockSize_/2, 0, stream_>>>(n_faces_, max_split_level_, faces_.data(), elements_.data(), device_faces_refine_array_.data());
+    device_faces_refine_array_.copy_to(host_faces_refine_array_, stream_);
+    cudaStreamSynchronize(stream_);
 
-    device_vector<Element2D_t> new_elements(elements_.size() + 3 * splitting_elements, stream_);
-    SEM::Meshes::hp_adapt<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, faces_.size(), nodes_.size(), elements_.data(), new_elements.data(), faces_.data(), new_faces.data(), device_refine_array_.data(), device_nodes_refine_array_.data(), max_split_level_, N_max, new_nodes.data(), polynomial_nodes.data(), barycentric_weights.data());
+    size_t n_splitting_faces = 0;
+    for (int i = 0; i < faces_numBlocks_; ++i) {
+        host_faces_refine_array_[i] = n_splitting_faces; // Current block offset
+        n_splitting_faces += host_faces_refine_array_[i];
+    }
 
-    SEM::Meshes::move_faces<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces_.size(), faces_.data(), new_faces.data(), elements_.data());
+    device_faces_refine_array_.copy_from(host_faces_refine_array_, stream_);
+
+    device_vector<Vec2<deviceFloat>> new_nodes(nodes_.size() + n_splitting_elements + n_splitting_faces, stream_);
+    device_vector<Face2D_t> new_faces(faces_.size() + 4 * n_splitting_elements + n_splitting_faces, stream_);
+
+    cudaMemcpyAsync(new_nodes.data(), nodes_.data(), nodes_.size() * sizeof(Vec2<deviceFloat>), cudaMemcpyDeviceToDevice, stream_); // Apparently slower than using a kernel
+
+    SEM::Meshes::hp_adapt<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, faces_.size(), nodes_.size(), n_splitting_elements, elements_.data(), new_elements.data(), faces_.data(), new_faces.data(), device_refine_array_.data(), device_faces_refine_array_.data(), max_split_level_, N_max, new_nodes.data(), polynomial_nodes.data(), barycentric_weights.data(), faces_blockSize_);
+    
+    SEM::Meshes::split_faces<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces_.size(), faces_.data(), new_faces.data(), new_nodes.data());
+    
+
+
+
+
+
 
     if (!wall_boundaries_.empty()) {
         SEM::Meshes::rebuild_boundaries<<<wall_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(wall_boundaries_.size(), elements_.data(), elements_.data(), wall_boundaries_.data(), faces_.data());
@@ -1512,7 +1520,7 @@ auto SEM::Meshes::project_to_faces(size_t n_faces, Face2D_t* faces, const Elemen
         // Conforming
         if ((face.N_ == element_L.N_) 
                 && (face.nodes_[0] == element_L.nodes_[face.elements_side_[0]]) 
-                && (face.nodes_[1] == element_L.nodes_[(face.elements_side_[0] + 1) * (!(face.elements_side_[0] == (element_L.nodes_.size() - 1)))])) {
+                && (face.nodes_[1] == element_L.nodes_[(face.elements_side_[0] + 1) * (!(face.elements_side_[0] + 1 == (element_L.nodes_.size())))])) {
             for (int i = 0; i <= face.N_; ++i) {
                 face.p_[0][i] = element_L.p_extrapolated_[face.elements_side_[0]][i];
                 face.u_[0][i] = element_L.u_extrapolated_[face.elements_side_[0]][i];
@@ -1556,7 +1564,7 @@ auto SEM::Meshes::project_to_faces(size_t n_faces, Face2D_t* faces, const Elemen
         // Conforming, but reversed
         if ((face.N_ == element_R.N_) 
                 && (face.nodes_[1] == element_R.nodes_[face.elements_side_[1]]) 
-                && (face.nodes_[0] == element_R.nodes_[(face.elements_side_[1] + 1) * (!(face.elements_side_[1] == (element_R.nodes_.size() - 1)))])) {
+                && (face.nodes_[0] == element_R.nodes_[(face.elements_side_[1] + 1) * (!(face.elements_side_[1] + 1 == (element_R.nodes_.size())))])) {
             for (int i = 0; i <= face.N_; ++i) {
                 face.p_[1][face.N_ - i] = element_R.p_extrapolated_[face.elements_side_[1]][i];
                 face.u_[1][face.N_ - i] = element_R.u_extrapolated_[face.elements_side_[1]][i];
@@ -1611,7 +1619,7 @@ auto SEM::Meshes::project_to_elements(size_t n_elements, const Face2D_t* faces, 
             if ((element.faces_[side_index].size() == 1)
                     && (faces[element.faces_[side_index][0]].N_ == element.N_)  
                     && (faces[element.faces_[side_index][0]].nodes_[0] == element.nodes_[side_index]) 
-                    && (faces[element.faces_[side_index][0]].nodes_[1] == element.nodes_[(side_index + 1) * !(side_index == (element.faces_.size() - 1))])) {
+                    && (faces[element.faces_[side_index][0]].nodes_[1] == element.nodes_[(side_index + 1) * !(side_index + 1 == (element.faces_.size()))])) {
 
                 const Face2D_t& face = faces[element.faces_[side_index][0]];
                 for (int j = 0; j <= faces[element.faces_[side_index][0]].N_; ++j) {
@@ -1624,7 +1632,7 @@ auto SEM::Meshes::project_to_elements(size_t n_elements, const Face2D_t* faces, 
             else if ((element.faces_[side_index].size() == 1)
                     && (faces[element.faces_[side_index][0]].N_ == element.N_) 
                     && (faces[element.faces_[side_index][0]].nodes_[1] == element.nodes_[side_index]) 
-                    && (faces[element.faces_[side_index][0]].nodes_[0] == element.nodes_[(side_index + 1) * !(side_index == (element.faces_.size() - 1))])) {
+                    && (faces[element.faces_[side_index][0]].nodes_[0] == element.nodes_[(side_index + 1) * !(side_index + 1 == (element.faces_.size()))])) {
 
                 const Face2D_t& face = faces[element.faces_[side_index][0]];
                 for (int j = 0; j <= face.N_; ++j) {
@@ -2247,7 +2255,7 @@ auto SEM::Meshes::p_adapt(size_t n_elements, Element2D_t* elements, int N_max, c
 }
 
 __global__
-auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, Element2D_t* elements, Element2D_t* new_elements, Face2D_t* faces, Face2D_t* new_faces, const size_t* block_offsets, const size_t* nodes_block_offsets, int max_split_level, int N_max, Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void {
+auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, int n_splitting_elements, Element2D_t* elements, Element2D_t* new_elements, Face2D_t* faces, Face2D_t* new_faces, const size_t* block_offsets, const size_t* faces_block_offsets, int max_split_level, int N_max, Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights, int faces_blockSize) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     const int thread_id = threadIdx.x;
@@ -2257,564 +2265,411 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
     for (size_t i = index; i < n_elements; i += stride) {
         Element2D_t& element = elements[i];
 
-        size_t element_index = i + block_offsets[block_id];
+        size_t n_splitting_elements_before = block_offsets[block_id]
         for (size_t j = i - thread_id; j < i; ++j) {
-            element_index += 3 * elements[j].would_h_refine(max_split_level);
+            n_splitting_elements_before += elements[j].would_h_refine(max_split_level);
         }
+        const size_t element_index = i + 3 * n_splitting_elements_before;
 
         // h refinement
         if (element.would_h_refine(max_split_level)) {
-            size_t new_node_index = n_nodes + nodes_block_offsets[block_id];
-            size_t new_face_index = n_faces + nodes_block_offsets[block_id] + block_offsets[block_id]; // Wow this just happens to work, we need to add 3 faces per splitting element to the number of additional nodes, and the element offset is 3 * n_splitting
-            for (size_t j = i - thread_id; j < i; ++j) {
-                if (elements[j].would_h_refine(max_split_level)) { 
-                    ++new_node_index;
-                    new_face_index += 4;
-                    for (size_t side_index = 0; side_index < elements[j].faces_.size(); ++side_index) {
-                        new_node_index += elements[j].additional_nodes_[side_index];
-                        new_face_index += elements[j].additional_nodes_[side_index];
+            const size_t new_node_index = n_nodes + n_splitting_elements_before;
+
+            std::array<size_t, 4> new_node_indices {static_cast<size_t>(-1), static_cast<size_t>(-1), static_cast<size_t>(-1), static_cast<size_t>(-1)}; // CHECK this won't work with elements with more than 4 sides
+            std::array<Vec2<deviceFloat>, 4> new_nodes {}; // CHECK this won't work with elements with more than 4 sides
+            nodes[new_node_index] = Vec2<deviceFloat>{0};
+            for (size_t side_index = 0; side_index < element.nodes_.size(); ++side_index) {
+                nodes[new_node_index] += nodes[element.nodes_[side_index]];
+
+                if (element.additional_nodes_[side_index]) {
+                    const size_t face_index = element.faces_[side_index][0];
+                    new_nodes[side_index] = (nodes[faces[face_index].nodes_[0]] + nodes[faces[face_index].nodes_[1]])/2;
+
+                    const int face_block_id = face_index/faces_blockSize;
+                    const int face_thread_id = face_index%faces_blockSize;
+
+                    new_node_indices[side_index] = n_nodes + n_splitting_elements + faces_block_offsets[face_block_id];
+                    for (size_t j = face_index - face_thread_id; j < face_index; ++j) {
+                        new_node_indices[side_index] += faces[j].refine_;
+                    }
+                }
+                else {
+                    const std::array<SEM::Entities::Vec2<deviceFloat>, 2> side_nodes = {nodes[element.nodes_[side_index]], (side_index + 1 < element.faces_.size()) ? nodes[element.nodes_[side_index + 1]] : nodes[element.nodes_[0]]};
+                    const SEM::Entities::Vec2<deviceFloat> new_node = (side_nodes[0] + side_nodes[1])/2;
+
+                    for (size_t face_index = 0; face_index < element.faces_[side_index].size(); ++face_index) {
+                        const SEM::Entities::Face2D_t& face = faces[element.faces_[side_index][face_index]];
+                        if (nodes[face.nodes_[0]].almost_equal(new_node)) {
+                            new_node_indices[side_index] = face.nodes_[0];
+                            new_nodes[side_index] = nodes[face.nodes_[0]];
+                            break;
+                        } 
+                        else if (nodes[face.nodes_[1]].almost_equal(new_node)) {
+                            new_node_indices[side_index] = face.nodes_[1];
+                            new_nodes[side_index] = nodes[face.nodes_[1]];
+                            break;
+                        }
                     }
                 }
             }
-            
-            Vec2<deviceFloat> new_center_node {0};
-            std::array<size_t, 4> new_nodes {static_cast<size_t>(-1), static_cast<size_t>(-1), static_cast<size_t>(-1), static_cast<size_t>(-1)}; // CHECK this won't work with elements with more than 4 sides
+            nodes[new_node_index] /= element.nodes_.size();
+
             const std::array<Vec2<deviceFloat>, 4> element_nodes = {nodes[element.nodes_[0]], nodes[element.nodes_[1]], nodes[element.nodes_[2]], nodes[element.nodes_[3]]}; // CHECK this won't work with elements with more than 4 sides
-            std::array<size_t, 4> new_faces {static_cast<size_t>(-1), static_cast<size_t>(-1), static_cast<size_t>(-1), static_cast<size_t>(-1)};
 
-            size_t local_node_index = 1;
-            size_t local_face_index = 4;
-            for (size_t side_index = 0; side_index < element.faces_.size(); ++side_index) {
-                new_center_node += element_nodes[side_index];
-                const std::array<Vec2<deviceFloat>, 2> side_nodes = {element_nodes[side_index], (side_index < element.faces_.size() - 1) ? element_nodes[side_index + 1] : element_nodes[0]};
-                const Vec2<deviceFloat> new_node = (side_nodes[0] + side_nodes[1])/2;
+            // CHECK follow Hilbert curve
+            const size_t new_face_index = n_faces + 4 * n_splitting_elements_before;
 
-                // Here we check if the new node already exists
-                bool found_node = false;
-                for (size_t face_index = 0; face_index < element.faces_[side_index].size(); ++face_index) {
-                    const Face2D_t& face = faces[element.faces_[side_index][face_index]];
-                    if (nodes[face.nodes_[0]] == new_node) {
-                        found_node = true;
-                        new_nodes[side_index] = face.nodes_[0];
-                        break;
+            for (size_t side_index = 0; side_index < element.nodes_.size(); ++side_index) {
+                const size_t previous_side_index = (side_index > 0) ? side_index - 1 : element.nodes_.size() - 1;
+                const size_t next_side_index = (side_index + 1 < element.nodes_.size()) ? side_index + 1 : 0;
+                const size_t opposite_side_index = (side_index + 2 < element.nodes_.size()) ? side_index + 2 : side_index + 2 - element.nodes_.size();
+
+                const std::array<size_t, 2> side_element_indices {element_index + side_index, element_index + next_side_index};
+                const std::array<size_t, 2> side_element_sides {next_side_index, previous_side_index};
+                
+                new_faces[new_face_index + side_index] = Face2D_t{element.N_, {new_node_indices[side_index], new_node_index}, side_element_indices, side_element_sides};
+            
+                std:array<cuda_vector<size_t>, 4> new_element_faces {device_vector<deviceFloat>{},  device_vector<deviceFloat>{}, device_vector<deviceFloat>{}, device_vector<deviceFloat>{}};
+            
+                new_element_faces[next_side_index] = device_vector<deviceFloat>{1};
+                new_element_faces[opposite_side_index] = device_vector<deviceFloat>{1};
+
+                new_element_faces[next_side_index][0] = side_index;
+                new_element_faces[opposite_side_index][0] = previous_side_index;
+                
+                if (element.additional_nodes_[side_index]) {
+                    new_element_faces[side_index] = device_vector<deviceFloat>{1};
+    
+                    const size_t face_index = element.faces_[side_index][0];
+                    const int face_block_id = face_index/faces_blockSize;
+                    const int face_thread_id = face_index%faces_blockSize;
+    
+                    size_t splitting_face_index = n_faces + 4 * n_splitting_elements + faces_block_offsets[face_block_id];
+                    for (size_t j = face_index - face_thread_id; j < face_index; ++j) {
+                        splitting_face_index += faces[j].refine_;
                     }
-                    else if (nodes[face.nodes_[1]] == new_node) {
-                        found_node = true;
-                        new_nodes[side_index] = face.nodes_[1];
-                        break;
+    
+                    if (i == faces[face_index].elements_[0]) { // forward
+                        new_element_faces[side_index][0] = face_index;
                     }
-                }
-
-                // Here we check if another element would create the same node, and yield if its index is smaller
-                if (!found_node) {
-                    for (size_t face_index = 0; face_index < element.faces_[side_index].size(); ++face_index) {
-                        const size_t neighbour_face_index = element.faces_[side_index][face_index];
-                        const Face2D_t& face = faces[neighbour_face_index];
-                        const int face_side = face.elements_[0] == i;
-                        const size_t neighbour_side = face.elements_side_[face_side];
-                        const size_t neighbour_element_index = face.elements_[face_side];
-                        const Element2D_t& neighbour = elements[neighbour_element_index];
-                        
-                        if (neighbour.would_h_refine(max_split_level)) {
-                            const std::array<Vec2<deviceFloat>, 2> neighbour_nodes = {nodes[neighbour.nodes_[neighbour_side]], (neighbour_side < neighbour.faces_.size() - 1) ? nodes[neighbour.nodes_[neighbour_side + 1]] : nodes[neighbour.nodes_[0]]};
-                            const Vec2<deviceFloat> neighbour_new_node = (neighbour_nodes[0] + neighbour_nodes[1])/2;
-
-                            if (new_node.almost_equal(neighbour_new_node) && neighbour_element_index < i) {
-                                found_node = true;
-
-                                const int neighbour_block_id = neighbour_element_index/block_dim;
-                                const int neighbour_thread_id = neighbour_element_index%block_dim;
-
-                                size_t neighbour_new_node_offset = n_nodes + 1 + nodes_block_offsets[neighbour_block_id];
-                                for (size_t neighbour_side_index = 0; neighbour_side_index < neighbour_side; ++neighbour_side_index) {
-                                    neighbour_new_node_offset += neighbour.additional_nodes_[neighbour_side_index];
-                                }
-
-                                for (size_t j = neighbour_element_index - neighbour_thread_id; j < neighbour_element_index; ++j) {
-                                    if (elements[j].would_h_refine(max_split_level)) {
-                                        ++neighbour_new_node_offset;
-                                        for (size_t side_index = 0; side_index < elements[j].faces_.size(); ++side_index) {
-                                            neighbour_new_node_offset += elements[j].additional_nodes_[side_index];
-                                        }
-                                    }
-                                }
-
-
-                                new_nodes[side_index] = neighbour_new_node_offset;
-                                break;
-                            }
-                        }
+                    else { // backward
+                        new_element_faces[side_index][0] = splitting_face_index
                     }
                 }
-
-                if (!found_node) {
-                    new_nodes[side_index] = new_node_index + local_node_index;
-                    nodes[new_nodes[side_index]] = new_node;
-                    ++local_node_index;
-
-                    if (element.faces_[side_index].size() == 1) {
-                        const size_t neighbour_face_index = element.faces_[side_index][0];
-                        const Face2D_t& face = faces[neighbour_face_index];
-                        const int face_side = face.elements_[0] == i;
-                        const size_t neighbour_side = face.elements_side_[face_side];
-                        const size_t neighbour_element_index = face.elements_[face_side];
-                        const Element2D_t& neighbour = elements[neighbour_element_index];
-
-                        // We find the max N, and to do this we need to take care and check if the neighbour would p-adapt
-                        const int neighbour_N = neighbour.N_ + 2 * neighbour.would_p_refine(N_max);
-                        const int face_N = std::max(element.N_, neighbour_N);
-
-                        const int neighbour_block_id = neighbour_element_index/block_dim;
-                        const int neighbour_thread_id = neighbour_element_index%block_dim;
-                        size_t neighbour_element_new_index = neighbour_element_index + block_offsets[neighbour_block_id];
-                        for (size_t j = neighbour_element_index - neighbour_thread_id; j < neighbour_element_index; ++j) {
-                            neighbour_element_new_index += 3 * elements[j].would_h_refine(max_split_level);
-                        }
-
-                        std::array<size_t, 2> neighbour_element_new_indices = {neighbour_element_new_index, neighbour_element_new_index};
-                        if (neighbour.would_h_refine(max_split_level)) {
-                            std::array<size_t, 2> neighbour_element_new_side_indices = neighbour_element_new_indices;
-                            neighbour_element_new_side_indices[0] += neighbour_side;
-                            if (neighbour_side < neighbour.faces_.size() - 1) {
-                                neighbour_element_new_side_indices[1] += neighbour_side + 1;
-                            }
-
-                            const Vec2<deviceFloat> neighbour_new_node = (nodes[neighbour.nodes_[neighbour_side]] + nodes[neighbour.nodes_[(neighbour_side < neighbour.faces_.size() - 1) ? neighbour_side + 1 : 0]]) /2;
-
-                            const std::array<Vec2<deviceFloat>, 2> element_side_nodes {neighbour_new_node, nodes[neighbour.nodes_[neighbour_side]]};
-                            const Vec2<deviceFloat> AB {element_side_nodes[1] - element_side_nodes[0]};
-                            const deviceFloat AB_dot_inv = 1/AB.dot(AB);
-
-                            const std::array<Vec2<deviceFloat>, 3> face_nodes {nodes[element.nodes_[side_index]], new_node, nodes[element.nodes_[(side_index < element.nodes_.size() - 1) ? side_index + 1 : 0]]};
-                            const Vec2<deviceFloat> AC {face_nodes[0] - element_side_nodes[0]};
-                            const Vec2<deviceFloat> AD {face_nodes[1] - element_side_nodes[0]};
-                            const Vec2<deviceFloat> AE {face_nodes[2] - element_side_nodes[0]};
-
+                else {
+                    size_t n_side_faces = 0;
+                    const Vec2<deviceFloat> new_node = (nodes[element.nodes_[side_index]] + nodes[element.nodes_[next_side_index]])/2;
+    
+                    const Vec2<deviceFloat>, 2> AB = new_node - nodes[element.nodes_[side_index]];
+    
+                    const deviceFloat AB_dot_inv  = 1/AB.dot(AB);
+    
+                    for (size_t side_face_index = 0; side_face_index < element.faces_[side_index].size(); ++side_face_index) {
+                        const size_t face_index = element.faces_[side_index][side_face_index];
+                        const Face2D_t& face = faces[face_index];
+                        if (face.refine_) {
+                            const Vec2<deviceFloat> face_new_node = (nodes[face.nodes_[0]] + nodes[face.nodes_[1]])/2;
+                            const Vec2<deviceFloat> AC = nodes[face.nodes_[0]] - nodes[element.nodes_[side_index]];
+                            const Vec2<deviceFloat> AD = face_new_node - nodes[element.nodes_[side_index]];
+                            const Vec2<deviceFloat> AE = nodes[face.nodes_[1]] - nodes[element.nodes_[side_index]];
+    
                             const deviceFloat C_proj = AC.dot(AB) * AB_dot_inv;
                             const deviceFloat D_proj = AD.dot(AB) * AB_dot_inv;
                             const deviceFloat E_proj = AE.dot(AB) * AB_dot_inv;
-
+    
+                            // The first half of the face is within the element
                             if (C_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
                                 && C_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
                                 && D_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
                                 && D_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
-
-                                neighbour_element_new_indices[0] = neighbour_element_new_side_indices[0];
+        
+                                ++n_side_faces;
                             }
-                            else {
-                                neighbour_element_new_indices[0] = neighbour_element_new_side_indices[1];
-                            }
-                            
+                            // The second half of the face is within the element
                             if (D_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
                                 && D_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
                                 && E_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
                                 && E_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
-
-                                neighbour_element_new_indices[1] = neighbour_element_new_side_indices[0];
+        
+                                ++n_side_faces;
                             }
-                            else {
-                                neighbour_element_new_indices[1] = neighbour_element_new_side_indices[1];
-                            }
-
                         }
-
-                        new_faces[neighbour_face_index] = Face2D_t(face_N, {element.nodes_[side_index], new_nodes[side_index]}, {element_index + side_index, neighbour_element_new_indices[0]}, {side_index, neighbour_side});
-                        new_faces[new_face_index + local_face_index] = Face2D_t(face_N, {new_nodes[side_index], (side_index < element.faces_.size() - 1) ? element.nodes_[size_index + 1] : element.nodes_[0]}, {(side_index < element.faces_.size() -1 ) ? element_index + side_index : element_index, neighbour_element_new_indices[1]}, {side_index, neighbour_side});
-                        faces[neighbour_face_index].N_ = -1;
-                        new_faces[side_index] = new_face_index + local_face_index;
-                        ++local_face_index;
+                        else {
+                            const Vec2<deviceFloat> AC = nodes[face.nodes_[0]] - nodes[element.nodes_[side_index]];
+                            const Vec2<deviceFloat> AD = nodes[face.nodes_[1]] - nodes[element.nodes_[side_index]];
+    
+                            const deviceFloat C_proj = AC.dot(AB) * AB_dot_inv;
+                            const deviceFloat D_proj = AD.dot(AB) * AB_dot_inv;
+    
+                            // The face is within the element
+                            if (C_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                                && C_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                                && D_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                                && D_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+        
+                                ++n_side_faces;
+                            }
+                        }
                     }
-                    else { // CHECK This shouldn't happen as is, with elements always splitting in the middle and nodes not moving.
-                        fprintf(stderr, "Error: Splitting element %llu creating node and face on side %llu, but there are already %llu faces on that side. Exiting.\n", i, side_index, element.faces_[side_index].size());    
-                        exit(53);
-                    }
-                }
-            }
-
-            new_center_node /= element.faces_.size();
-            nodes[new_node_index] = new_center_node;
-
-            new_faces[new_face_index]     = Face2D_t{element.N_, {new_nodes[0], new_node_index}, {element_index,     element_index + 1}, {0, 2}};
-            new_faces[new_face_index + 1] = Face2D_t{element.N_, {new_nodes[1], new_node_index}, {element_index + 1, element_index + 2}, {1, 3}};
-            new_faces[new_face_index + 2] = Face2D_t{element.N_, {new_nodes[2], new_node_index}, {element_index + 2, element_index + 3}, {2, 0}};
-            new_faces[new_face_index + 3] = Face2D_t{element.N_, {new_nodes[3], new_node_index}, {element_index + 3, element_index},     {3, 1}};
-
-            // CHECK add order
-            // CHECK this won't work with anything other than quadrilaterals
-            const std::array<std::array<Vec2<deviceFloat>, 4>, 4> new_elements_nodes {std::array<Vec2<deviceFloat>, 4>{nodes[element.nodes_[0]], nodes[new_nodes[0]], nodes[new_node_index], nodes[new_nodes[3]]},
-                                                                                      std::array<Vec2<deviceFloat>, 4>{nodes[new_nodes[0]], nodes[element.nodes_[1]], nodes[new_nodes[1]], nodes[new_node_index]},
-                                                                                      std::array<Vec2<deviceFloat>, 4>{nodes[new_node_index], nodes[new_nodes[1]], nodes[element.nodes_[2]], nodes[new_nodes[2]]},
-                                                                                      std::array<Vec2<deviceFloat>, 4>{nodes[new_nodes[3]], nodes[new_node_index], nodes[new_nodes[2]], nodes[element.nodes_[3]]}};
-
-            std::array<std:array<cuda_vector<size_t>, 4>, 4> new_elements_faces {{device_vector<deviceFloat>{},  device_vector<deviceFloat>{1}, device_vector<deviceFloat>{1}, device_vector<deviceFloat>{}},
-                                                                                 {device_vector<deviceFloat>{},  device_vector<deviceFloat>{},  device_vector<deviceFloat>{1}, device_vector<deviceFloat>{1}},
-                                                                                 {device_vector<deviceFloat>{1}, device_vector<deviceFloat>{},  device_vector<deviceFloat>{},  device_vector<deviceFloat>{1}},
-                                                                                 {device_vector<deviceFloat>{1}, device_vector<deviceFloat>{1}, device_vector<deviceFloat>{},  device_vector<deviceFloat>{}}};
-
-            // These are the newly created faces
-            new_elements_faces[0][1][0] = new_face_index;
-            new_elements_faces[0][2][0] = new_face_index + 3;
-
-            new_elements_faces[1][3][0] = new_face_index;
-            new_elements_faces[1][2][0] = new_face_index + 1;
-
-            new_elements_faces[2][0][0] = new_face_index + 1;
-            new_elements_faces[2][3][0] = new_face_index + 2;
-
-            new_elements_faces[3][1][0] = new_face_index + 2;
-            new_elements_faces[3][0][0] = new_face_index + 3;
-
-            if (element.additional_nodes_[0]) {
-                new_elements_faces[0][0] = device_vector<deviceFloat>{1};
-                new_elements_faces[1][0] = device_vector<deviceFloat>{1};
-                new_elements_faces[0][0][0] = element.faces_[0][0]
-                new_elements_faces[1][0][0] = new_faces[0];
-            }
-            else {
-                const std::array<std::array<Vec2<deviceFloat>, 2>, 2> element_side_nodes {{new_elements_nodes[0][0], new_elements_nodes[0][1]},
-                                                                                          {new_elements_nodes[1][0], new_elements_nodes[1][1]}};
-                const std::array<Vec2<deviceFloat>, 2> AB {element_side_nodes[0][1] - element_side_nodes[0][0],
-                                                           element_side_nodes[1][1] - element_side_nodes[1][0]};
-                const std::array<deviceFloat, 2> AB_dot_inv {1/AB[0].dot(AB[0]),
-                                                             1/AB[1].dot(AB[1])};
-
-                std::array<size_t, 2> side_n_faces {0, 0};
-                for (size_t face_index = 0; face_index < element.faces_[0].size(); ++face_index) {
-                    const Face2D_t& face = faces[element.faces_[0][face_index]];
-                    const std::array<Vec2<deviceFloat>, 2> face_nodes {nodes[face.nodes_[0]], nodes[face.nodes_[1]]};
-                    const std::array<Vec2<deviceFloat>, 2> AC {face_nodes[0] - element_side_nodes[0][0],
-                                                               face_nodes[0] - element_side_nodes[1][0]};
-                    const std::array<Vec2<deviceFloat>, 2> AD {face_nodes[1] - element_side_nodes[0][0],
-                                                               face_nodes[1] - element_side_nodes[1][0]};
-
-                    const std::array<deviceFloat, 2> C_proj {AC[0].dot(AB[0]) * AB_dot_inv[0],
-                                                             AC[1].dot(AB[1]) * AB_dot_inv[1]};
-                    const std::array<deviceFloat, 2> D_proj {AD[0].dot(AB[0]) * AB_dot_inv[0],
-                                                             AD[1].dot(AB[1]) * AB_dot_inv[1]};
-
-                    if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                        && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                        && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                        && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
-
-                        ++side_n_faces[0];
-                    }
-                    
-                    if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                        && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                        && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                        && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
-
-                        ++side_n_faces[1];
+    
+                    new_element_faces[side_index] = device_vector<deviceFloat>{n_side_faces};
+    
+                    size_t new_element_side_face_index 0;
+                    for (size_t side_face_index = 0; side_face_index < element.faces_[side_index].size(); ++side_face_index) {
+                        const size_t face_index = element.faces_[side_index][side_face_index];
+                        const Face2D_t& face = faces[face_index];
+                        if (face.refine_) {
+                            const int face_block_id = face_index/faces_blockSize;
+                            const int face_thread_id = face_index%faces_blockSize;
+    
+                            size_t splitting_face_index = n_faces + 4 * n_splitting_elements + faces_block_offsets[face_block_id];
+                            for (size_t j = face_index - face_thread_id; j < face_index; ++j) {
+                                splitting_face_index += faces[j].refine_;
+                            }
+                            const Vec2<deviceFloat> face_new_node = (nodes[face.nodes_[0]] + nodes[face.nodes_[1]])/2;
+                            const Vec2<deviceFloat> AC = nodes[face.nodes_[0]] - nodes[element.nodes_[side_index]];
+                            const Vec2<deviceFloat> AD = face_new_node - nodes[element.nodes_[side_index]];
+                            const Vec2<deviceFloat> AE = nodes[face.nodes_[1]] - nodes[element.nodes_[side_index]];
+    
+                            const deviceFloat C_proj = AC.dot(AB) * AB_dot_inv;
+                            const deviceFloat D_proj = AD.dot(AB) * AB_dot_inv;
+                            const deviceFloat E_proj = AE.dot(AB) * AB_dot_inv;
+    
+                            // The first half of the face is within the element
+                            if (C_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                                && C_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                                && D_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                                && D_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+        
+                                    new_element_faces[side_index][new_element_side_face_index] = face_index;
+                                ++new_element_side_face_index;
+                            }
+                            // The second half of the face is within the element
+                            if (D_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                                && D_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                                && E_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                                && E_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+        
+                                    new_element_faces[side_index][new_element_side_face_index] = splitting_face_index;
+                                ++new_element_side_face_index;
+                            }
+                        }
+                        else {
+                            const Vec2<deviceFloat> AC = nodes[face.nodes_[0]] - nodes[element.nodes_[side_index]];
+                            const Vec2<deviceFloat> AD = nodes[face.nodes_[1]] - nodes[element.nodes_[side_index]];
+    
+                            const deviceFloat C_proj = AC.dot(AB) * AB_dot_inv;
+                            const deviceFloat D_proj = AD.dot(AB) * AB_dot_inv;
+    
+                            // The face is within the element
+                            if (C_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                                && C_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                                && D_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                                && D_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+        
+                                    new_element_faces[side_index][new_element_side_face_index] = face_index;
+                                ++new_element_side_face_index;
+                            }
+                        }
                     }
                 }
 
-                new_elements_faces[0][0] = device_vector<deviceFloat>{side_n_faces[0]};
-                new_elements_faces[1][0] = device_vector<deviceFloat>{side_n_faces[1]};
-
-                std::array<size_t, 2> new_elements_side_face_index {0, 0};
-                for (size_t face_index = 0; face_index < element.faces_[0].size(); ++face_index) {
-                    const Face2D_t& face = faces[element.faces_[0][face_index]];
-                    const std::array<Vec2<deviceFloat>, 2> face_nodes {nodes[face.nodes_[0]], nodes[face.nodes_[1]]};
-                    const std::array<Vec2<deviceFloat>, 2> AC {face_nodes[0] - element_side_nodes[0][0],
-                                                               face_nodes[0] - element_side_nodes[1][0]};
-                    const std::array<Vec2<deviceFloat>, 2> AD {face_nodes[1] - element_side_nodes[0][0],
-                                                               face_nodes[1] - element_side_nodes[1][0]};
-
-                    const std::array<deviceFloat, 2> C_proj {AC[0].dot(AB[0]) * AB_dot_inv[0],
-                                                             AC[1].dot(AB[1]) * AB_dot_inv[1]};
-                    const std::array<deviceFloat, 2> D_proj {AD[0].dot(AB[0]) * AB_dot_inv[0],
-                                                             AD[1].dot(AB[1]) * AB_dot_inv[1]};
-
-                    if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                        && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                        && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                        && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
-
-                        new_elements_faces[1][0][new_elements_side_face_index[0]] = element.faces_[0][face_index];
-                        ++new_elements_side_face_index[0];
+                if (element.additional_nodes_[previous_side_index]) {
+                    new_element_faces[previous_side_index] = device_vector<deviceFloat>{1};
+    
+                    const size_t face_index = element.faces_[previous_side_index][0];
+                    const int face_block_id = face_index/faces_blockSize;
+                    const int face_thread_id = face_index%faces_blockSize;
+    
+                    size_t splitting_face_index = n_faces + 4 * n_splitting_elements + faces_block_offsets[face_block_id];
+                    for (size_t j = face_index - face_thread_id; j < face_index; ++j) {
+                        splitting_face_index += faces[j].refine_;
                     }
-                    
-                    if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                        && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                        && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                        && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
-
-                        new_elements_faces[1][0][new_elements_side_face_index[1]] = element.faces_[0][face_index];
-                        ++new_elements_side_face_index[1];
+    
+                    if (i == faces[face_index].elements_[0]) { // forward
+                        new_element_faces[previous_side_index][0] = splitting_face_index;
+                    }
+                    else { // backward
+                        new_element_faces[previous_side_index][0] = face_index
                     }
                 }
-            }
-
-            if (element.additional_nodes_[1]) {
-                new_elements_faces[1][1] = device_vector<deviceFloat>{1};
-                new_elements_faces[2][1] = device_vector<deviceFloat>{1};
-                new_elements_faces[1][1][0] = element.faces_[1][0]
-                new_elements_faces[2][1][0] = new_faces[1];
-            }
-            else {
-                const std::array<std::array<Vec2<deviceFloat>, 2>, 2> element_side_nodes {{new_elements_nodes[1][1], new_elements_nodes[1][2]},
-                                                                                          {new_elements_nodes[2][1], new_elements_nodes[2][2]}};
-                const std::array<Vec2<deviceFloat>, 2> AB {element_side_nodes[0][1] - element_side_nodes[0][0],
-                                                           element_side_nodes[1][1] - element_side_nodes[1][0]};
-                const std::array<deviceFloat, 2> AB_dot_inv {1/AB[0].dot(AB[0]),
-                                                             1/AB[1].dot(AB[1])};
-
-                std::array<size_t, 2> side_n_faces {0, 0};
-                for (size_t face_index = 0; face_index < element.faces_[1].size(); ++face_index) {
-                    const Face2D_t& face = faces[element.faces_[1][face_index]];
-                    const std::array<Vec2<deviceFloat>, 2> face_nodes {nodes[face.nodes_[0]], nodes[face.nodes_[1]]};
-                    const std::array<Vec2<deviceFloat>, 2> AC {face_nodes[0] - element_side_nodes[0][0],
-                                                               face_nodes[0] - element_side_nodes[1][0]};
-                    const std::array<Vec2<deviceFloat>, 2> AD {face_nodes[1] - element_side_nodes[0][0],
-                                                               face_nodes[1] - element_side_nodes[1][0]};
-
-                    const std::array<deviceFloat, 2> C_proj {AC[0].dot(AB[0]) * AB_dot_inv[0],
-                                                             AC[1].dot(AB[1]) * AB_dot_inv[1]};
-                    const std::array<deviceFloat, 2> D_proj {AD[0].dot(AB[0]) * AB_dot_inv[0],
-                                                             AD[1].dot(AB[1]) * AB_dot_inv[1]};
-
-                    if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                        && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                        && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                        && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
-
-                        ++side_n_faces[0];
+                else {
+                    size_t n_side_faces = 0;
+                    const Vec2<deviceFloat> new_node = (nodes[element.nodes_[previous_side_index]] + nodes[element.nodes_[side_index]])/2;
+    
+                    const Vec2<deviceFloat>, 2> AB = nodes[element.nodes_[side_index]] - new_node;
+    
+                    const deviceFloat AB_dot_inv  = 1/AB.dot(AB);
+    
+                    for (size_t side_face_index = 0; side_face_index < element.faces_[previous_side_index].size(); ++side_face_index) {
+                        const size_t face_index = element.faces_[previous_side_index][side_face_index];
+                        const Face2D_t& face = faces[face_index];
+                        if (face.refine_) {
+                            const Vec2<deviceFloat> face_new_node = (nodes[face.nodes_[0]] + nodes[face.nodes_[1]])/2;
+                            const Vec2<deviceFloat> AC = nodes[face.nodes_[0]] - new_node;
+                            const Vec2<deviceFloat> AD = face_new_node - new_node;
+                            const Vec2<deviceFloat> AE = nodes[face.nodes_[1]] - new_node;
+    
+                            const deviceFloat C_proj = AC.dot(AB) * AB_dot_inv;
+                            const deviceFloat D_proj = AD.dot(AB) * AB_dot_inv;
+                            const deviceFloat E_proj = AE.dot(AB) * AB_dot_inv;
+    
+                            // The first half of the face is within the element
+                            if (C_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                                && C_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                                && D_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                                && D_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+        
+                                ++n_side_faces;
+                            }
+                            // The second half of the face is within the element
+                            if (D_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                                && D_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                                && E_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                                && E_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+        
+                                ++n_side_faces;
+                            }
+                        }
+                        else {
+                            const Vec2<deviceFloat> AC = nodes[face.nodes_[0]] - new_node;
+                            const Vec2<deviceFloat> AD = nodes[face.nodes_[1]] - new_node;
+    
+                            const deviceFloat C_proj = AC.dot(AB) * AB_dot_inv;
+                            const deviceFloat D_proj = AD.dot(AB) * AB_dot_inv;
+    
+                            // The face is within the element
+                            if (C_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                                && C_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                                && D_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                                && D_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+        
+                                ++n_side_faces;
+                            }
+                        }
                     }
-                    
-                    if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                        && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                        && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                        && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
-
-                        ++side_n_faces[1];
-                    }
-                }
-
-                new_elements_faces[1][1] = device_vector<deviceFloat>{side_n_faces[0]};
-                new_elements_faces[2][1] = device_vector<deviceFloat>{side_n_faces[1]};
-
-                std::array<size_t, 2> new_elements_side_face_index {0, 0};
-                for (size_t face_index = 0; face_index < element.faces_[1].size(); ++face_index) {
-                    const Face2D_t& face = faces[element.faces_[1][face_index]];
-                    const std::array<Vec2<deviceFloat>, 2> face_nodes {nodes[face.nodes_[0]], nodes[face.nodes_[1]]};
-                    const std::array<Vec2<deviceFloat>, 2> AC {face_nodes[0] - element_side_nodes[0][0],
-                                                               face_nodes[0] - element_side_nodes[1][0]};
-                    const std::array<Vec2<deviceFloat>, 2> AD {face_nodes[1] - element_side_nodes[0][0],
-                                                               face_nodes[1] - element_side_nodes[1][0]};
-
-                    const std::array<deviceFloat, 2> C_proj {AC[0].dot(AB[0]) * AB_dot_inv[0],
-                                                             AC[1].dot(AB[1]) * AB_dot_inv[1]};
-                    const std::array<deviceFloat, 2> D_proj {AD[0].dot(AB[0]) * AB_dot_inv[0],
-                                                             AD[1].dot(AB[1]) * AB_dot_inv[1]};
-
-                    if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                        && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                        && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                        && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
-
-                        new_elements_faces[1][1][new_elements_side_face_index[0]] = element.faces_[1][face_index];
-                        ++new_elements_side_face_index[0];
-                    }
-                    
-                    if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                        && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                        && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                        && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
-
-                        new_elements_faces[2][1][new_elements_side_face_index[1]] = element.faces_[1][face_index];
-                        ++new_elements_side_face_index[1];
-                    }
-                }
-            }
-
-            if (element.additional_nodes_[2]) {
-                new_elements_faces[2][2] = device_vector<deviceFloat>{1};
-                new_elements_faces[3][2] = device_vector<deviceFloat>{1};
-                new_elements_faces[2][2][0] = element.faces_[2][0]
-                new_elements_faces[3][2][0] = new_faces[2];
-            }
-            else {
-                const std::array<std::array<Vec2<deviceFloat>, 2>, 2> element_side_nodes {{new_elements_nodes[2][2], new_elements_nodes[2][3]},
-                                                                                          {new_elements_nodes[3][2], new_elements_nodes[3][3]}};
-                const std::array<Vec2<deviceFloat>, 2> AB {element_side_nodes[0][1] - element_side_nodes[0][0],
-                                                           element_side_nodes[1][1] - element_side_nodes[1][0]};
-                const std::array<deviceFloat, 2> AB_dot_inv {1/AB[0].dot(AB[0]),
-                                                             1/AB[1].dot(AB[1])};
-
-                std::array<size_t, 2> side_n_faces {0, 0};
-                for (size_t face_index = 0; face_index < element.faces_[2].size(); ++face_index) {
-                    const Face2D_t& face = faces[element.faces_[2][face_index]];
-                    const std::array<Vec2<deviceFloat>, 2> face_nodes {nodes[face.nodes_[0]], nodes[face.nodes_[1]]};
-                    const std::array<Vec2<deviceFloat>, 2> AC {face_nodes[0] - element_side_nodes[0][0],
-                                                               face_nodes[0] - element_side_nodes[1][0]};
-                    const std::array<Vec2<deviceFloat>, 2> AD {face_nodes[1] - element_side_nodes[0][0],
-                                                               face_nodes[1] - element_side_nodes[1][0]};
-
-                    const std::array<deviceFloat, 2> C_proj {AC[0].dot(AB[0]) * AB_dot_inv[0],
-                                                             AC[1].dot(AB[1]) * AB_dot_inv[1]};
-                    const std::array<deviceFloat, 2> D_proj {AD[0].dot(AB[0]) * AB_dot_inv[0],
-                                                             AD[1].dot(AB[1]) * AB_dot_inv[1]};
-
-                    if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                        && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                        && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                        && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
-
-                        ++side_n_faces[0];
-                    }
-                    
-                    if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                        && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                        && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                        && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
-
-                        ++side_n_faces[1];
+    
+                    new_element_faces[previous_side_index] = device_vector<deviceFloat>{n_side_faces};
+    
+                    size_t new_element_side_face_index 0;
+                    for (size_t side_face_index = 0; side_face_index < element.faces_[previous_side_index].size(); ++side_face_index) {
+                        const size_t face_index = element.faces_[previous_side_index][side_face_index];
+                        const Face2D_t& face = faces[face_index];
+                        if (face.refine_) {
+                            const int face_block_id = face_index/faces_blockSize;
+                            const int face_thread_id = face_index%faces_blockSize;
+    
+                            size_t splitting_face_index = n_faces + 4 * n_splitting_elements + faces_block_offsets[face_block_id];
+                            for (size_t j = face_index - face_thread_id; j < face_index; ++j) {
+                                splitting_face_index += faces[j].refine_;
+                            }
+                            const Vec2<deviceFloat> face_new_node = (nodes[face.nodes_[0]] + nodes[face.nodes_[1]])/2;
+                            const Vec2<deviceFloat> AC = nodes[face.nodes_[0]] - new_node;
+                            const Vec2<deviceFloat> AD = face_new_node - new_node;
+                            const Vec2<deviceFloat> AE = nodes[face.nodes_[1]] - new_node;
+    
+                            const deviceFloat C_proj = AC.dot(AB) * AB_dot_inv;
+                            const deviceFloat D_proj = AD.dot(AB) * AB_dot_inv;
+                            const deviceFloat E_proj = AE.dot(AB) * AB_dot_inv;
+    
+                            // The first half of the face is within the element
+                            if (C_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                                && C_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                                && D_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                                && D_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+        
+                                new_element_faces[previous_side_index][new_element_side_face_index] = face_index;
+                                ++new_element_side_face_index;
+                            }
+                            // The second half of the face is within the element
+                            if (D_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                                && D_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                                && E_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                                && E_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+        
+                                new_element_faces[previous_side_index][new_element_side_face_index] = splitting_face_index;
+                                ++new_element_side_face_index;
+                            }
+                        }
+                        else {
+                            const Vec2<deviceFloat> AC = nodes[face.nodes_[0]] - new_node;
+                            const Vec2<deviceFloat> AD = nodes[face.nodes_[1]] - new_node;
+    
+                            const deviceFloat C_proj = AC.dot(AB) * AB_dot_inv;
+                            const deviceFloat D_proj = AD.dot(AB) * AB_dot_inv;
+    
+                            // The face is within the element
+                            if (C_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                                && C_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                                && D_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                                && D_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+        
+                                    new_element_faces[previous_side_index][new_element_side_face_index] = face_index;
+                                ++new_element_side_face_index;
+                            }
+                        }
                     }
                 }
 
-                new_elements_faces[2][2] = device_vector<deviceFloat>{side_n_faces[0]};
-                new_elements_faces[3][2] = device_vector<deviceFloat>{side_n_faces[1]};
+                std::array<size_t, 4> new_element_node_indices {};
+                new_element_node_indices[side_index] = element.nodes_[side_index];
+                new_element_node_indices[next_side_index] = new_node_indices[side_index];
+                new_element_node_indices[opposite_side_index] = new_node_index;
+                new_element_node_indices[previous_side_index] = new_node_indices[previous_side_index];
 
-                std::array<size_t, 2> new_elements_side_face_index {0, 0};
-                for (size_t face_index = 0; face_index < element.faces_[2].size(); ++face_index) {
-                    const Face2D_t& face = faces[element.faces_[2][face_index]];
-                    const std::array<Vec2<deviceFloat>, 2> face_nodes {nodes[face.nodes_[0]], nodes[face.nodes_[1]]};
-                    const std::array<Vec2<deviceFloat>, 2> AC {face_nodes[0] - element_side_nodes[0][0],
-                                                               face_nodes[0] - element_side_nodes[1][0]};
-                    const std::array<Vec2<deviceFloat>, 2> AD {face_nodes[1] - element_side_nodes[0][0],
-                                                               face_nodes[1] - element_side_nodes[1][0]};
+                new_elements[element_index + side_index] = Element2D_t{element.N_, element.split_level_ + 1, new_element_faces, new_element_node_indices};
 
-                    const std::array<deviceFloat, 2> C_proj {AC[0].dot(AB[0]) * AB_dot_inv[0],
-                                                             AC[1].dot(AB[1]) * AB_dot_inv[1]};
-                    const std::array<deviceFloat, 2> D_proj {AD[0].dot(AB[0]) * AB_dot_inv[0],
-                                                             AD[1].dot(AB[1]) * AB_dot_inv[1]};
+                const std::array<Vec2<deviceFloat>, 4> new_element_nodes {};
+                new_element_nodes[side_index] = nodes[element.nodes_[side_index]];
+                new_element_nodes[next_side_index] = new_nodes[side_index];
+                new_element_nodes[opposite_side_index] = nodes[new_node_index];
+                new_element_nodes[previous_side_index] = new_nodes[previous_side_index];
 
-                    if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                        && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                        && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                        && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
-
-                        new_elements_faces[2][2][new_elements_side_face_index[0]] = element.faces_[2][face_index];
-                        ++new_elements_side_face_index[0];
-                    }
-                    
-                    if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                        && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                        && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                        && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
-
-                        new_elements_faces[3][2][new_elements_side_face_index[1]] = element.faces_[2][face_index];
-                        ++new_elements_side_face_index[1];
-                    }
-                }
-            }
-
-            if (element.additional_nodes_[3]) {
-                new_elements_faces[3][3] = device_vector<deviceFloat>{1};
-                new_elements_faces[0][3] = device_vector<deviceFloat>{1};
-                new_elements_faces[3][3][0] = element.faces_[3][0]
-                new_elements_faces[0][3][0] = new_faces[3];
-            }
-            else {
-                const std::array<std::array<Vec2<deviceFloat>, 2>, 2> element_side_nodes {{new_elements_nodes[3][3], new_elements_nodes[3][0]},
-                                                                                          {new_elements_nodes[0][3], new_elements_nodes[0][0]}};
-                const std::array<Vec2<deviceFloat>, 2> AB {element_side_nodes[0][1] - element_side_nodes[0][0],
-                                                           element_side_nodes[1][1] - element_side_nodes[1][0]};
-                const std::array<deviceFloat, 2> AB_dot_inv {1/AB[0].dot(AB[0]),
-                                                             1/AB[1].dot(AB[1])};
-
-                std::array<size_t, 2> side_n_faces {0, 0};
-                for (size_t face_index = 0; face_index < element.faces_[3].size(); ++face_index) {
-                    const Face2D_t& face = faces[element.faces_[3][face_index]];
-                    const std::array<Vec2<deviceFloat>, 2> face_nodes {nodes[face.nodes_[0]], nodes[face.nodes_[1]]};
-                    const std::array<Vec2<deviceFloat>, 2> AC {face_nodes[0] - element_side_nodes[0][0],
-                                                               face_nodes[0] - element_side_nodes[1][0]};
-                    const std::array<Vec2<deviceFloat>, 2> AD {face_nodes[1] - element_side_nodes[0][0],
-                                                               face_nodes[1] - element_side_nodes[1][0]};
-
-                    const std::array<deviceFloat, 2> C_proj {AC[0].dot(AB[0]) * AB_dot_inv[0],
-                                                             AC[1].dot(AB[1]) * AB_dot_inv[1]};
-                    const std::array<deviceFloat, 2> D_proj {AD[0].dot(AB[0]) * AB_dot_inv[0],
-                                                             AD[1].dot(AB[1]) * AB_dot_inv[1]};
-
-                    if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                        && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                        && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                        && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
-
-                        ++side_n_faces[0];
-                    }
-                    
-                    if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                        && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                        && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                        && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
-
-                        ++side_n_faces[1];
-                    }
-                }
-
-                new_elements_faces[3][3] = device_vector<deviceFloat>{side_n_faces[0]};
-                new_elements_faces[0][3] = device_vector<deviceFloat>{side_n_faces[1]};
-
-                std::array<size_t, 2> new_elements_side_face_index {0, 0};
-                for (size_t face_index = 0; face_index < element.faces_[3].size(); ++face_index) {
-                    const Face2D_t& face = faces[element.faces_[3][face_index]];
-                    const std::array<Vec2<deviceFloat>, 2> face_nodes {nodes[face.nodes_[0]], nodes[face.nodes_[1]]};
-                    const std::array<Vec2<deviceFloat>, 2> AC {face_nodes[0] - element_side_nodes[0][0],
-                                                               face_nodes[0] - element_side_nodes[1][0]};
-                    const std::array<Vec2<deviceFloat>, 2> AD {face_nodes[1] - element_side_nodes[0][0],
-                                                               face_nodes[1] - element_side_nodes[1][0]};
-
-                    const std::array<deviceFloat, 2> C_proj {AC[0].dot(AB[0]) * AB_dot_inv[0],
-                                                             AC[1].dot(AB[1]) * AB_dot_inv[1]};
-                    const std::array<deviceFloat, 2> D_proj {AD[0].dot(AB[0]) * AB_dot_inv[0],
-                                                             AD[1].dot(AB[1]) * AB_dot_inv[1]};
-
-                    if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                        && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                        && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                        && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
-
-                        new_elements_faces[3][3][new_elements_side_face_index[0]] = element.faces_[3][face_index];
-                        ++new_elements_side_face_index[0];
-                    }
-                    
-                    if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                        && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                        && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                        && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
-
-                        new_elements_faces[0][3][new_elements_side_face_index[1]] = element.faces_[3][face_index];
-                        ++new_elements_side_face_index[1];
-                    }
-                }
-            }
-
-            new_elements[element_index]     = Element2D_t{element.N_, element.split_level_ + 1, new_elements_faces[0], {element.nodes_[0], new_nodes[0], new_node_index, new_nodes[3]}};
-            new_elements[element_index + 1] = Element2D_t{element.N_, element.split_level_ + 1, new_elements_faces[1], {new_nodes[0], element.nodes_[1], new_nodes[1], new_node_index}};
-            new_elements[element_index + 2] = Element2D_t{element.N_, element.split_level_ + 1, new_elements_faces[2], {new_node_index, new_nodes[1], element.nodes_[2], new_nodes[2]}};
-            new_elements[element_index + 3] = Element2D_t{element.N_, element.split_level_ + 1, new_elements_faces[3], {new_nodes[3], new_node_index, new_nodes[2], element.nodes_[3]}};
-
-            new_elements[element_index].interpolate_from(new_elements_nodes[0], element_nodes, element, polynomial_nodes, barycentric_weights);
-            new_elements[element_index + 1].interpolate_from(new_elements_nodes[1], element_nodes, element, polynomial_nodes, barycentric_weights);
-            new_elements[element_index + 2].interpolate_from(new_elements_nodes[2], element_nodes, element, polynomial_nodes, barycentric_weights);
-            new_elements[element_index + 3].interpolate_from(new_elements_nodes[3], element_nodes, element, polynomial_nodes, barycentric_weights);
-            
-            new_elements[element_index].compute_geometry(new_elements_nodes[0], polynomial_nodes);
-            new_elements[element_index + 1].compute_geometry(new_elements_nodes[1], polynomial_nodes);
-            new_elements[element_index + 2].compute_geometry(new_elements_nodes[2], polynomial_nodes);
-            new_elements[element_index + 3].compute_geometry(new_elements_nodes[3], polynomial_nodes); 
-            
-            new_faces[new_face_index].compute_geometry(new_elements, nodes);
-            new_faces[new_face_index + 1].compute_geometry(new_elements, nodes);
-            new_faces[new_face_index + 2].compute_geometry(new_elements, nodes);
-            new_faces[new_face_index + 3].compute_geometry(new_elements, nodes);
+                new_elements[element_index + side_index].interpolate_from(new_element_nodes, element_nodes, element, polynomial_nodes, barycentric_weights);
+                new_elements[element_index + side_index].compute_geometry(new_element_nodes, polynomial_nodes);
         }
         // p refinement
         else if (element.would_p_refine(N_max)) {
             new_elements[element_index] = Element2D_t{element.N_ + 2, element.split_level_, element.faces_, element.nodes_};
+
+            // Adjusting faces for splitting elements
+            for (size_t side_index = 0; side_index < element.faces_.size(); ++side_index) {
+                size_t side_n_splitting_faces = 0;
+                for (size_t face_index = 0; face_index < element.faces_[side_index].size(); ++face_index) {
+                    side_n_splitting_faces += faces[element.faces_[side_index][face_index]].refine_;
+                }
+
+                if (side_n_splitting_faces > 0) {
+                    cuda_vector<deviceFloat> side_new_faces(element.faces_[side_index].size() + side_n_splitting_faces);
+
+                    size_t side_new_face_index = 0;
+                    for (size_t side_face_index = 0; side_face_index < element.faces_[side_index].size(); ++side_face_index) {
+                        const size_t face_index = element.faces_[side_index][side_face_index];
+                        if (faces[face_index].refine_) {
+                            side_new_faces[side_new_face_index] = face_index;
+
+                            const int face_block_id = face_index/faces_blockSize;
+                            const int face_thread_id = face_index%faces_blockSize;
+
+                            size_t new_face_index = n_faces + 4 * n_splitting_elements + faces_block_offsets[face_block_id];
+                            for (size_t j = face_index - face_thread_id; j < face_index; ++j) {
+                                new_face_index += faces[j].refine_;
+                            }
+
+                            side_new_faces[side_new_face_index + 1] = new_face_index;
+
+                            side_new_face_index += 2;
+                        }
+                        else {
+                            side_new_faces[side_new_face_index] = face_index;
+                            ++side_new_face_index;
+                        }
+                        side_n_splitting_faces += faces[element.faces_[side_index][face_index]].refine_;
+                    }
+
+                    new_elements[element_index].faces_[side_index] = std::move(side_new_faces);
+                }
+            }
 
             new_elements[element_index].interpolate_from(element, polynomial_nodes, barycentric_weights);
 
@@ -2826,10 +2681,234 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, El
         }
         // move
         else {
+            // Adjusting faces for splitting elements
+            for (size_t side_index = 0; side_index < element.faces_.size(); ++side_index) {
+                size_t side_n_splitting_faces = 0;
+                for (size_t face_index = 0; face_index < element.faces_[side_index].size(); ++face_index) {
+                    side_n_splitting_faces += faces[element.faces_[side_index][face_index]].refine_;
+                }
+
+                if (side_n_splitting_faces > 0) {
+                    cuda_vector<deviceFloat> side_new_faces(element.faces_[side_index].size() + side_n_splitting_faces);
+
+                    size_t side_new_face_index = 0;
+                    for (size_t side_face_index = 0; side_face_index < element.faces_[side_index].size(); ++side_face_index) {
+                        const size_t face_index = element.faces_[side_index][side_face_index];
+                        if (faces[face_index].refine_) {
+                            side_new_faces[side_new_face_index] = face_index;
+
+                            const int face_block_id = face_index/faces_blockSize;
+                            const int face_thread_id = face_index%faces_blockSize;
+
+                            size_t new_face_index = n_faces + 4 * n_splitting_elements + faces_block_offsets[face_block_id];
+                            for (size_t j = face_index - face_thread_id; j < face_index; ++j) {
+                                new_face_index += faces[j].refine_;
+                            }
+
+                            side_new_faces[side_new_face_index + 1] = new_face_index;
+
+                            side_new_face_index += 2;
+                        }
+                        else {
+                            side_new_faces[side_new_face_index] = face_index;
+                            ++side_new_face_index;
+                        }
+                        side_n_splitting_faces += faces[element.faces_[side_index][face_index]].refine_;
+                    }
+
+                    element.faces_[side_index] = std::move(side_new_faces);
+                }
+            }
+
             new_elements[element_index] = std::move(element);
         }
     }
 }
+
+__global__
+auto SEM::Meshes::split_faces(size_t n_faces, Face2D_t* faces, Face2D_t* new_faces, const Element2D_t* elements, const Vec2<deviceFloat>* nodes, const size_t* faces_block_offsets, int max_split_level) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t face_index = index; face_index < n_faces; face_index += stride) {
+        Face2D_t& face = faces[face_index];
+
+        if (elements[face.elements_[0]].additional_nodes_[face.elements_side_[0]] || elements[face.elements_[1]].additional_nodes_[face.elements_side_[1]]) {
+            face.refine_ = true;
+
+        }
+        else {
+            face.refine_ = false;
+            if ()
+
+        }
+
+        if (face.N_ == -1) { // Face has split
+            Face2D_t& new_face = new_faces[face_index];
+            const Element2D_t& element_L = elements[face.elements_[0]];
+            const Element2D_t& element_R = elements[face.elements_[1]];
+
+            size_t min_element_index = static_cast<size_t>(-1);
+            size_t min_element_side = static_cast<size_t>(-1);
+            if (element_L.would_h_refine(max_split_level)) {
+                if (element_R.would_h_refine(max_split_level)) {
+                    if (face.elements_[0] < face.elements_[1]) {
+                        min_element_index = face.elements_[0];
+                        min_element_side = face.elements_side_[0];
+                    }
+                    else {
+                        min_element_index = face.elements_[1];
+                        min_element_side = face.elements_side_[1];
+                    }
+                }
+                else {
+                    min_element_index = face.elements_[0];
+                    min_element_side = face.elements_side_[0];
+                }
+            }
+            else if (element_R.would_h_refine(max_split_level)) {
+                min_element_index = face.elements_[1];
+                min_element_side = face.elements_side_[1];
+            }
+            else { // This should not happen
+                fprintf(stderr, "Error: Splitting face %llu has no elements (%llu, %llu) that would split. Exiting.\n", face_index, face.elements_[0], face.elements_[1]);    
+                exit(54);
+            }
+
+            const int neighbour_block_id = min_element_index/elements_blockSize;
+            const int neighbour_thread_id = min_element_index%elements_blockSize;
+
+            size_t new_face_index = n_faces + nodes_block_offsets[neighbour_block_id] + block_offsets[neighbour_block_id]; // Wow this just happens to work, we need to add 3 faces per splitting element to the number of additional nodes, and the element offset is 3 * n_splitting
+            for (size_t neighbour_side_index = 0; neighbour_side_index < min_element_side; ++neighbour_side_index) {
+                new_face_index += elements[min_element_index].additional_nodes_[neighbour_side_index];
+            }
+            for (size_t j = min_element_index - neighbour_thread_id; j < min_element_index; ++j) {
+                if (elements[j].would_h_refine(max_split_level)) {
+                    new_face_index += 4;
+                    for (size_t side_index = 0; side_index < elements[j].faces_.size(); ++side_index) {
+                        new_face_index += elements[j].additional_nodes_[side_index];
+                    }
+                }
+            }
+
+            Face2D_t& new_face_2 = new_faces[new_face_index];
+
+            // Elements that yielded, always the second one on a face, and non-splitting elements still have the old face
+            Element2D_t& new_face_element = new_elements[new_face.elements_[1]];
+            Element2D_t& new_face_element_2 = new_elements[new_face_2.elements_[1]];
+
+            new_face.compute_geometry(new_elements, nodes);
+            new_face_2.compute_geometry(new_elements, nodes);
+        }
+        else {
+            const size_t element_L_index = face.elements_[0];
+            const size_t element_R_index = face.elements_[1];
+            const size_t element_L_side = face.elements_side_[0];
+            const size_t element_R_side = face.elements_side_[1];
+            const Element2D_t& element_L = elements[element_L_index];
+            const Element2D_t& element_R = elements[element_R_index];
+
+            const int N_max = std::max(element_L.N_ + 2 * element_L.would_p_refine(N_max), element_R.N_ + 2 * element_R.would_p_refine(N_max));
+
+            if (face.N_ != N_max) {
+                face.resize_storage(N_max);
+            }
+
+            const int element_L_block_id = element_L_index/elements_blockSize;
+            const int element_L_thread_id = element_L_index%elements_blockSize;
+
+            size_t element_L_new_index = element_L_index + block_offsets[element_L_block_id];
+            for (size_t j = element_L_index - element_L_thread_id; j < element_L_index; ++j) {
+                element_L_new_index += 3 * elements[j].would_h_refine(max_split_level);
+            }
+
+            const int element_R_block_id = element_R_index/elements_blockSize;
+            const int element_R_thread_id = element_R_index%elements_blockSize;
+
+            size_t element_R_new_index = element_R_index + block_offsets[element_R_block_id];
+            for (size_t j = element_R_index - element_R_thread_id; j < element_R_index; ++j) {
+                element_R_new_index += 3 * elements[j].would_h_refine(max_split_level);
+            }
+
+            // CHECK the new indices thing won't use the Hilbert curve like this
+            if (element_L.would_h_refine(max_split_level)) {
+                const std::array<size_t, 2> new_indices {element_L_new_index + element_L_side, (element_L_side + 1 < element_L.faces_.size()) ? element_L_new_index + element_L_side + 1: element_L_new_index};
+                bool found_face = false;
+                for (size_t element_face_index = 0; element_face_index < new_elements[new_indices[0]].faces_[element_L_side].size(), ++element_face_index) {
+                    if (new_elements[new_indices[0]].faces_[element_L_side][element_face_index] == face_index) {
+                        face.elements_[0] = new_indices[0];
+                        found_face = true;
+                        break;
+                    }
+                }
+                if (!found_face) {
+                    for (size_t element_face_index = 0; element_face_index < new_elements[new_indices[1]].faces_[element_L_side].size(), ++element_face_index) {
+                        if (new_elements[new_indices[1]].faces_[element_L_side][element_face_index] == face_index) {
+                            face.elements_[0] = new_indices[1];
+                            break;
+                        }
+                    }
+                }
+            }
+            else {
+                face.elements_[0] = element_L_new_index;
+            }
+
+            if (element_R.would_h_refine(max_split_level)) {
+                const std::array<size_t, 2> new_indices {element_R_new_index + element_R_side, (element_R_side + 1 < element_R.faces_.size()) ? element_R_new_index + element_R_side + 1: element_R_new_index};
+                bool found_face = false;
+                for (size_t element_face_index = 0; element_face_index < new_elements[new_indices[0]].faces_[element_R_side].size(), ++element_face_index) {
+                    if (new_elements[new_indices[0]].faces_[element_R_side][element_face_index] == face_index) {
+                        face.elements_[1] = new_indices[0];
+                        found_face = true;
+                        break;
+                    }
+                }
+                if (!found_face) {
+                    for (size_t element_face_index = 0; element_face_index < new_elements[new_indices[1]].faces_[element_R_side].size(), ++element_face_index) {
+                        if (new_elements[new_indices[1]].faces_[element_R_side][element_face_index] == face_index) {
+                            face.elements_[1] = new_indices[1];
+                            break;
+                        }
+                    }
+                }
+            }
+            else {
+                face.elements_[1] = element_R_new_index;
+            }
+
+            new_faces[face_index] = std::move(face);
+        }
+    }
+}
+
+__global__
+auto SEM::Meshes::find_nodes(size_t n_elements, Element2D_t* elements, const Face2D_t* faces, const Vec2<deviceFloat>* nodes, int max_split_level) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+    
+    for (size_t i = index; i < n_elements; i += stride) {
+        SEM::Entities::Element2D_t& element = elements[i];
+        element.additional_nodes_ = {false, false, false, false};
+        if (element.would_h_refine(max_split_level)) {
+            element.additional_nodes_ = {true, true, true, true};
+            for (size_t side_index = 0; side_index < element.faces_.size(); ++side_index) {
+                const std::array<SEM::Entities::Vec2<deviceFloat>, 2> side_nodes = {nodes[element.nodes_[side_index]], (side_index + 1 < element.faces_.size()) ? nodes[element.nodes_[side_index + 1]] : nodes[element.nodes_[0]]};
+                const SEM::Entities::Vec2<deviceFloat> new_node = (side_nodes[0] + side_nodes[1])/2;
+
+                // Here we check if the new node already exists
+                for (size_t face_index = 0; face_index < element.faces_[side_index].size(); ++face_index) {
+                    const SEM::Entities::Face2D_t& face = faces[element.faces_[side_index][face_index]];
+                    if (nodes[face.nodes_[0]].almost_equal(new_node) || nodes[face.nodes_[1]].almost_equal(new_node)) {
+                        element.additional_nodes_[side_index] = false;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 __global__
 auto SEM::Meshes::move_faces(size_t n_faces, Face2D_t* faces, Face2D_t* new_faces, Element2D_t* elements, Element2D_t* new_elements, const Vec2<deviceFloat>* nodes, const size_t* block_offsets, const size_t* nodes_block_offsets, int max_split_level, int N_max, int elements_blockSize) -> void {
@@ -2928,7 +3007,7 @@ auto SEM::Meshes::move_faces(size_t n_faces, Face2D_t* faces, Face2D_t* new_face
 
             // CHECK the new indices thing won't use the Hilbert curve like this
             if (element_L.would_h_refine(max_split_level)) {
-                const std::array<size_t, 2> new_indices {element_L_new_index + element_L_side, (element_L_side < element_L.faces_.size() - 1) ? element_L_new_index + element_L_side + 1: element_L_new_index};
+                const std::array<size_t, 2> new_indices {element_L_new_index + element_L_side, (element_L_side + 1 < element_L.faces_.size()) ? element_L_new_index + element_L_side + 1: element_L_new_index};
                 bool found_face = false;
                 for (size_t element_face_index = 0; element_face_index < new_elements[new_indices[0]].faces_[element_L_side].size(), ++element_face_index) {
                     if (new_elements[new_indices[0]].faces_[element_L_side][element_face_index] == face_index) {
@@ -2951,7 +3030,7 @@ auto SEM::Meshes::move_faces(size_t n_faces, Face2D_t* faces, Face2D_t* new_face
             }
 
             if (element_R.would_h_refine(max_split_level)) {
-                const std::array<size_t, 2> new_indices {element_R_new_index + element_R_side, (element_R_side < element_R.faces_.size() - 1) ? element_R_new_index + element_R_side + 1: element_R_new_index};
+                const std::array<size_t, 2> new_indices {element_R_new_index + element_R_side, (element_R_side + 1 < element_R.faces_.size()) ? element_R_new_index + element_R_side + 1: element_R_new_index};
                 bool found_face = false;
                 for (size_t element_face_index = 0; element_face_index < new_elements[new_indices[0]].faces_[element_R_side].size(), ++element_face_index) {
                     if (new_elements[new_indices[0]].faces_[element_R_side][element_face_index] == face_index) {
