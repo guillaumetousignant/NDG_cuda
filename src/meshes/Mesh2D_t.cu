@@ -2889,6 +2889,10 @@ auto SEM::Meshes::move_faces(size_t n_faces, Face2D_t* faces, Face2D_t* new_face
 
             Face2D_t& new_face_2 = new_faces[new_face_index];
 
+            // Elements that yielded, always the second one on a face, and non-splitting elements still have the old face
+            Element2D_t& new_face_element = new_elements[new_face.elements_[1]];
+            Element2D_t& new_face_element_2 = new_elements[new_face_2.elements_[1]];
+
             new_face.compute_geometry(new_elements, nodes);
             new_face_2.compute_geometry(new_elements, nodes);
         }
