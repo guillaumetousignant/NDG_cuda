@@ -17,6 +17,7 @@ namespace fs = std::filesystem;
 
 using SEM::Entities::device_vector;
 using SEM::Entities::host_vector;
+using SEM::Entities::cuda_vector;
 using SEM::Entities::Vec2;
 using SEM::Entities::Element2D_t;
 using SEM::Entities::Face2D_t;
@@ -1167,9 +1168,9 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
 
     device_vector<Element2D_t> new_elements(elements_.size() + 3 * n_splitting_elements, stream_);
 
-    SEM::Meshes::find_nodes<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, elements_.data(), faces_.data(), nodes.data(), max_split_level_);
+    SEM::Meshes::find_nodes<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, elements_.data(), faces_.data(), nodes_.data(), max_split_level_);
     
-    SEM::Meshes::reduce_faces_refine_2D<faces_blockSize_/2><<<faces_numBlocks_, faces_blockSize_/2, 0, stream_>>>(n_faces_, max_split_level_, faces_.data(), elements_.data(), device_faces_refine_array_.data());
+    SEM::Meshes::reduce_faces_refine_2D<faces_blockSize_/2><<<faces_numBlocks_, faces_blockSize_/2, 0, stream_>>>(faces_.size(), max_split_level_, faces_.data(), elements_.data(), device_faces_refine_array_.data());
     device_faces_refine_array_.copy_to(host_faces_refine_array_, stream_);
     cudaStreamSynchronize(stream_);
 
@@ -1188,7 +1189,7 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
 
     SEM::Meshes::hp_adapt<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, faces_.size(), nodes_.size(), n_splitting_elements, elements_.data(), new_elements.data(), faces_.data(), new_faces.data(), device_refine_array_.data(), device_faces_refine_array_.data(), max_split_level_, N_max, new_nodes.data(), polynomial_nodes.data(), barycentric_weights.data(), faces_blockSize_);
     
-    SEM::Meshes::split_faces<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces_.size(), nodes_.size(), n_splitting_elements, faces_.data(), new_faces.data(), elements_.data(), new_nodes.data(), device_faces_refine_array_.data(), max_split_level_, elements_blockSize_);
+    SEM::Meshes::split_faces<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces_.size(), nodes_.size(), n_splitting_elements, faces_.data(), new_faces.data(), elements_.data(), new_nodes.data(), device_refine_array_.data(), device_faces_refine_array_.data(), max_split_level_, N_max, elements_blockSize_);
     
 
 
@@ -1416,8 +1417,8 @@ auto SEM::Meshes::compute_face_geometry(size_t n_faces, Face2D_t* faces, const E
         const Element2D_t& element_L = elements[element_L_index];
         const Element2D_t& element_R = elements[element_R_index];
         const std::array<std::array<Vec2<deviceFloat>, 2>, 2> elements_nodes {
-            {nodes[element_L.nodes_[element_L_side]], nodes[element_L.nodes_[element_L_next_side]]},
-            {nodes[element_R.nodes_[element_R_side]], nodes[element_R.nodes_[element_R_next_side]]}
+            std::array<Vec2<deviceFloat>, 2>{nodes[element_L.nodes_[element_L_side]], nodes[element_L.nodes_[element_L_next_side]]},
+            std::array<Vec2<deviceFloat>, 2>{nodes[element_R.nodes_[element_R_side]], nodes[element_R.nodes_[element_R_next_side]]}
         };
         const std::array<Vec2<deviceFloat>, 2> elements_centres {
             element_L.center_, 
@@ -2284,7 +2285,7 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, si
     for (size_t i = index; i < n_elements; i += stride) {
         Element2D_t& element = elements[i];
 
-        size_t n_splitting_elements_before = block_offsets[block_id]
+        size_t n_splitting_elements_before = block_offsets[block_id];
         for (size_t j = i - thread_id; j < i; ++j) {
             n_splitting_elements_before += elements[j].would_h_refine(max_split_level);
         }
@@ -2348,16 +2349,16 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, si
                 
                 new_faces[new_face_index + side_index] = Face2D_t{element.N_, {new_node_indices[side_index], new_node_index}, side_element_indices, side_element_sides};
             
-                std:array<cuda_vector<size_t>, 4> new_element_faces {device_vector<deviceFloat>{},  device_vector<deviceFloat>{}, device_vector<deviceFloat>{}, device_vector<deviceFloat>{}};
+                std::array<cuda_vector<size_t>, 4> new_element_faces {0, 0, 0, 0};
             
-                new_element_faces[next_side_index] = device_vector<deviceFloat>{1};
-                new_element_faces[opposite_side_index] = device_vector<deviceFloat>{1};
+                new_element_faces[next_side_index] = cuda_vector<size_t>(1);
+                new_element_faces[opposite_side_index] = cuda_vector<size_t>(1);
 
                 new_element_faces[next_side_index][0] = side_index;
                 new_element_faces[opposite_side_index][0] = previous_side_index;
                 
                 if (element.additional_nodes_[side_index]) {
-                    new_element_faces[side_index] = device_vector<deviceFloat>{1};
+                    new_element_faces[side_index] = cuda_vector<size_t>(1);
     
                     const size_t face_index = element.faces_[side_index][0];
                     const int face_block_id = face_index/faces_blockSize;
@@ -2372,14 +2373,14 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, si
                         new_element_faces[side_index][0] = face_index;
                     }
                     else { // backward
-                        new_element_faces[side_index][0] = splitting_face_index
+                        new_element_faces[side_index][0] = splitting_face_index;
                     }
                 }
                 else {
                     size_t n_side_faces = 0;
                     const Vec2<deviceFloat> new_node = (nodes[element.nodes_[side_index]] + nodes[element.nodes_[next_side_index]])/2;
     
-                    const Vec2<deviceFloat>, 2> AB = new_node - nodes[element.nodes_[side_index]];
+                    const Vec2<deviceFloat> AB = new_node - nodes[element.nodes_[side_index]];
     
                     const deviceFloat AB_dot_inv  = 1/AB.dot(AB);
     
@@ -2431,9 +2432,9 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, si
                         }
                     }
     
-                    new_element_faces[side_index] = device_vector<deviceFloat>{n_side_faces};
+                    new_element_faces[side_index] = cuda_vector<size_t>(n_side_faces);
     
-                    size_t new_element_side_face_index 0;
+                    size_t new_element_side_face_index = 0;
                     for (size_t side_face_index = 0; side_face_index < element.faces_[side_index].size(); ++side_face_index) {
                         const size_t face_index = element.faces_[side_index][side_face_index];
                         const Face2D_t& face = faces[face_index];
@@ -2494,7 +2495,7 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, si
                 }
 
                 if (element.additional_nodes_[previous_side_index]) {
-                    new_element_faces[previous_side_index] = device_vector<deviceFloat>{1};
+                    new_element_faces[previous_side_index] = cuda_vector<size_t>(1);
     
                     const size_t face_index = element.faces_[previous_side_index][0];
                     const int face_block_id = face_index/faces_blockSize;
@@ -2509,14 +2510,14 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, si
                         new_element_faces[previous_side_index][0] = splitting_face_index;
                     }
                     else { // backward
-                        new_element_faces[previous_side_index][0] = face_index
+                        new_element_faces[previous_side_index][0] = face_index;
                     }
                 }
                 else {
                     size_t n_side_faces = 0;
                     const Vec2<deviceFloat> new_node = (nodes[element.nodes_[previous_side_index]] + nodes[element.nodes_[side_index]])/2;
     
-                    const Vec2<deviceFloat>, 2> AB = nodes[element.nodes_[side_index]] - new_node;
+                    const Vec2<deviceFloat> AB = nodes[element.nodes_[side_index]] - new_node;
     
                     const deviceFloat AB_dot_inv  = 1/AB.dot(AB);
     
@@ -2568,9 +2569,9 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, si
                         }
                     }
     
-                    new_element_faces[previous_side_index] = device_vector<deviceFloat>{n_side_faces};
+                    new_element_faces[previous_side_index] = cuda_vector<size_t>(n_side_faces);
     
-                    size_t new_element_side_face_index 0;
+                    size_t new_element_side_face_index = 0;
                     for (size_t side_face_index = 0; side_face_index < element.faces_[previous_side_index].size(); ++side_face_index) {
                         const size_t face_index = element.faces_[previous_side_index][side_face_index];
                         const Face2D_t& face = faces[face_index];
@@ -2638,7 +2639,7 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, si
 
                 new_elements[element_index + side_index] = Element2D_t{element.N_, element.split_level_ + 1, new_element_faces, new_element_node_indices};
 
-                const std::array<Vec2<deviceFloat>, 4> new_element_nodes {};
+                std::array<Vec2<deviceFloat>, 4> new_element_nodes {};
                 new_element_nodes[side_index] = nodes[element.nodes_[side_index]];
                 new_element_nodes[next_side_index] = new_nodes[side_index];
                 new_element_nodes[opposite_side_index] = nodes[new_node_index];
@@ -2656,8 +2657,8 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, si
                     nodes[new_node_index]
                 };
                 const std::array<std::array<Vec2<deviceFloat>, 2>, 2> elements_nodes {
-                    {new_node, nodes[new_node_index]}, // Not the same new node... this is confusing
-                    {nodes[new_node_index], new_node}
+                    std::array<Vec2<deviceFloat>, 2>{new_node, nodes[new_node_index]}, // Not the same new node... this is confusing
+                    std::array<Vec2<deviceFloat>, 2>{nodes[new_node_index], new_node}
                 };
                 const std::array<Vec2<deviceFloat>, 2> elements_centres {
                     new_elements[element_index + side_index].center_,
@@ -2679,7 +2680,7 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, si
                 }
 
                 if (side_n_splitting_faces > 0) {
-                    cuda_vector<deviceFloat> side_new_faces(element.faces_[side_index].size() + side_n_splitting_faces);
+                    cuda_vector<size_t> side_new_faces(element.faces_[side_index].size() + side_n_splitting_faces);
 
                     size_t side_new_face_index = 0;
                     for (size_t side_face_index = 0; side_face_index < element.faces_[side_index].size(); ++side_face_index) {
@@ -2728,7 +2729,7 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, si
                 }
 
                 if (side_n_splitting_faces > 0) {
-                    cuda_vector<deviceFloat> side_new_faces(element.faces_[side_index].size() + side_n_splitting_faces);
+                    cuda_vector<size_t> side_new_faces(element.faces_[side_index].size() + side_n_splitting_faces);
 
                     size_t side_new_face_index = 0;
                     for (size_t side_face_index = 0; side_face_index < element.faces_[side_index].size(); ++side_face_index) {
@@ -2765,7 +2766,7 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, si
 }
 
 __global__
-auto SEM::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_splitting_elements, Face2D_t* faces, Face2D_t* new_faces, const Element2D_t* elements, Vec2<deviceFloat>* nodes, const size_t* faces_block_offsets, int max_split_level, int elements_blockSize) -> void {
+auto SEM::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_splitting_elements, Face2D_t* faces, Face2D_t* new_faces, const Element2D_t* elements, Vec2<deviceFloat>* nodes, const size_t* block_offsets, const size_t* faces_block_offsets, int max_split_level, int N_max, int elements_blockSize) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     const int thread_id = threadIdx.x;
@@ -2810,23 +2811,23 @@ auto SEM::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_splitting
             }
 
             std::array<std::array<size_t, 2>, 2> new_element_indices {
-                {element_L_new_index, element_R_new_index},
-                {element_L_new_index, element_R_new_index}
+                std::array<size_t, 2>{element_L_new_index, element_R_new_index},
+                std::array<size_t, 2>{element_L_new_index, element_R_new_index}
             };
 
             std::array<std::array<Vec2<deviceFloat>, 2>, 2> elements_centres {
-                {element_L.center_, element_R.center_},
-                {element_L.center_, element_R.center_}
+                std::array<Vec2<deviceFloat>, 2>{element_L.center_, element_R.center_},
+                std::array<Vec2<deviceFloat>, 2>{element_L.center_, element_R.center_}
             };
 
-            const std::array<std::array<std::array<Vec2<deviceFloat>, 2>, 2>, 2> elements_nodes {
-                {
-                    {nodes[element_L.nodes_[element_L_side_index]], nodes[element_L.nodes_[element_L_next_side_index]]},
-                    {nodes[element_R.nodes_[element_R_side_index]], nodes[element_R.nodes_[element_R_next_side_index]]}
+            std::array<std::array<std::array<Vec2<deviceFloat>, 2>, 2>, 2> elements_nodes {
+                std::array<std::array<Vec2<deviceFloat>, 2>, 2>{
+                    std::array<Vec2<deviceFloat>, 2>{nodes[element_L.nodes_[element_L_side_index]], nodes[element_L.nodes_[element_L_next_side_index]]},
+                    std::array<Vec2<deviceFloat>, 2>{nodes[element_R.nodes_[element_R_side_index]], nodes[element_R.nodes_[element_R_next_side_index]]}
                 },
-                {
-                    {nodes[element_L.nodes_[element_L_side_index]], nodes[element_L.nodes_[element_L_next_side_index]]},
-                    {nodes[element_R.nodes_[element_R_side_index]], nodes[element_R.nodes_[element_R_next_side_index]]}
+                std::array<std::array<Vec2<deviceFloat>, 2>, 2>{
+                    std::array<Vec2<deviceFloat>, 2>{nodes[element_L.nodes_[element_L_side_index]], nodes[element_L.nodes_[element_L_next_side_index]]},
+                    std::array<Vec2<deviceFloat>, 2>{nodes[element_R.nodes_[element_R_side_index]], nodes[element_R.nodes_[element_R_next_side_index]]}
                 }
             };
 
@@ -2834,7 +2835,7 @@ auto SEM::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_splitting
                 const std::array<Vec2<deviceFloat>, 2> element_nodes {nodes[element_L.nodes_[element_L_side_index]], nodes[element_L.nodes_[element_L_next_side_index]]};
                 const Vec2<deviceFloat> new_element_node = (element_nodes[0] + element_nodes[1])/2;
 
-                const std::array<Vec2<deviceFloat>, 2>, 2> AB {new_element_node - element_nodes[0], element_nodes[1] - new_element_node};
+                const std::array<Vec2<deviceFloat>, 2> AB {new_element_node - element_nodes[0], element_nodes[1] - new_element_node};
                 const std::array<deviceFloat, 2> AB_dot_inv  {1/AB[0].dot(AB[0]), 1/AB[1].dot(AB[1])};
 
                 const std::array<Vec2<deviceFloat>, 2> AC {nodes[face.nodes_[0]] - element_nodes[0], nodes[face.nodes_[0]] - new_element_node};
@@ -2898,7 +2899,7 @@ auto SEM::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_splitting
                 const std::array<Vec2<deviceFloat>, 2> element_nodes {nodes[element_R.nodes_[element_R_side_index]], nodes[element_R.nodes_[element_R_next_side_index]]};
                 const Vec2<deviceFloat> new_element_node = (element_nodes[0] + element_nodes[1])/2;
 
-                const std::array<Vec2<deviceFloat>, 2>, 2> AB {new_element_node - element_nodes[0], element_nodes[1] - new_element_node};
+                const std::array<Vec2<deviceFloat>, 2> AB {new_element_node - element_nodes[0], element_nodes[1] - new_element_node};
                 const std::array<deviceFloat, 2> AB_dot_inv  {1/AB[0].dot(AB[0]), 1/AB[1].dot(AB[1])};
 
                 const std::array<Vec2<deviceFloat>, 2> AC {nodes[face.nodes_[0]] - element_nodes[0], nodes[face.nodes_[0]] - new_element_node};
@@ -2959,14 +2960,14 @@ auto SEM::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_splitting
                 }
             }
 
-            const int N_max = std::max(element_L.N_ + 2 * element_L.would_p_refine(N_max), element_R.N_ + 2 * element_R.would_p_refine(N_max));
+            const int face_N = std::max(element_L.N_ + 2 * element_L.would_p_refine(N_max), element_R.N_ + 2 * element_R.would_p_refine(N_max));
 
-            new_faces[face_index] = Face2D_t(N_max, {face.nodes_[0], new_node_index}, new_element_indices[0], face.elements_side_);
-            new_faces[new_face_index] = Face2D_t(N_max, {new_node_index, face.nodes_[1]}, new_element_indices[1], face.elements_side_);
+            new_faces[face_index] = Face2D_t(face_N, {face.nodes_[0], new_node_index}, new_element_indices[0], face.elements_side_);
+            new_faces[new_face_index] = Face2D_t(face_N, {new_node_index, face.nodes_[1]}, new_element_indices[1], face.elements_side_);
 
             const std::array<std::array<Vec2<deviceFloat>, 2>, 2> face_nodes {
-                {nodes[face.nodes_[0]], new_node},
-                {new_node, nodes[face.nodes_[1]]}
+                std::array<Vec2<deviceFloat>, 2>{nodes[face.nodes_[0]], new_node},
+                std::array<Vec2<deviceFloat>, 2>{new_node, nodes[face.nodes_[1]]}
             };
 
             new_faces[face_index].compute_geometry(elements_centres[0], face_nodes[0], elements_nodes[0]);
@@ -2994,7 +2995,7 @@ auto SEM::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_splitting
                 const std::array<Vec2<deviceFloat>, 2> element_nodes {nodes[element_L.nodes_[element_L_side_index]], nodes[element_L.nodes_[next_side_index]]};
                 const Vec2<deviceFloat> new_element_node = (element_nodes[0] + element_nodes[1])/2;
 
-                const std::array<Vec2<deviceFloat>, 2>, 2> AB {new_element_node - element_nodes[0], element_nodes[1] - new_element_node};
+                const std::array<Vec2<deviceFloat>, 2> AB {new_element_node - element_nodes[0], element_nodes[1] - new_element_node};
                 const std::array<deviceFloat, 2> AB_dot_inv  {1/AB[0].dot(AB[0]), 1/AB[1].dot(AB[1])};
 
                 const std::array<Vec2<deviceFloat>, 2> AC {nodes[face.nodes_[0]] - element_nodes[0], nodes[face.nodes_[0]] - new_element_node};
@@ -3027,7 +3028,7 @@ auto SEM::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_splitting
                 const std::array<Vec2<deviceFloat>, 2> element_nodes {nodes[element_R.nodes_[element_R_side_index]], nodes[element_R.nodes_[next_side_index]]};
                 const Vec2<deviceFloat> new_element_node = (element_nodes[0] + element_nodes[1])/2;
 
-                const std::array<Vec2<deviceFloat>, 2>, 2> AB {new_element_node - element_nodes[0], element_nodes[1] - new_element_node};
+                const std::array<Vec2<deviceFloat>, 2> AB {new_element_node - element_nodes[0], element_nodes[1] - new_element_node};
                 const std::array<deviceFloat, 2> AB_dot_inv  {1/AB[0].dot(AB[0]), 1/AB[1].dot(AB[1])};
 
                 const std::array<Vec2<deviceFloat>, 2> AC {nodes[face.nodes_[0]] - element_nodes[0], nodes[face.nodes_[0]] - new_element_node};
@@ -3056,10 +3057,10 @@ auto SEM::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_splitting
 
             face.elements_ = {element_L_new_index, element_R_new_index};
 
-            const int N_max = std::max(element_L.N_ + 2 * element_L.would_p_refine(N_max), element_R.N_ + 2 * element_R.would_p_refine(N_max));
+            const int face_N = std::max(element_L.N_ + 2 * element_L.would_p_refine(N_max), element_R.N_ + 2 * element_R.would_p_refine(N_max));
 
-            if (face.N_ != N_max) {
-                face.resize_storage(N_max);
+            if (face.N_ != face_N) {
+                face.resize_storage(face_N);
             }
 
             new_faces[face_index] = std::move(face);
@@ -3101,18 +3102,18 @@ auto SEM::Meshes::adjust_boundaries(size_t n_boundaries, Element2D_t* elements, 
 
     for (size_t boundary_index = index; boundary_index < n_boundaries; boundary_index += stride) {
         Element2D_t& destination_element = elements[boundaries[boundary_index]];
-        int N_max = destination_element.N_;
+        int N_element = destination_element.N_;
 
         for (size_t face_index = 0; face_index < destination_element.faces_[0].size(); ++face_index) {
             const Face2D_t face = faces[destination_element.faces_[0][face_index]];
             const int element_index = face.elements_[0] == boundaries[boundary_index];
             const Element2D_t& source_element = elements[face.elements_[element_index]];
 
-            N_max = std::max(N_max, source_element.N_);
+            N_element = std::max(N_element, source_element.N_);
         }
 
-        if (destination_element.N_ != N_max) {
-            destination_element.resize_boundary_storage(N_max);
+        if (destination_element.N_ != N_element) {
+            destination_element.resize_boundary_storage(N_element);
         }
     }
 }
@@ -3124,18 +3125,18 @@ auto SEM::Meshes::rebuild_boundaries(size_t n_boundaries, Element2D_t* elements,
 
     for (size_t boundary_index = index; boundary_index < n_boundaries; boundary_index += stride) {
         Element2D_t& destination_element = elements[boundaries[boundary_index]];
-        int N_max = destination_element.N_;
+        int N_element = destination_element.N_;
 
         for (size_t face_index = 0; face_index < destination_element.faces_[0].size(); ++face_index) {
             const Face2D_t face = faces[destination_element.faces_[0][face_index]];
             const int element_index = face.elements_[0] == boundaries[boundary_index];
             const Element2D_t& source_element = elements[face.elements_[element_index]];
 
-            N_max = std::max(N_max, source_element.N_);
+            N_element = std::max(N_element, source_element.N_);
         }
 
-        if (destination_element.N_ != N_max) {
-            destination_element.resize_boundary_storage(N_max);
+        if (destination_element.N_ != N_element) {
+            destination_element.resize_boundary_storage(N_element);
         }
 
         new_elements[boundaries[boundary_index]] = std::move(elements[boundaries[boundary_index]]);
@@ -3184,10 +3185,10 @@ auto SEM::Meshes::adjust_faces(size_t n_faces, Face2D_t* faces, const Element2D_
         const Element2D_t& element_L = elements[face.elements_[0]];
         const Element2D_t& element_R = elements[face.elements_[1]];
 
-        const int N_max = std::max(element_L.N_, element_R.N_);
+        const int N_face = std::max(element_L.N_, element_R.N_);
 
-        if (face.N_ != N_max) {
-            face.resize_storage(N_max);
+        if (face.N_ != N_face) {
+            face.resize_storage(N_face);
         }
     }
 }
