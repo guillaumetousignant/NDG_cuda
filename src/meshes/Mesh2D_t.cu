@@ -1166,10 +1166,9 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
 
     device_refine_array_.copy_from(host_refine_array_, stream_);
 
-    device_vector<Element2D_t> new_elements(elements_.size() + 3 * n_splitting_elements, stream_);
-
     SEM::Meshes::find_nodes<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, elements_.data(), faces_.data(), nodes_.data(), max_split_level_);
-    
+    SEM::Meshes::copy_interfaces_error(<<<interfaces_numBlocks_, boundaries_blockSize_, 0, stream_>>>(interfaces_origin_.size(), elements_.data(), interfaces_origin_.data(), interfaces_origin_side_.data(), interfaces_destination_.data());
+
     SEM::Meshes::reduce_faces_refine_2D<faces_blockSize_/2><<<faces_numBlocks_, faces_blockSize_/2, 0, stream_>>>(faces_.size(), max_split_level_, faces_.data(), elements_.data(), device_faces_refine_array_.data());
     device_faces_refine_array_.copy_to(host_faces_refine_array_, stream_);
     cudaStreamSynchronize(stream_);
@@ -1182,6 +1181,7 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
 
     device_faces_refine_array_.copy_from(host_faces_refine_array_, stream_);
 
+    device_vector<Element2D_t> new_elements(elements_.size() + 3 * n_splitting_elements, stream_);
     device_vector<Vec2<deviceFloat>> new_nodes(nodes_.size() + n_splitting_elements + n_splitting_faces, stream_);
     device_vector<Face2D_t> new_faces(faces_.size() + 4 * n_splitting_elements + n_splitting_faces, stream_);
 
@@ -3092,6 +3092,29 @@ auto SEM::Meshes::find_nodes(size_t n_elements, Element2D_t* elements, const Fac
                 }
             }
         }
+    }
+}
+
+__global__
+auto SEM::Meshes::copy_interfaces_error(size_t n_local_interfaces, Element2D_t* elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_origin_side, const size_t* local_interfaces_destination) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t interface_index = index; interface_index < n_local_interfaces; interface_index += stride) {
+        const Element2D_t& source_element = elements[local_interfaces_origin[interface_index]];
+        Element2D_t& destination_element = elements[local_interfaces_destination[interface_index]];
+        const size_t element_side = local_interfaces_origin_side[interface_index];
+
+        destination_element.additional_nodes_[0] = source_element.additional_nodes_[element_side];
+        destination_element.refine_ = source_element.refine_;
+        destination_element.coarsen_ = source_element.coarsen_;
+        destination_element.p_error_ = source_element.p_error_;
+        destination_element.u_error_ = source_element.u_error_;
+        destination_element.v_error_ = source_element.v_error_;
+        destination_element.p_sigma_ = source_element.p_sigma_;
+        destination_element.u_sigma_ = source_element.u_sigma_;
+        destination_element.v_sigma_ = source_element.v_sigma_;
+        destination_element.split_level_ = source_element.split_level_;
     }
 }
 

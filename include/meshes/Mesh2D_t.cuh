@@ -231,6 +231,9 @@ namespace SEM { namespace Meshes {
     auto find_nodes(size_t n_elements, SEM::Entities::Element2D_t* elements, const SEM::Entities::Face2D_t* faces, const SEM::Entities::Vec2<deviceFloat>* nodes, int max_split_level) -> void;
 
     __global__
+    auto copy_interfaces_error(size_t n_local_interfaces, SEM::Entities::Element2D_t* elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_origin_side, const size_t* local_interfaces_destination) -> void;
+
+    __global__
     auto adjust_boundaries(size_t n_boundaries, SEM::Entities::Element2D_t* elements, const size_t* boundaries, const SEM::Entities::Face2D_t* faces) -> void;
 
     __global__
