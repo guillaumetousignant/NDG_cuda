@@ -225,7 +225,7 @@ namespace SEM { namespace Meshes {
     auto hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, size_t n_splitting_elements, SEM::Entities::Element2D_t* elements, SEM::Entities::Element2D_t* new_elements, SEM::Entities::Face2D_t* faces, SEM::Entities::Face2D_t* new_faces, const size_t* block_offsets, const size_t* faces_block_offsets, int max_split_level, int N_max, SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights, int faces_blockSize) -> void;
     
     __global__
-    auto split_faces(size_t n_faces, size_t n_nodes, size_t n_splitting_elements, SEM::Entities::Face2D_t* faces, SEM::Entities::Face2D_t* new_faces, const SEM::Entities::Element2D_t* elements, const SEM::Entities::Vec2<deviceFloat>* nodes, const size_t* faces_block_offsets, int max_split_level, int elements_blockSize) -> void;
+    auto split_faces(size_t n_faces, size_t n_nodes, size_t n_splitting_elements, SEM::Entities::Face2D_t* faces, SEM::Entities::Face2D_t* new_faces, const SEM::Entities::Element2D_t* elements, SEM::Entities::Vec2<deviceFloat>* nodes, const size_t* faces_block_offsets, int max_split_level, int elements_blockSize) -> void;
 
     __global__
     auto find_nodes(size_t n_elements, SEM::Entities::Element2D_t* elements, const SEM::Entities::Face2D_t* faces, const SEM::Entities::Vec2<deviceFloat>* nodes, int max_split_level) -> void;
