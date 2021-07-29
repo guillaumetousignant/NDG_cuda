@@ -58,10 +58,10 @@ auto SEM::Entities::Face2D_t::resize_storage(int N) -> void {
 }
 
 __device__
-auto SEM::Entities::Face2D_t::compute_geometry(const SEM::Entities::Element2D_t* elements, const SEM::Entities::Vec2<deviceFloat>* nodes) -> void {
+auto SEM::Entities::Face2D_t::compute_geometry(const SEM::Entities::Element2D_t* elements, const std::array<SEM::Entities::Vec2<deviceFloat>, 2> nodes, const std::array<std::array<SEM::Entities::Vec2<deviceFloat>, 2>, 2> element_nodes) -> void {
     const std::array<SEM::Entities::Vec2<deviceFloat>, 2> points {nodes[nodes_[0]], nodes[nodes_[1]]};
     
-    tangent_ = points[1] - points[0]; 
+    tangent_ = nodes[1] - nodes[0]; 
     length_ = tangent_.magnitude();
     tangent_ /= length_; // CHECK should be normalized or not?
     normal_ = SEM::Entities::Vec2<deviceFloat>(tangent_.y(), -tangent_.x());     
@@ -69,27 +69,22 @@ auto SEM::Entities::Face2D_t::compute_geometry(const SEM::Entities::Element2D_t*
     const SEM::Entities::Element2D_t& element_L = elements[elements_[0]];
     const SEM::Entities::Element2D_t& element_R = elements[elements_[1]];
 
-    const SEM::Entities::Vec2<deviceFloat> center = (points[0] + points[1])/2;
+    const SEM::Entities::Vec2<deviceFloat> center = (nodes[0] + nodes[1])/2;
     const SEM::Entities::Vec2<deviceFloat> delta = center - element_L.center_; // CHECK doesn't work with ghost cells
     const deviceFloat sign = std::copysign(static_cast<deviceFloat>(1), normal_.dot(delta));
     normal_ *= sign;
     tangent_ *= sign;
 
-    const std::array<std::array<SEM::Entities::Vec2<deviceFloat>, 2>, 2> elements_nodes {
-        std::array<SEM::Entities::Vec2<deviceFloat>, 2>{nodes[element_L.nodes_[elements_side_[0]]], (elements_side_[0] + 1 < element_L.nodes_.size()) ? nodes[element_L.nodes_[elements_side_[0] + 1]] : nodes[element_L.nodes_[0]]},
-        std::array<SEM::Entities::Vec2<deviceFloat>, 2>{nodes[element_R.nodes_[elements_side_[1]]], (elements_side_[1] + 1 < element_R.nodes_.size()) ? nodes[element_R.nodes_[elements_side_[1] + 1]] : nodes[element_R.nodes_[0]]}
-    };
-
     const std::array<SEM::Entities::Vec2<deviceFloat>, 2> elements_delta {
-        elements_nodes[0][1] - elements_nodes[0][0], 
-        elements_nodes[1][1] - elements_nodes[1][0]
+        element_nodes[0][1] - element_nodes[0][0], 
+        element_nodes[1][1] - element_nodes[1][0]
     };
 
-    const SEM::Entities::Vec2<deviceFloat> face_delta = points[1] - points[0];
+    const SEM::Entities::Vec2<deviceFloat> face_delta = nodes[1] - nodes[0];
 
     const std::array<SEM::Entities::Vec2<deviceFloat>, 2> edge_delta {
-        points[0] - elements_nodes[0][0], 
-        points[1] - elements_nodes[1][0]
+        nodes[0] - element_nodes[0][0], 
+        nodes[1] - element_nodes[1][0]
     };
 
     offset_ = {edge_delta[0].magnitude()/elements_delta[0].magnitude(), edge_delta[1].magnitude()/elements_delta[1].magnitude()};

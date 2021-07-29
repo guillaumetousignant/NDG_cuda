@@ -82,9 +82,10 @@ namespace SEM { namespace Entities {
              * 
              * @param elements Array of elements, in which the face's elements are placed at their index.
              * @param nodes Array of nodes, in which the face's nodes are placed at their index.
+             * @param element_nodes Array of arrays of the two nodes of each neighbour element.
              */
             __device__
-            auto compute_geometry(const SEM::Entities::Element2D_t* elements, const SEM::Entities::Vec2<deviceFloat>* nodes) -> void;
+            auto compute_geometry(const SEM::Entities::Element2D_t* elements, const std::array<SEM::Entities::Vec2<deviceFloat>, 2> nodes, const std::array<std::array<SEM::Entities::Vec2<deviceFloat>, 2>, 2> element_nodes) -> void;
     };
 }}
 
