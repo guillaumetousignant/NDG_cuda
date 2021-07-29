@@ -106,6 +106,14 @@ namespace SEM { namespace Meshes {
             std::vector<size_t> host_refine_array_;
             SEM::Entities::device_vector<size_t> device_faces_refine_array_;
             std::vector<size_t> host_faces_refine_array_;
+            SEM::Entities::device_vector<size_t> device_wall_boundaries_refine_array_;
+            std::vector<size_t> host_wall_boundaries_refine_array_;
+            SEM::Entities::device_vector<size_t> device_symmetry_boundaries_refine_array_;
+            std::vector<size_t> host_symmetry_boundaries_refine_array_;
+            SEM::Entities::device_vector<size_t> device_inflow_boundaries_refine_array_;
+            std::vector<size_t> host_inflow_boundaries_refine_array_;
+            SEM::Entities::device_vector<size_t> device_outflow_boundaries_refine_array_;
+            std::vector<size_t> host_outflow_boundaries_refine_array_;
 
             const cudaStream_t &stream_;
 
@@ -316,6 +324,41 @@ namespace SEM { namespace Meshes {
                 }
                 else {
                     faces[i+blockSize].refine_ = false;
+                }
+            }
+            i += gridSize; 
+        }
+        __syncthreads();
+
+        if (blockSize >= 8192) { if (tid < 4096) { sdata[tid] += sdata[tid + 4096]; } __syncthreads(); }
+        if (blockSize >= 4096) { if (tid < 2048) { sdata[tid] += sdata[tid + 2048]; } __syncthreads(); }
+        if (blockSize >= 2048) { if (tid < 1024) { sdata[tid] += sdata[tid + 1024]; } __syncthreads(); }
+        if (blockSize >= 1024) { if (tid < 512) { sdata[tid] += sdata[tid + 512]; } __syncthreads(); }
+        if (blockSize >= 512) { if (tid < 256) { sdata[tid] += sdata[tid + 256]; } __syncthreads(); }
+        if (blockSize >= 256) { if (tid < 128) { sdata[tid] += sdata[tid + 128]; } __syncthreads(); }
+        if (blockSize >= 128) { if (tid < 64) { sdata[tid] += sdata[tid + 64]; } __syncthreads(); }
+
+        if (tid < 32) warp_reduce_2D<blockSize>(sdata, tid);
+        if (tid == 0) g_odata[blockIdx.x] = sdata[0];
+    }
+
+    // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
+    template <unsigned int blockSize>
+    __global__ 
+    auto reduce_boundaries_refine_2D(size_t n_boundaries, const SEM::Entities::Element2D_t* elements, const size_t* boundaries, const SEM::Entities::Face2D_t* faces, size_t* g_odata) -> void {
+        __shared__ size_t sdata[(blockSize >= 64) ? blockSize : blockSize + blockSize/2]; // Because within a warp there is no branching and this is read up until blockSize + blockSize/2
+        unsigned int tid = threadIdx.x;
+        size_t i = blockIdx.x*(blockSize*2) + tid;
+        unsigned int gridSize = blockSize*2*gridDim.x;
+        sdata[tid] = 0;
+
+        while (i < n_boundaries) { 
+            if (elements[boundaries[i]].faces_[0].size() == 1) { // Should always be the case 
+                sdata[tid] += faces[elements[boundaries[i]].faces_[0][0]].refine_;
+            }
+            if (i+blockSize < n_boundaries) {
+                if (elements[boundaries[i+blockSize]].faces_[0].size() == 1) { // Should always be the case 
+                    sdata[tid] += faces[elements[boundaries[i+blockSize]].faces_[0][0]].refine_;
                 }
             }
             i += gridSize; 

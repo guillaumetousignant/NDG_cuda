@@ -709,6 +709,14 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     device_refine_array_ = device_vector<size_t>(elements_numBlocks_, stream_);
     host_faces_refine_array_ = std::vector<size_t>(faces_numBlocks_);
     device_faces_refine_array_ = device_vector<size_t>(faces_numBlocks_, stream_);
+    host_wall_boundaries_refine_array_ = std::vector<size_t>(wall_boundaries_numBlocks_);
+    device_wall_boundaries_refine_array_ = device_vector<size_t>(wall_boundaries_numBlocks_, stream_);
+    host_symmetry_boundaries_refine_array_ = std::vector<size_t>(symmetry_boundaries_numBlocks_);
+    device_symmetry_boundaries_refine_array_ = device_vector<size_t>(symmetry_boundaries_numBlocks_, stream_);
+    host_inflow_boundaries_refine_array_ = std::vector<size_t>(inflow_boundaries_numBlocks_);
+    device_inflow_boundaries_refine_array_ = device_vector<size_t>(inflow_boundaries_numBlocks_, stream_);
+    host_outflow_boundaries_refine_array_ = std::vector<size_t>(outflow_boundaries_numBlocks_);
+    device_outflow_boundaries_refine_array_ = device_vector<size_t>(outflow_boundaries_numBlocks_, stream_);
 
     allocate_element_storage<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, elements_.data());
     allocate_boundary_storage<<<ghosts_numBlocks_, boundaries_blockSize_, 0, stream_>>>(n_elements_, elements_.size(), elements_.data());
@@ -1090,8 +1098,8 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
 
     size_t n_splitting_elements = 0;
     for (int i = 0; i < elements_numBlocks_; ++i) {
-        host_refine_array_[i] = n_splitting_elements; // Current block offset
         n_splitting_elements += host_refine_array_[i];
+        host_refine_array_[i] = n_splitting_elements - host_refine_array_[i]; // Current block offset
     }
 
     int global_rank;
@@ -1168,6 +1176,7 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
 
     SEM::Meshes::find_nodes<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, elements_.data(), faces_.data(), nodes_.data(), max_split_level_);
     SEM::Meshes::copy_interfaces_error(<<<interfaces_numBlocks_, boundaries_blockSize_, 0, stream_>>>(interfaces_origin_.size(), elements_.data(), interfaces_origin_.data(), interfaces_origin_side_.data(), interfaces_destination_.data());
+    // CHECK add the same thing for MPI here
 
     SEM::Meshes::reduce_faces_refine_2D<faces_blockSize_/2><<<faces_numBlocks_, faces_blockSize_/2, 0, stream_>>>(faces_.size(), max_split_level_, faces_.data(), elements_.data(), device_faces_refine_array_.data());
     device_faces_refine_array_.copy_to(host_faces_refine_array_, stream_);
@@ -1175,12 +1184,56 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
 
     size_t n_splitting_faces = 0;
     for (int i = 0; i < faces_numBlocks_; ++i) {
-        host_faces_refine_array_[i] = n_splitting_faces; // Current block offset
         n_splitting_faces += host_faces_refine_array_[i];
+        host_faces_refine_array_[i] = n_splitting_faces - host_faces_refine_array_[i]; // Current block offset
     }
 
     device_faces_refine_array_.copy_from(host_faces_refine_array_, stream_);
 
+    // Boundary stuff
+    SEM::Meshes::reduce_boundaries_refine_2D<boundaries_blockSize_/2><<<wall_boundaries_numBlocks_, boundaries_blockSize_/2, 0, stream_>>>(wall_boundaries_.size(), elements_.data(), wall_boundaries_.data(), faces_.data(), device_wall_boundaries_refine_array_.data());
+    device_wall_boundaries_refine_array_.copy_to(host_wall_boundaries_refine_array_, stream_);
+
+    SEM::Meshes::reduce_boundaries_refine_2D<boundaries_blockSize_/2><<<symmetry_boundaries_numBlocks_, boundaries_blockSize_/2, 0, stream_>>>(symmetry_boundaries_.size(), elements_.data(), symmetry_boundaries_.data(), faces_.data(), device_symmetry_boundaries_refine_array_.data());
+    device_symmetry_boundaries_refine_array_.copy_to(host_symmetry_boundaries_refine_array_, stream_);
+
+    SEM::Meshes::reduce_boundaries_refine_2D<boundaries_blockSize_/2><<<inflow_boundaries_numBlocks_, boundaries_blockSize_/2, 0, stream_>>>(inflow_boundaries_.size(), elements_.data(), inflow_boundaries_.data(), faces_.data(), device_inflow_boundaries_refine_array_.data());
+    device_inflow_boundaries_refine_array_.copy_to(host_inflow_boundaries_refine_array_, stream_);
+
+    SEM::Meshes::reduce_boundaries_refine_2D<boundaries_blockSize_/2><<<outflow_boundaries_numBlocks_, boundaries_blockSize_/2, 0, stream_>>>(outflow_boundaries_.size(), elements_.data(), outflow_boundaries_.data(), faces_.data(), device_outflow_boundaries_refine_array_.data());
+    device_outflow_boundaries_refine_array_.copy_to(host_outflow_boundaries_refine_array_, stream_);
+
+    cudaStreamSynchronize(stream_);
+
+    size_t n_splitting_wall_boundaries = 0;
+    for (int i = 0; i < wall_boundaries_numBlocks_; ++i) {
+        n_splitting_wall_boundaries += host_wall_boundaries_refine_array_[i];
+        host_wall_boundaries_refine_array_[i] = n_splitting_wall_boundaries - host_wall_boundaries_refine_array_[i]; // Current block offset
+    }
+    device_wall_boundaries_refine_array_.copy_from(host_wall_boundaries_refine_array_, stream_);
+
+    size_t n_splitting_symmetry_boundaries = 0;
+    for (int i = 0; i < symmetry_boundaries_numBlocks_; ++i) {
+        n_splitting_symmetry_boundaries += host_symmetry_boundaries_refine_array_[i];
+        host_symmetry_boundaries_refine_array_[i] = n_splitting_symmetry_boundaries - host_symmetry_boundaries_refine_array_[i]; // Current block offset
+    }
+    device_symmetry_boundaries_refine_array_.copy_from(host_symmetry_boundaries_refine_array_, stream_);
+
+    size_t n_splitting_inflow_boundaries = 0;
+    for (int i = 0; i < inflow_boundaries_numBlocks_; ++i) {
+        n_splitting_inflow_boundaries += host_inflow_boundaries_refine_array_[i];
+        host_inflow_boundaries_refine_array_[i] = n_splitting_inflow_boundaries - host_inflow_boundaries_refine_array_[i]; // Current block offset
+    }
+    device_inflow_boundaries_refine_array_.copy_from(host_inflow_boundaries_refine_array_, stream_);
+
+    size_t n_splitting_outflow_boundaries = 0;
+    for (int i = 0; i < outflow_boundaries_numBlocks_; ++i) {
+        n_splitting_outflow_boundaries += host_outflow_boundaries_refine_array_[i];
+        host_outflow_boundaries_refine_array_[i] = n_splitting_outflow_boundaries - host_outflow_boundaries_refine_array_[i]; // Current block offset
+    }
+    device_outflow_boundaries_refine_array_.copy_from(host_outflow_boundaries_refine_array_, stream_);
+
+    // New arrays
     device_vector<Element2D_t> new_elements(elements_.size() + 3 * n_splitting_elements, stream_);
     device_vector<Vec2<deviceFloat>> new_nodes(nodes_.size() + n_splitting_elements + n_splitting_faces, stream_);
     device_vector<Face2D_t> new_faces(faces_.size() + 4 * n_splitting_elements + n_splitting_faces, stream_);
