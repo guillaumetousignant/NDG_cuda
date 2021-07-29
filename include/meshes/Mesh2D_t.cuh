@@ -231,9 +231,6 @@ namespace SEM { namespace Meshes {
     auto find_nodes(size_t n_elements, SEM::Entities::Element2D_t* elements, const SEM::Entities::Face2D_t* faces, const SEM::Entities::Vec2<deviceFloat>* nodes, int max_split_level) -> void;
 
     __global__
-    auto move_faces(size_t n_faces, SEM::Entities::Face2D_t* faces, SEM::Entities::Face2D_t* new_faces, SEM::Entities::Element2D_t* elements, SEM::Entities::Element2D_t* new_elements, const SEM::Entities::Vec2<deviceFloat>* nodes, const size_t* block_offsets, const size_t* nodes_block_offsets, int max_split_level, int N_max, int elements_blockSize) -> void;
-
-    __global__
     auto adjust_boundaries(size_t n_boundaries, SEM::Entities::Element2D_t* elements, const size_t* boundaries, const SEM::Entities::Face2D_t* faces) -> void;
 
     __global__
@@ -316,123 +313,6 @@ namespace SEM { namespace Meshes {
                 }
                 else {
                     faces[i+blockSize].refine_ = false;
-                }
-            }
-            i += gridSize; 
-        }
-        __syncthreads();
-
-        if (blockSize >= 8192) { if (tid < 4096) { sdata[tid] += sdata[tid + 4096]; } __syncthreads(); }
-        if (blockSize >= 4096) { if (tid < 2048) { sdata[tid] += sdata[tid + 2048]; } __syncthreads(); }
-        if (blockSize >= 2048) { if (tid < 1024) { sdata[tid] += sdata[tid + 1024]; } __syncthreads(); }
-        if (blockSize >= 1024) { if (tid < 512) { sdata[tid] += sdata[tid + 512]; } __syncthreads(); }
-        if (blockSize >= 512) { if (tid < 256) { sdata[tid] += sdata[tid + 256]; } __syncthreads(); }
-        if (blockSize >= 256) { if (tid < 128) { sdata[tid] += sdata[tid + 128]; } __syncthreads(); }
-        if (blockSize >= 128) { if (tid < 64) { sdata[tid] += sdata[tid + 64]; } __syncthreads(); }
-
-        if (tid < 32) warp_reduce_2D<blockSize>(sdata, tid);
-        if (tid == 0) g_odata[blockIdx.x] = sdata[0];
-    }
-
-    // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
-    template <unsigned int blockSize>
-    __global__ 
-    auto reduce_nodes_2D(size_t n_elements, int max_split_level, SEM::Entities::Element2D_t* elements, const SEM::Entities::Face2D_t* faces, const SEM::Entities::Vec2<deviceFloat>* nodes, size_t* g_odata) -> void {
-        __shared__ size_t sdata[(blockSize >= 64) ? blockSize : blockSize + blockSize/2]; // Because within a warp there is no branching and this is read up until blockSize + blockSize/2
-        unsigned int tid = threadIdx.x;
-        size_t i = blockIdx.x*(blockSize*2) + tid;
-        unsigned int gridSize = blockSize*2*gridDim.x;
-        sdata[tid] = 0;
-
-        while (i < n_elements) {
-            SEM::Entities::Element2D_t& element = elements[i];
-            element.additional_nodes_ = {false, false, false, false};
-            if (element.would_h_refine(max_split_level)) {
-                // This is the middle node, always needs to be created
-                ++sdata[tid];
-                for (size_t side_index = 0; side_index < element.faces_.size(); ++side_index) {
-                    const std::array<SEM::Entities::Vec2<deviceFloat>, 2> side_nodes = {nodes[element.nodes_[side_index]], (side_index + 1 < element.faces_.size()) ? nodes[element.nodes_[side_index + 1]] : nodes[element.nodes_[0]]};
-                    const SEM::Entities::Vec2<deviceFloat> new_node = (side_nodes[0] + side_nodes[1])/2;
-
-                    // Here we check if the new node already exists
-                    bool found_node = false;
-                    for (size_t face_index = 0; face_index < element.faces_[side_index].size(); ++face_index) {
-                        const SEM::Entities::Face2D_t& face = faces[element.faces_[side_index][face_index]];
-                        if (nodes[face.nodes_[0]] == new_node || nodes[face.nodes_[1]] == new_node) {
-                            found_node = true;
-                            break;
-                        }
-                    }
-
-                    // Here we check if another element would create the same node, and yield if its index is smaller
-                    if (!found_node) {
-                        for (size_t face_index = 0; face_index < element.faces_[side_index].size(); ++face_index) {
-                            const SEM::Entities::Face2D_t& face = faces[element.faces_[side_index][face_index]];
-                            const int face_side = face.elements_[0] == i;
-                            const SEM::Entities::Element2D_t& neighbour = elements[face.elements_[face_side]];
-                            
-                            if (neighbour.would_h_refine(max_split_level)) {
-                                const std::array<SEM::Entities::Vec2<deviceFloat>, 2> neighbour_nodes = {nodes[neighbour.nodes_[face.elements_side_[face_side]]], (face.elements_side_[face_side] + 1 < neighbour.faces_.size()) ? nodes[neighbour.nodes_[face.elements_side_[face_side] + 1]] : nodes[neighbour.nodes_[0]]};
-                                const SEM::Entities::Vec2<deviceFloat> neighbour_new_node = (neighbour_nodes[0] + neighbour_nodes[1])/2;
-
-                                if (new_node.almost_equal(neighbour_new_node) && face.elements_[face_side] < i) {
-                                    found_node = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-
-                    if (!found_node) {
-                        ++sdata[tid];
-                        element.additional_nodes_[side_index] = true;
-                    }
-                }
-            }
-
-            if (i+blockSize < n_elements) {
-                SEM::Entities::Element2D_t& element = elements[i+blockSize];
-                element.additional_nodes_ = {false, false, false, false};
-                if (element.would_h_refine(max_split_level)) {
-                    // This is the middle node, always needs to be created
-                    ++sdata[tid];
-                    for (size_t side_index = 0; side_index < element.faces_.size(); ++side_index) {
-                        const std::array<SEM::Entities::Vec2<deviceFloat>, 2> side_nodes = {nodes[element.nodes_[side_index]], (side_index + 1 < element.faces_.size()) ? nodes[element.nodes_[side_index + 1]] : nodes[element.nodes_[0]]};
-                        const SEM::Entities::Vec2<deviceFloat> new_node = (side_nodes[0] + side_nodes[1])/2;
-    
-                        // Here we check if the new node already exists
-                        bool found_node = false;
-                        for (size_t face_index = 0; face_index < element.faces_[side_index].size(); ++face_index) {
-                            const SEM::Entities::Face2D_t& face = faces[element.faces_[side_index][face_index]];
-                            if (nodes[face.nodes_[0]] == new_node || nodes[face.nodes_[1]] == new_node) {
-                                found_node = true;
-                                break;
-                            }
-                        }
-    
-                        if (!found_node) {
-                            for (size_t face_index = 0; face_index < element.faces_[side_index].size(); ++face_index) {
-                                const SEM::Entities::Face2D_t& face = faces[element.faces_[side_index][face_index]];
-                                const int face_side = face.elements_[0] == i;
-                                const SEM::Entities::Element2D_t& neighbour = elements[face.elements_[face_side]];
-                                
-                                if (neighbour.would_h_refine(max_split_level)) {
-                                    const std::array<SEM::Entities::Vec2<deviceFloat>, 2> neighbour_nodes = {nodes[neighbour.nodes_[face.elements_side_[face_side]]], (face.elements_side_[face_side] + 1 < neighbour.faces_.size()) ? nodes[neighbour.nodes_[face.elements_side_[face_side] + 1]] : nodes[neighbour.nodes_[0]]};
-                                    const SEM::Entities::Vec2<deviceFloat> neighbour_new_node = (neighbour_nodes[0] + neighbour_nodes[1])/2;
-    
-                                    if (new_node.almost_equal(neighbour_new_node) && face.elements_[face_side] < i+blockSize) {
-                                        found_node = true;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-    
-                        if (!found_node) {
-                            ++sdata[tid];
-                            element.additional_nodes_[side_index] = true;
-                        }
-                    }
                 }
             }
             i += gridSize; 

@@ -4,7 +4,6 @@
 #include "helpers/float_types.h"
 #include "entities/Vec2.cuh"
 #include "entities/cuda_vector.cuh"
-#include "entities/Element2D_t.cuh"
 #include <array>
 
 namespace SEM { namespace Entities {
@@ -80,12 +79,12 @@ namespace SEM { namespace Entities {
              *
              * Computes the face's normal, tangent, length, offset and scale, all from the first element to the second.
              * 
-             * @param elements Array of elements, in which the face's elements are placed at their index.
+             * @param elements_centres Array of the center of each neighbour element.
              * @param nodes Array of nodes, in which the face's nodes are placed at their index.
              * @param element_nodes Array of arrays of the two nodes of each neighbour element.
              */
             __device__
-            auto compute_geometry(const SEM::Entities::Element2D_t* elements, const std::array<SEM::Entities::Vec2<deviceFloat>, 2> nodes, const std::array<std::array<SEM::Entities::Vec2<deviceFloat>, 2>, 2> element_nodes) -> void;
+            auto compute_geometry(const std::array<SEM::Entities::Vec2<deviceFloat>, 2>& elements_centres, const std::array<SEM::Entities::Vec2<deviceFloat>, 2>& nodes, const std::array<std::array<SEM::Entities::Vec2<deviceFloat>, 2>, 2>& element_nodes) -> void;
     };
 }}
 

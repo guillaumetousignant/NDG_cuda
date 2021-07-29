@@ -1419,8 +1419,12 @@ auto SEM::Meshes::compute_face_geometry(size_t n_faces, Face2D_t* faces, const E
             {nodes[element_L.nodes_[element_L_side]], nodes[element_L.nodes_[element_L_next_side]]},
             {nodes[element_R.nodes_[element_R_side]], nodes[element_R.nodes_[element_R_next_side]]}
         };
+        const std::array<Vec2<deviceFloat>, 2> elements_centres {
+            element_L.center_, 
+            element_R.center_
+        };
 
-        faces[face_index].compute_geometry(elements, face_nodes, elements_nodes);
+        faces[face_index].compute_geometry(elements_centres, face_nodes, elements_nodes);
     }
 }
 
@@ -2647,12 +2651,20 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, si
             for (size_t side_index = 0; side_index < element.nodes_.size(); ++side_index) {
                 const size_t next_side_index = (side_index + 1 < element.nodes_.size()) ? side_index + 1 : 0;
                 const Vec2<deviceFloat> new_node = (nodes[element.nodes_[side_index]] + nodes[element.nodes_[next_side_index]])/2;
+                const std::array<Vec2<deviceFloat>, 2> face_nodes {
+                    new_node,
+                    nodes[new_node_index]
+                };
                 const std::array<std::array<Vec2<deviceFloat>, 2>, 2> elements_nodes {
                     {new_node, nodes[new_node_index]}, // Not the same new node... this is confusing
                     {nodes[new_node_index], new_node}
                 };
+                const std::array<Vec2<deviceFloat>, 2> elements_centres {
+                    new_elements[element_index + side_index].center_,
+                    new_elements[element_index + next_side_index].center_
+                };
 
-                new_faces[new_face_index + side_index].compute_geometry(new_elements, {new_node, nodes[new_node_index]}, elements_nodes);
+                new_faces[new_face_index + side_index].compute_geometry(elements_centres, face_nodes, elements_nodes);
             }
         }
         // p refinement
@@ -2768,7 +2780,10 @@ auto SEM::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_splitting
         const Element2D_t& element_L = elements[element_L_index];
         const Element2D_t& element_R = elements[element_R_index];
 
-        if (element_L.additional_nodes_[element_L_side_index] || element_R.additional_nodes_[element_R_side_index]) {
+        if (face.refine_) {
+            const size_t element_L_next_side_index = (element_L_side_index + 1 < element_L.nodes_.size()) ? element_L_side_index + 1 : 0;
+            const size_t element_R_next_side_index = (element_R_side_index + 1 < element_R.nodes_.size()) ? element_R_side_index + 1 : 0;
+
             size_t new_node_index = n_nodes + n_splitting_elements + faces_block_offsets[block_id];
             size_t new_face_index = n_faces + 4 * n_splitting_elements + faces_block_offsets[block_id];
             for (size_t j = face_index - thread_id; j < face_index; ++j) {
@@ -2777,6 +2792,7 @@ auto SEM::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_splitting
             }
 
             const Vec2<deviceFloat> new_node = (nodes[face.nodes_[0]] + nodes[face.nodes_[1]])/2;
+            nodes[new_node_index] = new_node;
 
             const int element_L_block_id = element_L_index/elements_blockSize;
             const int element_L_thread_id = element_L_index%elements_blockSize;
@@ -2798,8 +2814,163 @@ auto SEM::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_splitting
                 {element_L_new_index, element_R_new_index}
             };
 
+            std::array<std::array<Vec2<deviceFloat>, 2>, 2> elements_centres {
+                {element_L.center_, element_R.center_},
+                {element_L.center_, element_R.center_}
+            };
 
+            const std::array<std::array<std::array<Vec2<deviceFloat>, 2>, 2>, 2> elements_nodes {
+                {
+                    {nodes[element_L.nodes_[element_L_side_index]], nodes[element_L.nodes_[element_L_next_side_index]]},
+                    {nodes[element_R.nodes_[element_R_side_index]], nodes[element_R.nodes_[element_R_next_side_index]]}
+                },
+                {
+                    {nodes[element_L.nodes_[element_L_side_index]], nodes[element_L.nodes_[element_L_next_side_index]]},
+                    {nodes[element_R.nodes_[element_R_side_index]], nodes[element_R.nodes_[element_R_next_side_index]]}
+                }
+            };
 
+            if (element_L.would_h_refine(max_split_level)) {
+                const std::array<Vec2<deviceFloat>, 2> element_nodes {nodes[element_L.nodes_[element_L_side_index]], nodes[element_L.nodes_[element_L_next_side_index]]};
+                const Vec2<deviceFloat> new_element_node = (element_nodes[0] + element_nodes[1])/2;
+
+                const std::array<Vec2<deviceFloat>, 2>, 2> AB {new_element_node - element_nodes[0], element_nodes[1] - new_element_node};
+                const std::array<deviceFloat, 2> AB_dot_inv  {1/AB[0].dot(AB[0]), 1/AB[1].dot(AB[1])};
+
+                const std::array<Vec2<deviceFloat>, 2> AC {nodes[face.nodes_[0]] - element_nodes[0], nodes[face.nodes_[0]] - new_element_node};
+                const std::array<Vec2<deviceFloat>, 2> AD {new_node - element_nodes[0], new_node - new_element_node};
+                const std::array<Vec2<deviceFloat>, 2> AE {nodes[face.nodes_[1]] - element_nodes[0], nodes[face.nodes_[1]] - new_element_node};
+
+                const std::array<deviceFloat, 2> C_proj {AC[0].dot(AB[0]) * AB_dot_inv[0], AC[1].dot(AB[1]) * AB_dot_inv[1]};
+                const std::array<deviceFloat, 2> D_proj {AD[0].dot(AB[0]) * AB_dot_inv[0], AD[1].dot(AB[1]) * AB_dot_inv[1]};
+                const std::array<deviceFloat, 2> E_proj {AE[0].dot(AB[0]) * AB_dot_inv[0], AE[1].dot(AB[1]) * AB_dot_inv[1]};
+
+                // The first face is within the first element
+                if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                    && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                    && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                    && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+
+                    const size_t previous_side_index = (element_L_side_index > 0) ? element_L_side_index - 1 : element_L.nodes_.size() - 1;
+                    
+                    new_element_indices[0][0] += element_L_side_index;
+                    elements_centres[0][0] = (nodes[element_L.nodes_[element_L_side_index]] + element_L.center_ + (nodes[element_L.nodes_[element_L_side_index]] + nodes[element_L.nodes_[element_L_next_side_index]])/2 + (nodes[element_L.nodes_[element_L_side_index]] + nodes[element_L.nodes_[previous_side_index]])/2)/4;
+                    elements_nodes[0][0] = {nodes[element_L.nodes_[element_L_side_index]], (nodes[element_L.nodes_[element_L_side_index]] + nodes[element_L.nodes_[element_L_next_side_index]])/2};
+                }
+                // The second face is within the first element
+                if (D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                    && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                    && E_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                    && E_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+
+                    const size_t previous_side_index = (element_L_side_index > 0) ? element_L_side_index - 1 : element_L.nodes_.size() - 1;
+                    
+                    new_element_indices[1][0] += element_L_side_index;
+                    elements_centres[1][0] = (nodes[element_L.nodes_[element_L_side_index]] + element_L.center_ + (nodes[element_L.nodes_[element_L_side_index]] + nodes[element_L.nodes_[element_L_next_side_index]])/2 + (nodes[element_L.nodes_[element_L_side_index]] + nodes[element_L.nodes_[previous_side_index]])/2)/4;
+                    elements_nodes[1][0] = {nodes[element_L.nodes_[element_L_side_index]], (nodes[element_L.nodes_[element_L_side_index]] + nodes[element_L.nodes_[element_L_next_side_index]])/2};
+                }
+                // The first face is within the second element
+                if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                    && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                    && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                    && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+
+                    const size_t opposite_side_index = (element_L_side_index + 2 < element_L.nodes_.size()) ? element_L_side_index + 2 : element_L_side_index + 2 - element_L.nodes_.size();
+
+                    new_element_indices[0][0] += element_L_next_side_index;
+                    elements_centres[0][0] = (nodes[element_L.nodes_[element_L_next_side_index]] + element_L.center_ + (nodes[element_L.nodes_[element_L_side_index]] + nodes[element_L.nodes_[element_L_next_side_index]])/2 + (nodes[element_L.nodes_[element_L_next_side_index]] + nodes[element_L.nodes_[opposite_side_index]])/2)/4;
+                    elements_nodes[0][0] = {(nodes[element_L.nodes_[element_L_side_index]] + nodes[element_L.nodes_[element_L_next_side_index]])/2, nodes[element_L.nodes_[element_L_next_side_index]]};
+                }
+                // The second face is within the second element
+                if (D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                    && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                    && E_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                    && E_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+
+                    const size_t opposite_side_index = (element_L_side_index + 2 < element_L.nodes_.size()) ? element_L_side_index + 2 : element_L_side_index + 2 - element_L.nodes_.size();
+
+                    new_element_indices[1][0] += element_L_next_side_index;
+                    elements_centres[1][0] = (nodes[element_L.nodes_[element_L_next_side_index]] + element_L.center_ + (nodes[element_L.nodes_[element_L_side_index]] + nodes[element_L.nodes_[element_L_next_side_index]])/2 + (nodes[element_L.nodes_[element_L_next_side_index]] + nodes[element_L.nodes_[opposite_side_index]])/2)/4;
+                    elements_nodes[1][0] = {(nodes[element_L.nodes_[element_L_side_index]] + nodes[element_L.nodes_[element_L_next_side_index]])/2, nodes[element_L.nodes_[element_L_next_side_index]]};
+                }
+            }
+            if (element_R.would_h_refine(max_split_level)) {
+                const std::array<Vec2<deviceFloat>, 2> element_nodes {nodes[element_R.nodes_[element_R_side_index]], nodes[element_R.nodes_[element_R_next_side_index]]};
+                const Vec2<deviceFloat> new_element_node = (element_nodes[0] + element_nodes[1])/2;
+
+                const std::array<Vec2<deviceFloat>, 2>, 2> AB {new_element_node - element_nodes[0], element_nodes[1] - new_element_node};
+                const std::array<deviceFloat, 2> AB_dot_inv  {1/AB[0].dot(AB[0]), 1/AB[1].dot(AB[1])};
+
+                const std::array<Vec2<deviceFloat>, 2> AC {nodes[face.nodes_[0]] - element_nodes[0], nodes[face.nodes_[0]] - new_element_node};
+                const std::array<Vec2<deviceFloat>, 2> AD {new_node - element_nodes[0], new_node - new_element_node};
+                const std::array<Vec2<deviceFloat>, 2> AE {nodes[face.nodes_[1]] - element_nodes[0], nodes[face.nodes_[1]] - new_element_node};
+
+                const std::array<deviceFloat, 2> C_proj {AC[0].dot(AB[0]) * AB_dot_inv[0], AC[1].dot(AB[1]) * AB_dot_inv[1]};
+                const std::array<deviceFloat, 2> D_proj {AD[0].dot(AB[0]) * AB_dot_inv[0], AD[1].dot(AB[1]) * AB_dot_inv[1]};
+                const std::array<deviceFloat, 2> E_proj {AE[0].dot(AB[0]) * AB_dot_inv[0], AE[1].dot(AB[1]) * AB_dot_inv[1]};
+                
+                // The first face is within the first element
+                if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                    && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                    && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                    && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+
+                    const size_t previous_side_index = (element_R_side_index > 0) ? element_R_side_index - 1 : element_R.nodes_.size() - 1;
+                    
+                    new_element_indices[0][1] += element_R_side_index;
+                    elements_centres[0][1] = (nodes[element_R.nodes_[element_R_side_index]] + element_R.center_ + (nodes[element_R.nodes_[element_R_side_index]] + nodes[element_R.nodes_[element_R_next_side_index]])/2 + (nodes[element_R.nodes_[element_R_side_index]] + nodes[element_R.nodes_[previous_side_index]])/2)/4;
+                    elements_nodes[0][1] = {nodes[element_R.nodes_[element_R_side_index]], (nodes[element_R.nodes_[element_R_side_index]] + nodes[element_R.nodes_[element_R_next_side_index]])/2};
+                }
+                // The second face is within the first element
+                if (D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                    && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                    && E_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                    && E_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+
+                    const size_t previous_side_index = (element_R_side_index > 0) ? element_R_side_index - 1 : element_R.nodes_.size() - 1;
+                    
+                    new_element_indices[1][1] += element_R_side_index;
+                    elements_centres[1][1] = (nodes[element_R.nodes_[element_R_side_index]] + element_R.center_ + (nodes[element_R.nodes_[element_R_side_index]] + nodes[element_R.nodes_[element_R_next_side_index]])/2 + (nodes[element_R.nodes_[element_R_side_index]] + nodes[element_R.nodes_[previous_side_index]])/2)/4;
+                    elements_nodes[1][1] = {nodes[element_R.nodes_[element_R_side_index]], (nodes[element_R.nodes_[element_R_side_index]] + nodes[element_R.nodes_[element_R_next_side_index]])/2};
+                }
+                // The first face is within the second element
+                if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                    && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                    && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                    && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+
+                    const size_t opposite_side_index = (element_R_side_index + 2 < element_R.nodes_.size()) ? element_R_side_index + 2 : element_R_side_index + 2 - element_R.nodes_.size();
+
+                    new_element_indices[0][1] += element_R_next_side_index;
+                    elements_centres[0][1] = (nodes[element_R.nodes_[element_R_next_side_index]] + element_R.center_ + (nodes[element_R.nodes_[element_R_side_index]] + nodes[element_R.nodes_[element_R_next_side_index]])/2 + (nodes[element_R.nodes_[element_R_next_side_index]] + nodes[element_R.nodes_[opposite_side_index]])/2)/4;
+                    elements_nodes[0][1] = {(nodes[element_R.nodes_[element_R_side_index]] + nodes[element_R.nodes_[element_R_next_side_index]])/2, nodes[element_R.nodes_[element_R_next_side_index]]};
+                }
+                // The second face is within the second element
+                if (D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                    && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                    && E_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                    && E_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+
+                    const size_t opposite_side_index = (element_R_side_index + 2 < element_R.nodes_.size()) ? element_R_side_index + 2 : element_R_side_index + 2 - element_R.nodes_.size();
+
+                    new_element_indices[1][1] += element_R_next_side_index;
+                    elements_centres[1][1] = (nodes[element_R.nodes_[element_R_next_side_index]] + element_R.center_ + (nodes[element_R.nodes_[element_R_side_index]] + nodes[element_R.nodes_[element_R_next_side_index]])/2 + (nodes[element_R.nodes_[element_R_next_side_index]] + nodes[element_R.nodes_[opposite_side_index]])/2)/4;
+                    elements_nodes[1][1] = {(nodes[element_R.nodes_[element_R_side_index]] + nodes[element_R.nodes_[element_R_next_side_index]])/2, nodes[element_R.nodes_[element_R_next_side_index]]};
+                }
+            }
+
+            const int N_max = std::max(element_L.N_ + 2 * element_L.would_p_refine(N_max), element_R.N_ + 2 * element_R.would_p_refine(N_max));
+
+            new_faces[face_index] = Face2D_t(N_max, {face.nodes_[0], new_node_index}, new_element_indices[0], face.elements_side_);
+            new_faces[new_face_index] = Face2D_t(N_max, {new_node_index, face.nodes_[1]}, new_element_indices[1], face.elements_side_);
+
+            const std::array<std::array<Vec2<deviceFloat>, 2>, 2> face_nodes {
+                {nodes[face.nodes_[0]], new_node},
+                {new_node, nodes[face.nodes_[1]]}
+            };
+
+            new_faces[face_index].compute_geometry(elements_centres[0], face_nodes[0], elements_nodes[0]);
+            new_faces[new_face_index].compute_geometry(elements_centres[1], face_nodes[1], elements_nodes[1]);
         }
         else {
             const int element_L_block_id = element_L_index/elements_blockSize;
@@ -2893,143 +3064,6 @@ auto SEM::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_splitting
 
             new_faces[face_index] = std::move(face);
         }
-
-        if (face.N_ == -1) { // Face has split
-            Face2D_t& new_face = new_faces[face_index];
-            const Element2D_t& element_L = elements[face.elements_[0]];
-            const Element2D_t& element_R = elements[face.elements_[1]];
-
-            size_t min_element_index = static_cast<size_t>(-1);
-            size_t min_element_side = static_cast<size_t>(-1);
-            if (element_L.would_h_refine(max_split_level)) {
-                if (element_R.would_h_refine(max_split_level)) {
-                    if (face.elements_[0] < face.elements_[1]) {
-                        min_element_index = face.elements_[0];
-                        min_element_side = face.elements_side_[0];
-                    }
-                    else {
-                        min_element_index = face.elements_[1];
-                        min_element_side = face.elements_side_[1];
-                    }
-                }
-                else {
-                    min_element_index = face.elements_[0];
-                    min_element_side = face.elements_side_[0];
-                }
-            }
-            else if (element_R.would_h_refine(max_split_level)) {
-                min_element_index = face.elements_[1];
-                min_element_side = face.elements_side_[1];
-            }
-            else { // This should not happen
-                fprintf(stderr, "Error: Splitting face %llu has no elements (%llu, %llu) that would split. Exiting.\n", face_index, face.elements_[0], face.elements_[1]);    
-                exit(54);
-            }
-
-            const int neighbour_block_id = min_element_index/elements_blockSize;
-            const int neighbour_thread_id = min_element_index%elements_blockSize;
-
-            size_t new_face_index = n_faces + nodes_block_offsets[neighbour_block_id] + block_offsets[neighbour_block_id]; // Wow this just happens to work, we need to add 3 faces per splitting element to the number of additional nodes, and the element offset is 3 * n_splitting
-            for (size_t neighbour_side_index = 0; neighbour_side_index < min_element_side; ++neighbour_side_index) {
-                new_face_index += elements[min_element_index].additional_nodes_[neighbour_side_index];
-            }
-            for (size_t j = min_element_index - neighbour_thread_id; j < min_element_index; ++j) {
-                if (elements[j].would_h_refine(max_split_level)) {
-                    new_face_index += 4;
-                    for (size_t side_index = 0; side_index < elements[j].faces_.size(); ++side_index) {
-                        new_face_index += elements[j].additional_nodes_[side_index];
-                    }
-                }
-            }
-
-            Face2D_t& new_face_2 = new_faces[new_face_index];
-
-            // Elements that yielded, always the second one on a face, and non-splitting elements still have the old face
-            Element2D_t& new_face_element = new_elements[new_face.elements_[1]];
-            Element2D_t& new_face_element_2 = new_elements[new_face_2.elements_[1]];
-
-            new_face.compute_geometry(new_elements, nodes);
-            new_face_2.compute_geometry(new_elements, nodes);
-        }
-        else {
-            const size_t element_L_index = face.elements_[0];
-            const size_t element_R_index = face.elements_[1];
-            const size_t element_L_side = face.elements_side_[0];
-            const size_t element_R_side = face.elements_side_[1];
-            const Element2D_t& element_L = elements[element_L_index];
-            const Element2D_t& element_R = elements[element_R_index];
-
-            const int N_max = std::max(element_L.N_ + 2 * element_L.would_p_refine(N_max), element_R.N_ + 2 * element_R.would_p_refine(N_max));
-
-            if (face.N_ != N_max) {
-                face.resize_storage(N_max);
-            }
-
-            const int element_L_block_id = element_L_index/elements_blockSize;
-            const int element_L_thread_id = element_L_index%elements_blockSize;
-
-            size_t element_L_new_index = element_L_index + block_offsets[element_L_block_id];
-            for (size_t j = element_L_index - element_L_thread_id; j < element_L_index; ++j) {
-                element_L_new_index += 3 * elements[j].would_h_refine(max_split_level);
-            }
-
-            const int element_R_block_id = element_R_index/elements_blockSize;
-            const int element_R_thread_id = element_R_index%elements_blockSize;
-
-            size_t element_R_new_index = element_R_index + block_offsets[element_R_block_id];
-            for (size_t j = element_R_index - element_R_thread_id; j < element_R_index; ++j) {
-                element_R_new_index += 3 * elements[j].would_h_refine(max_split_level);
-            }
-
-            // CHECK the new indices thing won't use the Hilbert curve like this
-            if (element_L.would_h_refine(max_split_level)) {
-                const std::array<size_t, 2> new_indices {element_L_new_index + element_L_side, (element_L_side + 1 < element_L.faces_.size()) ? element_L_new_index + element_L_side + 1: element_L_new_index};
-                bool found_face = false;
-                for (size_t element_face_index = 0; element_face_index < new_elements[new_indices[0]].faces_[element_L_side].size(), ++element_face_index) {
-                    if (new_elements[new_indices[0]].faces_[element_L_side][element_face_index] == face_index) {
-                        face.elements_[0] = new_indices[0];
-                        found_face = true;
-                        break;
-                    }
-                }
-                if (!found_face) {
-                    for (size_t element_face_index = 0; element_face_index < new_elements[new_indices[1]].faces_[element_L_side].size(), ++element_face_index) {
-                        if (new_elements[new_indices[1]].faces_[element_L_side][element_face_index] == face_index) {
-                            face.elements_[0] = new_indices[1];
-                            break;
-                        }
-                    }
-                }
-            }
-            else {
-                face.elements_[0] = element_L_new_index;
-            }
-
-            if (element_R.would_h_refine(max_split_level)) {
-                const std::array<size_t, 2> new_indices {element_R_new_index + element_R_side, (element_R_side + 1 < element_R.faces_.size()) ? element_R_new_index + element_R_side + 1: element_R_new_index};
-                bool found_face = false;
-                for (size_t element_face_index = 0; element_face_index < new_elements[new_indices[0]].faces_[element_R_side].size(), ++element_face_index) {
-                    if (new_elements[new_indices[0]].faces_[element_R_side][element_face_index] == face_index) {
-                        face.elements_[1] = new_indices[0];
-                        found_face = true;
-                        break;
-                    }
-                }
-                if (!found_face) {
-                    for (size_t element_face_index = 0; element_face_index < new_elements[new_indices[1]].faces_[element_R_side].size(), ++element_face_index) {
-                        if (new_elements[new_indices[1]].faces_[element_R_side][element_face_index] == face_index) {
-                            face.elements_[1] = new_indices[1];
-                            break;
-                        }
-                    }
-                }
-            }
-            else {
-                face.elements_[1] = element_R_new_index;
-            }
-
-            new_faces[face_index] = std::move(face);
-        }
     }
 }
 
@@ -3059,155 +3093,6 @@ auto SEM::Meshes::find_nodes(size_t n_elements, Element2D_t* elements, const Fac
         }
     }
 }
-
-
-__global__
-auto SEM::Meshes::move_faces(size_t n_faces, Face2D_t* faces, Face2D_t* new_faces, Element2D_t* elements, Element2D_t* new_elements, const Vec2<deviceFloat>* nodes, const size_t* block_offsets, const size_t* nodes_block_offsets, int max_split_level, int N_max, int elements_blockSize) -> void {
-    const int index = blockIdx.x * blockDim.x + threadIdx.x;
-    const int stride = blockDim.x * gridDim.x;
-
-    for (size_t face_index = index; face_index < n_faces; face_index += stride) {
-        Face2D_t& face = faces[face_index];
-
-        if (face.N_ == -1) { // Face has split
-            Face2D_t& new_face = new_faces[face_index];
-            const Element2D_t& element_L = elements[face.elements_[0]];
-            const Element2D_t& element_R = elements[face.elements_[1]];
-
-            size_t min_element_index = static_cast<size_t>(-1);
-            size_t min_element_side = static_cast<size_t>(-1);
-            if (element_L.would_h_refine(max_split_level)) {
-                if (element_R.would_h_refine(max_split_level)) {
-                    if (face.elements_[0] < face.elements_[1]) {
-                        min_element_index = face.elements_[0];
-                        min_element_side = face.elements_side_[0];
-                    }
-                    else {
-                        min_element_index = face.elements_[1];
-                        min_element_side = face.elements_side_[1];
-                    }
-                }
-                else {
-                    min_element_index = face.elements_[0];
-                    min_element_side = face.elements_side_[0];
-                }
-            }
-            else if (element_R.would_h_refine(max_split_level)) {
-                min_element_index = face.elements_[1];
-                min_element_side = face.elements_side_[1];
-            }
-            else { // This should not happen
-                fprintf(stderr, "Error: Splitting face %llu has no elements (%llu, %llu) that would split. Exiting.\n", face_index, face.elements_[0], face.elements_[1]);    
-                exit(54);
-            }
-
-            const int neighbour_block_id = min_element_index/elements_blockSize;
-            const int neighbour_thread_id = min_element_index%elements_blockSize;
-
-            size_t new_face_index = n_faces + nodes_block_offsets[neighbour_block_id] + block_offsets[neighbour_block_id]; // Wow this just happens to work, we need to add 3 faces per splitting element to the number of additional nodes, and the element offset is 3 * n_splitting
-            for (size_t neighbour_side_index = 0; neighbour_side_index < min_element_side; ++neighbour_side_index) {
-                new_face_index += elements[min_element_index].additional_nodes_[neighbour_side_index];
-            }
-            for (size_t j = min_element_index - neighbour_thread_id; j < min_element_index; ++j) {
-                if (elements[j].would_h_refine(max_split_level)) {
-                    new_face_index += 4;
-                    for (size_t side_index = 0; side_index < elements[j].faces_.size(); ++side_index) {
-                        new_face_index += elements[j].additional_nodes_[side_index];
-                    }
-                }
-            }
-
-            Face2D_t& new_face_2 = new_faces[new_face_index];
-
-            // Elements that yielded, always the second one on a face, and non-splitting elements still have the old face
-            Element2D_t& new_face_element = new_elements[new_face.elements_[1]];
-            Element2D_t& new_face_element_2 = new_elements[new_face_2.elements_[1]];
-
-            new_face.compute_geometry(new_elements, nodes);
-            new_face_2.compute_geometry(new_elements, nodes);
-        }
-        else {
-            const size_t element_L_index = face.elements_[0];
-            const size_t element_R_index = face.elements_[1];
-            const size_t element_L_side = face.elements_side_[0];
-            const size_t element_R_side = face.elements_side_[1];
-            const Element2D_t& element_L = elements[element_L_index];
-            const Element2D_t& element_R = elements[element_R_index];
-
-            const int N_max = std::max(element_L.N_ + 2 * element_L.would_p_refine(N_max), element_R.N_ + 2 * element_R.would_p_refine(N_max));
-
-            if (face.N_ != N_max) {
-                face.resize_storage(N_max);
-            }
-
-            const int element_L_block_id = element_L_index/elements_blockSize;
-            const int element_L_thread_id = element_L_index%elements_blockSize;
-
-            size_t element_L_new_index = element_L_index + block_offsets[element_L_block_id];
-            for (size_t j = element_L_index - element_L_thread_id; j < element_L_index; ++j) {
-                element_L_new_index += 3 * elements[j].would_h_refine(max_split_level);
-            }
-
-            const int element_R_block_id = element_R_index/elements_blockSize;
-            const int element_R_thread_id = element_R_index%elements_blockSize;
-
-            size_t element_R_new_index = element_R_index + block_offsets[element_R_block_id];
-            for (size_t j = element_R_index - element_R_thread_id; j < element_R_index; ++j) {
-                element_R_new_index += 3 * elements[j].would_h_refine(max_split_level);
-            }
-
-            // CHECK the new indices thing won't use the Hilbert curve like this
-            if (element_L.would_h_refine(max_split_level)) {
-                const std::array<size_t, 2> new_indices {element_L_new_index + element_L_side, (element_L_side + 1 < element_L.faces_.size()) ? element_L_new_index + element_L_side + 1: element_L_new_index};
-                bool found_face = false;
-                for (size_t element_face_index = 0; element_face_index < new_elements[new_indices[0]].faces_[element_L_side].size(), ++element_face_index) {
-                    if (new_elements[new_indices[0]].faces_[element_L_side][element_face_index] == face_index) {
-                        face.elements_[0] = new_indices[0];
-                        found_face = true;
-                        break;
-                    }
-                }
-                if (!found_face) {
-                    for (size_t element_face_index = 0; element_face_index < new_elements[new_indices[1]].faces_[element_L_side].size(), ++element_face_index) {
-                        if (new_elements[new_indices[1]].faces_[element_L_side][element_face_index] == face_index) {
-                            face.elements_[0] = new_indices[1];
-                            break;
-                        }
-                    }
-                }
-            }
-            else {
-                face.elements_[0] = element_L_new_index;
-            }
-
-            if (element_R.would_h_refine(max_split_level)) {
-                const std::array<size_t, 2> new_indices {element_R_new_index + element_R_side, (element_R_side + 1 < element_R.faces_.size()) ? element_R_new_index + element_R_side + 1: element_R_new_index};
-                bool found_face = false;
-                for (size_t element_face_index = 0; element_face_index < new_elements[new_indices[0]].faces_[element_R_side].size(), ++element_face_index) {
-                    if (new_elements[new_indices[0]].faces_[element_R_side][element_face_index] == face_index) {
-                        face.elements_[1] = new_indices[0];
-                        found_face = true;
-                        break;
-                    }
-                }
-                if (!found_face) {
-                    for (size_t element_face_index = 0; element_face_index < new_elements[new_indices[1]].faces_[element_R_side].size(), ++element_face_index) {
-                        if (new_elements[new_indices[1]].faces_[element_R_side][element_face_index] == face_index) {
-                            face.elements_[1] = new_indices[1];
-                            break;
-                        }
-                    }
-                }
-            }
-            else {
-                face.elements_[1] = element_R_new_index;
-            }
-
-            new_faces[face_index] = std::move(face);
-        }
-    }
-}
-
 
 __global__
 auto SEM::Meshes::adjust_boundaries(size_t n_boundaries, Element2D_t* elements, const size_t* boundaries, const Face2D_t* faces) -> void {

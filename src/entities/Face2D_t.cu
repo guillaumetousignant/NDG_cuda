@@ -58,19 +58,16 @@ auto SEM::Entities::Face2D_t::resize_storage(int N) -> void {
 }
 
 __device__
-auto SEM::Entities::Face2D_t::compute_geometry(const SEM::Entities::Element2D_t* elements, const std::array<SEM::Entities::Vec2<deviceFloat>, 2> nodes, const std::array<std::array<SEM::Entities::Vec2<deviceFloat>, 2>, 2> element_nodes) -> void {
+auto SEM::Entities::Face2D_t::compute_geometry(const std::array<SEM::Entities::Vec2<deviceFloat>, 2>& elements_centres, const std::array<SEM::Entities::Vec2<deviceFloat>, 2>& nodes, const std::array<std::array<SEM::Entities::Vec2<deviceFloat>, 2>, 2>& element_nodes) -> void {
     const std::array<SEM::Entities::Vec2<deviceFloat>, 2> points {nodes[nodes_[0]], nodes[nodes_[1]]};
     
     tangent_ = nodes[1] - nodes[0]; 
     length_ = tangent_.magnitude();
     tangent_ /= length_; // CHECK should be normalized or not?
     normal_ = SEM::Entities::Vec2<deviceFloat>(tangent_.y(), -tangent_.x());     
-    
-    const SEM::Entities::Element2D_t& element_L = elements[elements_[0]];
-    const SEM::Entities::Element2D_t& element_R = elements[elements_[1]];
 
     const SEM::Entities::Vec2<deviceFloat> center = (nodes[0] + nodes[1])/2;
-    const SEM::Entities::Vec2<deviceFloat> delta = center - element_L.center_; // CHECK doesn't work with ghost cells
+    const SEM::Entities::Vec2<deviceFloat> delta = center - elements_centres[0]; // CHECK doesn't work with ghost cells
     const deviceFloat sign = std::copysign(static_cast<deviceFloat>(1), normal_.dot(delta));
     normal_ *= sign;
     tangent_ *= sign;
