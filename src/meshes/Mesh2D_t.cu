@@ -1234,9 +1234,14 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
     device_outflow_boundaries_refine_array_.copy_from(host_outflow_boundaries_refine_array_, stream_);
 
     // New arrays
-    device_vector<Element2D_t> new_elements(elements_.size() + 3 * n_splitting_elements, stream_);
+    device_vector<Element2D_t> new_elements(elements_.size() + 3 * n_splitting_elements + n_splitting_wall_boundaries + n_splitting_symmetry_boundaries + n_splitting_inflow_boundaries + n_splitting_outflow_boundaries, stream_);
     device_vector<Vec2<deviceFloat>> new_nodes(nodes_.size() + n_splitting_elements + n_splitting_faces, stream_);
     device_vector<Face2D_t> new_faces(faces_.size() + 4 * n_splitting_elements + n_splitting_faces, stream_);
+
+    device_vector<size_t> new_wall_boundaries(wall_boundaries_.size() + n_splitting_wall_boundaries, stream_);
+    device_vector<size_t> new_symmetry_boundaries(symmetry_boundaries_.size() + n_splitting_symmetry_boundaries, stream_);
+    device_vector<size_t> new_inflow_boundaries(inflow_boundaries_.size() + n_splitting_inflow_boundaries, stream_);
+    device_vector<size_t> new_outflow_boundaries(outflow_boundaries_.size() + n_splitting_outflow_boundaries, stream_);
 
     cudaMemcpyAsync(new_nodes.data(), nodes_.data(), nodes_.size() * sizeof(Vec2<deviceFloat>), cudaMemcpyDeviceToDevice, stream_); // Apparently slower than using a kernel
 
@@ -1244,6 +1249,10 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
     
     SEM::Meshes::split_faces<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces_.size(), nodes_.size(), n_splitting_elements, faces_.data(), new_faces.data(), elements_.data(), new_nodes.data(), device_refine_array_.data(), device_faces_refine_array_.data(), max_split_level_, N_max, elements_blockSize_);
     
+    SEM::Meshes::move_boundaries<<<wall_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(wall_boundaries_.size(), n_splitting_elements, elements_.data(), new_elements.data(), wall_boundaries_.data(), new_wall_boundaries_.data(), faces_.data(), device_wall_boundaries_refine_array_.data());
+    SEM::Meshes::move_boundaries<<<symmetry_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(symmetry_boundaries_.size(), n_splitting_elements + n_splitting_wall_boundaries, elements_.data(), new_elements.data(), symmetry_boundaries_.data(), new_symmetry_boundaries_.data(), faces_.data(), device_symmetry_boundaries_refine_array_.data());
+    SEM::Meshes::move_boundaries<<<inflow_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(inflow_boundaries_.size(), n_splitting_elements + n_splitting_wall_boundaries + n_splitting_symmetry_boundaries, elements_.data(), new_elements.data(), inflow_boundaries_.data(), new_inflow_boundaries_.data(), faces_.data(), device_inflow_boundaries_refine_array_.data());
+    SEM::Meshes::move_boundaries<<<outflow_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(outflow_boundaries_.size(), n_splitting_elements + n_splitting_wall_boundaries + n_splitting_symmetry_boundaries + n_splitting_inflow_boundaries, elements_.data(), new_elements.data(), outflow_boundaries_.data(), new_outflow_boundaries_.data(), faces_.data(), device_outflow_boundaries_refine_array_.data());
 
 
 
@@ -1288,6 +1297,11 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
     elements_ = std::move(new_elements);
     faces_ = std::move(new_faces);
     nodes_ = std::move(new_nodes);
+
+    wall_boundaries_ = std::move(new_wall_boundaries);
+    symmetry_boundaries_ = std::move(new_symmetry_boundaries);
+    inflow_boundaries_ = std::move(new_inflow_boundaries);
+    outflow_boundaries_ = std::move(new_outflow_boundaries);
 
 
 
@@ -3170,6 +3184,17 @@ auto SEM::Meshes::copy_interfaces_error(size_t n_local_interfaces, Element2D_t* 
         destination_element.split_level_ = source_element.split_level_;
     }
 }
+
+__global__
+auto SEM::Meshes::move_boundaries(size_t n_boundaries, size_t offset, Element2D_t* elements, Element2D_t* new_elements, const size_t* boundaries, size_t* new_boundaries, const Face2D_t* faces, const size_t* boundary_block_offsets) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t boundary_index = index; boundary_index < n_boundaries; boundary_index += stride) {
+
+    }
+}
+
 
 __global__
 auto SEM::Meshes::adjust_boundaries(size_t n_boundaries, Element2D_t* elements, const size_t* boundaries, const Face2D_t* faces) -> void {

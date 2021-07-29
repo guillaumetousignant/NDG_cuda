@@ -242,6 +242,9 @@ namespace SEM { namespace Meshes {
     auto copy_interfaces_error(size_t n_local_interfaces, SEM::Entities::Element2D_t* elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_origin_side, const size_t* local_interfaces_destination) -> void;
 
     __global__
+    auto move_boundaries(size_t n_boundaries, size_t offset, SEM::Entities::Element2D_t* elements, SEM::Entities::Element2D_t* new_elements, const size_t* boundaries, size_t* new_boundaries, const SEM::Entities::Face2D_t* faces, const size_t* boundary_block_offsets) -> void;
+
+    __global__
     auto adjust_boundaries(size_t n_boundaries, SEM::Entities::Element2D_t* elements, const size_t* boundaries, const SEM::Entities::Face2D_t* faces) -> void;
 
     __global__
