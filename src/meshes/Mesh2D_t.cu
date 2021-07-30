@@ -3252,15 +3252,15 @@ auto SEM::Meshes::move_boundaries(size_t n_boundaries, size_t n_faces, size_t n_
             new_elements[new_element_index + 1].faces_[0][0] = face_index; // This should always be the case
 
             const std::array<Vec2<deviceFloat>, 4> points {nodes[new_elements[new_element_index].nodes_[0]],
-                                                           nodes[new_elements[new_element_index].nodes_[1]],
-                                                           nodes[new_elements[new_element_index].nodes_[2]],
+                                                           new_node,
+                                                           new_node,
                                                            nodes[new_elements[new_element_index].nodes_[3]]};
             new_elements[new_element_index].compute_boundary_geometry(points, polynomial_nodes);
 
-            const std::array<Vec2<deviceFloat>, 4> points_2 {nodes[new_elements[new_element_index + 1].nodes_[0]],
+            const std::array<Vec2<deviceFloat>, 4> points_2 {new_node,
                                                              nodes[new_elements[new_element_index + 1].nodes_[1]],
                                                              nodes[new_elements[new_element_index + 1].nodes_[2]],
-                                                             nodes[new_elements[new_element_index + 1].nodes_[3]]};
+                                                             new_node};
             new_elements[new_element_index + 1].compute_boundary_geometry(points_2, polynomial_nodes);
         }
         else {
@@ -3371,15 +3371,15 @@ auto SEM::Meshes::move_interfaces(size_t n_local_interfaces, size_t n_faces, siz
             new_elements[new_element_index + 1].allocate_boundary_storage();
 
             const std::array<Vec2<deviceFloat>, 4> points {nodes[new_elements[new_element_index].nodes_[0]],
-                                                           nodes[new_elements[new_element_index].nodes_[1]],
-                                                           nodes[new_elements[new_element_index].nodes_[2]],
+                                                           new_node,
+                                                           new_node,
                                                            nodes[new_elements[new_element_index].nodes_[3]]};
             new_elements[new_element_index].compute_boundary_geometry(points, polynomial_nodes);
 
-            const std::array<Vec2<deviceFloat>, 4> points_2 {nodes[new_elements[new_element_index + 1].nodes_[0]],
+            const std::array<Vec2<deviceFloat>, 4> points_2 {new_node,
                                                              nodes[new_elements[new_element_index + 1].nodes_[1]],
                                                              nodes[new_elements[new_element_index + 1].nodes_[2]],
-                                                             nodes[new_elements[new_element_index + 1].nodes_[3]]};
+                                                             new_node};
             new_elements[new_element_index + 1].compute_boundary_geometry(points_2, polynomial_nodes);
 
             if (destination_element.additional_nodes_[0]) {
