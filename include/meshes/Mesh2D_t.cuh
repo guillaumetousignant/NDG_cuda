@@ -58,6 +58,12 @@ namespace SEM { namespace Meshes {
             SEM::Entities::host_vector<deviceFloat> host_receiving_interfaces_u_;
             SEM::Entities::host_vector<deviceFloat> host_receiving_interfaces_v_;
             std::vector<int> host_receiving_interfaces_N_;
+            SEM::Entities::device_vector<bool> device_interfaces_refine_;
+            SEM::Entities::device_vector<size_t> device_interfaces_new_index_;
+            SEM::Entities::device_vector<size_t> device_interfaces_new_splitting_index_;
+            SEM::Entities::host_vector<bool> host_interfaces_refine_;
+            std::vector<size_t> host_interfaces_new_index_;
+            std::vector<size_t> host_interfaces_new_splitting_index_;
 
             // Output
             std::vector<deviceFloat> x_output_host_;
@@ -218,6 +224,9 @@ namespace SEM { namespace Meshes {
 
     __global__
     auto get_MPI_interfaces_N(size_t n_MPI_interface_elements, const SEM::Entities::Element2D_t* elements, const size_t* MPI_interfaces_origin, int* N) -> void;
+
+    __global__
+    auto get_MPI_interfaces_adaptivity(size_t n_MPI_interface_elements, const SEM::Entities::Element2D_t* elements, const size_t* MPI_interfaces_origin, const size_t* MPI_interfaces_origin_side, int* N, bool* elements_splitting, size_t* new_element_indices, size_t* new_splitting_element_indices, int max_split_level, int N_max, const size_t* block_offsets) -> void;
 
     __global__
     auto put_MPI_interfaces(size_t n_MPI_interface_elements, SEM::Entities::Element2D_t* elements, const size_t* MPI_interfaces_destination, int maximum_N, const deviceFloat* p, const deviceFloat* u, const deviceFloat* v) -> void;

@@ -1176,6 +1176,9 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
 
     device_refine_array_.copy_from(host_refine_array_, stream_);
 
+    auto SEM::Meshes::get_MPI_interfaces_adaptivity<<<mpi_interfaces_numBlocks_, boundaries_blockSize_, 0, stream_>>>(mpi_interfaces_origin_.size(), elements_.data(), mpi_interfaces_origin_.data(), mpi_interfaces_origin_side_.data(), device_interfaces_N_.data(), device_interfaces_refine_.data(), device_interfaces_new_index_.data(), device_interfaces_new_splitting_index_.data(), max_split_level_, N_max, device_refine_array_.data());
+
+
     SEM::Meshes::find_nodes<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, elements_.data(), faces_.data(), nodes_.data(), max_split_level_);
     SEM::Meshes::copy_interfaces_error<<<interfaces_numBlocks_, boundaries_blockSize_, 0, stream_>>>(interfaces_origin_.size(), elements_.data(), interfaces_origin_.data(), interfaces_origin_side_.data(), interfaces_destination_.data());
     // CHECK add the same thing for MPI here
@@ -2285,6 +2288,39 @@ auto SEM::Meshes::get_MPI_interfaces_N(size_t n_MPI_interface_elements, const El
 
     for (size_t interface_index = index; interface_index < n_MPI_interface_elements; interface_index += stride) {
         N[interface_index] = elements[MPI_interfaces_origin[interface_index]].N_;
+    }
+}
+
+__global__
+auto SEM::Meshes::get_MPI_interfaces_adaptivity(size_t n_MPI_interface_elements, const Element2D_t* elements, const size_t* MPI_interfaces_origin, const size_t* MPI_interfaces_origin_side, int* N, bool* elements_splitting, size_t* new_element_indices, size_t* new_splitting_element_indices, int max_split_level, int N_max, const size_t* block_offsets) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t interface_index = index; interface_index < n_MPI_interface_elements; interface_index += stride) {
+        const size_t element_index = MPI_interfaces_origin[interface_index];
+        const int element_block_id = element_index/elements_blockSize;
+        const int element_thread_id = element_index%elements_blockSize;
+        size_t element_new_index = element_index + 3 * block_offsets[element_block_id];
+        for (size_t j = element_index - element_thread_id; j < element_index; ++j) {
+            element_new_index += 3 * elements[j].would_h_refine(max_split_level);
+        }
+
+        N[interface_index] = elements[element_index].N_ + 2 * elements[element_index].would_p_adapt(N_max);
+        
+
+        if (elements[MPI_interfaces_origin[interface_index]].would_h_refine(max_split_level)) {
+            elements_splitting[interface_index] = true;
+
+            const size_t side_index = MPI_interfaces_origin_side[interface_index];
+            const size_t next_side_index = (side_index + 1 < elements[element_index].nodes_.size()) ? side_index + 1 : 0;
+
+            new_element_indices[interface_index] = element_new_index + side_index;
+            new_splitting_element_indices[interface_index] = element_new_index + next_side_index;
+        }
+        else {
+            elements_splitting[interface_index] = false;
+            new_element_indices[interface_index] = element_new_index
+        }
     }
 }
 
