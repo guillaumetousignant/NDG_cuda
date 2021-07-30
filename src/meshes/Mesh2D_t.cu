@@ -3356,7 +3356,38 @@ auto SEM::Meshes::move_interfaces(size_t n_local_interfaces, size_t n_faces, siz
                 }
             }
 
-            
+            new_elements[new_element_index].N_     = source_element.N_
+            new_elements[new_element_index].nodes_ = {destination_element.nodes_[0],
+                                                      new_node_index,
+                                                      new_node_index,
+                                                      destination_element.nodes_[0]};
+            new_elements[new_element_index].allocate_boundary_storage();
+
+            new_elements[new_element_index + 1].N_ = source_element.N_
+            new_elements[new_element_index + 1].nodes_ = {new_node_index,
+                                                          destination_element.nodes_[1],
+                                                          destination_element.nodes_[1],
+                                                          new_node_index};
+            new_elements[new_element_index + 1].allocate_boundary_storage();
+
+            const std::array<Vec2<deviceFloat>, 4> points {nodes[new_elements[new_element_index].nodes_[0]],
+                                                           nodes[new_elements[new_element_index].nodes_[1]],
+                                                           nodes[new_elements[new_element_index].nodes_[2]],
+                                                           nodes[new_elements[new_element_index].nodes_[3]]};
+            new_elements[new_element_index].compute_boundary_geometry(points, polynomial_nodes);
+
+            const std::array<Vec2<deviceFloat>, 4> points_2 {nodes[new_elements[new_element_index + 1].nodes_[0]],
+                                                             nodes[new_elements[new_element_index + 1].nodes_[1]],
+                                                             nodes[new_elements[new_element_index + 1].nodes_[2]],
+                                                             nodes[new_elements[new_element_index + 1].nodes_[3]]};
+            new_elements[new_element_index + 1].compute_boundary_geometry(points_2, polynomial_nodes);
+
+            if (destination_element.additional_nodes_[0]) {
+
+            }
+            else {
+                
+            }
 
 
 
