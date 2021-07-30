@@ -3315,12 +3315,12 @@ auto SEM::Meshes::move_interfaces(size_t n_local_interfaces, size_t n_faces, siz
         if (source_element.would_h_refine(max_split_level)) {
             const size_t source_element_next_side = (source_element_side + 1 < source_element.nodes_.size()) ? source_element_side + 1 : 0;
 
-            new_local_interfaces_origin[new_interface_index]     = source_element_new_index;
-            new_local_interfaces_origin[new_interface_index + 1] = source_element_new_index;
+            new_local_interfaces_origin[new_interface_index]     = source_element_new_index + source_element_side;
+            new_local_interfaces_origin[new_interface_index + 1] = source_element_new_index + source_element_next_side;
             new_local_interfaces_origin_side[new_interface_index]     = source_element_side;
             new_local_interfaces_origin_side[new_interface_index + 1] = source_element_side;
             new_local_interfaces_destination[new_interface_index]     = new_element_index;
-            new_local_interfaces_destination[new_interface_index + 1] = new_element_index;
+            new_local_interfaces_destination[new_interface_index + 1] = new_element_index + 1;
 
         }
         else {
