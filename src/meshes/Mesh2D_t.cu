@@ -1249,28 +1249,22 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
     
     SEM::Meshes::split_faces<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces_.size(), nodes_.size(), n_splitting_elements, faces_.data(), new_faces.data(), elements_.data(), new_nodes.data(), device_refine_array_.data(), device_faces_refine_array_.data(), max_split_level_, N_max, elements_blockSize_);
     
-    SEM::Meshes::move_boundaries<<<wall_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(wall_boundaries_.size(), elements_.size() + 3 * n_splitting_elements, elements_.data(), new_elements.data(), wall_boundaries_.data(), new_wall_boundaries.data(), faces_.data(), device_wall_boundaries_refine_array_.data());
-    SEM::Meshes::move_boundaries<<<symmetry_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(symmetry_boundaries_.size(), elements_.size() + 3 * n_splitting_elements + n_splitting_wall_boundaries, elements_.data(), new_elements.data(), symmetry_boundaries_.data(), new_symmetry_boundaries.data(), faces_.data(), device_symmetry_boundaries_refine_array_.data());
-    SEM::Meshes::move_boundaries<<<inflow_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(inflow_boundaries_.size(), elements_.size() + 3 * n_splitting_elements + n_splitting_wall_boundaries + n_splitting_symmetry_boundaries, elements_.data(), new_elements.data(), inflow_boundaries_.data(), new_inflow_boundaries.data(), faces_.data(), device_inflow_boundaries_refine_array_.data());
-    SEM::Meshes::move_boundaries<<<outflow_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(outflow_boundaries_.size(), elements_.size() + 3 * n_splitting_elements + n_splitting_wall_boundaries + n_splitting_symmetry_boundaries + n_splitting_inflow_boundaries, elements_.data(), new_elements.data(), outflow_boundaries_.data(), new_outflow_boundaries.data(), faces_.data(), device_outflow_boundaries_refine_array_.data());
-
-
-
-
-
-
     if (!wall_boundaries_.empty()) {
-        SEM::Meshes::rebuild_boundaries<<<wall_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(wall_boundaries_.size(), elements_.data(), elements_.data(), wall_boundaries_.data(), faces_.data());
+        SEM::Meshes::move_boundaries<<<wall_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(wall_boundaries_.size(), faces_.size(), nodes_.size(), n_splitting_elements, elements_.size() + 3 * n_splitting_elements, elements_.data(), new_elements.data(), wall_boundaries_.data(), new_wall_boundaries.data(), faces_.data(), new_nodes.data(), device_faces_refine_array_.data(), device_wall_boundaries_refine_array_.data(), polynomial_nodes.data(), faces_blockSize_);
     }
     if (!symmetry_boundaries_.empty()) {
-        SEM::Meshes::rebuild_boundaries<<<symmetry_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(symmetry_boundaries_.size(), elements_.data(), elements_.data(), symmetry_boundaries_.data(), faces_.data());
+        SEM::Meshes::move_boundaries<<<symmetry_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(symmetry_boundaries_.size(), faces_.size(), nodes_.size(), n_splitting_elements, elements_.size() + 3 * n_splitting_elements + n_splitting_wall_boundaries, elements_.data(), new_elements.data(), symmetry_boundaries_.data(), new_symmetry_boundaries.data(), faces_.data(), new_nodes.data(), device_faces_refine_array_.data(), device_symmetry_boundaries_refine_array_.data(), polynomial_nodes.data(), faces_blockSize_);
     }
     if (!inflow_boundaries_.empty()) {
-        SEM::Meshes::rebuild_boundaries<<<inflow_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(inflow_boundaries_.size(), elements_.data(), elements_.data(), inflow_boundaries_.data(), faces_.data());
+        SEM::Meshes::move_boundaries<<<inflow_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(inflow_boundaries_.size(), faces_.size(), nodes_.size(), n_splitting_elements, elements_.size() + 3 * n_splitting_elements + n_splitting_wall_boundaries + n_splitting_symmetry_boundaries, elements_.data(), new_elements.data(), inflow_boundaries_.data(), new_inflow_boundaries.data(), faces_.data(), new_nodes.data(), device_faces_refine_array_.data(), device_inflow_boundaries_refine_array_.data(), polynomial_nodes.data(), faces_blockSize_);
     }
     if (!outflow_boundaries_.empty()) {
-        SEM::Meshes::rebuild_boundaries<<<outflow_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(outflow_boundaries_.size(), elements_.data(), elements_.data(), outflow_boundaries_.data(), faces_.data());
+        SEM::Meshes::move_boundaries<<<outflow_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(outflow_boundaries_.size(), faces_.size(), nodes_.size(), n_splitting_elements, elements_.size() + 3 * n_splitting_elements + n_splitting_wall_boundaries + n_splitting_symmetry_boundaries + n_splitting_inflow_boundaries, elements_.data(), new_elements.data(), outflow_boundaries_.data(), new_outflow_boundaries.data(), faces_.data(), new_nodes.data(), device_faces_refine_array_.data(), device_outflow_boundaries_refine_array_.data(), polynomial_nodes.data(), faces_blockSize_);
     }
+
+
+
+
     if (!interfaces_origin_.empty()) {
         SEM::Meshes::rebuild_interfaces<<<interfaces_numBlocks_, boundaries_blockSize_, 0, stream_>>>(interfaces_origin_.size(), elements_.data(), new_elements.data(), interfaces_origin_.data(), interfaces_destination_.data());
     }
@@ -3186,7 +3180,7 @@ auto SEM::Meshes::copy_interfaces_error(size_t n_local_interfaces, Element2D_t* 
 }
 
 __global__
-auto SEM::Meshes::move_boundaries(size_t n_boundaries, size_t offset, Element2D_t* elements, Element2D_t* new_elements, const size_t* boundaries, size_t* new_boundaries, const Face2D_t* faces, const size_t* boundary_block_offsets) -> void {
+auto SEM::Meshes::move_boundaries(size_t n_boundaries, size_t n_faces, size_t n_nodes, size_t n_splitting_elements, size_t offset, Element2D_t* elements, Element2D_t* new_elements, const size_t* boundaries, size_t* new_boundaries, const Face2D_t* faces, const Vec2<deviceFloat>* nodes, const size_t* faces_block_offsets, const size_t* boundary_block_offsets, const deviceFloat* polynomial_nodes, int faces_blockSize) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     const int thread_id = threadIdx.x;
@@ -3205,7 +3199,53 @@ auto SEM::Meshes::move_boundaries(size_t n_boundaries, size_t offset, Element2D_
         const size_t new_element_index = offset + new_boundary_index;
 
         if ((elements[element_index].faces_[0].size() == 1) && (faces[elements[element_index].faces_[0][0]].refine_)) {
+            new_boundaries[new_boundary_index] = new_element_index;
+            new_boundaries[new_boundary_index + 1] = new_element_index + 1;
 
+            const size_t face_index = elements[element_index].faces_[0][0];
+            const Face2D_t& face = faces[face_index];
+            const int face_block_id = face_index/faces_blockSize;
+            const int face_thread_id = face_index%faces_blockSize;
+
+            size_t new_node_index = n_nodes + n_splitting_elements + faces_block_offsets[face_block_id];
+            size_t new_face_index = n_faces + 4 * n_splitting_elements + faces_block_offsets[face_block_id];
+            for (size_t j = face_index - face_thread_id; j < face_index; ++j) {
+                new_node_index += faces[j].refine_;
+                new_face_index += faces[j].refine_;
+            }
+
+            const Vec2<deviceFloat> new_node = (nodes[face.nodes_[0]] + nodes[face.nodes_[1]])/2;
+
+            new_elements[new_element_index].N_ = destination_element.N_;
+            new_elements[new_element_index].nodes_ = {destination_element.nodes_[0],
+                                                      new_node_index,
+                                                      new_node_index,
+                                                      destination_element.nodes_[0]};
+            new_elements[new_element_index].allocate_boundary_storage();
+            new_elements[new_element_index].faces_[0][0] = new_face_index; // This should always be the case
+
+            new_elements[new_element_index + 1].N_ = destination_element.N_;
+            new_elements[new_element_index + 1].nodes_ = {new_node_index,
+                                                          destination_element.nodes_[1],
+                                                          destination_element.nodes_[1],
+                                                          new_node_index};
+            new_elements[new_element_index + 1].allocate_boundary_storage();
+            new_elements[new_element_index + 1].faces_[0][0] = face_index; // This should always be the case
+
+            const std::array<Vec2<deviceFloat>, 4> points {nodes[new_elements[new_element_index].nodes_[0]],
+                                                           nodes[new_elements[new_element_index].nodes_[1]],
+                                                           nodes[new_elements[new_element_index].nodes_[2]],
+                                                           nodes[new_elements[new_element_index].nodes_[3]]};
+            new_elements[new_element_index].compute_boundary_geometry(points, polynomial_nodes);
+
+            const std::array<Vec2<deviceFloat>, 4> points_2 {nodes[new_elements[new_element_index + 1].nodes_[0]],
+                                                             nodes[new_elements[new_element_index + 1].nodes_[1]],
+                                                             nodes[new_elements[new_element_index + 1].nodes_[2]],
+                                                             nodes[new_elements[new_element_index + 1].nodes_[3]]};
+            new_elements[new_element_index + 1].compute_boundary_geometry(points_2, polynomial_nodes);
+
+            new_elements[new_element_index] = std::move(destination_element);
+            new_elements[new_element_index + 1] = std::move(destination_element);
         }
         else {
             new_boundaries[new_boundary_index] = new_element_index;
@@ -3249,31 +3289,6 @@ auto SEM::Meshes::adjust_boundaries(size_t n_boundaries, Element2D_t* elements, 
         if (destination_element.N_ != N_element) {
             destination_element.resize_boundary_storage(N_element);
         }
-    }
-}
-
-__global__
-auto SEM::Meshes::rebuild_boundaries(size_t n_boundaries, Element2D_t* elements, Element2D_t* new_elements, const size_t* boundaries, const Face2D_t* faces) -> void {
-    const int index = blockIdx.x * blockDim.x + threadIdx.x;
-    const int stride = blockDim.x * gridDim.x;
-
-    for (size_t boundary_index = index; boundary_index < n_boundaries; boundary_index += stride) {
-        Element2D_t& destination_element = elements[boundaries[boundary_index]];
-        int N_element = destination_element.N_;
-
-        for (size_t face_index = 0; face_index < destination_element.faces_[0].size(); ++face_index) {
-            const Face2D_t& face = faces[destination_element.faces_[0][face_index]];
-            const int element_index = face.elements_[0] == boundaries[boundary_index];
-            const Element2D_t& source_element = elements[face.elements_[element_index]];
-
-            N_element = std::max(N_element, source_element.N_);
-        }
-
-        if (destination_element.N_ != N_element) {
-            destination_element.resize_boundary_storage(N_element);
-        }
-
-        new_elements[boundaries[boundary_index]] = std::move(elements[boundaries[boundary_index]]);
     }
 }
 
