@@ -3383,7 +3383,17 @@ auto SEM::Meshes::move_interfaces(size_t n_local_interfaces, size_t n_faces, siz
             new_elements[new_element_index + 1].compute_boundary_geometry(points_2, polynomial_nodes);
 
             if (destination_element.additional_nodes_[0]) {
+                const size_t face_index = destination_element.faces_[0][0];
+                const int face_block_id = face_index/faces_blockSize;
+                const int face_thread_id = face_index%faces_blockSize;
 
+                size_t splitting_face_index = n_faces + 4 * n_splitting_elements + faces_block_offsets[face_block_id];
+                for (size_t j = face_index - face_thread_id; j < face_index; ++j) {
+                    splitting_face_index += faces[j].refine_;
+                }
+
+                new_elements[new_element_index].faces_[0][0] = splitting_face_index; // Should always be the case
+                new_elements[new_element_index + 1].faces_[0][0] = face_index; // Should always be the case
             }
             else {
                 
