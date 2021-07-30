@@ -1280,7 +1280,7 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
     }
 
     if (!interfaces_origin_.empty()) {
-        SEM::Meshes::move_interfaces<<<interfaces_numBlocks_, boundaries_blockSize_, 0, stream_>>>(interfaces_origin_.size(), faces_.size(), nodes_.size(), n_splitting_elements, elements_.size() + 3 * n_splitting_elements + n_splitting_wall_boundaries + n_splitting_symmetry_boundaries + n_splitting_inflow_boundaries + n_splitting_outflow_boundaries, elements_.data(), new_elements.data(), interfaces_origin_.data(), interfaces_origin_side_.data(), interfaces_destination_.data(), new_interfaces_origin.data(), new_outflow_boundaries.data(), new_interfaces_origin_side.data(), new_interfaces_destination.data(), faces_.data(), new_nodes.data(), device_refine_array_.data(), device_faces_refine_array_.data(), device_interfaces_refine_array_.data(), max_split_level_, N_max, polynomial_nodes.data(), elements_blockSize_, faces_blockSize_);
+        SEM::Meshes::move_interfaces<<<interfaces_numBlocks_, boundaries_blockSize_, 0, stream_>>>(interfaces_origin_.size(), faces_.size(), nodes_.size(), n_splitting_elements, elements_.size() + 3 * n_splitting_elements + n_splitting_wall_boundaries + n_splitting_symmetry_boundaries + n_splitting_inflow_boundaries + n_splitting_outflow_boundaries, elements_.data(), new_elements.data(), interfaces_origin_.data(), interfaces_origin_side_.data(), interfaces_destination_.data(), new_interfaces_origin.data(), new_interfaces_origin_side.data(), new_interfaces_destination.data(), faces_.data(), new_nodes.data(), device_refine_array_.data(), device_faces_refine_array_.data(), device_interfaces_refine_array_.data(), max_split_level_, N_max, polynomial_nodes.data(), elements_blockSize_, faces_blockSize_);
     }
 
 
@@ -3307,7 +3307,7 @@ auto SEM::Meshes::move_interfaces(size_t n_local_interfaces, size_t n_faces, siz
         }
 
         size_t new_interface_index = interface_index + interface_block_offsets[block_id];
-        for (size_t j = boundary_index - thread_id; j < boundary_index; ++j) {
+        for (size_t j = interface_index - thread_id; j < interface_index; ++j) {
             new_interface_index += elements[local_interfaces_origin[j]].would_h_refine(max_split_level);
         }
         const size_t new_element_index = offset + new_interface_index;
@@ -3356,14 +3356,14 @@ auto SEM::Meshes::move_interfaces(size_t n_local_interfaces, size_t n_faces, siz
                 }
             }
 
-            new_elements[new_element_index].N_     = source_element.N_
+            new_elements[new_element_index].N_     = source_element.N_;
             new_elements[new_element_index].nodes_ = {destination_element.nodes_[0],
                                                       new_node_index,
                                                       new_node_index,
                                                       destination_element.nodes_[0]};
             new_elements[new_element_index].allocate_boundary_storage();
 
-            new_elements[new_element_index + 1].N_ = source_element.N_
+            new_elements[new_element_index + 1].N_ = source_element.N_;
             new_elements[new_element_index + 1].nodes_ = {new_node_index,
                                                           destination_element.nodes_[1],
                                                           destination_element.nodes_[1],
@@ -3488,7 +3488,7 @@ auto SEM::Meshes::move_interfaces(size_t n_local_interfaces, size_t n_faces, siz
                         };
                         const std::array<deviceFloat, 2> D_proj {
                             AD[0].dot(AB[0]) * AB_dot_inv[0],
-                            AD[1].dot(AB[1]) * AB_dot_inv[]
+                            AD[1].dot(AB[1]) * AB_dot_inv[1]
                         };
 
                         // The face is within the first element
@@ -3605,7 +3605,7 @@ auto SEM::Meshes::move_interfaces(size_t n_local_interfaces, size_t n_faces, siz
                         };
                         const std::array<deviceFloat, 2> D_proj {
                             AD[0].dot(AB[0]) * AB_dot_inv[0],
-                            AD[1].dot(AB[1]) * AB_dot_inv[]
+                            AD[1].dot(AB[1]) * AB_dot_inv[1]
                         };
 
                         // The face is within the first element
