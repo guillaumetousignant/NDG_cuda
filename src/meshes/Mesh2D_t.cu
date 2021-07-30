@@ -1280,7 +1280,7 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
     }
 
     if (!interfaces_origin_.empty()) {
-        SEM::Meshes::move_interfaces<<<interfaces_numBlocks_, boundaries_blockSize_, 0, stream_>>>(interfaces_origin_.size(), faces_.size(), nodes_.size(), n_splitting_elements, elements_.size() + 3 * n_splitting_elements + n_splitting_wall_boundaries + n_splitting_symmetry_boundaries + n_splitting_inflow_boundaries + n_splitting_outflow_boundaries, elements_.data(), new_elements.data(), outflow_boundaries_.data(), new_outflow_boundaries.data(), faces_.data(), new_nodes.data(), device_faces_refine_array_.data(), device_outflow_boundaries_refine_array_.data(), polynomial_nodes.data(), faces_blockSize_);
+        SEM::Meshes::move_interfaces<<<interfaces_numBlocks_, boundaries_blockSize_, 0, stream_>>>(interfaces_origin_.size(), faces_.size(), nodes_.size(), n_splitting_elements, elements_.size() + 3 * n_splitting_elements + n_splitting_wall_boundaries + n_splitting_symmetry_boundaries + n_splitting_inflow_boundaries + n_splitting_outflow_boundaries, elements_.data(), new_elements.data(), interfaces_origin_.data(), interfaces_origin_side_.data(), interfaces_destination_.data(), new_interfaces_origin.data(), new_outflow_boundaries.data(), new_interfaces_origin_side.data(), new_interfaces_destination.data(), faces_.data(), new_nodes.data(), device_faces_refine_array_.data(), device_interfaces_refine_array_.data(), max_split_level_, polynomial_nodes.data(), faces_blockSize_);
     }
 
 
@@ -3288,90 +3288,30 @@ auto SEM::Meshes::move_boundaries(size_t n_boundaries, size_t n_faces, size_t n_
 }
 
 __global__
-auto SEM::Meshes::move_interfaces(size_t n_local_interfaces, size_t n_faces, size_t n_nodes, size_t n_splitting_elements, size_t offset, Element2D_t* elements, Element2D_t* new_elements, const size_t* boundaries, size_t* new_boundaries, const Face2D_t* faces, const Vec2<deviceFloat>* nodes, const size_t* faces_block_offsets, const size_t* boundary_block_offsets, const deviceFloat* polynomial_nodes, int faces_blockSize) -> void {
+auto SEM::Meshes::move_interfaces(size_t n_local_interfaces, size_t n_faces, size_t n_nodes, size_t n_splitting_elements, size_t offset, Element2D_t* elements, Element2D_t* new_elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_origin_side, const size_t* local_interfaces_destination, size_t* new_local_interfaces_origin, size_t* new_local_interfaces_origin_side, size_t* new_local_interfaces_destination, const Face2D_t* faces, const Vec2<deviceFloat>* nodes, const size_t* faces_block_offsets, const size_t* interface_block_offsets, int max_split_level, const deviceFloat* polynomial_nodes, int faces_blockSize) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     const int thread_id = threadIdx.x;
     const int block_id = blockIdx.x;
 
-    for (size_t boundary_index = index; boundary_index < n_boundaries; boundary_index += stride) {
-        const size_t element_index = boundaries[boundary_index];
-        Element2D_t& destination_element = elements[element_index];
+    for (size_t interface_index = index; interface_index < n_local_interfaces; interface_index += stride) {
+        const size_t source_element_index = local_interfaces_origin[interface_index];
+        const size_t destination_element_index = local_interfaces_destination[interface_index];
+        const Element2D_t& source_element = elements[source_element_index];
+        Element2D_t& destination_element = elements[destination_element_index];
+        const size_t source_element_side = local_interfaces_origin_side[interface_index];
 
-        size_t new_boundary_index = boundary_index + boundary_block_offsets[block_id];
+        size_t new_interface_index = interface_index + interface_block_offsets[block_id];
         for (size_t j = boundary_index - thread_id; j < boundary_index; ++j) {
-            if (elements[boundaries[j]].faces_[0].size() == 1) { // Should always be the case 
-                new_boundary_index += faces[elements[boundaries[j]].faces_[0][0]].refine_;
-            }
+            new_interface_index += elements[local_interfaces_origin[j]].would_h_refine(max_split_level);
         }
-        const size_t new_element_index = offset + new_boundary_index;
+        const size_t new_element_index = offset + new_interface_index;
 
-        if ((elements[element_index].faces_[0].size() == 1) && (faces[elements[element_index].faces_[0][0]].refine_)) {
-            new_boundaries[new_boundary_index] = new_element_index;
-            new_boundaries[new_boundary_index + 1] = new_element_index + 1;
+        if (source_element.would_h_refine(max_split_level)) {
 
-            const size_t face_index = elements[element_index].faces_[0][0];
-            const Face2D_t& face = faces[face_index];
-            const int face_block_id = face_index/faces_blockSize;
-            const int face_thread_id = face_index%faces_blockSize;
-
-            size_t new_node_index = n_nodes + n_splitting_elements + faces_block_offsets[face_block_id];
-            size_t new_face_index = n_faces + 4 * n_splitting_elements + faces_block_offsets[face_block_id];
-            for (size_t j = face_index - face_thread_id; j < face_index; ++j) {
-                new_node_index += faces[j].refine_;
-                new_face_index += faces[j].refine_;
-            }
-
-            const Vec2<deviceFloat> new_node = (nodes[face.nodes_[0]] + nodes[face.nodes_[1]])/2;
-
-            new_elements[new_element_index].N_ = destination_element.N_;
-            new_elements[new_element_index].nodes_ = {destination_element.nodes_[0],
-                                                      new_node_index,
-                                                      new_node_index,
-                                                      destination_element.nodes_[0]};
-            new_elements[new_element_index].allocate_boundary_storage();
-            new_elements[new_element_index].faces_[0][0] = new_face_index; // This should always be the case
-
-            new_elements[new_element_index + 1].N_ = destination_element.N_;
-            new_elements[new_element_index + 1].nodes_ = {new_node_index,
-                                                          destination_element.nodes_[1],
-                                                          destination_element.nodes_[1],
-                                                          new_node_index};
-            new_elements[new_element_index + 1].allocate_boundary_storage();
-            new_elements[new_element_index + 1].faces_[0][0] = face_index; // This should always be the case
-
-            const std::array<Vec2<deviceFloat>, 4> points {nodes[new_elements[new_element_index].nodes_[0]],
-                                                           nodes[new_elements[new_element_index].nodes_[1]],
-                                                           nodes[new_elements[new_element_index].nodes_[2]],
-                                                           nodes[new_elements[new_element_index].nodes_[3]]};
-            new_elements[new_element_index].compute_boundary_geometry(points, polynomial_nodes);
-
-            const std::array<Vec2<deviceFloat>, 4> points_2 {nodes[new_elements[new_element_index + 1].nodes_[0]],
-                                                             nodes[new_elements[new_element_index + 1].nodes_[1]],
-                                                             nodes[new_elements[new_element_index + 1].nodes_[2]],
-                                                             nodes[new_elements[new_element_index + 1].nodes_[3]]};
-            new_elements[new_element_index + 1].compute_boundary_geometry(points_2, polynomial_nodes);
-
-            new_elements[new_element_index] = std::move(destination_element);
-            new_elements[new_element_index + 1] = std::move(destination_element);
         }
         else {
-            new_boundaries[new_boundary_index] = new_element_index;
 
-            int N_element = destination_element.N_;
-            for (size_t face_index = 0; face_index < destination_element.faces_[0].size(); ++face_index) {
-                const Face2D_t& face = faces[destination_element.faces_[0][face_index]];
-                const int neighbour_element_index = face.elements_[0] == element_index;
-                const Element2D_t& source_element = elements[face.elements_[neighbour_element_index]];
-
-                N_element = std::max(N_element, source_element.N_);
-            }
-
-            if (destination_element.N_ != N_element) {
-                destination_element.resize_boundary_storage(N_element);
-            }
-
-            new_elements[new_element_index] = std::move(destination_element);
         }
     }
 }
