@@ -718,13 +718,13 @@ auto SEM::Entities::Element2D_t::compute_geometry(const std::array<Vec2<deviceFl
         scaling_factor_[1][i] = std::sqrt(metrics_right[0].y() * metrics_right[0].y() + metrics_right[1].y() * metrics_right[1].y());
         scaling_factor_[2][i] = std::sqrt(metrics_top[0].x() * metrics_top[0].x() + metrics_top[1].x() * metrics_top[1].x());
         scaling_factor_[3][i] = std::sqrt(metrics_left[0].y() * metrics_left[0].y() + metrics_left[1].y() * metrics_left[1].y());
-
-        delta_xy_min_ = std::min(std::min(
-            std::min((points[1] - points[0]).magnitude(), (points[2] - points[3]).magnitude()), 
-            std::min((points[1] - points[2]).magnitude(), (points[0] - points[3]).magnitude())), 
-            std::min((points[1] - points[3]).magnitude(), (points[2] - points[0]).magnitude()));
-        center_ = (points[0] + points[1] + points[2] + points[3])/4;
     }
+
+    delta_xy_min_ = std::min(std::min(
+        std::min((points[1] - points[0]).magnitude(), (points[2] - points[3]).magnitude()), 
+        std::min((points[1] - points[2]).magnitude(), (points[0] - points[3]).magnitude())), 
+        std::min((points[1] - points[3]).magnitude(), (points[2] - points[0]).magnitude()));
+    center_ = (points[0] + points[1] + points[2] + points[3])/4;
 }
 
 __device__
@@ -733,17 +733,14 @@ auto SEM::Entities::Element2D_t::compute_boundary_geometry(const std::array<Vec2
 
     for (int i = 0; i <= N_; ++i) {
         const Vec2<deviceFloat> coordinates_bottom {polynomial_nodes[offset_1D + i], -1};
-        const Vec2<deviceFloat> coordinates_right  {1, polynomial_nodes[offset_1D + i]};
-        const Vec2<deviceFloat> coordinates_top    {polynomial_nodes[offset_1D + i], 1};
-        const Vec2<deviceFloat> coordinates_left   {-1, polynomial_nodes[offset_1D + i]};
 
         const std::array<Vec2<deviceFloat>, 2> metrics_bottom = SEM::quad_metrics(coordinates_bottom, points);
 
         scaling_factor_[0][i] = std::sqrt(metrics_bottom[0].x() * metrics_bottom[0].x() + metrics_bottom[1].x() * metrics_bottom[1].x());
-
-        delta_xy_min_ = (points[1] - points[0]).magnitude();
-        center_ = (points[0] + points[1])/2;
     }
+    
+    delta_xy_min_ = (points[1] - points[0]).magnitude();
+    center_ = (points[0] + points[1])/2;
 }
 
 // From cppreference.com
