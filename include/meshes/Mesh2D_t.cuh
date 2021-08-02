@@ -231,13 +231,13 @@ namespace SEM { namespace Meshes {
     auto get_MPI_interfaces_N(size_t n_MPI_interface_elements, const SEM::Entities::Element2D_t* elements, const size_t* MPI_interfaces_origin, int* N) -> void;
 
     __global__
-    auto get_MPI_interfaces_adaptivity(size_t n_MPI_interface_elements, const SEM::Entities::Element2D_t* elements, const size_t* MPI_interfaces_origin, const size_t* MPI_interfaces_origin_side, int* N, bool* elements_splitting, size_t* new_element_indices, size_t* new_splitting_element_indices, int max_split_level, int N_max, const size_t* block_offsets) -> void;
+    auto get_MPI_interfaces_adaptivity(size_t n_MPI_interface_elements, const SEM::Entities::Element2D_t* elements, const size_t* MPI_interfaces_origin, const size_t* MPI_interfaces_origin_side, int* N, bool* elements_splitting, size_t* new_element_indices, size_t* new_splitting_element_indices, int max_split_level, int N_max, const size_t* block_offsets, int elements_blockSize) -> void;
 
     __global__
     auto put_MPI_interfaces(size_t n_MPI_interface_elements, SEM::Entities::Element2D_t* elements, const size_t* MPI_interfaces_destination, int maximum_N, const deviceFloat* p, const deviceFloat* u, const deviceFloat* v) -> void;
 
     __global__
-    auto adjust_MPI_interfaces(size_t n_MPI_interface_elements, SEM::Entities::Element2D_t* elements, const size_t* MPI_interfaces_destination, size_t* MPI_interfaces_origin, const int* N, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const size_t* new_element_indices) -> void;
+    auto adjust_MPI_interfaces(size_t n_MPI_interface_elements, SEM::Entities::Element2D_t* elements, const size_t* MPI_interfaces_destination, size_t* MPI_interfaces_origin, const int* N, size_t* new_element_indices, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes) -> void;
     
     __global__
     auto p_adapt(size_t n_elements, SEM::Entities::Element2D_t* elements, int N_max, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void;
@@ -246,7 +246,7 @@ namespace SEM { namespace Meshes {
     auto p_adapt_move(size_t n_elements, SEM::Entities::Element2D_t* elements, SEM::Entities::Element2D_t* new_elements, int N_max, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void;
     
     __global__
-    auto p_adapt_split_faces(size_t n_elements, size_t n_faces, size_t n_nodes, size_t n_splitting_elements, SEM::Entities::Element2D_t* elements, SEM::Entities::Element2D_t* new_elements, const SEM::Entities::Face2D_t* faces, int N_max, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void;
+    auto p_adapt_split_faces(size_t n_elements, size_t n_faces, size_t n_nodes, size_t n_splitting_elements, SEM::Entities::Element2D_t* elements, SEM::Entities::Element2D_t* new_elements, const SEM::Entities::Face2D_t* faces, int N_max, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights, const size_t* faces_block_offsets, int faces_blockSize) -> void;
     
     __global__
     auto hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, size_t n_splitting_elements, SEM::Entities::Element2D_t* elements, SEM::Entities::Element2D_t* new_elements, SEM::Entities::Face2D_t* faces, SEM::Entities::Face2D_t* new_faces, const size_t* block_offsets, const size_t* faces_block_offsets, int max_split_level, int N_max, SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights, int faces_blockSize) -> void;
@@ -285,7 +285,7 @@ namespace SEM { namespace Meshes {
     auto adjust_faces(size_t n_faces, SEM::Entities::Face2D_t* faces, const SEM::Entities::Element2D_t* elements) -> void;
     
     __global__
-    auto adjust_faces_neighbours(size_t n_faces, SEM::Entities::Face2D_t* faces, const SEM::Entities::Element2D_t* elements, int elements_blockSize) -> void;
+    auto adjust_faces_neighbours(size_t n_faces, SEM::Entities::Face2D_t* faces, const SEM::Entities::Element2D_t* elements, const SEM::Entities::Vec2<deviceFloat>* nodes, int max_split_level, int N_max, const size_t* block_offsets, int elements_blockSize) -> void;
 
     __global__
     auto move_boundaries(size_t n_boundaries, SEM::Entities::Element2D_t* elements, SEM::Entities::Element2D_t* new_elements, const size_t* boundaries, const SEM::Entities::Face2D_t* faces) -> void;
@@ -457,7 +457,7 @@ namespace SEM { namespace Meshes {
 
         while (i < n_MPI_interface_elements) { 
             sdata[tid] += elements_splitting[i];
-            if (i+blockSize < n_local_interfaces) {
+            if (i+blockSize < n_MPI_interface_elements) {
                 sdata[tid] += elements_splitting[i+blockSize];
             }
             i += gridSize; 
