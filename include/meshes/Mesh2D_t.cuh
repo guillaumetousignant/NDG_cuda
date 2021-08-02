@@ -280,6 +280,9 @@ namespace SEM { namespace Meshes {
 
     __global__
     auto adjust_faces(size_t n_faces, SEM::Entities::Face2D_t* faces, const SEM::Entities::Element2D_t* elements) -> void;
+    
+    __global__
+    auto adjust_faces_neighbours(size_t n_faces, SEM::Entities::Face2D_t* faces, const SEM::Entities::Element2D_t* elements, int elements_blockSize) -> void;
 
     __global__
     auto move_boundaries(size_t n_boundaries, SEM::Entities::Element2D_t* elements, SEM::Entities::Element2D_t* new_elements, const size_t* boundaries, const SEM::Entities::Face2D_t* faces) -> void;
