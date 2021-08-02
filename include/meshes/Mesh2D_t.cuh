@@ -153,8 +153,8 @@ namespace SEM { namespace Meshes {
             // MPI exchange variables
             std::vector<MPI_Request> requests_;
             std::vector<MPI_Status> statuses_;
-            std::vector<MPI_Request> requests_N_;
-            std::vector<MPI_Status> statuses_N_;
+            std::vector<MPI_Request> requests_adaptivity_;
+            std::vector<MPI_Status> statuses_adaptivity_;
 
             static auto build_node_to_element(size_t n_nodes, const std::vector<SEM::Entities::Element2D_t>& elements) -> std::vector<std::vector<size_t>>;
             static auto build_element_to_element(const std::vector<SEM::Entities::Element2D_t>& elements, const std::vector<std::vector<size_t>>& node_to_element) -> std::vector<std::vector<size_t>>;
@@ -235,9 +235,6 @@ namespace SEM { namespace Meshes {
     auto put_MPI_interfaces_N(size_t n_MPI_interface_elements, SEM::Entities::Element2D_t* elements, const size_t* MPI_interfaces_destination, const int* N) -> void;
     
     __global__
-    auto put_MPI_interfaces_N_and_rebuild(size_t n_MPI_interface_elements, SEM::Entities::Element2D_t* elements, SEM::Entities::Element2D_t* new_elements, const size_t* MPI_interfaces_destination, const int* N) -> void;
-
-    __global__
     auto p_adapt(size_t n_elements, SEM::Entities::Element2D_t* elements, int N_max, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void;
     
     __global__
@@ -263,9 +260,6 @@ namespace SEM { namespace Meshes {
 
     __global__
     auto adjust_interfaces(size_t n_local_interfaces, SEM::Entities::Element2D_t* elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_destination) -> void;
-
-    __global__
-    auto rebuild_interfaces(size_t n_local_interfaces, SEM::Entities::Element2D_t* elements, SEM::Entities::Element2D_t* new_elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_destination) -> void;
 
     __global__
     auto adjust_faces(size_t n_faces, SEM::Entities::Face2D_t* faces, const SEM::Entities::Element2D_t* elements) -> void;
