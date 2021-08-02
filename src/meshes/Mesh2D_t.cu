@@ -1405,7 +1405,63 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
         }
     }
 
-    
+    n_elements_ += n_splitting_elements;
+
+    // Parallel sizings
+    elements_numBlocks_ = (n_elements_ + elements_blockSize_ - 1) / elements_blockSize_;
+    faces_numBlocks_ = (faces_.size() + faces_blockSize_ - 1) / faces_blockSize_;
+    wall_boundaries_numBlocks_ = (wall_boundaries_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+    symmetry_boundaries_numBlocks_ = (symmetry_boundaries_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+    inflow_boundaries_numBlocks_ = (inflow_boundaries_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+    outflow_boundaries_numBlocks_ = (outflow_boundaries_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+    ghosts_numBlocks_ = (n_elements_ + wall_boundaries_.size() + symmetry_boundaries_.size() + inflow_boundaries_.size() + outflow_boundaries_.size() + interfaces_origin_.size() + mpi_interfaces_origin_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+    interfaces_numBlocks_ = (interfaces_origin_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+    mpi_interfaces_numBlocks_ = (mpi_interfaces_origin_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+
+    // Boundary solution exchange
+    device_interfaces_p_ = device_vector<deviceFloat>(mpi_interfaces_origin_.size() * (maximum_N_ + 1), stream_);
+    device_interfaces_u_ = device_vector<deviceFloat>(mpi_interfaces_origin_.size() * (maximum_N_ + 1), stream_);
+    device_interfaces_v_ = device_vector<deviceFloat>(mpi_interfaces_origin_.size() * (maximum_N_ + 1), stream_);
+    device_interfaces_N_ = device_vector<int>(mpi_interfaces_origin_.size(), stream_);
+    device_interfaces_refine_ = device_vector<bool>(mpi_interfaces_origin_.size(), stream_);
+    device_interfaces_new_index_ = device_vector<size_t>(mpi_interfaces_origin_.size(), stream_);
+    device_interfaces_new_splitting_index_ = device_vector<size_t>(mpi_interfaces_origin_.size(), stream_);
+
+    host_interfaces_p_ = host_vector<deviceFloat>(mpi_interfaces_origin_.size() * (maximum_N_ + 1));
+    host_interfaces_u_ = host_vector<deviceFloat>(mpi_interfaces_origin_.size() * (maximum_N_ + 1));
+    host_interfaces_v_ = host_vector<deviceFloat>(mpi_interfaces_origin_.size() * (maximum_N_ + 1));
+    host_interfaces_N_ = std::vector<int>(mpi_interfaces_origin_.size());
+    host_interfaces_refine_ = host_vector<bool>(mpi_interfaces_origin_.size());
+    host_interfaces_new_index_ = std::vector<size_t>(mpi_interfaces_origin_.size());
+    host_interfaces_new_splitting_index_ = std::vector<size_t>(mpi_interfaces_origin_.size());
+
+    host_receiving_interfaces_p_ = host_vector<deviceFloat>(mpi_interfaces_origin_.size() * (maximum_N_ + 1));
+    host_receiving_interfaces_u_ = host_vector<deviceFloat>(mpi_interfaces_origin_.size() * (maximum_N_ + 1));
+    host_receiving_interfaces_v_ = host_vector<deviceFloat>(mpi_interfaces_origin_.size() * (maximum_N_ + 1));
+    host_receiving_interfaces_N_ = std::vector<int>(mpi_interfaces_origin_.size());
+    host_receiving_interfaces_refine_ = host_vector<bool>(mpi_interfaces_origin_.size());
+    host_receiving_interfaces_new_index_ = std::vector<size_t>(mpi_interfaces_origin_.size());
+    host_receiving_interfaces_new_splitting_index_ = std::vector<size_t>(mpi_interfaces_origin_.size());
+
+    // Transfer arrays
+    host_delta_t_array_ = host_vector<deviceFloat>(elements_numBlocks_);
+    device_delta_t_array_ = device_vector<deviceFloat>(elements_numBlocks_, stream_);
+    host_refine_array_ = std::vector<size_t>(elements_numBlocks_);
+    device_refine_array_ = device_vector<size_t>(elements_numBlocks_, stream_);
+    host_faces_refine_array_ = std::vector<size_t>(faces_numBlocks_);
+    device_faces_refine_array_ = device_vector<size_t>(faces_numBlocks_, stream_);
+    host_wall_boundaries_refine_array_ = std::vector<size_t>(wall_boundaries_numBlocks_);
+    device_wall_boundaries_refine_array_ = device_vector<size_t>(wall_boundaries_numBlocks_, stream_);
+    host_symmetry_boundaries_refine_array_ = std::vector<size_t>(symmetry_boundaries_numBlocks_);
+    device_symmetry_boundaries_refine_array_ = device_vector<size_t>(symmetry_boundaries_numBlocks_, stream_);
+    host_inflow_boundaries_refine_array_ = std::vector<size_t>(inflow_boundaries_numBlocks_);
+    device_inflow_boundaries_refine_array_ = device_vector<size_t>(inflow_boundaries_numBlocks_, stream_);
+    host_outflow_boundaries_refine_array_ = std::vector<size_t>(outflow_boundaries_numBlocks_);
+    device_outflow_boundaries_refine_array_ = device_vector<size_t>(outflow_boundaries_numBlocks_, stream_);
+    host_interfaces_refine_array_ = std::vector<size_t>(interfaces_numBlocks_);
+    device_interfaces_refine_array_ = device_vector<size_t>(interfaces_numBlocks_, stream_);
+    host_mpi_interfaces_refine_array_ = std::vector<size_t>(interfaces_numBlocks_);
+    device_mpi_interfaces_refine_array_ = device_vector<size_t>(interfaces_numBlocks_, stream_);
 }
 
 auto SEM::Meshes::Mesh2D_t::boundary_conditions(deviceFloat t, const device_vector<deviceFloat>& polynomial_nodes, const device_vector<deviceFloat>& weights, const device_vector<deviceFloat>& barycentric_weights) -> void {
