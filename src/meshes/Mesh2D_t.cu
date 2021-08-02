@@ -3849,8 +3849,77 @@ auto SEM::Meshes::move_mpi_interfaces(size_t n_MPI_interface_elements, size_t n_
             new_mpi_interfaces_destination[new_mpi_interface_index]     = new_element_index;
             new_mpi_interfaces_destination[new_mpi_interface_index + 1] = new_element_index + 1;
 
-            
+            Vec2<deviceFloat> new_node {};
+            size_t new_node_index = static_cast<size_t>(-1);
 
+            if (destination_element.additional_nodes_[0]) {
+                const size_t face_index = destination_element.faces_[0][0];
+                new_node = (nodes[faces[face_index].nodes_[0]] + nodes[faces[face_index].nodes_[1]])/2;
+
+                const int face_block_id = face_index/faces_blockSize;
+                const int face_thread_id = face_index%faces_blockSize;
+
+                new_node_index = n_nodes + n_splitting_elements + faces_block_offsets[face_block_id];
+                for (size_t j = face_index - face_thread_id; j < face_index; ++j) {
+                    new_node_index += faces[j].refine_;
+                }
+            }
+            else {
+                const std::array<SEM::Entities::Vec2<deviceFloat>, 2> side_nodes = {nodes[destination_element.nodes_[0]], nodes[destination_element.nodes_[1]]};
+                const SEM::Entities::Vec2<deviceFloat> side_new_node = (side_nodes[0] + side_nodes[1])/2;
+
+                for (size_t face_index = 0; face_index < destination_element.faces_[0].size(); ++face_index) {
+                    const SEM::Entities::Face2D_t& face = faces[destination_element.faces_[0][face_index]];
+                    if (nodes[face.nodes_[0]].almost_equal(side_new_node)) {
+                        new_node_index = face.nodes_[0];
+                        new_node = nodes[face.nodes_[0]];
+                        break;
+                    } 
+                    else if (nodes[face.nodes_[1]].almost_equal(side_new_node)) {
+                        new_node_index = face.nodes_[1];
+                        new_node = nodes[face.nodes_[1]];
+                        break;
+                    }
+                }
+            }
+
+            new_elements[new_element_index].N_     = N[mpi_interface_index];
+            new_elements[new_element_index].nodes_ = {destination_element.nodes_[0],
+                                                      new_node_index,
+                                                      new_node_index,
+                                                      destination_element.nodes_[0]};
+            new_elements[new_element_index].split_level_ = destination_element.split_level_ + 1;
+            new_elements[new_element_index].refine_ = false;
+            new_elements[new_element_index].coarsen_ = false;
+            new_elements[new_element_index].additional_nodes_ = {false, false, false, false};
+            new_elements[new_element_index].allocate_boundary_storage();
+
+            new_elements[new_element_index + 1].N_ = N[mpi_interface_index];
+            new_elements[new_element_index + 1].nodes_ = {new_node_index,
+                                                          destination_element.nodes_[1],
+                                                          destination_element.nodes_[1],
+                                                          new_node_index};
+            new_elements[new_element_index + 1].split_level_ = destination_element.split_level_ + 1;
+            new_elements[new_element_index + 1].refine_ = false;
+            new_elements[new_element_index + 1].coarsen_ = false;
+            new_elements[new_element_index + 1].additional_nodes_ = {false, false, false, false};
+            new_elements[new_element_index + 1].allocate_boundary_storage();
+
+            const std::array<Vec2<deviceFloat>, 4> points {nodes[new_elements[new_element_index].nodes_[0]],
+                                                           new_node,
+                                                           new_node,
+                                                           nodes[new_elements[new_element_index].nodes_[3]]};
+            new_elements[new_element_index].compute_boundary_geometry(points, polynomial_nodes);
+
+            const std::array<Vec2<deviceFloat>, 4> points_2 {new_node,
+                                                             nodes[new_elements[new_element_index + 1].nodes_[1]],
+                                                             nodes[new_elements[new_element_index + 1].nodes_[2]],
+                                                             new_node};
+            new_elements[new_element_index + 1].compute_boundary_geometry(points_2, polynomial_nodes);
+
+
+
+            
         }
         else {
             new_mpi_interfaces_origin[new_mpi_interface_index] = new_element_indices[mpi_interface_index];
