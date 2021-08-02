@@ -346,6 +346,7 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
                                   static_cast<size_t>(connectivity[i][2 * j + 1] - 1),
                                   static_cast<size_t>(connectivity[i][2 * j + 1] - 1),
                                   static_cast<size_t>(connectivity[i][2 * j] - 1)};
+                element.split_level_ = 0;
             }
             element_ghost_index += section_ranges[i][1] - section_ranges[i][0] + 1;
         }
@@ -1218,6 +1219,7 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
         device_interfaces_new_index_.copy_from(host_interfaces_new_index_, stream_);
         device_interfaces_new_splitting_index_.copy_from(host_interfaces_new_splitting_index_, stream_);
 
+        SEM::Meshes::copy_mpi_interfaces_error<<<mpi_interfaces_numBlocks_, boundaries_blockSize_, 0, stream_>>>(mpi_interfaces_origin_.size(), elements_.data(), faces_.data(), nodes_.data(), mpi_interfaces_destination_.data(), device_interfaces_N_.data(), device_interfaces_refine_.data());
 
         MPI_Waitall(4 * mpi_interfaces_size_.size(), requests_adaptivity_.data() + 4 * mpi_interfaces_size_.size(), statuses_adaptivity_.data() + 4 * mpi_interfaces_size_.size());
     }
@@ -3258,6 +3260,49 @@ auto SEM::Meshes::copy_interfaces_error(size_t n_local_interfaces, Element2D_t* 
 }
 
 __global__
+auto SEM::Meshes::copy_mpi_interfaces_error(size_t n_MPI_interface_elements, Element2D_t* elements, const Face2D_t* faces, const Vec2<deviceFloat>* nodes, const size_t* MPI_interfaces_destination, const int* N, const bool* elements_splitting) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t interface_index = index; interface_index < n_MPI_interface_elements; interface_index += stride) {
+        Element2D_t& element = elements[MPI_interfaces_destination[interface_index]];
+
+        if (elements_splitting[interface_index]) {
+            element.refine_ = true;
+            element.coarsen_ = false;
+            element.p_sigma_ = 0; // CHECK this is not relative to the cutoff, but it should stay above this
+            element.u_sigma_ = 0;
+            element.v_sigma_ = 0;
+            
+            const std::array<SEM::Entities::Vec2<deviceFloat>, 2> side_nodes = {nodes[element.nodes_[0]], nodes[element.nodes_[1]]};
+            const SEM::Entities::Vec2<deviceFloat> new_node = (side_nodes[0] + side_nodes[1])/2;
+
+            // Here we check if the new node already exists
+            element.additional_nodes_[0] = true;
+            for (size_t face_index = 0; face_index < element.faces_[0].size(); ++face_index) {
+                const SEM::Entities::Face2D_t& face = faces[element.faces_[0][face_index]];
+                if (nodes[face.nodes_[0]].almost_equal(new_node) || nodes[face.nodes_[1]].almost_equal(new_node)) {
+                    element.additional_nodes_[0] = false;
+                    break;
+                }
+            }
+        }
+        else if (element.N_ < N[interface_index]) {
+            element.refine_ = true;
+            element.coarsen_ = false;
+            element.p_sigma_ = 1000; // CHECK this is not relative to the cutoff, but it should stay below this
+            element.u_sigma_ = 1000;
+            element.v_sigma_ = 1000;
+        }
+        else {
+            element.refine_ = false;
+            element.coarsen_ = false;
+        }
+    }
+}
+
+
+__global__
 auto SEM::Meshes::move_boundaries(size_t n_boundaries, size_t n_faces, size_t n_nodes, size_t n_splitting_elements, size_t offset, Element2D_t* elements, Element2D_t* new_elements, const size_t* boundaries, size_t* new_boundaries, const Face2D_t* faces, const Vec2<deviceFloat>* nodes, const size_t* faces_block_offsets, const size_t* boundary_block_offsets, const deviceFloat* polynomial_nodes, int faces_blockSize) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
@@ -3299,6 +3344,7 @@ auto SEM::Meshes::move_boundaries(size_t n_boundaries, size_t n_faces, size_t n_
                                                       new_node_index,
                                                       new_node_index,
                                                       destination_element.nodes_[0]};
+            new_elements[new_element_index].split_level_ = destination_element.split_level_ + 1;
             new_elements[new_element_index].allocate_boundary_storage();
             new_elements[new_element_index].faces_[0][0] = new_face_index; // This should always be the case
 
@@ -3307,6 +3353,7 @@ auto SEM::Meshes::move_boundaries(size_t n_boundaries, size_t n_faces, size_t n_
                                                           destination_element.nodes_[1],
                                                           destination_element.nodes_[1],
                                                           new_node_index};
+            new_elements[new_element_index + 1].split_level_ = destination_element.split_level_ + 1;
             new_elements[new_element_index + 1].allocate_boundary_storage();
             new_elements[new_element_index + 1].faces_[0][0] = face_index; // This should always be the case
 
@@ -3420,6 +3467,7 @@ auto SEM::Meshes::move_interfaces(size_t n_local_interfaces, size_t n_faces, siz
                                                       new_node_index,
                                                       new_node_index,
                                                       destination_element.nodes_[0]};
+            new_elements[new_element_index].split_level_ = destination_element.split_level_ + 1;
             new_elements[new_element_index].allocate_boundary_storage();
 
             new_elements[new_element_index + 1].N_ = source_element.N_;
@@ -3427,6 +3475,7 @@ auto SEM::Meshes::move_interfaces(size_t n_local_interfaces, size_t n_faces, siz
                                                           destination_element.nodes_[1],
                                                           destination_element.nodes_[1],
                                                           new_node_index};
+            new_elements[new_element_index + 1].split_level_ = destination_element.split_level_ + 1;
             new_elements[new_element_index + 1].allocate_boundary_storage();
 
             const std::array<Vec2<deviceFloat>, 4> points {nodes[new_elements[new_element_index].nodes_[0]],

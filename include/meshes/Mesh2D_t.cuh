@@ -253,6 +253,9 @@ namespace SEM { namespace Meshes {
 
     __global__
     auto copy_interfaces_error(size_t n_local_interfaces, SEM::Entities::Element2D_t* elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_origin_side, const size_t* local_interfaces_destination) -> void;
+    
+    __global__
+    auto copy_mpi_interfaces_error(size_t n_MPI_interface_elements, SEM::Entities::Element2D_t* elements, const SEM::Entities::Face2D_t* faces, const SEM::Entities::Vec2<deviceFloat>* nodes, const size_t* MPI_interfaces_destination, const int* N, const bool* elements_splitting) -> void;
 
     __global__
     auto move_boundaries(size_t n_boundaries, size_t n_faces, size_t n_nodes, size_t n_splitting_elements, size_t offset, SEM::Entities::Element2D_t* elements, SEM::Entities::Element2D_t* new_elements, const size_t* boundaries, size_t* new_boundaries, const SEM::Entities::Face2D_t* faces, const SEM::Entities::Vec2<deviceFloat>* nodes, const size_t* faces_block_offsets, const size_t* boundary_block_offsets, const deviceFloat* polynomial_nodes, int faces_blockSize) -> void;
