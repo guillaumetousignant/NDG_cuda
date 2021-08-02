@@ -64,6 +64,9 @@ namespace SEM { namespace Meshes {
             SEM::Entities::host_vector<bool> host_interfaces_refine_;
             std::vector<size_t> host_interfaces_new_index_;
             std::vector<size_t> host_interfaces_new_splitting_index_;
+            SEM::Entities::host_vector<bool> host_receiving_interfaces_refine_;
+            std::vector<size_t> host_receiving_interfaces_new_index_;
+            std::vector<size_t> host_receiving_interfaces_new_splitting_index_;
 
             // Output
             std::vector<deviceFloat> x_output_host_;
