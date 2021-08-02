@@ -3831,8 +3831,9 @@ auto SEM::Meshes::move_mpi_interfaces(size_t n_MPI_interface_elements, size_t n_
     const int block_id = blockIdx.x;
 
     for (size_t mpi_interface_index = index; mpi_interface_index < n_MPI_interface_elements; mpi_interface_index += stride) {
-        const size_t destination_element_index = mpi_interfaces_destination[interface_index];
+        const size_t destination_element_index = mpi_interfaces_destination[mpi_interface_index];
         Element2D_t& destination_element = elements[destination_element_index];
+        const size_t source_element_side = mpi_interfaces_origin_side[mpi_interface_index];
 
         size_t new_mpi_interface_index = mpi_interface_index + mpi_interface_block_offsets[block_id];
         for (size_t j = mpi_interface_index - thread_id; j < mpi_interface_index; ++j) {
@@ -3841,11 +3842,19 @@ auto SEM::Meshes::move_mpi_interfaces(size_t n_MPI_interface_elements, size_t n_
         const size_t new_element_index = offset + new_mpi_interface_index;
 
         if (elements_splitting[mpi_interface_index]) {
+            new_mpi_interfaces_origin[new_mpi_interface_index]     = new_element_indices[mpi_interface_index];
+            new_mpi_interfaces_origin[new_mpi_interface_index + 1] = new_splitting_element_indices[mpi_interface_index];
+            new_mpi_interfaces_origin_side[new_mpi_interface_index]     = source_element_side;
+            new_mpi_interfaces_origin_side[new_mpi_interface_index + 1] = source_element_side;
+            new_mpi_interfaces_destination[new_mpi_interface_index]     = new_element_index;
+            new_mpi_interfaces_destination[new_mpi_interface_index + 1] = new_element_index + 1;
+
+            
 
         }
         else {
             new_mpi_interfaces_origin[new_mpi_interface_index] = new_element_indices[mpi_interface_index];
-            new_mpi_interfaces_origin_side[new_mpi_interface_index] = mpi_interfaces_origin_side[mpi_interface_index];
+            new_mpi_interfaces_origin_side[new_mpi_interface_index] = source_element_side;
             new_mpi_interfaces_destination[new_mpi_interface_index] = new_element_index;
 
             size_t side_n_splitting_faces = 0;
