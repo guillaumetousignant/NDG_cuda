@@ -1175,7 +1175,7 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
 
             device_interfaces_N_.copy_from(host_receiving_interfaces_N_, stream_);
 
-            SEM::Meshes::put_MPI_interfaces_N<<<mpi_interfaces_numBlocks_, boundaries_blockSize_, 0, stream_>>>(mpi_interfaces_destination_.size(), elements_.data(), mpi_interfaces_destination_.data(), device_interfaces_N_.data());
+            SEM::Meshes::put_MPI_interfaces_N<<<mpi_interfaces_numBlocks_, boundaries_blockSize_, 0, stream_>>>(mpi_interfaces_destination_.size(), elements_.data(), mpi_interfaces_destination_.data(), device_interfaces_N_.data(), nodes_.data(), polynomial_nodes.data());
 
             MPI_Waitall(mpi_interfaces_size_.size(), requests_adaptivity_.data() + mpi_interfaces_size_.size(), statuses_adaptivity_.data() + mpi_interfaces_size_.size());
         }
@@ -2408,7 +2408,7 @@ auto SEM::Meshes::put_MPI_interfaces(size_t n_MPI_interface_elements, Element2D_
 }
 
 __global__
-auto SEM::Meshes::put_MPI_interfaces_N(size_t n_MPI_interface_elements, Element2D_t* elements, const size_t* MPI_interfaces_destination, const int* N) -> void {
+auto SEM::Meshes::put_MPI_interfaces_N(size_t n_MPI_interface_elements, Element2D_t* elements, const size_t* MPI_interfaces_destination, const int* N, const Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -2417,6 +2417,11 @@ auto SEM::Meshes::put_MPI_interfaces_N(size_t n_MPI_interface_elements, Element2
 
         if (destination_element.N_ != N[interface_index]) {
             destination_element.resize_boundary_storage(N[interface_index]);
+            const std::array<Vec2<deviceFloat>, 4> points {nodes[destination_element.nodes_[0]],
+                                                           nodes[destination_element.nodes_[1]],
+                                                           nodes[destination_element.nodes_[2]],
+                                                           nodes[destination_element.nodes_[3]]};
+            destination_element.compute_boundary_geometry(points, polynomial_nodes);
         }
     }
 }
