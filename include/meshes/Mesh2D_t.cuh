@@ -125,6 +125,8 @@ namespace SEM { namespace Meshes {
             std::vector<size_t> host_outflow_boundaries_refine_array_;
             SEM::Entities::device_vector<size_t> device_interfaces_refine_array_;
             std::vector<size_t> host_interfaces_refine_array_;
+            SEM::Entities::device_vector<size_t> device_mpi_interfaces_refine_array_;
+            std::vector<size_t> host_mpi_interfaces_refine_array_;
 
             const cudaStream_t &stream_;
 
