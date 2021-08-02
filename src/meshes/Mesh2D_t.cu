@@ -346,7 +346,6 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
                                   static_cast<size_t>(connectivity[i][2 * j + 1] - 1),
                                   static_cast<size_t>(connectivity[i][2 * j + 1] - 1),
                                   static_cast<size_t>(connectivity[i][2 * j] - 1)};
-                element.split_level_ = 0;
             }
             element_ghost_index += section_ranges[i][1] - section_ranges[i][0] + 1;
         }
@@ -3255,7 +3254,6 @@ auto SEM::Meshes::copy_interfaces_error(size_t n_local_interfaces, Element2D_t* 
         destination_element.p_sigma_ = source_element.p_sigma_;
         destination_element.u_sigma_ = source_element.u_sigma_;
         destination_element.v_sigma_ = source_element.v_sigma_;
-        destination_element.split_level_ = source_element.split_level_;
     }
 }
 
@@ -3345,6 +3343,9 @@ auto SEM::Meshes::move_boundaries(size_t n_boundaries, size_t n_faces, size_t n_
                                                       new_node_index,
                                                       destination_element.nodes_[0]};
             new_elements[new_element_index].split_level_ = destination_element.split_level_ + 1;
+            new_elements[new_element_index].refine_ = false;
+            new_elements[new_element_index].coarsen_ = false;
+            new_elements[new_element_index].additional_nodes_ = {false, false, false, false};
             new_elements[new_element_index].allocate_boundary_storage();
             new_elements[new_element_index].faces_[0][0] = new_face_index; // This should always be the case
 
@@ -3354,6 +3355,9 @@ auto SEM::Meshes::move_boundaries(size_t n_boundaries, size_t n_faces, size_t n_
                                                           destination_element.nodes_[1],
                                                           new_node_index};
             new_elements[new_element_index + 1].split_level_ = destination_element.split_level_ + 1;
+            new_elements[new_element_index + 1].refine_ = false;
+            new_elements[new_element_index + 1].coarsen_ = false;
+            new_elements[new_element_index + 1].additional_nodes_ = {false, false, false, false};
             new_elements[new_element_index + 1].allocate_boundary_storage();
             new_elements[new_element_index + 1].faces_[0][0] = face_index; // This should always be the case
 
@@ -3468,6 +3472,9 @@ auto SEM::Meshes::move_interfaces(size_t n_local_interfaces, size_t n_faces, siz
                                                       new_node_index,
                                                       destination_element.nodes_[0]};
             new_elements[new_element_index].split_level_ = destination_element.split_level_ + 1;
+            new_elements[new_element_index].refine_ = false;
+            new_elements[new_element_index].coarsen_ = false;
+            new_elements[new_element_index].additional_nodes_ = {false, false, false, false};
             new_elements[new_element_index].allocate_boundary_storage();
 
             new_elements[new_element_index + 1].N_ = source_element.N_;
@@ -3476,6 +3483,9 @@ auto SEM::Meshes::move_interfaces(size_t n_local_interfaces, size_t n_faces, siz
                                                           destination_element.nodes_[1],
                                                           new_node_index};
             new_elements[new_element_index + 1].split_level_ = destination_element.split_level_ + 1;
+            new_elements[new_element_index + 1].refine_ = false;
+            new_elements[new_element_index + 1].coarsen_ = false;
+            new_elements[new_element_index + 1].additional_nodes_ = {false, false, false, false};
             new_elements[new_element_index + 1].allocate_boundary_storage();
 
             const std::array<Vec2<deviceFloat>, 4> points {nodes[new_elements[new_element_index].nodes_[0]],
