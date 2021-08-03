@@ -767,3 +767,67 @@ auto SEM::Entities::Element2D_t::would_h_refine(int max_split_level) const -> bo
         && (p_sigma_ + u_sigma_ + v_sigma_)/3 < static_cast<deviceFloat>(1) 
         && split_level_ < max_split_level;
 }
+
+__device__
+auto SEM::Entities::Element2D_t::clear_storage() -> void {
+    faces_[0].data_ = nullptr;
+    faces_[1].data_ = nullptr;
+    faces_[2].data_ = nullptr;
+    faces_[3].data_ = nullptr;
+
+    dxi_dx_.data_ = nullptr;
+    deta_dx_.data_ = nullptr;
+    dxi_dy_.data_ = nullptr;
+    deta_dy_.data_ = nullptr;
+    jacobian_.data_ = nullptr;
+    scaling_factor_[0].data_ = nullptr;
+    scaling_factor_[1].data_ = nullptr;
+    scaling_factor_[2].data_ = nullptr;
+    scaling_factor_[3].data_ = nullptr;
+
+    p_.data_ = nullptr;
+    u_.data_ = nullptr;
+    v_.data_ = nullptr;
+
+    G_p_.data_ = nullptr;
+    G_u_.data_ = nullptr;
+    G_v_.data_ = nullptr;
+
+    p_extrapolated_[0].data_ = nullptr;
+    p_extrapolated_[1].data_ = nullptr;
+    p_extrapolated_[2].data_ = nullptr;
+    p_extrapolated_[3].data_ = nullptr;
+    u_extrapolated_[0].data_ = nullptr;
+    u_extrapolated_[1].data_ = nullptr;
+    u_extrapolated_[2].data_ = nullptr;
+    u_extrapolated_[3].data_ = nullptr;
+    v_extrapolated_[0].data_ = nullptr;
+    v_extrapolated_[1].data_ = nullptr;
+    v_extrapolated_[2].data_ = nullptr;
+    v_extrapolated_[3].data_ = nullptr;
+
+    p_flux_.data_ = nullptr;
+    u_flux_.data_ = nullptr;
+    v_flux_.data_ = nullptr;
+    p_flux_derivative_.data_ = nullptr;
+    u_flux_derivative_.data_ = nullptr;
+    v_flux_derivative_.data_ = nullptr;
+
+    p_flux_extrapolated_[0].data_ = nullptr;
+    p_flux_extrapolated_[1].data_ = nullptr;
+    p_flux_extrapolated_[2].data_ = nullptr;
+    p_flux_extrapolated_[3].data_ = nullptr;
+    u_flux_extrapolated_[0].data_ = nullptr;
+    u_flux_extrapolated_[1].data_ = nullptr;
+    u_flux_extrapolated_[2].data_ = nullptr;
+    u_flux_extrapolated_[3].data_ = nullptr;
+    v_flux_extrapolated_[0].data_ = nullptr;
+    v_flux_extrapolated_[1].data_ = nullptr;
+    v_flux_extrapolated_[2].data_ = nullptr;
+    v_flux_extrapolated_[3].data_ = nullptr;
+    
+    p_intermediate_.data_ = nullptr;
+    u_intermediate_.data_ = nullptr;
+    v_intermediate_.data_ = nullptr;
+    spectrum_.data_ = nullptr;
+}

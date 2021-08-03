@@ -58,6 +58,19 @@ auto SEM::Entities::Face2D_t::resize_storage(int N) -> void {
 }
 
 __device__
+auto SEM::Entities::Face2D_t::clear_storage() -> void {
+    p_[0].data_ = nullptr;
+    p_[1].data_ = nullptr;
+    u_[0].data_ = nullptr;
+    u_[1].data_ = nullptr;
+    v_[0].data_ = nullptr;
+    v_[1].data_ = nullptr;
+    p_flux_.data_ = nullptr;
+    u_flux_.data_ = nullptr;
+    v_flux_.data_ = nullptr;
+}
+
+__device__
 auto SEM::Entities::Face2D_t::compute_geometry(const std::array<SEM::Entities::Vec2<deviceFloat>, 2>& elements_centres, const std::array<SEM::Entities::Vec2<deviceFloat>, 2>& nodes, const std::array<std::array<SEM::Entities::Vec2<deviceFloat>, 2>, 2>& element_nodes) -> void {
     const std::array<SEM::Entities::Vec2<deviceFloat>, 2> points {nodes[nodes_[0]], nodes[nodes_[1]]};
     

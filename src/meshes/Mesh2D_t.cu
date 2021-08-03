@@ -2718,6 +2718,8 @@ auto SEM::Meshes::p_adapt_move(size_t n_elements, Element2D_t* elements, Element
     
     for (size_t i = index; i < n_elements; i += stride) {
         elements_new_indices[i] = i;
+        new_elements[i].clear_storage();
+
         if (elements[i].would_p_refine(N_max)) {
             new_elements[i] = Element2D_t(elements[i].N_ + 2, elements[i].split_level_, elements[i].faces_, elements[i].nodes_);
 
@@ -2743,6 +2745,7 @@ auto SEM::Meshes::p_adapt_split_faces(size_t n_elements, size_t n_faces, size_t 
     for (size_t element_index = index; element_index < n_elements; element_index += stride) {
         Element2D_t& element = elements[element_index];
         elements_new_indices[element_index] = element_index;
+        new_elements[element_index].clear_storage();
 
         if (elements[element_index].would_p_refine(N_max)) {
            new_elements[element_index] = Element2D_t{element.N_ + 2, element.split_level_, element.faces_, element.nodes_};
@@ -2911,6 +2914,7 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, si
                 const std::array<size_t, 2> side_element_indices {element_index + side_index, element_index + next_side_index};
                 const std::array<size_t, 2> side_element_sides {next_side_index, previous_side_index};
                 
+                new_faces[new_face_index + side_index].clear_storage();
                 new_faces[new_face_index + side_index] = Face2D_t{element.N_, {new_node_indices[side_index], new_node_index}, side_element_indices, side_element_sides};
             
                 std::array<cuda_vector<size_t>, 4> new_element_faces {1, 1, 1, 1};
@@ -3194,6 +3198,7 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, si
                 new_element_node_indices[opposite_side_index] = new_node_index;
                 new_element_node_indices[previous_side_index] = new_node_indices[previous_side_index];
 
+                new_elements[element_index + side_index].clear_storage();
                 new_elements[element_index + side_index] = Element2D_t{element.N_, element.split_level_ + 1, new_element_faces, new_element_node_indices};
 
                 std::array<Vec2<deviceFloat>, 4> new_element_nodes {};
@@ -3227,6 +3232,7 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, si
         }
         // p refinement
         else if (element.would_p_refine(N_max)) {
+            new_elements[element_index].clear_storage();
             new_elements[element_index] = Element2D_t{element.N_ + 2, element.split_level_, element.faces_, element.nodes_};
 
             // Adjusting faces for splitting elements
@@ -3315,6 +3321,7 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, si
                 }
             }
 
+            new_elements[element_index].clear_storage();
             new_elements[element_index] = std::move(element);
         }
     }
@@ -3337,6 +3344,8 @@ auto SEM::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_splitting
         const Element2D_t& element_R = elements[element_R_index];
         const size_t element_L_new_index = elements_new_indices[element_L_index];
         const size_t element_R_new_index = elements_new_indices[element_R_index];
+
+        new_faces[face_index].clear_storage();
 
         if (face.refine_) {
             const size_t element_L_next_side_index = (element_L_side_index + 1 < element_L.nodes_.size()) ? element_L_side_index + 1 : 0;
@@ -3503,7 +3512,8 @@ auto SEM::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_splitting
             }
 
             const int face_N = std::max(element_L.N_ + 2 * element_L.would_p_refine(N_max), element_R.N_ + 2 * element_R.would_p_refine(N_max));
-
+            
+            new_faces[new_face_index].clear_storage();
             new_faces[face_index] = Face2D_t(face_N, {face.nodes_[0], new_node_index}, new_element_indices[0], face.elements_side_);
             new_faces[new_face_index] = Face2D_t(face_N, {new_node_index, face.nodes_[1]}, new_element_indices[1], face.elements_side_);
 
@@ -3737,6 +3747,7 @@ auto SEM::Meshes::split_boundaries(size_t n_boundaries, size_t n_faces, size_t n
 
             const Vec2<deviceFloat> new_node = (nodes[face.nodes_[0]] + nodes[face.nodes_[1]])/2;
 
+            new_elements[new_element_index].clear_storage();
             new_elements[new_element_index].N_ = destination_element.N_;
             new_elements[new_element_index].nodes_ = {destination_element.nodes_[0],
                                                       new_node_index,
@@ -3749,6 +3760,7 @@ auto SEM::Meshes::split_boundaries(size_t n_boundaries, size_t n_faces, size_t n
             new_elements[new_element_index].allocate_boundary_storage();
             new_elements[new_element_index].faces_[0][0] = new_face_index; // This should always be the case
 
+            new_elements[new_element_index + 1].clear_storage();
             new_elements[new_element_index + 1].N_ = destination_element.N_;
             new_elements[new_element_index + 1].nodes_ = {new_node_index,
                                                           destination_element.nodes_[1],
@@ -3794,6 +3806,7 @@ auto SEM::Meshes::split_boundaries(size_t n_boundaries, size_t n_faces, size_t n
                 destination_element.compute_boundary_geometry(points, polynomial_nodes);
             }
 
+            new_elements[new_element_index].clear_storage();
             new_elements[new_element_index] = std::move(destination_element);
         }
     }
@@ -3873,6 +3886,7 @@ auto SEM::Meshes::split_interfaces(size_t n_local_interfaces, size_t n_faces, si
                 }
             }
 
+            new_elements[new_element_index].clear_storage();
             new_elements[new_element_index].N_     = source_element.N_;
             new_elements[new_element_index].nodes_ = {destination_element.nodes_[0],
                                                       new_node_index,
@@ -3884,6 +3898,7 @@ auto SEM::Meshes::split_interfaces(size_t n_local_interfaces, size_t n_faces, si
             new_elements[new_element_index].additional_nodes_ = {false, false, false, false};
             new_elements[new_element_index].allocate_boundary_storage();
 
+            new_elements[new_element_index + 1].clear_storage();
             new_elements[new_element_index + 1].N_ = source_element.N_;
             new_elements[new_element_index + 1].nodes_ = {new_node_index,
                                                           destination_element.nodes_[1],
@@ -4204,6 +4219,7 @@ auto SEM::Meshes::split_interfaces(size_t n_local_interfaces, size_t n_faces, si
                 destination_element.compute_boundary_geometry(points, polynomial_nodes);
             }
 
+            new_elements[new_element_index].clear_storage();
             new_elements[new_element_index] = std::move(destination_element);
         }
     }
@@ -4271,6 +4287,7 @@ auto SEM::Meshes::split_mpi_interfaces(size_t n_MPI_interface_elements, size_t n
                 }
             }
 
+            new_elements[new_element_index].clear_storage();
             new_elements[new_element_index].N_     = N[mpi_interface_index];
             new_elements[new_element_index].nodes_ = {destination_element.nodes_[0],
                                                       new_node_index,
@@ -4282,6 +4299,7 @@ auto SEM::Meshes::split_mpi_interfaces(size_t n_MPI_interface_elements, size_t n
             new_elements[new_element_index].additional_nodes_ = {false, false, false, false};
             new_elements[new_element_index].allocate_boundary_storage();
 
+            new_elements[new_element_index + 1].clear_storage();
             new_elements[new_element_index + 1].N_ = N[mpi_interface_index];
             new_elements[new_element_index + 1].nodes_ = {new_node_index,
                                                           destination_element.nodes_[1],
@@ -4602,6 +4620,7 @@ auto SEM::Meshes::split_mpi_interfaces(size_t n_MPI_interface_elements, size_t n
                 destination_element.compute_boundary_geometry(points, polynomial_nodes);
             }
 
+            new_elements[new_element_index].clear_storage();
             new_elements[new_element_index] = std::move(destination_element);
         }
     }
@@ -4777,6 +4796,7 @@ auto SEM::Meshes::move_boundaries(size_t n_boundaries, Element2D_t* elements, El
             destination_element.resize_boundary_storage(N_element);
         }
 
+        new_elements[boundary_element_index].clear_storage();
         new_elements[boundary_element_index] = std::move(destination_element);
     }
 }
@@ -4796,6 +4816,7 @@ auto SEM::Meshes::move_interfaces(size_t n_local_interfaces, Element2D_t* elemen
             destination_element.resize_boundary_storage(source_element.N_);
         }
 
+        new_elements[destination_element_index].clear_storage();
         new_elements[destination_element_index] = std::move(elements[destination_element_index]);
     }
 }

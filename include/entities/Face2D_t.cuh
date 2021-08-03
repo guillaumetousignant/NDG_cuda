@@ -69,10 +69,16 @@ namespace SEM { namespace Entities {
             auto allocate_storage() -> void;
 
             /**
-             * @brief Changes the polynomial order of the face and creates new vectors with the new size..
+             * @brief Changes the polynomial order of the face and creates new vectors with the new size.
              */
             __device__
             auto resize_storage(int N) -> void;
+
+            /**
+             * @brief Sets the different vectors to null in case the face was not initialised.
+             */
+             __device__
+             auto clear_storage() -> void;
 
             /**
              * @brief Computes the face's geometry from elements and nodes.

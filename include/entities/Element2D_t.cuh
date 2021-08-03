@@ -117,6 +117,9 @@ namespace SEM { namespace Entities {
             __device__
             auto would_h_refine(int max_split_level) const -> bool;
 
+            __device__
+            auto clear_storage() -> void;
+
         private:
             __device__
             auto exponential_decay(int n_points_least_squares) -> std::array<deviceFloat, 2>;
