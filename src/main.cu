@@ -248,8 +248,8 @@ auto main(int argc, char* argv[]) -> int {
     auto t_start = std::chrono::high_resolution_clock::now();
 
     solver.solve(NDG, mesh, data_writer);
-    //mesh.print();
-    // Wait for GPU to finish before copying to host
+
+    // Wait for GPU to finish for timing
     cudaStreamSynchronize(stream);
 
     auto t_end = std::chrono::high_resolution_clock::now();
