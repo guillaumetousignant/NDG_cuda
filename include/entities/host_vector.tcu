@@ -3,7 +3,12 @@
 template <typename T>
 template<typename TI>
 SEM::Entities::host_vector<T>::host_vector(TI size) : size_(size) {
-    cudaMallocHost(&data_, size_ * sizeof(T));
+    if (size_ != 0) {
+        cudaMallocHost(&data_, size_ * sizeof(T));
+    }
+    else {
+        data_ = nullptr;
+    }
 }
 
 template <typename T>
@@ -21,8 +26,13 @@ SEM::Entities::host_vector<T>::~host_vector() {
 
 template <typename T>
 SEM::Entities::host_vector<T>::host_vector(const host_vector<T>& other) : size_(other.size()) { // copy constructor
-    cudaMallocHost(&data_, size_ * sizeof(T));
-    memcpy(data_, other.data(), size_ * sizeof(T));
+    if (size_ != 0) {
+        cudaMallocHost(&data_, size_ * sizeof(T));
+        memcpy(data_, other.data(), size_ * sizeof(T));
+    }
+    else {
+        data_ = nullptr;
+    }
 }
 
 template <typename T>
@@ -40,9 +50,16 @@ auto SEM::Entities::host_vector<T>::operator=(const host_vector<T>& other) -> ho
     if (size_ != other.size()) {
         cudaFreeHost(data_);
         size_ = other.size();
-        cudaMallocHost(&data_, size_ * sizeof(T));
+        if (size_ != 0) {
+            cudaMallocHost(&data_, size_ * sizeof(T));
+        }
+        else {
+            data_ = nullptr;
+        }
     }
-    memcpy(data_, other.data(), size_ * sizeof(T));
+    if (size_ != 0) {
+        memcpy(data_, other.data(), size_ * sizeof(T));
+    }
 
     return *this;
 }
