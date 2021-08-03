@@ -1583,7 +1583,7 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
         }
     }
 
-    n_elements_ += n_splitting_elements;
+    n_elements_ += 3 * n_splitting_elements;
 
     // Parallel sizings
     elements_numBlocks_ = (n_elements_ + elements_blockSize_ - 1) / elements_blockSize_;
