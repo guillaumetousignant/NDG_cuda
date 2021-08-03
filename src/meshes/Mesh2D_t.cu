@@ -2901,17 +2901,12 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, si
                 
                 new_faces[new_face_index + side_index] = Face2D_t{element.N_, {new_node_indices[side_index], new_node_index}, side_element_indices, side_element_sides};
             
-                std::array<cuda_vector<size_t>, 4> new_element_faces {0, 0, 0, 0};
-            
-                new_element_faces[next_side_index] = cuda_vector<size_t>(1);
-                new_element_faces[opposite_side_index] = cuda_vector<size_t>(1);
-
+                std::array<cuda_vector<size_t>, 4> new_element_faces {1, 1, 1, 1};
+                
                 new_element_faces[next_side_index][0] = side_index;
                 new_element_faces[opposite_side_index][0] = previous_side_index;
                 
                 if (element.additional_nodes_[side_index]) {
-                    new_element_faces[side_index] = cuda_vector<size_t>(1);
-    
                     const size_t face_index = element.faces_[side_index][0];
                     const int face_block_id = face_index/faces_blockSize;
                     const int face_thread_id = face_index%faces_blockSize;
@@ -3047,8 +3042,6 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, si
                 }
 
                 if (element.additional_nodes_[previous_side_index]) {
-                    new_element_faces[previous_side_index] = cuda_vector<size_t>(1);
-    
                     const size_t face_index = element.faces_[previous_side_index][0];
                     const int face_block_id = face_index/faces_blockSize;
                     const int face_thread_id = face_index%faces_blockSize;
