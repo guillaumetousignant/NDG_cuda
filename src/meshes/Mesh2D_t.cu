@@ -2256,9 +2256,9 @@ auto SEM::Meshes::project_to_elements(size_t n_elements, const Face2D_t* faces, 
                             
                             for (int i = 0; i <= element.N_; ++i) {
                                 if (SEM::Meshes::Mesh2D_t::almost_equal(coordinate, polynomial_nodes[offset_1D + i])) {
-                                    element.p_flux_extrapolated_[side_index][i] += weights[offset_1D_other + j]/weights[offset_1D + i] * face.p_flux_[j] * element.scaling_factor_[side_index][i];
-                                    element.u_flux_extrapolated_[side_index][i] += weights[offset_1D_other + j]/weights[offset_1D + i] * face.u_flux_[j] * element.scaling_factor_[side_index][i];
-                                    element.v_flux_extrapolated_[side_index][i] += weights[offset_1D_other + j]/weights[offset_1D + i] * face.v_flux_[j] * element.scaling_factor_[side_index][i];
+                                    element.p_flux_extrapolated_[side_index][i] += weights[offset_1D_other + j]/weights[offset_1D + i] * face.p_flux_[j] * element.scaling_factor_[side_index][i] * face.scale_[0];
+                                    element.u_flux_extrapolated_[side_index][i] += weights[offset_1D_other + j]/weights[offset_1D + i] * face.u_flux_[j] * element.scaling_factor_[side_index][i] * face.scale_[0];
+                                    element.v_flux_extrapolated_[side_index][i] += weights[offset_1D_other + j]/weights[offset_1D + i] * face.v_flux_[j] * element.scaling_factor_[side_index][i] * face.scale_[0];
                                     found_row = true;
                                     break;
                                 }
@@ -2272,9 +2272,9 @@ auto SEM::Meshes::project_to_elements(size_t n_elements, const Face2D_t* faces, 
                                 for (int i = 0; i <= element.N_; ++i) {
                                     const deviceFloat T = barycentric_weights[offset_1D + i]/((coordinate - polynomial_nodes[offset_1D + i]) * s);
 
-                                    element.p_flux_extrapolated_[side_index][i] += T * weights[offset_1D_other + j]/weights[offset_1D + i] * face.p_flux_[j] * element.scaling_factor_[side_index][i];
-                                    element.u_flux_extrapolated_[side_index][i] += T * weights[offset_1D_other + j]/weights[offset_1D + i] * face.u_flux_[j] * element.scaling_factor_[side_index][i];
-                                    element.v_flux_extrapolated_[side_index][i] += T * weights[offset_1D_other + j]/weights[offset_1D + i] * face.v_flux_[j] * element.scaling_factor_[side_index][i];
+                                    element.p_flux_extrapolated_[side_index][i] += T * weights[offset_1D_other + j]/weights[offset_1D + i] * face.p_flux_[j] * element.scaling_factor_[side_index][i] * face.scale_[0];
+                                    element.u_flux_extrapolated_[side_index][i] += T * weights[offset_1D_other + j]/weights[offset_1D + i] * face.u_flux_[j] * element.scaling_factor_[side_index][i] * face.scale_[0];
+                                    element.v_flux_extrapolated_[side_index][i] += T * weights[offset_1D_other + j]/weights[offset_1D + i] * face.v_flux_[j] * element.scaling_factor_[side_index][i] * face.scale_[0];
                                 }
                             }
                         }
@@ -2287,9 +2287,9 @@ auto SEM::Meshes::project_to_elements(size_t n_elements, const Face2D_t* faces, 
                             
                             for (int i = 0; i <= element.N_; ++i) {
                                 if (SEM::Meshes::Mesh2D_t::almost_equal(coordinate, polynomial_nodes[offset_1D + i])) {
-                                    element.p_flux_extrapolated_[side_index][i] += -weights[offset_1D_other + j]/weights[offset_1D + i] * face.p_flux_[j] * element.scaling_factor_[side_index][i];
-                                    element.u_flux_extrapolated_[side_index][i] += -weights[offset_1D_other + j]/weights[offset_1D + i] * face.u_flux_[j] * element.scaling_factor_[side_index][i];
-                                    element.v_flux_extrapolated_[side_index][i] += -weights[offset_1D_other + j]/weights[offset_1D + i] * face.v_flux_[j] * element.scaling_factor_[side_index][i];
+                                    element.p_flux_extrapolated_[side_index][i] += -weights[offset_1D_other + j]/weights[offset_1D + i] * face.p_flux_[j] * element.scaling_factor_[side_index][i] * face.scale_[1];
+                                    element.u_flux_extrapolated_[side_index][i] += -weights[offset_1D_other + j]/weights[offset_1D + i] * face.u_flux_[j] * element.scaling_factor_[side_index][i] * face.scale_[1];
+                                    element.v_flux_extrapolated_[side_index][i] += -weights[offset_1D_other + j]/weights[offset_1D + i] * face.v_flux_[j] * element.scaling_factor_[side_index][i] * face.scale_[1];
                                     found_row = true;
                                     break;
                                 }
@@ -2303,9 +2303,9 @@ auto SEM::Meshes::project_to_elements(size_t n_elements, const Face2D_t* faces, 
                                 for (int i = 0; i <= element.N_; ++i) {
                                     const deviceFloat T = barycentric_weights[offset_1D + i]/((coordinate - polynomial_nodes[offset_1D + i]) * s);
 
-                                    element.p_flux_extrapolated_[side_index][i] += -T * weights[offset_1D_other + j]/weights[offset_1D + i] * face.p_flux_[j] * element.scaling_factor_[side_index][i];
-                                    element.u_flux_extrapolated_[side_index][i] += -T * weights[offset_1D_other + j]/weights[offset_1D + i] * face.u_flux_[j] * element.scaling_factor_[side_index][i];
-                                    element.v_flux_extrapolated_[side_index][i] += -T * weights[offset_1D_other + j]/weights[offset_1D + i] * face.v_flux_[j] * element.scaling_factor_[side_index][i];
+                                    element.p_flux_extrapolated_[side_index][i] += -T * weights[offset_1D_other + j]/weights[offset_1D + i] * face.p_flux_[j] * element.scaling_factor_[side_index][i] * face.scale_[1];
+                                    element.u_flux_extrapolated_[side_index][i] += -T * weights[offset_1D_other + j]/weights[offset_1D + i] * face.u_flux_[j] * element.scaling_factor_[side_index][i] * face.scale_[1];
+                                    element.v_flux_extrapolated_[side_index][i] += -T * weights[offset_1D_other + j]/weights[offset_1D + i] * face.v_flux_[j] * element.scaling_factor_[side_index][i] * face.scale_[1];
                                 }
                             }
                         }
