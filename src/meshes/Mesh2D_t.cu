@@ -888,6 +888,9 @@ auto SEM::Meshes::Mesh2D_t::print() const -> void {
     std::vector<size_t> host_interfaces_origin(interfaces_origin_.size());
     std::vector<size_t> host_interfaces_origin_side(interfaces_origin_side_.size());
     std::vector<size_t> host_interfaces_destination(interfaces_destination_.size());
+    std::vector<size_t> host_mpi_interfaces_origin(mpi_interfaces_origin_.size());
+    std::vector<size_t> host_mpi_interfaces_origin_side(mpi_interfaces_origin_side_.size());
+    std::vector<size_t> host_mpi_interfaces_destination(mpi_interfaces_destination_.size());
     
     faces_.copy_to(host_faces, stream_);
     elements_.copy_to(host_elements, stream_);
@@ -899,6 +902,9 @@ auto SEM::Meshes::Mesh2D_t::print() const -> void {
     interfaces_origin_.copy_to(host_interfaces_origin, stream_);
     interfaces_origin_side_.copy_to(host_interfaces_origin_side, stream_);
     interfaces_destination_.copy_to(host_interfaces_destination, stream_);
+    mpi_interfaces_origin_.copy_to(host_mpi_interfaces_origin, stream_);
+    mpi_interfaces_origin_side_.copy_to(host_mpi_interfaces_origin_side, stream_);
+    mpi_interfaces_destination_.copy_to(host_mpi_interfaces_destination, stream_);
     cudaStreamSynchronize(stream_);
     
     std::cout << "N elements: " << n_elements_ << std::endl;
@@ -910,44 +916,45 @@ auto SEM::Meshes::Mesh2D_t::print() const -> void {
     std::cout << "N inflow boundaries: " << inflow_boundaries_.size() << std::endl;
     std::cout << "N outflow boundaries: " << outflow_boundaries_.size() << std::endl;
     std::cout << "N interfaces: " << interfaces_origin_.size() << std::endl;
+    std::cout << "N mpi interfaces: " << mpi_interfaces_origin_.size() << std::endl;
     std::cout << "Initial N: " << initial_N_ << std::endl;
 
     std::cout << std::endl <<  "Connectivity" << std::endl;
     std::cout << '\t' <<  "Nodes:" << std::endl;
     for (size_t i = 0; i < host_nodes.size(); ++i) {
-        std::cout << '\t' << '\t' << "node " << i << " : " << host_nodes[i] << std::endl;
+        std::cout << '\t' << '\t' << "node " << std::setw(6) << i << " : " << std::setw(6) << host_nodes[i] << std::endl;
     }
 
     std::cout << std::endl << '\t' <<  "Element nodes:" << std::endl;
     for (size_t i = 0; i < host_elements.size(); ++i) {
-        std::cout << '\t' << '\t' << "element " << i << " : ";
+        std::cout << '\t' << '\t' << "element " << std::setw(6) << i << " : ";
         for (auto node_index : host_elements[i].nodes_) {
-            std::cout << node_index << " ";
+            std::cout << std::setw(6) << node_index << " ";
         }
         std::cout << std::endl;
     }
 
     std::cout << std::endl << '\t' <<  "Face nodes:" << std::endl;
     for (size_t i = 0; i < host_faces.size(); ++i) {
-        std::cout << '\t' << '\t' << "face " << i << " : ";
+        std::cout << '\t' << '\t' << "face " << std::setw(6) << i << " : ";
         for (auto node_index : host_faces[i].nodes_) {
-            std::cout << node_index << " ";
+            std::cout << std::setw(6) << node_index << " ";
         }
         std::cout << std::endl;
     }
 
     std::cout << std::endl << '\t' <<  "Face elements:" << std::endl;
     for (size_t i = 0; i < host_faces.size(); ++i) {
-        std::cout << '\t' << '\t' << "face " << i << " : ";
+        std::cout << '\t' << '\t' << "face " << std::setw(6) << i << " : ";
         for (auto element_index : host_faces[i].elements_) {
-            std::cout << element_index << " ";
+            std::cout << std::setw(6) << element_index << " ";
         }
         std::cout << std::endl;
     }
 
     std::cout << std::endl << '\t' <<  "Face elements side:" << std::endl;
     for (size_t i = 0; i < host_faces.size(); ++i) {
-        std::cout << '\t' << '\t' << "face " << i << " : ";
+        std::cout << '\t' << '\t' << "face " << std::setw(6) << i << " : ";
         for (auto side_index : host_faces[i].elements_side_) {
             std::cout << side_index << " ";
         }
@@ -957,58 +964,81 @@ auto SEM::Meshes::Mesh2D_t::print() const -> void {
     std::cout << std::endl <<  "Geometry" << std::endl;
     std::cout << '\t' <<  "Element min length:" << std::endl;
     for (size_t i = 0; i < host_elements.size(); ++i) {
-        std::cout << '\t' << '\t' << "element " << i << " : " << host_elements[i].delta_xy_min_ << std::endl;
+        std::cout << '\t' << '\t' << "element " << std::setw(6) << i << " : " << host_elements[i].delta_xy_min_ << std::endl;
     }
 
     std::cout << std::endl << '\t' <<  "Element N:" << std::endl;
     for (size_t i = 0; i < host_elements.size(); ++i) {
-        std::cout << '\t' << '\t' << "element " << i << " : " << host_elements[i].N_ << std::endl;
+        std::cout << '\t' << '\t' << "element " << std::setw(6) << i << " : " << host_elements[i].N_ << std::endl;
     }
     
     std::cout << std::endl << '\t' <<  "Face N:" << std::endl;
     for (size_t i = 0; i < host_faces.size(); ++i) {
-        std::cout << '\t' << '\t' << "face " << i << " : " << host_faces[i].N_ << std::endl;
+        std::cout << '\t' << '\t' << "face " << std::setw(6) << i << " : " << host_faces[i].N_ << std::endl;
     }
 
     std::cout << std::endl << '\t' <<  "Face length:" << std::endl;
     for (size_t i = 0; i < host_faces.size(); ++i) {
-        std::cout << '\t' << '\t' << "face " << i << " : " << host_faces[i].length_ << std::endl;
+        std::cout << '\t' << '\t' << "face " << std::setw(6) << i << " : " << host_faces[i].length_ << std::endl;
     }
 
     std::cout << std::endl << '\t' <<  "Face normal:" << std::endl;
     for (size_t i = 0; i < host_faces.size(); ++i) {
-        std::cout << '\t' << '\t' << "face " << i << " : " << host_faces[i].normal_ << std::endl;
+        std::cout << '\t' << '\t' << "face " << std::setw(6) << i << " : " << host_faces[i].normal_ << std::endl;
     }
 
     std::cout << std::endl << '\t' <<  "Face tangent:" << std::endl;
     for (size_t i = 0; i < host_faces.size(); ++i) {
-        std::cout << '\t' << '\t' << "face " << i << " : " << host_faces[i].tangent_ << std::endl;
+        std::cout << '\t' << '\t' << "face " << std::setw(6) << i << " : " << host_faces[i].tangent_ << std::endl;
+    }
+
+    std::cout << std::endl << '\t' <<  "Face offset:" << std::endl;
+    for (size_t i = 0; i < host_faces.size(); ++i) {
+        std::cout << '\t' << '\t' << "face " << std::setw(6) << i << " : " << std::setw(6) << host_faces[i].offset_[0] << " " << std::setw(6) << host_faces[i].offset_[1] << std::endl;
+    }
+
+    std::cout << std::endl << '\t' <<  "Face scale:" << std::endl;
+    for (size_t i = 0; i < host_faces.size(); ++i) {
+        std::cout << '\t' << '\t' << "face " << std::setw(6) << i << " : " << std::setw(6) << host_faces[i].scale_[0] << " " << std::setw(6) << host_faces[i].scale_[1] << std::endl;
+    }
+
+    std::cout << std::endl << '\t' <<  "Face refine:" << std::endl;
+    for (size_t i = 0; i < host_faces.size(); ++i) {
+        std::cout << '\t' << '\t' << "face " << std::setw(6) << i << " : " << host_faces[i].refine_ << std::endl;
     }
 
     std::cout << std::endl <<  "Interfaces" << std::endl;
     std::cout << '\t' <<  "Interface destination, origin and origin side:" << std::endl;
     for (size_t i = 0; i < host_interfaces_origin.size(); ++i) {
-        std::cout << '\t' << '\t' << "interface " << i << " : " << host_interfaces_destination[i] << " " << host_interfaces_origin[i] << " " << host_interfaces_origin_side[i] << std::endl;
+        std::cout << '\t' << '\t' << "interface " << std::setw(6) << i << " : " << std::setw(6) << host_interfaces_destination[i] << " " << std::setw(6) << host_interfaces_origin[i] << " " << std::setw(6) << host_interfaces_origin_side[i] << std::endl;
+    }
+
+    std::cout << '\t' <<  "MPI interface destination, origin and origin side:" << std::endl;
+    for (size_t j = 0; j < mpi_interfaces_size_.size(); ++j) {
+        std::cout << '\t' << '\t' << "MPI interface to process " << mpi_interfaces_process_[j] << " of size " << mpi_interfaces_size_[j] << " and offset " << mpi_interfaces_offset_[j] << ":" << std::endl;
+        for (size_t i = 0; i < mpi_interfaces_size_[j]; ++i) {
+            std::cout << '\t' << '\t'  << '\t' << "mpi interface " << std::setw(6) << i << " : " << std::setw(6) << host_mpi_interfaces_destination[mpi_interfaces_offset_[j] + i] << " " << std::setw(6) << host_mpi_interfaces_origin[mpi_interfaces_offset_[j] + i] << " " << std::setw(6) << host_mpi_interfaces_origin_side[mpi_interfaces_offset_[j] + i] << std::endl;
+        }
     }
 
     std::cout << std::endl << '\t' <<  "Wall boundaries:" << std::endl;
     for (size_t i = 0; i < host_wall_boundaries.size(); ++i) {
-        std::cout << '\t' << '\t' << "wall " << i << " : " << host_wall_boundaries[i] << std::endl;
+        std::cout << '\t' << '\t' << "wall " << std::setw(6) << i << " : " << std::setw(6) << host_wall_boundaries[i] << std::endl;
     }
 
     std::cout << std::endl << '\t' <<  "Symmetry boundaries:" << std::endl;
     for (size_t i = 0; i < host_symmetry_boundaries.size(); ++i) {
-        std::cout << '\t' << '\t' << "symmetry " << i << " : " << host_symmetry_boundaries[i] << std::endl;
+        std::cout << '\t' << '\t' << "symmetry " << std::setw(6) << i << " : " << std::setw(6) << host_symmetry_boundaries[i] << std::endl;
     }
 
     std::cout << std::endl << '\t' <<  "Inflow boundaries:" << std::endl;
     for (size_t i = 0; i < host_inflow_boundaries.size(); ++i) {
-        std::cout << '\t' << '\t' << "inflow " << i << " : " << host_inflow_boundaries[i] << std::endl;
+        std::cout << '\t' << '\t' << "inflow " << std::setw(6) << i << " : " << std::setw(6) << host_inflow_boundaries[i] << std::endl;
     }
 
     std::cout << std::endl << '\t' <<  "Outflow boundaries:" << std::endl;
     for (size_t i = 0; i < host_outflow_boundaries.size(); ++i) {
-        std::cout << '\t' << '\t' << "outflow " << i << " : " << host_outflow_boundaries[i] << std::endl;
+        std::cout << '\t' << '\t' << "outflow " << std::setw(6) << i << " : " << std::setw(6) << host_outflow_boundaries[i] << std::endl;
     }
 
     std::cout << std::endl;
