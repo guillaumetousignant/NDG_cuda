@@ -3079,8 +3079,8 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, si
             
                 std::array<cuda_vector<size_t>, 4> new_element_faces {1, 1, 1, 1};
                 
-                new_element_faces[next_side_index][0] = side_index;
-                new_element_faces[opposite_side_index][0] = previous_side_index;
+                new_element_faces[next_side_index][0] = new_face_index + side_index;
+                new_element_faces[opposite_side_index][0] = new_face_index + previous_side_index;
                 
                 if (element.additional_nodes_[side_index]) {
                     const size_t face_index = element.faces_[side_index][0];
