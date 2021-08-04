@@ -12,6 +12,7 @@
 #include <filesystem>
 #include <algorithm>
 #include <limits>
+#include <cmath>
 
 namespace fs = std::filesystem;
 
@@ -736,7 +737,8 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     allocate_face_storage<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces_.size(), faces_.data());
 
     device_vector<std::array<size_t, 4>> device_element_to_face(element_to_face, stream_);
-    fill_element_faces<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(elements_.size(), elements_.data(), device_element_to_face.data());
+    fill_element_faces<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, elements_.data(), device_element_to_face.data());
+    fill_boundary_element_faces<<<ghosts_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, elements_.size(), elements_.data(), device_element_to_face.data());
     device_element_to_face.clear(stream_);
 
     // Allocating output arrays
@@ -875,6 +877,107 @@ auto SEM::Meshes::Mesh2D_t::build_faces(size_t n_elements_domain, size_t n_nodes
 
 auto SEM::Meshes::Mesh2D_t::initial_conditions(const device_vector<deviceFloat>& polynomial_nodes) -> void {
     initial_conditions_2D<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, elements_.data(), nodes_.data(), polynomial_nodes.data());
+}
+
+__global__
+auto SEM::Meshes::print_element_faces(size_t n_elements, const Element2D_t* elements) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+    
+    for (size_t element_index = index; element_index < n_elements; element_index += stride) {
+        const Element2D_t& element = elements[element_index];
+
+        constexpr size_t max_string_size = 100;
+        char faces_string[4][max_string_size + 1]; // CHECK this only works for quadrilaterals
+
+        faces_string[0][0] = '\0';
+        faces_string[1][0] = '\0';
+        faces_string[2][0] = '\0';
+        faces_string[3][0] = '\0';
+
+        for (size_t j = 0; j < element.faces_.size(); ++j) {
+            for (size_t i = 0; i < element.faces_[j].size(); ++i) {
+                size_t current_size = max_string_size + 1;
+                for (size_t k = 0; k < max_string_size + 1; ++k) {
+                    if (faces_string[j][k] == '\0') {
+                        current_size = k;
+                        break;
+                    }
+                }
+
+                size_t face_index =  element.faces_[j][i];
+                size_t number_size = 1;
+                while (face_index/static_cast<size_t>(std::pow(10, number_size)) > 0) {
+                    ++number_size;
+                }
+
+                faces_string[j][current_size] = ' ';
+                size_t exponent = number_size - 1;
+                size_t remainder = face_index;
+                for (size_t k = 0; k < number_size; ++k) {
+                    const size_t number = remainder/static_cast<size_t>(std::pow(10, exponent));
+                    if (current_size + k + 1 < max_string_size) {
+                        faces_string[j][current_size + k + 1] = static_cast<char>(number) + '0';
+                    }
+                    remainder -= number * static_cast<size_t>(std::pow(10, exponent));
+                    --exponent;
+                }
+
+                faces_string[j][std::min(current_size + number_size + 1, max_string_size)] = '\0';
+            }
+        }
+
+
+        printf("\tElement %llu has:\n\t\tBottom faces:%s\n\t\tRight faces:%s\n\t\tTop faces:%s\n\t\tLeft faces:%s\n", element_index, faces_string[0], faces_string[1], faces_string[2], faces_string[3]);
+    }
+}
+
+__global__
+auto SEM::Meshes::print_boundary_element_faces(size_t n_domain_elements, size_t n_total_elements, const Element2D_t* elements) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+    
+    for (size_t element_index = index + n_domain_elements; element_index < n_total_elements; element_index += stride) {
+        const Element2D_t& element = elements[element_index];
+
+        constexpr size_t max_string_size = 100;
+        char faces_string[max_string_size + 1];
+
+        faces_string[0] = '\0';
+
+        for (size_t i = 0; i < element.faces_[0].size(); ++i) {
+            size_t current_size = max_string_size + 1;
+            for (size_t k = 0; k < max_string_size + 1; ++k) {
+                if (faces_string[k] == '\0') {
+                    current_size = k;
+                    break;
+                }
+            }
+
+            size_t face_index =  element.faces_[0][i];
+            size_t number_size = 1;
+            while (face_index/static_cast<size_t>(std::pow(10, number_size)) > 0) {
+                ++number_size;
+            }
+
+            faces_string[current_size] = ' ';
+            size_t exponent = number_size - 1;
+            size_t remainder = face_index;
+            for (size_t k = 0; k < number_size; ++k) {
+                const size_t number = remainder/static_cast<size_t>(std::pow(10, exponent));
+                if (current_size + k + 1 < max_string_size) {
+                    faces_string[current_size + k + 1] = static_cast<char>(number) + '0';
+                }
+                remainder -= number * static_cast<size_t>(std::pow(10, exponent));
+                --exponent;
+            }
+
+            faces_string[std::min(current_size + number_size + 1, max_string_size)] = '\0';
+        }
+
+
+        printf("\tElement %llu has:\n\t\tFaces:%s\n", element_index, faces_string);
+    }
 }
 
 auto SEM::Meshes::Mesh2D_t::print() const -> void {
@@ -1041,6 +1144,11 @@ auto SEM::Meshes::Mesh2D_t::print() const -> void {
         std::cout << '\t' << '\t' << "outflow " << std::setw(6) << i << " : " << std::setw(6) << host_outflow_boundaries[i] << std::endl;
     }
 
+    std::cout << std::endl <<  "Element faces:" << std::endl;
+    SEM::Meshes::print_element_faces<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, elements_.data());
+    SEM::Meshes::print_boundary_element_faces<<<ghosts_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, elements_.size(), elements_.data());
+
+    cudaStreamSynchronize(stream_);
     std::cout << std::endl;
 }
 
@@ -1851,6 +1959,16 @@ auto SEM::Meshes::fill_element_faces(size_t n_elements, Element2D_t* elements, c
         for (size_t j = 0; j < elements[element_index].faces_.size(); ++j) {
             elements[element_index].faces_[j][0] = element_to_face[element_index][j];
         }
+    }
+}
+
+__global__
+auto SEM::Meshes::fill_boundary_element_faces(size_t n_domain_elements, size_t n_total_elements, Element2D_t* elements, const std::array<size_t, 4>* element_to_face) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t element_index = index + n_domain_elements; element_index < n_total_elements; element_index += stride) {
+        elements[element_index].faces_[0][0] = element_to_face[element_index][0];
     }
 }
 

@@ -185,6 +185,9 @@ namespace SEM { namespace Meshes {
     auto fill_element_faces(size_t n_elements, SEM::Entities::Element2D_t* elements, const std::array<size_t, 4>* element_to_face) -> void;
 
     __global__
+    auto fill_boundary_element_faces(size_t n_domain_elements, size_t n_total_elements, SEM::Entities::Element2D_t* elements, const std::array<size_t, 4>* element_to_face) -> void;
+
+    __global__
     auto compute_face_geometry(size_t n_faces, SEM::Entities::Face2D_t* faces, const SEM::Entities::Element2D_t* elements, const SEM::Entities::Vec2<deviceFloat>* nodes) -> void;
 
     __global__
@@ -295,6 +298,12 @@ namespace SEM { namespace Meshes {
 
     __global__
     auto move_interfaces(size_t n_local_interfaces, SEM::Entities::Element2D_t* elements, SEM::Entities::Element2D_t* new_elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_destination, size_t* elements_new_indices) -> void;
+
+    __global__
+    auto print_element_faces(size_t n_elements, const SEM::Entities::Element2D_t* elements) -> void;
+
+    __global__
+    auto print_boundary_element_faces(size_t n_domain_elements, size_t n_total_elements, const SEM::Entities::Element2D_t* elements) -> void;
 
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>

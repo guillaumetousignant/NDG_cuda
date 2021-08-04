@@ -657,9 +657,9 @@ auto SEM::Entities::Element2D_t::allocate_storage() -> void {
 __device__
 auto SEM::Entities::Element2D_t::allocate_boundary_storage() -> void {
     faces_ = {cuda_vector<size_t>(1),
-              cuda_vector<size_t>(1),
-              cuda_vector<size_t>(1),
-              cuda_vector<size_t>(1)};
+              cuda_vector<size_t>(),
+              cuda_vector<size_t>(),
+              cuda_vector<size_t>()};
 
     p_extrapolated_ = {cuda_vector<deviceFloat>(N_ + 1),
                        cuda_vector<deviceFloat>(),
