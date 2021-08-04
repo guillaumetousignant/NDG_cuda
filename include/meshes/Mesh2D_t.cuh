@@ -261,6 +261,9 @@ namespace SEM { namespace Meshes {
     auto no_new_nodes(size_t n_elements, SEM::Entities::Element2D_t* elements) -> void;
 
     __global__
+    auto copy_boundaries_error(size_t n_boundaries, SEM::Entities::Element2D_t* elements, const size_t* boundaries, const SEM::Entities::Face2D_t* faces) -> void;
+
+    __global__
     auto copy_interfaces_error(size_t n_local_interfaces, SEM::Entities::Element2D_t* elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_origin_side, const size_t* local_interfaces_destination) -> void;
     
     __global__

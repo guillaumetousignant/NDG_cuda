@@ -1405,6 +1405,18 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
     if (!interfaces_origin_.empty()) {
         SEM::Meshes::copy_interfaces_error<<<interfaces_numBlocks_, boundaries_blockSize_, 0, stream_>>>(interfaces_origin_.size(), elements_.data(), interfaces_origin_.data(), interfaces_origin_side_.data(), interfaces_destination_.data());
     }
+    if (!wall_boundaries_.empty()) {
+        SEM::Meshes::copy_boundaries_error<<<wall_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(wall_boundaries_.size(), elements_.data(), wall_boundaries_.data(), faces_.data());
+    }
+    if (!symmetry_boundaries_.empty()) {
+        SEM::Meshes::copy_boundaries_error<<<symmetry_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(symmetry_boundaries_.size(), elements_.data(), symmetry_boundaries_.data(), faces_.data());
+    }
+    if (!inflow_boundaries_.empty()) {
+        SEM::Meshes::copy_boundaries_error<<<inflow_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(inflow_boundaries_.size(), elements_.data(), inflow_boundaries_.data(), faces_.data());
+    }
+    if (!outflow_boundaries_.empty()) {
+        SEM::Meshes::copy_boundaries_error<<<outflow_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(outflow_boundaries_.size(), elements_.data(), outflow_boundaries_.data(), faces_.data());
+    }
 
     SEM::Meshes::reduce_faces_refine_2D<faces_blockSize_/2><<<faces_numBlocks_, faces_blockSize_/2, 0, stream_>>>(faces_.size(), max_split_level_, faces_.data(), elements_.data(), device_faces_refine_array_.data());
     device_faces_refine_array_.copy_to(host_faces_refine_array_, stream_);
@@ -3638,6 +3650,34 @@ auto SEM::Meshes::no_new_nodes(size_t n_elements, Element2D_t* elements) -> void
     
     for (size_t i = index; i < n_elements; i += stride) {
         elements[i].additional_nodes_ = {false, false, false, false};
+    }
+}
+
+__global__
+auto SEM::Meshes::copy_boundaries_error(size_t n_boundaries, Element2D_t* elements, const size_t* boundaries, const Face2D_t* faces) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t boundary_index = index; boundary_index < n_boundaries; boundary_index += stride) {
+        const size_t destination_element_index = boundaries[boundary_index];
+        Element2D_t& destination_element = elements[destination_element_index];
+
+        if (destination_element.faces_[0].size() == 1) { // Should always be the case 
+            const Face2D_t face = faces[destination_element.faces_[0][0]];
+            const size_t face_side = face.elements_[0] == destination_element_index;
+            const Element2D_t& source_element = elements[face.elements_[face_side]];
+            const size_t element_side = face.elements_side_[face_side];
+
+            destination_element.additional_nodes_[0] = source_element.additional_nodes_[element_side];
+            destination_element.refine_ = source_element.refine_;
+            destination_element.coarsen_ = source_element.coarsen_;
+            destination_element.p_error_ = source_element.p_error_;
+            destination_element.u_error_ = source_element.u_error_;
+            destination_element.v_error_ = source_element.v_error_;
+            destination_element.p_sigma_ = source_element.p_sigma_;
+            destination_element.u_sigma_ = source_element.u_sigma_;
+            destination_element.v_sigma_ = source_element.v_sigma_;
+        }
     }
 }
 
