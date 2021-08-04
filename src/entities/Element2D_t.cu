@@ -374,12 +374,18 @@ auto SEM::Entities::Element2D_t::interpolate_from(const std::array<Vec2<deviceFl
                 p_[i * (N_ + 1) + j] = other.p_[column_found * (other.N_ + 1) + row_found];
                 u_[i * (N_ + 1) + j] = other.u_[column_found * (other.N_ + 1) + row_found];
                 v_[i * (N_ + 1) + j] = other.v_[column_found * (other.N_ + 1) + row_found]; 
+                G_p_[i * (N_ + 1) + j] = other.G_p_[column_found * (other.N_ + 1) + row_found];
+                G_u_[i * (N_ + 1) + j] = other.G_u_[column_found * (other.N_ + 1) + row_found];
+                G_v_[i * (N_ + 1) + j] = other.G_v_[column_found * (other.N_ + 1) + row_found]; 
             }
             // A row fits exactly
             else if (row_found != -1) {
                 deviceFloat p_numerator = 0.0;
                 deviceFloat u_numerator = 0.0;
                 deviceFloat v_numerator = 0.0;
+                deviceFloat G_p_numerator = 0.0;
+                deviceFloat G_u_numerator = 0.0;
+                deviceFloat G_v_numerator = 0.0;
                 deviceFloat denominator = 0.0;
 
                 for (int m = 0; m <= other.N_; ++m) {
@@ -387,18 +393,27 @@ auto SEM::Entities::Element2D_t::interpolate_from(const std::array<Vec2<deviceFl
                     p_numerator += t * other.p_[m * (other.N_ + 1) + row_found];
                     u_numerator += t * other.u_[m * (other.N_ + 1) + row_found];
                     v_numerator += t * other.v_[m * (other.N_ + 1) + row_found];
+                    G_p_numerator += t * other.G_p_[m * (other.N_ + 1) + row_found];
+                    G_u_numerator += t * other.G_u_[m * (other.N_ + 1) + row_found];
+                    G_v_numerator += t * other.G_v_[m * (other.N_ + 1) + row_found];
                     denominator += t;
                 }
 
                 p_[i * (N_ + 1) + j] = p_numerator/denominator;
                 u_[i * (N_ + 1) + j] = u_numerator/denominator;
                 v_[i * (N_ + 1) + j] = v_numerator/denominator;
+                G_p_[i * (N_ + 1) + j] = G_p_numerator/denominator;
+                G_u_[i * (N_ + 1) + j] = G_u_numerator/denominator;
+                G_v_[i * (N_ + 1) + j] = G_v_numerator/denominator;
             }
             // A column fits exactly
             else if (column_found != -1) {
                 deviceFloat p_numerator = 0.0;
                 deviceFloat u_numerator = 0.0;
                 deviceFloat v_numerator = 0.0;
+                deviceFloat G_p_numerator = 0.0;
+                deviceFloat G_u_numerator = 0.0;
+                deviceFloat G_v_numerator = 0.0;
                 deviceFloat denominator = 0.0;
 
                 for (int n = 0; n <= other.N_; ++n) {
@@ -406,19 +421,28 @@ auto SEM::Entities::Element2D_t::interpolate_from(const std::array<Vec2<deviceFl
                     p_numerator += t * other.p_[column_found * (other.N_ + 1) + n];
                     u_numerator += t * other.u_[column_found * (other.N_ + 1) + n];
                     v_numerator += t * other.v_[column_found * (other.N_ + 1) + n];
+                    G_p_numerator += t * other.G_p_[column_found * (other.N_ + 1) + n];
+                    G_u_numerator += t * other.G_u_[column_found * (other.N_ + 1) + n];
+                    G_v_numerator += t * other.G_v_[column_found * (other.N_ + 1) + n];
                     denominator += t;
                 }
                 
                 p_[i * (N_ + 1) + j] = p_numerator/denominator;
                 u_[i * (N_ + 1) + j] = u_numerator/denominator;
                 v_[i * (N_ + 1) + j] = v_numerator/denominator;
+                G_p_[i * (N_ + 1) + j] = G_p_numerator/denominator;
+                G_u_[i * (N_ + 1) + j] = G_u_numerator/denominator;
+                G_v_[i * (N_ + 1) + j] = G_v_numerator/denominator;
             }
             // Complete interpolation
             else {
                 p_[i * (N_ + 1) + j] = 0;
                 u_[i * (N_ + 1) + j] = 0;
                 v_[i * (N_ + 1) + j] = 0;
-                
+                G_p_[i * (N_ + 1) + j] = 0;
+                G_u_[i * (N_ + 1) + j] = 0;
+                G_v_[i * (N_ + 1) + j] = 0;
+
                 deviceFloat denominator_x = 0.0;
                 deviceFloat denominator_y = 0.0;
 
@@ -435,6 +459,9 @@ auto SEM::Entities::Element2D_t::interpolate_from(const std::array<Vec2<deviceFl
                         p_[i * (N_ + 1) + j] += other.p_[m * (other.N_ + 1) + n] * t_x * t_y;
                         u_[i * (N_ + 1) + j] += other.u_[m * (other.N_ + 1) + n] * t_x * t_y;
                         v_[i * (N_ + 1) + j] += other.v_[m * (other.N_ + 1) + n] * t_x * t_y;
+                        G_p_[i * (N_ + 1) + j] += other.G_p_[m * (other.N_ + 1) + n] * t_x * t_y;
+                        G_u_[i * (N_ + 1) + j] += other.G_u_[m * (other.N_ + 1) + n] * t_x * t_y;
+                        G_v_[i * (N_ + 1) + j] += other.G_v_[m * (other.N_ + 1) + n] * t_x * t_y;
                     }
                 }
             }  
@@ -468,12 +495,18 @@ auto SEM::Entities::Element2D_t::interpolate_from(const SEM::Entities::Element2D
                 p_[i * (N_ + 1) + j] = other.p_[column_found * (other.N_ + 1) + row_found];
                 u_[i * (N_ + 1) + j] = other.u_[column_found * (other.N_ + 1) + row_found];
                 v_[i * (N_ + 1) + j] = other.v_[column_found * (other.N_ + 1) + row_found]; 
+                G_p_[i * (N_ + 1) + j] = other.G_p_[column_found * (other.N_ + 1) + row_found];
+                G_u_[i * (N_ + 1) + j] = other.G_u_[column_found * (other.N_ + 1) + row_found];
+                G_v_[i * (N_ + 1) + j] = other.G_v_[column_found * (other.N_ + 1) + row_found]; 
             }
             // A row fits exactly
             else if (row_found != -1) {
                 deviceFloat p_numerator = 0.0;
                 deviceFloat u_numerator = 0.0;
                 deviceFloat v_numerator = 0.0;
+                deviceFloat G_p_numerator = 0.0;
+                deviceFloat G_u_numerator = 0.0;
+                deviceFloat G_v_numerator = 0.0;
                 deviceFloat denominator = 0.0;
 
                 for (int m = 0; m <= other.N_; ++m) {
@@ -481,18 +514,27 @@ auto SEM::Entities::Element2D_t::interpolate_from(const SEM::Entities::Element2D
                     p_numerator += t * other.p_[m * (other.N_ + 1) + row_found];
                     u_numerator += t * other.u_[m * (other.N_ + 1) + row_found];
                     v_numerator += t * other.v_[m * (other.N_ + 1) + row_found];
+                    G_p_numerator += t * other.G_p_[m * (other.N_ + 1) + row_found];
+                    G_u_numerator += t * other.G_u_[m * (other.N_ + 1) + row_found];
+                    G_v_numerator += t * other.G_v_[m * (other.N_ + 1) + row_found];
                     denominator += t;
                 }
 
                 p_[i * (N_ + 1) + j] = p_numerator/denominator;
                 u_[i * (N_ + 1) + j] = u_numerator/denominator;
                 v_[i * (N_ + 1) + j] = v_numerator/denominator;
+                G_p_[i * (N_ + 1) + j] = G_p_numerator/denominator;
+                G_u_[i * (N_ + 1) + j] = G_u_numerator/denominator;
+                G_v_[i * (N_ + 1) + j] = G_v_numerator/denominator;
             }
             // A column fits exactly
             else if (column_found != -1) {
                 deviceFloat p_numerator = 0.0;
                 deviceFloat u_numerator = 0.0;
                 deviceFloat v_numerator = 0.0;
+                deviceFloat G_p_numerator = 0.0;
+                deviceFloat G_u_numerator = 0.0;
+                deviceFloat G_v_numerator = 0.0;
                 deviceFloat denominator = 0.0;
 
                 for (int n = 0; n <= other.N_; ++n) {
@@ -500,18 +542,27 @@ auto SEM::Entities::Element2D_t::interpolate_from(const SEM::Entities::Element2D
                     p_numerator += t * other.p_[column_found * (other.N_ + 1) + n];
                     u_numerator += t * other.u_[column_found * (other.N_ + 1) + n];
                     v_numerator += t * other.v_[column_found * (other.N_ + 1) + n];
+                    G_p_numerator += t * other.G_p_[column_found * (other.N_ + 1) + n];
+                    G_u_numerator += t * other.G_u_[column_found * (other.N_ + 1) + n];
+                    G_v_numerator += t * other.G_v_[column_found * (other.N_ + 1) + n];
                     denominator += t;
                 }
                 
                 p_[i * (N_ + 1) + j] = p_numerator/denominator;
                 u_[i * (N_ + 1) + j] = u_numerator/denominator;
                 v_[i * (N_ + 1) + j] = v_numerator/denominator;
+                G_p_[i * (N_ + 1) + j] = G_p_numerator/denominator;
+                G_u_[i * (N_ + 1) + j] = G_u_numerator/denominator;
+                G_v_[i * (N_ + 1) + j] = G_v_numerator/denominator;
             }
             // Complete interpolation
             else {
                 p_[i * (N_ + 1) + j] = 0;
                 u_[i * (N_ + 1) + j] = 0;
                 v_[i * (N_ + 1) + j] = 0;
+                G_p_[i * (N_ + 1) + j] = 0;
+                G_u_[i * (N_ + 1) + j] = 0;
+                G_v_[i * (N_ + 1) + j] = 0;
 
                 deviceFloat denominator_x = 0.0;
                 deviceFloat denominator_y = 0.0;
@@ -529,6 +580,9 @@ auto SEM::Entities::Element2D_t::interpolate_from(const SEM::Entities::Element2D
                         p_[i * (N_ + 1) + j] += other.p_[m * (other.N_ + 1) + n] * t_x * t_y;
                         u_[i * (N_ + 1) + j] += other.u_[m * (other.N_ + 1) + n] * t_x * t_y;
                         v_[i * (N_ + 1) + j] += other.v_[m * (other.N_ + 1) + n] * t_x * t_y;
+                        G_p_[i * (N_ + 1) + j] += other.G_p_[m * (other.N_ + 1) + n] * t_x * t_y;
+                        G_u_[i * (N_ + 1) + j] += other.G_u_[m * (other.N_ + 1) + n] * t_x * t_y;
+                        G_v_[i * (N_ + 1) + j] += other.G_v_[m * (other.N_ + 1) + n] * t_x * t_y;
                     }
                 }
             }  
