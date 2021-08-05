@@ -3686,78 +3686,116 @@ auto SEM::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_splitting
             new_faces[new_face_index].compute_geometry(elements_centres[1], face_nodes[1], elements_nodes[1]);
         }
         else {
-            std::array<size_t, 2> face_new_element_indices = {element_L_new_index, element_R_new_index};
-            if (element_L.would_h_refine(max_split_level)) {
-                const size_t next_side_index = (element_L_side_index + 1 < element_L.faces_.size()) ? element_L_side_index + 1 : 0;
-                const std::array<Vec2<deviceFloat>, 2> element_nodes {nodes[element_L.nodes_[element_L_side_index]], nodes[element_L.nodes_[next_side_index]]};
-                const Vec2<deviceFloat> new_element_node = (element_nodes[0] + element_nodes[1])/2;
-
-                const std::array<Vec2<deviceFloat>, 2> AB {new_element_node - element_nodes[0], element_nodes[1] - new_element_node};
-                const std::array<deviceFloat, 2> AB_dot_inv  {1/AB[0].dot(AB[0]), 1/AB[1].dot(AB[1])};
-
-                const std::array<Vec2<deviceFloat>, 2> AC {nodes[face.nodes_[0]] - element_nodes[0], nodes[face.nodes_[0]] - new_element_node};
-                const std::array<Vec2<deviceFloat>, 2> AD {nodes[face.nodes_[1]] - element_nodes[0], nodes[face.nodes_[1]] - new_element_node};
-
-                const std::array<deviceFloat, 2> C_proj {AC[0].dot(AB[0]) * AB_dot_inv[0], AC[1].dot(AB[1]) * AB_dot_inv[1]};
-                const std::array<deviceFloat, 2> D_proj {AD[0].dot(AB[0]) * AB_dot_inv[0], AD[1].dot(AB[1]) * AB_dot_inv[1]};
-
-                // The face is within the first element
-                if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                    && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
-
-                    face_new_element_indices[0] += element_L_side_index;
-                }
-                // The face is within the second element
-                if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                    && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
-
-                    face_new_element_indices[0] += next_side_index;
-                }
-
-            }
-            if (element_R.would_h_refine(max_split_level)) {
-                const size_t next_side_index = (element_R_side_index + 1 < element_R.faces_.size()) ? element_R_side_index + 1 : 0;
-                const std::array<Vec2<deviceFloat>, 2> element_nodes {nodes[element_R.nodes_[element_R_side_index]], nodes[element_R.nodes_[next_side_index]]};
-                const Vec2<deviceFloat> new_element_node = (element_nodes[0] + element_nodes[1])/2;
-
-                const std::array<Vec2<deviceFloat>, 2> AB {new_element_node - element_nodes[0], element_nodes[1] - new_element_node};
-                const std::array<deviceFloat, 2> AB_dot_inv  {1/AB[0].dot(AB[0]), 1/AB[1].dot(AB[1])};
-
-                const std::array<Vec2<deviceFloat>, 2> AC {nodes[face.nodes_[0]] - element_nodes[0], nodes[face.nodes_[0]] - new_element_node};
-                const std::array<Vec2<deviceFloat>, 2> AD {nodes[face.nodes_[1]] - element_nodes[0], nodes[face.nodes_[1]] - new_element_node};
-
-                const std::array<deviceFloat, 2> C_proj {AC[0].dot(AB[0]) * AB_dot_inv[0], AC[1].dot(AB[1]) * AB_dot_inv[1]};
-                const std::array<deviceFloat, 2> D_proj {AD[0].dot(AB[0]) * AB_dot_inv[0], AD[1].dot(AB[1]) * AB_dot_inv[1]};
-
-                // The face is within the first element
-                if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                    && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
-
-                    face_new_element_indices[1] += element_R_side_index;
-                }
-                // The face is within the second element
-                if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                    && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
-
-                    face_new_element_indices[1] += next_side_index;
-                }
-            }
-
-            face.elements_ = face_new_element_indices;
-
             const int face_N = std::max(element_L.N_ + 2 * element_L.would_p_refine(N_max), element_R.N_ + 2 * element_R.would_p_refine(N_max));
 
             if (face.N_ != face_N) {
                 face.resize_storage(face_N);
             }
+
+            std::array<size_t, 2> face_new_element_indices = {element_L_new_index, element_R_new_index};
+            if (element_L.would_h_refine(max_split_level) || element_R.would_h_refine(max_split_level)) {
+                const size_t element_L_next_side_index = (element_L_side_index + 1 < element_L.nodes_.size()) ? element_L_side_index + 1 : 0;
+                const size_t element_R_next_side_index = (element_R_side_index + 1 < element_R.nodes_.size()) ? element_R_side_index + 1 : 0;
+
+                std::array<Vec2<deviceFloat>, 2> elements_centres {element_L.center_, element_R.center_};
+                const std::array<Vec2<deviceFloat>, 2> face_nodes {nodes[face.nodes_[0]], nodes[face.nodes_[1]]};
+                std::array<std::array<Vec2<deviceFloat>, 2>, 2> element_geometry_nodes {
+                    std::array<Vec2<deviceFloat>, 2>{nodes[element_L.nodes_[element_L_side_index]], nodes[element_L.nodes_[element_L_next_side_index]]},
+                    std::array<Vec2<deviceFloat>, 2>{nodes[element_R.nodes_[element_R_side_index]], nodes[element_R.nodes_[element_R_next_side_index]]}
+                };
+
+                if (element_L.would_h_refine(max_split_level)) {
+                    const std::array<Vec2<deviceFloat>, 2> element_nodes {nodes[element_L.nodes_[element_L_side_index]], nodes[element_L.nodes_[element_L_next_side_index]]};
+                    const Vec2<deviceFloat> new_element_node = (element_nodes[0] + element_nodes[1])/2;
+                    Vec2<deviceFloat> element_centre {0};
+                    for (size_t element_side_index = 0; element_side_index < element_L.nodes_.size(); ++element_side_index) {
+                        element_centre += nodes[element_L.nodes_[element_side_index]];
+                    }
+                    element_centre /= element_L.nodes_.size();
+
+                    const std::array<Vec2<deviceFloat>, 2> AB {new_element_node - element_nodes[0], element_nodes[1] - new_element_node};
+                    const std::array<deviceFloat, 2> AB_dot_inv  {1/AB[0].dot(AB[0]), 1/AB[1].dot(AB[1])};
+
+                    const std::array<Vec2<deviceFloat>, 2> AC {nodes[face.nodes_[0]] - element_nodes[0], nodes[face.nodes_[0]] - new_element_node};
+                    const std::array<Vec2<deviceFloat>, 2> AD {nodes[face.nodes_[1]] - element_nodes[0], nodes[face.nodes_[1]] - new_element_node};
+
+                    const std::array<deviceFloat, 2> C_proj {AC[0].dot(AB[0]) * AB_dot_inv[0], AC[1].dot(AB[1]) * AB_dot_inv[1]};
+                    const std::array<deviceFloat, 2> D_proj {AD[0].dot(AB[0]) * AB_dot_inv[0], AD[1].dot(AB[1]) * AB_dot_inv[1]};
+
+                    // The face is within the first element
+                    if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                        && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                        && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                        && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+
+                        face_new_element_indices[0] += element_L_side_index;
+                        element_geometry_nodes[0] = {element_nodes[0], new_element_node};
+
+                        const size_t previous_side_index = (element_L_side_index > 0) ? element_L_side_index - 1 : element_L.nodes_.size() - 1;
+                        elements_centres[0] = (element_nodes[0] + new_element_node + element_centre + nodes[element_L.nodes_[previous_side_index]])/4; // CHECK only works on quadrilaterals
+                    }
+                    // The face is within the second element
+                    if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                        && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                        && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                        && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+
+                        face_new_element_indices[0] += element_L_next_side_index;
+                        element_geometry_nodes[0] = {new_element_node, element_nodes[1]};
+
+                        const size_t opposite_side_index = (element_L_side_index + 2 < element_L.nodes_.size()) ? element_L_side_index + 2 : element_L_side_index + 2 - element_L.nodes_.size();
+                        elements_centres[0] = (new_element_node + element_nodes[1] + element_centre + nodes[element_R.nodes_[opposite_side_index]])/4; // CHECK only works on quadrilaterals
+                    }
+
+                }
+                if (element_R.would_h_refine(max_split_level)) {
+                    const std::array<Vec2<deviceFloat>, 2> element_nodes {nodes[element_R.nodes_[element_R_side_index]], nodes[element_R.nodes_[element_R_next_side_index]]};
+                    const Vec2<deviceFloat> new_element_node = (element_nodes[0] + element_nodes[1])/2;
+                    Vec2<deviceFloat> element_centre {0};
+                    for (size_t element_side_index = 0; element_side_index < element_R.nodes_.size(); ++element_side_index) {
+                        element_centre += nodes[element_R.nodes_[element_side_index]];
+                    }
+                    element_centre /= element_R.nodes_.size();
+
+                    const std::array<Vec2<deviceFloat>, 2> AB {new_element_node - element_nodes[0], element_nodes[1] - new_element_node};
+                    const std::array<deviceFloat, 2> AB_dot_inv  {1/AB[0].dot(AB[0]), 1/AB[1].dot(AB[1])};
+
+                    const std::array<Vec2<deviceFloat>, 2> AC {nodes[face.nodes_[0]] - element_nodes[0], nodes[face.nodes_[0]] - new_element_node};
+                    const std::array<Vec2<deviceFloat>, 2> AD {nodes[face.nodes_[1]] - element_nodes[0], nodes[face.nodes_[1]] - new_element_node};
+
+                    const std::array<deviceFloat, 2> C_proj {AC[0].dot(AB[0]) * AB_dot_inv[0], AC[1].dot(AB[1]) * AB_dot_inv[1]};
+                    const std::array<deviceFloat, 2> D_proj {AD[0].dot(AB[0]) * AB_dot_inv[0], AD[1].dot(AB[1]) * AB_dot_inv[1]};
+
+                    // The face is within the first element
+                    if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                        && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                        && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                        && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+
+                        face_new_element_indices[1] += element_R_side_index;
+                        element_geometry_nodes[1] = {element_nodes[0], new_element_node};
+                        
+                        const size_t previous_side_index = (element_R_side_index > 0) ? element_R_side_index - 1 : element_R.nodes_.size() - 1;
+                        elements_centres[1] = (element_nodes[0] + new_element_node + element_centre + nodes[element_R.nodes_[previous_side_index]])/4; // CHECK only works on quadrilaterals
+                    }
+                    // The face is within the second element
+                    if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                        && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                        && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                        && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+
+                        face_new_element_indices[1] += element_R_next_side_index;
+                        element_geometry_nodes[1] = {new_element_node, element_nodes[1]};
+                        
+                        const size_t opposite_side_index = (element_R_side_index + 2 < element_R.nodes_.size()) ? element_R_side_index + 2 : element_R_side_index + 2 - element_R.nodes_.size();
+                        elements_centres[1] = (new_element_node + element_nodes[1] + element_centre + nodes[element_R.nodes_[opposite_side_index]])/4; // CHECK only works on quadrilaterals
+                    }
+                }
+
+                face.compute_geometry(elements_centres, face_nodes, element_geometry_nodes);
+            }
+
+            face.elements_ = face_new_element_indices;
 
             new_faces[face_index] = std::move(face);
         }
@@ -4886,78 +4924,118 @@ auto SEM::Meshes::adjust_faces_neighbours(size_t n_faces, Face2D_t* faces, const
         const size_t element_L_new_index = elements_new_indices[element_L_index];
         const size_t element_R_new_index = elements_new_indices[element_R_index];
         std::array<size_t, 2> face_new_element_indices = {element_L_new_index, element_R_new_index};
-        
-        if (element_L.would_h_refine(max_split_level)) {
-            const size_t next_side_index = (element_L_side_index + 1 < element_L.faces_.size()) ? element_L_side_index + 1 : 0;
-            const std::array<Vec2<deviceFloat>, 2> element_nodes {nodes[element_L.nodes_[element_L_side_index]], nodes[element_L.nodes_[next_side_index]]};
-            const Vec2<deviceFloat> new_element_node = (element_nodes[0] + element_nodes[1])/2;
-
-            const std::array<Vec2<deviceFloat>, 2> AB {new_element_node - element_nodes[0], element_nodes[1] - new_element_node};
-            const std::array<deviceFloat, 2> AB_dot_inv  {1/AB[0].dot(AB[0]), 1/AB[1].dot(AB[1])};
-
-            const std::array<Vec2<deviceFloat>, 2> AC {nodes[face.nodes_[0]] - element_nodes[0], nodes[face.nodes_[0]] - new_element_node};
-            const std::array<Vec2<deviceFloat>, 2> AD {nodes[face.nodes_[1]] - element_nodes[0], nodes[face.nodes_[1]] - new_element_node};
-
-            const std::array<deviceFloat, 2> C_proj {AC[0].dot(AB[0]) * AB_dot_inv[0], AC[1].dot(AB[1]) * AB_dot_inv[1]};
-            const std::array<deviceFloat, 2> D_proj {AD[0].dot(AB[0]) * AB_dot_inv[0], AD[1].dot(AB[1]) * AB_dot_inv[1]};
-
-            // The face is within the first element
-            if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
-
-                face_new_element_indices[0] = element_L_side_index;
-            }
-            // The face is within the second element
-            if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
-
-                face_new_element_indices[0] = next_side_index;
-            }
-
-        }
-        if (element_R.would_h_refine(max_split_level)) {
-            const size_t next_side_index = (element_R_side_index + 1 < element_R.faces_.size()) ? element_R_side_index + 1 : 0;
-            const std::array<Vec2<deviceFloat>, 2> element_nodes {nodes[element_R.nodes_[element_R_side_index]], nodes[element_R.nodes_[next_side_index]]};
-            const Vec2<deviceFloat> new_element_node = (element_nodes[0] + element_nodes[1])/2;
-
-            const std::array<Vec2<deviceFloat>, 2> AB {new_element_node - element_nodes[0], element_nodes[1] - new_element_node};
-            const std::array<deviceFloat, 2> AB_dot_inv  {1/AB[0].dot(AB[0]), 1/AB[1].dot(AB[1])};
-
-            const std::array<Vec2<deviceFloat>, 2> AC {nodes[face.nodes_[0]] - element_nodes[0], nodes[face.nodes_[0]] - new_element_node};
-            const std::array<Vec2<deviceFloat>, 2> AD {nodes[face.nodes_[1]] - element_nodes[0], nodes[face.nodes_[1]] - new_element_node};
-
-            const std::array<deviceFloat, 2> C_proj {AC[0].dot(AB[0]) * AB_dot_inv[0], AC[1].dot(AB[1]) * AB_dot_inv[1]};
-            const std::array<deviceFloat, 2> D_proj {AD[0].dot(AB[0]) * AB_dot_inv[0], AD[1].dot(AB[1]) * AB_dot_inv[1]};
-
-            // The face is within the first element
-            if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
-
-                face_new_element_indices[1] += element_R_side_index;
-            }
-            // The face is within the second element
-            if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
-
-                face_new_element_indices[1] += next_side_index;
-            }
-        }
-
-        face.elements_ = face_new_element_indices;
 
         const int face_N = std::max(element_L.N_ + 2 * element_L.would_p_refine(N_max), element_R.N_ + 2 * element_R.would_p_refine(N_max));
 
         if (face.N_ != face_N) {
             face.resize_storage(face_N);
         }
+
+        if (element_L.would_h_refine(max_split_level) || element_R.would_h_refine(max_split_level)) {
+            const size_t element_L_next_side_index = (element_L_side_index + 1 < element_L.nodes_.size()) ? element_L_side_index + 1 : 0;
+            const size_t element_R_next_side_index = (element_R_side_index + 1 < element_R.nodes_.size()) ? element_R_side_index + 1 : 0;
+
+            std::array<Vec2<deviceFloat>, 2> elements_centres {element_L.center_, element_R.center_};
+            const std::array<Vec2<deviceFloat>, 2> face_nodes {nodes[face.nodes_[0]], nodes[face.nodes_[1]]};
+            std::array<std::array<Vec2<deviceFloat>, 2>, 2> element_geometry_nodes {
+                std::array<Vec2<deviceFloat>, 2>{nodes[element_L.nodes_[element_L_side_index]], nodes[element_L.nodes_[element_L_next_side_index]]},
+                std::array<Vec2<deviceFloat>, 2>{nodes[element_R.nodes_[element_R_side_index]], nodes[element_R.nodes_[element_R_next_side_index]]}
+            };
+        
+            if (element_L.would_h_refine(max_split_level)) {
+                const std::array<Vec2<deviceFloat>, 2> element_nodes {nodes[element_L.nodes_[element_L_side_index]], nodes[element_L.nodes_[element_L_next_side_index]]};
+                const Vec2<deviceFloat> new_element_node = (element_nodes[0] + element_nodes[1])/2;
+                Vec2<deviceFloat> element_centre {0};
+                for (size_t element_side_index = 0; element_side_index < element_L.nodes_.size(); ++element_side_index) {
+                    element_centre += nodes[element_L.nodes_[element_side_index]];
+                }
+                element_centre /= element_L.nodes_.size();
+
+                const std::array<Vec2<deviceFloat>, 2> AB {new_element_node - element_nodes[0], element_nodes[1] - new_element_node};
+                const std::array<deviceFloat, 2> AB_dot_inv  {1/AB[0].dot(AB[0]), 1/AB[1].dot(AB[1])};
+
+                const std::array<Vec2<deviceFloat>, 2> AC {nodes[face.nodes_[0]] - element_nodes[0], nodes[face.nodes_[0]] - new_element_node};
+                const std::array<Vec2<deviceFloat>, 2> AD {nodes[face.nodes_[1]] - element_nodes[0], nodes[face.nodes_[1]] - new_element_node};
+
+                const std::array<deviceFloat, 2> C_proj {AC[0].dot(AB[0]) * AB_dot_inv[0], AC[1].dot(AB[1]) * AB_dot_inv[1]};
+                const std::array<deviceFloat, 2> D_proj {AD[0].dot(AB[0]) * AB_dot_inv[0], AD[1].dot(AB[1]) * AB_dot_inv[1]};
+
+                // The face is within the first element
+                if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                    && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                    && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                    && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+
+                    face_new_element_indices[0] = element_L_side_index;
+                    element_geometry_nodes[0] = {element_nodes[0], new_element_node};
+
+                    const size_t previous_side_index = (element_L_side_index > 0) ? element_L_side_index - 1 : element_L.nodes_.size() - 1;
+                    elements_centres[0] = (element_nodes[0] + new_element_node + element_centre + nodes[element_L.nodes_[previous_side_index]])/4; // CHECK only works on quadrilaterals
+
+                }
+                // The face is within the second element
+                if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                    && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                    && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                    && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+
+                    face_new_element_indices[0] = element_L_next_side_index;
+                    element_geometry_nodes[0] = {new_element_node, element_nodes[1]};
+
+                    const size_t opposite_side_index = (element_L_side_index + 2 < element_L.nodes_.size()) ? element_L_side_index + 2 : element_L_side_index + 2 - element_L.nodes_.size();
+                    elements_centres[0] = (new_element_node + element_nodes[1] + element_centre + nodes[element_R.nodes_[opposite_side_index]])/4; // CHECK only works on quadrilaterals
+
+                }
+
+            }
+            if (element_R.would_h_refine(max_split_level)) {
+                const std::array<Vec2<deviceFloat>, 2> element_nodes {nodes[element_R.nodes_[element_R_side_index]], nodes[element_R.nodes_[element_R_next_side_index]]};
+                const Vec2<deviceFloat> new_element_node = (element_nodes[0] + element_nodes[1])/2;
+                Vec2<deviceFloat> element_centre {0};
+                for (size_t element_side_index = 0; element_side_index < element_R.nodes_.size(); ++element_side_index) {
+                    element_centre += nodes[element_R.nodes_[element_side_index]];
+                }
+                element_centre /= element_R.nodes_.size();
+
+                const std::array<Vec2<deviceFloat>, 2> AB {new_element_node - element_nodes[0], element_nodes[1] - new_element_node};
+                const std::array<deviceFloat, 2> AB_dot_inv  {1/AB[0].dot(AB[0]), 1/AB[1].dot(AB[1])};
+
+                const std::array<Vec2<deviceFloat>, 2> AC {nodes[face.nodes_[0]] - element_nodes[0], nodes[face.nodes_[0]] - new_element_node};
+                const std::array<Vec2<deviceFloat>, 2> AD {nodes[face.nodes_[1]] - element_nodes[0], nodes[face.nodes_[1]] - new_element_node};
+
+                const std::array<deviceFloat, 2> C_proj {AC[0].dot(AB[0]) * AB_dot_inv[0], AC[1].dot(AB[1]) * AB_dot_inv[1]};
+                const std::array<deviceFloat, 2> D_proj {AD[0].dot(AB[0]) * AB_dot_inv[0], AD[1].dot(AB[1]) * AB_dot_inv[1]};
+
+                // The face is within the first element
+                if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                    && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                    && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                    && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+
+                    face_new_element_indices[1] += element_R_side_index;
+                    element_geometry_nodes[1] = {element_nodes[0], new_element_node};
+                        
+                    const size_t previous_side_index = (element_R_side_index > 0) ? element_R_side_index - 1 : element_R.nodes_.size() - 1;
+                    elements_centres[1] = (element_nodes[0] + new_element_node + element_centre + nodes[element_R.nodes_[previous_side_index]])/4; // CHECK only works on quadrilaterals
+                }
+                // The face is within the second element
+                if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                    && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                    && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
+                    && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+
+                    face_new_element_indices[1] += element_R_next_side_index;
+                    element_geometry_nodes[1] = {new_element_node, element_nodes[1]};
+                        
+                    const size_t opposite_side_index = (element_R_side_index + 2 < element_R.nodes_.size()) ? element_R_side_index + 2 : element_R_side_index + 2 - element_R.nodes_.size();
+                    elements_centres[1] = (new_element_node + element_nodes[1] + element_centre + nodes[element_R.nodes_[opposite_side_index]])/4; // CHECK only works on quadrilaterals
+                }
+            }
+
+            face.compute_geometry(elements_centres, face_nodes, element_geometry_nodes);
+        }
+
+        face.elements_ = face_new_element_indices;
     }
 }
 
