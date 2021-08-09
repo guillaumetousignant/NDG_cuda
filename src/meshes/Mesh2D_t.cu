@@ -730,8 +730,8 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
     device_outflow_boundaries_refine_array_ = device_vector<size_t>(outflow_boundaries_numBlocks_, stream_);
     host_interfaces_refine_array_ = std::vector<size_t>(interfaces_numBlocks_);
     device_interfaces_refine_array_ = device_vector<size_t>(interfaces_numBlocks_, stream_);
-    host_mpi_interfaces_refine_array_ = std::vector<size_t>(interfaces_numBlocks_);
-    device_mpi_interfaces_refine_array_ = device_vector<size_t>(interfaces_numBlocks_, stream_);
+    host_mpi_interfaces_refine_array_ = std::vector<size_t>(mpi_interfaces_numBlocks_);
+    device_mpi_interfaces_refine_array_ = device_vector<size_t>(mpi_interfaces_numBlocks_, stream_);
 
     allocate_element_storage<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, elements_.data());
     allocate_boundary_storage<<<ghosts_numBlocks_, boundaries_blockSize_, 0, stream_>>>(n_elements_, elements_.size(), elements_.data());
