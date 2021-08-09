@@ -1257,34 +1257,14 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
         host_refine_array_[i] = n_splitting_elements - host_refine_array_[i]; // Current block offset
     }
 
-    int global_rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
-    int global_size;
-    MPI_Comm_size(MPI_COMM_WORLD, &global_size);
-
-    std::vector<size_t> splitting_elements_global(global_size);
-    constexpr MPI_Datatype size_t_data_type = (sizeof(size_t) == sizeof(unsigned long long)) ? MPI_UNSIGNED_LONG_LONG : (sizeof(size_t) == sizeof(unsigned long)) ? MPI_UNSIGNED_LONG : MPI_UNSIGNED; // CHECK this is a bad way of doing this
-
-    MPI_Allgather(&n_splitting_elements, 1, size_t_data_type, splitting_elements_global.data(), 1, size_t_data_type, MPI_COMM_WORLD);
-
-    size_t n_splitting_elements_previous = 0;
-    for (int i = 0; i < global_rank; ++i) {
-        n_splitting_elements_previous += splitting_elements_global[i];
-    }
-    const size_t global_element_offset_current = global_element_offset_ + 3 * n_splitting_elements_previous;
-    size_t n_splitting_elements_global = 0;
-    for (int i = 0; i < global_size; ++i) {
-        n_splitting_elements_global += splitting_elements_global[i];
-    }
-    n_elements_global_ += 3 * n_splitting_elements_global;
-    const size_t global_element_offset_end_current = global_element_offset_current + n_elements_ + 3 * n_splitting_elements - 1;
-
-    const size_t n_elements_per_process = (n_elements_global_ + global_size - 1)/global_size;
-    global_element_offset_ = global_rank * n_elements_per_process;
-    const size_t global_element_offset_end = std::min(global_element_offset_ + n_elements_per_process - 1, n_elements_global_ - 1);
-
-    if ((n_splitting_elements == 0) && (global_element_offset_ == global_element_offset_current) && (global_element_offset_end == global_element_offset_end_current)) {
+    if (n_splitting_elements == 0) {
         if (!mpi_interfaces_origin_.empty()) {
+            int global_rank;
+            MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
+            int global_size;
+            MPI_Comm_size(MPI_COMM_WORLD, &global_size);
+            constexpr MPI_Datatype size_t_data_type = (sizeof(size_t) == sizeof(unsigned long long)) ? MPI_UNSIGNED_LONG_LONG : (sizeof(size_t) == sizeof(unsigned long)) ? MPI_UNSIGNED_LONG : MPI_UNSIGNED; // CHECK this is a bad way of doing this
+
             SEM::Meshes::get_MPI_interfaces_N<<<mpi_interfaces_numBlocks_, boundaries_blockSize_, 0, stream_>>>(mpi_interfaces_origin_.size(), elements_.data(), mpi_interfaces_origin_.data(), device_interfaces_N_.data());
 
             device_interfaces_N_.copy_to(host_interfaces_N_, stream_);
@@ -1509,6 +1489,12 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
 
     // Sending and receiving splitting elements on MPI interfaces
     if (!mpi_interfaces_origin_.empty()) {
+        int global_rank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
+        int global_size;
+        MPI_Comm_size(MPI_COMM_WORLD, &global_size);
+        constexpr MPI_Datatype size_t_data_type = (sizeof(size_t) == sizeof(unsigned long long)) ? MPI_UNSIGNED_LONG_LONG : (sizeof(size_t) == sizeof(unsigned long)) ? MPI_UNSIGNED_LONG : MPI_UNSIGNED; // CHECK this is a bad way of doing this
+
         SEM::Meshes::get_MPI_interfaces_adaptivity<<<mpi_interfaces_numBlocks_, boundaries_blockSize_, 0, stream_>>>(mpi_interfaces_origin_.size(), elements_.data(), mpi_interfaces_origin_.data(), mpi_interfaces_origin_side_.data(), device_interfaces_N_.data(), device_interfaces_refine_.data(), device_interfaces_new_index_.data(), device_interfaces_new_splitting_index_.data(), max_split_level_, N_max, device_refine_array_.data(), elements_blockSize_);
 
         device_interfaces_N_.copy_to(host_interfaces_N_, stream_);
