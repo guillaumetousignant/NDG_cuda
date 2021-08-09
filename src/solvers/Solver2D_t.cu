@@ -86,25 +86,31 @@ auto SEM::Solvers::Solver2D_t::solve(const SEM::Entities::NDG_t<Polynomial> &NDG
         time += delta_t;
         for (auto const& e : std::as_const(output_times_)) {
             if ((time >= e) && (time < e + delta_t)) {
-                mesh.estimate_error<Polynomial>(NDG.nodes_, NDG.weights_);
                 if (global_rank == 0) {
                     bar.set_status_text("Writing solution");
                     bar.update(time/t_end);
                 }
+                mesh.estimate_error<Polynomial>(NDG.nodes_, NDG.weights_);
                 mesh.write_complete_data(time, NDG.nodes_, NDG.interpolation_matrices_, data_writer);
                 break;
             }
         }
+
+        if (timestep % mesh.adaptivity_interval_ == 0) {
+            if (global_rank == 0) {
+                bar.set_status_text("Adapting");
+                bar.update(time/t_end);
+            }
+
+            mesh.estimate_error<Polynomial>(NDG.nodes_, NDG.weights_);
+            mesh.adapt(NDG.N_max_, NDG.nodes_, NDG.barycentric_weights_);
+        }
+
         if (global_rank == 0) {
             std::stringstream ss;
             ss << "Iteration " << timestep;
             bar.set_status_text(ss.str());
             bar.update(time/t_end);
-        }
-
-        if (timestep % mesh.adaptivity_interval_ == 0) {
-            mesh.estimate_error<Polynomial>(NDG.nodes_, NDG.weights_);
-            mesh.adapt(NDG.N_max_, NDG.nodes_, NDG.barycentric_weights_);
         }
     }
 
