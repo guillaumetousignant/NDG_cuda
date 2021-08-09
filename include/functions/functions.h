@@ -10,6 +10,7 @@ namespace SEM {
     namespace Hilbert {}
 }
 
+#include "analytical_solution.cuh"
 #include "Hilbert.h"
 #include "inverse_quad_map.cuh"
 #include "quad_map.cuh"
