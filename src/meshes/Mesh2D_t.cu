@@ -3328,7 +3328,7 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, si
                 new_element_node_indices[previous_side_index] = new_node_indices[previous_side_index];
 
                 new_elements[element_index + side_index].clear_storage();
-                new_elements[element_index + side_index] = Element2D_t{element.N_, element.split_level_ + 1, new_element_faces, new_element_node_indices};
+                new_elements[element_index + side_index] = Element2D_t(element.N_, element.split_level_ + 1, new_element_faces, new_element_node_indices);
 
                 std::array<Vec2<deviceFloat>, 4> new_element_nodes {};
                 new_element_nodes[side_index] = nodes[element.nodes_[side_index]];
@@ -3362,7 +3362,7 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, si
         // p refinement
         else if (element.would_p_refine(N_max)) {
             new_elements[element_index].clear_storage();
-            new_elements[element_index] = Element2D_t{element.N_ + 2, element.split_level_, element.faces_, element.nodes_};
+            new_elements[element_index] = Element2D_t(element.N_ + 2, element.split_level_, element.faces_, element.nodes_);
 
             // Adjusting faces for splitting elements
             for (size_t side_index = 0; side_index < element.faces_.size(); ++side_index) {
@@ -3818,7 +3818,7 @@ auto SEM::Meshes::copy_boundaries_error(size_t n_boundaries, Element2D_t* elemen
         Element2D_t& destination_element = elements[destination_element_index];
 
         if (destination_element.faces_[0].size() == 1) { // Should always be the case 
-            const Face2D_t face = faces[destination_element.faces_[0][0]];
+            const Face2D_t& face = faces[destination_element.faces_[0][0]];
             const size_t face_side = face.elements_[0] == destination_element_index;
             const Element2D_t& source_element = elements[face.elements_[face_side]];
             const size_t element_side = face.elements_side_[face_side];
