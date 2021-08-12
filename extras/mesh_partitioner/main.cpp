@@ -372,7 +372,15 @@ auto main(int argc, char* argv[]) -> int {
     std::vector<cgsize_t> starting_elements(n_proc);
     cgsize_t starting_element = 0;
     for (cgsize_t i = 0; i < n_proc; ++i) {
-        N_elements[i] = (i == n_proc - 1) ? N_elements_per_process + n_elements_domain - N_elements_per_process * n_proc : N_elements_per_process;
+        if (N_elements_per_process * i >= n_elements_domain) {
+            N_elements[i] = 0;
+        }
+        else if (N_elements_per_process * (i + 1) > n_elements_domain) {
+            N_elements[i] = N_elements_per_process + n_elements_domain - (i + 1) * N_elements_per_process;
+        }
+        else {
+            N_elements[i] = N_elements_per_process;
+        }
         starting_elements[i] = starting_element;
         starting_element += N_elements[i];
     }
