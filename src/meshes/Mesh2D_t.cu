@@ -1659,7 +1659,7 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
         SEM::Meshes::split_interfaces<<<interfaces_numBlocks_, boundaries_blockSize_, 0, stream_>>>(interfaces_origin_.size(), faces_.size(), nodes_.size(), n_splitting_elements, n_elements_ + 3 * n_splitting_elements + wall_boundaries_.size() + n_splitting_wall_boundaries + symmetry_boundaries_.size() + n_splitting_symmetry_boundaries + inflow_boundaries_.size() + n_splitting_inflow_boundaries + outflow_boundaries_.size() + n_splitting_outflow_boundaries, elements_.data(), new_elements.data(), interfaces_origin_.data(), interfaces_origin_side_.data(), interfaces_destination_.data(), new_interfaces_origin.data(), new_interfaces_origin_side.data(), new_interfaces_destination.data(), faces_.data(), new_nodes.data(), device_refine_array_.data(), device_faces_refine_array_.data(), device_interfaces_refine_array_.data(), max_split_level_, N_max, polynomial_nodes.data(), elements_blockSize_, faces_blockSize_, elements_new_indices.data());
     }
 
-    if (!mpi_interfaces_origin_.empty()) {        
+    if (!mpi_interfaces_origin_.empty()) {       
         SEM::Meshes::split_mpi_outgoing_interfaces<<<mpi_interfaces_outgoing_numBlocks_, boundaries_blockSize_, 0, stream_>>>(mpi_interfaces_origin_.size(), elements_.data(), mpi_interfaces_origin_.data(), mpi_interfaces_origin_side_.data(), new_mpi_interfaces_origin.data(), new_mpi_interfaces_origin_side.data(), device_mpi_interfaces_outgoing_refine_array_.data(), max_split_level_, device_refine_array_.data(), elements_blockSize_);
         SEM::Meshes::split_mpi_incoming_interfaces<<<mpi_interfaces_incoming_numBlocks_, boundaries_blockSize_, 0, stream_>>>(mpi_interfaces_destination_.size(), faces_.size(), nodes_.size(), n_splitting_elements, n_elements_ + 3 * n_splitting_elements + wall_boundaries_.size() + n_splitting_wall_boundaries + symmetry_boundaries_.size() + n_splitting_symmetry_boundaries + inflow_boundaries_.size() + n_splitting_inflow_boundaries + outflow_boundaries_.size() + n_splitting_outflow_boundaries + interfaces_origin_.size() + n_splitting_interface_elements, elements_.data(), new_elements.data(), mpi_interfaces_destination_.data(), new_mpi_interfaces_destination.data(), faces_.data(), new_nodes.data(), device_faces_refine_array_.data(), device_mpi_interfaces_incoming_refine_array_.data(), polynomial_nodes.data(), faces_blockSize_, device_receiving_interfaces_N_.data(), device_receiving_interfaces_refine_.data(), elements_new_indices.data());
     }
@@ -1717,7 +1717,7 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
             }
             mpi_interfaces_outgoing_offset_[interface_index] = interface_offset;
             mpi_interfaces_outgoing_size_[interface_index] += splitting_incoming_elements;
-            interface_offset += mpi_interfaces_incoming_size_[interface_index];
+            interface_offset += mpi_interfaces_outgoing_size_[interface_index];
         }
     }
 
