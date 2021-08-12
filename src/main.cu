@@ -207,23 +207,21 @@ auto main(int argc, char* argv[]) -> int {
     const int device_size = (device == deviceCount - 1) ? n_proc_per_gpu + local_size - n_proc_per_gpu * deviceCount : n_proc_per_gpu;
 
     cudaSetDevice(device);
-    if (device_rank == 0) {
-        cudaDeviceProp deviceProp;
-        cudaGetDeviceProperties(&deviceProp, device);
-        const size_t memory_amount = deviceProp.totalGlobalMem * memory_fraction;
-        const cudaError_t code = cudaDeviceSetLimit(cudaLimitMallocHeapSize, memory_amount);
-        if (code != cudaSuccess) {
-            std::cerr << "GPU memory request failed: " << cudaGetErrorString(code) << std::endl;
-            exit(1);
-        }
-        size_t device_heap_limit = 0;
-        cudaDeviceGetLimit(&device_heap_limit, cudaLimitMallocHeapSize);
-        std::cout << "Node " << node_rank << ", device " << device << " requested " <<  static_cast<size_t>(deviceProp.totalGlobalMem * memory_fraction) << " bytes and got " << device_heap_limit << " bytes." << std::endl;
+
+    cudaDeviceProp deviceProp;
+    cudaGetDeviceProperties(&deviceProp, device);
+    const size_t memory_amount = deviceProp.totalGlobalMem * memory_fraction / device_size;
+    const cudaError_t code = cudaDeviceSetLimit(cudaLimitMallocHeapSize, memory_amount);
+    if (code != cudaSuccess) {
+        std::cerr << "GPU memory request failed: " << cudaGetErrorString(code) << std::endl;
+        exit(1);
     }
+    size_t device_heap_limit = 0;
+    cudaDeviceGetLimit(&device_heap_limit, cudaLimitMallocHeapSize);
 
     cudaStream_t stream;
     cudaStreamCreate(&stream); 
-    std::cout << "Process with global id " << global_rank + 1 << "/" << global_size << " on node " << node_rank + 1 << "/" << node_size << " and local id " << local_rank + 1 << "/" << local_size << " picked GPU " << device + 1 << "/" << deviceCount << " with stream " << device_rank + 1 << "/" << device_size << "." << std::endl;
+    std::cout << "Process with global id " << global_rank + 1 << "/" << global_size << " on node " << node_rank + 1 << "/" << node_size << " and local id " << local_rank + 1 << "/" << local_size << " picked GPU " << device + 1 << "/" << deviceCount << " with stream " << device_rank + 1 << "/" << device_size << ", requested " << memory_amount <<  " bytes and got " << device_heap_limit << " bytes." << std::endl;
 
     if (global_rank == 0) {
         std::cout << "CFL is: " << CFL << std::endl;
