@@ -64,7 +64,7 @@ SEM::Entities::Element2D_t::Element2D_t() :
         N_{0},
         faces_{},
         nodes_{0, 0, 0, 0},
-        status_{Hilbert::Status::H},
+        status_{Hilbert::Status::A},
         delta_xy_min_{0.0},
         center_{0.0, 0.0},
         scaling_factor_{},

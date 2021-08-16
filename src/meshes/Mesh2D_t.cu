@@ -351,7 +351,7 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
                                   static_cast<size_t>(connectivity[i][2 * j + 1] - 1),
                                   static_cast<size_t>(connectivity[i][2 * j + 1] - 1),
                                   static_cast<size_t>(connectivity[i][2 * j] - 1)};
-                element.status_ = Hilbert::Status::H;
+                element.status_ = Hilbert::Status::A; // This is not a random status, when splitting the first two elements are 0 and 1, which is needed for boundaries
             }
             element_ghost_index += section_ranges[i][1] - section_ranges[i][0] + 1;
         }
@@ -4051,7 +4051,7 @@ auto SEM::Meshes::split_boundaries(size_t n_boundaries, size_t n_faces, size_t n
                                                       new_node_index,
                                                       new_node_index,
                                                       destination_element.nodes_[0]};
-            new_elements[new_element_index].status_ = Hilbert::Status::H;
+            new_elements[new_element_index].status_ = destination_element.status_;
             new_elements[new_element_index].split_level_ = destination_element.split_level_ + 1;
             new_elements[new_element_index].refine_ = false;
             new_elements[new_element_index].coarsen_ = false;
@@ -4065,7 +4065,7 @@ auto SEM::Meshes::split_boundaries(size_t n_boundaries, size_t n_faces, size_t n
                                                           destination_element.nodes_[1],
                                                           destination_element.nodes_[1],
                                                           new_node_index};
-            new_elements[new_element_index + 1].status_ = Hilbert::Status::H;
+            new_elements[new_element_index + 1].status_ = destination_element.status_;
             new_elements[new_element_index + 1].split_level_ = destination_element.split_level_ + 1;
             new_elements[new_element_index + 1].refine_ = false;
             new_elements[new_element_index + 1].coarsen_ = false;
@@ -4193,7 +4193,7 @@ auto SEM::Meshes::split_interfaces(size_t n_local_interfaces, size_t n_faces, si
                                                       new_node_index,
                                                       new_node_index,
                                                       destination_element.nodes_[0]};
-            new_elements[new_element_index].status_ = Hilbert::Status::H;
+            new_elements[new_element_index].status_ = destination_element.status_;
             new_elements[new_element_index].split_level_ = destination_element.split_level_ + 1;
             new_elements[new_element_index].refine_ = false;
             new_elements[new_element_index].coarsen_ = false;
@@ -4206,7 +4206,7 @@ auto SEM::Meshes::split_interfaces(size_t n_local_interfaces, size_t n_faces, si
                                                           destination_element.nodes_[1],
                                                           destination_element.nodes_[1],
                                                           new_node_index};
-            new_elements[new_element_index + 1].status_ = Hilbert::Status::H;
+            new_elements[new_element_index + 1].status_ = destination_element.status_;
             new_elements[new_element_index + 1].split_level_ = destination_element.split_level_ + 1;
             new_elements[new_element_index + 1].refine_ = false;
             new_elements[new_element_index + 1].coarsen_ = false;
@@ -4631,7 +4631,7 @@ auto SEM::Meshes::split_mpi_incoming_interfaces(size_t n_MPI_interface_elements,
                                                       new_node_index,
                                                       new_node_index,
                                                       destination_element.nodes_[0]};
-            new_elements[new_element_index].status_ = Hilbert::Status::H;
+            new_elements[new_element_index].status_ = destination_element.status_;
             new_elements[new_element_index].split_level_ = destination_element.split_level_ + 1;
             new_elements[new_element_index].refine_ = false;
             new_elements[new_element_index].coarsen_ = false;
@@ -4644,7 +4644,7 @@ auto SEM::Meshes::split_mpi_incoming_interfaces(size_t n_MPI_interface_elements,
                                                           destination_element.nodes_[1],
                                                           destination_element.nodes_[1],
                                                           new_node_index};
-            new_elements[new_element_index + 1].status_ = Hilbert::Status::H;
+            new_elements[new_element_index + 1].status_ = destination_element.status_;
             new_elements[new_element_index + 1].split_level_ = destination_element.split_level_ + 1;
             new_elements[new_element_index + 1].refine_ = false;
             new_elements[new_element_index + 1].coarsen_ = false;
