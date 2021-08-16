@@ -239,7 +239,7 @@ auto SEM::Helpers::DataWriter_t::write_complete_data(size_t N_interpolation_poin
     vtkNew<vtkUnsignedLongLongArray> index;
     index->SetNumberOfComponents(1);
     index->Allocate(N_elements * N_interpolation_points * N_interpolation_points);
-    index->SetName("index");
+    index->SetName("Index");
 
     for (size_t element_index = 0; element_index < N_elements; ++element_index) {
         for (size_t i = 0; i < N_interpolation_points; ++i) {
@@ -255,7 +255,7 @@ auto SEM::Helpers::DataWriter_t::write_complete_data(size_t N_interpolation_poin
     vtkNew<vtkIntArray> status_output;
     status_output->SetNumberOfComponents(1);
     status_output->Allocate(N_elements * N_interpolation_points * N_interpolation_points);
-    status_output->SetName("status");
+    status_output->SetName("Status");
 
     for (size_t element_index = 0; element_index < N_elements; ++element_index) {
         for (size_t i = 0; i < N_interpolation_points; ++i) {
