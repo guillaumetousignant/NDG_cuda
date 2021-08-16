@@ -2858,7 +2858,9 @@ auto SEM::Meshes::get_MPI_interfaces_N(size_t n_MPI_interface_elements, int N_ma
     const int stride = blockDim.x * gridDim.x;
 
     for (size_t interface_index = index; interface_index < n_MPI_interface_elements; interface_index += stride) {
-        N[interface_index] = elements[MPI_interfaces_origin[interface_index]].N_ + 2 * elements[MPI_interfaces_origin[interface_index]].would_p_refine(N_max);
+        const size_t element_index = MPI_interfaces_origin[interface_index];
+        
+        N[interface_index] = elements[element_index].N_ + 2 * elements[element_index].would_p_refine(N_max);
     }
 }
 
