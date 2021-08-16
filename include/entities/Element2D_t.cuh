@@ -4,13 +4,14 @@
 #include "helpers/float_types.h"
 #include "entities/cuda_vector.cuh"
 #include "entities/Vec2.cuh"
+#include "functions/Hilbert_splitting.cuh"
 #include <array>
 
 namespace SEM { namespace Entities {
     class Element2D_t { // Turn this into separate vectors, because cache exists
         public:
             __device__ 
-            Element2D_t(int N, int split_level, const std::array<SEM::Entities::cuda_vector<size_t>, 4>& faces, std::array<size_t, 4> nodes);
+            Element2D_t(int N, int split_level, SEM::Hilbert::Status status, const std::array<SEM::Entities::cuda_vector<size_t>, 4>& faces, std::array<size_t, 4> nodes);
 
             __host__ __device__
             Element2D_t();
@@ -22,6 +23,7 @@ namespace SEM { namespace Entities {
             std::array<size_t, 4> nodes_;
 
             // Geometry
+            SEM::Hilbert::Status status_;
             deviceFloat delta_xy_min_;
             SEM::Entities::Vec2<deviceFloat> center_;
             SEM::Entities::cuda_vector<deviceFloat> dxi_dx_;
@@ -55,6 +57,7 @@ namespace SEM { namespace Entities {
             SEM::Entities::cuda_vector<deviceFloat> v_intermediate_;
             SEM::Entities::cuda_vector<deviceFloat> spectrum_;
 
+            // Error
             bool refine_;
             bool coarsen_;
             deviceFloat p_error_;
@@ -63,6 +66,8 @@ namespace SEM { namespace Entities {
             deviceFloat p_sigma_;
             deviceFloat u_sigma_;
             deviceFloat v_sigma_;
+
+            // Adaptivity
             int split_level_;
             std::array<bool, 4> additional_nodes_;
 

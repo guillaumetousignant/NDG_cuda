@@ -8,6 +8,7 @@
 #include "entities/Element2D_t.cuh"
 #include "entities/device_vector.cuh"
 #include "functions/quad_map.cuh"
+#include "functions/Hilbert_splitting.cuh"
 
 using SEM::Entities::Vec2;
 
@@ -37,8 +38,8 @@ auto element_to_element_projection_init(int N, size_t n_elements, SEM::Entities:
         element_faces[2][0] = element_index;
         element_faces[3][0] = element_index;
 
-        elements[element_index] = SEM::Entities::Element2D_t(N, 0, element_faces, std::array<size_t, 4>{4 * element_index, 4 * element_index + 1, 4 * element_index + 2, 4 * element_index + 3});
-        elements_small[element_index] = SEM::Entities::Element2D_t(N, 1, element_faces, std::array<size_t, 4>{4 * element_index, 4 * element_index + 1, 4 * element_index + 2, 4 * element_index + 3});
+        elements[element_index] = SEM::Entities::Element2D_t(N, 0, SEM::Hilbert::Status::H, element_faces, std::array<size_t, 4>{4 * element_index, 4 * element_index + 1, 4 * element_index + 2, 4 * element_index + 3});
+        elements_small[element_index] = SEM::Entities::Element2D_t(N, 1, SEM::Hilbert::Status::A, element_faces, std::array<size_t, 4>{4 * element_index, 4 * element_index + 1, 4 * element_index + 2, 4 * element_index + 3});
         
         SEM::Entities::Element2D_t& element = elements[element_index];
         SEM::Entities::Element2D_t& element_small = elements_small[element_index];
@@ -82,8 +83,8 @@ auto element_to_element_projection_init_2(int N, int N_high, size_t n_elements, 
         element_faces[2][0] = element_index;
         element_faces[3][0] = element_index;
 
-        elements[element_index] = SEM::Entities::Element2D_t(N, 0, element_faces, std::array<size_t, 4>{4 * element_index, 4 * element_index + 1, 4 * element_index + 2, 4 * element_index + 3});
-        elements_high[element_index] = SEM::Entities::Element2D_t(N_high, 1, element_faces, std::array<size_t, 4>{4 * element_index, 4 * element_index + 1, 4 * element_index + 2, 4 * element_index + 3});
+        elements[element_index] = SEM::Entities::Element2D_t(N, 0, SEM::Hilbert::Status::H, element_faces, std::array<size_t, 4>{4 * element_index, 4 * element_index + 1, 4 * element_index + 2, 4 * element_index + 3});
+        elements_high[element_index] = SEM::Entities::Element2D_t(N_high, 1, SEM::Hilbert::Status::H, element_faces, std::array<size_t, 4>{4 * element_index, 4 * element_index + 1, 4 * element_index + 2, 4 * element_index + 3});
         
         SEM::Entities::Element2D_t& element = elements[element_index];
         SEM::Entities::Element2D_t& element_high = elements_high[element_index];

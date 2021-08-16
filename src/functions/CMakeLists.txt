@@ -2,6 +2,7 @@ target_sources(SEM
     PRIVATE
         analytical_solution.cu
         Hilbert.cpp
+        Hilbert_splitting.cu
         quad_map.cu
         inverse_quad_map.cu
         quad_metrics.cu

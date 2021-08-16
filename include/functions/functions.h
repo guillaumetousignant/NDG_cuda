@@ -12,6 +12,7 @@ namespace SEM {
 
 #include "analytical_solution.cuh"
 #include "Hilbert.h"
+#include "Hilbert_splitting.cuh"
 #include "inverse_quad_map.cuh"
 #include "quad_map.cuh"
 #include "quad_metrics.cuh"

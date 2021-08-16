@@ -3,6 +3,7 @@
 #include "polynomials/LegendrePolynomial_t.cuh"
 #include "helpers/constants.h"
 #include "functions/Utilities.h"
+#include "functions/Hilbert_splitting.cuh"
 #include "functions/quad_map.cuh"
 #include "functions/analytical_solution.cuh"
 #include "cgnslib.h"
@@ -23,6 +24,7 @@ using SEM::Entities::cuda_vector;
 using SEM::Entities::Vec2;
 using SEM::Entities::Element2D_t;
 using SEM::Entities::Face2D_t;
+using namespace SEM::Hilbert;
 
 constexpr int CGIO_MAX_NAME_LENGTH = 33; // Includes the null terminator
 
@@ -52,6 +54,7 @@ SEM::Meshes::Mesh2D_t::Mesh2D_t(std::filesystem::path filename, int initial_N, i
 
     compute_element_geometry<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, elements_.data(), nodes_.data(), polynomial_nodes.data());
     compute_boundary_geometry<<<ghosts_numBlocks_, boundaries_blockSize_, 0, stream_>>>(n_elements_, elements_.size(), elements_.data(), nodes_.data(), polynomial_nodes.data());
+    compute_element_status<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, elements_.data(), nodes_.data());
     compute_face_geometry<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces_.size(), faces_.data(), elements_.data(), nodes_.data());
 }
 
@@ -348,6 +351,7 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
                                   static_cast<size_t>(connectivity[i][2 * j + 1] - 1),
                                   static_cast<size_t>(connectivity[i][2 * j + 1] - 1),
                                   static_cast<size_t>(connectivity[i][2 * j] - 1)};
+                element.status_ = Hilbert::Status::H;
             }
             element_ghost_index += section_ranges[i][1] - section_ranges[i][0] + 1;
         }
@@ -1194,8 +1198,9 @@ auto SEM::Meshes::Mesh2D_t::write_complete_data(deviceFloat time, const device_v
     device_vector<deviceFloat> p_analytical_error(n_elements_ * n_interpolation_points_ * n_interpolation_points_, stream_);
     device_vector<deviceFloat> u_analytical_error(n_elements_ * n_interpolation_points_ * n_interpolation_points_, stream_);
     device_vector<deviceFloat> v_analytical_error(n_elements_ * n_interpolation_points_ * n_interpolation_points_, stream_);
+    device_vector<int> status(n_elements_, stream_);
 
-    SEM::Meshes::get_complete_solution<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, n_interpolation_points_, time, elements_.data(), nodes_.data(), polynomial_nodes.data(), interpolation_matrices.data(), x_output_device_.data(), y_output_device_.data(), p_output_device_.data(), u_output_device_.data(), v_output_device_.data(), N.data(), dp_dt.data(), du_dt.data(), dv_dt.data(), p_error.data(), u_error.data(), v_error.data(), p_sigma.data(), u_sigma.data(), v_sigma.data(), refine.data(), coarsen.data(), split_level.data(), p_analytical_error.data(), u_analytical_error.data(), v_analytical_error.data());
+    SEM::Meshes::get_complete_solution<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, n_interpolation_points_, time, elements_.data(), nodes_.data(), polynomial_nodes.data(), interpolation_matrices.data(), x_output_device_.data(), y_output_device_.data(), p_output_device_.data(), u_output_device_.data(), v_output_device_.data(), N.data(), dp_dt.data(), du_dt.data(), dv_dt.data(), p_error.data(), u_error.data(), v_error.data(), p_sigma.data(), u_sigma.data(), v_sigma.data(), refine.data(), coarsen.data(), split_level.data(), p_analytical_error.data(), u_analytical_error.data(), v_analytical_error.data(), status.data());
     
     std::vector<deviceFloat> dp_dt_host(n_elements_ * n_interpolation_points_ * n_interpolation_points_);
     std::vector<deviceFloat> du_dt_host(n_elements_ * n_interpolation_points_ * n_interpolation_points_);
@@ -1213,6 +1218,7 @@ auto SEM::Meshes::Mesh2D_t::write_complete_data(deviceFloat time, const device_v
     std::vector<deviceFloat> p_analytical_error_host(n_elements_ * n_interpolation_points_ * n_interpolation_points_);
     std::vector<deviceFloat> u_analytical_error_host(n_elements_ * n_interpolation_points_ * n_interpolation_points_);
     std::vector<deviceFloat> v_analytical_error_host(n_elements_ * n_interpolation_points_ * n_interpolation_points_);
+    std::vector<int> status_host(n_elements_);
 
     x_output_device_.copy_to(x_output_host_, stream_);
     y_output_device_.copy_to(y_output_host_, stream_);
@@ -1235,9 +1241,10 @@ auto SEM::Meshes::Mesh2D_t::write_complete_data(deviceFloat time, const device_v
     p_analytical_error.copy_to(p_analytical_error_host, stream_);
     u_analytical_error.copy_to(u_analytical_error_host, stream_);
     v_analytical_error.copy_to(v_analytical_error_host, stream_);
+    status.copy_to(status_host, stream_);
     cudaStreamSynchronize(stream_);
 
-    data_writer.write_complete_data(n_interpolation_points_, n_elements_, time, x_output_host_, y_output_host_, p_output_host_, u_output_host_, v_output_host_, N_host, dp_dt_host, du_dt_host, dv_dt_host, p_error_host, u_error_host, v_error_host, p_sigma_host, u_sigma_host, v_sigma_host, refine_host, coarsen_host, split_level_host, p_analytical_error_host, u_analytical_error_host, v_analytical_error_host);
+    data_writer.write_complete_data(n_interpolation_points_, n_elements_, time, x_output_host_, y_output_host_, p_output_host_, u_output_host_, v_output_host_, N_host, dp_dt_host, du_dt_host, dv_dt_host, p_error_host, u_error_host, v_error_host, p_sigma_host, u_sigma_host, v_sigma_host, refine_host, coarsen_host, split_level_host, p_analytical_error_host, u_analytical_error_host, v_analytical_error_host, status_host);
 
     dp_dt.clear(stream_);
     du_dt.clear(stream_);
@@ -1255,6 +1262,7 @@ auto SEM::Meshes::Mesh2D_t::write_complete_data(deviceFloat time, const device_v
     p_analytical_error.clear(stream_);
     u_analytical_error.clear(stream_);
     v_analytical_error.clear(stream_);
+    status.clear(stream_);
 }
 
 auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& polynomial_nodes, const device_vector<deviceFloat>& barycentric_weights) -> void {
@@ -1931,6 +1939,84 @@ auto SEM::Meshes::compute_boundary_geometry(size_t n_domain_elements, size_t n_t
 }
 
 __global__
+auto SEM::Meshes::compute_element_status(size_t n_elements, Element2D_t* elements, const Vec2<deviceFloat>* nodes) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t element_index = index; element_index < n_elements; element_index += stride) {
+        if (n_elements == 1) {
+            elements[element_index].status_ = Hilbert::Status::H;
+        }
+        else if (element_index == 0) {
+            const size_t next_element_index = element_index + 1;
+
+            const Vec2<deviceFloat> delta_next = elements[next_element_index].center_ - elements[element_index].center_;
+
+            size_t outgoing_side = 0;
+            deviceFloat cross_outgoing = 0;
+            for (size_t i = 0; i < elements[element_index].nodes_.size(); ++i) {
+                const Vec2<deviceFloat> delta_side = nodes[elements[element_index].nodes_[(i + 1 < elements[element_index].nodes_.size()) ? i + 1 : 0]] - nodes[elements[element_index].nodes_[i]];
+
+                const deviceFloat cross_out = delta_next.cross(delta_side);
+                if (cross_out > cross_outgoing) {
+                    cross_outgoing = cross_out;
+                    outgoing_side = i;
+                }
+            }
+
+            elements[element_index].status_ = Hilbert::deduct_first_element_status(outgoing_side);
+        }
+        else if (element_index == n_elements - 1) {
+            const size_t previous_element_index = element_index - 1;
+
+            const Vec2<deviceFloat> delta_previous = elements[previous_element_index].center_ - elements[element_index].center_;
+
+            size_t incoming_side = 0;
+            deviceFloat cross_incoming = 0;
+            for (size_t i = 0; i < elements[element_index].nodes_.size(); ++i) {
+                const Vec2<deviceFloat> delta_side = nodes[elements[element_index].nodes_[(i + 1 < elements[element_index].nodes_.size()) ? i + 1 : 0]] - nodes[elements[element_index].nodes_[i]];
+
+                const deviceFloat cross_in = delta_previous.cross(delta_side);
+                if (cross_in > cross_incoming) {
+                    cross_incoming = cross_in;
+                    incoming_side = i;
+                }
+            }
+
+            elements[element_index].status_ = Hilbert::deduct_last_element_status(incoming_side);
+        }
+        else {
+            const size_t previous_element_index = element_index - 1;
+            const size_t next_element_index = element_index + 1;
+
+            const Vec2<deviceFloat> delta_previous = elements[previous_element_index].center_ - elements[element_index].center_;
+            const Vec2<deviceFloat> delta_next = elements[next_element_index].center_ - elements[element_index].center_;
+
+            size_t incoming_side = 0;
+            deviceFloat cross_incoming = 0;
+            size_t outgoing_side = 0;
+            deviceFloat cross_outgoing = 0;
+            for (size_t i = 0; i < elements[element_index].nodes_.size(); ++i) {
+                const Vec2<deviceFloat> delta_side = nodes[elements[element_index].nodes_[(i + 1 < elements[element_index].nodes_.size()) ? i + 1 : 0]] - nodes[elements[element_index].nodes_[i]];
+
+                const deviceFloat cross_in = delta_previous.cross(delta_side);
+                const deviceFloat cross_out = delta_next.cross(delta_side);
+                if (cross_in > cross_incoming) {
+                    cross_incoming = cross_in;
+                    incoming_side = i;
+                }
+                if (cross_out > cross_outgoing) {
+                    cross_outgoing = cross_out;
+                    outgoing_side = i;
+                }
+            }
+
+            elements[element_index].status_ = Hilbert::deduct_element_status(incoming_side, outgoing_side);
+        }
+    }
+}
+
+__global__
 auto SEM::Meshes::allocate_face_storage(size_t n_faces, Face2D_t* faces) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
@@ -2039,7 +2125,7 @@ auto SEM::Meshes::get_solution(size_t n_elements, size_t n_interpolation_points,
 }
 
 __global__
-auto SEM::Meshes::get_complete_solution(size_t n_elements, size_t n_interpolation_points, deviceFloat time, const Element2D_t* elements, const Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v, int* N, deviceFloat* dp_dt, deviceFloat* du_dt, deviceFloat* dv_dt, deviceFloat* p_error, deviceFloat* u_error, deviceFloat* v_error, deviceFloat* p_sigma, deviceFloat* u_sigma, deviceFloat* v_sigma, int* refine, int* coarsen, int* split_level, deviceFloat* p_analytical_error, deviceFloat* u_analytical_error, deviceFloat* v_analytical_error) -> void {
+auto SEM::Meshes::get_complete_solution(size_t n_elements, size_t n_interpolation_points, deviceFloat time, const Element2D_t* elements, const Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v, int* N, deviceFloat* dp_dt, deviceFloat* du_dt, deviceFloat* dv_dt, deviceFloat* p_error, deviceFloat* u_error, deviceFloat* v_error, deviceFloat* p_sigma, deviceFloat* u_sigma, deviceFloat* v_sigma, int* refine, int* coarsen, int* split_level, deviceFloat* p_analytical_error, deviceFloat* u_analytical_error, deviceFloat* v_analytical_error, int* status) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -2058,6 +2144,7 @@ auto SEM::Meshes::get_complete_solution(size_t n_elements, size_t n_interpolatio
         refine[element_index] = element.refine_;
         coarsen[element_index] = element.coarsen_;
         split_level[element_index] = element.split_level_;
+        status[element_index] = element.status_;
         const std::array<Vec2<deviceFloat>, 4> points {nodes[element.nodes_[0]],
                                                        nodes[element.nodes_[1]],
                                                        nodes[element.nodes_[2]],
@@ -2825,7 +2912,7 @@ auto SEM::Meshes::p_adapt(size_t n_elements, Element2D_t* elements, int N_max, c
     
     for (size_t i = index; i < n_elements; i += stride) {
         if (elements[i].would_p_refine(N_max)) {
-            Element2D_t new_element(elements[i].N_ + 2, elements[i].split_level_, elements[i].faces_, elements[i].nodes_);
+            Element2D_t new_element(elements[i].N_ + 2, elements[i].split_level_, elements[i].status_, elements[i].faces_, elements[i].nodes_);
 
             new_element.interpolate_from(elements[i], polynomial_nodes, barycentric_weights);
 
@@ -2850,7 +2937,7 @@ auto SEM::Meshes::p_adapt_move(size_t n_elements, Element2D_t* elements, Element
         new_elements[i].clear_storage();
 
         if (elements[i].would_p_refine(N_max)) {
-            new_elements[i] = Element2D_t(elements[i].N_ + 2, elements[i].split_level_, elements[i].faces_, elements[i].nodes_);
+            new_elements[i] = Element2D_t(elements[i].N_ + 2, elements[i].split_level_, elements[i].status_, elements[i].faces_, elements[i].nodes_);
 
             new_elements[i].interpolate_from(elements[i], polynomial_nodes, barycentric_weights);
 
@@ -2877,7 +2964,7 @@ auto SEM::Meshes::p_adapt_split_faces(size_t n_elements, size_t n_faces, size_t 
         new_elements[element_index].clear_storage();
 
         if (elements[element_index].would_p_refine(N_max)) {
-           new_elements[element_index] = Element2D_t{element.N_ + 2, element.split_level_, element.faces_, element.nodes_};
+           new_elements[element_index] = Element2D_t(element.N_ + 2, element.split_level_, element.status_, element.faces_, element.nodes_);
 
             // Adjusting faces for splitting elements
             for (size_t side_index = 0; side_index < element.faces_.size(); ++side_index) {
@@ -3033,6 +3120,8 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, si
             const std::array<Vec2<deviceFloat>, 4> element_nodes = {nodes[element.nodes_[0]], nodes[element.nodes_[1]], nodes[element.nodes_[2]], nodes[element.nodes_[3]]}; // CHECK this won't work with elements with more than 4 sides
 
             // CHECK follow Hilbert curve
+            const std::array<size_t, 4> child_order = Hilbert::child_order(element.status_);
+            const std::array<Hilbert::Status, 4> child_statuses = Hilbert::child_statuses(element.status_);
             const size_t new_face_index = n_faces + 4 * n_splitting_elements_before;
 
             for (size_t side_index = 0; side_index < element.nodes_.size(); ++side_index) {
@@ -3040,7 +3129,7 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, si
                 const size_t next_side_index = (side_index + 1 < element.nodes_.size()) ? side_index + 1 : 0;
                 const size_t opposite_side_index = (side_index + 2 < element.nodes_.size()) ? side_index + 2 : side_index + 2 - element.nodes_.size();
 
-                const std::array<size_t, 2> side_element_indices {element_index + side_index, element_index + next_side_index};
+                const std::array<size_t, 2> side_element_indices {element_index + child_order[side_index], element_index + child_order[next_side_index]};
                 const std::array<size_t, 2> side_element_sides {next_side_index, previous_side_index};
                 
                 new_faces[new_face_index + side_index].clear_storage();
@@ -3153,7 +3242,7 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, si
                                 && D_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
                                 && D_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
         
-                                    new_element_faces[side_index][new_element_side_face_index] = face_index;
+                                new_element_faces[side_index][new_element_side_face_index] = face_index;
                                 ++new_element_side_face_index;
                             }
                             // The second half of the face is within the element
@@ -3162,7 +3251,7 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, si
                                 && E_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
                                 && E_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
         
-                                    new_element_faces[side_index][new_element_side_face_index] = splitting_face_index;
+                                new_element_faces[side_index][new_element_side_face_index] = splitting_face_index;
                                 ++new_element_side_face_index;
                             }
                         }
@@ -3179,7 +3268,7 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, si
                                 && D_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
                                 && D_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
         
-                                    new_element_faces[side_index][new_element_side_face_index] = face_index;
+                                new_element_faces[side_index][new_element_side_face_index] = face_index;
                                 ++new_element_side_face_index;
                             }
                         }
@@ -3314,7 +3403,7 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, si
                                 && D_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
                                 && D_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
         
-                                    new_element_faces[previous_side_index][new_element_side_face_index] = face_index;
+                                new_element_faces[previous_side_index][new_element_side_face_index] = face_index;
                                 ++new_element_side_face_index;
                             }
                         }
@@ -3327,8 +3416,8 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, si
                 new_element_node_indices[opposite_side_index] = new_node_index;
                 new_element_node_indices[previous_side_index] = new_node_indices[previous_side_index];
 
-                new_elements[element_index + side_index].clear_storage();
-                new_elements[element_index + side_index] = Element2D_t(element.N_, element.split_level_ + 1, new_element_faces, new_element_node_indices);
+                new_elements[element_index + child_order[side_index]].clear_storage();
+                new_elements[element_index + child_order[side_index]] = Element2D_t(element.N_, element.split_level_ + 1, child_statuses[side_index], new_element_faces, new_element_node_indices);
 
                 std::array<Vec2<deviceFloat>, 4> new_element_nodes {};
                 new_element_nodes[side_index] = nodes[element.nodes_[side_index]];
@@ -3336,8 +3425,8 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, si
                 new_element_nodes[opposite_side_index] = nodes[new_node_index];
                 new_element_nodes[previous_side_index] = new_nodes[previous_side_index];
 
-                new_elements[element_index + side_index].interpolate_from(new_element_nodes, element_nodes, element, polynomial_nodes, barycentric_weights);
-                new_elements[element_index + side_index].compute_geometry(new_element_nodes, polynomial_nodes);
+                new_elements[element_index + child_order[side_index]].interpolate_from(new_element_nodes, element_nodes, element, polynomial_nodes, barycentric_weights);
+                new_elements[element_index + child_order[side_index]].compute_geometry(new_element_nodes, polynomial_nodes);
             }
 
             for (size_t side_index = 0; side_index < element.nodes_.size(); ++side_index) {
@@ -3352,8 +3441,8 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, si
                     std::array<Vec2<deviceFloat>, 2>{nodes[new_node_index], new_node}
                 };
                 const std::array<Vec2<deviceFloat>, 2> elements_centres {
-                    new_elements[element_index + side_index].center_,
-                    new_elements[element_index + next_side_index].center_
+                    new_elements[element_index + child_order[side_index]].center_,
+                    new_elements[element_index + child_order[next_side_index]].center_
                 };
 
                 new_faces[new_face_index + side_index].compute_geometry(elements_centres, face_nodes, elements_nodes);
@@ -3362,7 +3451,7 @@ auto SEM::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, si
         // p refinement
         else if (element.would_p_refine(N_max)) {
             new_elements[element_index].clear_storage();
-            new_elements[element_index] = Element2D_t(element.N_ + 2, element.split_level_, element.faces_, element.nodes_);
+            new_elements[element_index] = Element2D_t(element.N_ + 2, element.split_level_, element.status_, element.faces_, element.nodes_);
 
             // Adjusting faces for splitting elements
             for (size_t side_index = 0; side_index < element.faces_.size(); ++side_index) {
@@ -3512,6 +3601,8 @@ auto SEM::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_splitting
             };
 
             if (element_L.would_h_refine(max_split_level)) {
+                const std::array<size_t, 4> child_order_L = Hilbert::child_order(element_L.status_);
+
                 const std::array<Vec2<deviceFloat>, 2> element_nodes {nodes[element_L.nodes_[element_L_side_index]], nodes[element_L.nodes_[element_L_next_side_index]]};
                 const Vec2<deviceFloat> new_element_node = (element_nodes[0] + element_nodes[1])/2;
 
@@ -3534,7 +3625,7 @@ auto SEM::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_splitting
 
                     const size_t previous_side_index = (element_L_side_index > 0) ? element_L_side_index - 1 : element_L.nodes_.size() - 1;
                     
-                    new_element_indices[0][0] += element_L_side_index;
+                    new_element_indices[0][0] += child_order_L[element_L_side_index];
                     elements_centres[0][0] = (nodes[element_L.nodes_[element_L_side_index]] + element_L.center_ + (nodes[element_L.nodes_[element_L_side_index]] + nodes[element_L.nodes_[element_L_next_side_index]])/2 + (nodes[element_L.nodes_[element_L_side_index]] + nodes[element_L.nodes_[previous_side_index]])/2)/4;
                     elements_nodes[0][0] = {nodes[element_L.nodes_[element_L_side_index]], (nodes[element_L.nodes_[element_L_side_index]] + nodes[element_L.nodes_[element_L_next_side_index]])/2};
                 }
@@ -3546,7 +3637,7 @@ auto SEM::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_splitting
 
                     const size_t previous_side_index = (element_L_side_index > 0) ? element_L_side_index - 1 : element_L.nodes_.size() - 1;
                     
-                    new_element_indices[1][0] += element_L_side_index;
+                    new_element_indices[1][0] += child_order_L[element_L_side_index];
                     elements_centres[1][0] = (nodes[element_L.nodes_[element_L_side_index]] + element_L.center_ + (nodes[element_L.nodes_[element_L_side_index]] + nodes[element_L.nodes_[element_L_next_side_index]])/2 + (nodes[element_L.nodes_[element_L_side_index]] + nodes[element_L.nodes_[previous_side_index]])/2)/4;
                     elements_nodes[1][0] = {nodes[element_L.nodes_[element_L_side_index]], (nodes[element_L.nodes_[element_L_side_index]] + nodes[element_L.nodes_[element_L_next_side_index]])/2};
                 }
@@ -3558,7 +3649,7 @@ auto SEM::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_splitting
 
                     const size_t opposite_side_index = (element_L_side_index + 2 < element_L.nodes_.size()) ? element_L_side_index + 2 : element_L_side_index + 2 - element_L.nodes_.size();
 
-                    new_element_indices[0][0] += element_L_next_side_index;
+                    new_element_indices[0][0] += child_order_L[element_L_next_side_index];
                     elements_centres[0][0] = (nodes[element_L.nodes_[element_L_next_side_index]] + element_L.center_ + (nodes[element_L.nodes_[element_L_side_index]] + nodes[element_L.nodes_[element_L_next_side_index]])/2 + (nodes[element_L.nodes_[element_L_next_side_index]] + nodes[element_L.nodes_[opposite_side_index]])/2)/4;
                     elements_nodes[0][0] = {(nodes[element_L.nodes_[element_L_side_index]] + nodes[element_L.nodes_[element_L_next_side_index]])/2, nodes[element_L.nodes_[element_L_next_side_index]]};
                 }
@@ -3570,12 +3661,14 @@ auto SEM::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_splitting
 
                     const size_t opposite_side_index = (element_L_side_index + 2 < element_L.nodes_.size()) ? element_L_side_index + 2 : element_L_side_index + 2 - element_L.nodes_.size();
 
-                    new_element_indices[1][0] += element_L_next_side_index;
+                    new_element_indices[1][0] += child_order_L[element_L_next_side_index];
                     elements_centres[1][0] = (nodes[element_L.nodes_[element_L_next_side_index]] + element_L.center_ + (nodes[element_L.nodes_[element_L_side_index]] + nodes[element_L.nodes_[element_L_next_side_index]])/2 + (nodes[element_L.nodes_[element_L_next_side_index]] + nodes[element_L.nodes_[opposite_side_index]])/2)/4;
                     elements_nodes[1][0] = {(nodes[element_L.nodes_[element_L_side_index]] + nodes[element_L.nodes_[element_L_next_side_index]])/2, nodes[element_L.nodes_[element_L_next_side_index]]};
                 }
             }
             if (element_R.would_h_refine(max_split_level)) {
+                const std::array<size_t, 4> child_order_R = Hilbert::child_order(element_R.status_);
+
                 const std::array<Vec2<deviceFloat>, 2> element_nodes {nodes[element_R.nodes_[element_R_side_index]], nodes[element_R.nodes_[element_R_next_side_index]]};
                 const Vec2<deviceFloat> new_element_node = (element_nodes[0] + element_nodes[1])/2;
 
@@ -3598,7 +3691,7 @@ auto SEM::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_splitting
 
                     const size_t previous_side_index = (element_R_side_index > 0) ? element_R_side_index - 1 : element_R.nodes_.size() - 1;
                     
-                    new_element_indices[0][1] += element_R_side_index;
+                    new_element_indices[0][1] += child_order_R[element_R_side_index];
                     elements_centres[0][1] = (nodes[element_R.nodes_[element_R_side_index]] + element_R.center_ + (nodes[element_R.nodes_[element_R_side_index]] + nodes[element_R.nodes_[element_R_next_side_index]])/2 + (nodes[element_R.nodes_[element_R_side_index]] + nodes[element_R.nodes_[previous_side_index]])/2)/4;
                     elements_nodes[0][1] = {nodes[element_R.nodes_[element_R_side_index]], (nodes[element_R.nodes_[element_R_side_index]] + nodes[element_R.nodes_[element_R_next_side_index]])/2};
                 }
@@ -3610,7 +3703,7 @@ auto SEM::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_splitting
 
                     const size_t previous_side_index = (element_R_side_index > 0) ? element_R_side_index - 1 : element_R.nodes_.size() - 1;
                     
-                    new_element_indices[1][1] += element_R_side_index;
+                    new_element_indices[1][1] += child_order_R[element_R_side_index];
                     elements_centres[1][1] = (nodes[element_R.nodes_[element_R_side_index]] + element_R.center_ + (nodes[element_R.nodes_[element_R_side_index]] + nodes[element_R.nodes_[element_R_next_side_index]])/2 + (nodes[element_R.nodes_[element_R_side_index]] + nodes[element_R.nodes_[previous_side_index]])/2)/4;
                     elements_nodes[1][1] = {nodes[element_R.nodes_[element_R_side_index]], (nodes[element_R.nodes_[element_R_side_index]] + nodes[element_R.nodes_[element_R_next_side_index]])/2};
                 }
@@ -3622,7 +3715,7 @@ auto SEM::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_splitting
 
                     const size_t opposite_side_index = (element_R_side_index + 2 < element_R.nodes_.size()) ? element_R_side_index + 2 : element_R_side_index + 2 - element_R.nodes_.size();
 
-                    new_element_indices[0][1] += element_R_next_side_index;
+                    new_element_indices[0][1] += child_order_R[element_R_next_side_index];
                     elements_centres[0][1] = (nodes[element_R.nodes_[element_R_next_side_index]] + element_R.center_ + (nodes[element_R.nodes_[element_R_side_index]] + nodes[element_R.nodes_[element_R_next_side_index]])/2 + (nodes[element_R.nodes_[element_R_next_side_index]] + nodes[element_R.nodes_[opposite_side_index]])/2)/4;
                     elements_nodes[0][1] = {(nodes[element_R.nodes_[element_R_side_index]] + nodes[element_R.nodes_[element_R_next_side_index]])/2, nodes[element_R.nodes_[element_R_next_side_index]]};
                 }
@@ -3634,7 +3727,7 @@ auto SEM::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_splitting
 
                     const size_t opposite_side_index = (element_R_side_index + 2 < element_R.nodes_.size()) ? element_R_side_index + 2 : element_R_side_index + 2 - element_R.nodes_.size();
 
-                    new_element_indices[1][1] += element_R_next_side_index;
+                    new_element_indices[1][1] += child_order_R[element_R_next_side_index];
                     elements_centres[1][1] = (nodes[element_R.nodes_[element_R_next_side_index]] + element_R.center_ + (nodes[element_R.nodes_[element_R_side_index]] + nodes[element_R.nodes_[element_R_next_side_index]])/2 + (nodes[element_R.nodes_[element_R_next_side_index]] + nodes[element_R.nodes_[opposite_side_index]])/2)/4;
                     elements_nodes[1][1] = {(nodes[element_R.nodes_[element_R_side_index]] + nodes[element_R.nodes_[element_R_next_side_index]])/2, nodes[element_R.nodes_[element_R_next_side_index]]};
                 }
@@ -3674,6 +3767,8 @@ auto SEM::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_splitting
                 };
 
                 if (element_L.would_h_refine(max_split_level)) {
+                    const std::array<size_t, 4> child_order_L = Hilbert::child_order(element_L.status_);
+
                     const std::array<Vec2<deviceFloat>, 2> element_nodes {nodes[element_L.nodes_[element_L_side_index]], nodes[element_L.nodes_[element_L_next_side_index]]};
                     const Vec2<deviceFloat> new_element_node = (element_nodes[0] + element_nodes[1])/2;
                     Vec2<deviceFloat> element_centre {0};
@@ -3697,7 +3792,7 @@ auto SEM::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_splitting
                         && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
                         && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
 
-                        face_new_element_indices[0] += element_L_side_index;
+                        face_new_element_indices[0] += child_order_L[element_L_side_index];
                         element_geometry_nodes[0] = {element_nodes[0], new_element_node};
 
                         const size_t previous_side_index = (element_L_side_index > 0) ? element_L_side_index - 1 : element_L.nodes_.size() - 1;
@@ -3709,7 +3804,7 @@ auto SEM::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_splitting
                         && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
                         && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
 
-                        face_new_element_indices[0] += element_L_next_side_index;
+                        face_new_element_indices[0] += child_order_L[element_L_next_side_index];
                         element_geometry_nodes[0] = {new_element_node, element_nodes[1]};
 
                         const size_t opposite_side_index = (element_L_side_index + 2 < element_L.nodes_.size()) ? element_L_side_index + 2 : element_L_side_index + 2 - element_L.nodes_.size();
@@ -3718,6 +3813,8 @@ auto SEM::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_splitting
 
                 }
                 if (element_R.would_h_refine(max_split_level)) {
+                    const std::array<size_t, 4> child_order_R = Hilbert::child_order(element_R.status_);
+
                     const std::array<Vec2<deviceFloat>, 2> element_nodes {nodes[element_R.nodes_[element_R_side_index]], nodes[element_R.nodes_[element_R_next_side_index]]};
                     const Vec2<deviceFloat> new_element_node = (element_nodes[0] + element_nodes[1])/2;
                     Vec2<deviceFloat> element_centre {0};
@@ -3741,7 +3838,7 @@ auto SEM::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_splitting
                         && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
                         && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
 
-                        face_new_element_indices[1] += element_R_side_index;
+                        face_new_element_indices[1] += child_order_R[element_R_side_index];
                         element_geometry_nodes[1] = {element_nodes[0], new_element_node};
                         
                         const size_t previous_side_index = (element_R_side_index > 0) ? element_R_side_index - 1 : element_R.nodes_.size() - 1;
@@ -3753,7 +3850,7 @@ auto SEM::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_splitting
                         && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
                         && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
 
-                        face_new_element_indices[1] += element_R_next_side_index;
+                        face_new_element_indices[1] += child_order_R[element_R_next_side_index];
                         element_geometry_nodes[1] = {new_element_node, element_nodes[1]};
                         
                         const size_t opposite_side_index = (element_R_side_index + 2 < element_R.nodes_.size()) ? element_R_side_index + 2 : element_R_side_index + 2 - element_R.nodes_.size();
@@ -3948,6 +4045,7 @@ auto SEM::Meshes::split_boundaries(size_t n_boundaries, size_t n_faces, size_t n
                                                       new_node_index,
                                                       new_node_index,
                                                       destination_element.nodes_[0]};
+            new_elements[new_element_index].status_ = Hilbert::Status::H;
             new_elements[new_element_index].split_level_ = destination_element.split_level_ + 1;
             new_elements[new_element_index].refine_ = false;
             new_elements[new_element_index].coarsen_ = false;
@@ -3961,6 +4059,7 @@ auto SEM::Meshes::split_boundaries(size_t n_boundaries, size_t n_faces, size_t n
                                                           destination_element.nodes_[1],
                                                           destination_element.nodes_[1],
                                                           new_node_index};
+            new_elements[new_element_index + 1].status_ = Hilbert::Status::H;
             new_elements[new_element_index + 1].split_level_ = destination_element.split_level_ + 1;
             new_elements[new_element_index + 1].refine_ = false;
             new_elements[new_element_index + 1].coarsen_ = false;
@@ -4039,9 +4138,10 @@ auto SEM::Meshes::split_interfaces(size_t n_local_interfaces, size_t n_faces, si
 
         if (source_element.would_h_refine(max_split_level)) {
             const size_t source_element_next_side = (source_element_side + 1 < source_element.nodes_.size()) ? source_element_side + 1 : 0;
+            const std::array<size_t, 4> child_order = Hilbert::child_order(source_element.status_);
 
-            new_local_interfaces_origin[new_interface_index]     = source_element_new_index + source_element_side;
-            new_local_interfaces_origin[new_interface_index + 1] = source_element_new_index + source_element_next_side;
+            new_local_interfaces_origin[new_interface_index]     = source_element_new_index + child_order[source_element_side];
+            new_local_interfaces_origin[new_interface_index + 1] = source_element_new_index + child_order[source_element_next_side];
             new_local_interfaces_origin_side[new_interface_index]     = source_element_side;
             new_local_interfaces_origin_side[new_interface_index + 1] = source_element_side;
             new_local_interfaces_destination[new_interface_index]     = new_element_index;
@@ -4087,6 +4187,7 @@ auto SEM::Meshes::split_interfaces(size_t n_local_interfaces, size_t n_faces, si
                                                       new_node_index,
                                                       new_node_index,
                                                       destination_element.nodes_[0]};
+            new_elements[new_element_index].status_ = Hilbert::Status::H;
             new_elements[new_element_index].split_level_ = destination_element.split_level_ + 1;
             new_elements[new_element_index].refine_ = false;
             new_elements[new_element_index].coarsen_ = false;
@@ -4099,6 +4200,7 @@ auto SEM::Meshes::split_interfaces(size_t n_local_interfaces, size_t n_faces, si
                                                           destination_element.nodes_[1],
                                                           destination_element.nodes_[1],
                                                           new_node_index};
+            new_elements[new_element_index + 1].status_ = Hilbert::Status::H;
             new_elements[new_element_index + 1].split_level_ = destination_element.split_level_ + 1;
             new_elements[new_element_index + 1].refine_ = false;
             new_elements[new_element_index + 1].coarsen_ = false;
@@ -4448,9 +4550,10 @@ auto SEM::Meshes::split_mpi_outgoing_interfaces(size_t n_MPI_interface_elements,
 
         if (origin_element.would_h_refine(max_split_level)) {
             const size_t next_side_index = (mpi_interfaces_origin_side[mpi_interface_index] + 1 < origin_element.nodes_.size()) ? mpi_interfaces_origin_side[mpi_interface_index] + 1 : 0;
+            const std::array<size_t, 4> child_order = Hilbert::child_order(origin_element.status_);
 
-            new_mpi_interfaces_origin[new_mpi_interface_index]     = origin_element_new_index + mpi_interfaces_origin_side[mpi_interface_index];
-            new_mpi_interfaces_origin[new_mpi_interface_index + 1] = origin_element_new_index + next_side_index;
+            new_mpi_interfaces_origin[new_mpi_interface_index]     = origin_element_new_index + child_order[mpi_interfaces_origin_side[mpi_interface_index]];
+            new_mpi_interfaces_origin[new_mpi_interface_index + 1] = origin_element_new_index + child_order[next_side_index];
             new_mpi_interfaces_origin_side[new_mpi_interface_index + 1] = mpi_interfaces_origin_side[mpi_interface_index];
         }
         else {
@@ -4522,6 +4625,7 @@ auto SEM::Meshes::split_mpi_incoming_interfaces(size_t n_MPI_interface_elements,
                                                       new_node_index,
                                                       new_node_index,
                                                       destination_element.nodes_[0]};
+            new_elements[new_element_index].status_ = Hilbert::Status::H;
             new_elements[new_element_index].split_level_ = destination_element.split_level_ + 1;
             new_elements[new_element_index].refine_ = false;
             new_elements[new_element_index].coarsen_ = false;
@@ -4534,6 +4638,7 @@ auto SEM::Meshes::split_mpi_incoming_interfaces(size_t n_MPI_interface_elements,
                                                           destination_element.nodes_[1],
                                                           destination_element.nodes_[1],
                                                           new_node_index};
+            new_elements[new_element_index + 1].status_ = Hilbert::Status::H;
             new_elements[new_element_index + 1].split_level_ = destination_element.split_level_ + 1;
             new_elements[new_element_index + 1].refine_ = false;
             new_elements[new_element_index + 1].coarsen_ = false;
@@ -4944,6 +5049,8 @@ auto SEM::Meshes::adjust_faces_neighbours(size_t n_faces, Face2D_t* faces, const
             };
         
             if (element_L.would_h_refine(max_split_level)) {
+                const std::array<size_t, 4> child_order_L = Hilbert::child_order(element_L.status_);
+
                 const std::array<Vec2<deviceFloat>, 2> element_nodes {nodes[element_L.nodes_[element_L_side_index]], nodes[element_L.nodes_[element_L_next_side_index]]};
                 const Vec2<deviceFloat> new_element_node = (element_nodes[0] + element_nodes[1])/2;
                 Vec2<deviceFloat> element_centre {0};
@@ -4967,7 +5074,7 @@ auto SEM::Meshes::adjust_faces_neighbours(size_t n_faces, Face2D_t* faces, const
                     && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
                     && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
 
-                    face_new_element_indices[0] = element_L_side_index;
+                    face_new_element_indices[0] += child_order_L[element_L_side_index];
                     element_geometry_nodes[0] = {element_nodes[0], new_element_node};
 
                     const size_t previous_side_index = (element_L_side_index > 0) ? element_L_side_index - 1 : element_L.nodes_.size() - 1;
@@ -4980,7 +5087,7 @@ auto SEM::Meshes::adjust_faces_neighbours(size_t n_faces, Face2D_t* faces, const
                     && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
                     && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
 
-                    face_new_element_indices[0] = element_L_next_side_index;
+                    face_new_element_indices[0] += child_order_L[element_L_next_side_index];
                     element_geometry_nodes[0] = {new_element_node, element_nodes[1]};
 
                     const size_t opposite_side_index = (element_L_side_index + 2 < element_L.nodes_.size()) ? element_L_side_index + 2 : element_L_side_index + 2 - element_L.nodes_.size();
@@ -4990,6 +5097,8 @@ auto SEM::Meshes::adjust_faces_neighbours(size_t n_faces, Face2D_t* faces, const
 
             }
             if (element_R.would_h_refine(max_split_level)) {
+                const std::array<size_t, 4> child_order_R = Hilbert::child_order(element_R.status_);
+
                 const std::array<Vec2<deviceFloat>, 2> element_nodes {nodes[element_R.nodes_[element_R_side_index]], nodes[element_R.nodes_[element_R_next_side_index]]};
                 const Vec2<deviceFloat> new_element_node = (element_nodes[0] + element_nodes[1])/2;
                 Vec2<deviceFloat> element_centre {0};
@@ -5013,7 +5122,7 @@ auto SEM::Meshes::adjust_faces_neighbours(size_t n_faces, Face2D_t* faces, const
                     && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
                     && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
 
-                    face_new_element_indices[1] += element_R_side_index;
+                    face_new_element_indices[1] += child_order_R[element_R_side_index];
                     element_geometry_nodes[1] = {element_nodes[0], new_element_node};
                         
                     const size_t previous_side_index = (element_R_side_index > 0) ? element_R_side_index - 1 : element_R.nodes_.size() - 1;
@@ -5025,7 +5134,7 @@ auto SEM::Meshes::adjust_faces_neighbours(size_t n_faces, Face2D_t* faces, const
                     && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
                     && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
 
-                    face_new_element_indices[1] += element_R_next_side_index;
+                    face_new_element_indices[1] += child_order_R[element_R_next_side_index];
                     element_geometry_nodes[1] = {new_element_node, element_nodes[1]};
                         
                     const size_t opposite_side_index = (element_R_side_index + 2 < element_R.nodes_.size()) ? element_R_side_index + 2 : element_R_side_index + 2 - element_R.nodes_.size();

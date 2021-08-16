@@ -9,6 +9,7 @@
 #include "entities/Element2D_t.cuh"
 #include "meshes/Mesh2D_t.cuh"
 #include "entities/device_vector.cuh"
+#include "functions/Hilbert_splitting.cuh"
 
 using SEM::Entities::Vec2;
 
@@ -28,8 +29,8 @@ auto face_to_element_projection_init(int N_test_elements, int N_test_faces, size
         element_faces[2][0] = i;
         element_faces[3][0] = i;
 
-        elements[2 * i]     = SEM::Entities::Element2D_t(N_test_elements, 0, element_faces, std::array<size_t, 4>{6 * i, 6 * i + 1, 6 * i + 2, 6 * i + 3});
-        elements[2 * i + 1] = SEM::Entities::Element2D_t(N_test_elements, 0, element_faces, std::array<size_t, 4>{6 * i + 4, 6 * i + 5, 6 * i + 1, 6 * i});
+        elements[2 * i]     = SEM::Entities::Element2D_t(N_test_elements, 0, SEM::Hilbert::Status::H, element_faces, std::array<size_t, 4>{6 * i, 6 * i + 1, 6 * i + 2, 6 * i + 3});
+        elements[2 * i + 1] = SEM::Entities::Element2D_t(N_test_elements, 0, SEM::Hilbert::Status::R, element_faces, std::array<size_t, 4>{6 * i + 4, 6 * i + 5, 6 * i + 1, 6 * i});
 
         faces[i] = SEM::Entities::Face2D_t(N_test_faces, std::array<size_t, 2>{6 * i, 6 * i + 1}, std::array<size_t, 2>{2 * i, 2 * i + 1}, std::array<size_t, 2>{0, 2});
 
@@ -70,8 +71,8 @@ auto faces_to_element_projection_init(int N, size_t n_faces, SEM::Entities::Elem
         element_faces[3][0] = 2 * i;
         element_faces[3][1] = 2 * i + 1;
 
-        elements[2 * i]     = SEM::Entities::Element2D_t(N, 0, element_faces, std::array<size_t, 4>{6 * i, 6 * i + 1, 6 * i + 2, 6 * i + 3});
-        elements[2 * i + 1] = SEM::Entities::Element2D_t(N, 0, element_faces, std::array<size_t, 4>{6 * i + 4, 6 * i + 5, 6 * i + 1, 6 * i});
+        elements[2 * i]     = SEM::Entities::Element2D_t(N, 0, SEM::Hilbert::Status::H, element_faces, std::array<size_t, 4>{6 * i, 6 * i + 1, 6 * i + 2, 6 * i + 3});
+        elements[2 * i + 1] = SEM::Entities::Element2D_t(N, 0, SEM::Hilbert::Status::B, element_faces, std::array<size_t, 4>{6 * i + 4, 6 * i + 5, 6 * i + 1, 6 * i});
 
         faces[2 * i]     = SEM::Entities::Face2D_t(N, std::array<size_t, 2>{8 * i, 8 * i + 1},     std::array<size_t, 2>{2 * i, 2 * i + 1}, std::array<size_t, 2>{0, 2});
         faces[2 * i + 1] = SEM::Entities::Face2D_t(N, std::array<size_t, 2>{8 * i + 1, 8 * i + 2}, std::array<size_t, 2>{2 * i, 2 * i + 1}, std::array<size_t, 2>{0, 2});
