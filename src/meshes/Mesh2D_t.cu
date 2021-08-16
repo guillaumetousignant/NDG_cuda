@@ -1076,6 +1076,12 @@ auto SEM::Meshes::Mesh2D_t::print() const -> void {
     }
 
     std::cout << std::endl <<  "Geometry" << std::endl;
+    std::cout << '\t' <<  "Element Hilbert status:" << std::endl;
+    constexpr std::array<char, 4> status_letter {'H', 'A', 'R', B};
+    for (size_t i = 0; i < host_elements.size(); ++i) {
+        std::cout << '\t' << '\t' << "element " << std::setw(6) << i << " : " << status_letter[host_elements[i].status_] << std::endl;
+    }
+
     std::cout << '\t' <<  "Element min length:" << std::endl;
     for (size_t i = 0; i < host_elements.size(); ++i) {
         std::cout << '\t' << '\t' << "element " << std::setw(6) << i << " : " << host_elements[i].delta_xy_min_ << std::endl;
