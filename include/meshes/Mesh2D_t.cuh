@@ -235,7 +235,7 @@ namespace SEM { namespace Meshes {
     auto get_MPI_interfaces(size_t n_MPI_interface_elements, const SEM::Entities::Element2D_t* elements, const size_t* MPI_interfaces_origin, const size_t* MPI_interfaces_origin_side, int maximum_N, deviceFloat* p, deviceFloat* u, deviceFloat* v) -> void;
 
     __global__
-    auto get_MPI_interfaces_N(size_t n_MPI_interface_elements, const SEM::Entities::Element2D_t* elements, const size_t* MPI_interfaces_origin, int* N) -> void;
+    auto get_MPI_interfaces_N(size_t n_MPI_interface_elements, int N_max, const SEM::Entities::Element2D_t* elements, const size_t* MPI_interfaces_origin, int* N) -> void;
 
     __global__
     auto get_MPI_interfaces_adaptivity(size_t n_MPI_interface_elements, const SEM::Entities::Element2D_t* elements, const size_t* MPI_interfaces_origin, int* N, bool* elements_splitting, int max_split_level, int N_max) -> void;

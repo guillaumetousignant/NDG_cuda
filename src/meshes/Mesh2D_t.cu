@@ -1289,7 +1289,7 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
             int global_size;
             MPI_Comm_size(MPI_COMM_WORLD, &global_size);
             
-            SEM::Meshes::get_MPI_interfaces_N<<<mpi_interfaces_outgoing_numBlocks_, boundaries_blockSize_, 0, stream_>>>(mpi_interfaces_origin_.size(), elements_.data(), mpi_interfaces_origin_.data(), device_interfaces_N_.data());
+            SEM::Meshes::get_MPI_interfaces_N<<<mpi_interfaces_outgoing_numBlocks_, boundaries_blockSize_, 0, stream_>>>(mpi_interfaces_origin_.size(), N_max, elements_.data(), mpi_interfaces_origin_.data(), device_interfaces_N_.data());
 
             device_interfaces_N_.copy_to(host_interfaces_N_, stream_);
             for (size_t mpi_interface_element_index = 0; mpi_interface_element_index < host_interfaces_refine_.size(); ++mpi_interface_element_index) {
@@ -2853,12 +2853,12 @@ auto SEM::Meshes::get_MPI_interfaces(size_t n_MPI_interface_elements, const Elem
 }
 
 __global__
-auto SEM::Meshes::get_MPI_interfaces_N(size_t n_MPI_interface_elements, const Element2D_t* elements, const size_t* MPI_interfaces_origin, int* N) -> void {
+auto SEM::Meshes::get_MPI_interfaces_N(size_t n_MPI_interface_elements, int N_max, const Element2D_t* elements, const size_t* MPI_interfaces_origin, int* N) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
     for (size_t interface_index = index; interface_index < n_MPI_interface_elements; interface_index += stride) {
-        N[interface_index] = elements[MPI_interfaces_origin[interface_index]].N_;
+        N[interface_index] = elements[MPI_interfaces_origin[interface_index]].N_ + 2 * elements[MPI_interfaces_origin[interface_index]].would_p_refine(N_max);
     }
 }
 
