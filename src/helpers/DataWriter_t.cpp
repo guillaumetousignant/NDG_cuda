@@ -392,10 +392,11 @@ auto SEM::Helpers::DataWriter_t::write_complete_data(size_t N_interpolation_poin
     velocity_analytical_error->SetName("VelocityAnalyticalError");
 
     for (size_t element_index = 0; element_index < N_elements; ++element_index) {
+        const size_t offset = element_index * N_interpolation_points * N_interpolation_points;
         for (size_t i = 0; i < N_interpolation_points; ++i) {
             for (size_t j = 0; j < N_interpolation_points; ++j) {
-                velocity_analytical_error->InsertNextValue(u_analytical_error[element_index]);
-                velocity_analytical_error->InsertNextValue(v_analytical_error[element_index]);
+                velocity_analytical_error->InsertNextValue(u_analytical_error[offset + i * N_interpolation_points + j]);
+                velocity_analytical_error->InsertNextValue(v_analytical_error[offset + i * N_interpolation_points + j]);
             }
         }
     }
