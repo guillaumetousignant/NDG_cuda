@@ -2106,6 +2106,10 @@ auto SEM::Meshes::initial_conditions_2D(size_t n_elements, Element2D_t* elements
                 element.p_[i * (element.N_ + 1) + j] = state[0];
                 element.u_[i * (element.N_ + 1) + j] = state[1];
                 element.v_[i * (element.N_ + 1) + j] = state[2];
+
+                element.G_p_[i * (element.N_ + 1) + j] = 0;
+                element.G_u_[i * (element.N_ + 1) + j] = 0;
+                element.G_v_[i * (element.N_ + 1) + j] = 0;
             }
         }
     }
