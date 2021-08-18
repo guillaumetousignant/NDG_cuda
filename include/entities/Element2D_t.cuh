@@ -11,7 +11,7 @@ namespace SEM { namespace Entities {
     class Element2D_t { // Turn this into separate vectors, because cache exists
         public:
             __device__ 
-            Element2D_t(int N, int split_level, SEM::Hilbert::Status status, const std::array<SEM::Entities::cuda_vector<size_t>, 4>& faces, std::array<size_t, 4> nodes);
+            Element2D_t(int N, int split_level, SEM::Hilbert::Status status, int rotation, const std::array<SEM::Entities::cuda_vector<size_t>, 4>& faces, std::array<size_t, 4> nodes);
 
             __host__ __device__
             Element2D_t();
@@ -32,6 +32,7 @@ namespace SEM { namespace Entities {
             SEM::Entities::cuda_vector<deviceFloat> deta_dy_;
             SEM::Entities::cuda_vector<deviceFloat> jacobian_;
             std::array<SEM::Entities::cuda_vector<deviceFloat>, 4> scaling_factor_;
+            int rotation_;
 
             // Solution
             SEM::Entities::cuda_vector<deviceFloat> p_; /**< @brief Pressure in the element. Sized N + 1 by N + 1, index with i * (N + 1) + j.*/

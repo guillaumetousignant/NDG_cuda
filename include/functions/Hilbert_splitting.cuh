@@ -47,10 +47,11 @@ namespace SEM { namespace Hilbert {
      * this is the order the child elements should be connected: top right, top left, bottom left, bottom right.
      * 
      * @param parent_status Geometric arrangement of the parent.
+     * @param rotation Which side is the element's first side.
      * @return std::array<size_t, 4> Order of the child elements in the curve, numbered from the bottom left counter-clockwise.
      */
      __host__ __device__
-    auto child_order(Status parent_status) -> std::array<size_t, 4>;
+    auto child_order(Status parent_status, int rotation) -> std::array<size_t, 4>;
 
     /**
      * @brief Returns the statuses of the child elements depending on the parent's status.
@@ -58,11 +59,12 @@ namespace SEM { namespace Hilbert {
      * The returned child statuses are from the bottom left, counter-clockwise. This means that if {A, B, H, H} is returned,
      * the bottom left child will be A, the bottom right child will be B, the top right will be H, and the top left will be H.
      * 
-     * @param parent_status 
-     * @return std::array<Status, 4> 
+     * @param parent_status Geometric arrangement of the parent.
+     * @param rotation Which side is the element's first side.
+     * @return std::array<Status, 4> Statuses of the child elements in the curve, numbered from the bottom left counter-clockwise.
      */
      __host__ __device__
-    auto child_statuses(Status parent_status) -> std::array<Status, 4>;
+    auto child_statuses(Status parent_status, int rotation) -> std::array<Status, 4>;
 }}
 
 #endif

@@ -13,7 +13,7 @@ using SEM::Entities::cuda_vector;
 using namespace SEM::Hilbert;
 
 __device__ 
-SEM::Entities::Element2D_t::Element2D_t(int N, int split_level, Hilbert::Status status, const std::array<cuda_vector<size_t>, 4>& faces, std::array<size_t, 4> nodes) : 
+SEM::Entities::Element2D_t::Element2D_t(int N, int split_level, Hilbert::Status status, int rotation, const std::array<cuda_vector<size_t>, 4>& faces, std::array<size_t, 4> nodes) : 
         N_{N},
         faces_{faces},
         nodes_{nodes},
@@ -26,6 +26,7 @@ SEM::Entities::Element2D_t::Element2D_t(int N, int split_level, Hilbert::Status 
         deta_dy_{(N_ + 1) * (N_ + 1)},
         jacobian_{(N_ + 1) * (N_ + 1)},
         scaling_factor_{N_ + 1, N_ + 1, N_ + 1, N_ + 1},
+        rotation_{rotation},
         p_{(N_ + 1) * (N_ + 1)},
         u_{(N_ + 1) * (N_ + 1)},
         v_{(N_ + 1) * (N_ + 1)},
@@ -68,6 +69,7 @@ SEM::Entities::Element2D_t::Element2D_t() :
         delta_xy_min_{0.0},
         center_{0.0, 0.0},
         scaling_factor_{},
+        rotation_{0},
         p_extrapolated_{},
         u_extrapolated_{},
         v_extrapolated_{},

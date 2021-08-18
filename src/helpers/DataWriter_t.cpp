@@ -152,7 +152,8 @@ auto SEM::Helpers::DataWriter_t::write_complete_data(size_t N_interpolation_poin
                                                      const std::vector<deviceFloat>& p_analytical_error,
                                                      const std::vector<deviceFloat>& u_analytical_error,
                                                      const std::vector<deviceFloat>& v_analytical_error,
-                                                     const std::vector<int>& status) const -> void {
+                                                     const std::vector<int>& status,
+                                                     const std::vector<int>& rotation) const -> void {
 
     // Creating points
     vtkNew<vtkPoints> points; // Should bt vtkPoints2D, but unstructured meshes can't take 2D points.
@@ -266,6 +267,22 @@ auto SEM::Helpers::DataWriter_t::write_complete_data(size_t N_interpolation_poin
     }
 
     grid->GetPointData()->AddArray(status_output);
+
+    // Add rotation to each point
+    vtkNew<vtkIntArray> rotation_output;
+    rotation_output->SetNumberOfComponents(1);
+    rotation_output->Allocate(N_elements * N_interpolation_points * N_interpolation_points);
+    rotation_output->SetName("Rotation");
+
+    for (size_t element_index = 0; element_index < N_elements; ++element_index) {
+        for (size_t i = 0; i < N_interpolation_points; ++i) {
+            for (size_t j = 0; j < N_interpolation_points; ++j) {
+                rotation_output->InsertNextValue(rotation[element_index]);
+            }
+        }
+    }
+
+    grid->GetPointData()->AddArray(rotation_output);
 
     // Add pressure derivative to each point
     vtkNew<vtkDoubleArray> pressure_derivative;
