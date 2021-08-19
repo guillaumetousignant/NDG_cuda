@@ -1852,10 +1852,11 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
 
     if (n_elements_send_left + n_elements_recv_left + n_elements_send_right + n_elements_recv_right > 0) {
 
+
+        n_elements_ = n_elements_new;
     }
 
     n_elements_global_ = n_elements_global_new;
-    n_elements_ = n_elements_new;
     global_element_offset_ = global_element_offset_new;
 
     // Adjust sizes with new n_elements, n_faces, n_nodes etc.
