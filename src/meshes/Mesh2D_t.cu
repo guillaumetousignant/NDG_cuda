@@ -1850,7 +1850,9 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
     const size_t n_elements_send_right = (global_element_offset_end_current > global_element_offset_end_new) ? global_element_offset_end_current - global_element_offset_end_new : 0;
     const size_t n_elements_recv_right = (global_element_offset_end_new > global_element_offset_end_current) ? global_element_offset_end_new - global_element_offset_end_current : 0;
 
+    if (n_elements_send_left + n_elements_recv_left + n_elements_send_right + n_elements_recv_right > 0) {
 
+    }
 
     n_elements_global_ = n_elements_global_new;
     n_elements_ = n_elements_new;
