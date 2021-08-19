@@ -1851,6 +1851,8 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
     n_elements_global_ = n_elements_global_new;
     n_elements_ = n_elements_new;
     global_element_offset_ = global_element_offset_new;
+
+    // Adjust sizes with new n_elements, n_faces, n_nodes etc.
 }
 
 auto SEM::Meshes::Mesh2D_t::boundary_conditions(deviceFloat t, const device_vector<deviceFloat>& polynomial_nodes, const device_vector<deviceFloat>& weights, const device_vector<deviceFloat>& barycentric_weights) -> void {
