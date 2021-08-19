@@ -34,21 +34,21 @@ auto SEM::Hilbert::child_order(SEM::Hilbert::Status parent_status, int rotation)
         }},
         {{
             {3, 2, 1, 0},
-            {3, 0, 1, 2},
+            {1, 2, 3, 0},
             {1, 0, 3, 2},
-            {1, 2, 3, 0}
+            {3, 0, 1, 2}
         }},
         {{
             {2, 1, 0, 3},
-            {1, 3, 0, 1},
+            {2, 3, 0, 1},
             {0, 3, 2, 1},
             {0, 1, 2, 3}
         }},
         {{
             {1, 0, 3, 2},
-            {1, 2, 3, 0},
+            {3, 0, 1, 2},
             {3, 2, 1, 0},
-            {3, 0, 1, 2}
+            {1, 2, 3, 0}
         }}
     }};
     return child_orders[rotation][parent_status];
