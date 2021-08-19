@@ -150,6 +150,8 @@ namespace SEM { namespace Meshes {
             auto write_complete_data(deviceFloat time, const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes, const SEM::Entities::device_vector<deviceFloat>& interpolation_matrices, const SEM::Helpers::DataWriter_t& data_writer) -> void;
 
             auto adapt(int N_max, const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes, const SEM::Entities::device_vector<deviceFloat>& barycentric_weights) -> void;
+            
+            auto load_balance() -> void;
 
             // From cppreference.com
             __device__

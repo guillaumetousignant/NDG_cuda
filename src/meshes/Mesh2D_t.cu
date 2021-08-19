@@ -1819,6 +1819,10 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
     device_mpi_interfaces_incoming_refine_array_ = device_vector<size_t>(mpi_interfaces_incoming_numBlocks_, stream_);
 }
 
+auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
+
+}
+
 auto SEM::Meshes::Mesh2D_t::boundary_conditions(deviceFloat t, const device_vector<deviceFloat>& polynomial_nodes, const device_vector<deviceFloat>& weights, const device_vector<deviceFloat>& barycentric_weights) -> void {
     // Boundary conditions
     if (!wall_boundaries_.empty()) {
