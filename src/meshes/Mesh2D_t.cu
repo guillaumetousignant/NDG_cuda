@@ -1825,10 +1825,31 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
     int global_size;
     MPI_Comm_size(MPI_COMM_WORLD, &global_size);
 
-    std::vector<size_t> n_elements_global(global_size);
+    std::vector<size_t> n_elements_per_proc(global_size);
 
     constexpr MPI_Datatype size_t_data_type = (sizeof(size_t) == sizeof(unsigned long long)) ? MPI_UNSIGNED_LONG_LONG : (sizeof(size_t) == sizeof(unsigned long)) ? MPI_UNSIGNED_LONG : MPI_UNSIGNED; // CHECK this is a bad way of doing this
-    MPI_Allgather(&n_elements_, 1, size_t_data_type, n_elements_global.data(), 1, size_t_data_type, MPI_COMM_WORLD);
+    MPI_Allgather(&n_elements_, 1, size_t_data_type, n_elements_per_proc.data(), 1, size_t_data_type, MPI_COMM_WORLD);
+
+    size_t n_elements_global_new = 0;
+    for (int i = 0; i < global_rank; ++i) {
+        n_elements_global_new += n_elements_per_proc[i];
+    }
+    const size_t global_element_offset_current = n_elements_global_new;
+    for (size_t i = global_rank; i < global_size; ++i) {
+        n_elements_global_new += n_elements_per_proc[i];
+    }
+    const size_t global_element_offset_end_current = global_element_offset_current + n_elements_ - 1;
+    
+    const size_t n_elements_per_process_new = (n_elements_global_new + global_size - 1)/global_size;
+    const size_t global_element_offset_new = global_rank * n_elements_per_process_new; // CHECK does this work for empty procs?
+    const size_t global_element_offset_end_new = std::min(global_element_offset_new + n_elements_per_process_new - 1, n_elements_global_new - 1); // CHECK does this work for empty procs?
+
+
+
+
+
+    n_elements_global_ = n_elements_global_new;
+    global_element_offset_ = global_element_offset_new;
 }
 
 auto SEM::Meshes::Mesh2D_t::boundary_conditions(deviceFloat t, const device_vector<deviceFloat>& polynomial_nodes, const device_vector<deviceFloat>& weights, const device_vector<deviceFloat>& barycentric_weights) -> void {
