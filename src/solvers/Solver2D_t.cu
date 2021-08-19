@@ -104,6 +104,7 @@ auto SEM::Solvers::Solver2D_t::solve(const SEM::Entities::NDG_t<Polynomial> &NDG
 
             mesh.estimate_error<Polynomial>(NDG.nodes_, NDG.weights_);
             mesh.adapt(NDG.N_max_, NDG.nodes_, NDG.barycentric_weights_);
+            mesh.load_balance();
         }
 
         if (global_rank == 0) {
