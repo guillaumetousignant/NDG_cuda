@@ -21,42 +21,51 @@
 	
 \end{center}
 
-In order to simulate complex fluid flows, high-order methods can be used to obtain very fine results. However, these methods are computationally expensive, 
+In order to simulate complex fluid flows, high-order methods can be used to obtain very fine results. However,
 
-and care should be taken to optimise their execution time. \textit{Graphics Processing Units (GPUs)} are a relatively new architecture in the domain of 
+these methods are computationally expensive, and care should be taken to optimise their execution time. 
 
-scientific computing, leveraging massive parallelism at the expense of reduced flexibility. To achieve the resolution of high-order methods with the 
+\textit{Graphics Processing Units (GPUs)} are a relatively new architecture in the domain of scientific 
 
-throughput of GPUs, we use the \textit{discontinuous Galerkin spectral element method (DG-SEM)} coupled with parallel \textit{adaptive mesh refinement (AMR)}
+computing, leveraging massive parallelism at the expense of reduced flexibility. To achieve the resolution of
 
-to solve the two-dimensional wave equation. The \textit{discontinuous Galerkin spectral element method (DG-SEM)} splits the domain in elements, within which
+high-order methods with the throughput of GPUs, we use the \textit{discontinuous Galerkin spectral element 
 
-the solution is represented as a weighted series of orthogonal polynomials, the \textit{Legendre polynomials} in this case. To insure no ressources are 
+method (DG-SEM)} coupled with parallel \textit{adaptive mesh refinement (AMR)} to solve the two-dimensional 
 
-wasted, the \textit{adaptive mesh refinement (AMR)} aims to increase the resolution in regions of interest, via two mechanisms: \textit{h-refinement}, where
+wave equation. The \textit{discontinuous Galerkin spectral element method (DG-SEM)} splits the domain in 
 
-elements are split in multiple smaller ones, and \textit{p-refinement}, where the polynomial order within an element is increased. In order to retain the 
+elements, within which the solution is represented as a weighted series of orthogonal polynomials, the 
 
-fast convergence high-order methods are known for, the \textit{mortar element method} is used to resolve the fluxes between geometrically or order(???) 
+\textit{Legendre polynomials} in this case. To insure no ressources are wasted, the \textit{adaptive mesh 
 
-non-conforming elements.
+refinement (AMR)} aims to increase the resolution in regions of interest, via two mechanisms: 
 
+\textit{h-refinement}, where elements are split in multiple smaller ones, and \textit{p-refinement}, where
 
+the polynomial order within an element is increased. In order to retain the fast convergence high-order 
 
-Scientific or engineering simulations of complex fluid flows, \textit{e.g.}, turbulent flow, often resort to high-order methods to obtain high resolutions. However, a large-scale, time-dependent, long-time simulation can be extremely  computationally expensive. To achieve high resolution while maximizing the computational savings, we combine a high-order method -- the \textit{discontinuous Galerkin spectral element method (DG-SEM)}, with parallel \textit{adaptive mesh refinement and coarsening (AMR)} techniques and apply it to a two-dimensional wave equation solver. DG-SEM discretizes solution functions as weighted polynomial series. In this work, \textit{Legendre polynomials} are chosen. With higher-order method and AMR techniques, a computational cost-efficient solver is formed. 
+methods are known for, the \textit{mortar element method} is used to resolve the fluxes between geometrically
 
-Two types of refinements are invoked: \textit{h-refinement}, where elements are split or merged, and \textit{p-refinement}, where polynomial orders can be increased or decreased. To retain the spectral convergence on the \textit{non-conforming} element interfaces caused by the hp-refinement, the \textit{mortar element method} is adopted. 
+or order(???) non-conforming elements. Since mesh refinement can increase resolution anywhere in the domain, 
 
-\textit{A hash table AMR} technique is developed for the AMR data encoding and storing. It can be built independently on distributed memory systems. It provides high control of the mesh resolution and efficient data management operations. Results using this approach on the adaptive wave equation solver confirm that its memory usage remains low on up to $16,384$ processors for a problem with over a million elements and 150 million degrees of freedom.
+it is possible that some nodes end up with more work to perform than others. Since the nodes need to sync 
 
-Dynamic load imbalance is incurred by the adaptivity of the program, which degrades the performance of the supercomputers. A \textit{space-filling curve (SFC) based} repartitioning algorithm is implemented in this work. The algorithm is designed to execute quickly in parallel. Its low memory overhead is beneficial to distributed memory systems. Additionally, the high-quality repartitioning results successfully reduce the dynamic workload imbalance among the computational processors. The scalability of the load balancing algorithm is demonstrated on two different high-performance computing systems with up to $16,384$ processors. The maximum memory scaling is up to 4,096 processors and no considerable memory growth is observed beyond the maximum scaling. High load balancing quality is demonstrated. 
+multiple times during the calculation, the computation time will be determined by the more heavily loaded
+
+node. To remedy this imbalance, a \textit{space-filling curve (SFC) based} repartitioning algorithm is used
+
+to even out the computational load and to keep a node's elements together and limit the number of interfaces
+
+between nodes, as these transfers are particularly costly when the data also has to be transferred from and 
+
+to the GPUs in addition to between the nodes.
+
 
 % -------------------------------------------------
 % add sth about the scaling performance 
 % -------------------------------------------------
 
-Using the hash table AMR and SFC-based repartitioning algorithm, we obtain speedup factors up to $8.46$ over a range of processor numbers from $32$ to $2048$, which, in the long run, can reduce week-long computational wait-times to a matter of days. 
-
-\textbf{Keywords}: Spectral element method, adaptive mesh refinement, space-filling curves, Hilbert curve, dynamic load balancing, large-scale scientific computing.
+\textbf{Keywords}: Spectral element method, graphics computing units, adaptive mesh refinement, space-filling curves, Hilbert curve, dynamic load balancing, large-scale scientific computing.
 
  
