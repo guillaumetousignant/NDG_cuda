@@ -51,11 +51,11 @@ or order(???) non-conforming elements. Since mesh refinement can increase resolu
 
 it is possible that some nodes end up with more work to perform than others. Since the nodes need to sync 
 
-multiple times during the calculation, the computation time will be determined by the more heavily loaded
+multiple times during the calculation, the computation time will be determined by the most heavily loaded
 
 node. To remedy this imbalance, a \textit{space-filling curve (SFC) based} repartitioning algorithm is used
 
-to even out the computational load and to keep a node's elements together and limit the number of interfaces
+to even out the computational load and to keep a node's elements together, limiting the number of interfaces
 
 between nodes, as these transfers are particularly costly when the data also has to be transferred from and 
 
