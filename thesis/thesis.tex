@@ -20,7 +20,36 @@
 \setlength{\parskip}{0.5em} % paragraph spacing
 % --------------------------------------------------------------------
 
+\usepackage{float}  % for figure "H"
 \usepackage[hidelinks]{hyperref} % hyperlinks
+\usepackage[chapter]{algorithm}	% algorithm numbered by chapter
+\usepackage{algorithmicx}	% algorithm
+
+% nonumberlist: no page number in glossary
+\usepackage[toc, nopostdot, nonumberlist, nogroupskip, acronym, order=letter]{glossaries} % [toc] put glossaries in content
+
+
+% add list of Greek symbols--------------------------------
+% [glg]{domain_name}{gls}{glo}{title_name}
+\newglossary[ch1]{greekstyle}{ch2}{ch3}{List of Greek Symbols}
+
+%\newglossary*{superscript}{Superscripts}
+\newglossary[ch4]{superscript}{ch5}{ch6}{Superscripts}
+\newglossary[ch10]{subscript}{ch11}{ch12}{Subscripts}
+
+\newglossary[ch7]{othersymbol}{ch8}{ch9}{Other Symbols}
+\newglossary[ch13]{othernotation}{ch14}{ch15}{Other Notations}
+%-----------------------------------------------------------
+
+\setglossarystyle{long} % left align
+\renewcommand{\glsnamefont}[1]{\textbf{#1}} % acronyms will be in bold style. 
+%------------------------------------------------------------
+
+\makenoidxglossaries
+
+\glsdisablehyper	% disable hyper of the symbol in text
+
+\include{glossary_entries} % define all your symbols in a separated file. 
 
 % preamble
 \begin{document}
@@ -42,5 +71,45 @@
 	\input{./Chapter_acknowledgements/acknowledgements.tex}
 	\addcontentsline{toc}{chapter}{Acknowledgements}
 	% ----------------------------------------------------
+
+	% generate table of contents ============================
+	\setcounter{tocdepth}{5}	% set the depth of table of contents
+	\tableofcontents
+	\addcontentsline{toc}{chapter}{Contents} % put toc to the toc
+	% ======================================================
+	
+	% ======================================================
+	\listoffigures	% list of figures
+	
+	\listoftables	% list of tables
+	
+	\listofalgorithms % list of algorithms
+	\addcontentsline{toc}{chapter}{List of Algorithms} 
+	% ======================================================
+	
+	% print all the symbols without referencing them
+	\glsaddall
+	% remove the left vacant space of long style
+	\setlength\LTleft{0pt}
+	\setlength\LTright{0pt}
+	\setlength\glsdescwidth{1.0\hsize}
+	
+	\printglossary[title=List of Symbols]
+	\printnoidxglossary[sort=standard, type=greekstyle] % self-defined ordering 
+	\printglossary[type=othersymbol]
+	\printglossary[type=superscript]
+	\printglossary[type=subscript]
+	\printglossary[type=othernotation]
+	\printglossary[title=List of Acronyms, type=\acronymtype]
+	
+	% start arabic page numbering here-------------------
+ 	\newpage
+ 	\setcounter{page}{1}
+	\pagenumbering{arabic}
+	%-----------------------------------------------------
+	
+	% input takes all the contents in the specified file
+	% intro
+	\input{./Chapter_introduction/introduction.tex}
 
 \end{document}
