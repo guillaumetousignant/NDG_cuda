@@ -36,10 +36,10 @@ refinement (AMR)} aims to increase the resolution in regions of interest, via tw
 \textit{h-refinement}, where elements are split in multiple smaller ones, and \textit{p-refinement}, where
 the polynomial order within an element is increased. In order to retain the fast convergence high-order 
 methods are known for, the \textit{mortar element method} is used to resolve the fluxes between geometrically
-or order(???) non-conforming elements.
+or functionally non-conforming elements.
 
 Since mesh refinement can increase resolution anywhere in the domain, 
-it is possible that some nodes end up with more work to perform than others. Since the nodes need to sync 
+it is possible that some nodes end up with more work to perform than others. Since the nodes need to synchronise 
 multiple times during the calculation, the computation time will be determined by the most heavily loaded
 node. To remedy this imbalance, a \textit{space-filling curve (SFC) based} repartitioning algorithm is used
 to even out the computational load and to keep a node's elements together, limiting the number of interfaces
