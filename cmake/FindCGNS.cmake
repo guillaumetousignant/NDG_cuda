@@ -5,12 +5,17 @@
 # CGNS_LIBRARIES   - List of fully qualified libraries to link against when using CGNS.
 # CGNS_FOUND       - Do not attempt to use CGNS if "no" or undefined.
 
+if (NOT CGNS_DIR AND NOT $ENV{CGNS_DIR} STREQUAL "")
+  set(CGNS_DIR $ENV{CGNS_DIR})
+endif()
+
 find_path(CGNS_INCLUDE_DIR
   NAMES
     cgnslib.h
   HINTS
     /usr/local/include
     /usr/include
+    ${CGNS_DIR}/include
     "C:/Program Files (x86)/cgns/include/"
     "C:/Program Files/cgns/include/"
   DOC "CGNS include directory")
@@ -21,6 +26,8 @@ find_library(CGNS_LIBRARY
     cgns
   HINTS
     /usr/lib64
+    ${CGNS_DIR}/lib
+    ${CGNS_DIR}/lib64
     "C:/Program Files (x86)/cgns/lib"
     "C:/Program Files/cgns/lib"
   DOC "CGNS library")
