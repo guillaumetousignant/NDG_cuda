@@ -1851,11 +1851,43 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
     const size_t n_elements_recv_right = (global_element_offset_end_new > global_element_offset_end_current) ? global_element_offset_end_new - global_element_offset_end_current : 0;
 
     if (n_elements_send_left + n_elements_recv_left + n_elements_send_right + n_elements_recv_right > 0) {
+        // MPI interfaces
+
+
 
 
         n_elements_ = n_elements_new;
 
         // Adjust sizes with new n_elements, n_faces, n_nodes etc.
+    }
+    else {
+        // MPI interfaces
+        std::vector<int> mpi_interfaces_new_process_outgoing(mpi_interfaces_origin_.size(), global_rank);
+        std::vector<size_t> mpi_interfaces_new_local_index_outgoing(mpi_interfaces_origin_.size());
+
+        mpi_interfaces_origin_.copy_to(mpi_interfaces_new_local_index_outgoing, stream_);
+
+        std::vector<int> mpi_interfaces_new_process_incoming(interfaces_destination_.size());
+        std::vector<size_t> mpi_interfaces_new_local_index_incoming(interfaces_destination_.size());
+
+        std::vector<MPI_Request> mpi_interfaces_requests(2 * mpi_interfaces_outgoing_size_.size());
+        std::vector<MPI_Status> mpi_interfaces_statuses(2 * mpi_interfaces_outgoing_size_.size());
+
+        cudaStreamSynchronize(stream_); // So the transfer to mpi_interfaces_new_local_index_outgoing is completed
+
+        for (size_t i = 0; i < mpi_interfaces_outgoing_size_.size(); ++i) {
+            MPI_Isend(mpi_interfaces_new_process_outgoing.data() + mpi_interfaces_outgoing_offset_[i], mpi_interfaces_outgoing_size_[i], MPI_INT, mpi_interfaces_process_[i], 5 * global_size * global_size + 2 * (global_size * global_rank + mpi_interfaces_process_[i]), MPI_COMM_WORLD, &mpi_interfaces_requests[2 * (mpi_interfaces_outgoing_size_.size() + i)]);
+            MPI_Irecv(mpi_interfaces_new_process_incoming.data() + mpi_interfaces_incoming_offset_[i], mpi_interfaces_incoming_size_[i], MPI_INT, mpi_interfaces_process_[i], 5 * global_size * global_size + 2 * (global_size * mpi_interfaces_process_[i] + global_rank), MPI_COMM_WORLD, &mpi_interfaces_requests[2 * i]);
+
+            MPI_Isend(mpi_interfaces_new_local_index_outgoing.data() + mpi_interfaces_outgoing_offset_[i], mpi_interfaces_outgoing_size_[i], size_t_data_type, mpi_interfaces_process_[i], 5 * global_size * global_size + 2 * (global_size * global_rank + mpi_interfaces_process_[i]) + 1, MPI_COMM_WORLD, &mpi_interfaces_requests[2 * (mpi_interfaces_outgoing_size_.size() + i) + 1]);
+            MPI_Irecv(mpi_interfaces_new_local_index_incoming.data() + mpi_interfaces_incoming_offset_[i], mpi_interfaces_incoming_size_[i], size_t_data_type, mpi_interfaces_process_[i], 5 * global_size * global_size + 2 * (global_size * mpi_interfaces_process_[i] + global_rank) + 1, MPI_COMM_WORLD, &mpi_interfaces_requests[2 * i + 1]);
+        }
+
+        MPI_Waitall(2 * mpi_interfaces_outgoing_size_.size(), mpi_interfaces_requests.data(), mpi_interfaces_statuses.data());
+
+
+
+        MPI_Waitall(2 * mpi_interfaces_outgoing_size_.size(), mpi_interfaces_requests.data() + 2 * mpi_interfaces_outgoing_size_.size(), mpi_interfaces_statuses.data() + 2 * mpi_interfaces_outgoing_size_.size());
     }
 
     n_elements_global_ = n_elements_global_new;
