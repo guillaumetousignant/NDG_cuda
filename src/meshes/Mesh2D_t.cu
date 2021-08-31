@@ -1858,17 +1858,20 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
             SEM::Entities::device_vector<deviceFloat> solution_arrays_left(3 * n_elements_send_left * std::pow(maximum_N_ + 1, 2), stream_);
             SEM::Entities::device_vector<int> N_arrays_left(n_elements_send_left, stream_);
             SEM::Entities::device_vector<size_t> neighbours_arrays_left(4 * n_elements_send_left, stream_);
+            SEM::Entities::device_vector<deviceFloat> nodes_arrays_left(8 * n_elements_send_left, stream_);
 
             const int send_left_numBlocks = (n_elements_send_left + boundaries_blockSize_ - 1) / boundaries_blockSize_;
-            SEM::Meshes::get_transfer_solution<<<send_left_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_send_left, elements_, solution_arrays_left.data(), N_arrays_left.data(), neighbours_arrays_left.data());
+            SEM::Meshes::get_transfer_solution<<<send_left_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_send_left, elements_, maximum_N_, nodes_.data(), solution_arrays_left.data(), N_arrays_left.data(), neighbours_arrays_left.data(), nodes_arrays_left.data());
 
             std::vector<deviceFloat> solution_arrays_send_left(3 * n_elements_send_left * std::pow(maximum_N_ + 1, 2));
             std::vector<int> N_arrays_send_left(n_elements_send_left);
             std::vector<size_t> neighbours_arrays_send_left(4 * n_elements_send_left); // CHECK this only works on quadrilaterals
+            std::vector<deviceFloat> nodes_arrays_send_left(8 * n_elements_send_left); // CHECK this only works on quadrilaterals
 
             solution_arrays_left.copy_to(solution_arrays_send_left, stream_);
             N_arrays_left.copy_to(N_arrays_send_left, stream_);
             neighbours_arrays_left.copy_to(neighbours_arrays_send_left, stream_);
+            nodes_arrays_left.copy_to(nodes_arrays_send_left, stream_);
 
             cudaStreamSynchronize(stream_); // So the transfer to elements_send_left and solution_arrays_send_left etc is completed
         }
@@ -1880,17 +1883,20 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
             SEM::Entities::device_vector<deviceFloat> solution_arrays_right(3 * n_elements_send_right * std::pow(maximum_N_ + 1, 2), stream_);
             SEM::Entities::device_vector<int> N_arrays_right(n_elements_send_right, stream_);
             SEM::Entities::device_vector<size_t> neighbours_arrays_right(4 * n_elements_send_right, stream_);
+            SEM::Entities::device_vector<deviceFloat> nodes_arrays_right(8 * n_elements_send_right, stream_);
 
             const int send_right_numBlocks = (n_elements_send_right + boundaries_blockSize_ - 1) / boundaries_blockSize_;
-            SEM::Meshes::get_transfer_solution<<<send_right_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_send_right, elements_ + n_elements_ - n_elements_send_right, solution_arrays_right.data(), N_arrays_right.data(), neighbours_arrays_right.data());
+            SEM::Meshes::get_transfer_solution<<<send_right_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_send_right, elements_ + n_elements_ - n_elements_send_right, maximum_N_, nodes_.data(), solution_arrays_right.data(), N_arrays_right.data(), neighbours_arrays_right.data(), nodes_arrays_right.data());
 
             std::vector<deviceFloat> solution_arrays_send_right(3 * n_elements_send_right * std::pow(maximum_N_ + 1, 2));
             std::vector<int> N_arrays_send_right(n_elements_send_right);
             std::vector<size_t> neighbours_arrays_send_right(4 * n_elements_send_right); // CHECK this only works on quadrilaterals
+            std::vector<deviceFloat> nodes_arrays_send_right(8 * n_elements_send_right); // CHECK this only works on quadrilaterals
 
             solution_arrays_right.copy_to(solution_arrays_send_right, stream_);
             N_arrays_right.copy_to(N_arrays_send_right, stream_);
             neighbours_arrays_right.copy_to(neighbours_arrays_send_right, stream_);
+            nodes_arrays_right.copy_to(nodes_arrays_send_right, stream_);
 
             cudaStreamSynchronize(stream_); // So the transfer to elements_send_right and solution_arrays_send_right etc is completed
 
@@ -5477,7 +5483,7 @@ auto SEM::Meshes::move_interfaces(size_t n_local_interfaces, Element2D_t* elemen
 }
 
 __global__
-auto SEM::Meshes::get_transfer_solution(size_t n_elements, const Element2D_t* elements, int maximum_N, deviceFloat* solution, int* N, size_t* n_neighbours) {
+auto SEM::Meshes::get_transfer_solution(size_t n_elements, const Element2D_t* elements, int maximum_N, const Vec2<deviceFloat>* nodes, deviceFloat* solution, int* N, size_t* n_neighbours, deviceFloat* element_nodes) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -5486,14 +5492,23 @@ auto SEM::Meshes::get_transfer_solution(size_t n_elements, const Element2D_t* el
         const size_t u_offset = (3 * element_index + 1) * std::pow(maximum_N + 1, 2);
         const size_t v_offset = (3 * element_index + 2) * std::pow(maximum_N + 1, 2);
         const size_t neighbours_offset = 4 * element_index;
+        const size_t nodes_offset = 8 * element_index;
 
         const Element2D_t& element = elements[element_index];
 
         N[element_index] = element.N_;
-        n_neighbours[neighbours_offset] = element.faces_[0].size();
+        n_neighbours[neighbours_offset]     = element.faces_[0].size();
         n_neighbours[neighbours_offset + 1] = element.faces_[1].size();
         n_neighbours[neighbours_offset + 2] = element.faces_[2].size();
         n_neighbours[neighbours_offset + 3] = element.faces_[3].size();
+        element_nodes[nodes_offset]     = nodes[element.nodes_[0]].x();
+        element_nodes[nodes_offset + 1] = nodes[element.nodes_[0]].y();
+        element_nodes[nodes_offset + 2] = nodes[element.nodes_[1]].x();
+        element_nodes[nodes_offset + 3] = nodes[element.nodes_[1]].y();
+        element_nodes[nodes_offset + 4] = nodes[element.nodes_[2]].x();
+        element_nodes[nodes_offset + 5] = nodes[element.nodes_[2]].y();
+        element_nodes[nodes_offset + 6] = nodes[element.nodes_[3]].x();
+        element_nodes[nodes_offset + 7] = nodes[element.nodes_[3]].y();
 
         for (int i = 0; i < std::pow(element.N_ + 1, 2); ++i) {
             solution[p_offset + i] = element.p_[i];

@@ -315,7 +315,7 @@ namespace SEM { namespace Meshes {
     auto print_boundary_element_faces(size_t n_domain_elements, size_t n_total_elements, const SEM::Entities::Element2D_t* elements) -> void;
 
     __global__
-    auto get_transfer_solution(size_t n_elements, const SEM::Entities::Element2D_t* elements, int maximum_N, deviceFloat* solution, int* N, size_t* n_neighbours) -> void;
+    auto get_transfer_solution(size_t n_elements, const SEM::Entities::Element2D_t* elements, int maximum_N, const SEM::Entities::Vec2<deviceFloat>* nodes, deviceFloat* solution, int* N, size_t* n_neighbours, deviceFloat* element_nodes) -> void;
 
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>
