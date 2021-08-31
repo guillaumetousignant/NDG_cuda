@@ -845,7 +845,7 @@ auto SEM::Entities::Element2D_t::would_h_refine(int max_split_level) const -> bo
         && split_level_ < max_split_level;
 }
 
-__device__
+__host__ __device__
 auto SEM::Entities::Element2D_t::clear_storage() -> void {
     faces_[0].data_ = nullptr;
     faces_[1].data_ = nullptr;

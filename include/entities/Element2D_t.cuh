@@ -123,7 +123,7 @@ namespace SEM { namespace Entities {
             __device__
             auto would_h_refine(int max_split_level) const -> bool;
 
-            __device__
+            __host__ __device__
             auto clear_storage() -> void;
 
         private:

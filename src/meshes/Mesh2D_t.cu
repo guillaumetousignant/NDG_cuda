@@ -1851,6 +1851,64 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
     const size_t n_elements_recv_right = (global_element_offset_end_new > global_element_offset_end_current) ? global_element_offset_end_new - global_element_offset_end_current : 0;
 
     if (n_elements_send_left + n_elements_recv_left + n_elements_send_right + n_elements_recv_right > 0) {
+        if (n_elements_send_left > 0) {
+            std::vector<SEM::Entities::Element2D_t> elements_send_left(n_elements_send_left);
+            cudaMemcpyAsync(elements_send_left.data(), elements_.data(), n_elements_send_left * sizeof(SEM::Entities::Element2D_t), cudaMemcpyDeviceToHost, stream_);
+
+            std::vector<deviceFloat> solution_arrays_send_left(3 * n_elements_send_left * std::pow(maximum_N_ + 1, 2));
+            std::vector<int> N_arrays_send_left(n_elements_send_left);
+            std::vector<size_t> neighbours_arrays_send_left(4 * n_elements_send_left); // CHECK this only works on quadrilaterals
+
+            SEM::Entities::device_vector<deviceFloat> solution_arrays_left(3 * n_elements_send_left * std::pow(maximum_N_ + 1, 2), stream_);
+            SEM::Entities::device_vector<int> N_arrays_left(n_elements_send_left, stream_);
+            SEM::Entities::device_vector<size_t> neighbours_arrays_left(4 * n_elements_send_left, stream_);
+
+            const int send_left_numBlocks = (n_elements_send_left + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+            SEM::Meshes::get_transfer_solution<<<send_left_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_send_left, elements_, solution_arrays_left.data(), N_arrays_left.data(), neighbours_arrays_left.data());
+
+            solution_arrays_left.copy_to(solution_arrays_send_left, stream_);
+            N_arrays_left.copy_to(N_arrays_send_left, stream_);
+            neighbours_arrays_left.copy_to(neighbours_arrays_send_left, stream_);
+
+            cudaStreamSynchronize(stream_); // So the transfer to elements_send_left and solution_arrays_send_left etc is completed
+        }
+
+        if (n_elements_send_right > 0) {
+            std::vector<SEM::Entities::Element2D_t> elements_send_right(n_elements_send_right);
+            cudaMemcpyAsync(elements_send_right.data(), elements_.data() + n_elements_ - n_elements_send_right, n_elements_send_right * sizeof(SEM::Entities::Element2D_t), cudaMemcpyDeviceToHost, stream_);
+            std::vector<deviceFloat> solution_arrays_send_right(3 * n_elements_send_right * std::pow(maximum_N_ + 1, 2));
+            std::vector<int> N_arrays_send_right(n_elements_send_right);
+            std::vector<size_t> neighbours_arrays_send_right(4 * n_elements_send_right); // CHECK this only works on quadrilaterals
+
+            SEM::Entities::device_vector<deviceFloat> solution_arrays_right(3 * n_elements_send_right * std::pow(maximum_N_ + 1, 2), stream_);
+            SEM::Entities::device_vector<int> N_arrays_right(n_elements_send_right, stream_);
+            SEM::Entities::device_vector<size_t> neighbours_arrays_right(4 * n_elements_send_right, stream_);
+
+            const int send_right_numBlocks = (n_elements_send_right + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+            SEM::Meshes::get_transfer_solution<<<send_right_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_send_right, elements_ + n_elements_ - n_elements_send_right, solution_arrays_right.data(), N_arrays_right.data(), neighbours_arrays_right.data());
+
+            solution_arrays_right.copy_to(solution_arrays_send_right, stream_);
+            N_arrays_right.copy_to(N_arrays_send_right, stream_);
+            neighbours_arrays_right.copy_to(neighbours_arrays_send_right, stream_);
+
+            cudaStreamSynchronize(stream_); // So the transfer to elements_send_right and solution_arrays_send_right etc is completed
+
+
+        }
+
+        std::vector<SEM::Entities::Element2D_t> elements_recv_left(n_elements_recv_left);
+        std::vector<SEM::Entities::Element2D_t> elements_recv_right(n_elements_recv_right);
+        
+
+        
+
+        
+        
+
+
+
+
+
         // MPI interfaces
 
 
@@ -5414,5 +5472,32 @@ auto SEM::Meshes::move_interfaces(size_t n_local_interfaces, Element2D_t* elemen
 
         new_elements[destination_element_index].clear_storage();
         new_elements[destination_element_index] = std::move(elements[destination_element_index]);
+    }
+}
+
+__global__
+auto SEM::Meshes::get_transfer_solution(size_t n_elements, const Element2D_t* elements, int maximum_N, deviceFloat* solution, int* N, size_t* n_neighbours) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t element_index = index; element_index < n_elements; element_index += stride) {
+        const size_t p_offset =  3 * element_index      * std::pow(maximum_N + 1, 2);
+        const size_t u_offset = (3 * element_index + 1) * std::pow(maximum_N + 1, 2);
+        const size_t v_offset = (3 * element_index + 2) * std::pow(maximum_N + 1, 2);
+        const size_t neighbours_offset = 4 * element_index;
+
+        const Element2D_t& element = elements[element_index];
+
+        N[element_index] = element.N_;
+        n_neighbours[neighbours_offset] = element.faces_[0].size();
+        n_neighbours[neighbours_offset + 1] = element.faces_[1].size();
+        n_neighbours[neighbours_offset + 2] = element.faces_[2].size();
+        n_neighbours[neighbours_offset + 3] = element.faces_[3].size();
+
+        for (int i = 0; i < std::pow(element.N_ + 1, 2); ++i) {
+            solution[p_offset + i] = element.p_[i];
+            solution[u_offset + i] = element.u_[i];
+            solution[v_offset + i] = element.v_[i];
+        }
     }
 }
