@@ -1855,16 +1855,16 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
             std::vector<SEM::Entities::Element2D_t> elements_send_left(n_elements_send_left);
             cudaMemcpyAsync(elements_send_left.data(), elements_.data(), n_elements_send_left * sizeof(SEM::Entities::Element2D_t), cudaMemcpyDeviceToHost, stream_);
 
-            std::vector<deviceFloat> solution_arrays_send_left(3 * n_elements_send_left * std::pow(maximum_N_ + 1, 2));
-            std::vector<int> N_arrays_send_left(n_elements_send_left);
-            std::vector<size_t> neighbours_arrays_send_left(4 * n_elements_send_left); // CHECK this only works on quadrilaterals
-
             SEM::Entities::device_vector<deviceFloat> solution_arrays_left(3 * n_elements_send_left * std::pow(maximum_N_ + 1, 2), stream_);
             SEM::Entities::device_vector<int> N_arrays_left(n_elements_send_left, stream_);
             SEM::Entities::device_vector<size_t> neighbours_arrays_left(4 * n_elements_send_left, stream_);
 
             const int send_left_numBlocks = (n_elements_send_left + boundaries_blockSize_ - 1) / boundaries_blockSize_;
             SEM::Meshes::get_transfer_solution<<<send_left_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_send_left, elements_, solution_arrays_left.data(), N_arrays_left.data(), neighbours_arrays_left.data());
+
+            std::vector<deviceFloat> solution_arrays_send_left(3 * n_elements_send_left * std::pow(maximum_N_ + 1, 2));
+            std::vector<int> N_arrays_send_left(n_elements_send_left);
+            std::vector<size_t> neighbours_arrays_send_left(4 * n_elements_send_left); // CHECK this only works on quadrilaterals
 
             solution_arrays_left.copy_to(solution_arrays_send_left, stream_);
             N_arrays_left.copy_to(N_arrays_send_left, stream_);
@@ -1876,16 +1876,17 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
         if (n_elements_send_right > 0) {
             std::vector<SEM::Entities::Element2D_t> elements_send_right(n_elements_send_right);
             cudaMemcpyAsync(elements_send_right.data(), elements_.data() + n_elements_ - n_elements_send_right, n_elements_send_right * sizeof(SEM::Entities::Element2D_t), cudaMemcpyDeviceToHost, stream_);
-            std::vector<deviceFloat> solution_arrays_send_right(3 * n_elements_send_right * std::pow(maximum_N_ + 1, 2));
-            std::vector<int> N_arrays_send_right(n_elements_send_right);
-            std::vector<size_t> neighbours_arrays_send_right(4 * n_elements_send_right); // CHECK this only works on quadrilaterals
-
+            
             SEM::Entities::device_vector<deviceFloat> solution_arrays_right(3 * n_elements_send_right * std::pow(maximum_N_ + 1, 2), stream_);
             SEM::Entities::device_vector<int> N_arrays_right(n_elements_send_right, stream_);
             SEM::Entities::device_vector<size_t> neighbours_arrays_right(4 * n_elements_send_right, stream_);
 
             const int send_right_numBlocks = (n_elements_send_right + boundaries_blockSize_ - 1) / boundaries_blockSize_;
             SEM::Meshes::get_transfer_solution<<<send_right_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_send_right, elements_ + n_elements_ - n_elements_send_right, solution_arrays_right.data(), N_arrays_right.data(), neighbours_arrays_right.data());
+
+            std::vector<deviceFloat> solution_arrays_send_right(3 * n_elements_send_right * std::pow(maximum_N_ + 1, 2));
+            std::vector<int> N_arrays_send_right(n_elements_send_right);
+            std::vector<size_t> neighbours_arrays_send_right(4 * n_elements_send_right); // CHECK this only works on quadrilaterals
 
             solution_arrays_right.copy_to(solution_arrays_send_right, stream_);
             N_arrays_right.copy_to(N_arrays_send_right, stream_);
