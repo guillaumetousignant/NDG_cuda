@@ -10,7 +10,7 @@ namespace SEM { namespace Hilbert {
      * This is necessary to the table-driven algorithm for the Hilbert curve, where the order
      * and status oh the next level cells is determined by its parent's status.
      */
-    enum Status {H, A, R, B};
+    enum Status : int {H, A, R, B};
 
     /**
      * @brief Returns the geometric status of the first element of a curve depending on which side the curve exits the element.
