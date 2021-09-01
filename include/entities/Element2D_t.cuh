@@ -6,6 +6,7 @@
 #include "entities/Vec2.cuh"
 #include "functions/Hilbert_splitting.cuh"
 #include <array>
+#include <mpi.h>
 
 namespace SEM { namespace Entities {
     class Element2D_t { // Turn this into separate vectors, because cache exists
@@ -71,6 +72,24 @@ namespace SEM { namespace Entities {
             // Adaptivity
             int split_level_;
             std::array<bool, 4> additional_nodes_;
+
+            class Datatype {
+                private:
+                   MPI_Datatype datatype_;
+                   
+                public:
+                    __host__
+                    Datatype();
+
+                    __host__
+                    ~Datatype();
+
+                    __host__
+                    auto data() const -> const MPI_Datatype&;
+
+                    __host__
+                    auto data() -> MPI_Datatype&;
+            };
 
             // Algorithm 61
             __device__

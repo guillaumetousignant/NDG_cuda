@@ -315,10 +315,10 @@ namespace SEM { namespace Meshes {
     auto print_boundary_element_faces(size_t n_domain_elements, size_t n_total_elements, const SEM::Entities::Element2D_t* elements) -> void;
 
     __global__
-    auto get_transfer_solution(size_t n_elements, const SEM::Entities::Element2D_t* elements, const SEM::Entities::Vec2<deviceFloat>* nodes, deviceFloat* solution, int* N, size_t* n_neighbours, deviceFloat* element_nodes) -> void;
+    auto get_transfer_solution(size_t n_elements, const SEM::Entities::Element2D_t* elements, int maximum_N, const SEM::Entities::Vec2<deviceFloat>* nodes, deviceFloat* solution, size_t* n_neighbours, deviceFloat* element_nodes) -> void;
 
     __global__
-    auto get_neighbours(size_t n_elements_send, size_t start_index, size_t n_domain_elements, size_t n_local_interfaces, size_t n_MPI_interface_elements_receiving, size_t n_elements_received_left, size_t n_elements_sent_left, int rank, const SEM::Entities::Element2D_t* elements, const SEM::Entities::Face2D_t* faces, const size_t* interfaces_destination, const size_t* interfaces_origin, const size_t* mpi_interfaces_destination, const size_t* mpi_interfaces_process, const size_t* mpi_interfaces_local_indices, const size_t* offsets, size_t* neighbours, size_t* neighbours_proc) -> void;
+    auto get_neighbours(size_t n_elements_send, size_t start_index, size_t n_domain_elements, size_t n_local_interfaces, size_t n_MPI_interface_elements_receiving, size_t n_elements_received_left, size_t n_elements_sent_left, int rank, const SEM::Entities::Element2D_t* elements, const SEM::Entities::Face2D_t* faces, const size_t* interfaces_destination, const size_t* interfaces_origin, const size_t* mpi_interfaces_destination, const int* mpi_interfaces_process, const size_t* mpi_interfaces_local_indices, const size_t* offsets, size_t* neighbours, int* neighbours_proc) -> void;
 
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>

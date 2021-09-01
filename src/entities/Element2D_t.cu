@@ -8,6 +8,7 @@
 #include "helpers/constants.h"
 #include <cmath>
 #include <limits>
+#include <cstddef>
 
 using SEM::Entities::cuda_vector;
 using namespace SEM::Hilbert;
@@ -907,4 +908,31 @@ auto SEM::Entities::Element2D_t::clear_storage() -> void {
     u_intermediate_.data_ = nullptr;
     v_intermediate_.data_ = nullptr;
     spectrum_.data_ = nullptr;
+}
+
+__host__
+SEM::Entities::Element2D_t::Datatype::Datatype() {
+    constexpr int n = 3;
+
+    constexpr std::array<int, n> lengths {1, 1, 1};
+    constexpr std::array<MPI_Aint, n> displacements {offsetof(SEM::Entities::Element2D_t, status_), offsetof(SEM::Entities::Element2D_t, rotation_), offsetof(SEM::Entities::Element2D_t, split_level_)};
+    constexpr std::array<MPI_Datatype, n> types {MPI_INT, MPI_INT, MPI_INT}; // Ok I could just send those as packed ints, but who knows if something will have to be added.
+    
+    MPI_Type_create_struct(n, lengths.data(), displacements.data(), types.data(), &datatype_);
+    MPI_Type_commit(&datatype_);
+}
+
+__host__
+SEM::Entities::Element2D_t::Datatype::~Datatype() {
+    MPI_Type_free(&datatype_);
+}
+
+__host__
+auto SEM::Entities::Element2D_t::Datatype::data() const -> const MPI_Datatype& {
+    return datatype_;
+}
+
+__host__
+auto SEM::Entities::Element2D_t::Datatype::data() -> MPI_Datatype& {
+    return datatype_;
 }
