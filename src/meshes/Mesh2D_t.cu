@@ -1845,10 +1845,10 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
     const size_t global_element_offset_end_new = std::min(global_element_offset_new + n_elements_per_process_new - 1, n_elements_global_new - 1); // CHECK does this work for empty procs?
     const size_t n_elements_new = (global_rank == global_size - 1) ? n_elements_global_new - n_elements_global_new * (global_size - 1) : n_elements_per_process_new; // CHECK does this work for empty procs?
 
-    const size_t n_elements_send_left = (global_element_offset_new > global_element_offset_current) ? global_element_offset_new - global_element_offset_current : 0; // CHECK what if more elements have to be moved than the number of elements in the proc?
-    const size_t n_elements_recv_left = (global_element_offset_current > global_element_offset_new) ? global_element_offset_current - global_element_offset_new : 0;
-    const size_t n_elements_send_right = (global_element_offset_end_current > global_element_offset_end_new) ? global_element_offset_end_current - global_element_offset_end_new : 0;
-    const size_t n_elements_recv_right = (global_element_offset_end_new > global_element_offset_end_current) ? global_element_offset_end_new - global_element_offset_end_current : 0;
+    const size_t n_elements_send_left = (global_element_offset_new > global_element_offset_current) ? std::min(global_element_offset_new - global_element_offset_current, n_elements_) : 0; // CHECK what if more elements have to be moved than the number of elements in the proc?
+    const size_t n_elements_recv_left = (global_element_offset_current > global_element_offset_new) ? std::min(global_element_offset_current - global_element_offset_new, n_elements_per_process_new) : 0;
+    const size_t n_elements_send_right = (global_element_offset_end_current > global_element_offset_end_new) ? std::min(global_element_offset_end_current - global_element_offset_end_new, n_elements_) : 0;
+    const size_t n_elements_recv_right = (global_element_offset_end_new > global_element_offset_end_current) ? std::min(global_element_offset_end_new - global_element_offset_end_current, n_elements_per_process_new) : 0;
 
     if (n_elements_send_left + n_elements_recv_left + n_elements_send_right + n_elements_recv_right > 0) {
         // MPI interfaces
@@ -1936,7 +1936,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
 
             cudaStreamSynchronize(stream_); // So the transfer to neighbours_arrays_send_left and neighbours_proc_arrays_left is completed
 
-            
+            // Compute the global indices of the elements, and where they are going
 
         }
 
