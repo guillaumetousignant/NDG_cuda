@@ -1936,7 +1936,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
 
             cudaStreamSynchronize(stream_); // So the transfer to neighbours_arrays_send_left and neighbours_proc_arrays_left is completed
 
-            // Compute the global indices of the elements, and where they are going
+            // Compute the global indices of the elements using global_element_offset_current, and where they are going
 
         }
 
