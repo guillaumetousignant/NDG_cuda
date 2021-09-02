@@ -1885,13 +1885,10 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
         cudaStreamSynchronize(stream_); // So the transfer to mpi_interfaces_new_local_index_outgoing is completed
 
         for (size_t i = 0; i < mpi_interfaces_new_local_index_outgoing.size(); ++i) {
-            if (mpi_interfaces_new_local_index_outgoing[i] < n_elements_send_left) {
-                --mpi_interfaces_new_process_outgoing[i];
-                mpi_interfaces_new_local_index_outgoing[i] = n_elements_per_process_new + i - n_elements_send_left;
-            }
-            else if (mpi_interfaces_new_local_index_outgoing[i] >= n_elements_ - n_elements_send_right) {
-                ++mpi_interfaces_new_process_outgoing[i];
-                mpi_interfaces_new_local_index_outgoing[i] = i + n_elements_send_right - n_elements_;
+            if (mpi_interfaces_new_local_index_outgoing[i] < n_elements_send_left || mpi_interfaces_new_local_index_outgoing[i] >= n_elements_ - n_elements_send_right) {
+                const size_t element_global_id = mpi_interfaces_new_local_index_outgoing[i] + global_element_offset_current[global_rank];
+                mpi_interfaces_new_process_outgoing[i] = element_global_id/n_elements_per_process_new;
+                mpi_interfaces_new_local_index_outgoing[i] = element_global_id%n_elements_per_process_new;
             }
             else {
                 mpi_interfaces_new_local_index_outgoing[i] += n_elements_recv_left;
@@ -1944,7 +1941,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
             SEM::Entities::device_vector<int> mpi_interfaces_new_process_incoming_device(mpi_interfaces_new_process_incoming, stream_);
             SEM::Entities::device_vector<size_t> mpi_interfaces_new_local_index_incoming_device(mpi_interfaces_new_local_index_incoming, stream_);
 
-            SEM::Meshes::get_neighbours<<<send_left_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_send_left, 0, n_elements_, interfaces_origin_.size(), mpi_interfaces_destination_.size(), n_elements_send_left, n_elements_recv_left, global_rank, elements_.data(), faces_.data(), interfaces_destination_.data(), interfaces_origin_.data(), mpi_interfaces_destination_.data(), mpi_interfaces_new_process_incoming_device.data(), mpi_interfaces_new_local_index_incoming_device.data(), neighbour_offsets_device.data(), neighbours_arrays_left.data(), neighbours_proc_arrays_left.data());
+            SEM::Meshes::get_neighbours<<<send_left_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_send_left, 0, n_elements_, interfaces_origin_.size(), mpi_interfaces_destination_.size(), n_elements_send_left, n_elements_recv_left, global_rank, global_size, elements_.data(), faces_.data(), interfaces_destination_.data(), interfaces_origin_.data(), mpi_interfaces_destination_.data(), mpi_interfaces_new_process_incoming_device.data(), mpi_interfaces_new_local_index_incoming_device.data(), neighbour_offsets_device.data(), neighbours_arrays_left.data(), neighbours_proc_arrays_left.data());
 
             std::vector<size_t> neighbours_arrays_send_left(neighbours_arrays_left.size());
             std::vector<int> neighbours_proc_arrays_send_left(neighbours_proc_arrays_left.size());
@@ -5597,7 +5594,7 @@ auto SEM::Meshes::get_transfer_solution(size_t n_elements, const Element2D_t* el
 }
 
 __global__
-auto SEM::Meshes::get_neighbours(size_t n_elements_send, size_t start_index, size_t n_domain_elements, size_t n_local_interfaces, size_t n_MPI_interface_elements_receiving, size_t n_elements_received_left, size_t n_elements_sent_left, int rank, const Element2D_t* elements, const Face2D_t* faces, const size_t* interfaces_destination, const size_t* interfaces_origin, const size_t* mpi_interfaces_destination, const int* mpi_interfaces_process, const size_t* mpi_interfaces_local_indices, const size_t* offsets, size_t* neighbours, int* neighbours_proc) -> void {
+auto SEM::Meshes::get_neighbours(size_t n_elements_send, size_t start_index, size_t n_domain_elements, size_t n_local_interfaces, size_t n_MPI_interface_elements_receiving, size_t n_elements_received_left, size_t n_elements_sent_left, int rank, int n_procs, const Element2D_t* elements, const Face2D_t* faces, const size_t* interfaces_destination, const size_t* interfaces_origin, const size_t* mpi_interfaces_destination, const int* mpi_interfaces_process, const size_t* mpi_interfaces_local_indices, const size_t* offsets, size_t* neighbours, int* neighbours_proc) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -5628,7 +5625,7 @@ auto SEM::Meshes::get_neighbours(size_t n_elements_send, size_t start_index, siz
 
                     if (missing) {
                         for (size_t i = 0; i < n_MPI_interface_elements_receiving; ++i) {
-                            if (mpi_interfaces_destination[i] == other_element_index) {
+                            if (mpi_interfaces_destination[i] == other_element_index) { // CHECK if it would be sent
                                 neighbours[element_offset] = mpi_interfaces_local_indices[i];
                                 neighbours_proc[element_offset] = mpi_interfaces_process[i];
     
