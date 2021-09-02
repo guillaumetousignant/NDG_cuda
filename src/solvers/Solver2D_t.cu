@@ -23,6 +23,8 @@ template<typename Polynomial>
 auto SEM::Solvers::Solver2D_t::solve(const SEM::Entities::NDG_t<Polynomial> &NDG, SEM::Meshes::Mesh2D_t& mesh, const SEM::Helpers::DataWriter_t& data_writer) const -> void {
     int global_rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
+    int global_size;
+    MPI_Comm_size(MPI_COMM_WORLD, &global_size);
     deviceFloat time = 0.0;
     const deviceFloat t_end = output_times_.back();
     SEM::Helpers::ProgressBar_t bar;
@@ -104,7 +106,9 @@ auto SEM::Solvers::Solver2D_t::solve(const SEM::Entities::NDG_t<Polynomial> &NDG
 
             mesh.estimate_error<Polynomial>(NDG.nodes_, NDG.weights_);
             mesh.adapt(NDG.N_max_, NDG.nodes_, NDG.barycentric_weights_);
-            mesh.load_balance();
+            if (global_size > 1) {
+                mesh.load_balance();
+            }
         }
 
         if (global_rank == 0) {
