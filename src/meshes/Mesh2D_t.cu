@@ -1830,25 +1830,44 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
     constexpr MPI_Datatype size_t_data_type = (sizeof(size_t) == sizeof(unsigned long long)) ? MPI_UNSIGNED_LONG_LONG : (sizeof(size_t) == sizeof(unsigned long)) ? MPI_UNSIGNED_LONG : MPI_UNSIGNED; // CHECK this is a bad way of doing this
     MPI_Allgather(&n_elements_, 1, size_t_data_type, n_elements_per_proc.data(), 1, size_t_data_type, MPI_COMM_WORLD);
 
-    size_t n_elements_global_new = 0;
-    for (int i = 0; i < global_rank; ++i) {
+    std::vector<size_t> global_element_offset_current(global_size, 0);
+    std::vector<size_t> global_element_offset_end_current(global_size);
+    global_element_offset_end_current[0] = n_elements_per_proc[0] - 1;
+
+    size_t n_elements_global_new = n_elements_per_proc[0];
+    for (int i = 1; i < global_size; ++i) {
+        global_element_offset_current[i] = global_element_offset_current[i - 1] + n_elements_per_proc[i];
+        global_element_offset_end_current[i] = global_element_offset_current[i] + n_elements_per_proc[i] - 1;
         n_elements_global_new += n_elements_per_proc[i];
     }
-    const size_t global_element_offset_current = n_elements_global_new;
-    for (size_t i = global_rank; i < global_size; ++i) {
-        n_elements_global_new += n_elements_per_proc[i];
-    }
-    const size_t global_element_offset_end_current = global_element_offset_current + n_elements_ - 1;
     
     const size_t n_elements_per_process_new = (n_elements_global_new + global_size - 1)/global_size;
-    const size_t global_element_offset_new = global_rank * n_elements_per_process_new; // CHECK does this work for empty procs?
-    const size_t global_element_offset_end_new = std::min(global_element_offset_new + n_elements_per_process_new - 1, n_elements_global_new - 1); // CHECK does this work for empty procs?
-    const size_t n_elements_new = (global_rank == global_size - 1) ? n_elements_global_new - n_elements_global_new * (global_size - 1) : n_elements_per_process_new; // CHECK does this work for empty procs?
 
-    const size_t n_elements_send_left = (global_element_offset_new > global_element_offset_current) ? std::min(global_element_offset_new - global_element_offset_current, n_elements_) : 0; // CHECK what if more elements have to be moved than the number of elements in the proc?
-    const size_t n_elements_recv_left = (global_element_offset_current > global_element_offset_new) ? std::min(global_element_offset_current - global_element_offset_new, n_elements_per_process_new) : 0;
-    const size_t n_elements_send_right = (global_element_offset_end_current > global_element_offset_end_new) ? std::min(global_element_offset_end_current - global_element_offset_end_new, n_elements_) : 0;
-    const size_t n_elements_recv_right = (global_element_offset_end_new > global_element_offset_end_current) ? std::min(global_element_offset_end_new - global_element_offset_end_current, n_elements_per_process_new) : 0;
+    std::vector<size_t> global_element_offset_new(global_size); // This is the first element that is owned by the proc
+    std::vector<size_t> global_element_offset_end_new(global_size); // This is the last element that is owned by the proc
+    std::vector<size_t> n_elements_new(global_size);
+    
+    for (int i = 0; i < global_size; ++i) {
+        global_element_offset_new[i] = i * n_elements_per_process_new; // CHECK does this work for empty procs?
+         
+        if (n_elements_per_process_new * i >= n_elements_global_new) { 
+            n_elements_new[i] = 0;
+            global_element_offset_end_new[i] = global_element_offset_new[i];
+        }
+        else if (n_elements_per_process_new * (i + 1) > n_elements_global_new) {
+            n_elements_new[i] = n_elements_global_new - i * n_elements_per_process_new;
+            global_element_offset_end_new[i] = global_element_offset_new[i] + n_elements_new[i] - 1;
+        }
+        else {
+            n_elements_new[i] = n_elements_per_process_new;
+            global_element_offset_end_new[i] = global_element_offset_new[i] + n_elements_new[i] - 1;
+        } 
+    }
+
+    const size_t n_elements_send_left = (global_element_offset_new[global_rank] > global_element_offset_current[global_rank]) ? std::min(global_element_offset_new[global_rank] - global_element_offset_current[global_rank], n_elements_) : 0; // CHECK what if more elements have to be moved than the number of elements in the proc?
+    const size_t n_elements_recv_left = (global_element_offset_current[global_rank] > global_element_offset_new[global_rank]) ? std::min(global_element_offset_current[global_rank] - global_element_offset_new[global_rank], n_elements_per_process_new) : 0;
+    const size_t n_elements_send_right = (global_element_offset_end_current[global_rank] > global_element_offset_end_new[global_rank]) ? std::min(global_element_offset_end_current[global_rank] - global_element_offset_end_new[global_rank], n_elements_) : 0;
+    const size_t n_elements_recv_right = (global_element_offset_end_new[global_rank] > global_element_offset_end_current[global_rank]) ? std::min(global_element_offset_end_new[global_rank] - global_element_offset_end_current[global_rank], n_elements_per_process_new) : 0;
 
     if (n_elements_send_left + n_elements_recv_left + n_elements_send_right + n_elements_recv_right > 0) {
         // MPI interfaces
@@ -5591,14 +5610,14 @@ auto SEM::Meshes::get_neighbours(size_t n_elements_send, size_t start_index, siz
                 const Face2D_t& face = faces[face_index];
                 const size_t other_element_index = face.elements_[face.elements_[0] == element_index + start_index];
 
-                if (other_element_index < n_domain_elements) {
+                if (other_element_index < n_domain_elements) { // CHECK if element would be sent
                     neighbours[element_offset] = other_element_index + n_elements_received_left - n_elements_sent_left;
                     neighbours_proc[element_offset] = rank;
                 }
                 else { // It is either a local or mpi interface
                     bool missing = true;
                     for (size_t i = 0; i < n_local_interfaces; ++i) {
-                        if (interfaces_destination[i] == other_element_index) {
+                        if (interfaces_destination[i] == other_element_index) { // CHECK if it would be sent
                             neighbours[element_offset] = interfaces_origin[i] + n_elements_received_left - n_elements_sent_left;
                             neighbours_proc[element_offset] = rank;
 
