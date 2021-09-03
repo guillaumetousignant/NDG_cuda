@@ -1962,7 +1962,12 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
             cudaStreamSynchronize(stream_); // So the transfer to neighbours_arrays_send_left and neighbours_proc_arrays_left is completed
 
             // Compute the global indices of the elements using global_element_offset_current, and where they are going
-
+            std::vector<size_t> global_element_indices_send_left(n_elements_send_left[global_rank], global_element_offset_current[global_rank]);
+            std::vector<size_t> destination_process_send_left(n_elements_send_left[global_rank]);
+            for (size_t i = 0; i < n_elements_send_left[global_rank]; ++i) {
+                global_element_indices_send_left[i] += i;
+                destination_process_send_left[i] = global_element_indices_send_left[i]/n_elements_per_process_new;
+            }
 
 
 
