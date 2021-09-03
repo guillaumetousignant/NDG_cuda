@@ -13,7 +13,7 @@ target_include_directories(SEM PUBLIC
 
 # Cuda stuff
 set_target_properties(SEM PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-set_property(TARGET SEM PROPERTY CUDA_ARCHITECTURES 61) # sm_61 is GTX 10X0
+set_target_properties(SEM PROPERTIES CUDA_ARCHITECTURES "60;61;70") # sm_61 is GTX 10X0, sm_60 is Tesla P100, sm_70 is Tesla V100
 target_compile_features(SEM PRIVATE cxx_std_17)
 if(NOT ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug"))
     set_property(TARGET SEM PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
