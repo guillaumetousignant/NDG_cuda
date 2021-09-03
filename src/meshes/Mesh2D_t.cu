@@ -1890,9 +1890,9 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
 
         for (size_t i = 0; i < mpi_interfaces_new_local_index_outgoing.size(); ++i) {
             if (mpi_interfaces_new_local_index_outgoing[i] < n_elements_send_left[global_rank] || mpi_interfaces_new_local_index_outgoing[i] >= n_elements_per_proc[global_rank] - n_elements_send_right[global_rank]) {
-                const size_t element_global_id = mpi_interfaces_new_local_index_outgoing[i] + global_element_offset_current[global_rank];
-                mpi_interfaces_new_process_outgoing[i] = element_global_id/n_elements_per_process_new;
-                mpi_interfaces_new_local_index_outgoing[i] = element_global_id%n_elements_per_process_new;
+                const size_t element_global_index = mpi_interfaces_new_local_index_outgoing[i] + global_element_offset_current[global_rank];
+                mpi_interfaces_new_process_outgoing[i] = element_global_index/n_elements_per_process_new;
+                mpi_interfaces_new_local_index_outgoing[i] = element_global_index%n_elements_per_process_new;
             }
             else {
                 mpi_interfaces_new_local_index_outgoing[i] += n_elements_recv_left[global_rank];
@@ -1948,8 +1948,9 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
             SEM::Entities::device_vector<size_t> n_elements_recv_left_device(n_elements_recv_left, stream_);
             SEM::Entities::device_vector<size_t> n_elements_send_right_device(n_elements_send_right, stream_);
             SEM::Entities::device_vector<size_t> n_elements_recv_right_device(n_elements_recv_right, stream_);
+            SEM::Entities::device_vector<size_t> global_element_offset_current_device(global_element_offset_current, stream_);
 
-            SEM::Meshes::get_neighbours<<<send_left_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_send_left[global_rank], 0, n_elements_per_proc[global_rank], interfaces_origin_.size(), mpi_interfaces_destination_.size(), global_rank, global_size, elements_.data(), faces_.data(), interfaces_destination_.data(), interfaces_origin_.data(), mpi_interfaces_destination_.data(), mpi_interfaces_new_process_incoming_device.data(), mpi_interfaces_new_local_index_incoming_device.data(), neighbour_offsets_device.data(), n_elements_send_left_device.data(), n_elements_recv_left_device.data(), n_elements_send_right_device.data(), n_elements_recv_right_device.data(), neighbours_arrays_left.data(), neighbours_proc_arrays_left.data());
+            SEM::Meshes::get_neighbours<<<send_left_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_send_left[global_rank], 0, n_elements_per_proc[global_rank], interfaces_origin_.size(), mpi_interfaces_destination_.size(), global_rank, global_size, n_elements_per_process_new, elements_.data(), faces_.data(), interfaces_destination_.data(), interfaces_origin_.data(), mpi_interfaces_destination_.data(), mpi_interfaces_new_process_incoming_device.data(), mpi_interfaces_new_local_index_incoming_device.data(), neighbour_offsets_device.data(), n_elements_send_left_device.data(), n_elements_recv_left_device.data(), n_elements_send_right_device.data(), n_elements_recv_right_device.data(), global_element_offset_current_device.data(), neighbours_arrays_left.data(), neighbours_proc_arrays_left.data());
 
             std::vector<size_t> neighbours_arrays_send_left(neighbours_arrays_left.size());
             std::vector<int> neighbours_proc_arrays_send_left(neighbours_proc_arrays_left.size());
@@ -1979,6 +1980,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
             n_elements_recv_left_device.clear(stream_);
             n_elements_send_right_device.clear(stream_);
             n_elements_recv_right_device.clear(stream_);
+            global_element_offset_current_device.clear(stream_);
         }
 
         if (n_elements_send_right[global_rank] > 0) {
@@ -5635,6 +5637,7 @@ auto SEM::Meshes::get_neighbours(size_t n_elements_send,
                                  size_t n_MPI_interface_elements_receiving, 
                                  int rank, 
                                  int n_procs, 
+                                 size_t n_elements_per_process,
                                  const Element2D_t* elements, 
                                  const Face2D_t* faces, 
                                  const size_t* interfaces_destination, 
@@ -5647,6 +5650,7 @@ auto SEM::Meshes::get_neighbours(size_t n_elements_send,
                                  const size_t* n_elements_sent_left, 
                                  const size_t* n_elements_received_right, 
                                  const size_t* n_elements_sent_right, 
+                                 const size_t* global_element_offset,
                                  size_t* neighbours, 
                                  int* neighbours_proc) -> void {
 
@@ -5662,9 +5666,11 @@ auto SEM::Meshes::get_neighbours(size_t n_elements_send,
                 const Face2D_t& face = faces[face_index];
                 const size_t other_element_index = face.elements_[face.elements_[0] == element_index + start_index];
 
-                if (other_element_index < n_domain_elements) { // CHECK if element would be sent
+                if (other_element_index < n_domain_elements) {
                     if (other_element_index < n_elements_sent_left[rank] || other_element_index >= n_domain_elements - n_elements_sent_right[rank]) {
-
+                        const size_t element_global_index = other_element_index + global_element_offset[rank];
+                        neighbours[element_offset] = element_global_index%n_elements_per_process;
+                        neighbours_proc[element_offset] = element_global_index/n_elements_per_process;
                     }
                     else {
                         neighbours[element_offset] = other_element_index + n_elements_received_left[rank] - n_elements_sent_left[rank];
@@ -5674,9 +5680,16 @@ auto SEM::Meshes::get_neighbours(size_t n_elements_send,
                 else { // It is either a local or mpi interface
                     bool missing = true;
                     for (size_t i = 0; i < n_local_interfaces; ++i) {
-                        if (interfaces_destination[i] == other_element_index) { // CHECK if it would be sent
-                            neighbours[element_offset] = interfaces_origin[i] + n_elements_received_left[rank] - n_elements_sent_left[rank];
-                            neighbours_proc[element_offset] = rank;
+                        if (interfaces_destination[i] == other_element_index) { // CHECK if it would be sent, or sent here
+                            if (interfaces_origin[i] < n_elements_sent_left[rank] || interfaces_origin[i] >= n_domain_elements - n_elements_sent_right[rank]) {
+                                const size_t element_global_index = interfaces_origin[i] + global_element_offset[rank];
+                                neighbours[element_offset] = element_global_index%n_elements_per_process;
+                                neighbours_proc[element_offset] = element_global_index/n_elements_per_process;
+                            }
+                            else {
+                                neighbours[element_offset] = interfaces_origin[i] + n_elements_received_left[rank] - n_elements_sent_left[rank];
+                                neighbours_proc[element_offset] = rank;
+                            }
 
                             missing = false;
                             break;
@@ -5685,7 +5698,7 @@ auto SEM::Meshes::get_neighbours(size_t n_elements_send,
 
                     if (missing) {
                         for (size_t i = 0; i < n_MPI_interface_elements_receiving; ++i) {
-                            if (mpi_interfaces_destination[i] == other_element_index) { // CHECK if it would be sent
+                            if (mpi_interfaces_destination[i] == other_element_index) { // CHECK if it would be sent, or sent here
                                 neighbours[element_offset] = mpi_interfaces_local_indices[i];
                                 neighbours_proc[element_offset] = mpi_interfaces_process[i];
     
