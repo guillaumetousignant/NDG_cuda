@@ -1944,6 +1944,10 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
             SEM::Entities::device_vector<size_t> neighbour_offsets_device(neighbour_offsets, stream_);
             SEM::Entities::device_vector<int> mpi_interfaces_new_process_incoming_device(mpi_interfaces_new_process_incoming, stream_);
             SEM::Entities::device_vector<size_t> mpi_interfaces_new_local_index_incoming_device(mpi_interfaces_new_local_index_incoming, stream_);
+            SEM::Entities::device_vector<size_t> n_elements_send_left_device(n_elements_send_left, stream_);
+            SEM::Entities::device_vector<size_t> n_elements_recv_left_device(n_elements_recv_left, stream_);
+            SEM::Entities::device_vector<size_t> n_elements_send_right_device(n_elements_send_right, stream_);
+            SEM::Entities::device_vector<size_t> n_elements_recv_right_device(n_elements_recv_right, stream_);
 
             SEM::Meshes::get_neighbours<<<send_left_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_send_left[global_rank], 0, n_elements_per_proc[global_rank], interfaces_origin_.size(), mpi_interfaces_destination_.size(), n_elements_send_left[global_rank], n_elements_recv_left[global_rank], n_elements_send_right[global_rank], n_elements_recv_right[global_rank], global_rank, global_size, elements_.data(), faces_.data(), interfaces_destination_.data(), interfaces_origin_.data(), mpi_interfaces_destination_.data(), mpi_interfaces_new_process_incoming_device.data(), mpi_interfaces_new_local_index_incoming_device.data(), neighbour_offsets_device.data(), neighbours_arrays_left.data(), neighbours_proc_arrays_left.data());
 
@@ -1958,6 +1962,23 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
 
             // Compute the global indices of the elements using global_element_offset_current, and where they are going
 
+
+
+
+
+
+            solution_arrays_left.clear(stream_);
+            n_neighbours_arrays_left.clear(stream_);
+            nodes_arrays_left.clear(stream_);
+            neighbours_arrays_left.clear(stream_);
+            neighbours_proc_arrays_left.clear(stream_);
+            neighbour_offsets_device.clear(stream_);
+            mpi_interfaces_new_process_incoming_device.clear(stream_);
+            mpi_interfaces_new_local_index_incoming_device.clear(stream_);
+            n_elements_send_left_device.clear(stream_);
+            n_elements_recv_left_device.clear(stream_);
+            n_elements_send_right_device.clear(stream_);
+            n_elements_recv_right_device.clear(stream_);
         }
 
         if (n_elements_send_right[global_rank] > 0) {
@@ -1983,6 +2004,15 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
             cudaStreamSynchronize(stream_); // So the transfer to elements_send_right and solution_arrays_send_right etc is completed
 
 
+
+
+
+
+
+
+            solution_arrays_right.clear(stream_);
+            n_neighbours_arrays_right.clear(stream_);
+            nodes_arrays_right.clear(stream_);
         }
 
         std::vector<SEM::Entities::Element2D_t> elements_recv_left(n_elements_recv_left[global_rank]);
