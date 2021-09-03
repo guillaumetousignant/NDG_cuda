@@ -60,3 +60,4 @@
 *.toc
 *.bbl
 *.blg
+/received/*
