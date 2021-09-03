@@ -5680,7 +5680,7 @@ auto SEM::Meshes::get_neighbours(size_t n_elements_send,
                 else { // It is either a local or mpi interface
                     bool missing = true;
                     for (size_t i = 0; i < n_local_interfaces; ++i) {
-                        if (interfaces_destination[i] == other_element_index) { // CHECK if it would be sent, or sent here
+                        if (interfaces_destination[i] == other_element_index) {
                             if (interfaces_origin[i] < n_elements_sent_left[rank] || interfaces_origin[i] >= n_domain_elements - n_elements_sent_right[rank]) {
                                 const size_t element_global_index = interfaces_origin[i] + global_element_offset[rank];
                                 neighbours[element_offset] = element_global_index%n_elements_per_process;
@@ -5698,7 +5698,7 @@ auto SEM::Meshes::get_neighbours(size_t n_elements_send,
 
                     if (missing) {
                         for (size_t i = 0; i < n_MPI_interface_elements_receiving; ++i) {
-                            if (mpi_interfaces_destination[i] == other_element_index) { // CHECK if it would be sent, or sent here
+                            if (mpi_interfaces_destination[i] == other_element_index) {
                                 neighbours[element_offset] = mpi_interfaces_local_indices[i];
                                 neighbours_proc[element_offset] = mpi_interfaces_process[i];
     
