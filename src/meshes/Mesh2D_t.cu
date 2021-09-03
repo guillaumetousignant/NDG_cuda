@@ -1949,7 +1949,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
             SEM::Entities::device_vector<size_t> n_elements_send_right_device(n_elements_send_right, stream_);
             SEM::Entities::device_vector<size_t> n_elements_recv_right_device(n_elements_recv_right, stream_);
 
-            SEM::Meshes::get_neighbours<<<send_left_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_send_left[global_rank], 0, n_elements_per_proc[global_rank], interfaces_origin_.size(), mpi_interfaces_destination_.size(), n_elements_send_left[global_rank], n_elements_recv_left[global_rank], n_elements_send_right[global_rank], n_elements_recv_right[global_rank], global_rank, global_size, elements_.data(), faces_.data(), interfaces_destination_.data(), interfaces_origin_.data(), mpi_interfaces_destination_.data(), mpi_interfaces_new_process_incoming_device.data(), mpi_interfaces_new_local_index_incoming_device.data(), neighbour_offsets_device.data(), neighbours_arrays_left.data(), neighbours_proc_arrays_left.data());
+            SEM::Meshes::get_neighbours<<<send_left_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_send_left[global_rank], 0, n_elements_per_proc[global_rank], interfaces_origin_.size(), mpi_interfaces_destination_.size(), global_rank, global_size, elements_.data(), faces_.data(), interfaces_destination_.data(), interfaces_origin_.data(), mpi_interfaces_destination_.data(), mpi_interfaces_new_process_incoming_device.data(), mpi_interfaces_new_local_index_incoming_device.data(), neighbour_offsets_device.data(), n_elements_send_left_device.data(), n_elements_recv_left_device.data(), n_elements_send_right_device.data(), n_elements_recv_right_device.data(), neighbours_arrays_left.data(), neighbours_proc_arrays_left.data());
 
             std::vector<size_t> neighbours_arrays_send_left(neighbours_arrays_left.size());
             std::vector<int> neighbours_proc_arrays_send_left(neighbours_proc_arrays_left.size());
@@ -5628,7 +5628,28 @@ auto SEM::Meshes::get_transfer_solution(size_t n_elements, const Element2D_t* el
 }
 
 __global__
-auto SEM::Meshes::get_neighbours(size_t n_elements_send, size_t start_index, size_t n_domain_elements, size_t n_local_interfaces, size_t n_MPI_interface_elements_receiving, size_t n_elements_received_left, size_t n_elements_sent_left, size_t n_elements_received_right, size_t n_elements_sent_right, int rank, int n_procs, const Element2D_t* elements, const Face2D_t* faces, const size_t* interfaces_destination, const size_t* interfaces_origin, const size_t* mpi_interfaces_destination, const int* mpi_interfaces_process, const size_t* mpi_interfaces_local_indices, const size_t* offsets, size_t* neighbours, int* neighbours_proc) -> void {
+auto SEM::Meshes::get_neighbours(size_t n_elements_send, 
+                                 size_t start_index, 
+                                 size_t n_domain_elements, 
+                                 size_t n_local_interfaces, 
+                                 size_t n_MPI_interface_elements_receiving, 
+                                 int rank, 
+                                 int n_procs, 
+                                 const Element2D_t* elements, 
+                                 const Face2D_t* faces, 
+                                 const size_t* interfaces_destination, 
+                                 const size_t* interfaces_origin, 
+                                 const size_t* mpi_interfaces_destination, 
+                                 const int* mpi_interfaces_process, 
+                                 const size_t* mpi_interfaces_local_indices, 
+                                 const size_t* offsets, 
+                                 const size_t* n_elements_received_left, 
+                                 const size_t* n_elements_sent_left, 
+                                 const size_t* n_elements_received_right, 
+                                 const size_t* n_elements_sent_right, 
+                                 size_t* neighbours, 
+                                 int* neighbours_proc) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -5642,11 +5663,11 @@ auto SEM::Meshes::get_neighbours(size_t n_elements_send, size_t start_index, siz
                 const size_t other_element_index = face.elements_[face.elements_[0] == element_index + start_index];
 
                 if (other_element_index < n_domain_elements) { // CHECK if element would be sent
-                    if (other_element_index < n_elements_sent_left || other_element_index >= n_domain_elements - n_elements_sent_right) {
+                    if (other_element_index < n_elements_sent_left[rank] || other_element_index >= n_domain_elements - n_elements_sent_right[rank]) {
 
                     }
                     else {
-                        neighbours[element_offset] = other_element_index + n_elements_received_left - n_elements_sent_left;
+                        neighbours[element_offset] = other_element_index + n_elements_received_left[rank] - n_elements_sent_left[rank];
                         neighbours_proc[element_offset] = rank;
                     }
                 }
@@ -5654,7 +5675,7 @@ auto SEM::Meshes::get_neighbours(size_t n_elements_send, size_t start_index, siz
                     bool missing = true;
                     for (size_t i = 0; i < n_local_interfaces; ++i) {
                         if (interfaces_destination[i] == other_element_index) { // CHECK if it would be sent
-                            neighbours[element_offset] = interfaces_origin[i] + n_elements_received_left - n_elements_sent_left;
+                            neighbours[element_offset] = interfaces_origin[i] + n_elements_received_left[rank] - n_elements_sent_left[rank];
                             neighbours_proc[element_offset] = rank;
 
                             missing = false;
