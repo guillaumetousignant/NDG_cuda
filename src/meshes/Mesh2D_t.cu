@@ -1963,16 +1963,44 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
 
             // Compute the global indices of the elements using global_element_offset_current, and where they are going
             std::vector<size_t> global_element_indices_send_left(n_elements_send_left[global_rank], global_element_offset_current[global_rank]);
-            std::vector<size_t> destination_process_send_left(n_elements_send_left[global_rank]);
+            std::vector<int> destination_process_send_left(n_elements_send_left[global_rank]);
             for (size_t i = 0; i < n_elements_send_left[global_rank]; ++i) {
                 global_element_indices_send_left[i] += i;
                 destination_process_send_left[i] = global_element_indices_send_left[i]/n_elements_per_process_new;
             }
 
+            size_t n_send_processes = 0;
+            int current_process = global_rank;
+            for (const auto send_rank : destination_process_send_left) {
+                if (send_rank != current_process) {
+                    current_process = send_rank;
+                    ++n_send_processes;
+                }
+            }
+
+            std::vector<int> destination_processes_left(n_send_processes);
+            std::vector<size_t> process_offset_left(n_send_processes, 0);
+            std::vector<size_t> process_size_left(n_send_processes, 0);
+            if (n_send_processes > 0) {
+                destination_processes_left[0] = destination_process_send_left[0];
+            }
+
+            size_t process_index = 0;
+            size_t process_current_offset = 0;
+            for (const auto send_rank : destination_process_send_left) {
+                if (send_rank != destination_processes_left[process_index]) {
+                    ++process_index;
+                    process_offset_left[process_index] = process_current_offset;
+                    destination_processes_left[process_index] = send_rank;
+                    ++process_size_left[process_index];
+                }
+                else {
+                    ++process_size_left[process_index];
+                }
+                ++process_current_offset;
+            }
 
 
-
-            
 
             solution_arrays_left.clear(stream_);
             n_neighbours_arrays_left.clear(stream_);
