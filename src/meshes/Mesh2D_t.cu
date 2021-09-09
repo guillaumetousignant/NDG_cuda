@@ -1910,6 +1910,8 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
 
         MPI_Waitall(2 * mpi_interfaces_process_.size(), mpi_interfaces_requests.data(), mpi_interfaces_statuses.data());
 
+        std::vector<MPI_Request> mpi_interfaces_send_requests();
+
         // Sending and receiving
         if (n_elements_send_left[global_rank] > 0) {
             std::vector<SEM::Entities::Element2D_t> elements_send_left(n_elements_send_left[global_rank]);
@@ -2000,6 +2002,9 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
                 ++process_current_offset;
             }
 
+            std::vector<MPI_Request> mpi_interfaces_send_requests_left(destination_processes_left.size()); // CHECK the size is likely larger
+            mpi_interfaces_send_requests.insert(std::end(mpi_interfaces_send_requests), std::begin(mpi_interfaces_send_requests_left), std::end(mpi_interfaces_send_requests_left));
+
             for (size_t i = 0; i < destination_processes_left.size(); ++i) {
 
             }
@@ -2076,6 +2081,9 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
         // Adjust sizes with new n_elements, n_faces, n_nodes etc.
 
         MPI_Waitall(2 * mpi_interfaces_process_.size(), mpi_interfaces_requests.data() + 2 * mpi_interfaces_process_.size(), mpi_interfaces_statuses.data() + 2 * mpi_interfaces_process_.size());
+    
+        std::vector<MPI_Status> mpi_interfaces_send_statuses(mpi_interfaces_send_requests.size());
+        MPI_Waitall(mpi_interfaces_send_requests.size(), mpi_interfaces_send_requests.data(), mpi_interfaces_send_statuses.data());
     }
     else {
         // MPI interfaces
