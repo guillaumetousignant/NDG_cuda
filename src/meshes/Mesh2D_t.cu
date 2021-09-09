@@ -2010,12 +2010,14 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
 
             constexpr size_t n_mpi_transfers_per_send = 1
             std::vector<MPI_Request> mpi_interfaces_send_requests_left(n_mpi_transfers_per_send * destination_processes_left.size()); // CHECK the size is likely larger
-            mpi_interfaces_send_requests.insert(std::end(mpi_interfaces_send_requests), std::begin(mpi_interfaces_send_requests_left), std::end(mpi_interfaces_send_requests_left));
 
             for (size_t i = 0; i < destination_processes_left.size(); ++i) {
-                MPI_Isend(mpi_interfaces_new_process_outgoing.data() + mpi_interfaces_outgoing_offset_[i], mpi_interfaces_outgoing_size_[i], MPI_INT, mpi_interfaces_process_[i], 5 * global_size * global_size + 2 * (global_size * global_rank + mpi_interfaces_process_[i]), MPI_COMM_WORLD, &mpi_interfaces_requests[2 * (mpi_interfaces_process_.size() + i)]);
+                MPI_Isend(&process_n_neighbours_left[i], 1, size_t_data_type, destination_processes_left[i], TAG, MPI_COMM_WORLD, &mpi_interfaces_requests[n_mpi_transfers_per_send * mpi_interfaces_send_requests_left + i]);
 
             }
+
+            mpi_interfaces_send_requests.insert(std::end(mpi_interfaces_send_requests), std::begin(mpi_interfaces_send_requests_left), std::end(mpi_interfaces_send_requests_left));
+
 
 
 
