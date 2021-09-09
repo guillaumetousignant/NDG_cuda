@@ -2000,6 +2000,10 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
                 ++process_current_offset;
             }
 
+            for (size_t i = 0; i < destination_processes_left.size(); ++i) {
+
+            }
+
 
 
             solution_arrays_left.clear(stream_);
@@ -2070,6 +2074,8 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
         n_elements_ = n_elements_new;
 
         // Adjust sizes with new n_elements, n_faces, n_nodes etc.
+
+        MPI_Waitall(2 * mpi_interfaces_process_.size(), mpi_interfaces_requests.data() + 2 * mpi_interfaces_process_.size(), mpi_interfaces_statuses.data() + 2 * mpi_interfaces_process_.size());
     }
     else {
         // MPI interfaces
