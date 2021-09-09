@@ -1983,29 +1983,37 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
             std::vector<int> destination_processes_left(n_send_processes);
             std::vector<size_t> process_offset_left(n_send_processes, 0);
             std::vector<size_t> process_size_left(n_send_processes, 0);
+            std::vector<size_t> process_n_neighbours_left(n_send_processes, 0);
+            std::vector<size_t> process_neighbour_offset_left(n_send_processes, 0);
             if (n_send_processes > 0) {
                 destination_processes_left[0] = destination_process_send_left[0];
             }
 
             size_t process_index = 0;
             size_t process_current_offset = 0;
-            for (const auto send_rank : destination_process_send_left) {
+            size_t process_current_neighbour_offset = 0;
+            for (size_t i = 0; i < n_elements_send_left[global_rank]; ++i) {
+                const int send_rank = destination_process_send_left[i];
                 if (send_rank != destination_processes_left[process_index]) {
+                    process_current_neighbour_offset += process_n_neighbours_left[process_index];
+                    process_current_offset += process_size_left[process_index];
                     ++process_index;
                     process_offset_left[process_index] = process_current_offset;
                     destination_processes_left[process_index] = send_rank;
-                    ++process_size_left[process_index];
+                    process_neighbour_offset_left[process_index] = process_current_neighbour_offset;
                 }
-                else {
-                    ++process_size_left[process_index];
-                }
-                ++process_current_offset;
+
+                ++process_size_left[process_index];
+                process_n_neighbours_left[process_index] += n_neighbours_arrays_send_left[4 * i] + n_neighbours_arrays_send_left[4 * i + 1] + n_neighbours_arrays_send_left[4 * i + 2] + n_neighbours_arrays_send_left[4 * i + 3];
+                neighbour_offsets[i] -= process_neighbour_offset_left[process_index];
             }
 
-            std::vector<MPI_Request> mpi_interfaces_send_requests_left(destination_processes_left.size()); // CHECK the size is likely larger
+            constexpr size_t n_mpi_transfers_per_send = 1
+            std::vector<MPI_Request> mpi_interfaces_send_requests_left(n_mpi_transfers_per_send * destination_processes_left.size()); // CHECK the size is likely larger
             mpi_interfaces_send_requests.insert(std::end(mpi_interfaces_send_requests), std::begin(mpi_interfaces_send_requests_left), std::end(mpi_interfaces_send_requests_left));
 
             for (size_t i = 0; i < destination_processes_left.size(); ++i) {
+                MPI_Isend(mpi_interfaces_new_process_outgoing.data() + mpi_interfaces_outgoing_offset_[i], mpi_interfaces_outgoing_size_[i], MPI_INT, mpi_interfaces_process_[i], 5 * global_size * global_size + 2 * (global_size * global_rank + mpi_interfaces_process_[i]), MPI_COMM_WORLD, &mpi_interfaces_requests[2 * (mpi_interfaces_process_.size() + i)]);
 
             }
 
