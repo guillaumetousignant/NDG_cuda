@@ -2092,8 +2092,8 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
 
             cudaStreamSynchronize(stream_); // So the transfer to neighbours_arrays_send and neighbours_proc_arrays is completed
 
-            // Compute the global indices of the elements using global_element_offset_current, and where they are going
-            std::vector<size_t> global_element_indices_send(n_elements_send_right[global_rank], global_element_offset_current[global_rank]);
+            // Compute the global indices of the elements using global_element_offset_end_current, and where they are going
+            std::vector<size_t> global_element_indices_send(n_elements_send_right[global_rank], global_element_offset_end_current[global_rank] + 1 - n_elements_send_right[global_rank]);
             std::vector<int> destination_process_send(n_elements_send_right[global_rank]);
             for (size_t i = 0; i < n_elements_send_right[global_rank]; ++i) {
                 global_element_indices_send[i] += i;
@@ -2172,7 +2172,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
             global_element_offset_current_device.clear(stream_);
         }
 
-        // Allocate new elements here? Received elements need to be put somewhere
+        device_vector<Element2D_t> new_elements(n_elements_new[global_rank], stream_); // What about boundary elements?
 
         if (n_elements_recv_left[global_rank] > 0) {
             // Compute the global indices of the elements using global_element_offset_new, and where they are coming from
@@ -2197,9 +2197,9 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
 
             size_t n_recv_processes = 0;
             int current_process = global_rank;
-            for (const auto send_rank : origin_process_recv) {
-                if (send_rank != current_process) {
-                    current_process = send_rank;
+            for (const auto recv_rank : origin_process_recv) {
+                if (recv_rank != current_process) {
+                    current_process = recv_rank;
                     ++n_recv_processes;
                 }
             }
@@ -2271,18 +2271,145 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
             std::vector<MPI_Status> mpi_interfaces_recv_statuses_left(mpi_interfaces_recv_requests_left.size());
             MPI_Waitall(mpi_interfaces_recv_requests_left.size(), mpi_interfaces_recv_requests_left.data(), mpi_interfaces_recv_statuses_left.data());
         
-            
+            // Now we must store these elements
+            cudaMemcpyAsync(new_elements.data(), elements_recv.data(), n_elements_recv_left[global_rank] * sizeof(SEM::Entities::Element2D_t), cudaMemcpyHostToDevice, stream_);
+            device_vector<deviceFloat> solution_arrays(solution_arrays_recv, stream_);
+            device_vector<size_t> n_neighbours_arrays(n_neighbours_arrays_recv, stream_);
+
+            const int recv_numBlocks = (n_elements_recv_left[global_rank] + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+            SEM::Meshes::put_transfer_solution<<<recv_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_recv_left[global_rank], new_elements.data(), maximum_N_, solution_arrays.data(), n_neighbours_arrays.data());
+
+            // Then we must figure out nodes and faces etc
+            // And compute geometry.
+            // Maybe we do all this before we put the solution back, as to do it at the same time
+
+
+            solution_arrays.clear(stream_);
+            n_neighbours_arrays.clear(stream_);
         }
 
+        if (n_elements_recv_right[global_rank] > 0) {
+            // Compute the global indices of the elements using global_element_offset_new, and where they are coming from
+            std::vector<size_t> global_element_indices_recv(n_elements_recv_right[global_rank], global_element_offset_end_new[global_rank] + 1 - n_elements_recv_right[global_rank]);
+            std::vector<int> origin_process_recv(n_elements_recv_right[global_rank]);
+            for (size_t i = 0; i < n_elements_recv_right[global_rank]; ++i) {
+                global_element_indices_recv[i] += i;
+
+                bool missing = true;
+                for (int j = 0; j < global_size; ++j) {
+                    if (global_element_indices_recv[i] >= global_element_offset_current[j] && global_element_indices_recv[i] <= global_element_offset_end_current[j]) {
+                        origin_process_recv[i] = j;
+                        missing = false;
+                        break;
+                    }
+                }
+                if (missing) {
+                    std::cerr << "Error: Process " << global_rank << " should receive element with global index " << global_element_indices_recv[i] << " as its right received element #" << i << ", for boundary " << i << ", element " << j << ", but the element is not within any process' range. Exiting." << std::endl;
+                    exit(55);
+                }
+            }
+
+            size_t n_recv_processes = 0;
+            int current_process = global_rank;
+            for (const auto recv_rank : origin_process_recv) {
+                if (recv_rank != current_process) {
+                    current_process = recv_rank;
+                    ++n_recv_processes;
+                }
+            }
+
+            std::vector<int> origin_processes(n_recv_processes);
+            std::vector<size_t> process_offset(n_recv_processes, 0);
+            std::vector<size_t> process_size(n_recv_processes, 0);
+            if (n_recv_processes > 0) {
+                origin_processes[0] = origin_process_recv[0];
+            }
+
+            size_t process_index = 0;
+            size_t process_current_offset = 0;
+            for (size_t i = 0; i < n_elements_recv_right[global_rank]; ++i) {
+                const int recv_rank = origin_process_recv[i];
+                if (recv_rank != origin_processes[process_index]) {
+                    process_current_offset += process_size[process_index];
+                    ++process_index;
+                    process_offset[process_index] = process_current_offset;
+                    origin_processes[process_index] = recv_rank;
+                }
+
+                ++process_size[process_index];
+            }
+
+            std::vector<size_t> process_n_neighbours(n_recv_processes, 0);
+            std::vector<size_t> n_neighbours_arrays_recv(4 * n_elements_recv_right[global_rank]);
+            std::vector<deviceFloat> nodes_arrays_recv(8 * n_elements_recv_right[global_rank]);
+            std::vector<deviceFloat> solution_arrays_recv(3 * n_elements_recv_right[global_rank] * std::pow(maximum_N_ + 1, 2));
+            std::vector<SEM::Entities::Element2D_t> elements_recv(n_elements_recv_right[global_rank]);
+
+            std::vector<MPI_Request> n_neighbours_recv_requests_right(origin_processes.size());
+            std::vector<MPI_Request> mpi_interfaces_recv_requests_right((n_mpi_transfers_per_send - 1) * origin_processes.size());
+
+            for (size_t i = 0; i < origin_processes.size(); ++i) {
+                // Neighbours
+                MPI_Irecv(&process_n_neighbours[i], 1, size_t_data_type, origin_processes[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * destination_processes[i] + global_rank), MPI_COMM_WORLD, &n_neighbours_recv_requests_right[i]);
+                MPI_Irecv(n_neighbours_arrays_recv.data() + 4 * process_offset[i], 4 * process_size[i], size_t_data_type, origin_processes[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * destination_processes[i] + global_rank) + 1, MPI_COMM_WORLD, &mpi_interfaces_recv_requests_right[(n_mpi_transfers_per_send - 1) * i]);
+
+                // Nodes
+                MPI_Irecv(nodes_arrays_recv.data() + 8 * process_offset[i], 8 * process_size[i], float_data_type, origin_processes[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * destination_processes[i] + global_rank) + 4, MPI_COMM_WORLD, &mpi_interfaces_recv_requests_right[(n_mpi_transfers_per_send - 1) * i + 1]);
+
+                // Solution
+                MPI_Irecv(solution_arrays_recv.data() + 3 * std::pow(maximum_N_ + 1, 2) * process_offset[i], 3 * std::pow(maximum_N_ + 1, 2) * process_size[i], float_data_type, origin_processes[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * destination_processes[i] + global_rank) + 5, MPI_COMM_WORLD, &mpi_interfaces_recv_requests_right[(n_mpi_transfers_per_send - 1) * i + 2]);
+
+                // Elements
+                MPI_Irecv(elements_recv.data() + process_offset[i], process_size[i], element_data_type, origin_processes[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * destination_processes[i] + global_rank) + 6, MPI_COMM_WORLD, &mpi_interfaces_recv_requests_right[(n_mpi_transfers_per_send - 1) * i + 3]);
+            }
+
+            std::vector<MPI_Status> n_neighbours_recv_statuses(n_neighbours_recv_requests_right.size());
+            MPI_Waitall(n_neighbours_recv_requests_right.size(), n_neighbours_recv_requests_right.data(), n_neighbours_recv_statuses.data());
+
+            size_t n_neighbours_total = 0;
+            std::vector<size_t> process_neighbour_offset(n_recv_processes);
+            for (size_t i = 0; i < origin_processes.size(); ++i) {
+                process_neighbour_offset[i] = n_neighbours_total;
+                n_neighbours_total += process_n_neighbours[i];
+            }
+
+            std::vector<size_t> neighbours_arrays_recv(n_neighbours_total);
+            std::vector<size_t> neighbours_proc_arrays_recv(n_neighbours_total);
+
+            for (size_t i = 0; i < origin_processes.size(); ++i) {
+                // Neighbours
+                MPI_Irecv(neighbours_arrays_recv.data() + process_neighbour_offset[i], process_n_neighbours[i], size_t_data_type, origin_processes[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * destination_processes[i] + global_rank) + 2, MPI_COMM_WORLD, &mpi_interfaces_recv_requests_right[(n_mpi_transfers_per_send - 1) * i + 4]);
+                MPI_Irecv(neighbours_proc_arrays_recv.data() + process_neighbour_offset[i], process_n_neighbours[i], size_t_data_type, origin_processes[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * destination_processes[i] + global_rank) + 3, MPI_COMM_WORLD, &mpi_interfaces_recv_requests_right[(n_mpi_transfers_per_send - 1) * i + 5]);
+            }
+
+            std::vector<MPI_Status> mpi_interfaces_recv_statuses_right(mpi_interfaces_recv_requests_right.size());
+            MPI_Waitall(mpi_interfaces_recv_requests_right.size(), mpi_interfaces_recv_requests_right.data(), mpi_interfaces_recv_statuses_right.data());
         
-        std::vector<SEM::Entities::Element2D_t> elements_recv_right(n_elements_recv_right[global_rank]);
+            // Now we must store these elements
+            cudaMemcpyAsync(new_elements.data() + n_elements_new[global_rank] - n_elements_recv_right[global_rank], elements_recv.data(), n_elements_recv_right[global_rank] * sizeof(SEM::Entities::Element2D_t), cudaMemcpyHostToDevice, stream_);
+            device_vector<deviceFloat> solution_arrays(solution_arrays_recv, stream_);
+            device_vector<size_t> n_neighbours_arrays(n_neighbours_arrays_recv, stream_);
+
+            const int recv_numBlocks = (n_elements_recv_right[global_rank] + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+            SEM::Meshes::put_transfer_solution<<<recv_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_recv_right[global_rank], new_elements.data() + n_elements_new[global_rank] - n_elements_recv_right[global_rank], maximum_N_, solution_arrays.data(), n_neighbours_arrays.data());
+
+            // Then we must figure out nodes and faces etc
+            // And compute geometry.
+            // Maybe we do all this before we put the solution back, as to do it at the same time
+
+
+
+            solution_arrays.clear(stream_);
+            n_neighbours_arrays.clear(stream_);
+        }
+        
         
 
         
 
         
         
-
+        // We need to move remaining elements
 
 
 
@@ -2291,6 +2418,9 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
 
 
         n_elements_ = n_elements_new;
+        elements_ = std::move(new_elements);
+
+        new_elements.clear(stream_);
 
         // Adjust sizes with new n_elements, n_faces, n_nodes etc.
 
@@ -5887,6 +6017,34 @@ auto SEM::Meshes::get_transfer_solution(size_t n_elements, const Element2D_t* el
             solution[p_offset + i] = element.p_[i];
             solution[u_offset + i] = element.u_[i];
             solution[v_offset + i] = element.v_[i];
+        }
+    }
+}
+
+__global__
+auto SEM::Meshes::put_transfer_solution(size_t n_elements, Element2D_t* elements, int maximum_N, const deviceFloat* solution, const size_t* n_neighbours) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t element_index = index; element_index < n_elements; element_index += stride) {
+        const size_t p_offset =  3 * element_index      * std::pow(maximum_N + 1, 2);
+        const size_t u_offset = (3 * element_index + 1) * std::pow(maximum_N + 1, 2);
+        const size_t v_offset = (3 * element_index + 2) * std::pow(maximum_N + 1, 2);
+        const size_t neighbours_offset = 4 * element_index;
+
+        Element2D_t& element = elements[element_index];
+        element.clear_storage();
+        clement.allocate_storage();
+
+        element.faces_[0] = cuda_vector<size_t>(n_neighbours[neighbours_offset]);
+        element.faces_[1] = cuda_vector<size_t>(n_neighbours[neighbours_offset + 1]);
+        element.faces_[2] = cuda_vector<size_t>(n_neighbours[neighbours_offset + 2]);
+        element.faces_[3] = cuda_vector<size_t>(n_neighbours[neighbours_offset + 3]);
+
+        for (int i = 0; i < std::pow(element.N_ + 1, 2); ++i) {
+            element.p_[i] = solution[p_offset + i];
+            element.u_[i] = solution[u_offset + i];
+            element.v_[i] = solution[v_offset + i];
         }
     }
 }
