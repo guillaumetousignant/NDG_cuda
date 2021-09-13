@@ -1911,7 +1911,8 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
         MPI_Waitall(2 * mpi_interfaces_process_.size(), mpi_interfaces_requests.data(), mpi_interfaces_statuses.data());
 
         std::vector<MPI_Request> mpi_interfaces_send_requests();
-        constexpr size_t n_mpi_transfers_per_send = 4
+        constexpr size_t n_mpi_transfers_per_send = 7
+        constexpr MPI_Datatype float_data_type = (sizeof(deviceFloat) == sizeof(float)) ? MPI_FLOAT : MPI_DOUBLE;
 
         // Sending and receiving
         if (n_elements_send_left[global_rank] > 0) {
@@ -1933,7 +1934,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
             n_neighbours_arrays_left.copy_to(n_neighbours_arrays_send_left, stream_);
             nodes_arrays_left.copy_to(nodes_arrays_send_left, stream_);
 
-            cudaStreamSynchronize(stream_); // So the transfer to elements_send_left and solution_arrays_send_left etc is completed
+            cudaStreamSynchronize(stream_); // So the transfer to elements_send_left, solution_arrays_send_left and n_neighbours_arrays_send_left etc is completed
         
             std::vector<size_t> neighbour_offsets(n_elements_send_left[global_rank], 0);
             size_t n_neighbours_total = 0;
@@ -1960,7 +1961,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
             neighbours_arrays_left.copy_to(neighbours_arrays_send_left, stream_);
             neighbours_proc_arrays_left.copy_to(neighbours_proc_arrays_send_left, stream_);
 
-            Element2D_t::Datatype datatype;
+            Element2D_t::Datatype element_data_type;
 
             cudaStreamSynchronize(stream_); // So the transfer to neighbours_arrays_send_left and neighbours_proc_arrays_left is completed
 
@@ -2006,23 +2007,28 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
 
                 ++process_size_left[process_index];
                 process_n_neighbours_left[process_index] += n_neighbours_arrays_send_left[4 * i] + n_neighbours_arrays_send_left[4 * i + 1] + n_neighbours_arrays_send_left[4 * i + 2] + n_neighbours_arrays_send_left[4 * i + 3];
-                neighbour_offsets[i] -= process_neighbour_offset_left[process_index];
             }
 
             std::vector<MPI_Request> mpi_interfaces_send_requests_left(n_mpi_transfers_per_send * destination_processes_left.size()); // CHECK the size is likely larger
 
             for (size_t i = 0; i < destination_processes_left.size(); ++i) {
+                // Neighbours
                 MPI_Isend(&process_n_neighbours_left[i], 1, size_t_data_type, destination_processes_left[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes_left[i]), MPI_COMM_WORLD, &mpi_interfaces_requests[n_mpi_transfers_per_send * i]);
-                MPI_Isend(neighbour_offsets.data() + process_offset_left[i], process_size_left[i], size_t_data_type, destination_processes_left[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes_left[i]) + 1, MPI_COMM_WORLD, &mpi_interfaces_requests[n_mpi_transfers_per_send * i + 1]);
+                MPI_Isend(n_neighbours_arrays_send_left.data() + 4 * process_offset_left[i], 4 * process_size_left[i], size_t_data_type, destination_processes_left[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes_left[i]) + 1, MPI_COMM_WORLD, &mpi_interfaces_requests[n_mpi_transfers_per_send * i + 1]);
                 MPI_Isend(neighbours_arrays_send_left.data() + process_neighbour_offset_left[i], process_n_neighbours_left[i], size_t_data_type, destination_processes_left[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes_left[i]) + 2, MPI_COMM_WORLD, &mpi_interfaces_requests[n_mpi_transfers_per_send * i + 2]);
-                MPI_Isend(neighbours_proc_arrays_send_left.data() + process_neighbour_offset_left[i], process_n_neighbours_left[i], size_t_data_type, destination_processes_left[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes_left[i]) + 2, MPI_COMM_WORLD, &mpi_interfaces_requests[n_mpi_transfers_per_send * i + 2]);
+                MPI_Isend(neighbours_proc_arrays_send_left.data() + process_neighbour_offset_left[i], process_n_neighbours_left[i], size_t_data_type, destination_processes_left[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes_left[i]) + 3, MPI_COMM_WORLD, &mpi_interfaces_requests[n_mpi_transfers_per_send * i + 3]);
 
+                // Nodes
+                MPI_Isend(nodes_arrays_send_left.data() + 8 * process_offset_left[i], 8 * process_size_left[i], float_data_type, destination_processes_left[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes_left[i]) + 4, MPI_COMM_WORLD, &mpi_interfaces_requests[n_mpi_transfers_per_send * i + 4]);
+
+                // Solution
+                MPI_Isend(solution_arrays_send_left.data() + 3 * std::pow(maximum_N_ + 1, 2) * process_offset_left[i], 3 * std::pow(maximum_N_ + 1, 2) * process_size_left[i], float_data_type, destination_processes_left[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes_left[i]) + 5, MPI_COMM_WORLD, &mpi_interfaces_requests[n_mpi_transfers_per_send * i + 5]);
+
+                // Elements
+                MPI_Isend(elements_send_left.data() + process_offset_left[i], process_size_left[i], element_data_type, destination_processes_left[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes_left[i]) + 6, MPI_COMM_WORLD, &mpi_interfaces_requests[n_mpi_transfers_per_send * i + 6]);
             }
 
             mpi_interfaces_send_requests.insert(std::end(mpi_interfaces_send_requests), std::begin(mpi_interfaces_send_requests_left), std::end(mpi_interfaces_send_requests_left));
-
-
-
 
             solution_arrays_left.clear(stream_);
             n_neighbours_arrays_left.clear(stream_);
