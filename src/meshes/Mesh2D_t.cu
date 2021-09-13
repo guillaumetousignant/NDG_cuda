@@ -2180,14 +2180,27 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
         if (n_elements_recv_left[global_rank] > 0) {
             std::vector<SEM::Entities::Element2D_t> elements_recv_left(n_elements_recv_left[global_rank]);
 
-            // Compute the global indices of the elements using global_element_offset_end_current, and where they are coming from
-            std::vector<size_t> global_element_indices_recv(n_elements_recv_left[global_rank], global_element_offset_end_current[global_rank] + 1);
+            // Compute the global indices of the elements using global_element_offset_new, and where they are coming from
+            std::vector<size_t> global_element_indices_recv(n_elements_recv_left[global_rank], global_element_offset_new[global_rank]);
             std::vector<int> destination_process_recv(n_elements_recv_left[global_rank]);
             for (size_t i = 0; i < n_elements_recv_left[global_rank]; ++i) {
                 global_element_indices_recv[i] += i;
 
-                
+                bool missing = true;
+                for (int j = 0; j < global_size; ++j) {
+                    if (global_element_indices_recv[i] >= global_element_offset_current[j] && global_element_indices_recv[i] <= global_element_offset_end_current[j]) {
+                        destination_process_recv[i] = j;
+                        missing = false;
+                        break;
+                    }
+                }
+                if (missing) {
+                    std::cerr << "Error: Process " << global_rank << " should receive element with global index " << global_element_indices_recv[i] << " as its left received element #" << i << ", for boundary " << i << ", element " << j << ", but the element is not within any process' range. Exiting." << std::endl;
+                    exit(54);
+                }
             }
+
+            
         }
 
         
