@@ -2175,7 +2175,22 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
             global_element_offset_current_device.clear(stream_);
         }
 
-        std::vector<SEM::Entities::Element2D_t> elements_recv_left(n_elements_recv_left[global_rank]);
+        // Allocate new elements here? Received elements need to be put somewhere
+
+        if (n_elements_recv_left[global_rank] > 0) {
+            std::vector<SEM::Entities::Element2D_t> elements_recv_left(n_elements_recv_left[global_rank]);
+
+            // Compute the global indices of the elements using global_element_offset_end_current, and where they are coming from
+            std::vector<size_t> global_element_indices_recv(n_elements_recv_left[global_rank], global_element_offset_end_current[global_rank] + 1);
+            std::vector<int> destination_process_recv(n_elements_recv_left[global_rank]);
+            for (size_t i = 0; i < n_elements_recv_left[global_rank]; ++i) {
+                global_element_indices_recv[i] += i;
+
+                
+            }
+        }
+
+        
         std::vector<SEM::Entities::Element2D_t> elements_recv_right(n_elements_recv_right[global_rank]);
         
 
