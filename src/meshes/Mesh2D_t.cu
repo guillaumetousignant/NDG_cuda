@@ -1911,6 +1911,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
         MPI_Waitall(2 * mpi_interfaces_process_.size(), mpi_interfaces_requests.data(), mpi_interfaces_statuses.data());
 
         std::vector<MPI_Request> mpi_interfaces_send_requests();
+        constexpr size_t n_mpi_transfers_per_send = 4
 
         // Sending and receiving
         if (n_elements_send_left[global_rank] > 0) {
@@ -2008,11 +2009,13 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
                 neighbour_offsets[i] -= process_neighbour_offset_left[process_index];
             }
 
-            constexpr size_t n_mpi_transfers_per_send = 1
             std::vector<MPI_Request> mpi_interfaces_send_requests_left(n_mpi_transfers_per_send * destination_processes_left.size()); // CHECK the size is likely larger
 
             for (size_t i = 0; i < destination_processes_left.size(); ++i) {
-                MPI_Isend(&process_n_neighbours_left[i], 1, size_t_data_type, destination_processes_left[i], TAG, MPI_COMM_WORLD, &mpi_interfaces_requests[n_mpi_transfers_per_send * mpi_interfaces_send_requests_left + i]);
+                MPI_Isend(&process_n_neighbours_left[i], 1, size_t_data_type, destination_processes_left[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes_left[i]), MPI_COMM_WORLD, &mpi_interfaces_requests[n_mpi_transfers_per_send * i]);
+                MPI_Isend(neighbour_offsets.data() + process_offset_left[i], process_size_left[i], size_t_data_type, destination_processes_left[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes_left[i]) + 1, MPI_COMM_WORLD, &mpi_interfaces_requests[n_mpi_transfers_per_send * i + 1]);
+                MPI_Isend(neighbours_arrays_send_left.data() + process_neighbour_offset_left[i], process_n_neighbours_left[i], size_t_data_type, destination_processes_left[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes_left[i]) + 2, MPI_COMM_WORLD, &mpi_interfaces_requests[n_mpi_transfers_per_send * i + 2]);
+                MPI_Isend(neighbours_proc_arrays_send_left.data() + process_neighbour_offset_left[i], process_n_neighbours_left[i], size_t_data_type, destination_processes_left[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes_left[i]) + 2, MPI_COMM_WORLD, &mpi_interfaces_requests[n_mpi_transfers_per_send * i + 2]);
 
             }
 
