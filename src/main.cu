@@ -197,7 +197,7 @@ auto main(int argc, char* argv[]) -> int {
         for (int device = 0; device < deviceCount; ++device) {
             cudaDeviceProp deviceProp;
             cudaGetDeviceProperties(&deviceProp, device);
-            std::cout << '\t' << "Device #" << device << " (" << deviceProp.name << ") has compute capability " << deviceProp.major << "." << deviceProp.minor << "." << std::endl;
+            std::cout << '\t' <<  "Node " << node_rank << " device #" << device << " (" << deviceProp.name << ") has compute capability " << deviceProp.major << "." << deviceProp.minor << "." << std::endl;
         }
     }
 
