@@ -1878,6 +1878,8 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
     std::cout << "Process " << global_rank << " has n_elements_send_left: " << n_elements_send_left[global_rank] << ", n_elements_send_right: " << n_elements_send_right[global_rank] << ", n_elements_recv_left: " << n_elements_recv_left[global_rank] << ", n_elements_recv_right: " << n_elements_recv_right[global_rank] << std::endl;
     
     if (n_elements_send_left[global_rank] + n_elements_recv_left[global_rank] + n_elements_send_right[global_rank] + n_elements_recv_right[global_rank] > 0) {
+        std::cout << "Process " << global_rank << " has elements to send or receive" << std::endl;
+        
         // MPI interfaces
         std::vector<int> mpi_interfaces_new_process_outgoing(mpi_interfaces_origin_.size(), global_rank);
         std::vector<size_t> mpi_interfaces_new_local_index_outgoing(mpi_interfaces_origin_.size());
@@ -2520,7 +2522,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
 
 
 
-
+        
 
         mpi_interfaces_destination_.copy_from(new_mpi_interfaces_destination, stream_);
         mpi_interfaces_process_ = std::move(new_mpi_interfaces_process);
