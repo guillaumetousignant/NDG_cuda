@@ -581,7 +581,7 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
         mpi_interfaces_incoming_size_ = std::vector<size_t>(n_mpi_interfaces);
         mpi_interfaces_outgoing_offset_ = std::vector<size_t>(n_mpi_interfaces);
         mpi_interfaces_incoming_offset_ = std::vector<size_t>(n_mpi_interfaces);
-        mpi_interfaces_process_ = std::vector<size_t>(n_mpi_interfaces);
+        mpi_interfaces_process_ = std::vector<int>(n_mpi_interfaces);
         std::vector<size_t> mpi_interfaces_origin(n_mpi_interface_elements);
         std::vector<size_t> mpi_interfaces_origin_side(n_mpi_interface_elements);
         std::vector<size_t> mpi_interfaces_destination(n_mpi_interface_elements);
@@ -2459,71 +2459,72 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
 
         std::cout << "Process " << global_rank << " sent and received mpi interfaces" << std::endl;
 
-        for (size_t i = 0; i < mpi_interfaces_incoming_size_.size(); ++i) {
-            for (size_t j = 0; j < mpi_interfaces_incoming_size_[i]; ++j) {
-                if (mpi_interfaces_new_process_incoming[mpi_interfaces_incoming_offset_[i] + j] != mpi_interfaces_process_[i]) {
-                    --mpi_interfaces_incoming_size_[i]; // CHECK what to do for outgoing?
-                    for (size_t k = 0; k < mpi_interfaces_process_.size(); ++k) {
-                        bool missing = true;
-                        if (mpi_interfaces_process_[k] == mpi_interfaces_new_process_incoming[mpi_interfaces_incoming_offset_[i] + j]) {
-                            ++mpi_interfaces_incoming_size_[k];
-                            missing = false;
-                            break;
-                        }
+        std::vector<int> new_mpi_interfaces_process;
+        std::vector<size_t> new_mpi_interfaces_incoming_size;
 
-                        if (missing) { // CHECK what if it is self? we then add a local interface
-                            mpi_interfaces_process_.push_back(mpi_interfaces_new_process_incoming[mpi_interfaces_incoming_offset_[i] + j]);
-                            
-                            mpi_interfaces_incoming_size_.push_back(1); // CHECK what to do for outgoing?
-                            mpi_interfaces_incoming_offset_.push_back(0); // CHECK what to do for outgoing?
-                        }
-                    }
+        // Rebuilding incoming interfaces
+        for (size_t i = 0; i < mpi_interfaces_new_process_incoming.size(); ++i) {
+            bool missing = true;
+            for (size_t j = 0; j < new_mpi_interfaces_process.size(); ++j) {
+                if (new_mpi_interfaces_process[j] == mpi_interfaces_new_process_incoming[i]) {
+                    ++new_mpi_interfaces_incoming_size[j];
+                    missing = false;
+                    break;
                 }
+            }
+
+            if (missing) {
+                new_mpi_interfaces_process.push_back(mpi_interfaces_new_process_incoming[i]);
+                new_mpi_interfaces_incoming_size.push_back(1);
             }
         }
 
         // Recalculate offsets
-        std::vector<size_t> new_mpi_interfaces_incoming_offset(mpi_interfaces_incoming_size_.size());
+        std::vector<size_t> new_mpi_interfaces_incoming_offset(new_mpi_interfaces_process.size());
         size_t mpi_interface_offset = 0;
-        for (size_t i = 0; i < mpi_interfaces_incoming_size_.size(); ++i) {
+        for (size_t i = 0; i < new_mpi_interfaces_incoming_offset.size(); ++i) {
             new_mpi_interfaces_incoming_offset[i] = mpi_interface_offset;
-            mpi_interface_offset += mpi_interfaces_incoming_size_[i];
+            mpi_interface_offset += new_mpi_interfaces_incoming_size[i];
         } // CHECK what to do about outgoing?
         const size_t n_mpi_interface_elements = mpi_interface_offset;
+        if (n_mpi_interface_elements != mpi_interfaces_new_process_incoming.size()) {
+            std::cerr << "Error: Process " << global_rank << " had " << mpi_interfaces_new_process_incoming.size() << " mpi interface elements, but now has " << n_mpi_interface_elements << ". Exiting." << std::endl;
+            exit(55);
+        }
 
+        // Filling rebuilt interfaces
         std::vector<size_t> mpi_interfaces_destination_host(mpi_interfaces_destination_.size());
         mpi_interfaces_destination_.copy_to(mpi_interfaces_destination_host, stream_);
         std::vector<size_t> new_mpi_interfaces_destination(n_mpi_interface_elements);
-
-        std::vector<size_t> mpi_interfaces_destination_indices(mpi_interfaces_process_.size(), 0);
+        std::vector<size_t> mpi_interfaces_destination_indices(new_mpi_interfaces_process.size(), 0);
 
         cudaStreamSynchronize(stream_); // So the transfer to mpi_interfaces_destination_host is completed
-        for (size_t i = 0; i < mpi_interfaces_incoming_size_.size(); ++i) {
-            for (size_t j = 0; j < mpi_interfaces_incoming_size_[i]; ++j) {
-                if (mpi_interfaces_new_process_incoming[mpi_interfaces_incoming_offset_[i] + j] != mpi_interfaces_process_[i]) {
-                    for (size_t k = 0; k < mpi_interfaces_process_.size(); ++k) {
-                        bool missing = true;
-                        if (mpi_interfaces_process_[k] == mpi_interfaces_new_process_incoming[mpi_interfaces_incoming_offset_[i] + j]) {
-                            new_mpi_interfaces_destination[new_mpi_interfaces_incoming_offset[k] + mpi_interfaces_destination_indices[k]] = mpi_interfaces_destination_host[mpi_interfaces_incoming_offset_[i] + j];
-                            ++mpi_interfaces_destination_indices[k];
-                            missing = false;
-                            break;
-                        }
 
-                        if (missing) { // CHECK what if it is self? we then add a local interface
-                            std::cerr << "Error: Process " << global_rank << " got sent new process " << mpi_interfaces_new_process_incoming[mpi_interfaces_incoming_offset_[i] + j] << " for boundary " << i << ", element " << j << ", local id " << mpi_interfaces_destination_host[mpi_interfaces_incoming_offset_[i] + j] << ", but the process is not in this process' mpi interfaces destinations. Exiting." << std::endl;
-                            exit(53);
-                        }
-                    }
-                }
-                else {
-                    new_mpi_interfaces_destination[new_mpi_interfaces_incoming_offset[i] + mpi_interfaces_destination_indices[i]] = mpi_interfaces_destination_host[mpi_interfaces_incoming_offset_[i] + j];
-                    ++mpi_interfaces_destination_indices[i];
-                }
+        for (size_t i = 0; i < mpi_interfaces_new_process_incoming.size(); ++i) {
+            bool missing = true;
+            for (size_t j = 0; j < new_mpi_interfaces_process.size(); ++j) {
+                if (new_mpi_interfaces_process[j] == mpi_interfaces_new_process_incoming[i]) {
+                    new_mpi_interfaces_destination[new_mpi_interfaces_incoming_offset[j] + mpi_interfaces_destination_indices[j]] = mpi_interfaces_destination_host[i];
+                    ++mpi_interfaces_destination_indices[j];
 
+                    missing = false;
+                    break;
+                }
+            }
+
+            if (missing) {
+                std::cerr << "Error: Process " << global_rank << " got sent new process " << mpi_interfaces_new_process_incoming[i] << " for mpi interface element " << i << ", local id " << mpi_interfaces_destination_host[i] << ", but the process is not in this process' mpi interfaces destinations. Exiting." << std::endl;
+                exit(53);
             }
         }
 
+
+
+
+
+        mpi_interfaces_destination_.copy_from(new_mpi_interfaces_destination, stream_);
+        mpi_interfaces_process_ = std::move(new_mpi_interfaces_process);
+        mpi_interfaces_incoming_size_ = std::move(new_mpi_interfaces_incoming_size);
         mpi_interfaces_incoming_offset_ = std::move(new_mpi_interfaces_incoming_offset); // CHECK how do we ensure the distant process has the same ordering?
 
         MPI_Waitall(2 * mpi_interfaces_process_.size(), mpi_interfaces_requests.data() + 2 * mpi_interfaces_process_.size(), mpi_interfaces_statuses.data() + 2 * mpi_interfaces_process_.size());

@@ -42,7 +42,7 @@ namespace SEM { namespace Meshes {
             std::vector<size_t> mpi_interfaces_incoming_size_;  // Those are only needed on the CPU... right?
             std::vector<size_t> mpi_interfaces_outgoing_offset_; // Those are only needed on the CPU... right?
             std::vector<size_t> mpi_interfaces_incoming_offset_; // Those are only needed on the CPU... right?
-            std::vector<size_t> mpi_interfaces_process_; // Those are only needed on the CPU... right?
+            std::vector<int> mpi_interfaces_process_; // Those are only needed on the CPU... right?
             SEM::Entities::device_vector<size_t> mpi_interfaces_origin_;
             SEM::Entities::device_vector<size_t> mpi_interfaces_origin_side_;
             SEM::Entities::device_vector<size_t> mpi_interfaces_destination_;
