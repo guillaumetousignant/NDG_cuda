@@ -2403,13 +2403,10 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
             n_neighbours_arrays.clear(stream_);
         }
         
-        
-
-        
-
-        
-        
         // We need to move remaining elements
+        const size_t n_elements_move = n_elements_ - n_elements_send_left[global_rank] - n_elements_send_right[global_rank];
+        const int move_numBlocks = (n_elements_move + elements_blockSize_ - 1) / elements_blockSize_;
+        SEM::Meshes::move_elements<<<move_numBlocks, elements_blockSize_, 0, stream_>>>(n_elements_move, n_elements_send_left[global_rank], n_elements_recv_left[global_rank], elements_.data(), new_elements.data());
 
 
 
@@ -6136,5 +6133,18 @@ auto SEM::Meshes::get_neighbours(size_t n_elements_send,
                 ++element_offset;
             }
         }
+    }
+}
+
+__global__
+auto SEM::Meshes::move_elements(size_t n_elements_move, size_t n_elements_send_left, size_t n_elements_recv_left, Element2D_t* elements, Element2D_t* new_elements) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t element_index = index; element_index < n_elements_move; element_index += stride) {
+        const size_t source_element_index = element_index + n_elements_send_left;
+        const size_t destination_element_index = element_index + n_elements_recv_left;
+
+        new_elements[destination_element_index] = std::move(elements[source_element_index]);
     }
 }
