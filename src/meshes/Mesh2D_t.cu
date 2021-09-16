@@ -1825,6 +1825,8 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
     int global_size;
     MPI_Comm_size(MPI_COMM_WORLD, &global_size);
 
+    std::cout << "Process " << global_rank << " load balancing" << std::endl;
+
     std::vector<size_t> n_elements_per_proc(global_size);
 
     constexpr MPI_Datatype size_t_data_type = (sizeof(size_t) == sizeof(unsigned long long)) ? MPI_UNSIGNED_LONG_LONG : (sizeof(size_t) == sizeof(unsigned long)) ? MPI_UNSIGNED_LONG : MPI_UNSIGNED; // CHECK this is a bad way of doing this
@@ -1873,6 +1875,8 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
         n_elements_recv_right[i] = (global_element_offset_end_new[i] > global_element_offset_end_current[i]) ? std::min(global_element_offset_end_new[i] - global_element_offset_end_current[i], n_elements_per_process_new) : 0;
     }
 
+    std::cout << "Process " << global_rank << " has n_elements_send_left: " << n_elements_send_left[global_rank] << ", n_elements_send_right: " << n_elements_send_right[global_rank] << ", n_elements_recv_left: " << n_elements_recv_left[global_rank] << ", n_elements_recv_right: " << n_elements_recv_right[global_rank] << std::endl;
+    
     if (n_elements_send_left[global_rank] + n_elements_recv_left[global_rank] + n_elements_send_right[global_rank] + n_elements_recv_right[global_rank] > 0) {
         // MPI interfaces
         std::vector<int> mpi_interfaces_new_process_outgoing(mpi_interfaces_origin_.size(), global_rank);
@@ -2427,6 +2431,8 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
         MPI_Waitall(mpi_interfaces_send_requests.size(), mpi_interfaces_send_requests.data(), mpi_interfaces_send_statuses.data());
     }
     else {
+        std::cout << "Process " << global_rank << " has no elements to send" << std::endl;
+
         // MPI interfaces
         std::vector<int> mpi_interfaces_new_process_outgoing(mpi_interfaces_origin_.size(), global_rank);
         std::vector<size_t> mpi_interfaces_new_local_index_outgoing(mpi_interfaces_origin_.size());
@@ -2450,6 +2456,8 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
         }
 
         MPI_Waitall(2 * mpi_interfaces_process_.size(), mpi_interfaces_requests.data(), mpi_interfaces_statuses.data());
+
+        std::cout << "Process " << global_rank << " sent and received mpi interfaces" << std::endl;
 
         for (size_t i = 0; i < mpi_interfaces_incoming_size_.size(); ++i) {
             for (size_t j = 0; j < mpi_interfaces_incoming_size_[i]; ++j) {
