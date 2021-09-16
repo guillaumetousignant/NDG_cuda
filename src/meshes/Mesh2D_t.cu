@@ -1887,8 +1887,8 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
         std::vector<int> mpi_interfaces_new_process_incoming(mpi_interfaces_destination_.size());
         std::vector<size_t> mpi_interfaces_new_local_index_incoming(mpi_interfaces_destination_.size());
 
-        std::vector<MPI_Request> mpi_interfaces_requests(2 * mpi_interfaces_process_.size());
-        std::vector<MPI_Status> mpi_interfaces_statuses(2 * mpi_interfaces_process_.size());
+        std::vector<MPI_Request> mpi_interfaces_requests(4 * mpi_interfaces_process_.size());
+        std::vector<MPI_Status> mpi_interfaces_statuses(4 * mpi_interfaces_process_.size());
 
         cudaStreamSynchronize(stream_); // So the transfer to mpi_interfaces_new_local_index_outgoing is completed
 
