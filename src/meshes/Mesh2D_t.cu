@@ -1872,7 +1872,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
         n_elements_send_right[i] = (global_element_offset_end_current[i] > global_element_offset_end_new[i]) ? std::min(global_element_offset_end_current[i] - global_element_offset_end_new[i], n_elements_per_proc[i]) : 0;
         n_elements_recv_right[i] = (global_element_offset_end_new[i] > global_element_offset_end_current[i]) ? std::min(global_element_offset_end_new[i] - global_element_offset_end_current[i], n_elements_per_process_new) : 0;
     }
-    
+
     if (n_elements_send_left[global_rank] + n_elements_recv_left[global_rank] + n_elements_send_right[global_rank] + n_elements_recv_right[global_rank] > 0) {
         // MPI interfaces
         std::vector<int> mpi_interfaces_new_process_outgoing(mpi_interfaces_origin_.size(), global_rank);
@@ -1880,8 +1880,8 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
 
         mpi_interfaces_origin_.copy_to(mpi_interfaces_new_local_index_outgoing, stream_);
 
-        std::vector<int> mpi_interfaces_new_process_incoming(interfaces_destination_.size());
-        std::vector<size_t> mpi_interfaces_new_local_index_incoming(interfaces_destination_.size());
+        std::vector<int> mpi_interfaces_new_process_incoming(mpi_interfaces_destination_.size());
+        std::vector<size_t> mpi_interfaces_new_local_index_incoming(mpi_interfaces_destination_.size());
 
         std::vector<MPI_Request> mpi_interfaces_requests(2 * mpi_interfaces_process_.size());
         std::vector<MPI_Status> mpi_interfaces_statuses(2 * mpi_interfaces_process_.size());
@@ -2433,11 +2433,11 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
 
         mpi_interfaces_origin_.copy_to(mpi_interfaces_new_local_index_outgoing, stream_);
 
-        std::vector<int> mpi_interfaces_new_process_incoming(interfaces_destination_.size());
-        std::vector<size_t> mpi_interfaces_new_local_index_incoming(interfaces_destination_.size());
+        std::vector<int> mpi_interfaces_new_process_incoming(mpi_interfaces_destination_.size());
+        std::vector<size_t> mpi_interfaces_new_local_index_incoming(mpi_interfaces_destination_.size());
 
-        std::vector<MPI_Request> mpi_interfaces_requests(2 * mpi_interfaces_process_.size());
-        std::vector<MPI_Status> mpi_interfaces_statuses(2 * mpi_interfaces_process_.size());
+        std::vector<MPI_Request> mpi_interfaces_requests(4 * mpi_interfaces_process_.size());
+        std::vector<MPI_Status> mpi_interfaces_statuses(4 * mpi_interfaces_process_.size());
 
         cudaStreamSynchronize(stream_); // So the transfer to mpi_interfaces_new_local_index_outgoing is completed
 
