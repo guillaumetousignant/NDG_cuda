@@ -2481,7 +2481,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
             }
         }
 
-        // Recalculate offsets
+        // Recalculate incoming offsets
         std::vector<size_t> new_mpi_interfaces_incoming_offset(new_mpi_interfaces_process.size());
         size_t mpi_interface_offset = 0;
         for (size_t i = 0; i < new_mpi_interfaces_incoming_offset.size(); ++i) {
@@ -2494,7 +2494,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
             exit(55);
         }
 
-        // Filling rebuilt interfaces
+        // Filling rebuilt incoming interfaces
         std::vector<size_t> mpi_interfaces_destination_host(mpi_interfaces_destination_.size());
         mpi_interfaces_destination_.copy_to(mpi_interfaces_destination_host, stream_);
         std::vector<size_t> new_mpi_interfaces_destination(n_mpi_interface_elements);
@@ -2520,7 +2520,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
             }
         }
 
-
+        // Rebuilding outgoing interfaces
 
         
 
