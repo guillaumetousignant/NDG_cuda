@@ -2487,11 +2487,11 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
         for (size_t i = 0; i < new_mpi_interfaces_incoming_offset.size(); ++i) {
             new_mpi_interfaces_incoming_offset[i] = mpi_interface_offset;
             mpi_interface_offset += new_mpi_interfaces_incoming_size[i];
-        } // CHECK what to do about outgoing?
+        }
         const size_t n_mpi_interface_elements = mpi_interface_offset;
         if (n_mpi_interface_elements != mpi_interfaces_new_process_incoming.size()) {
             std::cerr << "Error: Process " << global_rank << " had " << mpi_interfaces_new_process_incoming.size() << " mpi interface elements, but now has " << n_mpi_interface_elements << ". Exiting." << std::endl;
-            exit(55);
+            exit(56);
         }
 
         // Filling rebuilt incoming interfaces
@@ -2520,7 +2520,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
             }
         }
 
-        // Rebuilding outgoing interfaces
+        // Getting outgoing interfaces neighbouring processes
         SEM::Entities::device_vector<int> mpi_interfaces_new_process_incoming_device(mpi_interfaces_new_process_incoming, stream_);
         SEM::Entities::device_vector<size_t> mpi_interfaces_n_processes_device(mpi_interfaces_origin_.size(), stream_);
 
@@ -2549,8 +2549,33 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
 
         cudaStreamSynchronize(stream_); // So the transfer to mpi_interfaces_processes_host is completed
 
+        // Rebuilding outgoing interfaces
+        std::vector<size_t> new_mpi_interfaces_outgoing_size;
 
+        for (size_t i = 0; i < mpi_interfaces_processes_host.size(); ++i) {
+            bool missing = true;
+            for (size_t j = 0; j < new_mpi_interfaces_process.size(); ++j) {
+                if (new_mpi_interfaces_process[j] == mpi_interfaces_processes_host[i]) {
+                    ++new_mpi_interfaces_outgoing_size[j];
+                    missing = false;
+                    break;
+                }
+            }
 
+            if (missing) {
+                std::cerr << "Error: Outgoing interface element " << i << " has neighbour process " << mpi_interfaces_processes_host[i] << " but it is not found in new incoming processes. Exiting." << std::endl;
+                exit(56);
+            }
+        }
+
+        // Recalculate outgoing offsets
+        std::vector<size_t> new_mpi_interfaces_outgoing_offset(new_mpi_interfaces_process.size());
+        size_t mpi_interface_outgoing_offset = 0;
+        for (size_t i = 0; i < new_mpi_interfaces_outgoing_offset.size(); ++i) {
+            new_mpi_interfaces_outgoing_offset[i] = mpi_interface_outgoing_offset;
+            mpi_interface_outgoing_offset += new_mpi_interfaces_outgoing_size[i];
+        }
+        const size_t n_mpi_interface_outgoing_elements = mpi_interface_outgoing_offset;
 
 
 
