@@ -3685,7 +3685,7 @@ auto SEM::Meshes::compute_inflow_boundaries(size_t n_inflow_boundaries, Element2
 
     for (size_t boundary_index = index; boundary_index < n_inflow_boundaries; boundary_index += stride) {
         Element2D_t& element = elements[inflow_boundaries[boundary_index]];
-        const size_t offset_1D = element.N_ * (element.N_ + 1) /2;;
+        const size_t offset_1D = element.N_ * (element.N_ + 1) /2;
         const std::array<Vec2<deviceFloat>, 2> points{nodes[element.nodes_[0]], nodes[element.nodes_[1]]};
 
         for (int k = 0; k <= element.N_; ++k) {
@@ -6371,6 +6371,7 @@ auto SEM::Meshes::move_elements(size_t n_elements_move, size_t n_elements_send_l
         const size_t source_element_index = element_index + n_elements_send_left;
         const size_t destination_element_index = element_index + n_elements_recv_left;
 
+        new_elements[destination_element_index].clear_storage();
         new_elements[destination_element_index] = std::move(elements[source_element_index]);
     }
 }
