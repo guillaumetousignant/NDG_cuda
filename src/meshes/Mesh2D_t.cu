@@ -2636,7 +2636,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
         cudaStreamSynchronize(stream_); // So the transfer to mpi_interfaces_processes_host is completed
 
         // Rebuilding outgoing interfaces
-        std::vector<size_t> new_mpi_interfaces_outgoing_size;
+        std::vector<size_t> new_mpi_interfaces_outgoing_size(new_mpi_interfaces_process.size());
 
         for (size_t i = 0; i < mpi_interfaces_processes_host.size(); ++i) {
             bool missing = true;
