@@ -2611,7 +2611,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
         device_vector<size_t> mpi_interfaces_n_processes_device(mpi_interfaces_origin_.size(), stream_);
 
         const int mpi_outgoing_numBlocks = (mpi_interfaces_origin_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
-        SEM::Meshes::get_interface_n_processes<<<mpi_outgoing_numBlocks, boundaries_blockSize_, 0, stream_>>>(mpi_interfaces_origin_.size(), mpi_interfaces_destination_.size(), elements_.data(), faces_.data(), mpi_interfaces_origin_.data(), mpi_interfaces_origin_side_.data(), mpi_interfaces_destination.data(), mpi_interfaces_new_process_incoming_device.data(), mpi_interfaces_n_processes_device.data());
+        SEM::Meshes::get_interface_n_processes<<<mpi_outgoing_numBlocks, boundaries_blockSize_, 0, stream_>>>(mpi_interfaces_origin_.size(), mpi_interfaces_destination_.size(), elements_.data(), faces_.data(), mpi_interfaces_origin_.data(), mpi_interfaces_origin_side_.data(), mpi_interfaces_destination_.data(), mpi_interfaces_new_process_incoming_device.data(), mpi_interfaces_n_processes_device.data());
 
         std::vector<size_t> mpi_interfaces_n_processes_host(mpi_interfaces_n_processes_device.size());
         mpi_interfaces_n_processes_device.copy_to(mpi_interfaces_n_processes_host, stream_);
@@ -2628,9 +2628,9 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
         device_vector<size_t> mpi_interfaces_process_offset_device(mpi_interfaces_process_offset_host, stream_);
         device_vector<int> mpi_interfaces_processes_device(interfaces_n_processes_total, stream_);
 
-        SEM::Meshes::get_interface_processes<<<mpi_outgoing_numBlocks, boundaries_blockSize_, 0, stream_>>>(mpi_interfaces_origin_.size(), mpi_interfaces_destination_.size(), elements_.data(), faces_.data(), mpi_interfaces_origin_.data(), mpi_interfaces_origin_side_.data(), mpi_interfaces_destination.data(), mpi_interfaces_new_process_incoming_device.data(), mpi_interfaces_process_offset_device.data(), mpi_interfaces_processes_device.data());
+        SEM::Meshes::get_interface_processes<<<mpi_outgoing_numBlocks, boundaries_blockSize_, 0, stream_>>>(mpi_interfaces_origin_.size(), mpi_interfaces_destination_.size(), elements_.data(), faces_.data(), mpi_interfaces_origin_.data(), mpi_interfaces_origin_side_.data(), mpi_interfaces_destination_.data(), mpi_interfaces_new_process_incoming_device.data(), mpi_interfaces_process_offset_device.data(), mpi_interfaces_processes_device.data());
 
-        std::vector<size_t> mpi_interfaces_processes_host(mpi_interfaces_processes_device.size());
+        std::vector<int> mpi_interfaces_processes_host(mpi_interfaces_processes_device.size());
         mpi_interfaces_processes_device.copy_to(mpi_interfaces_processes_host, stream_);
 
         cudaStreamSynchronize(stream_); // So the transfer to mpi_interfaces_processes_host is completed
@@ -2700,23 +2700,23 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
         // Recalculate block sizes etc.
         mpi_interfaces_outgoing_numBlocks_ = (new_mpi_interfaces_origin.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
         host_mpi_interfaces_outgoing_refine_array_ = std::vector<size_t>(mpi_interfaces_outgoing_numBlocks_);
-        device_vector<size_t> new_device_mpi_interfaces_outgoing_refine_array(mpi_interfaces_outgoing_numBlocks_, stream_)
+        device_vector<size_t> new_device_mpi_interfaces_outgoing_refine_array(mpi_interfaces_outgoing_numBlocks_, stream_);
         device_mpi_interfaces_outgoing_refine_array_ = std::move(new_device_mpi_interfaces_outgoing_refine_array);
-        device_vector<deviceFloat> new_device_interfaces_p(mpi_interfaces_origin.size() * (maximum_N_ + 1), stream_);
-        device_vector<deviceFloat> new_device_interfaces_u(mpi_interfaces_origin.size() * (maximum_N_ + 1), stream_);
-        device_vector<deviceFloat> new_device_interfaces_v(mpi_interfaces_origin.size() * (maximum_N_ + 1), stream_);
+        device_vector<deviceFloat> new_device_interfaces_p(new_mpi_interfaces_origin.size() * (maximum_N_ + 1), stream_);
+        device_vector<deviceFloat> new_device_interfaces_u(new_mpi_interfaces_origin.size() * (maximum_N_ + 1), stream_);
+        device_vector<deviceFloat> new_device_interfaces_v(new_mpi_interfaces_origin.size() * (maximum_N_ + 1), stream_);
         device_interfaces_p_ = std::move(new_device_interfaces_p);
         device_interfaces_u_ = std::move(new_device_interfaces_u);
         device_interfaces_v_ = std::move(new_device_interfaces_v);
-        host_interfaces_p_ = host_vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
-        host_interfaces_u_ = host_vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
-        host_interfaces_v_ = host_vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
-        device_vector<int> new_device_interfaces_N(mpi_interfaces_origin_.size(), stream_);
+        host_interfaces_p_ = host_vector<deviceFloat>(new_mpi_interfaces_origin.size() * (maximum_N_ + 1));
+        host_interfaces_u_ = host_vector<deviceFloat>(new_mpi_interfaces_origin.size() * (maximum_N_ + 1));
+        host_interfaces_v_ = host_vector<deviceFloat>(new_mpi_interfaces_origin.size() * (maximum_N_ + 1));
+        device_vector<int> new_device_interfaces_N(new_mpi_interfaces_origin.size(), stream_);
         device_interfaces_N_ = std::move(new_device_interfaces_N);
-        device_vector<bool> new_device_interfaces_refine(mpi_interfaces_origin_.size(), stream_);
+        device_vector<bool> new_device_interfaces_refine(new_mpi_interfaces_origin.size(), stream_);
         device_interfaces_refine_ = std::move(new_device_interfaces_refine);
-        host_interfaces_N_ = std::vector<int>(mpi_interfaces_origin_.size());
-        host_interfaces_refine_ = host_vector<bool>(mpi_interfaces_origin_.size());
+        host_interfaces_N_ = std::vector<int>(new_mpi_interfaces_origin.size());
+        host_interfaces_refine_ = host_vector<bool>(new_mpi_interfaces_origin.size());
 
         // Swap for new arrays
         device_vector<size_t> new_mpi_interfaces_origin_device(new_mpi_interfaces_origin, stream_);
