@@ -1924,7 +1924,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
 
     size_t n_elements_global_new = n_elements_per_proc[0];
     for (int i = 1; i < global_size; ++i) {
-        global_element_offset_current[i] = global_element_offset_current[i - 1] + n_elements_per_proc[i];
+        global_element_offset_current[i] = global_element_offset_current[i - 1] + n_elements_per_proc[i - 1];
         global_element_offset_end_current[i] = global_element_offset_current[i] + n_elements_per_proc[i] - 1;
         n_elements_global_new += n_elements_per_proc[i];
     }
