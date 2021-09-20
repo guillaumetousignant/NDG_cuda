@@ -326,6 +326,9 @@ namespace SEM { namespace Meshes {
     __global__
     auto move_elements(size_t n_elements_move, size_t n_elements_send_left, size_t n_elements_recv_left, SEM::Entities::Element2D_t* elements, SEM::Entities::Element2D_t* new_elements) -> void;
 
+    __global__
+    auto get_interface_n_processes(size_t n_mpi_interfaces, size_t n_mpi_interfaces_incoming, const SEM::Entities::Element2D_t* elements, const SEM::Entities::Face2D_t* faces, const size_t* mpi_interfaces_origin, const size_t* mpi_interfaces_origin_side, const size_t* mpi_interfaces_destination, const int* mpi_interfaces_new_process_incoming, size_t* n_processes) -> void;
+    
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>
     __device__ 

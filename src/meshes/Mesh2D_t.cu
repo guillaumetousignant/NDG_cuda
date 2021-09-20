@@ -2521,14 +2521,25 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
         }
 
         // Rebuilding outgoing interfaces
+        SEM::Entities::device_vector<int> mpi_interfaces_new_process_incoming_device(mpi_interfaces_new_process_incoming, stream_);
+        SEM::Entities::device_vector<size_t> mpi_interfaces_n_processes_device(mpi_interfaces_origin_.size(), stream_);
 
-        
+        const int mpi_outgoing_numBlocks = (mpi_interfaces_origin_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+        SEM::Meshes::get_interface_n_processes<<<mpi_outgoing_numBlocks, boundaries_blockSize_, 0, stream_>>>(mpi_interfaces_origin_.size(), mpi_interfaces_destination_.size(), elements_.data(), faces_.data(), mpi_interfaces_origin_.data(), mpi_interfaces_origin_side_.data(), mpi_interfaces_destination.data(), mpi_interfaces_new_process_incoming_device.data(), mpi_interfaces_n_processes_device.data());
+
+        std::vector<size_t> mpi_interfaces_n_processes_host(mpi_interfaces_origin_.size());
+        mpi_interfaces_n_processes_device.copy_to(mpi_interfaces_n_processes_host, stream_);
+
+        cudaStreamSynchronize(stream_); // So the transfer to mpi_interfaces_n_processes_host is completed
+
+
 
         mpi_interfaces_destination_.copy_from(new_mpi_interfaces_destination, stream_);
         mpi_interfaces_process_ = std::move(new_mpi_interfaces_process);
         mpi_interfaces_incoming_size_ = std::move(new_mpi_interfaces_incoming_size);
         mpi_interfaces_incoming_offset_ = std::move(new_mpi_interfaces_incoming_offset); // CHECK how do we ensure the distant process has the same ordering?
 
+        mpi_interfaces_new_process_incoming_device.clear(stream_);
         MPI_Waitall(2 * mpi_interfaces_process_.size(), mpi_interfaces_requests.data() + 2 * mpi_interfaces_process_.size(), mpi_interfaces_statuses.data() + 2 * mpi_interfaces_process_.size());
     }
 
@@ -6157,5 +6168,84 @@ auto SEM::Meshes::move_elements(size_t n_elements_move, size_t n_elements_send_l
         const size_t destination_element_index = element_index + n_elements_recv_left;
 
         new_elements[destination_element_index] = std::move(elements[source_element_index]);
+    }
+}
+
+__global__
+auto SEM::Meshes::get_interface_n_processes(size_t n_mpi_interfaces, size_t n_mpi_interfaces_incoming, const Element2D_t* elements, const Face2D_t* faces, const size_t* mpi_interfaces_origin, const size_t* mpi_interfaces_origin_side, const size_t* mpi_interfaces_destination, const int* mpi_interfaces_new_process_incoming, size_t* n_processes) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t interface_index = index; interface_index < n_mpi_interfaces; interface_index += stride) {
+        const size_t origin_element_index = mpi_interfaces_origin[interface_index];
+        const Element2D_t& origin_element = elements[origin_element_index];
+        const size_t side_index = mpi_interfaces_origin_side[interface_index];
+        const size_t n_faces = origin_element.faces_[side_index].size();
+
+        n_processes[interface_index] = 0;
+
+        bool duplicate_origin = false; // We must check if the same element already needs to be sent to two processes
+        for (size_t i = 0; i < interface_index; ++i) {
+            if (mpi_interfaces_origin[i] == origin_element_index) {
+                duplicate_origin = true;
+                break;
+            }
+        }
+        if (duplicate_origin) {
+            break;
+        }
+
+        for (size_t i = 0; i < n_faces; ++i) {
+            const size_t face_index = origin_element.faces_[side_index][i];
+            const Face2D_t& face = faces[face_index];
+            const size_t face_side_index = face.elements_[0] == origin_element_index;
+            const size_t other_element_index = face.elements_[face_side_index];
+
+            size_t other_interface_index = static_cast<size_t>(-1);
+            bool missing = true;
+            for (size_t incoming_interface_index = 0; incoming_interface_index < n_mpi_interfaces_incoming; ++incoming_interface_index) {
+                if (mpi_interfaces_destination[incoming_interface_index] == other_element_index) {
+                    other_interface_index = incoming_interface_index;
+                    missing = false;
+                    break;
+                }
+            }
+            if (missing) {
+                printf("Error: Element %llu is not part of an mpi incoming interface. Results are undefined.\n", other_element_index);
+            }
+
+            const int other_interface_process = mpi_interfaces_new_process_incoming[other_interface_index];
+
+            bool missing_process = true;
+            for (size_t j = 0; j < i; ++j) {
+                const size_t previous_face_index = origin_element.faces_[side_index][j];
+                const Face2D_t& previous_face = faces[previous_face_index];
+                const size_t previous_face_side_index = previous_face.elements_[0] == origin_element_index;
+                const size_t previous_other_element_index = previous_face.elements_[previous_face_side_index];
+
+                size_t previous_other_interface_index = static_cast<size_t>(-1);
+                bool previous_missing = true;
+                for (size_t incoming_interface_index = 0; incoming_interface_index < n_mpi_interfaces_incoming; ++incoming_interface_index) {
+                    if (mpi_interfaces_destination[incoming_interface_index] == previous_other_element_index) {
+                        previous_other_interface_index = incoming_interface_index;
+                        previous_missing = false;
+                        break;
+                    }
+                }
+                if (previous_missing) {
+                    printf("Error: Previous element %llu is not part of an mpi incoming interface. Results are undefined.\n", other_element_index);
+                }
+
+                const int previous_other_interface_process = mpi_interfaces_new_process_incoming[previous_other_interface_index];
+                if (previous_other_interface_process == other_interface_process) {
+                    missing_process = false;
+                    break;
+                }
+            }
+
+            if (missing_process) {
+                ++n_processes[interface_index];
+            }
+        }
     }
 }
