@@ -683,11 +683,11 @@ auto SEM::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
         host_interfaces_v_ = host_vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
         host_interfaces_N_ = std::vector<int>(mpi_interfaces_origin.size());
         host_interfaces_refine_ = host_vector<bool>(mpi_interfaces_origin.size());
-        host_receiving_interfaces_p_ = host_vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
-        host_receiving_interfaces_u_ = host_vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
-        host_receiving_interfaces_v_ = host_vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
-        host_receiving_interfaces_N_ = std::vector<int>(mpi_interfaces_origin.size());
-        host_receiving_interfaces_refine_ = host_vector<bool>(mpi_interfaces_origin.size());
+        host_receiving_interfaces_p_ = host_vector<deviceFloat>(mpi_interfaces_destination.size() * (maximum_N_ + 1));
+        host_receiving_interfaces_u_ = host_vector<deviceFloat>(mpi_interfaces_destination.size() * (maximum_N_ + 1));
+        host_receiving_interfaces_v_ = host_vector<deviceFloat>(mpi_interfaces_destination.size() * (maximum_N_ + 1));
+        host_receiving_interfaces_N_ = std::vector<int>(mpi_interfaces_destination.size());
+        host_receiving_interfaces_refine_ = host_vector<bool>(mpi_interfaces_destination.size());
 
         requests_ = std::vector<MPI_Request>(n_mpi_interfaces * 6);
         statuses_ = std::vector<MPI_Status>(n_mpi_interfaces * 6);
@@ -1809,27 +1809,6 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
     v_output_device_ = std::move(new_v_output_device);
 
     // Boundary solution exchange
-    device_vector<deviceFloat> new_device_interfaces_p(mpi_interfaces_origin_.size() * (maximum_N_ + 1), stream_);
-    device_vector<deviceFloat> new_device_interfaces_u(mpi_interfaces_origin_.size() * (maximum_N_ + 1), stream_);
-    device_vector<deviceFloat> new_device_interfaces_v(mpi_interfaces_origin_.size() * (maximum_N_ + 1), stream_);
-    device_vector<deviceFloat> new_device_receiving_interfaces_p(mpi_interfaces_destination_.size() * (maximum_N_ + 1), stream_);
-    device_vector<deviceFloat> new_device_receiving_interfaces_u(mpi_interfaces_destination_.size() * (maximum_N_ + 1), stream_);
-    device_vector<deviceFloat> new_device_receiving_interfaces_v(mpi_interfaces_destination_.size() * (maximum_N_ + 1), stream_);
-    device_vector<int> new_device_interfaces_N(mpi_interfaces_origin_.size(), stream_);
-    device_vector<bool> new_device_interfaces_refine(mpi_interfaces_origin_.size(), stream_);
-    device_vector<int> new_device_receiving_interfaces_N(mpi_interfaces_destination_.size(), stream_);
-    device_vector<bool> new_device_receiving_interfaces_refine(mpi_interfaces_destination_.size(), stream_);
-    device_interfaces_p_ = std::move(new_device_interfaces_p);
-    device_interfaces_u_ = std::move(new_device_interfaces_u);
-    device_interfaces_v_ = std::move(new_device_interfaces_v);
-    device_receiving_interfaces_p_ = std::move(new_device_receiving_interfaces_p);
-    device_receiving_interfaces_u_ = std::move(new_device_receiving_interfaces_u);
-    device_receiving_interfaces_v_ = std::move(new_device_receiving_interfaces_v);
-    device_interfaces_N_ = std::move(new_device_interfaces_N);
-    device_interfaces_refine_ = std::move(new_device_interfaces_refine);
-    device_receiving_interfaces_N_ = std::move(new_device_receiving_interfaces_N);
-    device_receiving_interfaces_refine_ = std::move(new_device_receiving_interfaces_refine);
-
     host_interfaces_p_ = host_vector<deviceFloat>(mpi_interfaces_origin_.size() * (maximum_N_ + 1));
     host_interfaces_u_ = host_vector<deviceFloat>(mpi_interfaces_origin_.size() * (maximum_N_ + 1));
     host_interfaces_v_ = host_vector<deviceFloat>(mpi_interfaces_origin_.size() * (maximum_N_ + 1));
@@ -1842,36 +1821,62 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
     host_receiving_interfaces_N_ = std::vector<int>(mpi_interfaces_destination_.size());
     host_receiving_interfaces_refine_ = host_vector<bool>(mpi_interfaces_destination_.size());
 
+    device_vector<deviceFloat> new_device_interfaces_p(mpi_interfaces_origin_.size() * (maximum_N_ + 1), stream_);
+    device_vector<deviceFloat> new_device_interfaces_u(mpi_interfaces_origin_.size() * (maximum_N_ + 1), stream_);
+    device_vector<deviceFloat> new_device_interfaces_v(mpi_interfaces_origin_.size() * (maximum_N_ + 1), stream_);
+    device_vector<int> new_device_interfaces_N(mpi_interfaces_origin_.size(), stream_);
+    device_vector<bool> new_device_interfaces_refine(mpi_interfaces_origin_.size(), stream_)
+
+    device_vector<deviceFloat> new_device_receiving_interfaces_p(mpi_interfaces_destination_.size() * (maximum_N_ + 1), stream_);
+    device_vector<deviceFloat> new_device_receiving_interfaces_u(mpi_interfaces_destination_.size() * (maximum_N_ + 1), stream_);
+    device_vector<deviceFloat> new_device_receiving_interfaces_v(mpi_interfaces_destination_.size() * (maximum_N_ + 1), stream_);;
+    device_vector<int> new_device_receiving_interfaces_N(mpi_interfaces_destination_.size(), stream_);
+    device_vector<bool> new_device_receiving_interfaces_refine(mpi_interfaces_destination_.size(), stream_);
+
+    device_interfaces_p_ = std::move(new_device_interfaces_p);
+    device_interfaces_u_ = std::move(new_device_interfaces_u);
+    device_interfaces_v_ = std::move(new_device_interfaces_v);
+    device_interfaces_N_ = std::move(new_device_interfaces_N);
+    device_interfaces_refine_ = std::move(new_device_interfaces_refine);
+
+    device_receiving_interfaces_p_ = std::move(new_device_receiving_interfaces_p);
+    device_receiving_interfaces_u_ = std::move(new_device_receiving_interfaces_u);
+    device_receiving_interfaces_v_ = std::move(new_device_receiving_interfaces_v);
+    device_receiving_interfaces_N_ = std::move(new_device_receiving_interfaces_N);
+    device_receiving_interfaces_refine_ = std::move(new_device_receiving_interfaces_refine);
+
     // Transfer arrays
     host_delta_t_array_ = host_vector<deviceFloat>(elements_numBlocks_);
-    device_vector<deviceFloat> new_device_delta_t_array(elements_numBlocks_, stream_);
-    device_delta_t_array_ = std::move(new_device_delta_t_array);
     host_refine_array_ = std::vector<size_t>(elements_numBlocks_);
-    device_vector<size_t> new_device_refine_array(elements_numBlocks_, stream_);
-    device_refine_array_ = std::move(new_device_refine_array);
     host_faces_refine_array_ = std::vector<size_t>(faces_numBlocks_);
-    device_vector<size_t> new_device_faces_refine_array(faces_numBlocks_, stream_);
-    device_faces_refine_array_ = std::move(new_device_faces_refine_array);
     host_wall_boundaries_refine_array_ = std::vector<size_t>(wall_boundaries_numBlocks_);
-    device_vector<size_t> new_device_wall_boundaries_refine_array(wall_boundaries_numBlocks_, stream_);
-    device_wall_boundaries_refine_array_ = std::move(new_device_wall_boundaries_refine_array);
     host_symmetry_boundaries_refine_array_ = std::vector<size_t>(symmetry_boundaries_numBlocks_);
-    device_vector<size_t> new_device_symmetry_boundaries_refine_array(symmetry_boundaries_numBlocks_, stream_);
-    device_symmetry_boundaries_refine_array_ = std::move(new_device_symmetry_boundaries_refine_array);
     host_inflow_boundaries_refine_array_ = std::vector<size_t>(inflow_boundaries_numBlocks_);
-    device_vector<size_t> new_device_inflow_boundaries_refine_array(inflow_boundaries_numBlocks_, stream_);
-    device_inflow_boundaries_refine_array_ = std::move(new_device_inflow_boundaries_refine_array);
     host_outflow_boundaries_refine_array_ = std::vector<size_t>(outflow_boundaries_numBlocks_);
-    device_vector<size_t> new_device_outflow_boundaries_refine_array(outflow_boundaries_numBlocks_, stream_);
-    device_outflow_boundaries_refine_array_ = std::move(new_device_outflow_boundaries_refine_array);
     host_interfaces_refine_array_ = std::vector<size_t>(interfaces_numBlocks_);
-    device_vector<size_t> new_device_interfaces_refine_array(interfaces_numBlocks_, stream_);
-    device_interfaces_refine_array_ = std::move(new_device_interfaces_refine_array);
     host_mpi_interfaces_outgoing_refine_array_ = std::vector<size_t>(mpi_interfaces_outgoing_numBlocks_);
-    device_vector<size_t> new_device_mpi_interfaces_outgoing_refine_array(mpi_interfaces_outgoing_numBlocks_, stream_);
-    device_mpi_interfaces_outgoing_refine_array_ = std::move(new_device_mpi_interfaces_outgoing_refine_array);
     host_mpi_interfaces_incoming_refine_array_ = std::vector<size_t>(mpi_interfaces_incoming_numBlocks_);
+
+    device_vector<deviceFloat> new_device_delta_t_array(elements_numBlocks_, stream_);
+    device_vector<size_t> new_device_refine_array(elements_numBlocks_, stream_);
+    device_vector<size_t> new_device_faces_refine_array(faces_numBlocks_, stream_);
+    device_vector<size_t> new_device_wall_boundaries_refine_array(wall_boundaries_numBlocks_, stream_);
+    device_vector<size_t> new_device_symmetry_boundaries_refine_array(symmetry_boundaries_numBlocks_, stream_);
+    device_vector<size_t> new_device_inflow_boundaries_refine_array(inflow_boundaries_numBlocks_, stream_);
+    device_vector<size_t> new_device_outflow_boundaries_refine_array(outflow_boundaries_numBlocks_, stream_);
+    device_vector<size_t> new_device_interfaces_refine_array(interfaces_numBlocks_, stream_);
+    device_vector<size_t> new_device_mpi_interfaces_outgoing_refine_array(mpi_interfaces_outgoing_numBlocks_, stream_);
     device_vector<size_t> new_device_mpi_interfaces_incoming_refine_array(mpi_interfaces_incoming_numBlocks_, stream_);
+
+    device_delta_t_array_ = std::move(new_device_delta_t_array);
+    device_refine_array_ = std::move(new_device_refine_array);
+    device_faces_refine_array_ = std::move(new_device_faces_refine_array);
+    device_wall_boundaries_refine_array_ = std::move(new_device_wall_boundaries_refine_array);
+    device_symmetry_boundaries_refine_array_ = std::move(new_device_symmetry_boundaries_refine_array);
+    device_inflow_boundaries_refine_array_ = std::move(new_device_inflow_boundaries_refine_array);
+    device_outflow_boundaries_refine_array_ = std::move(new_device_outflow_boundaries_refine_array);
+    device_interfaces_refine_array_ = std::move(new_device_interfaces_refine_array);
+    device_mpi_interfaces_outgoing_refine_array_ = std::move(new_device_mpi_interfaces_outgoing_refine_array);
     device_mpi_interfaces_incoming_refine_array_ = std::move(device_mpi_interfaces_incoming_refine_array_);
 
     new_elements.clear(stream_);
@@ -1886,11 +1891,11 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
     new_device_interfaces_p.clear(stream_);
     new_device_interfaces_u.clear(stream_);
     new_device_interfaces_v.clear(stream_);
+    new_device_interfaces_N.clear(stream_);
+    new_device_interfaces_refine.clear(stream_);
     new_device_receiving_interfaces_p.clear(stream_);
     new_device_receiving_interfaces_u.clear(stream_);
     new_device_receiving_interfaces_v.clear(stream_);
-    new_device_interfaces_N.clear(stream_);
-    new_device_interfaces_refine.clear(stream_);
     new_device_receiving_interfaces_N.clear(stream_);
     new_device_receiving_interfaces_refine.clear(stream_);
     new_device_delta_t_array.clear(stream_);
@@ -2503,16 +2508,143 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
 
 
 
+        
 
-
-
-        n_elements_ = n_elements_new[global_rank];
+        // Swapping out the old arrays for the new ones
         elements_ = std::move(new_elements);
 
+        // Updating quantities
+        n_elements_ = n_elements_new[global_rank];
+
+        // Parallel sizings
+        elements_numBlocks_ = (n_elements_ + elements_blockSize_ - 1) / elements_blockSize_;
+        faces_numBlocks_ = (faces_.size() + faces_blockSize_ - 1) / faces_blockSize_;
+        wall_boundaries_numBlocks_ = (wall_boundaries_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+        symmetry_boundaries_numBlocks_ = (symmetry_boundaries_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+        inflow_boundaries_numBlocks_ = (inflow_boundaries_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+        outflow_boundaries_numBlocks_ = (outflow_boundaries_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+        ghosts_numBlocks_ = (n_elements_ + wall_boundaries_.size() + symmetry_boundaries_.size() + inflow_boundaries_.size() + outflow_boundaries_.size() + interfaces_origin_.size() + mpi_interfaces_destination_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+        interfaces_numBlocks_ = (interfaces_origin_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+        mpi_interfaces_outgoing_numBlocks_ = (mpi_interfaces_origin_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+        mpi_interfaces_incoming_numBlocks_ = (mpi_interfaces_destination_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+
+        // Output
+        x_output_host_ = std::vector<deviceFloat>(n_elements_ * std::pow(n_interpolation_points_, 2));
+        y_output_host_ = std::vector<deviceFloat>(n_elements_ * std::pow(n_interpolation_points_, 2));
+        p_output_host_ = std::vector<deviceFloat>(n_elements_ * std::pow(n_interpolation_points_, 2));
+        u_output_host_ = std::vector<deviceFloat>(n_elements_ * std::pow(n_interpolation_points_, 2));
+        v_output_host_ = std::vector<deviceFloat>(n_elements_ * std::pow(n_interpolation_points_, 2));
+        device_vector<deviceFloat> new_x_output_device(n_elements_ * std::pow(n_interpolation_points_, 2), stream_);
+        device_vector<deviceFloat> new_y_output_device(n_elements_ * std::pow(n_interpolation_points_, 2), stream_);
+        device_vector<deviceFloat> new_p_output_device(n_elements_ * std::pow(n_interpolation_points_, 2), stream_);
+        device_vector<deviceFloat> new_u_output_device(n_elements_ * std::pow(n_interpolation_points_, 2), stream_);
+        device_vector<deviceFloat> new_v_output_device(n_elements_ * std::pow(n_interpolation_points_, 2), stream_);
+        x_output_device_ = std::move(new_x_output_device);
+        y_output_device_ = std::move(new_y_output_device);
+        p_output_device_ = std::move(new_p_output_device);
+        u_output_device_ = std::move(new_u_output_device);
+        v_output_device_ = std::move(new_v_output_device);
+
+        // Boundary solution exchange
+        host_interfaces_p_ = host_vector<deviceFloat>(mpi_interfaces_origin_.size() * (maximum_N_ + 1));
+        host_interfaces_u_ = host_vector<deviceFloat>(mpi_interfaces_origin_.size() * (maximum_N_ + 1));
+        host_interfaces_v_ = host_vector<deviceFloat>(mpi_interfaces_origin_.size() * (maximum_N_ + 1));
+        host_interfaces_N_ = std::vector<int>(mpi_interfaces_origin_.size());
+        host_interfaces_refine_ = host_vector<bool>(mpi_interfaces_origin_.size());
+
+        host_receiving_interfaces_p_ = host_vector<deviceFloat>(mpi_interfaces_destination_.size() * (maximum_N_ + 1));
+        host_receiving_interfaces_u_ = host_vector<deviceFloat>(mpi_interfaces_destination_.size() * (maximum_N_ + 1));
+        host_receiving_interfaces_v_ = host_vector<deviceFloat>(mpi_interfaces_destination_.size() * (maximum_N_ + 1));
+        host_receiving_interfaces_N_ = std::vector<int>(mpi_interfaces_destination_.size());
+        host_receiving_interfaces_refine_ = host_vector<bool>(mpi_interfaces_destination_.size());
+
+        device_vector<deviceFloat> new_device_interfaces_p(mpi_interfaces_origin_.size() * (maximum_N_ + 1), stream_);
+        device_vector<deviceFloat> new_device_interfaces_u(mpi_interfaces_origin_.size() * (maximum_N_ + 1), stream_);
+        device_vector<deviceFloat> new_device_interfaces_v(mpi_interfaces_origin_.size() * (maximum_N_ + 1), stream_);
+        device_vector<int> new_device_interfaces_N(mpi_interfaces_origin_.size(), stream_);
+        device_vector<bool> new_device_interfaces_refine(mpi_interfaces_origin_.size(), stream_);
+
+        device_vector<deviceFloat> new_device_receiving_interfaces_p(mpi_interfaces_destination_.size() * (maximum_N_ + 1), stream_);
+        device_vector<deviceFloat> new_device_receiving_interfaces_u(mpi_interfaces_destination_.size() * (maximum_N_ + 1), stream_);
+        device_vector<deviceFloat> new_device_receiving_interfaces_v(mpi_interfaces_destination_.size() * (maximum_N_ + 1), stream_);
+        device_vector<int> new_device_receiving_interfaces_N(mpi_interfaces_destination_.size(), stream_);
+        device_vector<bool> new_device_receiving_interfaces_refine(mpi_interfaces_destination_.size(), stream_);
+
+        device_interfaces_p_ = std::move(new_device_interfaces_p);
+        device_interfaces_u_ = std::move(new_device_interfaces_u);
+        device_interfaces_v_ = std::move(new_device_interfaces_v);
+        device_interfaces_N_ = std::move(new_device_interfaces_N);
+        device_interfaces_refine_ = std::move(new_device_interfaces_refine);
+
+        device_receiving_interfaces_p_ = std::move(new_device_receiving_interfaces_p);
+        device_receiving_interfaces_u_ = std::move(new_device_receiving_interfaces_u);
+        device_receiving_interfaces_v_ = std::move(new_device_receiving_interfaces_v);
+        device_receiving_interfaces_N_ = std::move(new_device_receiving_interfaces_N);
+        device_receiving_interfaces_refine_ = std::move(new_device_receiving_interfaces_refine);
+
+        // Transfer arrays
+        host_delta_t_array_ = host_vector<deviceFloat>(elements_numBlocks_);
+        host_refine_array_ = std::vector<size_t>(elements_numBlocks_);
+        host_faces_refine_array_ = std::vector<size_t>(faces_numBlocks_);
+        host_wall_boundaries_refine_array_ = std::vector<size_t>(wall_boundaries_numBlocks_);
+        host_symmetry_boundaries_refine_array_ = std::vector<size_t>(symmetry_boundaries_numBlocks_);
+        host_inflow_boundaries_refine_array_ = std::vector<size_t>(inflow_boundaries_numBlocks_);
+        host_outflow_boundaries_refine_array_ = std::vector<size_t>(outflow_boundaries_numBlocks_);
+        host_interfaces_refine_array_ = std::vector<size_t>(interfaces_numBlocks_);
+        host_mpi_interfaces_outgoing_refine_array_ = std::vector<size_t>(mpi_interfaces_outgoing_numBlocks_);
+        host_mpi_interfaces_incoming_refine_array_ = std::vector<size_t>(mpi_interfaces_incoming_numBlocks_);
+
+        device_vector<deviceFloat> new_device_delta_t_array(elements_numBlocks_, stream_);
+        device_vector<size_t> new_device_refine_array(elements_numBlocks_, stream_);
+        device_vector<size_t> new_device_faces_refine_array(faces_numBlocks_, stream_);
+        device_vector<size_t> new_device_wall_boundaries_refine_array(wall_boundaries_numBlocks_, stream_);
+        device_vector<size_t> new_device_symmetry_boundaries_refine_array(symmetry_boundaries_numBlocks_, stream_);
+        device_vector<size_t> new_device_inflow_boundaries_refine_array(inflow_boundaries_numBlocks_, stream_);
+        device_vector<size_t> new_device_outflow_boundaries_refine_array(outflow_boundaries_numBlocks_, stream_);
+        device_vector<size_t> new_device_interfaces_refine_array(interfaces_numBlocks_, stream_);
+        device_vector<size_t> new_device_mpi_interfaces_outgoing_refine_array(mpi_interfaces_outgoing_numBlocks_, stream_);
+        device_vector<size_t> new_device_mpi_interfaces_incoming_refine_array(mpi_interfaces_incoming_numBlocks_, stream_);
+
+        device_delta_t_array_ = std::move(new_device_delta_t_array);
+        device_refine_array_ = std::move(new_device_refine_array);
+        device_faces_refine_array_ = std::move(new_device_faces_refine_array);
+        device_wall_boundaries_refine_array_ = std::move(new_device_wall_boundaries_refine_array);
+        device_symmetry_boundaries_refine_array_ = std::move(new_device_symmetry_boundaries_refine_array);
+        device_inflow_boundaries_refine_array_ = std::move(new_device_inflow_boundaries_refine_array);
+        device_outflow_boundaries_refine_array_ = std::move(new_device_outflow_boundaries_refine_array);
+        device_interfaces_refine_array_ = std::move(new_device_interfaces_refine_array);
+        device_mpi_interfaces_outgoing_refine_array_ = std::move(new_device_mpi_interfaces_outgoing_refine_array);
+        device_mpi_interfaces_incoming_refine_array_ = std::move(device_mpi_interfaces_incoming_refine_array_);
+
+
+        // Clearing created arrays, so it is done asynchronously 
         new_elements.clear(stream_);
-
-        // Adjust sizes with new n_elements, n_faces, n_nodes etc.
-
+        new_x_output_device.clear(stream_);
+        new_y_output_device.clear(stream_);
+        new_p_output_device.clear(stream_);
+        new_u_output_device.clear(stream_);
+        new_v_output_device.clear(stream_);
+        new_device_interfaces_p.clear(stream_);
+        new_device_interfaces_u.clear(stream_);
+        new_device_interfaces_v.clear(stream_);
+        new_device_interfaces_N.clear(stream_);
+        new_device_interfaces_refine.clear(stream_);
+        new_device_receiving_interfaces_p.clear(stream_);
+        new_device_receiving_interfaces_u.clear(stream_);
+        new_device_receiving_interfaces_v.clear(stream_);
+        new_device_receiving_interfaces_N.clear(stream_);
+        new_device_receiving_interfaces_refine.clear(stream_);
+        ew_device_delta_t_array.clear(stream_);
+        new_device_refine_array.clear(stream_);
+        new_device_faces_refine_array.clear(stream_);
+        new_device_wall_boundaries_refine_array.clear(stream_);
+        new_device_symmetry_boundaries_refine_array.clear(stream_);
+        new_device_inflow_boundaries_refine_array.clear(stream_);
+        new_device_outflow_boundaries_refine_array.clear(stream_);
+        new_device_interfaces_refine_array.clear(stream_);
+        new_device_mpi_interfaces_outgoing_refine_array.clear(stream_);
+        new_device_mpi_interfaces_incoming_refine_array.clear(stream_);
+        
         MPI_Waitall(2 * mpi_interfaces_process_.size(), mpi_interfaces_requests.data() + 2 * mpi_interfaces_process_.size(), mpi_interfaces_statuses.data() + 2 * mpi_interfaces_process_.size());
     
         std::vector<MPI_Status> mpi_interfaces_send_statuses(mpi_interfaces_send_requests.size());
