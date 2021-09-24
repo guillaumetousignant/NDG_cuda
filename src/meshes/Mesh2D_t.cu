@@ -1910,7 +1910,7 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
     new_device_mpi_interfaces_incoming_refine_array.clear(stream_);
 }
 
-auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
+auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes) -> void {
     int global_rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
     int global_size;
@@ -2511,12 +2511,12 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
 
         SEM::Meshes::add_new_received_nodes<<<received_nodes_numBlocks, elements_blockSize_, 0, stream_>>>(missing_received_nodes.size(), nodes_.size(), new_nodes.data(), nodes_arrays_device.data(), missing_received_nodes.data(), received_node_indices.data(), device_missing_received_nodes_refine_array.data());
 
+        // Now something similar for neighbours?
 
 
 
 
 
-        
 
         device_vector<Element2D_t> new_elements(n_elements_new[global_rank], stream_); // What about boundary elements?
 
@@ -2528,10 +2528,9 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
             device_vector<size_t> n_neighbours_arrays(n_neighbours_arrays_recv_left, stream_);
 
             const int recv_numBlocks = (n_elements_recv_left[global_rank] + boundaries_blockSize_ - 1) / boundaries_blockSize_;
-            SEM::Meshes::put_transfer_solution<<<recv_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_recv_left[global_rank], new_elements.data(), maximum_N_, solution_arrays.data(), n_neighbours_arrays.data());
+            SEM::Meshes::fill_received_elements<<<recv_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_recv_left[global_rank], new_elements.data(), maximum_N_, new_nodes.data(), solution_arrays.data(), n_neighbours_arrays.data(), received_node_indices.data(), polynomial_nodes.data());
 
-            // Then we must figure out nodes and faces etc
-            // And compute geometry.
+            // Then we must figure out faces etc
             // Maybe we do all this before we put the solution back, as to do it at the same time
 
 
@@ -2547,10 +2546,9 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
             device_vector<size_t> n_neighbours_arrays(n_neighbours_arrays_recv_right, stream_);
 
             const int recv_numBlocks = (n_elements_recv_right[global_rank] + boundaries_blockSize_ - 1) / boundaries_blockSize_;
-            SEM::Meshes::put_transfer_solution<<<recv_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_recv_right[global_rank], new_elements.data() + n_elements_new[global_rank] - n_elements_recv_right[global_rank], maximum_N_, solution_arrays.data(), n_neighbours_arrays.data());
+            SEM::Meshes::fill_received_elements<<<recv_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_recv_right[global_rank], new_elements.data() + n_elements_new[global_rank] - n_elements_recv_right[global_rank], maximum_N_, new_nodes.data(), solution_arrays.data(), n_neighbours_arrays.data(), received_node_indices.data() + 4 * n_elements_recv_left[global_rank], polynomial_nodes.data());
 
-            // Then we must figure out nodes and faces etc
-            // And compute geometry.
+            // Then we must figure out faces etc
             // Maybe we do all this before we put the solution back, as to do it at the same time
 
 
@@ -6442,7 +6440,7 @@ auto SEM::Meshes::get_transfer_solution(size_t n_elements, const Element2D_t* el
 }
 
 __global__
-auto SEM::Meshes::put_transfer_solution(size_t n_elements, Element2D_t* elements, int maximum_N, const deviceFloat* solution, const size_t* n_neighbours) -> void {
+auto SEM::Meshes::fill_received_elements(size_t n_elements, Element2D_t* elements, int maximum_N, const Vec2<deviceFloat>* nodes, const deviceFloat* solution, const size_t* n_neighbours, const size_t* received_node_indices, const deviceFloat* polynomial_nodes) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -6456,6 +6454,11 @@ auto SEM::Meshes::put_transfer_solution(size_t n_elements, Element2D_t* elements
         element.clear_storage();
         element.allocate_storage();
 
+        element.nodes_[0] = received_node_indices[4 * element_index];
+        element.nodes_[1] = received_node_indices[4 * element_index + 1];
+        element.nodes_[2] = received_node_indices[4 * element_index + 2];
+        element.nodes_[3] = received_node_indices[4 * element_index + 3];
+
         element.faces_[0] = cuda_vector<size_t>(n_neighbours[neighbours_offset]);
         element.faces_[1] = cuda_vector<size_t>(n_neighbours[neighbours_offset + 1]);
         element.faces_[2] = cuda_vector<size_t>(n_neighbours[neighbours_offset + 2]);
@@ -6466,6 +6469,15 @@ auto SEM::Meshes::put_transfer_solution(size_t n_elements, Element2D_t* elements
             element.u_[i] = solution[u_offset + i];
             element.v_[i] = solution[v_offset + i];
         }
+
+        const std::array<Vec2<deviceFloat>, 4> received_element_nodes {
+            nodes[element.nodes_[0]],
+            nodes[element.nodes_[1]],
+            nodes[element.nodes_[2]],
+            nodes[element.nodes_[3]]
+        };
+
+        element.compute_geometry(received_element_nodes, polynomial_nodes);
     }
 }
 
