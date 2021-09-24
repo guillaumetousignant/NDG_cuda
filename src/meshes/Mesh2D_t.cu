@@ -2273,8 +2273,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
         std::vector<Element2D_t> elements_recv_right(n_elements_recv_right[global_rank]);
         std::vector<size_t> n_neighbours_arrays_recv_left(4 * n_elements_recv_left[global_rank]);
         std::vector<size_t> n_neighbours_arrays_recv_right(4 * n_elements_recv_right[global_rank]);
-        std::vector<deviceFloat> nodes_arrays_recv_left(8 * n_elements_recv_left[global_rank]);
-        std::vector<deviceFloat> nodes_arrays_recv_right(8 * n_elements_recv_right[global_rank]);
+        std::vector<deviceFloat> nodes_arrays_recv(8 * (n_elements_recv_left[global_rank] + n_elements_recv_right[global_rank]));
         std::vector<deviceFloat> solution_arrays_recv_left(3 * n_elements_recv_left[global_rank] * std::pow(maximum_N_ + 1, 2));
         std::vector<deviceFloat> solution_arrays_recv_right(3 * n_elements_recv_right[global_rank] * std::pow(maximum_N_ + 1, 2));
         std::vector<size_t> process_n_neighbours_left;
@@ -2348,7 +2347,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
                 MPI_Irecv(n_neighbours_arrays_recv_left.data() + 4 * process_offset[i], 4 * process_size[i], size_t_data_type, origin_processes_left[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank) + 1, MPI_COMM_WORLD, &mpi_interfaces_recv_requests_left[(n_mpi_transfers_per_send - 1) * i]);
 
                 // Nodes
-                MPI_Irecv(nodes_arrays_recv_left.data() + 8 * process_offset[i], 8 * process_size[i], float_data_type, origin_processes_left[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank) + 4, MPI_COMM_WORLD, &mpi_interfaces_recv_requests_left[(n_mpi_transfers_per_send - 1) * i + 1]);
+                MPI_Irecv(nodes_arrays_recv.data() + 8 * process_offset[i], 8 * process_size[i], float_data_type, origin_processes_left[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank) + 4, MPI_COMM_WORLD, &mpi_interfaces_recv_requests_left[(n_mpi_transfers_per_send - 1) * i + 1]);
 
                 // Solution
                 MPI_Irecv(solution_arrays_recv_left.data() + 3 * (maximum_N_ + 1) * (maximum_N_ + 1) * process_offset[i], 3 * (maximum_N_ + 1) * (maximum_N_ + 1) * process_size[i], float_data_type, origin_processes_left[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank) + 5, MPI_COMM_WORLD, &mpi_interfaces_recv_requests_left[(n_mpi_transfers_per_send - 1) * i + 2]);
@@ -2423,7 +2422,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
                 MPI_Irecv(n_neighbours_arrays_recv_right.data() + 4 * process_offset[i], 4 * process_size[i], size_t_data_type, origin_processes_right[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 1, MPI_COMM_WORLD, &mpi_interfaces_recv_requests_right[(n_mpi_transfers_per_send - 1) * i]);
 
                 // Nodes
-                MPI_Irecv(nodes_arrays_recv_right.data() + 8 * process_offset[i], 8 * process_size[i], float_data_type, origin_processes_right[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 4, MPI_COMM_WORLD, &mpi_interfaces_recv_requests_right[(n_mpi_transfers_per_send - 1) * i + 1]);
+                MPI_Irecv(nodes_arrays_recv.data() + 8 * (process_offset[i] + n_elements_recv_left[global_rank]), 8 * process_size[i], float_data_type, origin_processes_right[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 4, MPI_COMM_WORLD, &mpi_interfaces_recv_requests_right[(n_mpi_transfers_per_send - 1) * i + 1]);
 
                 // Solution
                 MPI_Irecv(solution_arrays_recv_right.data() + 3 * (maximum_N_ + 1) * (maximum_N_ + 1) * n_elements_recv_left[global_rank] + 3 * (maximum_N_ + 1) * (maximum_N_ + 1) * process_offset[i], 3 * (maximum_N_ + 1) * (maximum_N_ + 1) * process_size[i], float_data_type, origin_processes_right[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 5, MPI_COMM_WORLD, &mpi_interfaces_recv_requests_right[(n_mpi_transfers_per_send - 1) * i + 2]);
@@ -2484,15 +2483,18 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
         std::vector<MPI_Status> mpi_interfaces_recv_statuses(mpi_interfaces_recv_requests.size());
         MPI_Waitall(mpi_interfaces_recv_requests.size(), mpi_interfaces_recv_requests.data(), mpi_interfaces_recv_statuses.data());
     
+        // Now everything is received
+        // We can do something about the nodes
 
 
+        device_vector<Element2D_t> new_elements(n_elements_new[global_rank], stream_); // What about boundary elements?
 
 
         if (n_elements_recv_left[global_rank] > 0) {
             // Now we must store these elements
-            cudaMemcpyAsync(new_elements.data(), elements_recv.data(), n_elements_recv_left[global_rank] * sizeof(Element2D_t), cudaMemcpyHostToDevice, stream_);
-            device_vector<deviceFloat> solution_arrays(solution_arrays_recv, stream_);
-            device_vector<size_t> n_neighbours_arrays(n_neighbours_arrays_recv, stream_);
+            cudaMemcpyAsync(new_elements.data(), elements_recv_left.data(), n_elements_recv_left[global_rank] * sizeof(Element2D_t), cudaMemcpyHostToDevice, stream_);
+            device_vector<deviceFloat> solution_arrays(solution_arrays_recv_left, stream_);
+            device_vector<size_t> n_neighbours_arrays(n_neighbours_arrays_recv_left, stream_);
 
             const int recv_numBlocks = (n_elements_recv_left[global_rank] + boundaries_blockSize_ - 1) / boundaries_blockSize_;
             SEM::Meshes::put_transfer_solution<<<recv_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_recv_left[global_rank], new_elements.data(), maximum_N_, solution_arrays.data(), n_neighbours_arrays.data());
@@ -2501,20 +2503,17 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
             // And compute geometry.
             // Maybe we do all this before we put the solution back, as to do it at the same time
 
-            
+
 
             solution_arrays.clear(stream_);
             n_neighbours_arrays.clear(stream_);
         }
 
-        
-
-
         if (n_elements_recv_right[global_rank] > 0) {
             // Now we must store these elements
-            cudaMemcpyAsync(new_elements.data() + n_elements_new[global_rank] - n_elements_recv_right[global_rank], elements_recv.data(), n_elements_recv_right[global_rank] * sizeof(Element2D_t), cudaMemcpyHostToDevice, stream_);
-            device_vector<deviceFloat> solution_arrays(solution_arrays_recv, stream_);
-            device_vector<size_t> n_neighbours_arrays(n_neighbours_arrays_recv, stream_);
+            cudaMemcpyAsync(new_elements.data() + n_elements_new[global_rank] - n_elements_recv_right[global_rank], elements_recv_right.data(), n_elements_recv_right[global_rank] * sizeof(Element2D_t), cudaMemcpyHostToDevice, stream_);
+            device_vector<deviceFloat> solution_arrays(solution_arrays_recv_right, stream_);
+            device_vector<size_t> n_neighbours_arrays(n_neighbours_arrays_recv_right, stream_);
 
             const int recv_numBlocks = (n_elements_recv_right[global_rank] + boundaries_blockSize_ - 1) / boundaries_blockSize_;
             SEM::Meshes::put_transfer_solution<<<recv_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_recv_right[global_rank], new_elements.data() + n_elements_new[global_rank] - n_elements_recv_right[global_rank], maximum_N_, solution_arrays.data(), n_neighbours_arrays.data());
