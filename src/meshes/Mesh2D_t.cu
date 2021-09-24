@@ -2485,6 +2485,31 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
     
         // Now everything is received
         // We can do something about the nodes
+        device_vector<bool> missing_received_nodes(4 * (n_elements_recv_left[global_rank] + n_elements_recv_right[global_rank]), stream_);
+        device_vector<size_t> received_node_indices(missing_received_nodes.size(), stream_);
+        device_vector<deviceFloat> nodes_arrays_device(nodes_arrays_recv, stream_);
+        const int received_nodes_numBlocks = (missing_received_nodes.size() + elements_blockSize_ - 1) / elements_blockSize_;
+
+        SEM::Meshes::find_received_nodes<<<received_nodes_numBlocks, elements_blockSize_, 0, stream_>>>(missing_received_nodes.size(), nodes_.size(), nodes_.data(), nodes_arrays_device.data(), missing_received_nodes.data(), received_node_indices.data());
+
+        device_vector<size_t> device_missing_received_nodes_refine_array(received_nodes_numBlocks, stream_);
+        std::vector<size_t> host_missing_received_nodes_refine_array(received_nodes_numBlocks);
+        SEM::Meshes::reduce_received_nodes<elements_blockSize_/2><<<received_nodes_numBlocks, elements_blockSize_/2, 0, stream_>>>(missing_received_nodes.size(), missing_received_nodes.data(), device_missing_received_nodes_refine_array.data());
+        device_missing_received_nodes_refine_array.copy_to(host_missing_received_nodes_refine_array, stream_);
+
+        cudaStreamSynchronize(stream_); // So the transfer to host_missing_received_nodes_refine_array is complete
+
+        size_t n_missing_received_nodes = 0;
+        for (int i = 0; i < received_nodes_numBlocks; ++i) {
+            n_missing_received_nodes += host_missing_received_nodes_refine_array[i];
+            host_missing_received_nodes_refine_array[i] = n_missing_received_nodes - host_missing_received_nodes_refine_array[i]; // Current block offset
+        }
+        device_missing_received_nodes_refine_array.copy_from(host_missing_received_nodes_refine_array, stream_);
+
+        device_vector<Vec2<deviceFloat>> new_nodes(nodes_.size() + n_missing_received_nodes, stream_);
+        cudaMemcpyAsync(new_nodes.data(), nodes_.data(), nodes_.size() * sizeof(Vec2<deviceFloat>), cudaMemcpyDeviceToDevice, stream_); // Apparently slower than using a kernel
+
+
 
 
         device_vector<Element2D_t> new_elements(n_elements_new[global_rank], stream_); // What about boundary elements?
@@ -2540,6 +2565,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
 
         // Swapping out the old arrays for the new ones
         elements_ = std::move(new_elements);
+        nodes_ = std::move(new_nodes);
 
         // Updating quantities
         n_elements_ = n_elements_new[global_rank];
@@ -2646,7 +2672,12 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
 
 
         // Clearing created arrays, so it is done asynchronously 
+        found_node.clear(stream_);
+        new_node_indices.clear(stream_);
+        nodes_arrays_device.clear(stream_);
+        device_missing_received_nodes_refine_array.clear(stream_);
         new_elements.clear(stream_);
+        new_nodes.clear(stream_);
         new_x_output_device.clear(stream_);
         new_y_output_device.clear(stream_);
         new_p_output_device.clear(stream_);
@@ -6695,3 +6726,23 @@ auto SEM::Meshes::get_interface_processes(size_t n_mpi_interfaces, size_t n_mpi_
         }
     }
 }
+
+__global__
+auto SEM::Meshes::find_received_nodes(size_t n_received_nodes, size_t n_nodes, const Vec2<deviceFloat>* nodes, const deviceFloat* received_nodes, bool* missing_received_nodes, size_t* received_nodes_indices) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t i = index; i < n_received_nodes; i += stride) {
+        const Vec2<deviceFloat> received_node(received_nodes[2 * i], received_nodes[2 * i + 1]);
+        missing_received_nodes[i] = true;
+
+        for (size_t j = 0; j < n_nodes; ++j) {
+            if (received_node.almost_equal(nodes[j])) {
+                found_received_nodes[i] = false;
+                missing_received_nodes[i] = j;
+                break;
+            }
+        }
+    }
+}
+
