@@ -2509,8 +2509,14 @@ auto SEM::Meshes::Mesh2D_t::load_balance() -> void {
         device_vector<Vec2<deviceFloat>> new_nodes(nodes_.size() + n_missing_received_nodes, stream_);
         cudaMemcpyAsync(new_nodes.data(), nodes_.data(), nodes_.size() * sizeof(Vec2<deviceFloat>), cudaMemcpyDeviceToDevice, stream_); // Apparently slower than using a kernel
 
+        SEM::Meshes::add_new_received_nodes<<<received_nodes_numBlocks, elements_blockSize_, 0, stream_>>>(missing_received_nodes.size(), nodes_.size(), new_nodes.data(), nodes_arrays_device.data(), missing_received_nodes.data(), received_node_indices.data(), device_missing_received_nodes_refine_array.data());
 
 
+
+
+
+
+        
 
         device_vector<Element2D_t> new_elements(n_elements_new[global_rank], stream_); // What about boundary elements?
 
@@ -6746,3 +6752,22 @@ auto SEM::Meshes::find_received_nodes(size_t n_received_nodes, size_t n_nodes, c
     }
 }
 
+__global__
+auto SEM::Meshes::add_new_received_nodes(size_t n_received_nodes, size_t n_nodes, Vec2<deviceFloat>* nodes, const deviceFloat* received_nodes, const bool* missing_received_nodes, size_t* received_nodes_indices, const size_t* received_nodes_block_offsets) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+    const int thread_id = threadIdx.x;
+    const int block_id = blockIdx.x;
+
+    for (size_t i = index; i < n_received_nodes; i += stride) {
+        if missing_received_nodes[i]) {
+            size_t new_received_index = n_nodes + received_nodes_block_offsets[block_id];
+            for (size_t j = i - thread_id; j < i; ++j) {
+                new_received_index += missing_received_nodes[j];
+            }
+
+            nodes[new_received_index] = Vec2<deviceFloat>(received_nodes[2 * i], received_nodes[2 * i + 1]);
+            received_nodes_indices[i] = new_received_index;
+        }
+    }
+}

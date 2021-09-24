@@ -335,6 +335,9 @@ namespace SEM { namespace Meshes {
     __global__
     auto find_received_nodes(size_t n_received_nodes, size_t n_nodes, const SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* received_nodes, bool* missing_received_nodes, size_t* received_nodes_indices) -> void;
     
+    __global__
+    auto add_new_received_nodes(size_t n_received_nodes, size_t n_nodes, SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* received_nodes, const bool* missing_received_nodes, size_t* received_nodes_indices, const size_t* received_nodes_block_offsets) -> void;
+
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>
     __device__ 
