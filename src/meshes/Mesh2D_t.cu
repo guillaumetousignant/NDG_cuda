@@ -2485,32 +2485,40 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
     
         // Now everything is received
         // We can do something about the nodes
-        device_vector<bool> missing_received_nodes(4 * (n_elements_recv_left[global_rank] + n_elements_recv_right[global_rank]), stream_);
         device_vector<size_t> received_node_indices(missing_received_nodes.size(), stream_);
-        device_vector<deviceFloat> nodes_arrays_device(nodes_arrays_recv, stream_);
-        const int received_nodes_numBlocks = (missing_received_nodes.size() + elements_blockSize_ - 1) / elements_blockSize_;
+        if (n_elements_recv_left[global_rank] + n_elements_recv_right[global_rank] > 0) {
+            device_vector<bool> missing_received_nodes(4 * (n_elements_recv_left[global_rank] + n_elements_recv_right[global_rank]), stream_);
+            device_vector<deviceFloat> nodes_arrays_device(nodes_arrays_recv, stream_);
+            const int received_nodes_numBlocks = (missing_received_nodes.size() + elements_blockSize_ - 1) / elements_blockSize_;
 
-        SEM::Meshes::find_received_nodes<<<received_nodes_numBlocks, elements_blockSize_, 0, stream_>>>(missing_received_nodes.size(), nodes_.size(), nodes_.data(), nodes_arrays_device.data(), missing_received_nodes.data(), received_node_indices.data());
+            SEM::Meshes::find_received_nodes<<<received_nodes_numBlocks, elements_blockSize_, 0, stream_>>>(missing_received_nodes.size(), nodes_.size(), nodes_.data(), nodes_arrays_device.data(), missing_received_nodes.data(), received_node_indices.data());
 
-        device_vector<size_t> device_missing_received_nodes_refine_array(received_nodes_numBlocks, stream_);
-        std::vector<size_t> host_missing_received_nodes_refine_array(received_nodes_numBlocks);
-        SEM::Meshes::reduce_received_nodes<elements_blockSize_/2><<<received_nodes_numBlocks, elements_blockSize_/2, 0, stream_>>>(missing_received_nodes.size(), missing_received_nodes.data(), device_missing_received_nodes_refine_array.data());
-        device_missing_received_nodes_refine_array.copy_to(host_missing_received_nodes_refine_array, stream_);
+            device_vector<size_t> device_missing_received_nodes_refine_array(received_nodes_numBlocks, stream_);
+            std::vector<size_t> host_missing_received_nodes_refine_array(received_nodes_numBlocks);
+            SEM::Meshes::reduce_received_nodes<elements_blockSize_/2><<<received_nodes_numBlocks, elements_blockSize_/2, 0, stream_>>>(missing_received_nodes.size(), missing_received_nodes.data(), device_missing_received_nodes_refine_array.data());
+            device_missing_received_nodes_refine_array.copy_to(host_missing_received_nodes_refine_array, stream_);
 
-        cudaStreamSynchronize(stream_); // So the transfer to host_missing_received_nodes_refine_array is complete
+            cudaStreamSynchronize(stream_); // So the transfer to host_missing_received_nodes_refine_array is complete
 
-        size_t n_missing_received_nodes = 0;
-        for (int i = 0; i < received_nodes_numBlocks; ++i) {
-            n_missing_received_nodes += host_missing_received_nodes_refine_array[i];
-            host_missing_received_nodes_refine_array[i] = n_missing_received_nodes - host_missing_received_nodes_refine_array[i]; // Current block offset
+            size_t n_missing_received_nodes = 0;
+            for (int i = 0; i < received_nodes_numBlocks; ++i) {
+                n_missing_received_nodes += host_missing_received_nodes_refine_array[i];
+                host_missing_received_nodes_refine_array[i] = n_missing_received_nodes - host_missing_received_nodes_refine_array[i]; // Current block offset
+            }
+            device_missing_received_nodes_refine_array.copy_from(host_missing_received_nodes_refine_array, stream_);
+
+            device_vector<Vec2<deviceFloat>> new_nodes(nodes_.size() + n_missing_received_nodes, stream_);
+            cudaMemcpyAsync(new_nodes.data(), nodes_.data(), nodes_.size() * sizeof(Vec2<deviceFloat>), cudaMemcpyDeviceToDevice, stream_); // Apparently slower than using a kernel
+
+            SEM::Meshes::add_new_received_nodes<<<received_nodes_numBlocks, elements_blockSize_, 0, stream_>>>(missing_received_nodes.size(), nodes_.size(), new_nodes.data(), nodes_arrays_device.data(), missing_received_nodes.data(), received_node_indices.data(), device_missing_received_nodes_refine_array.data());
+        
+            nodes_ = std::move(new_nodes);
+
+            new_nodes.clear(stream_);
+            missing_received_nodes.clear(stream_);
+            nodes_arrays_device.clear(stream_);
+            device_missing_received_nodes_refine_array.clear(stream_);
         }
-        device_missing_received_nodes_refine_array.copy_from(host_missing_received_nodes_refine_array, stream_);
-
-        device_vector<Vec2<deviceFloat>> new_nodes(nodes_.size() + n_missing_received_nodes, stream_);
-        cudaMemcpyAsync(new_nodes.data(), nodes_.data(), nodes_.size() * sizeof(Vec2<deviceFloat>), cudaMemcpyDeviceToDevice, stream_); // Apparently slower than using a kernel
-
-        SEM::Meshes::add_new_received_nodes<<<received_nodes_numBlocks, elements_blockSize_, 0, stream_>>>(missing_received_nodes.size(), nodes_.size(), new_nodes.data(), nodes_arrays_device.data(), missing_received_nodes.data(), received_node_indices.data(), device_missing_received_nodes_refine_array.data());
-
         // Now something similar for neighbours?
 
 
@@ -2569,7 +2577,6 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
 
         // Swapping out the old arrays for the new ones
         elements_ = std::move(new_elements);
-        nodes_ = std::move(new_nodes);
 
         // Updating quantities
         n_elements_ = n_elements_new[global_rank];
@@ -2676,12 +2683,8 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
 
 
         // Clearing created arrays, so it is done asynchronously 
-        found_node.clear(stream_);
-        new_node_indices.clear(stream_);
-        nodes_arrays_device.clear(stream_);
-        device_missing_received_nodes_refine_array.clear(stream_);
+        received_node_indices.clear(stream_);
         new_elements.clear(stream_);
-        new_nodes.clear(stream_);
         new_x_output_device.clear(stream_);
         new_y_output_device.clear(stream_);
         new_p_output_device.clear(stream_);
