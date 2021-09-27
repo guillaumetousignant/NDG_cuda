@@ -2624,7 +2624,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
 
 
 
-        device_vector<Element2D_t> new_elements(n_elements_new[global_rank], stream_); // What about boundary elements?
+        device_vector<Element2D_t> new_elements(n_elements_new[global_rank] + elements_.size() - n_elements_ + n_boundary_elements_to_add - n_boundary_elements_to_delete, stream_); // What about boundary elements?
 
 
         if (n_elements_recv_left[global_rank] > 0) {
@@ -7011,7 +7011,7 @@ auto SEM::Meshes::move_required_faces(size_t n_faces, Face2D_t* faces, Face2D_t*
                 }
             }
             if (missing_L) {
-                printf("Error: Face %llu could not find itself in its left element, element %llu, side %llu. Results are undefined.\n", i, new_faces[new_face_index].elements_[0], side_index_L);
+                printf("Error: Moving face %llu could not find itself in its left element, element %llu, side %llu. Results are undefined.\n", i, new_faces[new_face_index].elements_[0], side_index_L);
             }
             for (size_t side_face_index = 0; side_face_index < element_R.faces_[side_index_R].size(); ++side_face_index) {
                 if (element_R.faces_[side_index_R][side_face_index] == i) {
@@ -7021,7 +7021,36 @@ auto SEM::Meshes::move_required_faces(size_t n_faces, Face2D_t* faces, Face2D_t*
                 }
             }
             if (missing_R) {
-                printf("Error: Face %llu could not find itself in its right element, element %llu, side %llu. Results are undefined.\n", i, new_faces[new_face_index].elements_[1], side_index_R);
+                printf("Error: Moving face %llu could not find itself in its right element, element %llu, side %llu. Results are undefined.\n", i, new_faces[new_face_index].elements_[1], side_index_R);
+            }
+        }
+        else {
+            Element2D_t& element_L = elements[faces[i].elements_[0]];
+            Element2D_t& element_R = elements[faces[i].elements_[1]];
+            const size_t side_index_L = faces[i].elements_side_[0];
+            const size_t side_index_R = faces[i].elements_side_[1];
+            bool missing_L = true;
+            bool missing_R = true;
+
+            for (size_t side_face_index = 0; side_face_index < element_L.faces_[side_index_L].size(); ++side_face_index) {
+                if (element_L.faces_[side_index_L][side_face_index] == i) {
+                    element_L.faces_[side_index_L][side_face_index] = static_cast<size_t>(-1);
+                    missing_L = false;
+                    break;
+                }
+            }
+            if (missing_L) {
+                printf("Error: Deleting face %llu could not find itself in its left element, element %llu, side %llu. Results are undefined.\n", i, faces[i].elements_[0], side_index_L);
+            }
+            for (size_t side_face_index = 0; side_face_index < element_R.faces_[side_index_R].size(); ++side_face_index) {
+                if (element_R.faces_[side_index_R][side_face_index] == i) {
+                    element_R.faces_[side_index_R][side_face_index] = static_cast<size_t>(-1);
+                    missing_R = false;
+                    break;
+                }
+            }
+            if (missing_R) {
+                printf("Error: Deleting face %llu could not find itself in its right element, element %llu, side %llu. Results are undefined.\n", i, faces[i].elements_[1], side_index_R);
             }
         }
     }
