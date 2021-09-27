@@ -2052,7 +2052,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
             device_vector<size_t> n_elements_recv_right_device(n_elements_recv_right, stream_);
             device_vector<size_t> global_element_offset_current_device(global_element_offset_current, stream_);
 
-            SEM::Meshes::get_neighbours<<<send_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_send_left[global_rank], 0, n_elements_per_proc[global_rank], interfaces_origin_.size(), mpi_interfaces_destination_.size(), global_rank, global_size, n_elements_per_process_new, elements_.data(), faces_.data(), interfaces_destination_.data(), interfaces_origin_.data(), mpi_interfaces_destination_.data(), mpi_interfaces_new_process_incoming_device.data(), mpi_interfaces_new_local_index_incoming_device.data(), neighbour_offsets_device.data(), n_elements_send_left_device.data(), n_elements_recv_left_device.data(), n_elements_send_right_device.data(), n_elements_recv_right_device.data(), global_element_offset_current_device.data(), neighbours_arrays.data(), neighbours_proc_arrays.data());
+            SEM::Meshes::get_neighbours<<<send_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_send_left[global_rank], 0, n_elements_per_proc[global_rank], wall_boundaries_.size(), symmetry_boundaries_.size(), inflow_boundaries_.size(), outflow_boundaries_.size(), interfaces_origin_.size(), mpi_interfaces_destination_.size(), global_rank, global_size, n_elements_per_process_new, elements_.data(), faces_.data(), wall_boundaries_.data(), symmetry_boundaries_.data(), inflow_boundaries_.data(), outflow_boundaries_.data(), interfaces_destination_.data(), interfaces_origin_.data(), mpi_interfaces_destination_.data(), mpi_interfaces_new_process_incoming_device.data(), mpi_interfaces_new_local_index_incoming_device.data(), neighbour_offsets_device.data(), n_elements_send_left_device.data(), n_elements_recv_left_device.data(), n_elements_send_right_device.data(), n_elements_recv_right_device.data(), global_element_offset_current_device.data(), neighbours_arrays.data(), neighbours_proc_arrays.data());
 
             std::vector<size_t> neighbours_arrays_send(neighbours_arrays.size());
             std::vector<int> neighbours_proc_arrays_send(neighbours_proc_arrays.size());
@@ -2180,7 +2180,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
             device_vector<size_t> n_elements_recv_right_device(n_elements_recv_right, stream_);
             device_vector<size_t> global_element_offset_current_device(global_element_offset_current, stream_);
 
-            SEM::Meshes::get_neighbours<<<send_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_send_right[global_rank], n_elements_per_proc[global_rank] - n_elements_send_right[global_rank], n_elements_per_proc[global_rank], interfaces_origin_.size(), mpi_interfaces_destination_.size(), global_rank, global_size, n_elements_per_process_new, elements_.data(), faces_.data(), interfaces_destination_.data(), interfaces_origin_.data(), mpi_interfaces_destination_.data(), mpi_interfaces_new_process_incoming_device.data(), mpi_interfaces_new_local_index_incoming_device.data(), neighbour_offsets_device.data(), n_elements_send_left_device.data(), n_elements_recv_left_device.data(), n_elements_send_right_device.data(), n_elements_recv_right_device.data(), global_element_offset_current_device.data(), neighbours_arrays.data(), neighbours_proc_arrays.data());
+            SEM::Meshes::get_neighbours<<<send_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_send_right[global_rank], n_elements_per_proc[global_rank] - n_elements_send_right[global_rank], n_elements_per_proc[global_rank], wall_boundaries_.size(), symmetry_boundaries_.size(), inflow_boundaries_.size(), outflow_boundaries_.size(), interfaces_origin_.size(), mpi_interfaces_destination_.size(), global_rank, global_size, n_elements_per_process_new, elements_.data(), faces_.data(), wall_boundaries_.data(), symmetry_boundaries_.data(), inflow_boundaries_.data(), outflow_boundaries_.data(), interfaces_destination_.data(), interfaces_origin_.data(), mpi_interfaces_destination_.data(), mpi_interfaces_new_process_incoming_device.data(), mpi_interfaces_new_local_index_incoming_device.data(), neighbour_offsets_device.data(), n_elements_send_left_device.data(), n_elements_recv_left_device.data(), n_elements_send_right_device.data(), n_elements_recv_right_device.data(), global_element_offset_current_device.data(), neighbours_arrays.data(), neighbours_proc_arrays.data());
 
             std::vector<size_t> neighbours_arrays_send(neighbours_arrays.size());
             std::vector<int> neighbours_proc_arrays_send(neighbours_proc_arrays.size());
@@ -6486,6 +6486,10 @@ __global__
 auto SEM::Meshes::get_neighbours(size_t n_elements_send, 
                                  size_t start_index, 
                                  size_t n_domain_elements, 
+                                 size_t n_wall_boundaries, 
+                                 size_t n_symmetry_boundaries, 
+                                 size_t n_inflow_boundaries, 
+                                 size_t n_outflow_boundaries
                                  size_t n_local_interfaces, 
                                  size_t n_MPI_interface_elements_receiving, 
                                  int rank, 
@@ -6493,6 +6497,10 @@ auto SEM::Meshes::get_neighbours(size_t n_elements_send,
                                  size_t n_elements_per_process,
                                  const Element2D_t* elements, 
                                  const Face2D_t* faces, 
+                                 const size_t* wall_boundaries, 
+                                 const size_t* symmetry_boundaries, 
+                                 const size_t* inflow_boundaries, 
+                                 const size_t* outflow_boundaries
                                  const size_t* interfaces_destination, 
                                  const size_t* interfaces_origin, 
                                  const size_t* mpi_interfaces_destination, 
@@ -6531,6 +6539,7 @@ auto SEM::Meshes::get_neighbours(size_t n_elements_send,
                     }
                 }
                 else { // It is either a local or mpi interface
+                    // It could also be a boundary condition
                     bool missing = true;
                     for (size_t i = 0; i < n_local_interfaces; ++i) {
                         if (interfaces_destination[i] == other_element_index) {
@@ -6561,7 +6570,55 @@ auto SEM::Meshes::get_neighbours(size_t n_elements_send,
                         }
 
                         if (missing) {
-                            printf("Error: Element %llu is not part of local or mpi interfaces. Results are undefined.\n", other_element_index);
+                            for (size_t i = 0; i < n_wall_boundaries; ++i) {
+                                if (wall_boundaries[i] == other_element_index) {
+                                    neighbours[element_offset] = static_cast<size_t>(-1);
+                                    neighbours_proc[element_offset] = SEM::Meshes::Mesh2D_t::boundary_type::wall;
+        
+                                    missing = false;
+                                    break;
+                                }
+                            }
+
+                            if (missing) {
+                                for (size_t i = 0; i < n_symmetry_boundaries; ++i) {
+                                    if (symmetry_boundaries[i] == other_element_index) {
+                                        neighbours[element_offset] = static_cast<size_t>(-1);
+                                        neighbours_proc[element_offset] = SEM::Meshes::Mesh2D_t::boundary_type::symmetry;
+            
+                                        missing = false;
+                                        break;
+                                    }
+                                }
+    
+                                if (missing) {
+                                    for (size_t i = 0; i < n_inflow_boundaries; ++i) {
+                                        if (inflow_boundaries[i] == other_element_index) {
+                                            neighbours[element_offset] = static_cast<size_t>(-1);
+                                            neighbours_proc[element_offset] = SEM::Meshes::Mesh2D_t::boundary_type::inflow;
+                
+                                            missing = false;
+                                            break;
+                                        }
+                                    }
+        
+                                    if (missing) {
+                                        for (size_t i = 0; i < n_outflow_boundaries; ++i) {
+                                            if (outflow_boundaries[i] == other_element_index) {
+                                                neighbours[element_offset] = static_cast<size_t>(-1);
+                                                neighbours_proc[element_offset] = SEM::Meshes::Mesh2D_t::boundary_type::outflow;
+                    
+                                                missing = false;
+                                                break;
+                                            }
+                                        }
+            
+                                        if (missing) {
+                                            printf("Error: Element %llu is not part of local or mpi interfaces, or boundaries. Results are undefined.\n", other_element_index);
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
 
