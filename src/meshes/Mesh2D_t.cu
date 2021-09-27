@@ -2492,8 +2492,8 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
             SEM::Meshes::find_received_nodes<<<received_nodes_numBlocks, elements_blockSize_, 0, stream_>>>(missing_received_nodes.size(), nodes_.size(), nodes_.data(), nodes_arrays_device.data(), missing_received_nodes.data(), received_node_indices.data());
 
             device_vector<size_t> device_missing_received_nodes_refine_array(received_nodes_numBlocks, stream_);
+            SEM::Meshes::reduce_bools<elements_blockSize_/2><<<received_nodes_numBlocks, elements_blockSize_/2, 0, stream_>>>(missing_received_nodes.size(), missing_received_nodes.data(), device_missing_received_nodes_refine_array.data());
             std::vector<size_t> host_missing_received_nodes_refine_array(received_nodes_numBlocks);
-            SEM::Meshes::reduce_received_nodes<elements_blockSize_/2><<<received_nodes_numBlocks, elements_blockSize_/2, 0, stream_>>>(missing_received_nodes.size(), missing_received_nodes.data(), device_missing_received_nodes_refine_array.data());
             device_missing_received_nodes_refine_array.copy_to(host_missing_received_nodes_refine_array, stream_);
 
             cudaStreamSynchronize(stream_); // So the transfer to host_missing_received_nodes_refine_array is complete
@@ -2519,9 +2519,57 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
         }
         // Now something similar for neighbours?
 
+        // Faces
+        // Faces to add
+        size_t n_faces_to_add = 0;
+        if (n_elements_recv_left[global_rank] + n_elements_recv_right[global_rank] > 0) {
+            for (size_t i = 0; i < neighbours_arrays_recv.size(); ++i) {
+                if (neighbours_proc_arrays_recv[i] != global_rank || neighbours_arrays_recv[i] < n_elements_recv_left[global_rank] || neighbours_arrays_recv[i] > n_elements_new[global_rank] - n_elements_recv_right[global_rank]) {
+                    ++n_faces_to_add;
+                }
+            }
+        }
+
+        device_vector<Face2D_t> new_faces;
+
+        // Faces to delete
+        size_t n_faces_to_delete = 0;
+        if (n_elements_send_left[global_rank] + n_elements_send_right[global_rank] > 0) {
+            device_vector<bool> faces_to_delete(faces_.size(), stream_);
+            SEM::Meshes::find_faces_to_delete<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces_.size(), n_elements_, n_elements_send_left[global_rank], n_elements_send_right[global_rank], faces_.data(), faces_to_delete.data());
         
+            device_vector<size_t> device_faces_to_delete_refine_array(faces_numBlocks_, stream_);
+            SEM::Meshes::reduce_bools<faces_blockSize_/2><<<faces_numBlocks_, faces_blockSize_/2, 0, stream_>>>(faces_to_delete.size(), faces_to_delete.data(), device_faces_to_delete_refine_array.data());
+            std::vector<size_t> host_faces_to_delete_refine_array(faces_numBlocks_);
+            device_faces_to_delete_refine_array.copy_to(host_faces_to_delete_refine_array, stream_);
 
+            cudaStreamSynchronize(stream_); // So the transfer to host_faces_to_delete_refine_array is complete
 
+            for (int i = 0; i < faces_numBlocks_; ++i) {
+                n_faces_to_delete += host_faces_to_delete_refine_array[i];
+                host_faces_to_delete_refine_array[i] = n_faces_to_delete - host_faces_to_delete_refine_array[i]; // Current block offset
+            }
+            device_faces_to_delete_refine_array.copy_from(host_faces_to_delete_refine_array, stream_);
+
+            device_vector<Face2D_t> new_new_faces(faces_.size() + n_faces_to_add - n_faces_to_delete, stream_);
+            new_faces = std::move(new_new_faces);
+
+            SEM::Meshes::move_required_faces<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces_.size(), faces_.data(), new_faces.data(), elements_.data(), faces_to_delete.data(), device_faces_to_delete_refine_array.data());
+
+            faces_to_delete.clear(stream_);
+            device_faces_to_delete_refine_array.clear(stream_);
+            new_new_faces.clear(stream_);
+        }
+        else {
+            device_vector<Face2D_t> new_new_faces(faces_.size() + n_faces_to_add, stream_);
+            new_faces = std::move(new_new_faces);
+
+            SEM::Meshes::move_faces<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces_.size(), faces_.data(), new_faces.data());
+
+            new_new_faces.clear(stream_);
+        }
+
+        // Boundary elements
 
 
         device_vector<Element2D_t> new_elements(n_elements_new[global_rank], stream_); // What about boundary elements?
@@ -2575,6 +2623,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
 
         // Swapping out the old arrays for the new ones
         elements_ = std::move(new_elements);
+        faces_ = std::move(new_faces);
 
         // Updating quantities
         n_elements_ = n_elements_new[global_rank];
@@ -2683,6 +2732,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
         // Clearing created arrays, so it is done asynchronously 
         received_node_indices.clear(stream_);
         new_elements.clear(stream_);
+        new_faces.clear(stream_);
         new_x_output_device.clear(stream_);
         new_y_output_device.clear(stream_);
         new_p_output_device.clear(stream_);
@@ -6540,6 +6590,7 @@ auto SEM::Meshes::get_neighbours(size_t n_elements_send,
                 }
                 else { // It is either a local or mpi interface
                     // It could also be a boundary condition
+                    // This is a nightmare
                     bool missing = true;
                     for (size_t i = 0; i < n_local_interfaces; ++i) {
                         if (interfaces_destination[i] == other_element_index) {
@@ -6621,7 +6672,6 @@ auto SEM::Meshes::get_neighbours(size_t n_elements_send,
                             }
                         }
                     }
-
                 }
                 ++element_offset;
             }
@@ -6838,6 +6888,87 @@ auto SEM::Meshes::add_new_received_nodes(size_t n_received_nodes, size_t n_nodes
 
             nodes[new_received_index] = Vec2<deviceFloat>(received_nodes[2 * i], received_nodes[2 * i + 1]);
             received_nodes_indices[i] = new_received_index;
+        }
+    }
+}
+
+__global__
+auto SEM::Meshes::find_faces_to_delete(size_t n_faces, size_t n_domain_elements, size_t n_elements_send_left, size_t n_elements_send_right, const Face2D_t* faces, bool* faces_to_delete) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t i = index; i < n_faces; i += stride) {
+        const Face2D_t& face = faces[i];
+        const std::array<bool, 2> elements_leaving {
+            face.elements_[0] < n_elements_send_left || face.elements_[0] > n_domain_elements - n_elements_send_right && face.elements_[0] < n_domain_elements,
+            face.elements_[1] < n_elements_send_left || face.elements_[1] > n_domain_elements - n_elements_send_right && face.elements_[1] < n_domain_elements
+        }
+        const std::array<bool, 2> boundary_elements {
+            face.elements_[0] >= n_domain_elements,
+            face.elements_[1] >= n_domain_elements
+        }
+
+        faces_to_delete[i] = elements_leaving[0] && elements_leaving[1] || elements_leaving[0] && boundary_elements[1] || elements_leaving[1] && boundary_elements[2];
+    }
+}
+
+__global__
+auto SEM::Meshes::move_faces(size_t n_faces, Face2D_t* faces, Face2D_t* new_faces) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t i = index; i < n_faces; i += stride) {
+        new_faces[i].clear_storage();
+
+        new_faces[i] = std::move(faces[i]);
+    }
+}
+
+__global__
+auto SEM::Meshes::move_required_faces(size_t n_faces, Face2D_t* faces, Face2D_t* new_faces, Element2D_t* elements, const bool* faces_to_delete, const size_t* faces_to_delete_block_offsets) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+    const int thread_id = threadIdx.x;
+    const int block_id = blockIdx.x;
+
+    for (size_t i = index; i < n_faces; i += stride) {
+        if (!faces_to_delete[i]) {
+            size_t new_face_index = i - faces_to_delete_block_offsets[block_id];
+            for (size_t j = i - thread_id; j < i; ++j) {
+                new_face_index -= faces_to_delete[j];
+            }
+
+            new_faces[new_face_index].clear_storage();
+
+            new_faces[new_face_index] = std::move(faces[i]);
+
+            Element2D_t& element_L = elements[new_faces[new_face_index].elements_[0]];
+            Element2D_t& element_R = elements[new_faces[new_face_index].elements_[1]];
+            const size_t side_index_L = new_faces[new_face_index].elements_side_[0];
+            const size_t side_index_R = new_faces[new_face_index].elements_side_[1];
+            bool missing_L = true;
+            bool missing_R = true;
+
+            for (size_t side_face_index = 0; side_face_index < element_L.faces_[side_index_L].size(); ++side_face_index) {
+                if (element_L.faces_[side_index_L][side_face_index] == i) {
+                    element_L.faces_[side_index_L][side_face_index] = new_face_index;
+                    missing_L = false;
+                    break;
+                }
+            }
+            if (missing_L) {
+                printf("Error: Face %llu could not find itself in its left element, element %llu, side %llu. Results are undefined.\n", i, new_faces[new_face_index].elements_[0], side_index_L);
+            }
+            for (size_t side_face_index = 0; side_face_index < element_R.faces_[side_index_R].size(); ++side_face_index) {
+                if (element_R.faces_[side_index_R][side_face_index] == i) {
+                    element_R.faces_[side_index_R][side_face_index] = new_face_index;
+                    missing_R = false;
+                    break;
+                }
+            }
+            if (missing_R) {
+                printf("Error: Face %llu could not find itself in its right element, element %llu, side %llu. Results are undefined.\n", i, new_faces[new_face_index].elements_[1], side_index_R);
+            }
         }
     }
 }

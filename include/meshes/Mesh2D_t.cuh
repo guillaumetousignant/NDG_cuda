@@ -339,6 +339,15 @@ namespace SEM { namespace Meshes {
     __global__
     auto add_new_received_nodes(size_t n_received_nodes, size_t n_nodes, SEM::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* received_nodes, const bool* missing_received_nodes, size_t* received_nodes_indices, const size_t* received_nodes_block_offsets) -> void;
 
+    __global__
+    auto find_faces_to_delete(size_t n_faces, size_t n_domain_elements, size_t n_elements_send_left, size_t n_elements_send_right, const SEM::Entities::Face2D_t* faces, bool* faces_to_delete) -> void;
+
+    __global__
+    auto move_faces(size_t n_faces, SEM::Entities::Face2D_t* faces, SEM::Entities::Face2D_t* new_faces) -> void;
+
+    __global__
+    auto move_required_faces(size_t n_faces, SEM::Entities::Face2D_t* faces, SEM::Entities::Face2D_t* new_faces, SEM::Entities::Element2D_t* elements, const bool* faces_to_delete, const size_t* faces_to_delete_block_offsets) -> void;
+
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>
     __device__ 
@@ -525,17 +534,17 @@ namespace SEM { namespace Meshes {
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>
     __global__ 
-    auto reduce_received_nodes(size_t n_received_nodes, const bool* missing_received_nodes, size_t* g_odata) -> void {
+    auto reduce_bools(size_t n, const bool* data, size_t* g_odata) -> void {
         __shared__ size_t sdata[(blockSize >= 64) ? blockSize : blockSize + blockSize/2]; // Because within a warp there is no branching and this is read up until blockSize + blockSize/2
         unsigned int tid = threadIdx.x;
         size_t i = blockIdx.x*(blockSize*2) + tid;
         unsigned int gridSize = blockSize*2*gridDim.x;
         sdata[tid] = 0;
 
-        while (i < n_received_nodes) { 
-            sdata[tid] += missing_received_nodes[i];
-            if (i+blockSize < n_received_nodes) {
-                sdata[tid] += missing_received_nodes[i+blockSize];
+        while (i < n) { 
+            sdata[tid] += data[i];
+            if (i+blockSize < n) {
+                sdata[tid] += data[i+blockSize];
             }
             i += gridSize; 
         }
