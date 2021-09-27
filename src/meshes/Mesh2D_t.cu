@@ -2617,14 +2617,18 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
         }
         device_boundary_elements_to_delete_refine_array.copy_from(host_boundary_elements_to_delete_refine_array, stream_);
 
-
-
-
-
-
-
-
         device_vector<Element2D_t> new_elements(n_elements_new[global_rank] + elements_.size() - n_elements_ + n_boundary_elements_to_add - n_boundary_elements_to_delete, stream_); // What about boundary elements?
+        
+        // Now we move carried over elements
+        const size_t n_elements_move = n_elements_ - n_elements_send_left[global_rank] - n_elements_send_right[global_rank];
+        const int move_numBlocks = (n_elements_move + elements_blockSize_ - 1) / elements_blockSize_;
+        SEM::Meshes::move_elements<<<move_numBlocks, elements_blockSize_, 0, stream_>>>(n_elements_move, n_elements_send_left[global_rank], n_elements_recv_left[global_rank], elements_.data(), new_elements.data(), new_faces.data());
+
+        SEM::Meshes::move_boundary_elements<<<ghosts_numBlocks_, boundaries_blockSize_, 0, stream_>>>(boundary_elements_to_delete.size(), n_elements_, elements_.data(), new_elements.data(), new_faces.data(), boundary_elements_to_delete.data(), device_boundary_elements_to_delete_refine_array.data());
+
+
+
+
 
 
         if (n_elements_recv_left[global_rank] > 0) {
@@ -2663,10 +2667,6 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
             n_neighbours_arrays.clear(stream_);
         }
         
-        // We need to move remaining elements
-        const size_t n_elements_move = n_elements_ - n_elements_send_left[global_rank] - n_elements_send_right[global_rank];
-        const int move_numBlocks = (n_elements_move + elements_blockSize_ - 1) / elements_blockSize_;
-        SEM::Meshes::move_elements<<<move_numBlocks, elements_blockSize_, 0, stream_>>>(n_elements_move, n_elements_send_left[global_rank], n_elements_recv_left[global_rank], elements_.data(), new_elements.data());
 
 
 
@@ -6734,7 +6734,7 @@ auto SEM::Meshes::get_neighbours(size_t n_elements_send,
 }
 
 __global__
-auto SEM::Meshes::move_elements(size_t n_elements_move, size_t n_elements_send_left, size_t n_elements_recv_left, Element2D_t* elements, Element2D_t* new_elements) -> void {
+auto SEM::Meshes::move_elements(size_t n_elements_move, size_t n_elements_send_left, size_t n_elements_recv_left, Element2D_t* elements, Element2D_t* new_elements, Face2D_t* faces) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -6744,6 +6744,15 @@ auto SEM::Meshes::move_elements(size_t n_elements_move, size_t n_elements_send_l
 
         new_elements[destination_element_index].clear_storage();
         new_elements[destination_element_index] = std::move(elements[source_element_index]);
+
+        // We update indices
+        for (size_t i = 0; i < new_elements[destination_element_index].faces_.size()) {
+            for (size_t j = 0; j < new_elements[destination_element_index].faces_[i].size(); ++j) {
+                Face2D_t face = faces[new_elements[destination_element_index].faces_[i][j]];
+                const size_t side_index = face.elements_[1] == source_element_index;
+                face.elements_[side_index] = destination_element_index;
+            }
+        }
     }
 }
 
@@ -7089,6 +7098,51 @@ auto SEM::Meshes::find_mpi_interface_elements_to_delete(size_t n_mpi_interface_e
     for (size_t i = index; i < n_mpi_interface_elements; i += stride) {
         if (mpi_interfaces_new_process_incoming[i] == rank) {
             boundary_elements_to_delete[mpi_interfaces_destination[i] - n_domain_elements] = true;
+        }
+    }
+}
+
+__global__
+auto move_boundary_elements(size_t n_boundary_elements, size_t n_domain_elements, Element2D_t* elements, Element2D_t* new_elements, Face2D_t* faces, const bool* boundary_elements_to_delete, const size_t* boundary_elements_to_delete_block_offsets) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+    const int thread_id = threadIdx.x;
+    const int block_id = blockIdx.x;
+
+    for (size_t i = index; i < n_boundary_elements; i += stride) {
+        if (!boundary_elements_to_delete[i]) {
+            size_t new_boundary_element_index = n_domain_elements + i - boundary_elements_to_delete_block_offsets[block_id];
+            for (size_t j = i - thread_id; j < i; ++j) {
+                new_boundary_element_index -= boundary_elements_to_delete[j];
+            }
+
+            new_elements[new_boundary_element_index].clear_storage();
+            new_elements[new_boundary_element_index] = std::move(elements[i + n_domain_elements]);
+
+            // We check for bad faces and update our indices in good ones
+            size_t n_good_faces = 0;
+            for (size_t j = 0; j < new_elements[new_boundary_element_index].faces_[0].size(); ++j) {
+                const size_t face_index = new_elements[new_boundary_element_index].faces_[0][j];
+                if (face_index != static_cast<size_t>(-1)) {
+                    Face2D_t& face = faces[face_index];
+                    const size_t side_index = face.elements_[1] == i + n_domain_elements;
+                    face.elements_[side_index] = new_boundary_element_index;
+                    ++n_good_faces;
+                }
+            }
+            if (n_good_faces != new_elements[new_boundary_element_index].faces_[0].size()) {
+                cuda_vector<size_t> new_faces(n_good_faces);
+                size_t faces_index = 0;
+                for (size_t j = 0; j < new_elements[new_boundary_element_index].faces_[0].size(); ++j) {
+                    const size_t face_index = new_elements[new_boundary_element_index].faces_[0][j];
+                    if (face_index != static_cast<size_t>(-1)) {
+                        new_faces[faces_index] = face_index;
+                        ++faces_index;
+                    }
+                }
+
+                new_elements[new_boundary_element_index].faces_[0] = std::move(new_faces);
+            }
         }
     }
 }
