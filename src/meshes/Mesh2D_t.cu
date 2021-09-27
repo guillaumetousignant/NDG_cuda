@@ -2459,15 +2459,13 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
             }
         }
 
-        std::vector<size_t> neighbours_arrays_recv_left(n_neighbours_total_left);
-        std::vector<size_t> neighbours_arrays_recv_right(n_neighbours_total_right);
-        std::vector<size_t> neighbours_proc_arrays_recv_left(neighbours_arrays_recv_left.size());
-        std::vector<size_t> neighbours_proc_arrays_recv_right(neighbours_arrays_recv_right.size());
+        std::vector<size_t> neighbours_arrays_recv(n_neighbours_total_left + n_neighbours_total_right);
+        std::vector<size_t> neighbours_proc_arrays_recv(neighbours_arrays_recv.size());
 
         if (n_elements_recv_left[global_rank] > 0) {
             for (size_t i = 0; i < origin_processes_left.size(); ++i) {
                 // Neighbours
-                MPI_Irecv(neighbours_arrays_recv_left.data() + process_neighbour_offset_left[i], process_n_neighbours_left[i], size_t_data_type, origin_processes_left[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank) + 2, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * i + 4]);
+                MPI_Irecv(neighbours_arrays_recv.data() + process_neighbour_offset_left[i], process_n_neighbours_left[i], size_t_data_type, origin_processes_left[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank) + 2, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * i + 4]);
                 MPI_Irecv(neighbours_proc_arrays_recv.data() + process_neighbour_offset_left[i], process_n_neighbours_left[i], size_t_data_type, origin_processes_left[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank) + 3, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * i + 5]);
             }
         }
@@ -2475,8 +2473,8 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
         if (n_elements_recv_right[global_rank] > 0) {
             for (size_t i = 0; i < origin_processes_right.size(); ++i) {
                 // Neighbours
-                MPI_Irecv(neighbours_arrays_recv_right.data() + process_neighbour_offset_right[i], process_n_neighbours_right[i], size_t_data_type, origin_processes_right[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 2, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * (origin_processes_left.size() + i) + 4]);
-                MPI_Irecv(neighbours_proc_arrays_recv.data() + process_neighbour_offset_right[i], process_n_neighbours_right[i], size_t_data_type, origin_processes_right[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 3, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * (origin_processes_left.size() + i) + 5]);
+                MPI_Irecv(neighbours_arrays_recv.data() + n_neighbours_total_left + process_neighbour_offset_right[i], process_n_neighbours_right[i], size_t_data_type, origin_processes_right[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 2, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * (origin_processes_left.size() + i) + 4]);
+                MPI_Irecv(neighbours_proc_arrays_recv.data() + n_neighbours_total_left + process_neighbour_offset_right[i], process_n_neighbours_right[i], size_t_data_type, origin_processes_right[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 3, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * (origin_processes_left.size() + i) + 5]);
             }
         }
 
@@ -2521,7 +2519,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
         }
         // Now something similar for neighbours?
 
-
+        
 
 
 
