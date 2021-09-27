@@ -1476,7 +1476,7 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
                 }
             }
 
-            ghosts_numBlocks_ = (n_elements_ + wall_boundaries_.size() + symmetry_boundaries_.size() + inflow_boundaries_.size() + outflow_boundaries_.size() + interfaces_origin_.size() + mpi_interfaces_destination_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+            ghosts_numBlocks_ = (wall_boundaries_.size() + symmetry_boundaries_.size() + inflow_boundaries_.size() + outflow_boundaries_.size() + interfaces_origin_.size() + mpi_interfaces_destination_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
             mpi_interfaces_incoming_numBlocks_ = (mpi_interfaces_destination_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
 
             // Boundary solution exchange
@@ -1786,7 +1786,7 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
     symmetry_boundaries_numBlocks_ = (symmetry_boundaries_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
     inflow_boundaries_numBlocks_ = (inflow_boundaries_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
     outflow_boundaries_numBlocks_ = (outflow_boundaries_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
-    ghosts_numBlocks_ = (n_elements_ + wall_boundaries_.size() + symmetry_boundaries_.size() + inflow_boundaries_.size() + outflow_boundaries_.size() + interfaces_origin_.size() + mpi_interfaces_destination_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+    ghosts_numBlocks_ = (wall_boundaries_.size() + symmetry_boundaries_.size() + inflow_boundaries_.size() + outflow_boundaries_.size() + interfaces_origin_.size() + mpi_interfaces_destination_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
     interfaces_numBlocks_ = (interfaces_origin_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
     mpi_interfaces_outgoing_numBlocks_ = (mpi_interfaces_origin_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
     mpi_interfaces_incoming_numBlocks_ = (mpi_interfaces_destination_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
@@ -2013,6 +2013,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
         Element2D_t::Datatype element_data_type;
 
         // Sending and receiving
+        size_t n_boundary_elements_to_add_L = 0;
         if (n_elements_send_left[global_rank] > 0) {
             std::vector<Element2D_t> elements_send(n_elements_send_left[global_rank]);
             cudaMemcpyAsync(elements_send.data(), elements_.data(), n_elements_send_left[global_rank] * sizeof(Element2D_t), cudaMemcpyDeviceToHost, stream_);
@@ -2126,6 +2127,12 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
 
             mpi_interfaces_send_requests.insert(std::end(mpi_interfaces_send_requests), std::begin(mpi_interfaces_send_requests_left), std::end(mpi_interfaces_send_requests_left));
 
+            for (size_t i = 0; i < neighbours_arrays_send.size(); ++i) {
+                if (neighbours_proc_arrays_send[i] == global_rank) {
+                    ++n_boundary_elements_to_add_L;
+                }
+            }
+
             solution_arrays.clear(stream_);
             n_neighbours_arrays.clear(stream_);
             nodes_arrays.clear(stream_);
@@ -2141,6 +2148,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
             global_element_offset_current_device.clear(stream_);
         }
 
+        size_t n_boundary_elements_to_add_R = 0;
         if (n_elements_send_right[global_rank] > 0) {
             std::vector<Element2D_t> elements_send(n_elements_send_right[global_rank]);
             cudaMemcpyAsync(elements_send.data(), elements_.data() + n_elements_per_proc[global_rank] - n_elements_send_right[global_rank], n_elements_send_right[global_rank] * sizeof(Element2D_t), cudaMemcpyDeviceToHost, stream_);
@@ -2253,6 +2261,12 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
             }
 
             mpi_interfaces_send_requests.insert(std::end(mpi_interfaces_send_requests), std::begin(mpi_interfaces_send_requests_right), std::end(mpi_interfaces_send_requests_right));
+
+            for (size_t i = 0; i < neighbours_arrays_send.size(); ++i) {
+                if (neighbours_proc_arrays_send[i] == global_rank) {
+                    ++n_boundary_elements_to_add_R;
+                }
+            }
 
             solution_arrays.clear(stream_);
             n_neighbours_arrays.clear(stream_);
@@ -2570,6 +2584,44 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
         }
 
         // Boundary elements
+        // Boundary elements to add
+        size_t n_boundary_elements_to_add = n_boundary_elements_to_add_L + n_boundary_elements_to_add_R;
+        if (n_elements_recv_left[global_rank] + n_elements_recv_right[global_rank] > 0) {
+            for (size_t i = 0; i < neighbours_arrays_recv.size(); ++i) {
+                if (neighbours_proc_arrays_recv[i] != global_rank) {
+                    ++n_boundary_elements_to_add;
+                }
+            }
+        }
+
+        // Boundary elements to delete
+        device_vector<bool> boundary_elements_to_delete(elements_.size() - n_elements_, stream_);
+        if (n_elements_send_left[global_rank] + n_elements_send_right[global_rank] > 0) {
+            SEM::Meshes::find_boundary_elements_to_delete<<<ghosts_numBlocks_, boundaries_blockSize_, 0, stream_>>>(elements_.size() - n_elements_, n_elements_, n_elements_send_left[global_rank], n_elements_send_right[global_rank], elements_.data(), faces_.data(), boundary_elements_to_delete.data());
+        }
+
+        if (n_elements_recv_left[global_rank] + n_elements_recv_right[global_rank] > 0) {
+            SEM::Meshes::find_mpi_interface_elements_to_delete<<<mpi_interfaces_incoming_numBlocks_, boundaries_blockSize_, 0, stream_>>>(mpi_interfaces_destination_.size(), n_elements_, global_rank, mpi_interfaces_destination_.data(), mpi_interfaces_new_process_incoming.data(), boundary_elements_to_delete.data());
+        }
+        device_vector<size_t> device_boundary_elements_to_delete_refine_array(ghosts_numBlocks_, stream_);
+        SEM::Meshes::reduce_bools<boundaries_blockSize_/2><<<ghosts_numBlocks_, boundaries_blockSize_/2, 0, stream_>>>(boundary_elements_to_delete.size(), boundary_elements_to_delete.data(), device_boundary_elements_to_delete_refine_array.data());
+        std::vector<size_t> host_boundary_elements_to_delete_refine_array(device_boundary_elements_to_delete_refine_array.size());
+        device_boundary_elements_to_delete_refine_array.copy_to(host_boundary_elements_to_delete_refine_array, stream_);
+
+        cudaStreamSynchronize(stream_); // So the transfer to host_boundary_elements_to_delete_refine_array is complete
+
+        size_t n_boundary_elements_to_delete = 0;
+        for (int i = 0; i < ghosts_numBlocks_; ++i) {
+            n_boundary_elements_to_delete += host_boundary_elements_to_delete_refine_array[i];
+            host_boundary_elements_to_delete_refine_array[i] = n_boundary_elements_to_delete - host_boundary_elements_to_delete_refine_array[i]; // Current block offset
+        }
+        device_boundary_elements_to_delete_refine_array.copy_from(host_boundary_elements_to_delete_refine_array, stream_);
+
+
+
+
+
+        
 
 
         device_vector<Element2D_t> new_elements(n_elements_new[global_rank], stream_); // What about boundary elements?
@@ -2635,7 +2687,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
         symmetry_boundaries_numBlocks_ = (symmetry_boundaries_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
         inflow_boundaries_numBlocks_ = (inflow_boundaries_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
         outflow_boundaries_numBlocks_ = (outflow_boundaries_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
-        ghosts_numBlocks_ = (n_elements_ + wall_boundaries_.size() + symmetry_boundaries_.size() + inflow_boundaries_.size() + outflow_boundaries_.size() + interfaces_origin_.size() + mpi_interfaces_destination_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+        ghosts_numBlocks_ = (wall_boundaries_.size() + symmetry_boundaries_.size() + inflow_boundaries_.size() + outflow_boundaries_.size() + interfaces_origin_.size() + mpi_interfaces_destination_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
         interfaces_numBlocks_ = (interfaces_origin_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
         mpi_interfaces_outgoing_numBlocks_ = (mpi_interfaces_origin_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
         mpi_interfaces_incoming_numBlocks_ = (mpi_interfaces_destination_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
@@ -2731,6 +2783,8 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
 
         // Clearing created arrays, so it is done asynchronously 
         received_node_indices.clear(stream_);
+        boundary_elements_to_delete.clear(stream_);
+        device_boundary_elements_to_delete_refine_array.clear(stream_);
         new_elements.clear(stream_);
         new_faces.clear(stream_);
         new_x_output_device.clear(stream_);
@@ -6969,6 +7023,43 @@ auto SEM::Meshes::move_required_faces(size_t n_faces, Face2D_t* faces, Face2D_t*
             if (missing_R) {
                 printf("Error: Face %llu could not find itself in its right element, element %llu, side %llu. Results are undefined.\n", i, new_faces[new_face_index].elements_[1], side_index_R);
             }
+        }
+    }
+}
+
+__global__
+auto SEM::Meshes::find_boundary_elements_to_delete(size_t n_boundary_elements, size_t n_domain_elements, size_t n_elements_send_left, size_t n_elements_send_right, const Element2D_t* elements, const Face2D_t* faces, bool* boundary_elements_to_delete) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t i = index; i < n_boundary_elements; i += stride) {
+        const size_t element_index = i + n_domain_elements;
+        const Element2D_t& element = elements[element_index];
+
+        boundary_elements_to_delete[i] = true;
+
+        for (size_t j = 0; j < element.faces_[0].size(); ++j) {
+            const size_t face_index = element.faces_[0][j];
+            const Face2D_t& face = faces[face_index];
+            const size_t side_index = face.elements_[0] == element_index;
+            const size_t other_element_index = face.elements_[side_index];
+
+            if (other_element_index > n_elements_send_left && other_element_index < n_domain_elements - n_elements_send_right) {
+                boundary_elements_to_delete[i] = false;
+                break;
+            }
+        }
+    }
+}
+
+__global__
+auto SEM::Meshes::find_mpi_interface_elements_to_delete(size_t n_mpi_interface_elements, size_t n_domain_elements, int rank, const size_t* mpi_interfaces_destination, const int* mpi_interfaces_new_process_incoming, bool* boundary_elements_to_delete) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t i = index; i < n_mpi_interface_elements; i += stride) {
+        if (mpi_interfaces_new_process_incoming[i] == rank) {
+            boundary_elements_to_delete[mpi_interfaces_destination[i] - n_domain_elements] = true;
         }
     }
 }

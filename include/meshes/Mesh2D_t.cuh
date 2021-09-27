@@ -348,6 +348,12 @@ namespace SEM { namespace Meshes {
     __global__
     auto move_required_faces(size_t n_faces, SEM::Entities::Face2D_t* faces, SEM::Entities::Face2D_t* new_faces, SEM::Entities::Element2D_t* elements, const bool* faces_to_delete, const size_t* faces_to_delete_block_offsets) -> void;
 
+    __global__
+    auto find_boundary_elements_to_delete(size_t n_boundary_elements, size_t n_domain_elements, size_t n_elements_send_left, size_t n_elements_send_right, const SEM::Entities::Element2D_t* elements, const SEM::Entities::Face2D_t* faces, bool* boundary_elements_to_delete) -> void;
+
+    __global__
+    auto find_mpi_interface_elements_to_delete(size_t n_mpi_interface_elements, size_t n_domain_element, const size_t* mpi_interfaces_destination, const int* mpi_interfaces_new_process_incoming, bool* boundary_elements_to_delete) -> void;
+
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>
     __device__ 
