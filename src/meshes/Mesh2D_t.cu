@@ -2536,10 +2536,43 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
         // Faces
         // Faces to add
         size_t n_faces_to_add = 0;
-        if (n_elements_recv_left[global_rank] + n_elements_recv_right[global_rank] > 0) {
-            for (size_t i = 0; i < neighbours_arrays_recv.size(); ++i) {
-                if (neighbours_proc_arrays_recv[i] != global_rank || neighbours_arrays_recv[i] < n_elements_recv_left[global_rank] || neighbours_arrays_recv[i] > n_elements_new[global_rank] - n_elements_recv_right[global_rank]) {
-                    ++n_faces_to_add;
+        size_t neighbour_index = 0;
+        if (n_elements_recv_left[global_rank] > 0) {
+            for (size_t i = 0; i < n_elements_recv_left[global_rank]; ++i) {
+                const size_t element_index = i;
+                for (size_t j = 0; j < 4; ++j) {
+                    for (size_t k = 0; k < n_neighbours_arrays_recv_left[4 * i + j]; ++k) {
+                        const int neighbour_process = neighbours_proc_arrays_recv[neighbour_index];
+                        const size_t neighbour_element_index = neighbours_arrays_recv[neighbour_index];
+                        ++neighbour_index;
+
+                        if (neighbour_process != global_rank
+                                || neighbours_arrays_recv[i] < n_elements_recv_left[global_rank] && element_index < neighbour_element_index
+                                || neighbours_arrays_recv[i] > n_elements_new[global_rank] - n_elements_recv_right[global_rank] && element_index < neighbour_element_index) {
+
+                            ++n_faces_to_add;
+                        }
+                    }
+                }
+            }
+        }
+        neighbour_index = n_neighbours_total_left; // Maybe error check here? should already be there
+        if (n_elements_recv_right[global_rank] > 0) {
+            for (size_t i = 0; i < n_elements_recv_right[global_rank]; ++i) {
+                const size_t element_index = n_elements_new[global_rank] + 1 - n_elements_recv_right[global_rank] + i;
+                for (size_t j = 0; j < 4; ++j) {
+                    for (size_t k = 0; k < n_neighbours_arrays_recv_right[4 * i + j]; ++k) {
+                        const int neighbour_process = neighbours_proc_arrays_recv[neighbour_index];
+                        const size_t neighbour_element_index = neighbours_arrays_recv[neighbour_index];
+                        ++neighbour_index;
+
+                        if (neighbour_process != global_rank
+                                || neighbours_arrays_recv[i] < n_elements_recv_left[global_rank] && element_index < neighbour_element_index
+                                || neighbours_arrays_recv[i] > n_elements_new[global_rank] - n_elements_recv_right[global_rank] && element_index < neighbour_element_index) {
+
+                            ++n_faces_to_add;
+                        }
+                    }
                 }
             }
         }
@@ -2626,7 +2659,9 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
 
         SEM::Meshes::move_boundary_elements<<<ghosts_numBlocks_, boundaries_blockSize_, 0, stream_>>>(boundary_elements_to_delete.size(), n_elements_, elements_.data(), new_elements.data(), new_faces.data(), boundary_elements_to_delete.data(), device_boundary_elements_to_delete_refine_array.data());
 
+        // Now we create the new stuff
 
+        // And adjust boundaries etc
 
 
 
