@@ -357,6 +357,9 @@ namespace SEM { namespace Meshes {
     __global__
     auto move_boundary_elements(size_t n_boundary_elements, size_t n_domain_elements, SEM::Entities::Element2D_t* elements, SEM::Entities::Element2D_t* new_elements, SEM::Entities::Face2D_t* faces, const bool* boundary_elements_to_delete, const size_t* boundary_elements_to_delete_block_offsets) -> void;
 
+    __global__
+    auto find_boundaries_to_delete(size_t n_boundary_elements, size_t n_domain_elements, const size_t* boundary, const bool* boundary_elements_to_delete, bool* boundaries_to_delete) -> void;
+
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>
     __device__ 
