@@ -2665,8 +2665,11 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
             if (wall_boundaries_.size() > 0) {
                 device_vector<bool> wall_boundaries_to_delete(wall_boundaries_.size(), stream_);
                 SEM::Meshes::find_boundaries_to_delete<<<wall_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(wall_boundaries_.size(), n_elements_, wall_boundaries_.data(), boundary_elements_to_delete.data(), wall_boundaries_to_delete.data());
+                
                 device_vector<size_t> device_wall_boundaries_to_delete_refine_array(wall_boundaries_numBlocks_, stream_);
-
+                SEM::Meshes::reduce_bools<boundaries_blockSize_/2><<<wall_boundaries_numBlocks_, boundaries_blockSize_/2, 0, stream_>>>(wall_boundaries_to_delete.size(), wall_boundaries_to_delete.data(), device_wall_boundaries_to_delete_refine_array.data());
+                std::vector<size_t> host_wall_boundaries_to_delete_refine_array(wall_boundaries_numBlocks_);
+                device_wall_boundaries_to_delete_refine_array.copy_to(host_wall_boundaries_to_delete_refine_array, stream_);
 
                 wall_boundaries_to_delete.clear(stream_);
                 device_wall_boundaries_to_delete_refine_array.clear(stream_);
@@ -2675,8 +2678,11 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
             if (symmetry_boundaries_.size() > 0) {
                 device_vector<bool> symmetry_boundaries_to_delete(symmetry_boundaries_.size(), stream_);
                 SEM::Meshes::find_boundaries_to_delete<<<symmetry_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(symmetry_boundaries_.size(), n_elements_, symmetry_boundaries_.data(), boundary_elements_to_delete.data(), symmetry_boundaries_to_delete.data());
+                
                 device_vector<size_t> device_symmetry_boundaries_to_delete_refine_array(symmetry_boundaries_numBlocks_, stream_);
-
+                SEM::Meshes::reduce_bools<boundaries_blockSize_/2><<<symmetry_boundaries_numBlocks_, boundaries_blockSize_/2, 0, stream_>>>(symmetry_boundaries_to_delete.size(), symmetry_boundaries_to_delete.data(), device_symmetry_boundaries_to_delete_refine_array.data());
+                std::vector<size_t> host_symmetry_boundaries_to_delete_refine_array(symmetry_boundaries_numBlocks_);
+                device_symmetry_boundaries_to_delete_refine_array.copy_to(host_symmetry_boundaries_to_delete_refine_array, stream_);
 
                 symmetry_boundaries_to_delete.clear(stream_);
                 device_symmetry_boundaries_to_delete_refine_array.clear(stream_);
@@ -2685,26 +2691,38 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
             if (inflow_boundaries_.size() > 0) {
                 device_vector<bool> inflow_boundaries_to_delete(inflow_boundaries_.size(), stream_);
                 SEM::Meshes::find_boundaries_to_delete<<<inflow_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(inflow_boundaries_.size(), n_elements_, inflow_boundaries_.data(), boundary_elements_to_delete.data(), inflow_boundaries_to_delete.data());
-                device_vector<size_t> device_inlet_boundaries_to_delete_refine_array(inlet_boundaries_numBlocks_, stream_);
+                
+                device_vector<size_t> device_inflow_boundaries_to_delete_refine_array(inflow_boundaries_numBlocks_, stream_);
+                SEM::Meshes::reduce_bools<boundaries_blockSize_/2><<<inflow_boundaries_numBlocks_, boundaries_blockSize_/2, 0, stream_>>>(inflow_boundaries_to_delete.size(), inflow_boundaries_to_delete.data(), device_inflow_boundaries_to_delete_refine_array.data());
+                std::vector<size_t> host_inflow_boundaries_to_delete_refine_array(inflow_boundaries_numBlocks_);
+                device_inflow_boundaries_to_delete_refine_array.copy_to(host_inflow_boundaries_to_delete_refine_array, stream_);
 
-                inlet_boundaries_to_delete.clear(stream_);
-                device_inlet_boundaries_to_delete_refine_array.clear(stream_);
+                inflow_boundaries_to_delete.clear(stream_);
+                device_inflow_boundaries_to_delete_refine_array.clear(stream_);
             }
 
             if (outflow_boundaries_.size() > 0) {
                 device_vector<bool> outflow_boundaries_to_delete(outflow_boundaries_.size(), stream_);
                 SEM::Meshes::find_boundaries_to_delete<<<outflow_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(outflow_boundaries_.size(), n_elements_, outflow_boundaries_.data(), boundary_elements_to_delete.data(), outflow_boundaries_to_delete.data());
-                device_vector<size_t> device_outlet_boundaries_to_delete_refine_array(outlet_boundaries_numBlocks_, stream_);
+                
+                device_vector<size_t> device_outflow_boundaries_to_delete_refine_array(outflow_boundaries_numBlocks_, stream_);
+                SEM::Meshes::reduce_bools<boundaries_blockSize_/2><<<outflow_boundaries_numBlocks_, boundaries_blockSize_/2, 0, stream_>>>(outflow_boundaries_to_delete.size(), outflow_boundaries_to_delete.data(), device_outflow_boundaries_to_delete_refine_array.data());
+                std::vector<size_t> host_outflow_boundaries_to_delete_refine_array(outflow_boundaries_numBlocks_);
+                device_outflow_boundaries_to_delete_refine_array.copy_to(host_outflow_boundaries_to_delete_refine_array, stream_);
 
-                outlet_boundaries_to_delete.clear(stream_);
-                device_outlet_boundaries_to_delete_refine_array.clear(stream_);
+                outflow_boundaries_to_delete.clear(stream_);
+                device_outflow_boundaries_to_delete_refine_array.clear(stream_);
             }    
         }
 
         if (mpi_interfaces_destination_.size()) {
             device_vector<bool> mpi_destinations_to_delete(mpi_interfaces_destination_.size(), stream_);
             SEM::Meshes::find_boundaries_to_delete<<<mpi_interfaces_incoming_numBlocks_, boundaries_blockSize_, 0, stream_>>>(mpi_interfaces_destination_.size(), n_elements_, mpi_interfaces_destination_.data(), boundary_elements_to_delete.data(), mpi_destinations_to_delete.data());
+            
             device_vector<size_t> device_mpi_destinations_to_delete_refine_array(mpi_interfaces_incoming_numBlocks_, stream_);
+            SEM::Meshes::reduce_bools<boundaries_blockSize_/2><<<mpi_interfaces_incoming_numBlocks_, boundaries_blockSize_/2, 0, stream_>>>(mpi_destinations_to_delete.size(), mpi_destinations_to_delete.data(), device_mpi_destinations_to_delete_refine_array.data());
+            std::vector<size_t> host_mpi_destinations_to_delete_refine_array(mpi_interfaces_incoming_numBlocks_);
+            device_mpi_destinations_to_delete_refine_array.copy_to(host_mpi_destinations_to_delete_refine_array, stream_);
 
             mpi_destinations_to_delete.clear(stream_);
             device_mpi_destinations_to_delete_refine_array.clear(stream_);
