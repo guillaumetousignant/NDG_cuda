@@ -120,7 +120,7 @@ auto main(int argc, char* argv[]) -> int {
         std::cout << '\t' <<  "--n"                   <<  '\t' <<  "Initial polynomial order in elements. Defaults to [8]" << std::endl;
         std::cout << '\t' <<  "--n_max"               <<  '\t' <<  "Maximum polynomial order in elements. Defaults to [16]" << std::endl;
         std::cout << '\t' <<  "--max_splits"          <<  '\t' <<  "Maximum number of times an elements can split. Defaults to [3]" << std::endl;
-        std::cout << '\t' <<  "--n_points"            <<  '\t' <<  "Number of interpolation points in elements. Defaults to [n_max²]" << std::endl;
+        std::cout << '\t' <<  "--n_points"            <<  '\t' <<  "Number of interpolation points in elements. Defaults to [n_max²]. Minimum 2." << std::endl;
         std::cout << '\t' <<  "--adaptivity_interval" <<  '\t' <<  "Number of iterations between adapting the mesh. Defaults to [100]" << std::endl;
         std::cout << '\t' <<  "--cfl"                 <<  '\t' <<  "CFL used for the simulation. Defaults to [0.5]" << std::endl;
         std::cout << '\t' <<  "--viscosity"           <<  '\t' <<  "Viscosity used for the simulation. Defaults to [0.1/π]" << std::endl;
@@ -156,9 +156,14 @@ auto main(int argc, char* argv[]) -> int {
     const deviceFloat tolerance_min = input_parser.getCmdOptionOr("--tolerance_min", static_cast<deviceFloat>(1e-6));
     const deviceFloat tolerance_max = input_parser.getCmdOptionOr("--tolerance_max", static_cast<deviceFloat>(1e-14));
 
+    // Error checking
     if (N_initial > N_max) {
         std::cerr << "Error: Initial N (" << N_initial << ") is greater than maximum N (" << N_max << "). Exiting." << std::endl;
         exit(49);
+    }
+    if (N_interpolation_points < 2) {
+        std::cerr << "Error: Number of interpolation points (" << N_interpolation_points << ") is smaller than 2. Exiting." << std::endl;
+        exit(59);
     }
 
     // MPI ranks
