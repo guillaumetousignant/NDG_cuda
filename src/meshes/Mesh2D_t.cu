@@ -2895,7 +2895,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
         new_device_receiving_interfaces_v.clear(stream_);
         new_device_receiving_interfaces_N.clear(stream_);
         new_device_receiving_interfaces_refine.clear(stream_);
-        ew_device_delta_t_array.clear(stream_);
+        new_device_delta_t_array.clear(stream_);
         new_device_refine_array.clear(stream_);
         new_device_faces_refine_array.clear(stream_);
         new_device_wall_boundaries_refine_array.clear(stream_);
