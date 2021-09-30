@@ -112,10 +112,10 @@ namespace SEM { namespace Entities {
             auto interpolate_from(const Element2D_t& other, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void;
 
             __device__
-            auto interpolate_solution(size_t N_interpolation_points, const std::array<SEM::Entities::Vec2<deviceFloat>, 4>& points, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v) const -> void;
+            auto interpolate_solution(size_t n_interpolation_points, const std::array<SEM::Entities::Vec2<deviceFloat>, 4>& points, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v) const -> void;
 
             __device__
-            auto interpolate_complete_solution(size_t N_interpolation_points, deviceFloat time, const std::array<SEM::Entities::Vec2<deviceFloat>, 4>& points, const deviceFloat* polynomial_nodes, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v, deviceFloat* dp_dt, deviceFloat* du_dt, deviceFloat* dv_dt, deviceFloat* p_analytical_error, deviceFloat* u_analytical_error, deviceFloat* v_analytical_error) const -> void;
+            auto interpolate_complete_solution(size_t n_interpolation_points, deviceFloat time, const std::array<SEM::Entities::Vec2<deviceFloat>, 4>& points, const deviceFloat* polynomial_nodes, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v, deviceFloat* dp_dt, deviceFloat* du_dt, deviceFloat* dv_dt, deviceFloat* p_analytical_error, deviceFloat* u_analytical_error, deviceFloat* v_analytical_error) const -> void;
 
             __device__
             auto allocate_storage() -> void;

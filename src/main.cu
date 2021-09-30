@@ -147,7 +147,7 @@ auto main(int argc, char* argv[]) -> int {
     const int N_max = input_parser.getCmdOptionOr("--n_max", 16);
     const int N_initial = input_parser.getCmdOptionOr("--n", 8);
     const int max_splits = input_parser.getCmdOptionOr("--max_splits", 3);
-    const size_t N_interpolation_points = input_parser.getCmdOptionOr("--n_points", static_cast<size_t>(std::pow(N_max, 2)));
+    const size_t n_interpolation_points = input_parser.getCmdOptionOr("--n_points", static_cast<size_t>(std::pow(N_max, 2)));
     const int adaptivity_interval = input_parser.getCmdOptionOr("--adaptivity_interval", 100);
     const deviceFloat CFL = input_parser.getCmdOptionOr("--cfl", static_cast<deviceFloat>(0.5));
     const deviceFloat viscosity = input_parser.getCmdOptionOr("--viscosity", static_cast<deviceFloat>(0.1/pi));
@@ -161,8 +161,8 @@ auto main(int argc, char* argv[]) -> int {
         std::cerr << "Error: Initial N (" << N_initial << ") is greater than maximum N (" << N_max << "). Exiting." << std::endl;
         exit(49);
     }
-    if (N_interpolation_points < 2) {
-        std::cerr << "Error: Number of interpolation points (" << N_interpolation_points << ") is smaller than 2. Exiting." << std::endl;
+    if (n_interpolation_points < 2) {
+        std::cerr << "Error: Number of interpolation points (" << n_interpolation_points << ") is smaller than 2. Exiting." << std::endl;
         exit(59);
     }
 
@@ -243,8 +243,8 @@ auto main(int argc, char* argv[]) -> int {
     // Initialisation
     auto t_start_init = std::chrono::high_resolution_clock::now();
 
-    SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> NDG(N_max, N_interpolation_points, stream);
-    SEM::Meshes::Mesh2D_t mesh(mesh_file, N_initial, N_max, N_interpolation_points, max_splits, adaptivity_interval, tolerance_min, tolerance_max, NDG.nodes_, stream);
+    SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> NDG(N_max, n_interpolation_points, stream);
+    SEM::Meshes::Mesh2D_t mesh(mesh_file, N_initial, N_max, n_interpolation_points, max_splits, adaptivity_interval, tolerance_min, tolerance_max, NDG.nodes_, stream);
     SEM::Solvers::Solver2D_t solver(CFL, output_times, viscosity);
     SEM::Helpers::DataWriter_t data_writer(output_file);
     mesh.initial_conditions(NDG.nodes_);

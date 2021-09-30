@@ -26,7 +26,7 @@ auto main(int argc, char* argv[]) -> int {
     std::vector<hostFloat> output_times{0.0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00};
 
     const int initial_N = 6;
-    const size_t N_interpolation_points = N_max * 8;
+    const size_t n_interpolation_points = N_max * 8;
 
     // MPI ranks
     MPI_Comm node_communicator;
@@ -50,7 +50,7 @@ auto main(int argc, char* argv[]) -> int {
     // Initialisation
     auto t_start_init = std::chrono::high_resolution_clock::now();
 
-    SEM::Entities::NDG_host_t<SEM::Polynomials::LegendrePolynomial_host_t> NDG(N_max, N_interpolation_points);
+    SEM::Entities::NDG_host_t<SEM::Polynomials::LegendrePolynomial_host_t> NDG(N_max, n_interpolation_points);
     SEM::Meshes::Mesh_host_t mesh(N_elements, initial_N, delta_x_min, x[0], x[1], adaptivity_interval);
     mesh.set_initial_conditions(NDG.nodes_);
 

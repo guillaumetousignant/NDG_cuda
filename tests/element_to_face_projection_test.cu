@@ -266,7 +266,7 @@ TEST_CASE("Element to face projection test", "Projects the edge interpolated sol
     const int N_max = 16;
     const int N_test_faces = 16;
     const int N_test_elements = N_test_faces;
-    const size_t N_interpolation_points = N_max;
+    const size_t n_interpolation_points = N_max;
     constexpr size_t n_elements = 1;
     const double max_error = 1e-9;
 
@@ -276,7 +276,7 @@ TEST_CASE("Element to face projection test", "Projects the edge interpolated sol
     cudaStream_t stream;
     cudaStreamCreate(&stream); 
 
-    SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> NDG(N_max, N_interpolation_points, stream);
+    SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> NDG(N_max, n_interpolation_points, stream);
     SEM::Entities::device_vector<SEM::Entities::Element2D_t> elements(n_elements, stream);
     SEM::Entities::device_vector<SEM::Entities::Face2D_t> faces(4 * n_elements, stream);
 
@@ -378,7 +378,7 @@ TEST_CASE("Element to higher order face face projection test", "Projects the edg
     const int N_max = 16;
     const int N_test_faces = 16;
     const int N_test_elements = N_test_faces - 2;
-    const size_t N_interpolation_points = N_max;
+    const size_t n_interpolation_points = N_max;
     constexpr size_t n_elements = 1;
     const double max_error = 1e-9;
 
@@ -388,7 +388,7 @@ TEST_CASE("Element to higher order face face projection test", "Projects the edg
     cudaStream_t stream;
     cudaStreamCreate(&stream); 
 
-    SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> NDG(N_max, N_interpolation_points, stream);
+    SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> NDG(N_max, n_interpolation_points, stream);
     SEM::Entities::device_vector<SEM::Entities::Element2D_t> elements(n_elements, stream);
     SEM::Entities::device_vector<SEM::Entities::Face2D_t> faces(4 * n_elements, stream);
 
@@ -489,7 +489,7 @@ TEST_CASE("Element to higher order face face projection test", "Projects the edg
 TEST_CASE("Element to two faces projection test", "Projects the edge interpolated solution of an element to two faces per side and checks the values match.") {   
     const int N_max = 16;
     const int N_test = 16;
-    const size_t N_interpolation_points = N_max;
+    const size_t n_interpolation_points = N_max;
     constexpr size_t n_elements = 1;
     const double max_error = 1e-9;
 
@@ -498,7 +498,7 @@ TEST_CASE("Element to two faces projection test", "Projects the edge interpolate
     cudaStream_t stream;
     cudaStreamCreate(&stream); 
 
-    SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> NDG(N_max, N_interpolation_points, stream);
+    SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> NDG(N_max, n_interpolation_points, stream);
     SEM::Entities::device_vector<SEM::Entities::Element2D_t> elements(n_elements, stream);
     SEM::Entities::device_vector<SEM::Entities::Face2D_t> faces(8 * n_elements, stream);
 

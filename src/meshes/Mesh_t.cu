@@ -229,7 +229,7 @@ void SEM::Meshes::Mesh_t::print() {
     std::cout << std::endl;
 }
 
-void SEM::Meshes::Mesh_t::write_file_data(size_t N_interpolation_points, size_t N_elements, deviceFloat time, int rank, const std::vector<deviceFloat>& coordinates, const std::vector<deviceFloat>& velocity, const std::vector<deviceFloat>& du_dx, const std::vector<deviceFloat>& intermediate, const std::vector<deviceFloat>& x_L, const std::vector<deviceFloat>& x_R, const std::vector<int>& N, const std::vector<deviceFloat>& sigma, const bool* refine, const bool* coarsen, const std::vector<deviceFloat>& error, const std::vector<deviceFloat>& delta_x) {
+void SEM::Meshes::Mesh_t::write_file_data(size_t n_interpolation_points, size_t N_elements, deviceFloat time, int rank, const std::vector<deviceFloat>& coordinates, const std::vector<deviceFloat>& velocity, const std::vector<deviceFloat>& du_dx, const std::vector<deviceFloat>& intermediate, const std::vector<deviceFloat>& x_L, const std::vector<deviceFloat>& x_R, const std::vector<int>& N, const std::vector<deviceFloat>& sigma, const bool* refine, const bool* coarsen, const std::vector<deviceFloat>& error, const std::vector<deviceFloat>& delta_x) {
     fs::path save_dir = fs::current_path() / "data";
     fs::create_directory(save_dir);
 
@@ -242,13 +242,13 @@ void SEM::Meshes::Mesh_t::write_file_data(size_t N_interpolation_points, size_t 
     file << "VARIABLES = \"X\", \"U_x\", \"U_x_prime\", \"intermediate\"" << std::endl;
 
     for (size_t i = 0; i < N_elements; ++i) {
-        file << "ZONE T= \"Zone " << i + 1 << "\",  I= " << N_interpolation_points << ",  J= 1,  DATAPACKING = POINT, SOLUTIONTIME = " << time << std::endl;
+        file << "ZONE T= \"Zone " << i + 1 << "\",  I= " << n_interpolation_points << ",  J= 1,  DATAPACKING = POINT, SOLUTIONTIME = " << time << std::endl;
 
-        for (size_t j = 0; j < N_interpolation_points; ++j) {
-            file       << std::setw(12) << coordinates[i*N_interpolation_points + j] 
-                << " " << std::setw(12) << velocity[i*N_interpolation_points + j]
-                << " " << std::setw(12) << du_dx[i*N_interpolation_points + j]
-                << " " << std::setw(12) << intermediate[i*N_interpolation_points + j] << std::endl;
+        for (size_t j = 0; j < n_interpolation_points; ++j) {
+            file       << std::setw(12) << coordinates[i*n_interpolation_points + j] 
+                << " " << std::setw(12) << velocity[i*n_interpolation_points + j]
+                << " " << std::setw(12) << du_dx[i*n_interpolation_points + j]
+                << " " << std::setw(12) << intermediate[i*n_interpolation_points + j] << std::endl;
         }
     }
 
@@ -278,7 +278,7 @@ void SEM::Meshes::Mesh_t::write_file_data(size_t N_interpolation_points, size_t 
     file_element.close();
 }
 
-void SEM::Meshes::Mesh_t::write_data(deviceFloat time, size_t N_interpolation_points, const deviceFloat* interpolation_matrices) {
+void SEM::Meshes::Mesh_t::write_data(deviceFloat time, size_t n_interpolation_points, const deviceFloat* interpolation_matrices) {
     deviceFloat* x;
     deviceFloat* phi;
     deviceFloat* phi_prime;
@@ -291,10 +291,10 @@ void SEM::Meshes::Mesh_t::write_data(deviceFloat time, size_t N_interpolation_po
     bool* coarsen;
     deviceFloat* error;
     deviceFloat* delta_x;
-    std::vector<deviceFloat> host_x(N_elements_ * N_interpolation_points);
-    std::vector<deviceFloat> host_phi(N_elements_ * N_interpolation_points);
-    std::vector<deviceFloat> host_phi_prime(N_elements_ * N_interpolation_points);
-    std::vector<deviceFloat> host_intermediate(N_elements_ * N_interpolation_points);
+    std::vector<deviceFloat> host_x(N_elements_ * n_interpolation_points);
+    std::vector<deviceFloat> host_phi(N_elements_ * n_interpolation_points);
+    std::vector<deviceFloat> host_phi_prime(N_elements_ * n_interpolation_points);
+    std::vector<deviceFloat> host_intermediate(N_elements_ * n_interpolation_points);
     std::vector<deviceFloat> host_x_L(N_elements_);
     std::vector<deviceFloat> host_x_R(N_elements_);
     std::vector<int> host_N(N_elements_);
@@ -303,10 +303,10 @@ void SEM::Meshes::Mesh_t::write_data(deviceFloat time, size_t N_interpolation_po
     bool* host_coarsen = new bool[N_elements_]; // Like they won't be an array of bools but packed in integers, in which case getting them from Cuda will fail.
     std::vector<deviceFloat> host_error(N_elements_);
     std::vector<deviceFloat> host_delta_x(N_elements_);
-    cudaMalloc(&x, N_elements_ * N_interpolation_points * sizeof(deviceFloat));
-    cudaMalloc(&phi, N_elements_ * N_interpolation_points * sizeof(deviceFloat));
-    cudaMalloc(&phi_prime, N_elements_ * N_interpolation_points * sizeof(deviceFloat));
-    cudaMalloc(&intermediate, N_elements_ * N_interpolation_points * sizeof(deviceFloat));
+    cudaMalloc(&x, N_elements_ * n_interpolation_points * sizeof(deviceFloat));
+    cudaMalloc(&phi, N_elements_ * n_interpolation_points * sizeof(deviceFloat));
+    cudaMalloc(&phi_prime, N_elements_ * n_interpolation_points * sizeof(deviceFloat));
+    cudaMalloc(&intermediate, N_elements_ * n_interpolation_points * sizeof(deviceFloat));
     cudaMalloc(&x_L, N_elements_ * sizeof(deviceFloat));
     cudaMalloc(&x_R, N_elements_ * sizeof(deviceFloat));
     cudaMalloc(&N, N_elements_ * sizeof(int));
@@ -316,12 +316,12 @@ void SEM::Meshes::Mesh_t::write_data(deviceFloat time, size_t N_interpolation_po
     cudaMalloc(&error, N_elements_ * sizeof(deviceFloat));
     cudaMalloc(&delta_x, N_elements_ * sizeof(deviceFloat));
 
-    SEM::Entities::get_solution<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, N_interpolation_points, elements_, interpolation_matrices, x, phi, phi_prime, intermediate, x_L, x_R, N, sigma, refine, coarsen, error, delta_x);
+    SEM::Entities::get_solution<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, n_interpolation_points, elements_, interpolation_matrices, x, phi, phi_prime, intermediate, x_L, x_R, N, sigma, refine, coarsen, error, delta_x);
     
-    cudaMemcpy(host_x.data(), x , N_elements_ * N_interpolation_points * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_phi.data(), phi, N_elements_ * N_interpolation_points * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_phi_prime.data(), phi_prime, N_elements_ * N_interpolation_points * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_intermediate.data(), intermediate, N_elements_ * N_interpolation_points * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_x.data(), x , N_elements_ * n_interpolation_points * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_phi.data(), phi, N_elements_ * n_interpolation_points * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_phi_prime.data(), phi_prime, N_elements_ * n_interpolation_points * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_intermediate.data(), intermediate, N_elements_ * n_interpolation_points * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_x_L.data(), x_L, N_elements_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_x_R.data(), x_R, N_elements_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_N.data(), N, N_elements_ * sizeof(int), cudaMemcpyDeviceToHost);
@@ -334,7 +334,7 @@ void SEM::Meshes::Mesh_t::write_data(deviceFloat time, size_t N_interpolation_po
     int global_rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
     
-    write_file_data(N_interpolation_points, N_elements_, time, global_rank, host_x, host_phi, host_phi_prime, host_intermediate, host_x_L, host_x_R, host_N, host_sigma, host_refine, host_coarsen, host_error, host_delta_x);
+    write_file_data(n_interpolation_points, N_elements_, time, global_rank, host_x, host_phi, host_phi_prime, host_intermediate, host_x_L, host_x_R, host_N, host_sigma, host_refine, host_coarsen, host_error, host_delta_x);
 
     delete[] host_refine;
     delete[] host_coarsen;

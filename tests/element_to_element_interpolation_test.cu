@@ -115,7 +115,7 @@ auto element_to_element_projection_init_2(int N, int N_high, size_t n_elements, 
 TEST_CASE("Element to smaller element projection test", "Projects the solution from one element to a smaller one, as in h-adaptivity and checks the values match.") {   
     const int N_max = 16;
     const int N_test = 16;
-    const size_t N_interpolation_points = N_max;
+    const size_t n_interpolation_points = N_max;
     constexpr size_t n_elements = 1;
     const double max_error = 1e-9;
 
@@ -124,7 +124,7 @@ TEST_CASE("Element to smaller element projection test", "Projects the solution f
     cudaStream_t stream;
     cudaStreamCreate(&stream); 
 
-    SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> NDG(N_max, N_interpolation_points, stream);
+    SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> NDG(N_max, n_interpolation_points, stream);
     SEM::Entities::device_vector<SEM::Entities::Element2D_t> elements(n_elements, stream);
     SEM::Entities::device_vector<SEM::Entities::Element2D_t> elements_small(n_elements, stream);
 
@@ -196,7 +196,7 @@ TEST_CASE("Element to higher order element projection test", "Projects the solut
     const int N_max = 16;
     const int N_test = 16;
     const int N_test_low = N_test - 2;
-    const size_t N_interpolation_points = N_max;
+    const size_t n_interpolation_points = N_max;
     constexpr size_t n_elements = 1;
     const double max_error = 1e-9;
 
@@ -206,7 +206,7 @@ TEST_CASE("Element to higher order element projection test", "Projects the solut
     cudaStream_t stream;
     cudaStreamCreate(&stream); 
 
-    SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> NDG(N_max, N_interpolation_points, stream);
+    SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> NDG(N_max, n_interpolation_points, stream);
     SEM::Entities::device_vector<SEM::Entities::Element2D_t> elements(n_elements, stream);
     SEM::Entities::device_vector<SEM::Entities::Element2D_t> elements_high(n_elements, stream);
 

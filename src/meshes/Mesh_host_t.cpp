@@ -203,7 +203,7 @@ void SEM::Meshes::Mesh_host_t::print() {
     std::cout << std::endl;
 }
 
-void SEM::Meshes::Mesh_host_t::write_file_data(size_t N_interpolation_points, size_t N_elements, hostFloat time, int rank, const std::vector<hostFloat>& velocity, const std::vector<hostFloat>& coordinates, const std::vector<hostFloat>& du_dx, const std::vector<hostFloat>& intermediate, const std::vector<hostFloat>& x_L, const std::vector<hostFloat>& x_R, const std::vector<int>& N, const std::vector<hostFloat>& sigma, const std::vector<bool>& refine, const std::vector<bool>& coarsen, const std::vector<hostFloat>& error) {
+void SEM::Meshes::Mesh_host_t::write_file_data(size_t n_interpolation_points, size_t N_elements, hostFloat time, int rank, const std::vector<hostFloat>& velocity, const std::vector<hostFloat>& coordinates, const std::vector<hostFloat>& du_dx, const std::vector<hostFloat>& intermediate, const std::vector<hostFloat>& x_L, const std::vector<hostFloat>& x_R, const std::vector<int>& N, const std::vector<hostFloat>& sigma, const std::vector<bool>& refine, const std::vector<bool>& coarsen, const std::vector<hostFloat>& error) {
     fs::path save_dir = fs::current_path() / "data";
     fs::create_directory(save_dir);
 
@@ -216,13 +216,13 @@ void SEM::Meshes::Mesh_host_t::write_file_data(size_t N_interpolation_points, si
     file << "VARIABLES = \"X\", \"U_x\", \"U_x_prime\", \"intermediate\"" << std::endl;
 
     for (size_t i = 0; i < N_elements; ++i) {
-        file << "ZONE T= \"Zone " << i + 1 << "\",  I= " << N_interpolation_points << ",  J= 1,  DATAPACKING = POINT, SOLUTIONTIME = " << time << std::endl;
+        file << "ZONE T= \"Zone " << i + 1 << "\",  I= " << n_interpolation_points << ",  J= 1,  DATAPACKING = POINT, SOLUTIONTIME = " << time << std::endl;
 
-        for (size_t j = 0; j < N_interpolation_points; ++j) {
-            file       << std::setw(12) << coordinates[i*N_interpolation_points + j] 
-                << " " << std::setw(12) << velocity[i*N_interpolation_points + j]
-                << " " << std::setw(12) << du_dx[i*N_interpolation_points + j]
-                << " " << std::setw(12) << intermediate[i*N_interpolation_points + j] << std::endl;
+        for (size_t j = 0; j < n_interpolation_points; ++j) {
+            file       << std::setw(12) << coordinates[i*n_interpolation_points + j] 
+                << " " << std::setw(12) << velocity[i*n_interpolation_points + j]
+                << " " << std::setw(12) << du_dx[i*n_interpolation_points + j]
+                << " " << std::setw(12) << intermediate[i*n_interpolation_points + j] << std::endl;
         }
     }
 
@@ -251,11 +251,11 @@ void SEM::Meshes::Mesh_host_t::write_file_data(size_t N_interpolation_points, si
     file_element.close();
 }
 
-void SEM::Meshes::Mesh_host_t::write_data(hostFloat time, size_t N_interpolation_points, const std::vector<std::vector<hostFloat>>& interpolation_matrices) {
-    std::vector<hostFloat> phi(N_elements_ * N_interpolation_points);
-    std::vector<hostFloat> x(N_elements_ * N_interpolation_points);
-    std::vector<hostFloat> phi_prime(N_elements_ * N_interpolation_points);
-    std::vector<hostFloat> intermediate(N_elements_ * N_interpolation_points);
+void SEM::Meshes::Mesh_host_t::write_data(hostFloat time, size_t n_interpolation_points, const std::vector<std::vector<hostFloat>>& interpolation_matrices) {
+    std::vector<hostFloat> phi(N_elements_ * n_interpolation_points);
+    std::vector<hostFloat> x(N_elements_ * n_interpolation_points);
+    std::vector<hostFloat> phi_prime(N_elements_ * n_interpolation_points);
+    std::vector<hostFloat> intermediate(N_elements_ * n_interpolation_points);
     std::vector<hostFloat> x_L(N_elements_);
     std::vector<hostFloat> x_R(N_elements_);
     std::vector<int> N(N_elements_);
@@ -264,12 +264,12 @@ void SEM::Meshes::Mesh_host_t::write_data(hostFloat time, size_t N_interpolation
     std::vector<bool> coarsen(N_elements_);
     std::vector<hostFloat> error(N_elements_);
 
-    get_solution(N_interpolation_points, interpolation_matrices, phi, x, phi_prime, intermediate, x_L, x_R, N, sigma, refine, coarsen, error);
+    get_solution(n_interpolation_points, interpolation_matrices, phi, x, phi_prime, intermediate, x_L, x_R, N, sigma, refine, coarsen, error);
 
     int global_rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
     
-    write_file_data(N_interpolation_points, N_elements_, time, global_rank, phi, x, phi_prime, intermediate, x_L, x_R, N, sigma, refine, coarsen, error);
+    write_file_data(n_interpolation_points, N_elements_, time, global_rank, phi, x, phi_prime, intermediate, x_L, x_R, N, sigma, refine, coarsen, error);
 }
 
 template void SEM::Meshes::Mesh_host_t::solve(const hostFloat CFL, const std::vector<hostFloat> output_times, const SEM::Entities::NDG_host_t<SEM::Polynomials::ChebyshevPolynomial_host_t> &NDG, hostFloat viscosity); // Get with the times c++, it's crazy I have to do this
@@ -460,12 +460,12 @@ hostFloat SEM::Meshes::Mesh_host_t::g(hostFloat x) {
     return -std::sin(pi * x);
 }
 
-void SEM::Meshes::Mesh_host_t::get_solution(size_t N_interpolation_points, const std::vector<std::vector<hostFloat>>& interpolation_matrices, std::vector<hostFloat>& phi, std::vector<hostFloat>& x, std::vector<hostFloat>& phi_prime, std::vector<hostFloat>& intermediate, std::vector<hostFloat>& x_L, std::vector<hostFloat>& x_R, std::vector<int>& N, std::vector<hostFloat>& sigma, std::vector<bool>& refine, std::vector<bool>& coarsen, std::vector<hostFloat>& error) {
+void SEM::Meshes::Mesh_host_t::get_solution(size_t n_interpolation_points, const std::vector<std::vector<hostFloat>>& interpolation_matrices, std::vector<hostFloat>& phi, std::vector<hostFloat>& x, std::vector<hostFloat>& phi_prime, std::vector<hostFloat>& intermediate, std::vector<hostFloat>& x_L, std::vector<hostFloat>& x_R, std::vector<int>& N, std::vector<hostFloat>& sigma, std::vector<bool>& refine, std::vector<bool>& coarsen, std::vector<hostFloat>& error) {
     for (size_t i = 0; i < N_elements_; ++i) {
-        const size_t offset_interp_1D = i * N_interpolation_points;
-        const size_t step = N_interpolation_points/(elements_[i].N_ + 1);
+        const size_t offset_interp_1D = i * n_interpolation_points;
+        const size_t step = n_interpolation_points/(elements_[i].N_ + 1);
 
-        for (size_t j = 0; j < N_interpolation_points; ++j) {
+        for (size_t j = 0; j < n_interpolation_points; ++j) {
             phi[offset_interp_1D + j] = 0.0f;
             phi_prime[offset_interp_1D + j] = 0.0f;
             for (int k = 0; k <= elements_[i].N_; ++k) {
@@ -473,7 +473,7 @@ void SEM::Meshes::Mesh_host_t::get_solution(size_t N_interpolation_points, const
                 phi_prime[offset_interp_1D + j] += interpolation_matrices[elements_[i].N_][j * (elements_[i].N_ + 1) + k] * elements_[i].phi_prime_[k];
             }
             intermediate[offset_interp_1D + j] = elements_[i].intermediate_[std::min(static_cast<int>(j/step), elements_[i].N_)];
-            x[offset_interp_1D + j] = j * (elements_[i].x_[1] - elements_[i].x_[0]) / (N_interpolation_points - 1) + elements_[i].x_[0];
+            x[offset_interp_1D + j] = j * (elements_[i].x_[1] - elements_[i].x_[0]) / (n_interpolation_points - 1) + elements_[i].x_[0];
         }
 
         x_L[i] = elements_[i].x_[0];

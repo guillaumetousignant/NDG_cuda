@@ -29,7 +29,7 @@ SEM::Helpers::DataWriter_t::DataWriter_t(fs::path output_filename) :
     }
 }
 
-auto SEM::Helpers::DataWriter_t::write_data(size_t N_interpolation_points, 
+auto SEM::Helpers::DataWriter_t::write_data(size_t n_interpolation_points, 
                                             size_t N_elements, 
                                             deviceFloat time,
                                             const std::vector<deviceFloat>& x, 
@@ -40,27 +40,27 @@ auto SEM::Helpers::DataWriter_t::write_data(size_t N_interpolation_points,
 
     // Creating points
     vtkNew<vtkPoints> points; // Should bt vtkPoints2D, but unstructured meshes can't take 2D points.
-    points->Allocate(N_elements * N_interpolation_points * N_interpolation_points);
+    points->Allocate(N_elements * n_interpolation_points * n_interpolation_points);
     for (size_t element_index = 0; element_index < N_elements; ++element_index) {
-        const size_t offset = element_index * N_interpolation_points * N_interpolation_points;
-        for (size_t i = 0; i < N_interpolation_points; ++i) {
-            for (size_t j = 0; j < N_interpolation_points; ++j) {
-                points->InsertPoint(offset + i * N_interpolation_points + j, x[offset + i * N_interpolation_points + j], y[offset + i * N_interpolation_points + j], 0);
+        const size_t offset = element_index * n_interpolation_points * n_interpolation_points;
+        for (size_t i = 0; i < n_interpolation_points; ++i) {
+            for (size_t j = 0; j < n_interpolation_points; ++j) {
+                points->InsertPoint(offset + i * n_interpolation_points + j, x[offset + i * n_interpolation_points + j], y[offset + i * n_interpolation_points + j], 0);
             }
         }
     }
 
     // Creating cells, currently as points (It seems like a bad idea)
     vtkNew<vtkUnstructuredGrid> grid;
-    grid->AllocateExact(N_elements * N_interpolation_points * N_interpolation_points, 4);
+    grid->AllocateExact(N_elements * n_interpolation_points * n_interpolation_points, 4);
     for (size_t element_index = 0; element_index < N_elements; ++element_index) {
-        const size_t offset = element_index * N_interpolation_points * N_interpolation_points;
-        for (size_t i = 0; i < N_interpolation_points - 1; ++i) {
-            for (size_t j = 0; j < N_interpolation_points - 1; ++j) {
-                const std::array<vtkIdType, 4> index {static_cast<vtkIdType>(offset + (i + 1) * N_interpolation_points + j),
-                                                      static_cast<vtkIdType>(offset + (i + 1) * N_interpolation_points + j + 1),
-                                                      static_cast<vtkIdType>(offset + i * N_interpolation_points + j + 1),
-                                                      static_cast<vtkIdType>(offset + i * N_interpolation_points + j)};
+        const size_t offset = element_index * n_interpolation_points * n_interpolation_points;
+        for (size_t i = 0; i < n_interpolation_points - 1; ++i) {
+            for (size_t j = 0; j < n_interpolation_points - 1; ++j) {
+                const std::array<vtkIdType, 4> index {static_cast<vtkIdType>(offset + (i + 1) * n_interpolation_points + j),
+                                                      static_cast<vtkIdType>(offset + (i + 1) * n_interpolation_points + j + 1),
+                                                      static_cast<vtkIdType>(offset + i * n_interpolation_points + j + 1),
+                                                      static_cast<vtkIdType>(offset + i * n_interpolation_points + j)};
                 grid->InsertNextCell(VTK_QUAD, 4, index.data());
             }
         }
@@ -71,14 +71,14 @@ auto SEM::Helpers::DataWriter_t::write_data(size_t N_interpolation_points,
     // Add pressure to each point
     vtkNew<vtkDoubleArray> pressure;
     pressure->SetNumberOfComponents(1);
-    pressure->Allocate(N_elements * N_interpolation_points * N_interpolation_points);
+    pressure->Allocate(N_elements * n_interpolation_points * n_interpolation_points);
     pressure->SetName("Pressure");
 
     for (size_t element_index = 0; element_index < N_elements; ++element_index) {
-        const size_t offset = element_index * N_interpolation_points * N_interpolation_points;
-        for (size_t i = 0; i < N_interpolation_points; ++i) {
-            for (size_t j = 0; j < N_interpolation_points; ++j) {
-                pressure->InsertNextValue(p[offset + i * N_interpolation_points + j]);
+        const size_t offset = element_index * n_interpolation_points * n_interpolation_points;
+        for (size_t i = 0; i < n_interpolation_points; ++i) {
+            for (size_t j = 0; j < n_interpolation_points; ++j) {
+                pressure->InsertNextValue(p[offset + i * n_interpolation_points + j]);
             }
         }
     }
@@ -88,15 +88,15 @@ auto SEM::Helpers::DataWriter_t::write_data(size_t N_interpolation_points,
     // Add velocity to each point
     vtkNew<vtkDoubleArray> velocity;
     velocity->SetNumberOfComponents(2);
-    velocity->Allocate(N_elements * N_interpolation_points * N_interpolation_points * 2);
+    velocity->Allocate(N_elements * n_interpolation_points * n_interpolation_points * 2);
     velocity->SetName("Velocity");
 
     for (size_t element_index = 0; element_index < N_elements; ++element_index) {
-        const size_t offset = element_index * N_interpolation_points * N_interpolation_points;
-        for (size_t i = 0; i < N_interpolation_points; ++i) {
-            for (size_t j = 0; j < N_interpolation_points; ++j) {
-                velocity->InsertNextValue(u[offset + i * N_interpolation_points + j]);
-                velocity->InsertNextValue(v[offset + i * N_interpolation_points + j]);
+        const size_t offset = element_index * n_interpolation_points * n_interpolation_points;
+        for (size_t i = 0; i < n_interpolation_points; ++i) {
+            for (size_t j = 0; j < n_interpolation_points; ++j) {
+                velocity->InsertNextValue(u[offset + i * n_interpolation_points + j]);
+                velocity->InsertNextValue(v[offset + i * n_interpolation_points + j]);
             }
         }
     }
@@ -128,7 +128,7 @@ auto SEM::Helpers::DataWriter_t::write_data(size_t N_interpolation_points,
     }
 }
 
-auto SEM::Helpers::DataWriter_t::write_complete_data(size_t N_interpolation_points, 
+auto SEM::Helpers::DataWriter_t::write_complete_data(size_t n_interpolation_points, 
                                                      size_t N_elements, 
                                                      deviceFloat time,
                                                      const std::vector<deviceFloat>& x, 
@@ -157,27 +157,27 @@ auto SEM::Helpers::DataWriter_t::write_complete_data(size_t N_interpolation_poin
 
     // Creating points
     vtkNew<vtkPoints> points; // Should bt vtkPoints2D, but unstructured meshes can't take 2D points.
-    points->Allocate(N_elements * N_interpolation_points * N_interpolation_points);
+    points->Allocate(N_elements * n_interpolation_points * n_interpolation_points);
     for (size_t element_index = 0; element_index < N_elements; ++element_index) {
-        const size_t offset = element_index * N_interpolation_points * N_interpolation_points;
-        for (size_t i = 0; i < N_interpolation_points; ++i) {
-            for (size_t j = 0; j < N_interpolation_points; ++j) {
-                points->InsertPoint(offset + i * N_interpolation_points + j, x[offset + i * N_interpolation_points + j], y[offset + i * N_interpolation_points + j], 0);
+        const size_t offset = element_index * n_interpolation_points * n_interpolation_points;
+        for (size_t i = 0; i < n_interpolation_points; ++i) {
+            for (size_t j = 0; j < n_interpolation_points; ++j) {
+                points->InsertPoint(offset + i * n_interpolation_points + j, x[offset + i * n_interpolation_points + j], y[offset + i * n_interpolation_points + j], 0);
             }
         }
     }
 
     // Creating cells, currently as points (It seems like a bad idea)
     vtkNew<vtkUnstructuredGrid> grid;
-    grid->AllocateExact(N_elements * N_interpolation_points * N_interpolation_points, 4);
+    grid->AllocateExact(N_elements * n_interpolation_points * n_interpolation_points, 4);
     for (size_t element_index = 0; element_index < N_elements; ++element_index) {
-        const size_t offset = element_index * N_interpolation_points * N_interpolation_points;
-        for (size_t i = 0; i < N_interpolation_points - 1; ++i) {
-            for (size_t j = 0; j < N_interpolation_points - 1; ++j) {
-                const std::array<vtkIdType, 4> index {static_cast<vtkIdType>(offset + (i + 1) * N_interpolation_points + j),
-                                                      static_cast<vtkIdType>(offset + (i + 1) * N_interpolation_points + j + 1),
-                                                      static_cast<vtkIdType>(offset + i * N_interpolation_points + j + 1),
-                                                      static_cast<vtkIdType>(offset + i * N_interpolation_points + j)};
+        const size_t offset = element_index * n_interpolation_points * n_interpolation_points;
+        for (size_t i = 0; i < n_interpolation_points - 1; ++i) {
+            for (size_t j = 0; j < n_interpolation_points - 1; ++j) {
+                const std::array<vtkIdType, 4> index {static_cast<vtkIdType>(offset + (i + 1) * n_interpolation_points + j),
+                                                      static_cast<vtkIdType>(offset + (i + 1) * n_interpolation_points + j + 1),
+                                                      static_cast<vtkIdType>(offset + i * n_interpolation_points + j + 1),
+                                                      static_cast<vtkIdType>(offset + i * n_interpolation_points + j)};
                 grid->InsertNextCell(VTK_QUAD, 4, index.data());
             }
         }
@@ -188,14 +188,14 @@ auto SEM::Helpers::DataWriter_t::write_complete_data(size_t N_interpolation_poin
     // Add pressure to each point
     vtkNew<vtkDoubleArray> pressure;
     pressure->SetNumberOfComponents(1);
-    pressure->Allocate(N_elements * N_interpolation_points * N_interpolation_points);
+    pressure->Allocate(N_elements * n_interpolation_points * n_interpolation_points);
     pressure->SetName("Pressure");
 
     for (size_t element_index = 0; element_index < N_elements; ++element_index) {
-        const size_t offset = element_index * N_interpolation_points * N_interpolation_points;
-        for (size_t i = 0; i < N_interpolation_points; ++i) {
-            for (size_t j = 0; j < N_interpolation_points; ++j) {
-                pressure->InsertNextValue(p[offset + i * N_interpolation_points + j]);
+        const size_t offset = element_index * n_interpolation_points * n_interpolation_points;
+        for (size_t i = 0; i < n_interpolation_points; ++i) {
+            for (size_t j = 0; j < n_interpolation_points; ++j) {
+                pressure->InsertNextValue(p[offset + i * n_interpolation_points + j]);
             }
         }
     }
@@ -205,15 +205,15 @@ auto SEM::Helpers::DataWriter_t::write_complete_data(size_t N_interpolation_poin
     // Add velocity to each point
     vtkNew<vtkDoubleArray> velocity;
     velocity->SetNumberOfComponents(2);
-    velocity->Allocate(N_elements * N_interpolation_points * N_interpolation_points * 2);
+    velocity->Allocate(N_elements * n_interpolation_points * n_interpolation_points * 2);
     velocity->SetName("Velocity");
 
     for (size_t element_index = 0; element_index < N_elements; ++element_index) {
-        const size_t offset = element_index * N_interpolation_points * N_interpolation_points;
-        for (size_t i = 0; i < N_interpolation_points; ++i) {
-            for (size_t j = 0; j < N_interpolation_points; ++j) {
-                velocity->InsertNextValue(u[offset + i * N_interpolation_points + j]);
-                velocity->InsertNextValue(v[offset + i * N_interpolation_points + j]);
+        const size_t offset = element_index * n_interpolation_points * n_interpolation_points;
+        for (size_t i = 0; i < n_interpolation_points; ++i) {
+            for (size_t j = 0; j < n_interpolation_points; ++j) {
+                velocity->InsertNextValue(u[offset + i * n_interpolation_points + j]);
+                velocity->InsertNextValue(v[offset + i * n_interpolation_points + j]);
             }
         }
     }
@@ -223,12 +223,12 @@ auto SEM::Helpers::DataWriter_t::write_complete_data(size_t N_interpolation_poin
     // Add N to each point
     vtkNew<vtkIntArray> N_output;
     N_output->SetNumberOfComponents(1);
-    N_output->Allocate(N_elements * N_interpolation_points * N_interpolation_points);
+    N_output->Allocate(N_elements * n_interpolation_points * n_interpolation_points);
     N_output->SetName("N");
 
     for (size_t element_index = 0; element_index < N_elements; ++element_index) {
-        for (size_t i = 0; i < N_interpolation_points; ++i) {
-            for (size_t j = 0; j < N_interpolation_points; ++j) {
+        for (size_t i = 0; i < n_interpolation_points; ++i) {
+            for (size_t j = 0; j < n_interpolation_points; ++j) {
                 N_output->InsertNextValue(N[element_index]);
             }
         }
@@ -239,12 +239,12 @@ auto SEM::Helpers::DataWriter_t::write_complete_data(size_t N_interpolation_poin
     // Add index to each point
     vtkNew<vtkUnsignedLongLongArray> index;
     index->SetNumberOfComponents(1);
-    index->Allocate(N_elements * N_interpolation_points * N_interpolation_points);
+    index->Allocate(N_elements * n_interpolation_points * n_interpolation_points);
     index->SetName("Index");
 
     for (size_t element_index = 0; element_index < N_elements; ++element_index) {
-        for (size_t i = 0; i < N_interpolation_points; ++i) {
-            for (size_t j = 0; j < N_interpolation_points; ++j) {
+        for (size_t i = 0; i < n_interpolation_points; ++i) {
+            for (size_t j = 0; j < n_interpolation_points; ++j) {
                 index->InsertNextValue(element_index);
             }
         }
@@ -255,12 +255,12 @@ auto SEM::Helpers::DataWriter_t::write_complete_data(size_t N_interpolation_poin
     // Add status to each point
     vtkNew<vtkIntArray> status_output;
     status_output->SetNumberOfComponents(1);
-    status_output->Allocate(N_elements * N_interpolation_points * N_interpolation_points);
+    status_output->Allocate(N_elements * n_interpolation_points * n_interpolation_points);
     status_output->SetName("Status");
 
     for (size_t element_index = 0; element_index < N_elements; ++element_index) {
-        for (size_t i = 0; i < N_interpolation_points; ++i) {
-            for (size_t j = 0; j < N_interpolation_points; ++j) {
+        for (size_t i = 0; i < n_interpolation_points; ++i) {
+            for (size_t j = 0; j < n_interpolation_points; ++j) {
                 status_output->InsertNextValue(status[element_index]);
             }
         }
@@ -271,12 +271,12 @@ auto SEM::Helpers::DataWriter_t::write_complete_data(size_t N_interpolation_poin
     // Add rotation to each point
     vtkNew<vtkIntArray> rotation_output;
     rotation_output->SetNumberOfComponents(1);
-    rotation_output->Allocate(N_elements * N_interpolation_points * N_interpolation_points);
+    rotation_output->Allocate(N_elements * n_interpolation_points * n_interpolation_points);
     rotation_output->SetName("Rotation");
 
     for (size_t element_index = 0; element_index < N_elements; ++element_index) {
-        for (size_t i = 0; i < N_interpolation_points; ++i) {
-            for (size_t j = 0; j < N_interpolation_points; ++j) {
+        for (size_t i = 0; i < n_interpolation_points; ++i) {
+            for (size_t j = 0; j < n_interpolation_points; ++j) {
                 rotation_output->InsertNextValue(rotation[element_index]);
             }
         }
@@ -287,14 +287,14 @@ auto SEM::Helpers::DataWriter_t::write_complete_data(size_t N_interpolation_poin
     // Add pressure derivative to each point
     vtkNew<vtkDoubleArray> pressure_derivative;
     pressure_derivative->SetNumberOfComponents(1);
-    pressure_derivative->Allocate(N_elements * N_interpolation_points * N_interpolation_points);
+    pressure_derivative->Allocate(N_elements * n_interpolation_points * n_interpolation_points);
     pressure_derivative->SetName("PressureDerivative");
 
     for (size_t element_index = 0; element_index < N_elements; ++element_index) {
-        const size_t offset = element_index * N_interpolation_points * N_interpolation_points;
-        for (size_t i = 0; i < N_interpolation_points; ++i) {
-            for (size_t j = 0; j < N_interpolation_points; ++j) {
-                pressure_derivative->InsertNextValue(dp_dt[offset + i * N_interpolation_points + j]);
+        const size_t offset = element_index * n_interpolation_points * n_interpolation_points;
+        for (size_t i = 0; i < n_interpolation_points; ++i) {
+            for (size_t j = 0; j < n_interpolation_points; ++j) {
+                pressure_derivative->InsertNextValue(dp_dt[offset + i * n_interpolation_points + j]);
             }
         }
     }
@@ -304,15 +304,15 @@ auto SEM::Helpers::DataWriter_t::write_complete_data(size_t N_interpolation_poin
     // Add velocity derivative to each point
     vtkNew<vtkDoubleArray> velocity_derivative;
     velocity_derivative->SetNumberOfComponents(2);
-    velocity_derivative->Allocate(N_elements * N_interpolation_points * N_interpolation_points * 2);
+    velocity_derivative->Allocate(N_elements * n_interpolation_points * n_interpolation_points * 2);
     velocity_derivative->SetName("VelocityDerivative");
 
     for (size_t element_index = 0; element_index < N_elements; ++element_index) {
-        const size_t offset = element_index * N_interpolation_points * N_interpolation_points;
-        for (size_t i = 0; i < N_interpolation_points; ++i) {
-            for (size_t j = 0; j < N_interpolation_points; ++j) {
-                velocity_derivative->InsertNextValue(du_dt[offset + i * N_interpolation_points + j]);
-                velocity_derivative->InsertNextValue(dv_dt[offset + i * N_interpolation_points + j]);
+        const size_t offset = element_index * n_interpolation_points * n_interpolation_points;
+        for (size_t i = 0; i < n_interpolation_points; ++i) {
+            for (size_t j = 0; j < n_interpolation_points; ++j) {
+                velocity_derivative->InsertNextValue(du_dt[offset + i * n_interpolation_points + j]);
+                velocity_derivative->InsertNextValue(dv_dt[offset + i * n_interpolation_points + j]);
             }
         }
     }
@@ -322,12 +322,12 @@ auto SEM::Helpers::DataWriter_t::write_complete_data(size_t N_interpolation_poin
     // Add p_error to each point
     vtkNew<vtkDoubleArray> p_error_output;
     p_error_output->SetNumberOfComponents(1);
-    p_error_output->Allocate(N_elements * N_interpolation_points * N_interpolation_points);
+    p_error_output->Allocate(N_elements * n_interpolation_points * n_interpolation_points);
     p_error_output->SetName("PressureError");
 
     for (size_t element_index = 0; element_index < N_elements; ++element_index) {
-        for (size_t i = 0; i < N_interpolation_points; ++i) {
-            for (size_t j = 0; j < N_interpolation_points; ++j) {
+        for (size_t i = 0; i < n_interpolation_points; ++i) {
+            for (size_t j = 0; j < n_interpolation_points; ++j) {
                 p_error_output->InsertNextValue(p_error[element_index]);
             }
         }
@@ -338,12 +338,12 @@ auto SEM::Helpers::DataWriter_t::write_complete_data(size_t N_interpolation_poin
     // Add velocity error to each point
     vtkNew<vtkDoubleArray> velocity_error;
     velocity_error->SetNumberOfComponents(2);
-    velocity_error->Allocate(N_elements * N_interpolation_points * N_interpolation_points * 2);
+    velocity_error->Allocate(N_elements * n_interpolation_points * n_interpolation_points * 2);
     velocity_error->SetName("VelocityError");
 
     for (size_t element_index = 0; element_index < N_elements; ++element_index) {
-        for (size_t i = 0; i < N_interpolation_points; ++i) {
-            for (size_t j = 0; j < N_interpolation_points; ++j) {
+        for (size_t i = 0; i < n_interpolation_points; ++i) {
+            for (size_t j = 0; j < n_interpolation_points; ++j) {
                 velocity_error->InsertNextValue(u_error[element_index]);
                 velocity_error->InsertNextValue(v_error[element_index]);
             }
@@ -355,12 +355,12 @@ auto SEM::Helpers::DataWriter_t::write_complete_data(size_t N_interpolation_poin
     // Add p_sigma to each point
     vtkNew<vtkDoubleArray> p_sigma_output;
     p_sigma_output->SetNumberOfComponents(1);
-    p_sigma_output->Allocate(N_elements * N_interpolation_points * N_interpolation_points);
+    p_sigma_output->Allocate(N_elements * n_interpolation_points * n_interpolation_points);
     p_sigma_output->SetName("PressureSigma");
 
     for (size_t element_index = 0; element_index < N_elements; ++element_index) {
-        for (size_t i = 0; i < N_interpolation_points; ++i) {
-            for (size_t j = 0; j < N_interpolation_points; ++j) {
+        for (size_t i = 0; i < n_interpolation_points; ++i) {
+            for (size_t j = 0; j < n_interpolation_points; ++j) {
                 p_sigma_output->InsertNextValue(p_sigma[element_index]);
             }
         }
@@ -371,12 +371,12 @@ auto SEM::Helpers::DataWriter_t::write_complete_data(size_t N_interpolation_poin
     // Add velocity sigma to each point
     vtkNew<vtkDoubleArray> velocity_sigma;
     velocity_sigma->SetNumberOfComponents(2);
-    velocity_sigma->Allocate(N_elements * N_interpolation_points * N_interpolation_points * 2);
+    velocity_sigma->Allocate(N_elements * n_interpolation_points * n_interpolation_points * 2);
     velocity_sigma->SetName("VelocitySigma");
 
     for (size_t element_index = 0; element_index < N_elements; ++element_index) {
-        for (size_t i = 0; i < N_interpolation_points; ++i) {
-            for (size_t j = 0; j < N_interpolation_points; ++j) {
+        for (size_t i = 0; i < n_interpolation_points; ++i) {
+            for (size_t j = 0; j < n_interpolation_points; ++j) {
                 velocity_sigma->InsertNextValue(u_sigma[element_index]);
                 velocity_sigma->InsertNextValue(v_sigma[element_index]);
             }
@@ -388,14 +388,14 @@ auto SEM::Helpers::DataWriter_t::write_complete_data(size_t N_interpolation_poin
     // Add analytical solution pressure error to each point
     vtkNew<vtkDoubleArray> p_analytical_error_output;
     p_analytical_error_output->SetNumberOfComponents(1);
-    p_analytical_error_output->Allocate(N_elements * N_interpolation_points * N_interpolation_points);
+    p_analytical_error_output->Allocate(N_elements * n_interpolation_points * n_interpolation_points);
     p_analytical_error_output->SetName("PressureAnalyticalError");
 
     for (size_t element_index = 0; element_index < N_elements; ++element_index) {
-        const size_t offset = element_index * N_interpolation_points * N_interpolation_points;
-        for (size_t i = 0; i < N_interpolation_points; ++i) {
-            for (size_t j = 0; j < N_interpolation_points; ++j) {
-                p_analytical_error_output->InsertNextValue(p_analytical_error[offset + i * N_interpolation_points + j]);
+        const size_t offset = element_index * n_interpolation_points * n_interpolation_points;
+        for (size_t i = 0; i < n_interpolation_points; ++i) {
+            for (size_t j = 0; j < n_interpolation_points; ++j) {
+                p_analytical_error_output->InsertNextValue(p_analytical_error[offset + i * n_interpolation_points + j]);
             }
         }
     }
@@ -405,15 +405,15 @@ auto SEM::Helpers::DataWriter_t::write_complete_data(size_t N_interpolation_poin
     // Add analytical solution velocity error to each point
     vtkNew<vtkDoubleArray> velocity_analytical_error;
     velocity_analytical_error->SetNumberOfComponents(2);
-    velocity_analytical_error->Allocate(N_elements * N_interpolation_points * N_interpolation_points * 2);
+    velocity_analytical_error->Allocate(N_elements * n_interpolation_points * n_interpolation_points * 2);
     velocity_analytical_error->SetName("VelocityAnalyticalError");
 
     for (size_t element_index = 0; element_index < N_elements; ++element_index) {
-        const size_t offset = element_index * N_interpolation_points * N_interpolation_points;
-        for (size_t i = 0; i < N_interpolation_points; ++i) {
-            for (size_t j = 0; j < N_interpolation_points; ++j) {
-                velocity_analytical_error->InsertNextValue(u_analytical_error[offset + i * N_interpolation_points + j]);
-                velocity_analytical_error->InsertNextValue(v_analytical_error[offset + i * N_interpolation_points + j]);
+        const size_t offset = element_index * n_interpolation_points * n_interpolation_points;
+        for (size_t i = 0; i < n_interpolation_points; ++i) {
+            for (size_t j = 0; j < n_interpolation_points; ++j) {
+                velocity_analytical_error->InsertNextValue(u_analytical_error[offset + i * n_interpolation_points + j]);
+                velocity_analytical_error->InsertNextValue(v_analytical_error[offset + i * n_interpolation_points + j]);
             }
         }
     }
@@ -423,12 +423,12 @@ auto SEM::Helpers::DataWriter_t::write_complete_data(size_t N_interpolation_poin
     // Add refine to each point
     vtkNew<vtkIntArray> refine_output;
     refine_output->SetNumberOfComponents(1);
-    refine_output->Allocate(N_elements * N_interpolation_points * N_interpolation_points);
+    refine_output->Allocate(N_elements * n_interpolation_points * n_interpolation_points);
     refine_output->SetName("Refine");
 
     for (size_t element_index = 0; element_index < N_elements; ++element_index) {
-        for (size_t i = 0; i < N_interpolation_points; ++i) {
-            for (size_t j = 0; j < N_interpolation_points; ++j) {
+        for (size_t i = 0; i < n_interpolation_points; ++i) {
+            for (size_t j = 0; j < n_interpolation_points; ++j) {
                 refine_output->InsertNextValue(refine[element_index]);
             }
         }
@@ -439,12 +439,12 @@ auto SEM::Helpers::DataWriter_t::write_complete_data(size_t N_interpolation_poin
     // Add coarsen to each point
     vtkNew<vtkIntArray> coarsen_output;
     coarsen_output->SetNumberOfComponents(1);
-    coarsen_output->Allocate(N_elements * N_interpolation_points * N_interpolation_points);
+    coarsen_output->Allocate(N_elements * n_interpolation_points * n_interpolation_points);
     coarsen_output->SetName("Coarsen");
 
     for (size_t element_index = 0; element_index < N_elements; ++element_index) {
-        for (size_t i = 0; i < N_interpolation_points; ++i) {
-            for (size_t j = 0; j < N_interpolation_points; ++j) {
+        for (size_t i = 0; i < n_interpolation_points; ++i) {
+            for (size_t j = 0; j < n_interpolation_points; ++j) {
                 coarsen_output->InsertNextValue(coarsen[element_index]);
             }
         }
@@ -455,12 +455,12 @@ auto SEM::Helpers::DataWriter_t::write_complete_data(size_t N_interpolation_poin
     // Add split level to each point
     vtkNew<vtkIntArray> split_level_output;
     split_level_output->SetNumberOfComponents(1);
-    split_level_output->Allocate(N_elements * N_interpolation_points * N_interpolation_points);
+    split_level_output->Allocate(N_elements * n_interpolation_points * n_interpolation_points);
     split_level_output->SetName("SplitLevel");
 
     for (size_t element_index = 0; element_index < N_elements; ++element_index) {
-        for (size_t i = 0; i < N_interpolation_points; ++i) {
-            for (size_t j = 0; j < N_interpolation_points; ++j) {
+        for (size_t i = 0; i < n_interpolation_points; ++i) {
+            for (size_t j = 0; j < n_interpolation_points; ++j) {
                 split_level_output->InsertNextValue(split_level[element_index]);
             }
         }

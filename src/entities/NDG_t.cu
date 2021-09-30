@@ -18,9 +18,9 @@ template class SEM::Entities::NDG_t<SEM::Polynomials::ChebyshevPolynomial_t>; //
 template class SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t>;
 
 template<typename Polynomial>
-SEM::Entities::NDG_t<Polynomial>::NDG_t(int N_max, size_t N_interpolation_points, const cudaStream_t &stream) : 
+SEM::Entities::NDG_t<Polynomial>::NDG_t(int N_max, size_t n_interpolation_points, const cudaStream_t &stream) : 
         N_max_(N_max), 
-        N_interpolation_points_(N_interpolation_points),
+        N_interpolation_points_(n_interpolation_points),
         vector_length_((N_max_ + 1) * (N_max_ + 2)/2), 
         matrix_length_((N_max_ + 1) * (N_max_ + 2) * (2 * N_max_ + 3)/6),
         interpolation_length_((N_max_ + 1) * (N_max_ + 2) * N_interpolation_points_/2),
@@ -418,17 +418,17 @@ void SEM::Entities::polynomial_derivative_matrices_hat(int N, const deviceFloat*
     }
 }
 
-// Will interpolate N_interpolation_points between -1 and 1
+// Will interpolate n_interpolation_points between -1 and 1
 __global__
-void SEM::Entities::create_interpolation_matrices(int N, size_t N_interpolation_points, const deviceFloat* nodes, const deviceFloat* barycentric_weights, deviceFloat* interpolation_matrices) {
+void SEM::Entities::create_interpolation_matrices(int N, size_t n_interpolation_points, const deviceFloat* nodes, const deviceFloat* barycentric_weights, deviceFloat* interpolation_matrices) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     const size_t offset_1D = N * (N + 1) /2;
-    const size_t offset_interp = N * (N + 1) * N_interpolation_points/2;
+    const size_t offset_interp = N * (N + 1) * n_interpolation_points/2;
 
-    for (size_t j = index; j < N_interpolation_points; j += stride) {
+    for (size_t j = index; j < n_interpolation_points; j += stride) {
         bool row_has_match = false;
-        const deviceFloat x_coord = 2.0f * j / (N_interpolation_points - 1) - 1.0f;
+        const deviceFloat x_coord = 2.0f * j / (n_interpolation_points - 1) - 1.0f;
 
         for (int k = 0; k <= N; ++k) {
             interpolation_matrices[offset_interp + j * (N + 1) + k] = 0.0f;

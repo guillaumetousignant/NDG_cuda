@@ -510,16 +510,16 @@ void SEM::Entities::move_elements(size_t N_elements, Element_t* elements, Elemen
 }
 
 __global__
-void SEM::Entities::get_solution(size_t N_elements, size_t N_interpolation_points, const SEM::Entities::Element_t* elements, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* phi, deviceFloat* phi_prime, deviceFloat* intermediate, deviceFloat* x_L, deviceFloat* x_R, int* N, deviceFloat* sigma, bool* refine, bool* coarsen, deviceFloat* error, deviceFloat* delta_x) {
+void SEM::Entities::get_solution(size_t N_elements, size_t n_interpolation_points, const SEM::Entities::Element_t* elements, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* phi, deviceFloat* phi_prime, deviceFloat* intermediate, deviceFloat* x_L, deviceFloat* x_R, int* N, deviceFloat* sigma, bool* refine, bool* coarsen, deviceFloat* error, deviceFloat* delta_x) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
     for (size_t i = index; i < N_elements; i += stride) {
-        const size_t offset_interp_1D = i * N_interpolation_points;
-        const size_t offset_interp = elements[i].N_ * (elements[i].N_ + 1) * N_interpolation_points/2;
-        const size_t step = N_interpolation_points/(elements[i].N_ + 1);
+        const size_t offset_interp_1D = i * n_interpolation_points;
+        const size_t offset_interp = elements[i].N_ * (elements[i].N_ + 1) * n_interpolation_points/2;
+        const size_t step = n_interpolation_points/(elements[i].N_ + 1);
 
-        for (size_t j = 0; j < N_interpolation_points; ++j) {
+        for (size_t j = 0; j < n_interpolation_points; ++j) {
             phi[offset_interp_1D + j] = 0.0f;
             phi_prime[offset_interp_1D + j] = 0.0f;
             for (int k = 0; k <= elements[i].N_; ++k) {
@@ -527,7 +527,7 @@ void SEM::Entities::get_solution(size_t N_elements, size_t N_interpolation_point
                 phi_prime[offset_interp_1D + j] += interpolation_matrices[offset_interp + j * (elements[i].N_ + 1) + k] * elements[i].phi_prime_[k]; 
             }
             intermediate[offset_interp_1D + j] = elements[i].intermediate_[min(static_cast<int>(j/step), elements[i].N_)];
-            x[offset_interp_1D + j] = j * (elements[i].x_[1] - elements[i].x_[0]) / (N_interpolation_points - 1) + elements[i].x_[0];
+            x[offset_interp_1D + j] = j * (elements[i].x_[1] - elements[i].x_[0]) / (n_interpolation_points - 1) + elements[i].x_[0];
         }
 
         x_L[i] = elements[i].x_[0];

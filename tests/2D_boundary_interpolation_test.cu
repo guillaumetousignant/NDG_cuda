@@ -70,7 +70,7 @@ auto get_boundary_solution(size_t n_elements, const SEM::Entities::Element2D_t* 
 TEST_CASE("2D boundary interpolation test", "Checks the interpolated value of the solution at the element's edges.") {   
     const int N_max = 16;
     const int N_test = 16;
-    const size_t N_interpolation_points = std::pow(N_max, 2);
+    const size_t n_interpolation_points = std::pow(N_max, 2);
     const double max_error = 1e-6;
 
     REQUIRE(N_test <= N_max);
@@ -78,7 +78,7 @@ TEST_CASE("2D boundary interpolation test", "Checks the interpolated value of th
     cudaStream_t stream;
     cudaStreamCreate(&stream); 
     
-    SEM::Entities::NDG_t<SEM::Polynomials::ChebyshevPolynomial_t> NDG(N_max, N_interpolation_points, stream);
+    SEM::Entities::NDG_t<SEM::Polynomials::ChebyshevPolynomial_t> NDG(N_max, n_interpolation_points, stream);
 
     std::vector<SEM::Entities::Element2D_t> host_elements(1);
     host_elements[0].N_ = N_test;

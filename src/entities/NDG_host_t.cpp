@@ -13,9 +13,9 @@ template class SEM::Entities::NDG_host_t<SEM::Polynomials::ChebyshevPolynomial_h
 template class SEM::Entities::NDG_host_t<SEM::Polynomials::LegendrePolynomial_host_t>;
 
 template<typename Polynomial>
-SEM::Entities::NDG_host_t<Polynomial>::NDG_host_t(int N_max, size_t N_interpolation_points) : 
+SEM::Entities::NDG_host_t<Polynomial>::NDG_host_t(int N_max, size_t n_interpolation_points) : 
         N_max_(N_max), 
-        N_interpolation_points_(N_interpolation_points),
+        N_interpolation_points_(n_interpolation_points),
         nodes_(N_max + 1),
         weights_(N_max + 1),
         barycentric_weights_(N_max + 1),
@@ -287,12 +287,12 @@ void SEM::Entities::NDG_host_t<Polynomial>::polynomial_cg_derivative_matrices(in
     }
 }
 
-// Will interpolate N_interpolation_points between -1 and 1
+// Will interpolate n_interpolation_points between -1 and 1
 template<typename Polynomial>
-void SEM::Entities::NDG_host_t<Polynomial>::create_interpolation_matrices(int N, size_t N_interpolation_points, const std::vector<hostFloat>& nodes, const std::vector<hostFloat>& barycentric_weights, std::vector<hostFloat>& interpolation_matrices) {
-    for (size_t j = 0; j < N_interpolation_points; ++j) {
+void SEM::Entities::NDG_host_t<Polynomial>::create_interpolation_matrices(int N, size_t n_interpolation_points, const std::vector<hostFloat>& nodes, const std::vector<hostFloat>& barycentric_weights, std::vector<hostFloat>& interpolation_matrices) {
+    for (size_t j = 0; j < n_interpolation_points; ++j) {
         bool row_has_match = false;
-        const hostFloat x_coord = 2.0 * j / (N_interpolation_points - 1) - 1.0;
+        const hostFloat x_coord = 2.0 * j / (n_interpolation_points - 1) - 1.0;
 
         for (int k = 0; k <= N; ++k) {
             interpolation_matrices[j * (N + 1) + k] = 0.0;

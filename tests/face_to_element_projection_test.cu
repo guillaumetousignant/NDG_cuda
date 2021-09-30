@@ -162,7 +162,7 @@ TEST_CASE("Face to element projection test", "Projects the face flux solution of
     const int N_max = 16;
     const int N_test_faces = 16;
     const int N_test_elements = N_test_faces;
-    const size_t N_interpolation_points = N_max;
+    const size_t n_interpolation_points = N_max;
     constexpr size_t n_faces = 1;
     constexpr size_t n_elements = 2 * n_faces;
     const double max_error = 1e-9;
@@ -180,7 +180,7 @@ TEST_CASE("Face to element projection test", "Projects the face flux solution of
                                                      Vec2<deviceFloat>{1, -1},
                                                      Vec2<deviceFloat>{1, 1}};
 
-    SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> NDG(N_max, N_interpolation_points, stream);
+    SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> NDG(N_max, n_interpolation_points, stream);
     SEM::Entities::device_vector<SEM::Entities::Element2D_t> elements(n_elements, stream);
     SEM::Entities::device_vector<SEM::Entities::Face2D_t> faces(n_faces, stream);
     SEM::Entities::device_vector<Vec2<deviceFloat>> nodes(host_nodes, stream);
@@ -268,7 +268,7 @@ TEST_CASE("Face to lower order element projection test", "Projects the face flux
     const int N_max = 16;
     const int N_test_faces = 16;
     const int N_test_elements = N_test_faces - 2;
-    const size_t N_interpolation_points = N_max;
+    const size_t n_interpolation_points = N_max;
     constexpr size_t n_faces = 1;
     constexpr size_t n_elements = 2 * n_faces;
     const double max_error = 1e-9;
@@ -286,7 +286,7 @@ TEST_CASE("Face to lower order element projection test", "Projects the face flux
                                                      Vec2<deviceFloat>{1, -1},
                                                      Vec2<deviceFloat>{1, 1}};
 
-    SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> NDG(N_max, N_interpolation_points, stream);
+    SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> NDG(N_max, n_interpolation_points, stream);
     SEM::Entities::device_vector<SEM::Entities::Element2D_t> elements(n_elements, stream);
     SEM::Entities::device_vector<SEM::Entities::Face2D_t> faces(n_faces, stream);
     SEM::Entities::device_vector<Vec2<deviceFloat>> nodes(host_nodes, stream);
@@ -373,7 +373,7 @@ TEST_CASE("Face to lower order element projection test", "Projects the face flux
 TEST_CASE("Faces to element projection test", "Projects the face flux solution of two faces to their elements and checks the values match.") {   
     const int N_max = 16;
     const int N_test = 16;
-    const size_t N_interpolation_points = N_max;
+    const size_t n_interpolation_points = N_max;
     constexpr size_t n_faces = 2;
     constexpr size_t n_elements = n_faces;
     const double max_error = 1e-9;
@@ -391,7 +391,7 @@ TEST_CASE("Faces to element projection test", "Projects the face flux solution o
                                                      Vec2<deviceFloat>{1, -1},
                                                      Vec2<deviceFloat>{1, 1}};
 
-    SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> NDG(N_max, N_interpolation_points, stream);
+    SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> NDG(N_max, n_interpolation_points, stream);
     SEM::Entities::device_vector<SEM::Entities::Element2D_t> elements(n_elements, stream);
     SEM::Entities::device_vector<SEM::Entities::Face2D_t> faces(n_faces, stream);
     SEM::Entities::device_vector<Vec2<deviceFloat>> nodes(host_nodes, stream);

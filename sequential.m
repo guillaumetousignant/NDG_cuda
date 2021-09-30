@@ -267,20 +267,20 @@ function phi = DGStepByRK3(t_start, delta_t, c, phi, D_hat, weights, lagrange_in
     end
 end
 
-function ksi = InterpolationPoints(N_interpolation_points)
-    ksi = zeros(N_interpolation_points, 1);
-    for k = 0:N_interpolation_points-1
-        ksi(k+1) = 2 * k / (N_interpolation_points - 1) - 1;
+function ksi = InterpolationPoints(n_interpolation_points)
+    ksi = zeros(n_interpolation_points, 1);
+    for k = 0:n_interpolation_points-1
+        ksi(k+1) = 2 * k / (n_interpolation_points - 1) - 1;
     end
 end
 
 % Algorithm 32
 function interpolation_matrix = PolynomialInterpolationMatrix(ksi, nodes, barycentric_weights) 
     N = length(nodes) - 1;
-    N_interpolation_points = length(ksi);
+    n_interpolation_points = length(ksi);
     interpolation_matrix = zeros(length(ksi), length(nodes));
 
-    for k = 0:N_interpolation_points-1
+    for k = 0:n_interpolation_points-1
         row_has_match = false;
         for j = 0:N
             interpolation_matrix(k+1, j+1) = 0;
@@ -306,10 +306,10 @@ end
 
 % Algorithm 33
 function phi_interpolated = InterpolateToNewPoints(interpolation_matrix, phi)
-    N_interpolation_points = size(interpolation_matrix, 1);
+    n_interpolation_points = size(interpolation_matrix, 1);
     N = length(phi) - 1;
-    phi_interpolated = zeros(N_interpolation_points, 1);
-    for i = 0:N_interpolation_points-1
+    phi_interpolated = zeros(n_interpolation_points, 1);
+    for i = 0:n_interpolation_points-1
         t = 0;
         for j = 0:N
             t = t + interpolation_matrix(i+1, j+1) * phi(j+1);

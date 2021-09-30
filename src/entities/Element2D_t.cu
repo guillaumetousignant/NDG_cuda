@@ -601,25 +601,25 @@ auto SEM::Entities::Element2D_t::interpolate_from(const SEM::Entities::Element2D
 }
 
 __device__
-auto SEM::Entities::Element2D_t::interpolate_solution(size_t N_interpolation_points, const std::array<Vec2<deviceFloat>, 4>& points, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v) const -> void {
-    for (size_t i = 0; i < N_interpolation_points; ++i) {
-        for (size_t j = 0; j < N_interpolation_points; ++j) {
+auto SEM::Entities::Element2D_t::interpolate_solution(size_t n_interpolation_points, const std::array<Vec2<deviceFloat>, 4>& points, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v) const -> void {
+    for (size_t i = 0; i < n_interpolation_points; ++i) {
+        for (size_t j = 0; j < n_interpolation_points; ++j) {
             // x and y
-            const Vec2<deviceFloat> coordinates {static_cast<deviceFloat>(i)/static_cast<deviceFloat>(N_interpolation_points - 1) * 2 - 1, static_cast<deviceFloat>(j)/static_cast<deviceFloat>(N_interpolation_points - 1) * 2 - 1};
+            const Vec2<deviceFloat> coordinates {static_cast<deviceFloat>(i)/static_cast<deviceFloat>(n_interpolation_points - 1) * 2 - 1, static_cast<deviceFloat>(j)/static_cast<deviceFloat>(n_interpolation_points - 1) * 2 - 1};
             const Vec2<deviceFloat> global_coordinates = SEM::quad_map(coordinates, points);
 
-            x[i * N_interpolation_points + j] = global_coordinates.x();
-            y[i * N_interpolation_points + j] = global_coordinates.y();
+            x[i * n_interpolation_points + j] = global_coordinates.x();
+            y[i * n_interpolation_points + j] = global_coordinates.y();
 
             // Pressure, u, and v
-            p[i * N_interpolation_points + j] = 0.0;
-            u[i * N_interpolation_points + j] = 0.0;
-            v[i * N_interpolation_points + j] = 0.0;
+            p[i * n_interpolation_points + j] = 0.0;
+            u[i * n_interpolation_points + j] = 0.0;
+            v[i * n_interpolation_points + j] = 0.0;
             for (int m = 0; m <= N_; ++m) {
                 for (int n = 0; n <= N_; ++n) {
-                    p[i * N_interpolation_points + j] += p_[m * (N_ + 1) + n] * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
-                    u[i * N_interpolation_points + j] += u_[m * (N_ + 1) + n] * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
-                    v[i * N_interpolation_points + j] += v_[m * (N_ + 1) + n] * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
+                    p[i * n_interpolation_points + j] += p_[m * (N_ + 1) + n] * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
+                    u[i * n_interpolation_points + j] += u_[m * (N_ + 1) + n] * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
+                    v[i * n_interpolation_points + j] += v_[m * (N_ + 1) + n] * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
                 }
             }
         }
@@ -627,44 +627,44 @@ auto SEM::Entities::Element2D_t::interpolate_solution(size_t N_interpolation_poi
 }
 
 __device__
-auto SEM::Entities::Element2D_t::interpolate_complete_solution(size_t N_interpolation_points, deviceFloat time, const std::array<Vec2<deviceFloat>, 4>& points, const deviceFloat* polynomial_nodes, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v, deviceFloat* dp_dt, deviceFloat* du_dt, deviceFloat* dv_dt, deviceFloat* p_analytical_error, deviceFloat* u_analytical_error, deviceFloat* v_analytical_error) const -> void {
+auto SEM::Entities::Element2D_t::interpolate_complete_solution(size_t n_interpolation_points, deviceFloat time, const std::array<Vec2<deviceFloat>, 4>& points, const deviceFloat* polynomial_nodes, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v, deviceFloat* dp_dt, deviceFloat* du_dt, deviceFloat* dv_dt, deviceFloat* p_analytical_error, deviceFloat* u_analytical_error, deviceFloat* v_analytical_error) const -> void {
     const int offset_1D = N_ * (N_ + 1) /2;
 
-    for (size_t i = 0; i < N_interpolation_points; ++i) {
-        for (size_t j = 0; j < N_interpolation_points; ++j) {
+    for (size_t i = 0; i < n_interpolation_points; ++i) {
+        for (size_t j = 0; j < n_interpolation_points; ++j) {
             // x and y
-            const Vec2<deviceFloat> coordinates {static_cast<deviceFloat>(i)/static_cast<deviceFloat>(N_interpolation_points - 1) * 2 - 1, static_cast<deviceFloat>(j)/static_cast<deviceFloat>(N_interpolation_points - 1) * 2 - 1};
+            const Vec2<deviceFloat> coordinates {static_cast<deviceFloat>(i)/static_cast<deviceFloat>(n_interpolation_points - 1) * 2 - 1, static_cast<deviceFloat>(j)/static_cast<deviceFloat>(n_interpolation_points - 1) * 2 - 1};
             const Vec2<deviceFloat> global_coordinates = SEM::quad_map(coordinates, points);
 
-            x[i * N_interpolation_points + j] = global_coordinates.x();
-            y[i * N_interpolation_points + j] = global_coordinates.y();
+            x[i * n_interpolation_points + j] = global_coordinates.x();
+            y[i * n_interpolation_points + j] = global_coordinates.y();
 
             // Pressure, u, and v
-            p[i * N_interpolation_points + j] = 0.0;
-            u[i * N_interpolation_points + j] = 0.0;
-            v[i * N_interpolation_points + j] = 0.0;
-            dp_dt[i * N_interpolation_points + j] = 0.0;
-            du_dt[i * N_interpolation_points + j] = 0.0;
-            dv_dt[i * N_interpolation_points + j] = 0.0;
-            p_analytical_error[i * N_interpolation_points + j] = 0.0;
-            u_analytical_error[i * N_interpolation_points + j] = 0.0;
-            v_analytical_error[i * N_interpolation_points + j] = 0.0;
+            p[i * n_interpolation_points + j] = 0.0;
+            u[i * n_interpolation_points + j] = 0.0;
+            v[i * n_interpolation_points + j] = 0.0;
+            dp_dt[i * n_interpolation_points + j] = 0.0;
+            du_dt[i * n_interpolation_points + j] = 0.0;
+            dv_dt[i * n_interpolation_points + j] = 0.0;
+            p_analytical_error[i * n_interpolation_points + j] = 0.0;
+            u_analytical_error[i * n_interpolation_points + j] = 0.0;
+            v_analytical_error[i * n_interpolation_points + j] = 0.0;
             for (int m = 0; m <= N_; ++m) {
                 for (int n = 0; n <= N_; ++n) {
-                    p[i * N_interpolation_points + j] += p_[m * (N_ + 1) + n] * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
-                    u[i * N_interpolation_points + j] += u_[m * (N_ + 1) + n] * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
-                    v[i * N_interpolation_points + j] += v_[m * (N_ + 1) + n] * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
-                    dp_dt[i * N_interpolation_points + j] += G_p_[m * (N_ + 1) + n] * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
-                    du_dt[i * N_interpolation_points + j] += G_u_[m * (N_ + 1) + n] * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
-                    dv_dt[i * N_interpolation_points + j] += G_v_[m * (N_ + 1) + n] * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
+                    p[i * n_interpolation_points + j] += p_[m * (N_ + 1) + n] * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
+                    u[i * n_interpolation_points + j] += u_[m * (N_ + 1) + n] * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
+                    v[i * n_interpolation_points + j] += v_[m * (N_ + 1) + n] * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
+                    dp_dt[i * n_interpolation_points + j] += G_p_[m * (N_ + 1) + n] * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
+                    du_dt[i * n_interpolation_points + j] += G_u_[m * (N_ + 1) + n] * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
+                    dv_dt[i * n_interpolation_points + j] += G_v_[m * (N_ + 1) + n] * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
                 
                     const Vec2<deviceFloat> other_coordinates {polynomial_nodes[offset_1D + m], polynomial_nodes[offset_1D + n]};
                     const Vec2<deviceFloat> other_global_coordinates = SEM::quad_map(other_coordinates, points);
 
                     const std::array<deviceFloat, 3> state = SEM::g(other_global_coordinates, time);
-                    p_analytical_error[i * N_interpolation_points + j] += std::abs(state[0] - p_[m * (N_ + 1) + n]) * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
-                    u_analytical_error[i * N_interpolation_points + j] += std::abs(state[1] - u_[m * (N_ + 1) + n]) * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
-                    v_analytical_error[i * N_interpolation_points + j] += std::abs(state[2] - v_[m * (N_ + 1) + n]) * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
+                    p_analytical_error[i * n_interpolation_points + j] += std::abs(state[0] - p_[m * (N_ + 1) + n]) * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
+                    u_analytical_error[i * n_interpolation_points + j] += std::abs(state[1] - u_[m * (N_ + 1) + n]) * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
+                    v_analytical_error[i * n_interpolation_points + j] += std::abs(state[2] - v_[m * (N_ + 1) + n]) * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
                 }
             }
         }
