@@ -2823,10 +2823,12 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
         }
 
         // Interfaces
-        // Interfaces to add
+        // MPI incoming interfaces to add
         size_t n_mpi_destinations_to_add = 0;
 
-        // Interfaces to delete
+        // MPI incoming interfaces to delete
+        size_t n_mpi_destinations_to_delete = 0;
+
         device_vector<size_t> new_mpi_interfaces_destination;
 
         if (!mpi_interfaces_destination_.empty()) {
@@ -2840,7 +2842,6 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
 
             cudaStreamSynchronize(stream_); // So the transfer to host_mpi_destinations_to_delete_refine_array is complete
 
-            size_t n_mpi_destinations_to_delete = 0;
             for (int i = 0; i < mpi_interfaces_incoming_numBlocks_; ++i) {
                 n_mpi_destinations_to_delete += host_mpi_destinations_to_delete_refine_array[i];
                 host_mpi_destinations_to_delete_refine_array[i] = n_mpi_destinations_to_delete - host_mpi_destinations_to_delete_refine_array[i]; // Current block offset
@@ -2864,6 +2865,22 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
 
             new_new_mpi_interfaces_destination.clear(stream_);
         }
+
+        // MPI outgoing interfaces to add
+        size_t n_mpi_origins_to_add = 0;
+
+        // MPI outgoing interfaces to delete
+        size_t n_mpi_origins_to_delete = 0;
+
+
+        // Self interfaces to add
+        size_t n_self_interfaces_to_add = 0;
+
+        // Self interfaces to delete
+        size_t n_self_interfaces_to_delete = 0;
+
+
+
 
         // CHECK the same for self interfaces?
 
