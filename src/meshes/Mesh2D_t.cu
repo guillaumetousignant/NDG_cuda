@@ -2671,6 +2671,16 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
                 std::vector<size_t> host_wall_boundaries_to_delete_refine_array(wall_boundaries_numBlocks_);
                 device_wall_boundaries_to_delete_refine_array.copy_to(host_wall_boundaries_to_delete_refine_array, stream_);
 
+                cudaStreamSynchronize(stream_); // So the transfer to host_wall_boundaries_to_delete_refine_array is complete
+
+                size_t n_wall_boundaries_to_delete = 0;
+                for (int i = 0; i < wall_boundaries_numBlocks_; ++i) {
+                    n_wall_boundaries_to_delete += host_wall_boundaries_to_delete_refine_array[i];
+                    host_wall_boundaries_to_delete_refine_array[i] = n_wall_boundaries_to_delete - host_wall_boundaries_to_delete_refine_array[i]; // Current block offset
+                }
+                device_wall_boundaries_to_delete_refine_array.copy_from(host_wall_boundaries_to_delete_refine_array, stream_);
+
+
                 wall_boundaries_to_delete.clear(stream_);
                 device_wall_boundaries_to_delete_refine_array.clear(stream_);
             }
@@ -2683,6 +2693,16 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
                 SEM::Meshes::reduce_bools<boundaries_blockSize_/2><<<symmetry_boundaries_numBlocks_, boundaries_blockSize_/2, 0, stream_>>>(symmetry_boundaries_to_delete.size(), symmetry_boundaries_to_delete.data(), device_symmetry_boundaries_to_delete_refine_array.data());
                 std::vector<size_t> host_symmetry_boundaries_to_delete_refine_array(symmetry_boundaries_numBlocks_);
                 device_symmetry_boundaries_to_delete_refine_array.copy_to(host_symmetry_boundaries_to_delete_refine_array, stream_);
+
+                cudaStreamSynchronize(stream_); // So the transfer to host_symmetry_boundaries_to_delete_refine_array is complete
+
+                size_t n_symmetry_boundaries_to_delete = 0;
+                for (int i = 0; i < symmetry_boundaries_numBlocks_; ++i) {
+                    n_symmetry_boundaries_to_delete += host_symmetry_boundaries_to_delete_refine_array[i];
+                    host_symmetry_boundaries_to_delete_refine_array[i] = n_symmetry_boundaries_to_delete - host_symmetry_boundaries_to_delete_refine_array[i]; // Current block offset
+                }
+                device_symmetry_boundaries_to_delete_refine_array.copy_from(host_symmetry_boundaries_to_delete_refine_array, stream_);
+
 
                 symmetry_boundaries_to_delete.clear(stream_);
                 device_symmetry_boundaries_to_delete_refine_array.clear(stream_);
@@ -2697,6 +2717,16 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
                 std::vector<size_t> host_inflow_boundaries_to_delete_refine_array(inflow_boundaries_numBlocks_);
                 device_inflow_boundaries_to_delete_refine_array.copy_to(host_inflow_boundaries_to_delete_refine_array, stream_);
 
+                cudaStreamSynchronize(stream_); // So the transfer to host_inflow_boundaries_to_delete_refine_array is complete
+
+                size_t n_inflow_boundaries_to_delete = 0;
+                for (int i = 0; i < inflow_boundaries_numBlocks_; ++i) {
+                    n_inflow_boundaries_to_delete += host_inflow_boundaries_to_delete_refine_array[i];
+                    host_inflow_boundaries_to_delete_refine_array[i] = n_inflow_boundaries_to_delete - host_inflow_boundaries_to_delete_refine_array[i]; // Current block offset
+                }
+                device_inflow_boundaries_to_delete_refine_array.copy_from(host_inflow_boundaries_to_delete_refine_array, stream_);
+
+
                 inflow_boundaries_to_delete.clear(stream_);
                 device_inflow_boundaries_to_delete_refine_array.clear(stream_);
             }
@@ -2709,6 +2739,16 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
                 SEM::Meshes::reduce_bools<boundaries_blockSize_/2><<<outflow_boundaries_numBlocks_, boundaries_blockSize_/2, 0, stream_>>>(outflow_boundaries_to_delete.size(), outflow_boundaries_to_delete.data(), device_outflow_boundaries_to_delete_refine_array.data());
                 std::vector<size_t> host_outflow_boundaries_to_delete_refine_array(outflow_boundaries_numBlocks_);
                 device_outflow_boundaries_to_delete_refine_array.copy_to(host_outflow_boundaries_to_delete_refine_array, stream_);
+
+                cudaStreamSynchronize(stream_); // So the transfer to host_outflow_boundaries_to_delete_refine_array is complete
+
+                size_t n_outflow_boundaries_to_delete = 0;
+                for (int i = 0; i < outflow_boundaries_numBlocks_; ++i) {
+                    n_outflow_boundaries_to_delete += host_outflow_boundaries_to_delete_refine_array[i];
+                    host_outflow_boundaries_to_delete_refine_array[i] = n_outflow_boundaries_to_delete - host_outflow_boundaries_to_delete_refine_array[i]; // Current block offset
+                }
+                device_outflow_boundaries_to_delete_refine_array.copy_from(host_outflow_boundaries_to_delete_refine_array, stream_);
+
 
                 outflow_boundaries_to_delete.clear(stream_);
                 device_outflow_boundaries_to_delete_refine_array.clear(stream_);
@@ -2723,6 +2763,16 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
             SEM::Meshes::reduce_bools<boundaries_blockSize_/2><<<mpi_interfaces_incoming_numBlocks_, boundaries_blockSize_/2, 0, stream_>>>(mpi_destinations_to_delete.size(), mpi_destinations_to_delete.data(), device_mpi_destinations_to_delete_refine_array.data());
             std::vector<size_t> host_mpi_destinations_to_delete_refine_array(mpi_interfaces_incoming_numBlocks_);
             device_mpi_destinations_to_delete_refine_array.copy_to(host_mpi_destinations_to_delete_refine_array, stream_);
+
+            cudaStreamSynchronize(stream_); // So the transfer to host_mpi_destinations_to_delete_refine_array is complete
+
+            size_t n_mpi_destinations_to_delete = 0;
+            for (int i = 0; i < mpi_interfaces_incoming_numBlocks_; ++i) {
+                n_mpi_destinations_to_delete += host_mpi_destinations_to_delete_refine_array[i];
+                host_mpi_destinations_to_delete_refine_array[i] = n_mpi_destinations_to_delete - host_mpi_destinations_to_delete_refine_array[i]; // Current block offset
+            }
+            device_mpi_destinations_to_delete_refine_array.copy_from(host_mpi_destinations_to_delete_refine_array, stream_);
+
 
             mpi_destinations_to_delete.clear(stream_);
             device_mpi_destinations_to_delete_refine_array.clear(stream_);
