@@ -3062,6 +3062,33 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
             }
         }
 
+        // This is not right
+        neighbour_index_send = 0;
+        for (size_t i = 0; i < n_elements_send_left[global_rank]; ++i) {
+            for (size_t j = 0; j < 4; ++j) {
+                const size_t side_n_neighbours = n_neighbours_arrays_send_left[4 * i + j];
+                for (k = 0; k < side_n_neighbours; ++k) {
+                    if (neighbours_proc_arrays_send_left[neighbour_index_send + k] == global_rank) {
+                        ++n_mpi_origins_to_add;
+                    }
+                }
+                neighbour_index_send += side_n_neighbours;
+            }
+        }
+
+        neighbour_index_send = 0;
+        for (size_t i = 0; i < n_elements_send_right[global_rank]; ++i) {
+            for (size_t j = 0; j < 4; ++j) {
+                const size_t side_n_neighbours = n_neighbours_arrays_send_right[4 * i + j];
+                for (k = 0; k < side_n_neighbours; ++k) {
+                    if (neighbours_proc_arrays_send_right[neighbour_index_send + k] == global_rank) {
+                        ++n_mpi_origins_to_add;
+                    }
+                }
+                neighbour_index_send += side_n_neighbours;
+            }
+        }
+
         // MPI outgoing interfaces to delete
         size_t n_mpi_origins_to_delete = 0;
 
@@ -3078,7 +3105,13 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
             }
         }
         else if (n_mpi_origins_to_add > 0) {
+            device_vector<size_t> new_new_mpi_interfaces_origin(n_mpi_origins_to_add, stream_);
+            device_vector<size_t> new_new_mpi_interfaces_origin_side(n_mpi_origins_to_add, stream_);
+            new_mpi_interfaces_origin = std::move(new_new_mpi_interfaces_origin);
+            new_mpi_interfaces_origin_side = std::move(new_new_mpi_interfaces_origin_side);
 
+            new_new_mpi_interfaces_origin.clear(stream_);
+            new_new_mpi_interfaces_origin_side.clear(stream_);
         }
 
         // Self interfaces to add
