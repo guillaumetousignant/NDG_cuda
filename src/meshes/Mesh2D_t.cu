@@ -2668,7 +2668,24 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
                 const size_t neighbour_proc = neighbours_proc_arrays_recv[i];
 
                 if (neighbour_proc != global_rank) {
-                    ++n_boundary_elements_to_add; // CHECK multiple incoming elements can link to the same mpi received one
+                    if (neighbour_proc < 0) {
+                        ++n_boundary_elements_to_add;
+                    }
+                    else { // CHECK multiple incoming elements can link to the same mpi received one
+                        const size_t local_element_index = neighbours_arrays_recv[i];
+                        const size_t element_side_index = neighbours_side_arrays_recv[i];
+
+                        bool first_time = true;
+                        for (size_t j = 0; j < i; ++j) {
+                            if (neighbours_proc_arrays_recv[j] == neighbour_proc && neighbours_arrays_recv[j] == local_element_index && neighbours_side_arrays_recv[j] == element_side_index) {
+                                first_time = false;
+                                break;
+                            }
+                        }
+                        if (first_time) {
+                            ++n_boundary_elements_to_add;
+                        }
+                    }
                 }
             }
         }
@@ -2896,8 +2913,24 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
         // MPI incoming interfaces to add
         size_t n_mpi_destinations_to_add = 0;
         if (n_elements_recv_left[global_rank] + n_elements_recv_right[global_rank] > 0) {
-            for (const auto neighbour_proc : neighbours_proc_arrays_recv) {
-                n_mpi_destinations_to_add += neighbour_proc >= 0 && neighbour_proc != global_rank;
+            for (size_t i = 0; i < neighbours_proc_arrays_recv.size(); ++i) {
+                const size_t neighbour_proc = neighbours_proc_arrays_recv[i];
+
+                if (neighbour_proc != global_rank && neighbour_proc >= 0) {
+                    const size_t local_element_index = neighbours_arrays_recv[i];
+                    const size_t element_side_index = neighbours_side_arrays_recv[i];
+
+                    bool first_time = true;
+                    for (size_t j = 0; j < i; ++j) {
+                        if (neighbours_proc_arrays_recv[j] == neighbour_proc && neighbours_arrays_recv[j] == local_element_index && neighbours_side_arrays_recv[j] == element_side_index) {
+                            first_time = false;
+                            break;
+                        }
+                    }
+                    if (first_time) {
+                        ++n_mpi_destinations_to_add;
+                    }
+                }
             }
         }
 
