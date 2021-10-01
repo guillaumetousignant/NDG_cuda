@@ -2046,6 +2046,10 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
             nodes_arrays.copy_to(nodes_arrays_send_left, stream_);
 
             cudaStreamSynchronize(stream_); // So the transfer to elements_send_left, solution_arrays_send_left and n_neighbours_arrays_send_left etc is completed
+        
+            solution_arrays.clear(stream_);
+            n_neighbours_arrays.clear(stream_);
+            nodes_arrays.clear(stream_);
         }
 
         if (n_elements_send_right[global_rank] > 0) {
@@ -2063,6 +2067,10 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
             nodes_arrays.copy_to(nodes_arrays_send_right, stream_);
 
             cudaStreamSynchronize(stream_); // So the transfer to elements_send_right and solution_arrays_send_right etc is completed
+        
+            solution_arrays.clear(stream_);
+            n_neighbours_arrays.clear(stream_);
+            nodes_arrays.clear(stream_);
         }
 
         size_t n_neighbours_total_left = 0;
@@ -2181,11 +2189,6 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
 
             mpi_interfaces_send_requests.insert(std::end(mpi_interfaces_send_requests), std::begin(mpi_interfaces_send_requests_left), std::end(mpi_interfaces_send_requests_left));
 
-            
-
-            solution_arrays.clear(stream_);
-            n_neighbours_arrays.clear(stream_);
-            nodes_arrays.clear(stream_);
             neighbours_arrays.clear(stream_);
             neighbours_proc_arrays.clear(stream_);
             neighbour_offsets_device.clear(stream_);
@@ -2295,9 +2298,6 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
 
             mpi_interfaces_send_requests.insert(std::end(mpi_interfaces_send_requests), std::begin(mpi_interfaces_send_requests_right), std::end(mpi_interfaces_send_requests_right));
 
-            solution_arrays.clear(stream_);
-            n_neighbours_arrays.clear(stream_);
-            nodes_arrays.clear(stream_);
             neighbours_arrays.clear(stream_);
             neighbours_proc_arrays.clear(stream_);
             neighbour_offsets_device.clear(stream_);
