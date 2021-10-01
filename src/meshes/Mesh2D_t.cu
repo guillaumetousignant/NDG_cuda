@@ -1968,20 +1968,24 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
 
     std::cout << "Process " << global_rank << " has n_elements_send_left: " << n_elements_send_left[global_rank] << ", n_elements_send_right: " << n_elements_send_right[global_rank] << ", n_elements_recv_left: " << n_elements_recv_left[global_rank] << ", n_elements_recv_right: " << n_elements_recv_right[global_rank] << std::endl;
     
+    constexpr size_t n_mpi_transfers_per_interface = 3;
     if (n_elements_send_left[global_rank] + n_elements_recv_left[global_rank] + n_elements_send_right[global_rank] + n_elements_recv_right[global_rank] > 0) {
         std::cout << "Process " << global_rank << " has elements to send or receive" << std::endl;
         
         // MPI interfaces
         std::vector<int> mpi_interfaces_new_process_outgoing(mpi_interfaces_origin_.size(), global_rank);
         std::vector<size_t> mpi_interfaces_new_local_index_outgoing(mpi_interfaces_origin_.size());
+        std::vector<size_t> mpi_interfaces_new_side_outgoing(mpi_interfaces_origin_.size());
 
         mpi_interfaces_origin_.copy_to(mpi_interfaces_new_local_index_outgoing, stream_);
+        interfaces_origin_side_.copy_to(mpi_interfaces_new_side_outgoing, stream_);
 
         std::vector<int> mpi_interfaces_new_process_incoming(mpi_interfaces_destination_.size());
         std::vector<size_t> mpi_interfaces_new_local_index_incoming(mpi_interfaces_destination_.size());
+        std::vector<size_t> mpi_interfaces_new_side_incoming(mpi_interfaces_destination_.size());
 
-        std::vector<MPI_Request> mpi_interfaces_requests(4 * mpi_interfaces_process_.size());
-        std::vector<MPI_Status> mpi_interfaces_statuses(4 * mpi_interfaces_process_.size());
+        std::vector<MPI_Request> mpi_interfaces_requests(2 * n_mpi_transfers_per_interface * mpi_interfaces_process_.size());
+        std::vector<MPI_Status> mpi_interfaces_statuses(2 * n_mpi_transfers_per_interface * mpi_interfaces_process_.size());
 
         cudaStreamSynchronize(stream_); // So the transfer to mpi_interfaces_new_local_index_outgoing is completed
 
@@ -1998,17 +2002,20 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
         }
 
         for (size_t i = 0; i < mpi_interfaces_process_.size(); ++i) {
-            MPI_Isend(mpi_interfaces_new_process_outgoing.data() + mpi_interfaces_outgoing_offset_[i], mpi_interfaces_outgoing_size_[i], MPI_INT, mpi_interfaces_process_[i], 5 * global_size * global_size + 2 * (global_size * global_rank + mpi_interfaces_process_[i]), MPI_COMM_WORLD, &mpi_interfaces_requests[2 * (mpi_interfaces_process_.size() + i)]);
-            MPI_Irecv(mpi_interfaces_new_process_incoming.data() + mpi_interfaces_incoming_offset_[i], mpi_interfaces_incoming_size_[i], MPI_INT, mpi_interfaces_process_[i], 5 * global_size * global_size + 2 * (global_size * mpi_interfaces_process_[i] + global_rank), MPI_COMM_WORLD, &mpi_interfaces_requests[2 * i]);
+            MPI_Isend(mpi_interfaces_new_process_outgoing.data() + mpi_interfaces_outgoing_offset_[i], mpi_interfaces_outgoing_size_[i], MPI_INT, mpi_interfaces_process_[i], 5 * global_size * global_size + n_mpi_transfers_per_interface * (global_size * global_rank + mpi_interfaces_process_[i]), MPI_COMM_WORLD, &mpi_interfaces_requests[n_mpi_transfers_per_interface * (mpi_interfaces_process_.size() + i)]);
+            MPI_Irecv(mpi_interfaces_new_process_incoming.data() + mpi_interfaces_incoming_offset_[i], mpi_interfaces_incoming_size_[i], MPI_INT, mpi_interfaces_process_[i], 5 * global_size * global_size + n_mpi_transfers_per_interface * (global_size * mpi_interfaces_process_[i] + global_rank), MPI_COMM_WORLD, &mpi_interfaces_requests[n_mpi_transfers_per_interface * i]);
 
-            MPI_Isend(mpi_interfaces_new_local_index_outgoing.data() + mpi_interfaces_outgoing_offset_[i], mpi_interfaces_outgoing_size_[i], size_t_data_type, mpi_interfaces_process_[i], 5 * global_size * global_size + 2 * (global_size * global_rank + mpi_interfaces_process_[i]) + 1, MPI_COMM_WORLD, &mpi_interfaces_requests[2 * (mpi_interfaces_process_.size() + i) + 1]);
-            MPI_Irecv(mpi_interfaces_new_local_index_incoming.data() + mpi_interfaces_incoming_offset_[i], mpi_interfaces_incoming_size_[i], size_t_data_type, mpi_interfaces_process_[i], 5 * global_size * global_size + 2 * (global_size * mpi_interfaces_process_[i] + global_rank) + 1, MPI_COMM_WORLD, &mpi_interfaces_requests[2 * i + 1]);
+            MPI_Isend(mpi_interfaces_new_local_index_outgoing.data() + mpi_interfaces_outgoing_offset_[i], mpi_interfaces_outgoing_size_[i], size_t_data_type, mpi_interfaces_process_[i], 5 * global_size * global_size + n_mpi_transfers_per_interface * (global_size * global_rank + mpi_interfaces_process_[i]) + 1, MPI_COMM_WORLD, &mpi_interfaces_requests[n_mpi_transfers_per_interface * (mpi_interfaces_process_.size() + i) + 1]);
+            MPI_Irecv(mpi_interfaces_new_local_index_incoming.data() + mpi_interfaces_incoming_offset_[i], mpi_interfaces_incoming_size_[i], size_t_data_type, mpi_interfaces_process_[i], 5 * global_size * global_size + n_mpi_transfers_per_interface * (global_size * mpi_interfaces_process_[i] + global_rank) + 1, MPI_COMM_WORLD, &mpi_interfaces_requests[n_mpi_transfers_per_interface * i + 1]);
+        
+            MPI_Isend(mpi_interfaces_new_side_outgoing.data() + mpi_interfaces_outgoing_offset_[i], mpi_interfaces_outgoing_size_[i], size_t_data_type, mpi_interfaces_process_[i], 5 * global_size * global_size + n_mpi_transfers_per_interface * (global_size * global_rank + mpi_interfaces_process_[i]) + 2, MPI_COMM_WORLD, &mpi_interfaces_requests[n_mpi_transfers_per_interface * (mpi_interfaces_process_.size() + i) + 2]);
+            MPI_Irecv(mpi_interfaces_new_side_incoming.data() + mpi_interfaces_incoming_offset_[i], mpi_interfaces_incoming_size_[i], size_t_data_type, mpi_interfaces_process_[i], 5 * global_size * global_size + n_mpi_transfers_per_interface * (global_size * mpi_interfaces_process_[i] + global_rank) + 2, MPI_COMM_WORLD, &mpi_interfaces_requests[n_mpi_transfers_per_interface * i + 2]);
         }
 
-        MPI_Waitall(2 * mpi_interfaces_process_.size(), mpi_interfaces_requests.data(), mpi_interfaces_statuses.data());
+        MPI_Waitall(n_mpi_transfers_per_interface * mpi_interfaces_process_.size(), mpi_interfaces_requests.data(), mpi_interfaces_statuses.data());
 
         std::vector<MPI_Request> mpi_interfaces_send_requests;
-        constexpr size_t n_mpi_transfers_per_send = 7;
+        constexpr size_t n_mpi_transfers_per_send = 8;
         constexpr MPI_Datatype float_data_type = (sizeof(deviceFloat) == sizeof(float)) ? MPI_FLOAT : MPI_DOUBLE;
         Element2D_t::Datatype element_data_type;
 
@@ -2044,23 +2051,27 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
 
             device_vector<size_t> neighbours_arrays(n_neighbours_total, stream_);
             device_vector<int> neighbours_proc_arrays(n_neighbours_total, stream_);
+            device_vector<size_t> neighbours_side_arrays(n_neighbours_total, stream_);
             device_vector<size_t> neighbour_offsets_device(neighbour_offsets, stream_);
             device_vector<int> mpi_interfaces_new_process_incoming_device(mpi_interfaces_new_process_incoming, stream_);
             device_vector<size_t> mpi_interfaces_new_local_index_incoming_device(mpi_interfaces_new_local_index_incoming, stream_);
+            device_vector<size_t> mpi_interfaces_new_side_incoming_device(mpi_interfaces_new_side_incoming, stream_);
             device_vector<size_t> n_elements_send_left_device(n_elements_send_left, stream_);
             device_vector<size_t> n_elements_recv_left_device(n_elements_recv_left, stream_);
             device_vector<size_t> n_elements_send_right_device(n_elements_send_right, stream_);
             device_vector<size_t> n_elements_recv_right_device(n_elements_recv_right, stream_);
             device_vector<size_t> global_element_offset_current_device(global_element_offset_current, stream_);
 
-            SEM::Meshes::get_neighbours<<<send_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_send_left[global_rank], 0, n_elements_per_proc[global_rank], wall_boundaries_.size(), symmetry_boundaries_.size(), inflow_boundaries_.size(), outflow_boundaries_.size(), interfaces_origin_.size(), mpi_interfaces_destination_.size(), global_rank, global_size, n_elements_per_process_new, elements_.data(), faces_.data(), wall_boundaries_.data(), symmetry_boundaries_.data(), inflow_boundaries_.data(), outflow_boundaries_.data(), interfaces_destination_.data(), interfaces_origin_.data(), mpi_interfaces_destination_.data(), mpi_interfaces_new_process_incoming_device.data(), mpi_interfaces_new_local_index_incoming_device.data(), neighbour_offsets_device.data(), n_elements_send_left_device.data(), n_elements_recv_left_device.data(), n_elements_send_right_device.data(), n_elements_recv_right_device.data(), global_element_offset_current_device.data(), neighbours_arrays.data(), neighbours_proc_arrays.data());
+            SEM::Meshes::get_neighbours<<<send_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_send_left[global_rank], 0, n_elements_per_proc[global_rank], wall_boundaries_.size(), symmetry_boundaries_.size(), inflow_boundaries_.size(), outflow_boundaries_.size(), interfaces_origin_.size(), mpi_interfaces_destination_.size(), global_rank, global_size, n_elements_per_process_new, elements_.data(), faces_.data(), wall_boundaries_.data(), symmetry_boundaries_.data(), inflow_boundaries_.data(), outflow_boundaries_.data(), interfaces_destination_.data(), interfaces_origin_.data(), mpi_interfaces_destination_.data(), mpi_interfaces_new_process_incoming_device.data(), mpi_interfaces_new_local_index_incoming_device.data(), mpi_interfaces_new_side_incoming_device.data(), neighbour_offsets_device.data(), n_elements_send_left_device.data(), n_elements_recv_left_device.data(), n_elements_send_right_device.data(), n_elements_recv_right_device.data(), global_element_offset_current_device.data(), neighbours_arrays.data(), neighbours_proc_arrays.data(), neighbours_side_arrays.data());
 
             std::vector<size_t> neighbours_arrays_send(neighbours_arrays.size());
             std::vector<int> neighbours_proc_arrays_send(neighbours_proc_arrays.size());
+            std::vector<size_t> neighbours_side_arrays_send(neighbours_side_arrays.size());
             neighbours_arrays.copy_to(neighbours_arrays_send, stream_);
             neighbours_proc_arrays.copy_to(neighbours_proc_arrays_send, stream_);
+            neighbours_side_arrays.copy_to(neighbours_side_arrays_send, stream_);
 
-            cudaStreamSynchronize(stream_); // So the transfer to neighbours_arrays_send and neighbours_proc_arrays is completed
+            cudaStreamSynchronize(stream_); // So the transfer to neighbours_arrays_send, neighbours_proc_arrays and neighbours_side_arrays_send is completed
 
             // Compute the global indices of the elements using global_element_offset_current, and where they are going
             std::vector<size_t> global_element_indices_send(n_elements_send_left[global_rank], global_element_offset_current[global_rank]);
@@ -2110,19 +2121,20 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
 
             for (size_t i = 0; i < destination_processes.size(); ++i) {
                 // Neighbours
-                MPI_Isend(&process_n_neighbours[i], 1, size_t_data_type, destination_processes[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]), MPI_COMM_WORLD, &mpi_interfaces_send_requests_left[n_mpi_transfers_per_send * i]);
-                MPI_Isend(n_neighbours_arrays_send.data() + 4 * process_offset[i], 4 * process_size[i], size_t_data_type, destination_processes[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 1, MPI_COMM_WORLD, &mpi_interfaces_send_requests_left[n_mpi_transfers_per_send * i + 1]);
-                MPI_Isend(neighbours_arrays_send.data() + process_neighbour_offset[i], process_n_neighbours[i], size_t_data_type, destination_processes[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 2, MPI_COMM_WORLD, &mpi_interfaces_send_requests_left[n_mpi_transfers_per_send * i + 2]);
-                MPI_Isend(neighbours_proc_arrays_send.data() + process_neighbour_offset[i], process_n_neighbours[i], size_t_data_type, destination_processes[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 3, MPI_COMM_WORLD, &mpi_interfaces_send_requests_left[n_mpi_transfers_per_send * i + 3]);
+                MPI_Isend(&process_n_neighbours[i], 1, size_t_data_type, destination_processes[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]), MPI_COMM_WORLD, &mpi_interfaces_send_requests_left[n_mpi_transfers_per_send * i]);
+                MPI_Isend(n_neighbours_arrays_send.data() + 4 * process_offset[i], 4 * process_size[i], size_t_data_type, destination_processes[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 1, MPI_COMM_WORLD, &mpi_interfaces_send_requests_left[n_mpi_transfers_per_send * i + 1]);
+                MPI_Isend(neighbours_arrays_send.data() + process_neighbour_offset[i], process_n_neighbours[i], size_t_data_type, destination_processes[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 2, MPI_COMM_WORLD, &mpi_interfaces_send_requests_left[n_mpi_transfers_per_send * i + 2]);
+                MPI_Isend(neighbours_proc_arrays_send.data() + process_neighbour_offset[i], process_n_neighbours[i], MPI_INT, destination_processes[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 3, MPI_COMM_WORLD, &mpi_interfaces_send_requests_left[n_mpi_transfers_per_send * i + 3]);
+                MPI_Isend(neighbours_side_arrays_send.data() + process_neighbour_offset[i], process_n_neighbours[i], size_t_data_type, destination_processes[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 7, MPI_COMM_WORLD, &mpi_interfaces_send_requests_left[n_mpi_transfers_per_send * i + 7]);
 
                 // Nodes
-                MPI_Isend(nodes_arrays_send.data() + 8 * process_offset[i], 8 * process_size[i], float_data_type, destination_processes[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 4, MPI_COMM_WORLD, &mpi_interfaces_send_requests_left[n_mpi_transfers_per_send * i + 4]);
+                MPI_Isend(nodes_arrays_send.data() + 8 * process_offset[i], 8 * process_size[i], float_data_type, destination_processes[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 4, MPI_COMM_WORLD, &mpi_interfaces_send_requests_left[n_mpi_transfers_per_send * i + 4]);
 
                 // Solution
-                MPI_Isend(solution_arrays_send.data() + 3 * (maximum_N_ + 1) * (maximum_N_ + 1) * process_offset[i], 3 * (maximum_N_ + 1) * (maximum_N_ + 1) * process_size[i], float_data_type, destination_processes[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 5, MPI_COMM_WORLD, &mpi_interfaces_send_requests_left[n_mpi_transfers_per_send * i + 5]);
+                MPI_Isend(solution_arrays_send.data() + 3 * (maximum_N_ + 1) * (maximum_N_ + 1) * process_offset[i], 3 * (maximum_N_ + 1) * (maximum_N_ + 1) * process_size[i], float_data_type, destination_processes[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 5, MPI_COMM_WORLD, &mpi_interfaces_send_requests_left[n_mpi_transfers_per_send * i + 5]);
 
                 // Elements
-                MPI_Isend(elements_send.data() + process_offset[i], process_size[i], element_data_type.data(), destination_processes[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 6, MPI_COMM_WORLD, &mpi_interfaces_send_requests_left[n_mpi_transfers_per_send * i + 6]);
+                MPI_Isend(elements_send.data() + process_offset[i], process_size[i], element_data_type.data(), destination_processes[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 6, MPI_COMM_WORLD, &mpi_interfaces_send_requests_left[n_mpi_transfers_per_send * i + 6]);
             }
 
             mpi_interfaces_send_requests.insert(std::end(mpi_interfaces_send_requests), std::begin(mpi_interfaces_send_requests_left), std::end(mpi_interfaces_send_requests_left));
@@ -2141,6 +2153,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
             neighbour_offsets_device.clear(stream_);
             mpi_interfaces_new_process_incoming_device.clear(stream_);
             mpi_interfaces_new_local_index_incoming_device.clear(stream_);
+            mpi_interfaces_new_side_incoming_device.clear(stream_);
             n_elements_send_left_device.clear(stream_);
             n_elements_recv_left_device.clear(stream_);
             n_elements_send_right_device.clear(stream_);
@@ -2179,23 +2192,27 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
 
             device_vector<size_t> neighbours_arrays(n_neighbours_total, stream_);
             device_vector<int> neighbours_proc_arrays(n_neighbours_total, stream_);
+            device_vector<size_t> neighbours_side_arrays(n_neighbours_total, stream_);
             device_vector<size_t> neighbour_offsets_device(neighbour_offsets, stream_);
             device_vector<int> mpi_interfaces_new_process_incoming_device(mpi_interfaces_new_process_incoming, stream_);
             device_vector<size_t> mpi_interfaces_new_local_index_incoming_device(mpi_interfaces_new_local_index_incoming, stream_);
+            device_vector<size_t> mpi_interfaces_new_side_incoming_device(mpi_interfaces_new_side_incoming, stream_);
             device_vector<size_t> n_elements_send_left_device(n_elements_send_left, stream_);
             device_vector<size_t> n_elements_recv_left_device(n_elements_recv_left, stream_);
             device_vector<size_t> n_elements_send_right_device(n_elements_send_right, stream_);
             device_vector<size_t> n_elements_recv_right_device(n_elements_recv_right, stream_);
             device_vector<size_t> global_element_offset_current_device(global_element_offset_current, stream_);
 
-            SEM::Meshes::get_neighbours<<<send_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_send_right[global_rank], n_elements_per_proc[global_rank] - n_elements_send_right[global_rank], n_elements_per_proc[global_rank], wall_boundaries_.size(), symmetry_boundaries_.size(), inflow_boundaries_.size(), outflow_boundaries_.size(), interfaces_origin_.size(), mpi_interfaces_destination_.size(), global_rank, global_size, n_elements_per_process_new, elements_.data(), faces_.data(), wall_boundaries_.data(), symmetry_boundaries_.data(), inflow_boundaries_.data(), outflow_boundaries_.data(), interfaces_destination_.data(), interfaces_origin_.data(), mpi_interfaces_destination_.data(), mpi_interfaces_new_process_incoming_device.data(), mpi_interfaces_new_local_index_incoming_device.data(), neighbour_offsets_device.data(), n_elements_send_left_device.data(), n_elements_recv_left_device.data(), n_elements_send_right_device.data(), n_elements_recv_right_device.data(), global_element_offset_current_device.data(), neighbours_arrays.data(), neighbours_proc_arrays.data());
+            SEM::Meshes::get_neighbours<<<send_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_send_right[global_rank], n_elements_per_proc[global_rank] - n_elements_send_right[global_rank], n_elements_per_proc[global_rank], wall_boundaries_.size(), symmetry_boundaries_.size(), inflow_boundaries_.size(), outflow_boundaries_.size(), interfaces_origin_.size(), mpi_interfaces_destination_.size(), global_rank, global_size, n_elements_per_process_new, elements_.data(), faces_.data(), wall_boundaries_.data(), symmetry_boundaries_.data(), inflow_boundaries_.data(), outflow_boundaries_.data(), interfaces_destination_.data(), interfaces_origin_.data(), mpi_interfaces_destination_.data(), mpi_interfaces_new_process_incoming_device.data(), mpi_interfaces_new_local_index_incoming_device.data(), mpi_interfaces_new_side_incoming_device.data(), neighbour_offsets_device.data(), n_elements_send_left_device.data(), n_elements_recv_left_device.data(), n_elements_send_right_device.data(), n_elements_recv_right_device.data(), global_element_offset_current_device.data(), neighbours_arrays.data(), neighbours_proc_arrays.data(), neighbours_side_arrays.data());
 
             std::vector<size_t> neighbours_arrays_send(neighbours_arrays.size());
             std::vector<int> neighbours_proc_arrays_send(neighbours_proc_arrays.size());
+            std::vector<size_t> neighbours_side_arrays_send(neighbours_side_arrays.size());
             neighbours_arrays.copy_to(neighbours_arrays_send, stream_);
             neighbours_proc_arrays.copy_to(neighbours_proc_arrays_send, stream_);
+            neighbours_side_arrays.copy_to(neighbours_side_arrays_send, stream_);
 
-            cudaStreamSynchronize(stream_); // So the transfer to neighbours_arrays_send and neighbours_proc_arrays is completed
+            cudaStreamSynchronize(stream_); // So the transfer to neighbours_arrays_send, neighbours_proc_arrays and neighbours_side_arrays_send is completed
 
             // Compute the global indices of the elements using global_element_offset_end_current, and where they are going
             std::vector<size_t> global_element_indices_send(n_elements_send_right[global_rank], global_element_offset_end_current[global_rank] + 1 - n_elements_send_right[global_rank]);
@@ -2245,19 +2262,20 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
 
             for (size_t i = 0; i < destination_processes.size(); ++i) {
                 // Neighbours
-                MPI_Isend(&process_n_neighbours[i], 1, size_t_data_type, destination_processes[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]), MPI_COMM_WORLD, &mpi_interfaces_send_requests_right[n_mpi_transfers_per_send * i]);
-                MPI_Isend(n_neighbours_arrays_send.data() + 4 * process_offset[i], 4 * process_size[i], size_t_data_type, destination_processes[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 1, MPI_COMM_WORLD, &mpi_interfaces_send_requests_right[n_mpi_transfers_per_send * i + 1]);
-                MPI_Isend(neighbours_arrays_send.data() + process_neighbour_offset[i], process_n_neighbours[i], size_t_data_type, destination_processes[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 2, MPI_COMM_WORLD, &mpi_interfaces_send_requests_right[n_mpi_transfers_per_send * i + 2]);
-                MPI_Isend(neighbours_proc_arrays_send.data() + process_neighbour_offset[i], process_n_neighbours[i], size_t_data_type, destination_processes[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 3, MPI_COMM_WORLD, &mpi_interfaces_send_requests_right[n_mpi_transfers_per_send * i + 3]);
+                MPI_Isend(&process_n_neighbours[i], 1, size_t_data_type, destination_processes[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]), MPI_COMM_WORLD, &mpi_interfaces_send_requests_right[n_mpi_transfers_per_send * i]);
+                MPI_Isend(n_neighbours_arrays_send.data() + 4 * process_offset[i], 4 * process_size[i], size_t_data_type, destination_processes[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 1, MPI_COMM_WORLD, &mpi_interfaces_send_requests_right[n_mpi_transfers_per_send * i + 1]);
+                MPI_Isend(neighbours_arrays_send.data() + process_neighbour_offset[i], process_n_neighbours[i], size_t_data_type, destination_processes[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 2, MPI_COMM_WORLD, &mpi_interfaces_send_requests_right[n_mpi_transfers_per_send * i + 2]);
+                MPI_Isend(neighbours_proc_arrays_send.data() + process_neighbour_offset[i], process_n_neighbours[i], MPI_INT, destination_processes[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 3, MPI_COMM_WORLD, &mpi_interfaces_send_requests_right[n_mpi_transfers_per_send * i + 3]);
+                MPI_Isend(neighbours_side_arrays_send.data() + process_neighbour_offset[i], process_n_neighbours[i], size_t_data_type, destination_processes[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 7, MPI_COMM_WORLD, &mpi_interfaces_send_requests_right[n_mpi_transfers_per_send * i + 7]);
 
                 // Nodes
-                MPI_Isend(nodes_arrays_send.data() + 8 * process_offset[i], 8 * process_size[i], float_data_type, destination_processes[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 4, MPI_COMM_WORLD, &mpi_interfaces_send_requests_right[n_mpi_transfers_per_send * i + 4]);
+                MPI_Isend(nodes_arrays_send.data() + 8 * process_offset[i], 8 * process_size[i], float_data_type, destination_processes[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 4, MPI_COMM_WORLD, &mpi_interfaces_send_requests_right[n_mpi_transfers_per_send * i + 4]);
 
                 // Solution
-                MPI_Isend(solution_arrays_send.data() + 3 * (maximum_N_ + 1) * (maximum_N_ + 1) * process_offset[i], 3 * (maximum_N_ + 1) * (maximum_N_ + 1) * process_size[i], float_data_type, destination_processes[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 5, MPI_COMM_WORLD, &mpi_interfaces_send_requests_right[n_mpi_transfers_per_send * i + 5]);
+                MPI_Isend(solution_arrays_send.data() + 3 * (maximum_N_ + 1) * (maximum_N_ + 1) * process_offset[i], 3 * (maximum_N_ + 1) * (maximum_N_ + 1) * process_size[i], float_data_type, destination_processes[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 5, MPI_COMM_WORLD, &mpi_interfaces_send_requests_right[n_mpi_transfers_per_send * i + 5]);
 
                 // Elements
-                MPI_Isend(elements_send.data() + process_offset[i], process_size[i], element_data_type.data(), destination_processes[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 6, MPI_COMM_WORLD, &mpi_interfaces_send_requests_right[n_mpi_transfers_per_send * i + 6]);
+                MPI_Isend(elements_send.data() + process_offset[i], process_size[i], element_data_type.data(), destination_processes[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 6, MPI_COMM_WORLD, &mpi_interfaces_send_requests_right[n_mpi_transfers_per_send * i + 6]);
             }
 
             mpi_interfaces_send_requests.insert(std::end(mpi_interfaces_send_requests), std::begin(mpi_interfaces_send_requests_right), std::end(mpi_interfaces_send_requests_right));
@@ -2276,6 +2294,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
             neighbour_offsets_device.clear(stream_);
             mpi_interfaces_new_process_incoming_device.clear(stream_);
             mpi_interfaces_new_local_index_incoming_device.clear(stream_);
+            mpi_interfaces_new_side_incoming_device.clear(stream_);
             n_elements_send_left_device.clear(stream_);
             n_elements_recv_left_device.clear(stream_);
             n_elements_send_right_device.clear(stream_);
@@ -2357,17 +2376,17 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
 
             for (size_t i = 0; i < origin_processes_left.size(); ++i) {
                 // Neighbours
-                MPI_Irecv(&process_n_neighbours_left[i], 1, size_t_data_type, origin_processes_left[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank), MPI_COMM_WORLD, &n_neighbours_recv_requests_left[i]);
-                MPI_Irecv(n_neighbours_arrays_recv_left.data() + 4 * process_offset[i], 4 * process_size[i], size_t_data_type, origin_processes_left[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank) + 1, MPI_COMM_WORLD, &mpi_interfaces_recv_requests_left[(n_mpi_transfers_per_send - 1) * i]);
+                MPI_Irecv(&process_n_neighbours_left[i], 1, size_t_data_type, origin_processes_left[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank), MPI_COMM_WORLD, &n_neighbours_recv_requests_left[i]);
+                MPI_Irecv(n_neighbours_arrays_recv_left.data() + 4 * process_offset[i], 4 * process_size[i], size_t_data_type, origin_processes_left[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank) + 1, MPI_COMM_WORLD, &mpi_interfaces_recv_requests_left[(n_mpi_transfers_per_send - 1) * i]);
 
                 // Nodes
-                MPI_Irecv(nodes_arrays_recv.data() + 8 * process_offset[i], 8 * process_size[i], float_data_type, origin_processes_left[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank) + 4, MPI_COMM_WORLD, &mpi_interfaces_recv_requests_left[(n_mpi_transfers_per_send - 1) * i + 1]);
+                MPI_Irecv(nodes_arrays_recv.data() + 8 * process_offset[i], 8 * process_size[i], float_data_type, origin_processes_left[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank) + 4, MPI_COMM_WORLD, &mpi_interfaces_recv_requests_left[(n_mpi_transfers_per_send - 1) * i + 1]);
 
                 // Solution
-                MPI_Irecv(solution_arrays_recv_left.data() + 3 * (maximum_N_ + 1) * (maximum_N_ + 1) * process_offset[i], 3 * (maximum_N_ + 1) * (maximum_N_ + 1) * process_size[i], float_data_type, origin_processes_left[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank) + 5, MPI_COMM_WORLD, &mpi_interfaces_recv_requests_left[(n_mpi_transfers_per_send - 1) * i + 2]);
+                MPI_Irecv(solution_arrays_recv_left.data() + 3 * (maximum_N_ + 1) * (maximum_N_ + 1) * process_offset[i], 3 * (maximum_N_ + 1) * (maximum_N_ + 1) * process_size[i], float_data_type, origin_processes_left[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank) + 5, MPI_COMM_WORLD, &mpi_interfaces_recv_requests_left[(n_mpi_transfers_per_send - 1) * i + 2]);
 
                 // Elements
-                MPI_Irecv(elements_recv_left.data() + process_offset[i], process_size[i], element_data_type.data(), origin_processes_left[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank) + 6, MPI_COMM_WORLD, &mpi_interfaces_recv_requests_left[(n_mpi_transfers_per_send - 1) * i + 3]);
+                MPI_Irecv(elements_recv_left.data() + process_offset[i], process_size[i], element_data_type.data(), origin_processes_left[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank) + 6, MPI_COMM_WORLD, &mpi_interfaces_recv_requests_left[(n_mpi_transfers_per_send - 1) * i + 3]);
             }
 
             n_neighbours_recv_requests.insert(std::end(n_neighbours_recv_requests), std::begin(n_neighbours_recv_requests_left), std::end(n_neighbours_recv_requests_left));
@@ -2432,17 +2451,17 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
 
             for (size_t i = 0; i < origin_processes_right.size(); ++i) {
                 // Neighbours
-                MPI_Irecv(&process_n_neighbours_right[i], 1, size_t_data_type, origin_processes_right[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank), MPI_COMM_WORLD, &n_neighbours_recv_requests_right[i]);
-                MPI_Irecv(n_neighbours_arrays_recv_right.data() + 4 * process_offset[i], 4 * process_size[i], size_t_data_type, origin_processes_right[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 1, MPI_COMM_WORLD, &mpi_interfaces_recv_requests_right[(n_mpi_transfers_per_send - 1) * i]);
+                MPI_Irecv(&process_n_neighbours_right[i], 1, size_t_data_type, origin_processes_right[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank), MPI_COMM_WORLD, &n_neighbours_recv_requests_right[i]);
+                MPI_Irecv(n_neighbours_arrays_recv_right.data() + 4 * process_offset[i], 4 * process_size[i], size_t_data_type, origin_processes_right[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 1, MPI_COMM_WORLD, &mpi_interfaces_recv_requests_right[(n_mpi_transfers_per_send - 1) * i]);
 
                 // Nodes
-                MPI_Irecv(nodes_arrays_recv.data() + 8 * (process_offset[i] + n_elements_recv_left[global_rank]), 8 * process_size[i], float_data_type, origin_processes_right[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 4, MPI_COMM_WORLD, &mpi_interfaces_recv_requests_right[(n_mpi_transfers_per_send - 1) * i + 1]);
+                MPI_Irecv(nodes_arrays_recv.data() + 8 * (process_offset[i] + n_elements_recv_left[global_rank]), 8 * process_size[i], float_data_type, origin_processes_right[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 4, MPI_COMM_WORLD, &mpi_interfaces_recv_requests_right[(n_mpi_transfers_per_send - 1) * i + 1]);
 
                 // Solution
-                MPI_Irecv(solution_arrays_recv_right.data() + 3 * (maximum_N_ + 1) * (maximum_N_ + 1) * n_elements_recv_left[global_rank] + 3 * (maximum_N_ + 1) * (maximum_N_ + 1) * process_offset[i], 3 * (maximum_N_ + 1) * (maximum_N_ + 1) * process_size[i], float_data_type, origin_processes_right[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 5, MPI_COMM_WORLD, &mpi_interfaces_recv_requests_right[(n_mpi_transfers_per_send - 1) * i + 2]);
+                MPI_Irecv(solution_arrays_recv_right.data() + 3 * (maximum_N_ + 1) * (maximum_N_ + 1) * n_elements_recv_left[global_rank] + 3 * (maximum_N_ + 1) * (maximum_N_ + 1) * process_offset[i], 3 * (maximum_N_ + 1) * (maximum_N_ + 1) * process_size[i], float_data_type, origin_processes_right[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 5, MPI_COMM_WORLD, &mpi_interfaces_recv_requests_right[(n_mpi_transfers_per_send - 1) * i + 2]);
 
                 // Elements
-                MPI_Irecv(elements_recv_right.data() + process_offset[i], process_size[i], element_data_type.data(), origin_processes_right[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 6, MPI_COMM_WORLD, &mpi_interfaces_recv_requests_right[(n_mpi_transfers_per_send - 1) * i + 3]);
+                MPI_Irecv(elements_recv_right.data() + process_offset[i], process_size[i], element_data_type.data(), origin_processes_right[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 6, MPI_COMM_WORLD, &mpi_interfaces_recv_requests_right[(n_mpi_transfers_per_send - 1) * i + 3]);
             }
 
             n_neighbours_recv_requests.insert(std::end(n_neighbours_recv_requests), std::begin(n_neighbours_recv_requests_right), std::end(n_neighbours_recv_requests_right));
@@ -2474,21 +2493,24 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
         }
 
         std::vector<size_t> neighbours_arrays_recv(n_neighbours_total_left + n_neighbours_total_right);
-        std::vector<size_t> neighbours_proc_arrays_recv(neighbours_arrays_recv.size());
+        std::vector<int> neighbours_proc_arrays_recv(neighbours_arrays_recv.size());
+        std::vector<size_t> neighbours_side_arrays_recv(neighbours_arrays_recv.size());
 
         if (n_elements_recv_left[global_rank] > 0) {
             for (size_t i = 0; i < origin_processes_left.size(); ++i) {
                 // Neighbours
-                MPI_Irecv(neighbours_arrays_recv.data() + process_neighbour_offset_left[i], process_n_neighbours_left[i], size_t_data_type, origin_processes_left[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank) + 2, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * i + 4]);
-                MPI_Irecv(neighbours_proc_arrays_recv.data() + process_neighbour_offset_left[i], process_n_neighbours_left[i], size_t_data_type, origin_processes_left[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank) + 3, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * i + 5]);
+                MPI_Irecv(neighbours_arrays_recv.data() + process_neighbour_offset_left[i], process_n_neighbours_left[i], size_t_data_type, origin_processes_left[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank) + 2, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * i + 4]);
+                MPI_Irecv(neighbours_proc_arrays_recv.data() + process_neighbour_offset_left[i], process_n_neighbours_left[i], MPI_INT, origin_processes_left[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank) + 3, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * i + 5]);
+                MPI_Irecv(neighbours_side_arrays_recv.data() + process_neighbour_offset_left[i], process_n_neighbours_left[i], size_t_data_type, origin_processes_left[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank) + 7, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * i + 6]);
             }
         }
 
         if (n_elements_recv_right[global_rank] > 0) {
             for (size_t i = 0; i < origin_processes_right.size(); ++i) {
                 // Neighbours
-                MPI_Irecv(neighbours_arrays_recv.data() + n_neighbours_total_left + process_neighbour_offset_right[i], process_n_neighbours_right[i], size_t_data_type, origin_processes_right[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 2, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * (origin_processes_left.size() + i) + 4]);
-                MPI_Irecv(neighbours_proc_arrays_recv.data() + n_neighbours_total_left + process_neighbour_offset_right[i], process_n_neighbours_right[i], size_t_data_type, origin_processes_right[i], 7 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 3, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * (origin_processes_left.size() + i) + 5]);
+                MPI_Irecv(neighbours_arrays_recv.data() + n_neighbours_total_left + process_neighbour_offset_right[i], process_n_neighbours_right[i], size_t_data_type, origin_processes_right[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 2, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * (origin_processes_left.size() + i) + 4]);
+                MPI_Irecv(neighbours_proc_arrays_recv.data() + n_neighbours_total_left + process_neighbour_offset_right[i], process_n_neighbours_right[i], MPI_INT, origin_processes_right[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 3, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * (origin_processes_left.size() + i) + 5]);
+                MPI_Irecv(neighbours_side_arrays_recv.data() + n_neighbours_total_left + process_neighbour_offset_right[i], process_n_neighbours_right[i], size_t_data_type, origin_processes_right[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 7, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * (origin_processes_left.size() + i) + 6]);
             }
         }
 
@@ -2620,12 +2642,15 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
         // Boundary elements to add
         size_t n_boundary_elements_to_add = n_boundary_elements_to_add_L + n_boundary_elements_to_add_R;
         if (n_elements_recv_left[global_rank] + n_elements_recv_right[global_rank] > 0) {
-            for (size_t i = 0; i < neighbours_arrays_recv.size(); ++i) {
-                if (neighbours_proc_arrays_recv[i] != global_rank) {
-                    ++n_boundary_elements_to_add;
+            for (size_t i = 0; i < neighbours_proc_arrays_recv.size(); ++i) {
+                const size_t neighbour_proc = neighbours_proc_arrays_recv[i];
+
+                if (neighbour_proc != global_rank) {
+                    ++n_boundary_elements_to_add; // CHECK multiple incoming elements can link to the same mpi received one
                 }
             }
         }
+        // CHECK there are also boundary elements that have to be created for mpi interfaces for leaving elements
 
         // Boundary elements to delete
         device_vector<bool> boundary_elements_to_delete(elements_.size() - n_elements_, stream_);
@@ -2663,6 +2688,29 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
         size_t n_symmetry_boundaries_to_add = 0;
         size_t n_inflow_boundaries_to_add = 0;
         size_t n_outflow_boundaries_to_add = 0;
+
+        if (n_elements_recv_left[global_rank] + n_elements_recv_right[global_rank] > 0) {
+            for (const auto neighbour_proc : neighbours_proc_arrays_recv) {
+                switch (neighbour_proc) {
+                    case boundary_type::wall:
+                        ++n_wall_boundaries_to_add;
+                        break;
+        
+                    case boundary_type::symmetry:
+                        ++n_symmetry_boundaries_to_add;
+                        break;
+        
+                    case boundary_type::inflow:
+                        ++n_inflow_boundaries_to_add;
+                        break;
+        
+                    case boundary_type::outflow:
+                        +n_outflow_boundaries_to_add;
+                        break;
+                }
+                
+            }
+        }
 
         // Boundaries to delete
         size_t n_wall_boundaries_to_delete = 0;
@@ -2825,6 +2873,15 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
         // Interfaces
         // MPI incoming interfaces to add
         size_t n_mpi_destinations_to_add = 0;
+        if (n_elements_recv_left[global_rank] + n_elements_recv_right[global_rank] > 0) {
+            for (const auto neighbour_proc : neighbours_proc_arrays_recv) {
+                n_mpi_destinations_to_add += neighbour_proc >= 0 && neighbour_proc != global_rank;
+            }
+        }
+
+        if (n_elements_send_left[global_rank] + n_elements_send_right[global_rank] > 0) {
+
+        }
 
         // MPI incoming interfaces to delete
         size_t n_mpi_destinations_to_delete = 0;
@@ -2871,7 +2928,13 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
 
         // MPI outgoing interfaces to delete
         size_t n_mpi_origins_to_delete = 0;
+        device_vector<bool> mpi_origins_to_delete(mpi_interfaces_origin_.size(), stream_);
+        SEM::Meshes::find_mpi_origins_to_delete<<<mpi_interfaces_outgoing_numBlocks_, boundaries_blockSize_, 0, stream_>>>(mpi_interfaces_origin_.size(), n_elements_, n_elements_send_left[global_rank], n_elements_send_right[global_rank], mpi_interfaces_origin_.data(), mpi_origins_to_delete.data());
 
+        // This will have to be done with the other stuff
+        if (n_elements_recv_left[global_rank] + n_elements_recv_right[global_rank] > 0) {
+            //SEM::Meshes::find_obstructed_mpi_origins_to_delete<<<mpi_interfaces_incoming_numBlocks_, boundaries_blockSize_, 0, stream_>>>(mpi_interfaces_destination_.size(), n_elements_, global_rank, mpi_interfaces_destination_.data(), mpi_interfaces_new_process_incoming.data(), boundary_elements_to_delete.data());
+        }
 
         // Self interfaces to add
         size_t n_self_interfaces_to_add = 0;
@@ -3090,7 +3153,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
         new_device_mpi_interfaces_outgoing_refine_array.clear(stream_);
         new_device_mpi_interfaces_incoming_refine_array.clear(stream_);
         
-        MPI_Waitall(2 * mpi_interfaces_process_.size(), mpi_interfaces_requests.data() + 2 * mpi_interfaces_process_.size(), mpi_interfaces_statuses.data() + 2 * mpi_interfaces_process_.size());
+        MPI_Waitall(n_mpi_transfers_per_interface * mpi_interfaces_process_.size(), mpi_interfaces_requests.data() + n_mpi_transfers_per_interface * mpi_interfaces_process_.size(), mpi_interfaces_statuses.data() + n_mpi_transfers_per_interface * mpi_interfaces_process_.size());
     
         std::vector<MPI_Status> mpi_interfaces_send_statuses(mpi_interfaces_send_requests.size());
         MPI_Waitall(mpi_interfaces_send_requests.size(), mpi_interfaces_send_requests.data(), mpi_interfaces_send_statuses.data());
@@ -3101,26 +3164,32 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
         // MPI interfaces
         std::vector<int> mpi_interfaces_new_process_outgoing(mpi_interfaces_origin_.size(), global_rank);
         std::vector<size_t> mpi_interfaces_new_local_index_outgoing(mpi_interfaces_origin_.size());
+        std::vector<size_t> mpi_interfaces_new_side_outgoing(mpi_interfaces_origin_.size());
 
         mpi_interfaces_origin_.copy_to(mpi_interfaces_new_local_index_outgoing, stream_);
+        interfaces_origin_side_.copy_to(mpi_interfaces_new_side_outgoing, stream_);
 
         std::vector<int> mpi_interfaces_new_process_incoming(mpi_interfaces_destination_.size());
         std::vector<size_t> mpi_interfaces_new_local_index_incoming(mpi_interfaces_destination_.size());
+        std::vector<size_t> mpi_interfaces_new_side_incoming(mpi_interfaces_destination_.size());
 
-        std::vector<MPI_Request> mpi_interfaces_requests(4 * mpi_interfaces_process_.size());
-        std::vector<MPI_Status> mpi_interfaces_statuses(4 * mpi_interfaces_process_.size());
+        std::vector<MPI_Request> mpi_interfaces_requests(2 * n_mpi_transfers_per_interface * mpi_interfaces_process_.size());
+        std::vector<MPI_Status> mpi_interfaces_statuses(2 * n_mpi_transfers_per_interface * mpi_interfaces_process_.size());
 
         cudaStreamSynchronize(stream_); // So the transfer to mpi_interfaces_new_local_index_outgoing is completed
 
         for (size_t i = 0; i < mpi_interfaces_process_.size(); ++i) {
-            MPI_Isend(mpi_interfaces_new_process_outgoing.data() + mpi_interfaces_outgoing_offset_[i], mpi_interfaces_outgoing_size_[i], MPI_INT, mpi_interfaces_process_[i], 5 * global_size * global_size + 2 * (global_size * global_rank + mpi_interfaces_process_[i]), MPI_COMM_WORLD, &mpi_interfaces_requests[2 * (mpi_interfaces_process_.size() + i)]);
-            MPI_Irecv(mpi_interfaces_new_process_incoming.data() + mpi_interfaces_incoming_offset_[i], mpi_interfaces_incoming_size_[i], MPI_INT, mpi_interfaces_process_[i], 5 * global_size * global_size + 2 * (global_size * mpi_interfaces_process_[i] + global_rank), MPI_COMM_WORLD, &mpi_interfaces_requests[2 * i]);
+            MPI_Isend(mpi_interfaces_new_process_outgoing.data() + mpi_interfaces_outgoing_offset_[i], mpi_interfaces_outgoing_size_[i], MPI_INT, mpi_interfaces_process_[i], 5 * global_size * global_size + n_mpi_transfers_per_interface * (global_size * global_rank + mpi_interfaces_process_[i]), MPI_COMM_WORLD, &mpi_interfaces_requests[n_mpi_transfers_per_interface * (mpi_interfaces_process_.size() + i)]);
+            MPI_Irecv(mpi_interfaces_new_process_incoming.data() + mpi_interfaces_incoming_offset_[i], mpi_interfaces_incoming_size_[i], MPI_INT, mpi_interfaces_process_[i], 5 * global_size * global_size + n_mpi_transfers_per_interface * (global_size * mpi_interfaces_process_[i] + global_rank), MPI_COMM_WORLD, &mpi_interfaces_requests[n_mpi_transfers_per_interface * i]);
 
-            MPI_Isend(mpi_interfaces_new_local_index_outgoing.data() + mpi_interfaces_outgoing_offset_[i], mpi_interfaces_outgoing_size_[i], size_t_data_type, mpi_interfaces_process_[i], 5 * global_size * global_size + 2 * (global_size * global_rank + mpi_interfaces_process_[i]) + 1, MPI_COMM_WORLD, &mpi_interfaces_requests[2 * (mpi_interfaces_process_.size() + i) + 1]);
-            MPI_Irecv(mpi_interfaces_new_local_index_incoming.data() + mpi_interfaces_incoming_offset_[i], mpi_interfaces_incoming_size_[i], size_t_data_type, mpi_interfaces_process_[i], 5 * global_size * global_size + 2 * (global_size * mpi_interfaces_process_[i] + global_rank) + 1, MPI_COMM_WORLD, &mpi_interfaces_requests[2 * i + 1]);
+            MPI_Isend(mpi_interfaces_new_local_index_outgoing.data() + mpi_interfaces_outgoing_offset_[i], mpi_interfaces_outgoing_size_[i], size_t_data_type, mpi_interfaces_process_[i], 5 * global_size * global_size + n_mpi_transfers_per_interface * (global_size * global_rank + mpi_interfaces_process_[i]) + 1, MPI_COMM_WORLD, &mpi_interfaces_requests[n_mpi_transfers_per_interface * (mpi_interfaces_process_.size() + i) + 1]);
+            MPI_Irecv(mpi_interfaces_new_local_index_incoming.data() + mpi_interfaces_incoming_offset_[i], mpi_interfaces_incoming_size_[i], size_t_data_type, mpi_interfaces_process_[i], 5 * global_size * global_size + n_mpi_transfers_per_interface * (global_size * mpi_interfaces_process_[i] + global_rank) + 1, MPI_COMM_WORLD, &mpi_interfaces_requests[n_mpi_transfers_per_interface * i + 1]);
+        
+            MPI_Isend(mpi_interfaces_new_side_outgoing.data() + mpi_interfaces_outgoing_offset_[i], mpi_interfaces_outgoing_size_[i], size_t_data_type, mpi_interfaces_process_[i], 5 * global_size * global_size + n_mpi_transfers_per_interface * (global_size * global_rank + mpi_interfaces_process_[i]) + 2, MPI_COMM_WORLD, &mpi_interfaces_requests[n_mpi_transfers_per_interface * (mpi_interfaces_process_.size() + i) + 2]);
+            MPI_Irecv(mpi_interfaces_new_side_incoming.data() + mpi_interfaces_incoming_offset_[i], mpi_interfaces_incoming_size_[i], size_t_data_type, mpi_interfaces_process_[i], 5 * global_size * global_size + n_mpi_transfers_per_interface * (global_size * mpi_interfaces_process_[i] + global_rank) + 2, MPI_COMM_WORLD, &mpi_interfaces_requests[n_mpi_transfers_per_interface * i + 2]);
         }
 
-        MPI_Waitall(2 * mpi_interfaces_process_.size(), mpi_interfaces_requests.data(), mpi_interfaces_statuses.data());
+        MPI_Waitall(n_mpi_transfers_per_interface * mpi_interfaces_process_.size(), mpi_interfaces_requests.data(), mpi_interfaces_statuses.data());
 
         std::cout << "Process " << global_rank << " sent and received mpi interfaces" << std::endl;
 
@@ -3321,7 +3390,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
         new_device_interfaces_v.clear(stream_);
         new_device_interfaces_N.clear(stream_);
         new_device_interfaces_refine.clear(stream_);
-        MPI_Waitall(2 * mpi_interfaces_process_.size(), mpi_interfaces_requests.data() + 2 * mpi_interfaces_process_.size(), mpi_interfaces_statuses.data() + 2 * mpi_interfaces_process_.size());
+        MPI_Waitall(n_mpi_transfers_per_interface * mpi_interfaces_process_.size(), mpi_interfaces_requests.data() + n_mpi_transfers_per_interface * mpi_interfaces_process_.size(), mpi_interfaces_statuses.data() + n_mpi_transfers_per_interface * mpi_interfaces_process_.size());
     }
 
     n_elements_global_ = n_elements_global_new;
@@ -6886,7 +6955,8 @@ auto SEM::Meshes::get_neighbours(size_t n_elements_send,
                                  const size_t* interfaces_origin, 
                                  const size_t* mpi_interfaces_destination, 
                                  const int* mpi_interfaces_process, 
-                                 const size_t* mpi_interfaces_local_indices, 
+                                 const size_t* mpi_interfaces_local_indices,
+                                 const size_t* mpi_interfaces_side, 
                                  const size_t* offsets, 
                                  const size_t* n_elements_received_left, 
                                  const size_t* n_elements_sent_left, 
@@ -6894,7 +6964,8 @@ auto SEM::Meshes::get_neighbours(size_t n_elements_send,
                                  const size_t* n_elements_sent_right, 
                                  const size_t* global_element_offset,
                                  size_t* neighbours, 
-                                 int* neighbours_proc) -> void {
+                                 int* neighbours_proc,
+                                 size_t* neighbours_side) -> void {
 
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
@@ -6906,7 +6977,8 @@ auto SEM::Meshes::get_neighbours(size_t n_elements_send,
             for (size_t side_face_index = 0; side_face_index < element.faces_[side_index].size(); ++side_face_index) {
                 const size_t face_index = element.faces_[side_index][side_face_index];
                 const Face2D_t& face = faces[face_index];
-                const size_t other_element_index = face.elements_[face.elements_[0] == element_index + start_index];
+                const size_t face_side_index = face.elements_[0] == element_index + start_index;
+                const size_t other_element_index = face.elements_[face_side_index];
 
                 if (other_element_index < n_domain_elements) {
                     if (other_element_index < n_elements_sent_left[rank] || other_element_index >= n_domain_elements - n_elements_sent_right[rank]) {
@@ -6918,6 +6990,7 @@ auto SEM::Meshes::get_neighbours(size_t n_elements_send,
                         neighbours[element_offset] = other_element_index + n_elements_received_left[rank] - n_elements_sent_left[rank];
                         neighbours_proc[element_offset] = rank;
                     }
+                    neighbours_side[element_offset] = face.elements_side_[face_side_index];
                 }
                 else { // It is either a local or mpi interface
                     // It could also be a boundary condition
@@ -6934,6 +7007,7 @@ auto SEM::Meshes::get_neighbours(size_t n_elements_send,
                                 neighbours[element_offset] = interfaces_origin[i] + n_elements_received_left[rank] - n_elements_sent_left[rank];
                                 neighbours_proc[element_offset] = rank;
                             }
+                            neighbours_side[element_offset] = interfaces_origin_side_[i];
 
                             missing = false;
                             break;
@@ -6945,6 +7019,7 @@ auto SEM::Meshes::get_neighbours(size_t n_elements_send,
                             if (mpi_interfaces_destination[i] == other_element_index) {
                                 neighbours[element_offset] = mpi_interfaces_local_indices[i];
                                 neighbours_proc[element_offset] = mpi_interfaces_process[i];
+                                neighbours_side[element_offset] = mpi_interfaces_side[i];
     
                                 missing = false;
                                 break;
@@ -6956,6 +7031,7 @@ auto SEM::Meshes::get_neighbours(size_t n_elements_send,
                                 if (wall_boundaries[i] == other_element_index) {
                                     neighbours[element_offset] = static_cast<size_t>(-1);
                                     neighbours_proc[element_offset] = SEM::Meshes::Mesh2D_t::boundary_type::wall;
+                                    neighbours_side[element_offset] = static_cast<size_t>(-1);
         
                                     missing = false;
                                     break;
@@ -6967,6 +7043,7 @@ auto SEM::Meshes::get_neighbours(size_t n_elements_send,
                                     if (symmetry_boundaries[i] == other_element_index) {
                                         neighbours[element_offset] = static_cast<size_t>(-1);
                                         neighbours_proc[element_offset] = SEM::Meshes::Mesh2D_t::boundary_type::symmetry;
+                                        neighbours_side[element_offset] = static_cast<size_t>(-1);
             
                                         missing = false;
                                         break;
@@ -6978,6 +7055,7 @@ auto SEM::Meshes::get_neighbours(size_t n_elements_send,
                                         if (inflow_boundaries[i] == other_element_index) {
                                             neighbours[element_offset] = static_cast<size_t>(-1);
                                             neighbours_proc[element_offset] = SEM::Meshes::Mesh2D_t::boundary_type::inflow;
+                                            neighbours_side[element_offset] = static_cast<size_t>(-1);
                 
                                             missing = false;
                                             break;
@@ -6989,6 +7067,7 @@ auto SEM::Meshes::get_neighbours(size_t n_elements_send,
                                             if (outflow_boundaries[i] == other_element_index) {
                                                 neighbours[element_offset] = static_cast<size_t>(-1);
                                                 neighbours_proc[element_offset] = SEM::Meshes::Mesh2D_t::boundary_type::outflow;
+                                                neighbours_side[element_offset] = static_cast<size_t>(-1);
                     
                                                 missing = false;
                                                 break;
@@ -7487,5 +7566,17 @@ auto SEM::Meshes::move_required_boundaries(size_t n_boundary_elements, size_t n_
 
             new_boundary[new_boundary_index] = new_boundary_element_index; // CHECK compute new index!
         }
+    }
+}
+
+__global__
+auto SEM::Meshes::find_mpi_origins_to_delete(size_t n_mpi_origins, size_t n_domain_elements, size_t n_elements_send_left, size_t n_elements_send_right, const size_t* mpi_interfaces_origin, bool* mpi_origins_to_delete) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t i = index; i < n_mpi_origins; i += stride) {
+        const size_t element_index = mpi_interfaces_origin[i];
+
+        mpi_origins_to_delete[i] = element_index < n_elements_send_left || element_index >= n_domain_elements - n_elements_send_right;
     }
 }
