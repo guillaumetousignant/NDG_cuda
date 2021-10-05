@@ -1,4 +1,9 @@
 \chapter{Graphics Computing Units} \label{chapter:graphics_computing_units} 
-% Talk about parallelism here. Also mesh design?
+% Talk about parallelism here. Also mesh design? Another section for the whole architecture?
 % thread warps, branching
 % Talk about saturation, SEMs
+
+When trying to solve very large problems, a single node with a single \textit{GPU} will have
+insufficient processing power and memory to solve the problem in a reasonable time, or at all. To
+work with these larger problems, the work needs to be split at another level than \textit{GPU}
+parallelism. 
