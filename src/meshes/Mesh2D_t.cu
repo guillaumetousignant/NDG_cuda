@@ -2357,7 +2357,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
                 }
             }
 
-            origin_processes_left = std::vector<int>(n_recv_processes)
+            origin_processes_left = std::vector<int>(n_recv_processes);
             std::vector<size_t> process_offset(origin_processes_left.size(), 0);
             std::vector<size_t> process_size(origin_processes_left.size(), 0);
             if (origin_processes_left.size() > 0) {
@@ -3151,6 +3151,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
             new_new_mpi_interfaces_origin_side.clear(stream_);
         }
 
+        // CHECK the same for self interfaces?
         // Self interfaces to add
         size_t n_self_interfaces_to_add = 0;
 
@@ -3160,16 +3161,13 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
 
 
 
-        // CHECK the same for self interfaces?
+        
 
 
         // Now we create the new faces and boundary elements
 
-        // And adjust boundaries (actually do this first)
-
         // And that's it hopefully
 
-        // And we remove leaving elements from mpi_origin
 
 
 
