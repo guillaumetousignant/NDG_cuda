@@ -33,7 +33,7 @@ namespace SEM { namespace Meshes {
             SEM::Entities::device_vector<size_t> symmetry_boundaries_;
             SEM::Entities::device_vector<size_t> inflow_boundaries_;
             SEM::Entities::device_vector<size_t> outflow_boundaries_;
-            enum boundary_type : int {wall = -1, symmetry = -2, inflow = -3, outflow = -3};
+            enum boundary_type : int {wall = -1, symmetry = -2, inflow = -3, outflow = -4};
 
             // Interfaces
             SEM::Entities::device_vector<size_t> interfaces_origin_;

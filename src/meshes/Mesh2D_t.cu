@@ -2073,22 +2073,22 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
             nodes_arrays.clear(stream_);
         }
 
-        size_t n_neighbours_total_left = 0;
-        size_t n_neighbours_total_right = 0;
+        size_t n_neighbours_send_total_left = 0;
+        size_t n_neighbours_send_total_right = 0;
 
         for (const auto n_neighbours : n_neighbours_arrays_send_left) {
-            n_neighbours_total_left += n_neighbours;
+            n_neighbours_send_total_left += n_neighbours;
         }
         for (const auto n_neighbours : n_neighbours_arrays_send_right) {
-            n_neighbours_total_right += n_neighbours;
+            n_neighbours_send_total_right += n_neighbours;
         }
 
-        std::vector<size_t> neighbours_arrays_send_left(n_neighbours_total_left);
-        std::vector<size_t> neighbours_arrays_send_right(n_neighbours_total_right);
-        std::vector<int> neighbours_proc_arrays_send_left(n_neighbours_total_left);
-        std::vector<int> neighbours_proc_arrays_send_right(n_neighbours_total_right);
-        std::vector<size_t> neighbours_side_arrays_send_left(n_neighbours_total_left);
-        std::vector<size_t> neighbours_side_arrays_send_right(n_neighbours_total_right);
+        std::vector<size_t> neighbours_arrays_send_left(n_neighbours_send_total_left);
+        std::vector<size_t> neighbours_arrays_send_right(n_neighbours_send_total_right);
+        std::vector<int> neighbours_proc_arrays_send_left(n_neighbours_send_total_left);
+        std::vector<int> neighbours_proc_arrays_send_right(n_neighbours_send_total_right);
+        std::vector<size_t> neighbours_side_arrays_send_left(n_neighbours_send_total_left);
+        std::vector<size_t> neighbours_side_arrays_send_right(n_neighbours_send_total_right);
         std::vector<size_t> process_n_neighbours_send_left;
         std::vector<size_t> process_n_neighbours_send_right;
 
@@ -2101,9 +2101,9 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
                 n_neighbours_total += n_neighbours_arrays_send_left[4 * i] + n_neighbours_arrays_send_left[4 * i + 1] + n_neighbours_arrays_send_left[4 * i + 2] + n_neighbours_arrays_send_left[4 * i + 3];
             }
 
-            device_vector<size_t> neighbours_arrays(n_neighbours_total_left, stream_);
-            device_vector<int> neighbours_proc_arrays(n_neighbours_total_left, stream_);
-            device_vector<size_t> neighbours_side_arrays(n_neighbours_total_left, stream_);
+            device_vector<size_t> neighbours_arrays(n_neighbours_send_total_left, stream_);
+            device_vector<int> neighbours_proc_arrays(n_neighbours_send_total_left, stream_);
+            device_vector<size_t> neighbours_side_arrays(n_neighbours_send_total_left, stream_);
             device_vector<size_t> neighbour_offsets_device(neighbour_offsets, stream_);
             device_vector<int> mpi_interfaces_new_process_incoming_device(mpi_interfaces_new_process_incoming, stream_);
             device_vector<size_t> mpi_interfaces_new_local_index_incoming_device(mpi_interfaces_new_local_index_incoming, stream_);
@@ -2210,9 +2210,9 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
                 n_neighbours_total += n_neighbours_arrays_send_right[4 * i] + n_neighbours_arrays_send_right[4 * i + 1] + n_neighbours_arrays_send_right[4 * i + 2] + n_neighbours_arrays_send_right[4 * i + 3];
             }
 
-            device_vector<size_t> neighbours_arrays(n_neighbours_total_right, stream_);
-            device_vector<int> neighbours_proc_arrays(n_neighbours_total_right, stream_);
-            device_vector<size_t> neighbours_side_arrays(n_neighbours_total_right, stream_);
+            device_vector<size_t> neighbours_arrays(n_neighbours_send_total_right, stream_);
+            device_vector<int> neighbours_proc_arrays(n_neighbours_send_total_right, stream_);
+            device_vector<size_t> neighbours_side_arrays(n_neighbours_send_total_right, stream_);
             device_vector<size_t> neighbour_offsets_device(neighbour_offsets, stream_);
             device_vector<int> mpi_interfaces_new_process_incoming_device(mpi_interfaces_new_process_incoming, stream_);
             device_vector<size_t> mpi_interfaces_new_local_index_incoming_device(mpi_interfaces_new_local_index_incoming, stream_);
@@ -2480,28 +2480,28 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
         std::vector<MPI_Status> n_neighbours_recv_statuses(n_neighbours_recv_requests.size());
         MPI_Waitall(n_neighbours_recv_requests.size(), n_neighbours_recv_requests.data(), n_neighbours_recv_statuses.data());
 
-        size_t n_neighbours_total_left = 0;
-        size_t n_neighbours_total_right = 0;
+        size_t n_neighbours_recv_total_left = 0;
+        size_t n_neighbours_recv_total_right = 0;
         std::vector<size_t> process_neighbour_offset_left(origin_processes_left.size());
         std::vector<size_t> process_neighbour_offset_right(origin_processes_right.size());
         
 
         if (n_elements_recv_left[global_rank] > 0) {
             for (size_t i = 0; i < origin_processes_left.size(); ++i) {
-                process_neighbour_offset_left[i] = n_neighbours_total_left;
-                n_neighbours_total_left += process_n_neighbours_recv_left[i];
+                process_neighbour_offset_left[i] = n_neighbours_recv_total_left;
+                n_neighbours_recv_total_left += process_n_neighbours_recv_left[i];
             }
         }
 
         if (n_elements_recv_right[global_rank] > 0) {
             std::vector<size_t> process_neighbour_offset_right(origin_processes_right.size());
             for (size_t i = 0; i < origin_processes_right.size(); ++i) {
-                process_neighbour_offset_right[i] = n_neighbours_total_right;
-                n_neighbours_total_right += process_n_neighbours_recv_right[i];
+                process_neighbour_offset_right[i] = n_neighbours_recv_total_right;
+                n_neighbours_recv_total_right += process_n_neighbours_recv_right[i];
             }
         }
 
-        std::vector<size_t> neighbours_arrays_recv(n_neighbours_total_left + n_neighbours_total_right);
+        std::vector<size_t> neighbours_arrays_recv(n_neighbours_recv_total_left + n_neighbours_recv_total_right);
         std::vector<int> neighbours_proc_arrays_recv(neighbours_arrays_recv.size());
         std::vector<size_t> neighbours_side_arrays_recv(neighbours_arrays_recv.size());
 
@@ -2517,9 +2517,9 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
         if (n_elements_recv_right[global_rank] > 0) {
             for (size_t i = 0; i < origin_processes_right.size(); ++i) {
                 // Neighbours
-                MPI_Irecv(neighbours_arrays_recv.data() + n_neighbours_total_left + process_neighbour_offset_right[i], process_n_neighbours_recv_right[i], size_t_data_type, origin_processes_right[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 2, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * (origin_processes_left.size() + i) + 4]);
-                MPI_Irecv(neighbours_proc_arrays_recv.data() + n_neighbours_total_left + process_neighbour_offset_right[i], process_n_neighbours_recv_right[i], MPI_INT, origin_processes_right[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 3, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * (origin_processes_left.size() + i) + 5]);
-                MPI_Irecv(neighbours_side_arrays_recv.data() + n_neighbours_total_left + process_neighbour_offset_right[i], process_n_neighbours_recv_right[i], size_t_data_type, origin_processes_right[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 7, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * (origin_processes_left.size() + i) + 6]);
+                MPI_Irecv(neighbours_arrays_recv.data() + n_neighbours_recv_total_left + process_neighbour_offset_right[i], process_n_neighbours_recv_right[i], size_t_data_type, origin_processes_right[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 2, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * (origin_processes_left.size() + i) + 4]);
+                MPI_Irecv(neighbours_proc_arrays_recv.data() + n_neighbours_recv_total_left + process_neighbour_offset_right[i], process_n_neighbours_recv_right[i], MPI_INT, origin_processes_right[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 3, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * (origin_processes_left.size() + i) + 5]);
+                MPI_Irecv(neighbours_side_arrays_recv.data() + n_neighbours_recv_total_left + process_neighbour_offset_right[i], process_n_neighbours_recv_right[i], size_t_data_type, origin_processes_right[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 7, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * (origin_processes_left.size() + i) + 6]);
             }
         }
 
@@ -2587,7 +2587,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
                 }
             }
         }
-        neighbour_index = n_neighbours_total_left; // Maybe error check here? should already be there
+        neighbour_index = n_neighbours_recv_total_left; // Maybe error check here? should already be there
         if (n_elements_recv_right[global_rank] > 0) {
             for (size_t i = 0; i < n_elements_recv_right[global_rank]; ++i) {
                 const size_t element_index = n_elements_new[global_rank] + 1 - n_elements_recv_right[global_rank] + i;
@@ -2681,7 +2681,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
 
         if (n_elements_recv_left[global_rank] + n_elements_recv_right[global_rank] > 0) {
             for (size_t i = 0; i < neighbours_proc_arrays_recv.size(); ++i) {
-                const size_t neighbour_proc = neighbours_proc_arrays_recv[i];
+                const int neighbour_proc = neighbours_proc_arrays_recv[i];
 
                 if (neighbour_proc != global_rank) {
                     if (neighbour_proc < 0) {
@@ -3040,7 +3040,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
             }
         }
 
-        neighbour_mpi_index_recv = n_neighbours_total_left; // Maybe error check here? should already be there
+        neighbour_mpi_index_recv = n_neighbours_recv_total_left; // Maybe error check here? should already be there
         for (size_t i = 0; i  < n_elements_recv_right[global_rank]; ++i) {
             for (size_t j = 0; j < 4; ++j) {
                 const size_t side_n_neighbours = n_neighbours_arrays_recv_right[4 * i + j];
