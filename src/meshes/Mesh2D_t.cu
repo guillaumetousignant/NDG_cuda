@@ -3169,6 +3169,13 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
 
         // And that's it hopefully
 
+        if (n_elements_send_left[global_rank] > 0) {
+
+        }
+
+        if (n_elements_send_left[global_rank] > 0) {
+
+        }
 
 
 
