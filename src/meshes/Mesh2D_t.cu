@@ -2760,7 +2760,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
                         break;
         
                     case boundary_type::outflow :
-                        +n_outflow_boundaries_to_add;
+                        ++n_outflow_boundaries_to_add;
                         break;
                 }
                 
@@ -2930,7 +2930,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
         size_t n_mpi_destinations_to_add = 0;
         if (n_elements_recv_left[global_rank] + n_elements_recv_right[global_rank] > 0) {
             for (size_t i = 0; i < neighbours_proc_arrays_recv.size(); ++i) {
-                const size_t neighbour_proc = neighbours_proc_arrays_recv[i];
+                const int neighbour_proc = neighbours_proc_arrays_recv[i];
 
                 if (neighbour_proc != global_rank && neighbour_proc >= 0) {
                     const size_t local_element_index = neighbours_arrays_recv[i];
