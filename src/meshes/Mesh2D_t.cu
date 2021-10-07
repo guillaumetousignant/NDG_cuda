@@ -1825,7 +1825,7 @@ auto SEM::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& p
     device_vector<deviceFloat> new_device_interfaces_u(mpi_interfaces_origin_.size() * (maximum_N_ + 1), stream_);
     device_vector<deviceFloat> new_device_interfaces_v(mpi_interfaces_origin_.size() * (maximum_N_ + 1), stream_);
     device_vector<int> new_device_interfaces_N(mpi_interfaces_origin_.size(), stream_);
-    device_vector<bool> new_device_interfaces_refine(mpi_interfaces_origin_.size(), stream_)
+    device_vector<bool> new_device_interfaces_refine(mpi_interfaces_origin_.size(), stream_);
 
     device_vector<deviceFloat> new_device_receiving_interfaces_p(mpi_interfaces_destination_.size() * (maximum_N_ + 1), stream_);
     device_vector<deviceFloat> new_device_receiving_interfaces_u(mpi_interfaces_destination_.size() * (maximum_N_ + 1), stream_);
@@ -2423,7 +2423,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
                 }
             }
 
-            size_t n_recv_processes = 0
+            size_t n_recv_processes = 0;
             int current_process = global_rank;
             for (const auto recv_rank : origin_process_recv) {
                 if (recv_rank != current_process) {
@@ -2528,9 +2528,9 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
     
         // Now everything is received
         // We can do something about the nodes
-        device_vector<size_t> received_node_indices(missing_received_nodes.size(), stream_);
+        device_vector<size_t> received_node_indices(4 * (n_elements_recv_left[global_rank] + n_elements_recv_right[global_rank]), stream_);
         if (n_elements_recv_left[global_rank] + n_elements_recv_right[global_rank] > 0) {
-            device_vector<bool> missing_received_nodes(4 * (n_elements_recv_left[global_rank] + n_elements_recv_right[global_rank]), stream_);
+            device_vector<bool> missing_received_nodes(received_node_indices.size(), stream_);
             device_vector<deviceFloat> nodes_arrays_device(nodes_arrays_recv, stream_);
             const int received_nodes_numBlocks = (missing_received_nodes.size() + elements_blockSize_ - 1) / elements_blockSize_;
 
@@ -2655,7 +2655,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
         for (size_t i = 0; i < n_elements_send_left[global_rank]; ++i) {
             for (size_t j = 0; j < 4; ++j) {
                 const size_t side_n_neighbours = n_neighbours_arrays_send_left[4 * i + j];
-                for (k = 0; k < side_n_neighbours; ++k) {
+                for (size_t k = 0; k < side_n_neighbours; ++k) {
                     if (neighbours_proc_arrays_send_left[neighbour_index_send + k] == global_rank) {
                         ++n_boundary_elements_to_add;
                         break;
@@ -2669,7 +2669,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
         for (size_t i = 0; i < n_elements_send_right[global_rank]; ++i) {
             for (size_t j = 0; j < 4; ++j) {
                 const size_t side_n_neighbours = n_neighbours_arrays_send_right[4 * i + j];
-                for (k = 0; k < side_n_neighbours; ++k) {
+                for (size_t k = 0; k < side_n_neighbours; ++k) {
                     if (neighbours_proc_arrays_send_right[neighbour_index_send + k] == global_rank) {
                         ++n_boundary_elements_to_add;
                         break;
@@ -2747,19 +2747,19 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
         if (n_elements_recv_left[global_rank] + n_elements_recv_right[global_rank] > 0) {
             for (const auto neighbour_proc : neighbours_proc_arrays_recv) {
                 switch (neighbour_proc) {
-                    case boundary_type::wall:
+                    case boundary_type::wall :
                         ++n_wall_boundaries_to_add;
                         break;
         
-                    case boundary_type::symmetry:
+                    case boundary_type::symmetry :
                         ++n_symmetry_boundaries_to_add;
                         break;
         
-                    case boundary_type::inflow:
+                    case boundary_type::inflow :
                         ++n_inflow_boundaries_to_add;
                         break;
         
-                    case boundary_type::outflow:
+                    case boundary_type::outflow :
                         +n_outflow_boundaries_to_add;
                         break;
                 }
@@ -2954,7 +2954,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
         for (size_t i = 0; i < n_elements_send_left[global_rank]; ++i) {
             for (size_t j = 0; j < 4; ++j) {
                 const size_t side_n_neighbours = n_neighbours_arrays_send_left[4 * i + j];
-                for (k = 0; k < side_n_neighbours; ++k) {
+                for (size_t k = 0; k < side_n_neighbours; ++k) {
                     if (neighbours_proc_arrays_send_left[neighbour_mpi_index_send + k] == global_rank) {
                         ++n_mpi_destinations_to_add;
                         break;
@@ -2968,7 +2968,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
         for (size_t i = 0; i < n_elements_send_right[global_rank]; ++i) {
             for (size_t j = 0; j < 4; ++j) {
                 const size_t side_n_neighbours = n_neighbours_arrays_send_right[4 * i + j];
-                for (k = 0; k < side_n_neighbours; ++k) {
+                for (size_t k = 0; k < side_n_neighbours; ++k) {
                     if (neighbours_proc_arrays_send_right[neighbour_mpi_index_send + k] == global_rank) {
                         ++n_mpi_destinations_to_add;
                         break;
@@ -3067,7 +3067,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
         for (size_t i = 0; i < n_elements_send_left[global_rank]; ++i) {
             for (size_t j = 0; j < 4; ++j) {
                 const size_t side_n_neighbours = n_neighbours_arrays_send_left[4 * i + j];
-                for (k = 0; k < side_n_neighbours; ++k) {
+                for (size_t k = 0; k < side_n_neighbours; ++k) {
                     if (neighbours_proc_arrays_send_left[neighbour_index_send + k] == global_rank) {
                         ++n_mpi_origins_to_add;
                     }
@@ -3080,7 +3080,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
         for (size_t i = 0; i < n_elements_send_right[global_rank]; ++i) {
             for (size_t j = 0; j < 4; ++j) {
                 const size_t side_n_neighbours = n_neighbours_arrays_send_right[4 * i + j];
-                for (k = 0; k < side_n_neighbours; ++k) {
+                for (size_t k = 0; k < side_n_neighbours; ++k) {
                     if (neighbours_proc_arrays_send_right[neighbour_index_send + k] == global_rank) {
                         ++n_mpi_origins_to_add;
                     }
@@ -3179,7 +3179,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
             device_vector<size_t> n_neighbours_arrays(n_neighbours_arrays_recv_left, stream_);
 
             const int recv_numBlocks = (n_elements_recv_left[global_rank] + boundaries_blockSize_ - 1) / boundaries_blockSize_;
-            SEM::Meshes::fill_received_elements<<<recv_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_recv_left[global_rank], new_elements.data(), maximum_N_, new_nodes.data(), solution_arrays.data(), n_neighbours_arrays.data(), received_node_indices.data(), polynomial_nodes.data());
+            SEM::Meshes::fill_received_elements<<<recv_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_recv_left[global_rank], new_elements.data(), maximum_N_, nodes_.data(), solution_arrays.data(), n_neighbours_arrays.data(), received_node_indices.data(), polynomial_nodes.data());
 
             // Then we must figure out faces etc
             // Maybe we do all this before we put the solution back, as to do it at the same time
@@ -3197,7 +3197,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
             device_vector<size_t> n_neighbours_arrays(n_neighbours_arrays_recv_right, stream_);
 
             const int recv_numBlocks = (n_elements_recv_right[global_rank] + boundaries_blockSize_ - 1) / boundaries_blockSize_;
-            SEM::Meshes::fill_received_elements<<<recv_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_recv_right[global_rank], new_elements.data() + n_elements_new[global_rank] - n_elements_recv_right[global_rank], maximum_N_, new_nodes.data(), solution_arrays.data(), n_neighbours_arrays.data(), received_node_indices.data() + 4 * n_elements_recv_left[global_rank], polynomial_nodes.data());
+            SEM::Meshes::fill_received_elements<<<recv_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_recv_right[global_rank], new_elements.data() + n_elements_new[global_rank] - n_elements_recv_right[global_rank], maximum_N_, nodes_.data(), solution_arrays.data(), n_neighbours_arrays.data(), received_node_indices.data() + 4 * n_elements_recv_left[global_rank], polynomial_nodes.data());
 
             // Then we must figure out faces etc
             // Maybe we do all this before we put the solution back, as to do it at the same time
@@ -7156,7 +7156,7 @@ auto SEM::Meshes::get_neighbours(size_t n_elements_send,
                                  size_t n_wall_boundaries, 
                                  size_t n_symmetry_boundaries, 
                                  size_t n_inflow_boundaries, 
-                                 size_t n_outflow_boundaries
+                                 size_t n_outflow_boundaries,
                                  size_t n_local_interfaces, 
                                  size_t n_MPI_interface_elements_receiving, 
                                  int rank, 
@@ -7167,7 +7167,7 @@ auto SEM::Meshes::get_neighbours(size_t n_elements_send,
                                  const size_t* wall_boundaries, 
                                  const size_t* symmetry_boundaries, 
                                  const size_t* inflow_boundaries, 
-                                 const size_t* outflow_boundaries
+                                 const size_t* outflow_boundaries,
                                  const size_t* interfaces_destination, 
                                  const size_t* interfaces_origin, 
                                  const size_t* mpi_interfaces_destination, 
@@ -7224,7 +7224,7 @@ auto SEM::Meshes::get_neighbours(size_t n_elements_send,
                                 neighbours[element_offset] = interfaces_origin[i] + n_elements_received_left[rank] - n_elements_sent_left[rank];
                                 neighbours_proc[element_offset] = rank;
                             }
-                            neighbours_side[element_offset] = interfaces_origin_side_[i];
+                            neighbours_side[element_offset] = mpi_interfaces_side[i];
 
                             missing = false;
                             break;
@@ -7319,7 +7319,7 @@ auto SEM::Meshes::move_elements(size_t n_elements_move, size_t n_elements_send_l
         new_elements[destination_element_index] = std::move(elements[source_element_index]);
 
         // We update indices
-        for (size_t i = 0; i < new_elements[destination_element_index].faces_.size()) {
+        for (size_t i = 0; i < new_elements[destination_element_index].faces_.size(); ++i) {
             for (size_t j = 0; j < new_elements[destination_element_index].faces_[i].size(); ++j) {
                 Face2D_t face = faces[new_elements[destination_element_index].faces_[i][j]];
                 const size_t side_index = face.elements_[1] == source_element_index;
@@ -7500,8 +7500,8 @@ auto SEM::Meshes::find_received_nodes(size_t n_received_nodes, size_t n_nodes, c
 
         for (size_t j = 0; j < n_nodes; ++j) {
             if (received_node.almost_equal(nodes[j])) {
-                found_received_nodes[i] = false;
-                missing_received_nodes[i] = j;
+                missing_received_nodes[i] = false;
+                received_nodes_indices[i] = j;
                 break;
             }
         }
@@ -7516,7 +7516,7 @@ auto SEM::Meshes::add_new_received_nodes(size_t n_received_nodes, size_t n_nodes
     const int block_id = blockIdx.x;
 
     for (size_t i = index; i < n_received_nodes; i += stride) {
-        if missing_received_nodes[i]) {
+        if (missing_received_nodes[i]) {
             size_t new_received_index = n_nodes + received_nodes_block_offsets[block_id];
             for (size_t j = i - thread_id; j < i; ++j) {
                 new_received_index += missing_received_nodes[j];
@@ -7538,11 +7538,11 @@ auto SEM::Meshes::find_faces_to_delete(size_t n_faces, size_t n_domain_elements,
         const std::array<bool, 2> elements_leaving {
             face.elements_[0] < n_elements_send_left || face.elements_[0] > n_domain_elements - n_elements_send_right && face.elements_[0] < n_domain_elements,
             face.elements_[1] < n_elements_send_left || face.elements_[1] > n_domain_elements - n_elements_send_right && face.elements_[1] < n_domain_elements
-        }
+        };
         const std::array<bool, 2> boundary_elements {
             face.elements_[0] >= n_domain_elements,
             face.elements_[1] >= n_domain_elements
-        }
+        };
 
         faces_to_delete[i] = elements_leaving[0] && elements_leaving[1] || elements_leaving[0] && boundary_elements[1] || elements_leaving[1] && boundary_elements[2];
     }
@@ -7751,7 +7751,7 @@ auto SEM::Meshes::move_all_boundaries(size_t n_boundary_elements, size_t n_domai
 
         size_t new_boundary_element_index = new_n_domain_elements + boundary_element_index - boundary_elements_block_offsets[boundary_element_block_id];
         for (size_t j = boundary_element_index - boundary_element_thread_id; j < boundary_element_index; ++j) {
-            new_boundary_element_index -= boundaries_to_delete[j];
+            new_boundary_element_index -= boundary_elements_to_delete[j];
         }
 
         new_boundary[i] = new_boundary_element_index;
@@ -7807,7 +7807,7 @@ auto SEM::Meshes::find_obstructed_mpi_origins_to_delete(size_t n_mpi_origins, si
         const size_t element_index = mpi_interfaces_origin[i] + n_elements_recv_left - n_elements_send_left;
         const Element2D_t& element = elements[element_index];
         const size_t side_index = mpi_interfaces_origin_side[i];
-        const size_t side_n_faces = element.faces_[side_index];
+        const size_t side_n_faces = element.faces_[side_index].size();
 
         bool missing = true;
         for (size_t j = 0; j < side_n_faces; ++j) {
@@ -7865,7 +7865,7 @@ auto SEM::Meshes::move_required_mpi_origins(size_t n_mpi_origins, size_t n_domai
 
             size_t new_boundary_element_index = new_n_domain_elements + boundary_element_index - boundary_elements_block_offsets[boundary_element_block_id];
             for (size_t j = boundary_element_index - boundary_element_thread_id; j < boundary_element_index; ++j) {
-                new_boundary_element_index -= boundaries_to_delete[j];
+                new_boundary_element_index -= boundary_elements_to_delete[j];
             }
 
             new_mpi_origins[new_mpi_origin_index] = new_boundary_element_index;
