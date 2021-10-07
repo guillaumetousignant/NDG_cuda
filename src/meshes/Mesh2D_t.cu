@@ -7741,8 +7741,6 @@ __global__
 auto SEM::Meshes::move_all_boundaries(size_t n_boundary_elements, size_t n_domain_elements, size_t new_n_domain_elements, const size_t* boundary, size_t* new_boundary, const bool* boundary_elements_to_delete, const size_t* boundary_elements_block_offsets, int boundary_elements_blockSize) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
-    const int thread_id = threadIdx.x;
-    const int block_id = blockIdx.x;
 
     for (size_t i = index; i < n_boundary_elements; i += stride) {
         const size_t boundary_element_index = boundary[i] - n_domain_elements;
