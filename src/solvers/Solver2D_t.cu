@@ -106,10 +106,15 @@ auto SEM::Solvers::Solver2D_t::solve(const SEM::Entities::NDG_t<Polynomial> &NDG
 
             mesh.estimate_error<Polynomial>(NDG.nodes_, NDG.weights_);
             mesh.adapt(NDG.N_max_, NDG.nodes_, NDG.barycentric_weights_);
-            if (global_size > 1) {
-                std::cout << "Process " << global_rank << " load balancing, t = " << time << ", timestep = " << timestep << std::endl;
-                mesh.load_balance(NDG.nodes_);
+        }
+
+        if (timestep % mesh.load_balancing_interval_ == 0 && global_size > 1) {
+            if (global_rank == 0) {
+                bar.set_status_text("Load Balancing");
+                bar.update(time/t_end);
             }
+
+            mesh.load_balance(NDG.nodes_);
         }
 
         if (global_rank == 0) {

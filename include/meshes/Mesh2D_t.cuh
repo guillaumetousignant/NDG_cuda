@@ -21,7 +21,7 @@
 namespace SEM { namespace Meshes {
     class Mesh2D_t {
         public:
-            Mesh2D_t(std::filesystem::path filename, int initial_N, int maximum_N, size_t n_interpolation_points, int max_split_level, int adaptivity_interval, deviceFloat tolerance_min, deviceFloat tolerance_max, const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes, const cudaStream_t &stream);
+            Mesh2D_t(std::filesystem::path filename, int initial_N, int maximum_N, size_t n_interpolation_points, int max_split_level, int adaptivity_interval, int load_balancing_interval, deviceFloat tolerance_min, deviceFloat tolerance_max, const SEM::Entities::device_vector<deviceFloat>& polynomial_nodes, const cudaStream_t &stream);
 
             // Geometry
             SEM::Entities::device_vector<SEM::Entities::Vec2<deviceFloat>> nodes_;
@@ -108,6 +108,7 @@ namespace SEM { namespace Meshes {
             size_t n_interpolation_points_;
             int max_split_level_;
             int adaptivity_interval_;
+            int load_balancing_interval_;
             deviceFloat tolerance_min_;
             deviceFloat tolerance_max_;
 
