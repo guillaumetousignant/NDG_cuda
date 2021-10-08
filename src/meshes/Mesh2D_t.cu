@@ -2322,23 +2322,32 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
         std::vector<size_t> process_n_neighbours_recv_left;
         std::vector<size_t> process_n_neighbours_recv_right;
 
-        std::vector<int> origin_processes_left;
-        std::vector<int> origin_processes_right;
 
-        std::vector<MPI_Request> n_neighbours_recv_requests;
-        std::vector<MPI_Request> mpi_interfaces_recv_requests;
+
+
+
+
+
+        std::vector<int> origin_process_recv_left(n_elements_recv_left[global_rank]);
+        std::vector<int> origin_process_recv_right(n_elements_recv_right[global_rank]);
+        size_t n_recv_processes_left = 0;
+        size_t n_recv_processes_right = 0;
+
+
+
+
+
 
         if (n_elements_recv_left[global_rank] > 0) {
             // Compute the global indices of the elements using global_element_offset_new, and where they are coming from
             std::vector<size_t> global_element_indices_recv(n_elements_recv_left[global_rank], global_element_offset_new[global_rank]);
-            std::vector<int> origin_process_recv(n_elements_recv_left[global_rank]);
             for (size_t i = 0; i < n_elements_recv_left[global_rank]; ++i) {
                 global_element_indices_recv[i] += i;
 
                 bool missing = true;
                 for (int j = 0; j < global_size; ++j) {
                     if (global_element_indices_recv[i] >= global_element_offset_current[j] && global_element_indices_recv[i] <= global_element_offset_end_current[j]) {
-                        origin_process_recv[i] = j;
+                        origin_process_recv_left[i] = j;
                         missing = false;
                         break;
                     }
@@ -2349,26 +2358,61 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
                 }
             }
 
-            size_t n_recv_processes = 0;
             int current_process = global_rank;
-            for (const auto recv_rank : origin_process_recv) {
+            for (const auto recv_rank : origin_process_recv_left) {
                 if (recv_rank != current_process) {
                     current_process = recv_rank;
-                    ++n_recv_processes;
+                    ++n_recv_processes_left;
+                }
+            }
+        }
+
+        if (n_elements_recv_right[global_rank] > 0) {
+            // Compute the global indices of the elements using global_element_offset_new, and where they are coming from
+            std::vector<size_t> global_element_indices_recv(n_elements_recv_right[global_rank], global_element_offset_end_new[global_rank] + 1 - n_elements_recv_right[global_rank]);
+            for (size_t i = 0; i < n_elements_recv_right[global_rank]; ++i) {
+                global_element_indices_recv[i] += i;
+
+                bool missing = true;
+                for (int j = 0; j < global_size; ++j) {
+                    if (global_element_indices_recv[i] >= global_element_offset_current[j] && global_element_indices_recv[i] <= global_element_offset_end_current[j]) {
+                        origin_process_recv_right[i] = j;
+                        missing = false;
+                        break;
+                    }
+                }
+                if (missing) {
+                    std::cerr << "Error: Process " << global_rank << " should receive element with global index " << global_element_indices_recv[i] << " as its right received element #" << i << ", but the element is not within any process' range. Exiting." << std::endl;
+                    exit(55);
                 }
             }
 
-            origin_processes_left = std::vector<int>(n_recv_processes);
+            int current_process = global_rank;
+            for (const auto recv_rank : origin_process_recv_right) {
+                if (recv_rank != current_process) {
+                    current_process = recv_rank;
+                    ++n_recv_processes_right;
+                }
+            }
+        }
+
+        std::vector<int> origin_processes_left = std::vector<int>(n_recv_processes_left);
+        std::vector<int> origin_processes_right = std::vector<int>(n_recv_processes_right);
+
+        std::vector<MPI_Request> n_neighbours_recv_requests(origin_processes_left.size() + origin_processes_right.size());
+        std::vector<MPI_Request> mpi_interfaces_recv_requests((n_mpi_transfers_per_send - 1) * (origin_processes_left.size() + origin_processes_right.size()));
+
+        if (n_elements_recv_left[global_rank] > 0) {
             std::vector<size_t> process_offset(origin_processes_left.size(), 0);
             std::vector<size_t> process_size(origin_processes_left.size(), 0);
             if (origin_processes_left.size() > 0) {
-                origin_processes_left[0] = origin_process_recv[0];
+                origin_processes_left[0] = origin_process_recv_left[0];
             }
 
             size_t process_index = 0;
             size_t process_current_offset = 0;
             for (size_t i = 0; i < n_elements_recv_left[global_rank]; ++i) {
-                const int recv_rank = origin_process_recv[i];
+                const int recv_rank = origin_process_recv_left[i];
                 if (recv_rank != origin_processes_left[process_index]) {
                     process_current_offset += process_size[process_index];
                     ++process_index;
@@ -2381,12 +2425,11 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
 
             process_n_neighbours_recv_left = std::vector<size_t>(origin_processes_left.size(), 0);
 
-            std::vector<MPI_Request> n_neighbours_recv_requests_left(origin_processes_left.size());
             std::vector<MPI_Request> mpi_interfaces_recv_requests_left((n_mpi_transfers_per_send - 1) * origin_processes_left.size());
 
             for (size_t i = 0; i < origin_processes_left.size(); ++i) {
                 // Neighbours
-                MPI_Irecv(&process_n_neighbours_recv_left[i], 1, size_t_data_type, origin_processes_left[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank), MPI_COMM_WORLD, &n_neighbours_recv_requests_left[i]);
+                MPI_Irecv(&process_n_neighbours_recv_left[i], 1, size_t_data_type, origin_processes_left[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank), MPI_COMM_WORLD, &n_neighbours_recv_requests[i]);
                 MPI_Irecv(n_neighbours_arrays_recv_left.data() + 4 * process_offset[i], 4 * process_size[i], size_t_data_type, origin_processes_left[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank) + 1, MPI_COMM_WORLD, &mpi_interfaces_recv_requests_left[(n_mpi_transfers_per_send - 1) * i]);
 
                 // Nodes
@@ -2399,51 +2442,20 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
                 MPI_Irecv(elements_recv_left.data() + process_offset[i], process_size[i], element_data_type.data(), origin_processes_left[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank) + 6, MPI_COMM_WORLD, &mpi_interfaces_recv_requests_left[(n_mpi_transfers_per_send - 1) * i + 3]);
             }
 
-            n_neighbours_recv_requests.insert(std::end(n_neighbours_recv_requests), std::begin(n_neighbours_recv_requests_left), std::end(n_neighbours_recv_requests_left));
             mpi_interfaces_recv_requests.insert(std::end(mpi_interfaces_recv_requests), std::begin(mpi_interfaces_recv_requests_left), std::end(mpi_interfaces_recv_requests_left));
         }
 
         if (n_elements_recv_right[global_rank] > 0) {
-            // Compute the global indices of the elements using global_element_offset_new, and where they are coming from
-            std::vector<size_t> global_element_indices_recv(n_elements_recv_right[global_rank], global_element_offset_end_new[global_rank] + 1 - n_elements_recv_right[global_rank]);
-            std::vector<int> origin_process_recv(n_elements_recv_right[global_rank]);
-            for (size_t i = 0; i < n_elements_recv_right[global_rank]; ++i) {
-                global_element_indices_recv[i] += i;
-
-                bool missing = true;
-                for (int j = 0; j < global_size; ++j) {
-                    if (global_element_indices_recv[i] >= global_element_offset_current[j] && global_element_indices_recv[i] <= global_element_offset_end_current[j]) {
-                        origin_process_recv[i] = j;
-                        missing = false;
-                        break;
-                    }
-                }
-                if (missing) {
-                    std::cerr << "Error: Process " << global_rank << " should receive element with global index " << global_element_indices_recv[i] << " as its right received element #" << i << ", but the element is not within any process' range. Exiting." << std::endl;
-                    exit(55);
-                }
-            }
-
-            size_t n_recv_processes = 0;
-            int current_process = global_rank;
-            for (const auto recv_rank : origin_process_recv) {
-                if (recv_rank != current_process) {
-                    current_process = recv_rank;
-                    ++n_recv_processes;
-                }
-            }
-
-            origin_processes_right = std::vector<int>(n_recv_processes);
             std::vector<size_t> process_offset(origin_processes_right.size(), 0);
             std::vector<size_t> process_size(origin_processes_right.size(), 0);
             if (origin_processes_right.size() > 0) {
-                origin_processes_right[0] = origin_process_recv[0];
+                origin_processes_right[0] = origin_process_recv_right[0];
             }
 
             size_t process_index = 0;
             size_t process_current_offset = 0;
             for (size_t i = 0; i < n_elements_recv_right[global_rank]; ++i) {
-                const int recv_rank = origin_process_recv[i];
+                const int recv_rank = origin_process_recv_right[i];
                 if (recv_rank != origin_processes_right[process_index]) {
                     process_current_offset += process_size[process_index];
                     ++process_index;
@@ -2456,12 +2468,11 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
             
             process_n_neighbours_recv_right = std::vector<size_t>(origin_processes_right.size(), 0);
 
-            std::vector<MPI_Request> n_neighbours_recv_requests_right(origin_processes_right.size());
             std::vector<MPI_Request> mpi_interfaces_recv_requests_right((n_mpi_transfers_per_send - 1) * origin_processes_right.size());
 
             for (size_t i = 0; i < origin_processes_right.size(); ++i) {
                 // Neighbours
-                MPI_Irecv(&process_n_neighbours_recv_right[i], 1, size_t_data_type, origin_processes_right[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank), MPI_COMM_WORLD, &n_neighbours_recv_requests_right[i]);
+                MPI_Irecv(&process_n_neighbours_recv_right[i], 1, size_t_data_type, origin_processes_right[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank), MPI_COMM_WORLD, &n_neighbours_recv_requests[origin_processes_left.size() + i]);
                 MPI_Irecv(n_neighbours_arrays_recv_right.data() + 4 * process_offset[i], 4 * process_size[i], size_t_data_type, origin_processes_right[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 1, MPI_COMM_WORLD, &mpi_interfaces_recv_requests_right[(n_mpi_transfers_per_send - 1) * i]);
 
                 // Nodes
@@ -2474,7 +2485,6 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
                 MPI_Irecv(elements_recv_right.data() + process_offset[i], process_size[i], element_data_type.data(), origin_processes_right[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 6, MPI_COMM_WORLD, &mpi_interfaces_recv_requests_right[(n_mpi_transfers_per_send - 1) * i + 3]);
             }
 
-            n_neighbours_recv_requests.insert(std::end(n_neighbours_recv_requests), std::begin(n_neighbours_recv_requests_right), std::end(n_neighbours_recv_requests_right));
             mpi_interfaces_recv_requests.insert(std::end(mpi_interfaces_recv_requests), std::begin(mpi_interfaces_recv_requests_right), std::end(mpi_interfaces_recv_requests_right));
         }
 
@@ -2710,7 +2720,7 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
 
         // Boundary elements to delete
         device_vector<bool> boundary_elements_to_delete(elements_.size() - n_elements_, stream_);
-        SEM::Meshes::find_boundary_elements_to_delete<<<ghosts_numBlocks_, boundaries_blockSize_, 0, stream_>>>(elements_.size() - n_elements_, n_elements_, n_elements_send_left[global_rank], n_elements_send_right[global_rank], elements_.data(), faces_.data(), boundary_elements_to_delete.data());
+        SEM::Meshes::find_boundary_elements_to_delete<<<ghosts_numBlocks_, boundaries_blockSize_, 0, stream_>>>(elements_.size() - n_elements_, n_elements_, n_elements_send_left[global_rank], n_elements_send_right[global_rank], elements_.data(), new_faces.data(), boundary_elements_to_delete.data());
 
         if (n_elements_recv_left[global_rank] + n_elements_recv_right[global_rank] > 0) {
             SEM::Meshes::find_mpi_interface_elements_to_delete<<<mpi_interfaces_incoming_numBlocks_, boundaries_blockSize_, 0, stream_>>>(mpi_interfaces_destination_.size(), n_elements_, global_rank, mpi_interfaces_destination_.data(), mpi_interfaces_new_process_incoming.data(), boundary_elements_to_delete.data());
