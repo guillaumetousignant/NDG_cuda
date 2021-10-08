@@ -919,7 +919,7 @@ SEM::Entities::Element2D_t::Datatype::Datatype() {
 
     constexpr std::array<int, n> lengths {1, 1, 1};
     constexpr std::array<MPI_Aint, n> displacements {offsetof(SEM::Entities::Element2D_t, status_), offsetof(SEM::Entities::Element2D_t, rotation_), offsetof(SEM::Entities::Element2D_t, split_level_)};
-    constexpr std::array<MPI_Datatype, n> types {MPI_INT, MPI_INT, MPI_INT}; // Ok I could just send those as packed ints, but who knows if something will have to be added.
+    const std::array<MPI_Datatype, n> types {MPI_INT, MPI_INT, MPI_INT}; // Ok I could just send those as packed ints, but who knows if something will have to be added.
     
     MPI_Type_create_struct(n, lengths.data(), displacements.data(), types.data(), &datatype_);
     MPI_Type_commit(&datatype_);

@@ -4,7 +4,7 @@
 #include <cmath>
 #include <limits>
 
-SEM::Entities::Element_host_t::Element_host_t(int N, size_t face_L, size_t face_R, hostFloat x_L, hostFloat x_R) : 
+SEM::Entities::Element_host_t::Element_host_t(int N, std::size_t face_L, std::size_t face_R, hostFloat x_L, hostFloat x_R) : 
         N_(N),
         faces_{face_L, face_R},
         x_{x_L, x_R},
@@ -20,9 +20,9 @@ SEM::Entities::Element_host_t::Element_host_t(int N, size_t face_L, size_t face_
         error_(0.0) {}
 
 // Basically useless, find better solution when multiple elements.
-void SEM::Entities::Element_host_t::get_elements_data(size_t N_elements, const Element_host_t* elements, hostFloat* phi, hostFloat* phi_prime) {
-    for (size_t i = 0; i < N_elements; ++i) {
-        const size_t element_offset = i * (elements[i].N_ + 1);
+void SEM::Entities::Element_host_t::get_elements_data(std::size_t N_elements, const Element_host_t* elements, hostFloat* phi, hostFloat* phi_prime) {
+    for (std::size_t i = 0; i < N_elements; ++i) {
+        const std::size_t element_offset = i * (elements[i].N_ + 1);
         for (int j = 0; j <= elements[i].N_; ++j) {
             phi[element_offset + j] = elements[i].phi_[j];
             phi_prime[element_offset + j] = elements[i].phi_prime_[j];
@@ -31,8 +31,8 @@ void SEM::Entities::Element_host_t::get_elements_data(size_t N_elements, const E
 }
 
 // Basically useless, find better solution when multiple elements.
-void SEM::Entities::Element_host_t::get_phi(size_t N_elements, const Element_host_t* elements, hostFloat* phi) {
-    for (size_t i = 0; i < N_elements; ++i) {
+void SEM::Entities::Element_host_t::get_phi(std::size_t N_elements, const Element_host_t* elements, hostFloat* phi) {
+    for (std::size_t i = 0; i < N_elements; ++i) {
         for (int j = 0; j <= elements[i].N_; ++j) {
             phi[j] = elements[i].phi_[j];
         }

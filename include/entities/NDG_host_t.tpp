@@ -1,4 +1,3 @@
-#include "entities/NDG_host_t.h"
 #include "polynomials/ChebyshevPolynomial_host_t.h"
 #include "polynomials/LegendrePolynomial_host_t.h"
 #include <cmath>
@@ -9,11 +8,8 @@
 #include <iomanip>
 #include <limits>
 
-template class SEM::Entities::NDG_host_t<SEM::Polynomials::ChebyshevPolynomial_host_t>; // Like, I understand why I need this, but man is it crap.
-template class SEM::Entities::NDG_host_t<SEM::Polynomials::LegendrePolynomial_host_t>;
-
 template<typename Polynomial>
-SEM::Entities::NDG_host_t<Polynomial>::NDG_host_t(int N_max, size_t n_interpolation_points) : 
+SEM::Entities::NDG_host_t<Polynomial>::NDG_host_t(int N_max, std::size_t n_interpolation_points) : 
         N_max_(N_max), 
         N_interpolation_points_(n_interpolation_points),
         nodes_(N_max + 1),
@@ -152,9 +148,9 @@ void SEM::Entities::NDG_host_t<Polynomial>::print() {
     std::cout << std::endl << "Interpolation matrices: " << std::endl;
     for (int N = 0; N <= N_max_; ++N) {
         std::cout << '\t' << "N = " << N << ": " << std::endl;
-        for (size_t i = 0; i < N_interpolation_points_; ++i) {
+        for (std::size_t i = 0; i < N_interpolation_points_; ++i) {
             std::cout << '\t' << '\t';
-            for (size_t j = 0; j <= N; ++j) {
+            for (std::size_t j = 0; j <= N; ++j) {
                 std::cout << interpolation_matrices_[N][i * (N + 1) + j] << " ";
             }
             std::cout << std::endl;
@@ -289,8 +285,8 @@ void SEM::Entities::NDG_host_t<Polynomial>::polynomial_cg_derivative_matrices(in
 
 // Will interpolate n_interpolation_points between -1 and 1
 template<typename Polynomial>
-void SEM::Entities::NDG_host_t<Polynomial>::create_interpolation_matrices(int N, size_t n_interpolation_points, const std::vector<hostFloat>& nodes, const std::vector<hostFloat>& barycentric_weights, std::vector<hostFloat>& interpolation_matrices) {
-    for (size_t j = 0; j < n_interpolation_points; ++j) {
+void SEM::Entities::NDG_host_t<Polynomial>::create_interpolation_matrices(int N, std::size_t n_interpolation_points, const std::vector<hostFloat>& nodes, const std::vector<hostFloat>& barycentric_weights, std::vector<hostFloat>& interpolation_matrices) {
+    for (std::size_t j = 0; j < n_interpolation_points; ++j) {
         bool row_has_match = false;
         const hostFloat x_coord = 2.0 * j / (n_interpolation_points - 1) - 1.0;
 

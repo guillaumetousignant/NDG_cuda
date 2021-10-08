@@ -7,5 +7,4 @@ target_sources(SEM
         Face2D_t.cu
         Face_host_t.cpp
         NDG_t.cu
-        NDG_host_t.cpp
 )

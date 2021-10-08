@@ -8,11 +8,11 @@
 namespace SEM { namespace Entities {
     class Element_host_t { // Turn this into separate vectors, because cache exists
         public:
-            Element_host_t(int N, size_t face_L, size_t face_R, hostFloat x_L, hostFloat x_R);
+            Element_host_t(int N, std::size_t face_L, std::size_t face_R, hostFloat x_L, hostFloat x_R);
             Element_host_t() = default;
 
             int N_;
-            std::array<size_t, 2> faces_; // Could also be pointers. left, right
+            std::array<std::size_t, 2> faces_; // Could also be pointers. left, right
             std::array<hostFloat, 2> x_;
             hostFloat delta_x_;
             hostFloat phi_L_;
@@ -43,10 +43,10 @@ namespace SEM { namespace Entities {
 
         private: 
             // Basically useless, find better solution when multiple elements.
-            static void get_elements_data(size_t N_elements, const Element_host_t* elements, hostFloat* phi, hostFloat* phi_prime);
+            static void get_elements_data(std::size_t N_elements, const Element_host_t* elements, hostFloat* phi, hostFloat* phi_prime);
 
             // Basically useless, find better solution when multiple elements.
-            static void get_phi(size_t N_elements, const Element_host_t* elements, hostFloat* phi);
+            static void get_phi(std::size_t N_elements, const Element_host_t* elements, hostFloat* phi);
 
             hostFloat exponential_decay();
 
