@@ -2320,21 +2320,10 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
         std::vector<deviceFloat> solution_arrays_recv_left(3 * n_elements_recv_left[global_rank] * std::pow(maximum_N_ + 1, 2));
         std::vector<deviceFloat> solution_arrays_recv_right(3 * n_elements_recv_right[global_rank] * std::pow(maximum_N_ + 1, 2));
 
-
-
-
-
-
-
         std::vector<int> origin_process_recv_left(n_elements_recv_left[global_rank]);
         std::vector<int> origin_process_recv_right(n_elements_recv_right[global_rank]);
         size_t n_recv_processes_left = 0;
         size_t n_recv_processes_right = 0;
-
-
-
-
-
 
         if (n_elements_recv_left[global_rank] > 0) {
             // Compute the global indices of the elements using global_element_offset_new, and where they are coming from
@@ -2485,7 +2474,6 @@ auto SEM::Meshes::Mesh2D_t::load_balance(const SEM::Entities::device_vector<devi
         std::vector<size_t> process_neighbour_offset_left(origin_processes_left.size());
         std::vector<size_t> process_neighbour_offset_right(origin_processes_right.size());
         
-
         if (n_elements_recv_left[global_rank] > 0) {
             for (size_t i = 0; i < origin_processes_left.size(); ++i) {
                 process_neighbour_offset_left[i] = n_neighbours_recv_total_left;
