@@ -18,7 +18,9 @@ namespace SEM { namespace Hilbert {
      * @param outgoing_side Side through which the curve exits the element, which is the line from this element to the next.
      * @return Status Geometric arrangement of the cell.
      */
+    #if defined(__CUDA__)
     __host__ __device__
+    #endif
     auto deduct_first_element_status(size_t outgoing_side) -> Status;
 
     /**
@@ -27,7 +29,9 @@ namespace SEM { namespace Hilbert {
      * @param incoming_side Side through which the curve enters the element, which is the line from the previous element to this one.
      * @return Status Geometric arrangement of the cell.
      */
-     __host__ __device__
+    #if defined(__CUDA__)
+    __host__ __device__
+    #endif
     auto deduct_last_element_status(size_t incoming_side) -> Status;
 
     /**
@@ -37,7 +41,9 @@ namespace SEM { namespace Hilbert {
      * @param outgoing_side Side through which the curve exits the element, which is the line from this element to the next.
      * @return Status Geometric arrangement of the cell.
      */
-     __host__ __device__
+    #if defined(__CUDA__)
+    __host__ __device__
+    #endif
     auto deduct_element_status(size_t incoming_side, size_t outgoing_side) -> Status;
 
     /**
@@ -50,7 +56,9 @@ namespace SEM { namespace Hilbert {
      * @param rotation Which side is the element's first side.
      * @return std::array<size_t, 4> Order of the child elements in the curve, numbered from the bottom left counter-clockwise.
      */
-     __host__ __device__
+    #if defined(__CUDA__)
+    __host__ __device__
+    #endif
     auto child_order(Status parent_status, int rotation) -> std::array<size_t, 4>;
 
     /**
@@ -63,7 +71,9 @@ namespace SEM { namespace Hilbert {
      * @param rotation Which side is the element's first side.
      * @return std::array<Status, 4> Statuses of the child elements in the curve, numbered from the bottom left counter-clockwise.
      */
-     __host__ __device__
+    #if defined(__CUDA__)
+    __host__ __device__
+    #endif
     auto child_statuses(Status parent_status, int rotation) -> std::array<Status, 4>;
 }}
 

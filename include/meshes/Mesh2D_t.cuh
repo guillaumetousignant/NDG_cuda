@@ -3,12 +3,10 @@
 
 #include "entities/Element2D_t.cuh"
 #include "entities/Face2D_t.cuh"
-#include "entities/NDG_t.cuh"
 #include "entities/device_vector.cuh"
 #include "entities/host_vector.cuh"
 #include "entities/Vec2.cuh"
 #include "helpers/float_types.h"
-#include "entities/NDG_t.cuh"
 #include "helpers/DataWriter_t.h"
 #include <array>
 #include <tuple>

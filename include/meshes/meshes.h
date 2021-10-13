@@ -13,5 +13,6 @@ namespace SEM {
 #include "Mesh_t.cuh"
 #include "Mesh_host_t.h"
 #include "Mesh2D_t.cuh"
+#include "Mesh2D_host_t.cuh"
 
 #endif

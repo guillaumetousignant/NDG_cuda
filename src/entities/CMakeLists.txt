@@ -3,8 +3,10 @@ target_sources(SEM
         Element_t.cu
         Element2D_t.cu
         Element_host_t.cpp
+        Element2D_host_t.cpp
         Face_t.cu
         Face2D_t.cu
         Face_host_t.cpp
+        Face2D_host_t.cpp
         NDG_t.cu
 )

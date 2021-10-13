@@ -11,5 +11,6 @@ namespace SEM {
 }
 
 #include "Solver2D_t.cuh"
+#include "Solver2D_host_t.h"
 
 #endif

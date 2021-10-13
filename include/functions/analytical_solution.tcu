@@ -1,0 +1,14 @@
+#include "helpers/constants.h"
+#include <cmath>
+
+#if defined(__CUDA__)
+__host__ __device__
+#endif
+template <class T>
+auto SEM::g(SEM::Entities::Vec2<T> xy, T t) -> std::array<T, 3> {    
+    const T p = std::exp(-(SEM::Constants::k.x() * (xy.x() - SEM::Constants::xy0.x()) + SEM::Constants::k.y() * (xy.y() - SEM::Constants::xy0.y()) - SEM::Constants::c * t) * (SEM::Constants::k.x() * (xy.x() - SEM::Constants::xy0.x()) + SEM::Constants::k.y() * (xy.y() - SEM::Constants::xy0.y()) - SEM::Constants::c * t) / (SEM::Constants::d * SEM::Constants::d));
+
+    return {p,
+            p * SEM::Constants::k.x() / SEM::Constants::c,
+            p * SEM::Constants::k.y() / SEM::Constants::c};
+}

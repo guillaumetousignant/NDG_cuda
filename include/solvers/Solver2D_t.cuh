@@ -36,7 +36,7 @@ namespace SEM { namespace Solvers {
     };
 
     __global__
-    auto calculate_wave_fluxes(size_t N_faces, SEM::Entities::Face2D_t* faces, const SEM::Entities::Element2D_t* elements) -> void;
+    auto calculate_wave_fluxes(size_t N_faces, SEM::Entities::Face2D_t* faces) -> void;
 
     // Algorithm 114
     __global__
