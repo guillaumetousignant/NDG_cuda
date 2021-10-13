@@ -237,7 +237,7 @@ namespace SEM { namespace Meshes {
 
     auto move_boundary_elements(size_t n_boundary_elements, size_t n_domain_elements, size_t new_n_domain_elements, SEM::Entities::Element2D_host_t* elements, SEM::Entities::Element2D_host_t* new_elements, SEM::Entities::Face2D_host_t* faces, const bool* boundary_elements_to_delete, const size_t* boundary_elements_to_delete_block_offsets) -> void;
 
-    auto find_boundaries_to_delete(size_t n_boundary_elements, size_t n_domain_elements, const size_t* boundary, const bool* boundary_elements_to_delete, bool* boundaries_to_delete) -> void;
+    auto find_boundaries_to_delete(const std::vector<size_t>& n_boundary_elements, size_t n_domain_elements, const std::vector<bool>& boundary_elements_to_delete, std::vector<bool>& boundaries_to_delete) -> void;
 
     auto move_all_boundaries(size_t n_boundary_elements, size_t n_domain_elements, size_t new_n_domain_elements, const size_t* boundary, size_t* new_boundary, const bool* boundary_elements_to_delete, const size_t* boundary_elements_block_offsets, int boundary_elements_blockSize) -> void;
 

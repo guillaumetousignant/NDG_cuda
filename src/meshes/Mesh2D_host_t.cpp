@@ -2387,18 +2387,11 @@ auto SEM::Meshes::Mesh2D_host_t::load_balance(const SEM::Entities::std::vector<h
         if (n_elements_send_left[global_rank] + n_elements_send_right[global_rank] > 0) {
             if (!wall_boundaries_.empty()) {
                 std::vector<bool> wall_boundaries_to_delete(wall_boundaries_.size(), stream_);
-                SEM::Meshes::find_boundaries_to_delete(wall_boundaries_.size(), n_elements_, wall_boundaries_.data(), boundary_elements_to_delete.data(), wall_boundaries_to_delete.data());
+                SEM::Meshes::find_boundaries_to_delete(wall_boundaries_, n_elements_, boundary_elements_to_delete, wall_boundaries_to_delete);
                 
-                std::vector<size_t> device_wall_boundaries_to_delete_refine_array(wall_boundaries_numBlocks_, stream_);
-                SEM::Meshes::reduce_bools<boundaries_blockSize_/2>(wall_boundaries_to_delete.size(), wall_boundaries_to_delete.data(), device_wall_boundaries_to_delete_refine_array.data());
-                std::vector<size_t> host_wall_boundaries_to_delete_refine_array(wall_boundaries_numBlocks_);
-                device_wall_boundaries_to_delete_refine_array.copy_to(host_wall_boundaries_to_delete_refine_array, stream_);
-
                 for (int i = 0; i < wall_boundaries_numBlocks_; ++i) {
-                    n_wall_boundaries_to_delete += host_wall_boundaries_to_delete_refine_array[i];
-                    host_wall_boundaries_to_delete_refine_array[i] = n_wall_boundaries_to_delete - host_wall_boundaries_to_delete_refine_array[i]; // Current block offset
+                    n_wall_boundaries_to_delete += wall_boundaries_to_delete[i];
                 }
-                device_wall_boundaries_to_delete_refine_array.copy_from(host_wall_boundaries_to_delete_refine_array, stream_);
 
                 std::vector<size_t> new_new_wall_boundaries(wall_boundaries_.size() + n_wall_boundaries_to_add - n_wall_boundaries_to_delete, stream_);
                 new_wall_boundaries = std::move(new_new_wall_boundaries);
@@ -2412,18 +2405,11 @@ auto SEM::Meshes::Mesh2D_host_t::load_balance(const SEM::Entities::std::vector<h
 
             if (!symmetry_boundaries_.empty()) {
                 std::vector<bool> symmetry_boundaries_to_delete(symmetry_boundaries_.size(), stream_);
-                SEM::Meshes::find_boundaries_to_delete(symmetry_boundaries_.size(), n_elements_, symmetry_boundaries_.data(), boundary_elements_to_delete.data(), symmetry_boundaries_to_delete.data());
-                
-                std::vector<size_t> device_symmetry_boundaries_to_delete_refine_array(symmetry_boundaries_numBlocks_, stream_);
-                SEM::Meshes::reduce_bools<boundaries_blockSize_/2>(symmetry_boundaries_to_delete.size(), symmetry_boundaries_to_delete.data(), device_symmetry_boundaries_to_delete_refine_array.data());
-                std::vector<size_t> host_symmetry_boundaries_to_delete_refine_array(symmetry_boundaries_numBlocks_);
-                device_symmetry_boundaries_to_delete_refine_array.copy_to(host_symmetry_boundaries_to_delete_refine_array, stream_);
+                SEM::Meshes::find_boundaries_to_delete(symmetry_boundaries_, n_elements_, boundary_elements_to_delete, symmetry_boundaries_to_delete);
 
-                for (int i = 0; i < symmetry_boundaries_numBlocks_; ++i) {
-                    n_symmetry_boundaries_to_delete += host_symmetry_boundaries_to_delete_refine_array[i];
-                    host_symmetry_boundaries_to_delete_refine_array[i] = n_symmetry_boundaries_to_delete - host_symmetry_boundaries_to_delete_refine_array[i]; // Current block offset
+                for (int i = 0; i < symmetry_boundaries_to_delete.size(); ++i) {
+                    n_symmetry_boundaries_to_delete += symmetry_boundaries_to_delete[i];
                 }
-                device_symmetry_boundaries_to_delete_refine_array.copy_from(host_symmetry_boundaries_to_delete_refine_array, stream_);
 
                 std::vector<size_t> new_new_symmetry_boundaries(symmetry_boundaries_.size() + n_symmetry_boundaries_to_add - n_symmetry_boundaries_to_delete, stream_);
                 new_symmetry_boundaries = std::move(new_new_symmetry_boundaries);
@@ -2437,19 +2423,12 @@ auto SEM::Meshes::Mesh2D_host_t::load_balance(const SEM::Entities::std::vector<h
 
             if (!inflow_boundaries_.empty()) {
                 std::vector<bool> inflow_boundaries_to_delete(inflow_boundaries_.size(), stream_);
-                SEM::Meshes::find_boundaries_to_delete(inflow_boundaries_.size(), n_elements_, inflow_boundaries_.data(), boundary_elements_to_delete.data(), inflow_boundaries_to_delete.data());
+                SEM::Meshes::find_boundaries_to_delete(inflow_boundaries_, n_elements_, boundary_elements_to_delete, inflow_boundaries_to_delete);
                 
-                std::vector<size_t> device_inflow_boundaries_to_delete_refine_array(inflow_boundaries_numBlocks_, stream_);
-                SEM::Meshes::reduce_bools<boundaries_blockSize_/2>(inflow_boundaries_to_delete.size(), inflow_boundaries_to_delete.data(), device_inflow_boundaries_to_delete_refine_array.data());
-                std::vector<size_t> host_inflow_boundaries_to_delete_refine_array(inflow_boundaries_numBlocks_);
-                device_inflow_boundaries_to_delete_refine_array.copy_to(host_inflow_boundaries_to_delete_refine_array, stream_);
-
-                for (int i = 0; i < inflow_boundaries_numBlocks_; ++i) {
-                    n_inflow_boundaries_to_delete += host_inflow_boundaries_to_delete_refine_array[i];
-                    host_inflow_boundaries_to_delete_refine_array[i] = n_inflow_boundaries_to_delete - host_inflow_boundaries_to_delete_refine_array[i]; // Current block offset
+                for (int i = 0; i < inflow_boundaries_to_delete.size(); ++i) {
+                    n_inflow_boundaries_to_delete += inflow_boundaries_to_delete[i];
                 }
-                device_inflow_boundaries_to_delete_refine_array.copy_from(host_inflow_boundaries_to_delete_refine_array, stream_);
-
+                
                 std::vector<size_t> new_new_inflow_boundaries(inflow_boundaries_.size() + n_inflow_boundaries_to_add - n_inflow_boundaries_to_delete, stream_);
                 new_inflow_boundaries = std::move(new_new_inflow_boundaries);
 
@@ -2462,18 +2441,11 @@ auto SEM::Meshes::Mesh2D_host_t::load_balance(const SEM::Entities::std::vector<h
 
             if (!outflow_boundaries_.empty()) {
                 std::vector<bool> outflow_boundaries_to_delete(outflow_boundaries_.size(), stream_);
-                SEM::Meshes::find_boundaries_to_delete(outflow_boundaries_.size(), n_elements_, outflow_boundaries_.data(), boundary_elements_to_delete.data(), outflow_boundaries_to_delete.data());
-                
-                std::vector<size_t> device_outflow_boundaries_to_delete_refine_array(outflow_boundaries_numBlocks_, stream_);
-                SEM::Meshes::reduce_bools<boundaries_blockSize_/2>(outflow_boundaries_to_delete.size(), outflow_boundaries_to_delete.data(), device_outflow_boundaries_to_delete_refine_array.data());
-                std::vector<size_t> host_outflow_boundaries_to_delete_refine_array(outflow_boundaries_numBlocks_);
-                device_outflow_boundaries_to_delete_refine_array.copy_to(host_outflow_boundaries_to_delete_refine_array, stream_);
+                SEM::Meshes::find_boundaries_to_delete(outflow_boundaries_, n_elements_, boundary_elements_to_delete, outflow_boundaries_to_delete);
 
-                for (int i = 0; i < outflow_boundaries_numBlocks_; ++i) {
-                    n_outflow_boundaries_to_delete += host_outflow_boundaries_to_delete_refine_array[i];
-                    host_outflow_boundaries_to_delete_refine_array[i] = n_outflow_boundaries_to_delete - host_outflow_boundaries_to_delete_refine_array[i]; // Current block offset
+                for (int i = 0; i < outflow_boundaries_to_delete.size(); ++i) {
+                    n_outflow_boundaries_to_delete += outflow_boundaries_to_delete[i];
                 }
-                device_outflow_boundaries_to_delete_refine_array.copy_from(host_outflow_boundaries_to_delete_refine_array, stream_);
 
                 std::vector<size_t> new_new_outflow_boundaries(outflow_boundaries_.size() + n_outflow_boundaries_to_add - n_outflow_boundaries_to_delete, stream_);
                 new_outflow_boundaries = std::move(new_new_outflow_boundaries);
@@ -2487,39 +2459,27 @@ auto SEM::Meshes::Mesh2D_host_t::load_balance(const SEM::Entities::std::vector<h
         }
         else {
             if (wall_boundaries_.size() + n_wall_boundaries_to_add > 0) {
-                std::vector<size_t> new_new_wall_boundaries(wall_boundaries_.size() + n_wall_boundaries_to_add, stream_);
-                new_wall_boundaries = std::move(new_new_wall_boundaries);
+                new_wall_boundaries = std::vector<size_t>(wall_boundaries_.size() + n_wall_boundaries_to_add);
 
                 SEM::Meshes::move_all_boundaries(wall_boundaries_.size(), n_elements_, n_elements_new[global_rank], wall_boundaries_.data(), new_wall_boundaries.data(), boundary_elements_to_delete.data(), device_boundary_elements_to_delete_refine_array.data(), boundaries_blockSize_);
-
-                new_new_wall_boundaries.clear(stream_);
             }
 
             if (symmetry_boundaries_.size() + n_symmetry_boundaries_to_add > 0) {
-                std::vector<size_t> new_new_symmetry_boundaries(symmetry_boundaries_.size() + n_symmetry_boundaries_to_add, stream_);
-                new_symmetry_boundaries = std::move(new_new_symmetry_boundaries);
+                new_symmetry_boundaries = std::vector<size_t>(symmetry_boundaries_.size() + n_symmetry_boundaries_to_add);
 
                 SEM::Meshes::move_all_boundaries(symmetry_boundaries_.size(), n_elements_, n_elements_new[global_rank], symmetry_boundaries_.data(), new_symmetry_boundaries.data(), boundary_elements_to_delete.data(), device_boundary_elements_to_delete_refine_array.data(), boundaries_blockSize_);
-
-                new_new_symmetry_boundaries.clear(stream_);
             }
 
             if (inflow_boundaries_.size() + n_inflow_boundaries_to_add > 0) {
-                std::vector<size_t> new_new_inflow_boundaries(inflow_boundaries_.size() + n_inflow_boundaries_to_add, stream_);
-                new_inflow_boundaries = std::move(new_new_inflow_boundaries);
+                new_inflow_boundaries = std::vector<size_t>(inflow_boundaries_.size() + n_inflow_boundaries_to_add);
 
                 SEM::Meshes::move_all_boundaries(inflow_boundaries_.size(), n_elements_, n_elements_new[global_rank], inflow_boundaries_.data(), new_inflow_boundaries.data(), boundary_elements_to_delete.data(), device_boundary_elements_to_delete_refine_array.data(), boundaries_blockSize_);
-
-                new_new_inflow_boundaries.clear(stream_);
             }
 
             if (outflow_boundaries_.size() + n_outflow_boundaries_to_add > 0) {
-                std::vector<size_t> new_new_outflow_boundaries(outflow_boundaries_.size() + n_outflow_boundaries_to_add, stream_);
-                new_outflow_boundaries = std::move(new_new_outflow_boundaries);
+                new_outflow_boundaries = std::vector<size_t>(outflow_boundaries_.size() + n_outflow_boundaries_to_add);
 
                 SEM::Meshes::move_all_boundaries(outflow_boundaries_.size(), n_elements_, n_elements_new[global_rank], outflow_boundaries_.data(), new_outflow_boundaries.data(), boundary_elements_to_delete.data(), device_boundary_elements_to_delete_refine_array.data(), boundaries_blockSize_);
-
-                new_new_outflow_boundaries.clear(stream_);
             }
         }
 
@@ -2583,7 +2543,7 @@ auto SEM::Meshes::Mesh2D_host_t::load_balance(const SEM::Entities::std::vector<h
 
         if (!mpi_interfaces_destination_.empty()) {
             std::vector<bool> mpi_destinations_to_delete(mpi_interfaces_destination_.size(), stream_);
-            SEM::Meshes::find_boundaries_to_delete(mpi_interfaces_destination_.size(), n_elements_, mpi_interfaces_destination_.data(), boundary_elements_to_delete.data(), mpi_destinations_to_delete.data());
+            SEM::Meshes::find_boundaries_to_delete(mpi_interfaces_destination_, n_elements_, boundary_elements_to_delete, mpi_destinations_to_delete);
             
             std::vector<size_t> device_mpi_destinations_to_delete_refine_array(mpi_interfaces_incoming_numBlocks_, stream_);
             SEM::Meshes::reduce_bools<boundaries_blockSize_/2>(mpi_destinations_to_delete.size(), mpi_destinations_to_delete.data(), device_mpi_destinations_to_delete_refine_array.data());
@@ -6937,8 +6897,8 @@ auto SEM::Meshes::move_boundary_elements(size_t n_boundary_elements, size_t n_do
     }
 }
 
-auto SEM::Meshes::find_boundaries_to_delete(size_t n_boundary_elements, size_t n_domain_elements, const size_t* boundary, const bool* boundary_elements_to_delete, bool* boundaries_to_delete) -> void {
-    for (size_t i = 0; i < n_boundary_elements; ++i) {
+auto SEM::Meshes::find_boundaries_to_delete(const std::vector<size_t>& boundary, size_t n_domain_elements, const std::vector<bool>& boundary_elements_to_delete, std::vector<bool>& boundaries_to_delete) -> void {
+    for (size_t i = 0; i < boundary.size(); ++i) {
         const size_t boundary_element_index = boundary[i] - n_domain_elements;
 
         if (boundary_elements_to_delete[boundary_element_index]) {
