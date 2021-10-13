@@ -45,19 +45,13 @@ namespace SEM { namespace Meshes {
             std::vector<size_t> mpi_interfaces_destination_;
 
             // Boundary solution exchange
-            std::vector<hostFloat> device_interfaces_p_;
-            std::vector<hostFloat> device_interfaces_u_;
-            std::vector<hostFloat> device_interfaces_v_;
-            std::vector<hostFloat> device_receiving_interfaces_p_;
-            std::vector<hostFloat> device_receiving_interfaces_u_;
-            std::vector<hostFloat> device_receiving_interfaces_v_;
             std::vector<int> interfaces_N_;
-            std::vector<hostFloat> host_interfaces_p_;
-            std::vector<hostFloat> host_interfaces_u_;
-            std::vector<hostFloat> host_interfaces_v_;
-            std::vector<hostFloat> host_receiving_interfaces_p_;
-            std::vector<hostFloat> host_receiving_interfaces_u_;
-            std::vector<hostFloat> host_receiving_interfaces_v_;
+            std::vector<hostFloat> interfaces_p_;
+            std::vector<hostFloat> interfaces_u_;
+            std::vector<hostFloat> interfaces_v_;
+            std::vector<hostFloat> receiving_interfaces_p_;
+            std::vector<hostFloat> receiving_interfaces_u_;
+            std::vector<hostFloat> receiving_interfaces_v_;
             std::vector<int> receiving_interfaces_N_;
             std::vector<unsigned int> interfaces_refine_;
             std::vector<unsigned int> receiving_interfaces_refine_;
