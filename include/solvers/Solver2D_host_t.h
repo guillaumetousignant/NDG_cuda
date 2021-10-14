@@ -31,7 +31,7 @@ namespace SEM { namespace Solvers {
             // Algorithm 19
             static auto matrix_vector_multiply(int N, const hostFloat* matrix, const hostFloat* vector, hostFloat* result) -> void;
 
-            static auto calculate_wave_fluxes(std::vector<Face2D_host_t>& faces) -> void;
+            static auto calculate_wave_fluxes(std::vector<SEM::Entities::Face2D_host_t>& faces) -> void;
     };
 
     // Algorithm 114
