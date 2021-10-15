@@ -1,10 +1,10 @@
-#ifndef NDG_NDG_T_H
-#define NDG_NDG_T_H
+#ifndef NDG_ENTITIES_NDG_T_CUH
+#define NDG_ENTITIES_NDG_T_CUH
 
 #include "helpers/float_types.h"
 #include "entities/device_vector.cuh"
 
-namespace SEM { namespace Entities {
+namespace SEM { namespace Device { namespace Entities {
     template<typename Polynomial>
     class NDG_t { 
         public: 
@@ -15,17 +15,17 @@ namespace SEM { namespace Entities {
             size_t vector_length_; // Flattened length of all N one after the other
             size_t matrix_length_; // Flattened length of all N² one after the other
             size_t interpolation_length_;
-            SEM::Entities::device_vector<deviceFloat> nodes_;
-            SEM::Entities::device_vector<deviceFloat> weights_;
-            SEM::Entities::device_vector<deviceFloat> barycentric_weights_;
-            SEM::Entities::device_vector<deviceFloat> lagrange_interpolant_left_;
-            SEM::Entities::device_vector<deviceFloat> lagrange_interpolant_right_;
-            SEM::Entities::device_vector<deviceFloat> lagrange_interpolant_derivative_left_;
-            SEM::Entities::device_vector<deviceFloat> lagrange_interpolant_derivative_right_;
-            SEM::Entities::device_vector<deviceFloat> derivative_matrices_;
-            SEM::Entities::device_vector<deviceFloat> g_hat_derivative_matrices_;
-            SEM::Entities::device_vector<deviceFloat> derivative_matrices_hat_;
-            SEM::Entities::device_vector<deviceFloat> interpolation_matrices_;
+            SEM::Device::Entities::device_vector<deviceFloat> nodes_;
+            SEM::Device::Entities::device_vector<deviceFloat> weights_;
+            SEM::Device::Entities::device_vector<deviceFloat> barycentric_weights_;
+            SEM::Device::Entities::device_vector<deviceFloat> lagrange_interpolant_left_;
+            SEM::Device::Entities::device_vector<deviceFloat> lagrange_interpolant_right_;
+            SEM::Device::Entities::device_vector<deviceFloat> lagrange_interpolant_derivative_left_;
+            SEM::Device::Entities::device_vector<deviceFloat> lagrange_interpolant_derivative_right_;
+            SEM::Device::Entities::device_vector<deviceFloat> derivative_matrices_;
+            SEM::Device::Entities::device_vector<deviceFloat> g_hat_derivative_matrices_;
+            SEM::Device::Entities::device_vector<deviceFloat> derivative_matrices_hat_;
+            SEM::Device::Entities::device_vector<deviceFloat> interpolation_matrices_;
 
             void print();
     };
@@ -75,6 +75,8 @@ namespace SEM { namespace Entities {
     // Will interpolate n_interpolation_points between -1 and 1
     __global__
     void create_interpolation_matrices(int N, size_t n_interpolation_points, const deviceFloat* nodes, const deviceFloat* barycentric_weights, deviceFloat* interpolation_matrices);
-}}
+}}}
+
+#include "entities/NDG_t.tcu"
 
 #endif

@@ -1,5 +1,5 @@
-#ifndef NDG_MESH_T_H
-#define NDG_MESH_T_H
+#ifndef NDG_MESHES_MESH_T_CUH
+#define NDG_MESHES_MESH_T_CUH
 
 #include "entities/Element_t.cuh"
 #include "entities/Face_t.cuh"
@@ -10,7 +10,7 @@
 #include <mpi.h>
 #include <array>
 
-namespace SEM { namespace Meshes {
+namespace SEM { namespace Device { namespace Meshes {
     class Mesh_t {
         public:
             Mesh_t(size_t N_elements, int initial_N, deviceFloat delta_x_min, deviceFloat x_min, deviceFloat x_max, int adaptivity_interval, cudaStream_t &stream);
@@ -33,8 +33,8 @@ namespace SEM { namespace Meshes {
             int initial_N_;
             deviceFloat delta_x_min_;
             int adaptivity_interval_;
-            SEM::Entities::Element_t* elements_;
-            SEM::Entities::Face_t* faces_;
+            SEM::Device::Entities::Element_t* elements_;
+            SEM::Device::Entities::Face_t* faces_;
             size_t* local_boundary_to_element_;
             size_t* MPI_boundary_to_element_;
             size_t* MPI_boundary_from_element_;
@@ -46,7 +46,7 @@ namespace SEM { namespace Meshes {
             deviceFloat get_delta_t(const deviceFloat CFL);
             
             template<typename Polynomial>
-            void solve(const deviceFloat CFL, const std::vector<deviceFloat> output_times, const SEM::Entities::NDG_t<Polynomial> &NDG, deviceFloat viscosity);
+            void solve(const deviceFloat CFL, const std::vector<deviceFloat> output_times, const SEM::Device::Entities::NDG_t<Polynomial> &NDG, deviceFloat viscosity);
 
         private:
             deviceFloat* device_delta_t_array_;
@@ -75,16 +75,16 @@ namespace SEM { namespace Meshes {
     };
 
     __global__
-    void rk3_first_step(size_t N_elements, SEM::Entities::Element_t* elements, deviceFloat delta_t, deviceFloat g);
+    void rk3_first_step(size_t N_elements, SEM::Device::Entities::Element_t* elements, deviceFloat delta_t, deviceFloat g);
 
     __global__
-    void rk3_step(size_t N_elements, SEM::Entities::Element_t* elements, deviceFloat delta_t, deviceFloat a, deviceFloat g);
+    void rk3_step(size_t N_elements, SEM::Device::Entities::Element_t* elements, deviceFloat delta_t, deviceFloat a, deviceFloat g);
 
     __global__
-    void calculate_fluxes(size_t N_faces, SEM::Entities::Face_t* faces, const SEM::Entities::Element_t* elements);
+    void calculate_fluxes(size_t N_faces, SEM::Device::Entities::Face_t* faces, const SEM::Device::Entities::Element_t* elements);
 
     __global__
-    void calculate_q_fluxes(size_t N_faces, SEM::Entities::Face_t* faces, const SEM::Entities::Element_t* elements);
+    void calculate_q_fluxes(size_t N_faces, SEM::Device::Entities::Face_t* faces, const SEM::Device::Entities::Element_t* elements);
 
     __device__
     void matrix_vector_multiply(int N, const deviceFloat* matrix, const deviceFloat* vector, deviceFloat* result);
@@ -95,11 +95,11 @@ namespace SEM { namespace Meshes {
 
     // Algorithm 60 (not really anymore)
     __global__
-    void compute_dg_derivative(size_t N_elements, SEM::Entities::Element_t* elements, const SEM::Entities::Face_t* faces, const deviceFloat* weights, const deviceFloat* derivative_matrices_hat, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right);
+    void compute_dg_derivative(size_t N_elements, SEM::Device::Entities::Element_t* elements, const SEM::Device::Entities::Face_t* faces, const deviceFloat* weights, const deviceFloat* derivative_matrices_hat, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right);
 
     // Algorithm 60 (not really anymore)
     __global__
-    void compute_dg_derivative2(deviceFloat viscosity, size_t N_elements, SEM::Entities::Element_t* elements, const SEM::Entities::Face_t* faces, const deviceFloat* weights, const deviceFloat* derivative_matrices_hat, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right);
+    void compute_dg_derivative2(deviceFloat viscosity, size_t N_elements, SEM::Device::Entities::Element_t* elements, const SEM::Device::Entities::Face_t* faces, const deviceFloat* weights, const deviceFloat* derivative_matrices_hat, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right);
 
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>
@@ -116,7 +116,7 @@ namespace SEM { namespace Meshes {
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>
     __global__ 
-    void reduce_delta_t(deviceFloat CFL, size_t N_elements, const SEM::Entities::Element_t* elements, deviceFloat *g_odata) {
+    void reduce_delta_t(deviceFloat CFL, size_t N_elements, const SEM::Device::Entities::Element_t* elements, deviceFloat *g_odata) {
         __shared__ deviceFloat sdata[(blockSize >= 64) ? blockSize : blockSize + blockSize/2]; // Because within a warp there is no branching and this is read up until blockSize + blockSize/2
         unsigned int tid = threadIdx.x;
         size_t i = blockIdx.x*(blockSize*2) + tid;
@@ -174,7 +174,7 @@ namespace SEM { namespace Meshes {
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>
     __global__ 
-    void reduce_refine(size_t N_elements, deviceFloat delta_x_min, const SEM::Entities::Element_t* elements, unsigned long *g_odata) {
+    void reduce_refine(size_t N_elements, deviceFloat delta_x_min, const SEM::Device::Entities::Element_t* elements, unsigned long *g_odata) {
         __shared__ unsigned long sdata[(blockSize >= 64) ? blockSize : blockSize + blockSize/2]; // Because within a warp there is no branching and this is read up until blockSize + blockSize/2
         unsigned int tid = threadIdx.x;
         size_t i = blockIdx.x*(blockSize*2) + tid;
@@ -201,6 +201,6 @@ namespace SEM { namespace Meshes {
         if (tid < 32) warp_reduce_refine<blockSize>(sdata, tid);
         if (tid == 0) g_odata[blockIdx.x] = sdata[0];
     }
-}}
+}}}
 
 #endif

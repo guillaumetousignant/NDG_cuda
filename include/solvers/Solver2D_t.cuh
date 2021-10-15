@@ -1,5 +1,5 @@
-#ifndef NDG_SOLVER2D_T_H
-#define NDG_SOLVER2D_T_H
+#ifndef NDG_SOLVERS_SOLVER2D_T_CUH
+#define NDG_SOLVERS_SOLVER2D_T_CUH
 
 #include "helpers/float_types.h"
 #include "entities/NDG_t.cuh"
@@ -10,7 +10,7 @@
 #include <vector>
 #include <array>
 
-namespace SEM { namespace Solvers {
+namespace SEM { namespace Device { namespace Solvers {
     class Solver2D_t {
         public:
             Solver2D_t(deviceFloat CFL, std::vector<deviceFloat> output_times, deviceFloat viscosity);
@@ -20,9 +20,9 @@ namespace SEM { namespace Solvers {
             std::vector<deviceFloat> output_times_;
 
             template<typename Polynomial>
-            auto solve(const SEM::Entities::NDG_t<Polynomial> &NDG, SEM::Meshes::Mesh2D_t& mesh, const SEM::Helpers::DataWriter_t& data_writer) const -> void;
+            auto solve(const SEM::Device::Entities::NDG_t<Polynomial> &NDG, SEM::Device::Meshes::Mesh2D_t& mesh, const SEM::Helpers::DataWriter_t& data_writer) const -> void;
 
-            auto get_delta_t(SEM::Meshes::Mesh2D_t& mesh) const -> deviceFloat;
+            auto get_delta_t(SEM::Device::Meshes::Mesh2D_t& mesh) const -> deviceFloat;
 
             __host__ __device__
             static auto x_flux(deviceFloat p, deviceFloat u, deviceFloat v) -> std::array<deviceFloat, 3>;
@@ -36,17 +36,17 @@ namespace SEM { namespace Solvers {
     };
 
     __global__
-    auto calculate_wave_fluxes(size_t N_faces, SEM::Entities::Face2D_t* faces) -> void;
+    auto calculate_wave_fluxes(size_t N_faces, SEM::Device::Entities::Face2D_t* faces) -> void;
 
     // Algorithm 114
     __global__
-    auto compute_dg_wave_derivative(size_t N_elements, SEM::Entities::Element2D_t* elements, const SEM::Entities::Face2D_t* faces, const deviceFloat* weights, const deviceFloat* derivative_matrices_hat, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right) -> void;
+    auto compute_dg_wave_derivative(size_t N_elements, SEM::Device::Entities::Element2D_t* elements, const SEM::Device::Entities::Face2D_t* faces, const deviceFloat* weights, const deviceFloat* derivative_matrices_hat, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right) -> void;
 
     __global__
-    auto rk3_first_step(size_t N_elements, SEM::Entities::Element2D_t* elements, deviceFloat delta_t, deviceFloat g) -> void;
+    auto rk3_first_step(size_t N_elements, SEM::Device::Entities::Element2D_t* elements, deviceFloat delta_t, deviceFloat g) -> void;
 
     __global__
-    auto rk3_step(size_t N_elements, SEM::Entities::Element2D_t* elements, deviceFloat delta_t, deviceFloat a, deviceFloat g) -> void;
+    auto rk3_step(size_t N_elements, SEM::Device::Entities::Element2D_t* elements, deviceFloat delta_t, deviceFloat a, deviceFloat g) -> void;
 
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>
@@ -63,7 +63,7 @@ namespace SEM { namespace Solvers {
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>
     __global__ 
-    auto reduce_wave_delta_t(deviceFloat CFL, size_t N_elements, const SEM::Entities::Element2D_t* elements, deviceFloat *g_odata) -> void {
+    auto reduce_wave_delta_t(deviceFloat CFL, size_t N_elements, const SEM::Device::Entities::Element2D_t* elements, deviceFloat *g_odata) -> void {
         __shared__ deviceFloat sdata[(blockSize >= 64) ? blockSize : blockSize + blockSize/2]; // Because within a warp there is no branching and this is read up until blockSize + blockSize/2
         unsigned int tid = threadIdx.x;
         size_t i = blockIdx.x*(blockSize*2) + tid;
@@ -93,6 +93,6 @@ namespace SEM { namespace Solvers {
         if (tid < 32) warp_reduce_delta_t_2D<blockSize>(sdata, tid);
         if (tid == 0) g_odata[blockIdx.x] = sdata[0];
     }
-}}
+}}}
 
 #endif

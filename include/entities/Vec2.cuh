@@ -1,10 +1,10 @@
-#ifndef SEM_VEC2_H
-#define SEM_VEC2_H
+#ifndef SEM_ENTITIES_VEC2_CUH
+#define SEM_ENTITIES_VEC2_CUH
 
 #include <iostream>
 #include <array>
 
-namespace SEM { namespace Entities {
+namespace SEM { namespace Device{ namespace Entities {
 
     /**
      * @brief The Vec2 class represents a 2-element vector.
@@ -20,9 +20,7 @@ namespace SEM { namespace Entities {
             /**
              * @brief Construct a new Vec2 object with (0, 0).
              */
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             constexpr Vec2();
 
             /**
@@ -31,9 +29,7 @@ namespace SEM { namespace Entities {
              * @param x First component of the vector.
              * @param y Second component of the vector.
              */
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             constexpr Vec2(T x, T y); 
 
             /**
@@ -41,9 +37,7 @@ namespace SEM { namespace Entities {
              * 
              * @param x Value given to the two components of the vector.
              */
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             constexpr explicit Vec2(T x); 
 
             /**
@@ -53,9 +47,7 @@ namespace SEM { namespace Entities {
              * @return T& Reference to the selected component.
              */
             template <class T2>
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             constexpr auto operator[](T2 index) -> T&;
 
             /**
@@ -65,9 +57,7 @@ namespace SEM { namespace Entities {
              * @return T& Reference to the selected component.
              */
             template <class T2>
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             constexpr auto operator[](T2 index) const -> const T&;
 
             /**
@@ -79,9 +69,7 @@ namespace SEM { namespace Entities {
              * @return Vec2 Resulting vector, (x1*a, y1*a).
              */
             template <class T2>
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             constexpr auto operator*(T2 scale) const -> Vec2<T>;
 
             /**
@@ -93,9 +81,7 @@ namespace SEM { namespace Entities {
              * @return Vec2 Resulting vector, (x1*x2, y1*y2).
              */
             template <class T2>
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             constexpr auto operator*(const Vec2<T2> &other) const -> Vec2<T>;
 
             /**
@@ -107,9 +93,7 @@ namespace SEM { namespace Entities {
              * @return Vec2 Resulting vector, (x1/a, y1/a).
              */
             template <class T2>
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             constexpr auto operator/(T2 scale) const -> Vec2<T>;
 
             /**
@@ -121,9 +105,7 @@ namespace SEM { namespace Entities {
              * @return Vec2 Resulting vector, (x1/x2, y1/y2).
              */
             template <class T2>
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             constexpr auto operator/(const Vec2<T2> &other) const -> Vec2<T>;
 
             /**
@@ -135,9 +117,7 @@ namespace SEM { namespace Entities {
              * @return Vec2 Resulting vector, (x1+x2, y1+y2).
              */
             template <class T2>
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             constexpr auto operator+(const Vec2<T2> &other) const -> Vec2<T>;
 
             /**
@@ -149,9 +129,7 @@ namespace SEM { namespace Entities {
              * @return Vec2 Resulting vector, (x1+a, y1+a).
              */
             template <class T2>
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             constexpr auto operator+(T2 factor) const -> Vec2<T>;
 
             /**
@@ -163,9 +141,7 @@ namespace SEM { namespace Entities {
              * @return Vec2 Resulting vector, (x1-x2, y1-y2).
              */
             template <class T2>
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             constexpr auto operator-(const Vec2<T2> &other) const -> Vec2<T>;
 
             /**
@@ -177,9 +153,7 @@ namespace SEM { namespace Entities {
              * @return Vec2 Resulting vector, (x1-a, y1-a).
              */
             template <class T2>
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             constexpr auto operator-(T2 factor) const -> Vec2<T>;
 
             /**
@@ -189,9 +163,7 @@ namespace SEM { namespace Entities {
              * 
              * @return Vec2 Resulting vector, (-x1, -y1).
              */
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             constexpr auto operator-() const -> Vec2<T>; 
 
             /**
@@ -201,9 +173,7 @@ namespace SEM { namespace Entities {
              * @return true All two components of the vectors are equal.
              * @return false At least one component of the vectors is different.
              */
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             constexpr auto operator==(const Vec2<T> &other) const -> bool;
 
             /**
@@ -215,9 +185,7 @@ namespace SEM { namespace Entities {
              * @return const Vec2& Reference to the vector, used to chain operations.
              */
             template <class T2>
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             constexpr auto operator*=(T2 scale) -> const Vec2<T>&;
 
             /**
@@ -229,9 +197,7 @@ namespace SEM { namespace Entities {
              * @return const Vec2& Reference to the vector, used to chain operations.
              */
             template <class T2>
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             constexpr auto operator*=(const Vec2<T2> &other) -> const Vec2<T>&;
 
             /**
@@ -243,9 +209,7 @@ namespace SEM { namespace Entities {
              * @return const Vec2& Reference to the vector, used to chain operations.
              */
             template <class T2>
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             constexpr auto operator/=(T2 scale) -> const Vec2<T>&;
 
             /**
@@ -257,9 +221,7 @@ namespace SEM { namespace Entities {
              * @return const Vec2& Reference to the vector, used to chain operations.
              */
             template <class T2>
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             constexpr auto operator/=(const Vec2<T2> &other) -> const Vec2<T>&;
 
             /**
@@ -271,9 +233,7 @@ namespace SEM { namespace Entities {
              * @return const Vec2& Reference to the vector, used to chain operations.
              */
             template <class T2>
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             constexpr auto operator+=(const Vec2<T2> &other) -> const Vec2<T>&;
 
             /**
@@ -285,9 +245,7 @@ namespace SEM { namespace Entities {
              * @return const Vec2& Reference to the vector, used to chain operations.
              */
             template <class T2>
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             constexpr auto operator+=(T2 factor) -> const Vec2<T>&;
 
             /**
@@ -299,9 +257,7 @@ namespace SEM { namespace Entities {
              * @return const Vec2& Reference to the vector, used to chain operations.
              */
             template <class T2>
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             constexpr auto operator-=(const Vec2<T2> &other) -> const Vec2<T>&; 
 
             /**
@@ -313,9 +269,7 @@ namespace SEM { namespace Entities {
              * @return const Vec2& Reference to the vector, used to chain operations.
              */
             template <class T2>
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             constexpr auto operator-=(T2 factor) -> const Vec2<T>&;
 
             /**
@@ -327,9 +281,7 @@ namespace SEM { namespace Entities {
              * @return Vec2& Reference to the vector, used to chain operations.
              */
             template <class T2>
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             constexpr auto min(const Vec2<T2> &other) -> Vec2<T>&;
 
             /**
@@ -341,9 +293,7 @@ namespace SEM { namespace Entities {
              * @return Vec2& Reference to the vector, used to chain operations.
              */
             template <class T2>
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             constexpr auto min(T2 other) -> Vec2<T>&;
 
             /**
@@ -355,9 +305,7 @@ namespace SEM { namespace Entities {
              * @return Vec2& Reference to the vector, used to chain operations.
              */
             template <class T2>
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             constexpr auto max(const Vec2<T2> &other) -> Vec2<T>&;
 
             /**
@@ -369,9 +317,7 @@ namespace SEM { namespace Entities {
              * @return Vec2& Reference to the vector, used to chain operations.
              */
             template <class T2>
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             constexpr auto max(T2 other) -> Vec2<T>&;
 
             /**
@@ -383,9 +329,7 @@ namespace SEM { namespace Entities {
              * @return Vec2 Reference to the vector, used to chain operations.
              */
             template <class T2>
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             constexpr auto getMin(const Vec2<T2> &other) const -> Vec2<T>;
 
             /**
@@ -397,9 +341,7 @@ namespace SEM { namespace Entities {
              * @return Vec2 Reference to the vector, used to chain operations.
              */
             template <class T2>
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             constexpr auto getMin(T2 other) const -> Vec2<T>;
 
             /**
@@ -411,9 +353,7 @@ namespace SEM { namespace Entities {
              * @return Vec2 Reference to the vector, used to chain operations.
              */
             template <class T2>
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             constexpr auto getMax(const Vec2<T2> &other) const -> Vec2<T>;
 
             /**
@@ -425,9 +365,7 @@ namespace SEM { namespace Entities {
              * @return Vec2 Reference to the vector, used to chain operations.
              */
             template <class T2>
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             constexpr auto getMax(T2 other) const -> Vec2<T>;
 
             /**
@@ -437,9 +375,7 @@ namespace SEM { namespace Entities {
              * 
              * @return T Magnitude of the vector.
              */
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             auto magnitude() const -> T;
 
             /**
@@ -450,9 +386,7 @@ namespace SEM { namespace Entities {
              * 
              * @return T Squared magnitude of the norm.
              */
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             constexpr auto magnitudeSquared() const -> T;
 
             /**
@@ -462,9 +396,7 @@ namespace SEM { namespace Entities {
              * 
              * @return Vec2 Normalized vector.
              */
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             auto normalize() const -> Vec2<T>;
 
             /**
@@ -474,9 +406,7 @@ namespace SEM { namespace Entities {
              * 
              * @return const Vec2& Reference to the vector, used to chain operations.
              */
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             auto normalize_inplace() -> const Vec2<T>&;
 
             /**
@@ -488,9 +418,7 @@ namespace SEM { namespace Entities {
              * @return T Dot product of the two vectors.
              */
             template <class T2>
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             constexpr auto dot(const Vec2<T2> &other) const -> T;
 
             /**
@@ -505,9 +433,7 @@ namespace SEM { namespace Entities {
              * @return T Cross product of the two vectors.
              */
             template <class T2>
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             constexpr auto cross(const Vec2<T2> &other) const -> T;
 
             /**
@@ -517,9 +443,7 @@ namespace SEM { namespace Entities {
              * 
              * @return const Vec2& Reference to the vector, used to chain operations.
              */
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             auto to_sph() -> const Vec2<T>&;
 
             /**
@@ -529,9 +453,7 @@ namespace SEM { namespace Entities {
              * 
              * @return const Vec2& Reference to the vector, used to chain operations.
              */
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             auto to_xy() -> const Vec2<T>&;
 
             /**
@@ -544,9 +466,7 @@ namespace SEM { namespace Entities {
              * @return const Vec2& Reference to the vector, used to chain operations.
              */
             template <class T2, class T3>
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             auto to_xy_offset(const Vec2<T2>& ref1, const Vec2<T3>& ref2) -> const Vec2<T>&;
 
             /**
@@ -556,9 +476,7 @@ namespace SEM { namespace Entities {
              * 
              * @return Vec2 polar coordinates of the vector.
              */
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             auto get_sph() const -> Vec2<T>;
 
             /**
@@ -568,9 +486,7 @@ namespace SEM { namespace Entities {
              * 
              * @return Vec2 Cartesian coordinates of the vector.
              */
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             auto get_xy() const -> Vec2<T>;
 
             /**
@@ -583,9 +499,7 @@ namespace SEM { namespace Entities {
              * @return Vec2 Cartesian coordinates of the vector.
              */
             template <class T2, class T3>
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             auto get_xy_offset(const Vec2<T2>& ref1, const Vec2<T3>& ref2) const -> Vec2<T>;
 
             /**
@@ -595,9 +509,7 @@ namespace SEM { namespace Entities {
              * 
              * @return Vec2 Vector made of the natural logarithm of all components of the vector.
              */
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             auto ln() const -> Vec2<T>;
 
             /**
@@ -607,9 +519,7 @@ namespace SEM { namespace Entities {
              * 
              * @return Vec2 Vector made of the square root of all components of the vector.
              */
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             auto sqrt() const -> Vec2<T>;
 
             /**
@@ -619,9 +529,7 @@ namespace SEM { namespace Entities {
              * 
              * @return Vec2 Vector made of the exponential of all components of the vector.
              */
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             auto exp() const -> Vec2<T>;
 
             /**
@@ -633,9 +541,7 @@ namespace SEM { namespace Entities {
              * @return Vec2 Vector made of the components of the vector to the specified power.
              */
             template <class T2>
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             auto pow(T2 exp) const -> Vec2<T>;
 
             /**
@@ -647,9 +553,7 @@ namespace SEM { namespace Entities {
              * @return Vec2& Reference to the vector, used to chain operations.
              */
             template <class T2>
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             auto pow_inplace(T2 exp) -> Vec2<T>&;
 
             /**
@@ -659,9 +563,7 @@ namespace SEM { namespace Entities {
              * 
              * @return Vec2 Vector made of the components of the vector rounded down.
              */
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             auto floor() const -> Vec2<T>;
 
             /**
@@ -671,9 +573,7 @@ namespace SEM { namespace Entities {
              * 
              * @return Vec2 Vector made of the components of the vector rounded up.
              */
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             auto ceil() const -> Vec2<T>;
 
             /**
@@ -683,9 +583,7 @@ namespace SEM { namespace Entities {
              * 
              * @return Vec2& Reference to the vector, used to chain operations.
              */
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             auto round_inplace() -> Vec2<T>&;
 
             /**
@@ -696,9 +594,7 @@ namespace SEM { namespace Entities {
              * @return Vec2& Reference to the vector, used to chain operations.
              */
             template <class T2, class T3>
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             constexpr auto clamp(T2 minimum, T3 maximum) -> Vec2<T>&;
 
             /**
@@ -706,9 +602,7 @@ namespace SEM { namespace Entities {
              * 
              * @return T& Reference to the x component of the vector.
              */
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             constexpr auto x() -> T&;
             
             /**
@@ -716,9 +610,7 @@ namespace SEM { namespace Entities {
              * 
              * @return T& Reference to the y component of the vector.
              */
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             constexpr auto y() -> T&;
 
             /**
@@ -726,9 +618,7 @@ namespace SEM { namespace Entities {
              * 
              * @return T& Const reference to the x component of the vector.
              */
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             constexpr auto x() const -> const T&;
              
             /**
@@ -736,9 +626,7 @@ namespace SEM { namespace Entities {
              * 
              * @return T& Const reference to the y component of the vector.
              */
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             constexpr auto y() const -> const T&;
 
             /**
@@ -750,12 +638,10 @@ namespace SEM { namespace Entities {
              * @return true All two components of the vectors are approximately equal.
              * @return false At least one component of the vectors is not approximately equal.
              */
-            #if defined(__CUDA__)
             __host__ __device__
-            #endif
             constexpr auto almost_equal(const Vec2<T> &other) const -> bool;
     };
-}}
+}}}
 
 /**
  * @brief Formats a vector to be displayed.
@@ -765,10 +651,8 @@ namespace SEM { namespace Entities {
  * @return std::ostream& Output stream.
  */
 template <class T>
-#if defined(__CUDA__)
 __host__
-#endif
-auto operator<<(std::ostream &output, const SEM::Entities::Vec2<T> &v) -> std::ostream&;
+auto operator<<(std::ostream &output, const SEM::Device::Entities::Vec2<T> &v) -> std::ostream&;
 
 /**
  * @brief Multiplies a factor with a vector.
@@ -777,13 +661,11 @@ auto operator<<(std::ostream &output, const SEM::Entities::Vec2<T> &v) -> std::o
  * 
  * @param factor Factor multiplying the vector.
  * @param v Vector to be multiplied.
- * @return SEM::Entities::Vec2 Resulting Vector, (a*x, a*y).
+ * @return SEM::Device::Entities::Vec2 Resulting Vector, (a*x, a*y).
  */
 template <class T, class T2>
-#if defined(__CUDA__)
 __host__ __device__
-#endif
-constexpr auto operator*(const T2 factor, const SEM::Entities::Vec2<T> &v) -> SEM::Entities::Vec2<T>;
+constexpr auto operator*(const T2 factor, const SEM::Device::Entities::Vec2<T> &v) -> SEM::Device::Entities::Vec2<T>;
 
 #include "entities/Vec2.tcu"
 

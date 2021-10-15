@@ -1,13 +1,11 @@
 #include <cmath>
 
-using SEM::Entities::Vec2;
+using SEM::Device::Entities::Vec2;
 
 // Algorithm 95
-#if defined(__CUDA__)
-__host__ __device__
-#endif
 template <class T>
-auto SEM::inverse_quad_map(Vec2<T> global_coordinates, const std::array<Vec2<T>, 4>& points) -> Vec2<T> {
+__host__ __device__
+auto SEM::Device::inverse_quad_map(Vec2<T> global_coordinates, const std::array<Vec2<T>, 4>& points) -> Vec2<T> {
     /*const deviceFloat A = (points[0] - global_coordinates).cross(points[0] - points[2]);
     const deviceFloat B = ((points[0] - global_coordinates).cross(points[1] - points[3]) + (points[1] - global_coordinates).cross(points[0] - points[2])) / 2;
     const deviceFloat C = (points[1] - global_coordinates).cross(points[1] - points[3]);

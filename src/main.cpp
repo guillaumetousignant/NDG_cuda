@@ -1,8 +1,8 @@
 #include "helpers/float_types.h"
-#include "entities/NDG_host_t.h"
-#include "meshes/Mesh_host_t.h"
-#include "polynomials/ChebyshevPolynomial_host_t.h"
-#include "polynomials/LegendrePolynomial_host_t.h"
+#include "entities/NDG_t.h"
+#include "meshes/Mesh_t.h"
+#include "polynomials/ChebyshevPolynomial_t.h"
+#include "polynomials/LegendrePolynomial_t.h"
 #include <iostream>
 #include <chrono>
 #include <vector>
@@ -50,8 +50,8 @@ auto main(int argc, char* argv[]) -> int {
     // Initialisation
     auto t_start_init = std::chrono::high_resolution_clock::now();
 
-    SEM::Entities::NDG_host_t<SEM::Polynomials::LegendrePolynomial_host_t> NDG(N_max, n_interpolation_points);
-    SEM::Meshes::Mesh_host_t mesh(N_elements, initial_N, delta_x_min, x[0], x[1], adaptivity_interval);
+    SEM::Host::Entities::NDG_t<SEM::Host::Polynomials::LegendrePolynomial_t> NDG(N_max, n_interpolation_points);
+    SEM::Host::Meshes::Mesh_t mesh(N_elements, initial_N, delta_x_min, x[0], x[1], adaptivity_interval);
     mesh.set_initial_conditions(NDG.nodes_);
 
     auto t_end_init = std::chrono::high_resolution_clock::now();

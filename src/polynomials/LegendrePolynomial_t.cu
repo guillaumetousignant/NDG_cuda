@@ -5,7 +5,7 @@ constexpr deviceFloat pi = 3.14159265358979323846;
 
 // Algorithm 23
 __global__
-void SEM::Polynomials::legendre_gauss_nodes_and_weights(int N, deviceFloat* nodes, deviceFloat* weights) {
+void SEM::Device::Polynomials::legendre_gauss_nodes_and_weights(int N, deviceFloat* nodes, deviceFloat* weights) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     const size_t offset = N * (N + 1) /2;
@@ -54,16 +54,16 @@ void SEM::Polynomials::legendre_gauss_nodes_and_weights(int N, deviceFloat* node
     }
 }
 
-void SEM::Polynomials::LegendrePolynomial_t::nodes_and_weights(int N_max, int blockSize, deviceFloat* nodes, deviceFloat* weights, const cudaStream_t &stream) {
+void SEM::Device::Polynomials::LegendrePolynomial_t::nodes_and_weights(int N_max, int blockSize, deviceFloat* nodes, deviceFloat* weights, const cudaStream_t &stream) {
     for (int N = 0; N <= N_max; ++N) {
         const int numBlocks = ((N + 1)/2 + blockSize) / blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
-        SEM::Polynomials::legendre_gauss_nodes_and_weights<<<numBlocks, blockSize, 0, stream>>>(N, nodes, weights);
+        SEM::Device::Polynomials::legendre_gauss_nodes_and_weights<<<numBlocks, blockSize, 0, stream>>>(N, nodes, weights);
     }
 }
 
 // Algorithm 22
 __device__
-void SEM::Polynomials::LegendrePolynomial_t::polynomial_and_derivative(int N, deviceFloat x, deviceFloat &L_N, deviceFloat &L_N_prime) {
+void SEM::Device::Polynomials::LegendrePolynomial_t::polynomial_and_derivative(int N, deviceFloat x, deviceFloat &L_N, deviceFloat &L_N_prime) {
     if (N == 0) {
         L_N = 1.0f;
         L_N_prime = 0.0f;
@@ -90,7 +90,7 @@ void SEM::Polynomials::LegendrePolynomial_t::polynomial_and_derivative(int N, de
 }
 
 __device__
-deviceFloat SEM::Polynomials::LegendrePolynomial_t::polynomial(int N, deviceFloat x) {
+deviceFloat SEM::Device::Polynomials::LegendrePolynomial_t::polynomial(int N, deviceFloat x) {
     if (N == 0) {
         return 1.0f;
     }

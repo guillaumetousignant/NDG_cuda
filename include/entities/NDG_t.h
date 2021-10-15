@@ -1,14 +1,14 @@
-#ifndef NDG_NDG_HOST_T_H
-#define NDG_NDG_HOST_T_H
+#ifndef NDG_ENTITIES_NDG_T_H
+#define NDG_ENTITIES_NDG_T_H
 
 #include "helpers/float_types.h"
 #include <vector>
 
-namespace SEM { namespace Entities {
+namespace SEM { namespace Host { namespace Entities {
     template<typename Polynomial>
-    class NDG_host_t { 
+    class NDG_t { 
         public: 
-            NDG_host_t(int N_max, std::size_t n_interpolation_points);
+            NDG_t(int N_max, std::size_t n_interpolation_points);
 
             int N_max_;
             std::size_t N_interpolation_points_;
@@ -62,8 +62,8 @@ namespace SEM { namespace Entities {
             // Will interpolate n_interpolation_points between -1 and 1
             static void create_interpolation_matrices(int N, std::size_t n_interpolation_points, const std::vector<hostFloat>& nodes, const std::vector<hostFloat>& barycentric_weights, std::vector<hostFloat>& interpolation_matrices);
     };
-}}
+}}}
 
-#include "entities/NDG_host_t.tpp"
+#include "entities/NDG_t.tpp"
 
 #endif

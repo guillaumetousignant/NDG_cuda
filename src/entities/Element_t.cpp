@@ -1,10 +1,10 @@
-#include "entities/Element_host_t.h"
-#include "polynomials/ChebyshevPolynomial_host_t.h"
-#include "polynomials/LegendrePolynomial_host_t.h"
+#include "entities/Element_t.h"
+#include "polynomials/ChebyshevPolynomial_t.h"
+#include "polynomials/LegendrePolynomial_t.h"
 #include <cmath>
 #include <limits>
 
-SEM::Entities::Element_host_t::Element_host_t(int N, std::size_t face_L, std::size_t face_R, hostFloat x_L, hostFloat x_R) : 
+SEM::Host::Entities::Element_t::Element_t(int N, std::size_t face_L, std::size_t face_R, hostFloat x_L, hostFloat x_R) : 
         N_(N),
         faces_{face_L, face_R},
         x_{x_L, x_R},
@@ -20,7 +20,7 @@ SEM::Entities::Element_host_t::Element_host_t(int N, std::size_t face_L, std::si
         error_(0.0) {}
 
 // Basically useless, find better solution when multiple elements.
-void SEM::Entities::Element_host_t::get_elements_data(std::size_t N_elements, const Element_host_t* elements, hostFloat* phi, hostFloat* phi_prime) {
+void SEM::Host::Entities::Element_t::get_elements_data(std::size_t N_elements, const Element_t* elements, hostFloat* phi, hostFloat* phi_prime) {
     for (std::size_t i = 0; i < N_elements; ++i) {
         const std::size_t element_offset = i * (elements[i].N_ + 1);
         for (int j = 0; j <= elements[i].N_; ++j) {
@@ -31,7 +31,7 @@ void SEM::Entities::Element_host_t::get_elements_data(std::size_t N_elements, co
 }
 
 // Basically useless, find better solution when multiple elements.
-void SEM::Entities::Element_host_t::get_phi(std::size_t N_elements, const Element_host_t* elements, hostFloat* phi) {
+void SEM::Host::Entities::Element_t::get_phi(std::size_t N_elements, const Element_t* elements, hostFloat* phi) {
     for (std::size_t i = 0; i < N_elements; ++i) {
         for (int j = 0; j <= elements[i].N_; ++j) {
             phi[j] = elements[i].phi_[j];
@@ -40,7 +40,7 @@ void SEM::Entities::Element_host_t::get_phi(std::size_t N_elements, const Elemen
 }
 
 // Algorithm 61
-void SEM::Entities::Element_host_t::interpolate_to_boundaries(const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right) {
+void SEM::Host::Entities::Element_t::interpolate_to_boundaries(const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right) {
     phi_L_ = 0.0;
     phi_R_ = 0.0;
 
@@ -51,7 +51,7 @@ void SEM::Entities::Element_host_t::interpolate_to_boundaries(const std::vector<
 }
 
 // Algorithm 61
-void SEM::Entities::Element_host_t::interpolate_q_to_boundaries(const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right) {
+void SEM::Host::Entities::Element_t::interpolate_q_to_boundaries(const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right) {
     phi_prime_L_ = 0.0;
     phi_prime_R_ = 0.0;
 
@@ -61,11 +61,11 @@ void SEM::Entities::Element_host_t::interpolate_q_to_boundaries(const std::vecto
     }
 }
 
-template void SEM::Entities::Element_host_t::estimate_error<SEM::Polynomials::ChebyshevPolynomial_host_t>(const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& weights);
-template void SEM::Entities::Element_host_t::estimate_error<SEM::Polynomials::LegendrePolynomial_host_t>(const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& weights);
+template void SEM::Host::Entities::Element_t::estimate_error<SEM::Host::Polynomials::ChebyshevPolynomial_t>(const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& weights);
+template void SEM::Host::Entities::Element_t::estimate_error<SEM::Host::Polynomials::LegendrePolynomial_t>(const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& weights);
 
 template<typename Polynomial>
-void SEM::Entities::Element_host_t::estimate_error(const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& weights) {
+void SEM::Host::Entities::Element_t::estimate_error(const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& weights) {
     for (int k = 0; k <= N_; ++k) {
         intermediate_[k] = 0.0;
         for (int i = 0; i <= N_; ++i) {
@@ -98,7 +98,7 @@ void SEM::Entities::Element_host_t::estimate_error(const std::vector<std::vector
     }
 }
 
-hostFloat SEM::Entities::Element_host_t::exponential_decay() {
+hostFloat SEM::Host::Entities::Element_t::exponential_decay() {
     const int n_points_least_squares = std::min(N_, 4); // Number of points to use for thew least squares reduction, but don't go above N.
 
     hostFloat x_avg = 0.0;
@@ -127,7 +127,7 @@ hostFloat SEM::Entities::Element_host_t::exponential_decay() {
     return C;
 }
 
-void SEM::Entities::Element_host_t::interpolate_from(const SEM::Entities::Element_host_t& other, const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& barycentric_weights) {
+void SEM::Host::Entities::Element_t::interpolate_from(const SEM::Host::Entities::Element_t& other, const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& barycentric_weights) {
     for (int i = 0; i <= N_; ++i) {
         const hostFloat x = (x_[1] - x_[0]) * (nodes[N_][i] + 1) * 0.5 + x_[0];
         const hostFloat node = (2 * x - other.x_[0] - other.x_[1])/(other.x_[1] - other.x_[0]);
@@ -147,7 +147,7 @@ void SEM::Entities::Element_host_t::interpolate_from(const SEM::Entities::Elemen
     }
 }
 
-bool SEM::Entities::Element_host_t::almost_equal(hostFloat x, hostFloat y) {
+bool SEM::Host::Entities::Element_t::almost_equal(hostFloat x, hostFloat y) {
     constexpr int ulp = 2; // ULP
     // the machine epsilon has to be scaled to the magnitude of the values used
     // and multiplied by the desired precision in ULPs (units in the last place)

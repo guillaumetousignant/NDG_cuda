@@ -4,3 +4,9 @@ target_sources(SEM
         ProgressBar_t.cpp
         InputParser_t.cpp
 )
+target_sources(SEM-CUDA
+    PRIVATE
+        DataWriter_t.cpp
+        ProgressBar_t.cpp
+        InputParser_t.cpp
+)

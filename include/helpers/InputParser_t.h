@@ -1,5 +1,5 @@
-#ifndef NDG_INPUTPARSER_T_H
-#define NDG_INPUTPARSER_T_H
+#ifndef NDG_HELPERS_INPUTPARSER_T_H
+#define NDG_HELPERS_INPUTPARSER_T_H
 
 #include <vector>
 #include <string>

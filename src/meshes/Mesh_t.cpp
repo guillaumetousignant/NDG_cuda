@@ -1,6 +1,6 @@
-#include "meshes/Mesh_host_t.h"
-#include "polynomials/ChebyshevPolynomial_host_t.h"
-#include "polynomials/LegendrePolynomial_host_t.h"
+#include "meshes/Mesh_t.h"
+#include "polynomials/ChebyshevPolynomial_t.h"
+#include "polynomials/LegendrePolynomial_t.h"
 #include "helpers/ProgressBar_t.h"
 #include <iostream>
 #include <fstream>
@@ -13,7 +13,7 @@ namespace fs = std::filesystem;
 
 constexpr hostFloat pi = 3.14159265358979323846;
 
-SEM::Meshes::Mesh_host_t::Mesh_host_t(size_t N_elements, int initial_N, hostFloat delta_x_min, hostFloat x_min, hostFloat x_max, int adaptivity_interval) : 
+SEM::Host::Meshes::Mesh_t::Mesh_t(size_t N_elements, int initial_N, hostFloat delta_x_min, hostFloat x_min, hostFloat x_max, int adaptivity_interval) : 
         N_elements_global_(N_elements),
         delta_x_min_(delta_x_min),
         adaptivity_interval_(adaptivity_interval),
@@ -39,8 +39,8 @@ SEM::Meshes::Mesh_host_t::Mesh_host_t(size_t N_elements, int initial_N, hostFloa
     const size_t N_faces = N_elements_ + N_local_boundaries_ + N_MPI_boundaries_ - 1; 
     global_element_offset_ = global_rank * N_elements_per_process_;
 
-    faces_ = std::vector<SEM::Entities::Face_host_t>(N_faces);
-    elements_ = std::vector<SEM::Entities::Element_host_t>(N_elements_ + N_local_boundaries_ + N_MPI_boundaries_);
+    faces_ = std::vector<SEM::Host::Entities::Face_t>(N_faces);
+    elements_ = std::vector<SEM::Host::Entities::Element_t>(N_elements_ + N_local_boundaries_ + N_MPI_boundaries_);
 
     local_boundary_to_element_ = std::vector<size_t>(N_local_boundaries_);
     MPI_boundary_to_element_ = std::vector<size_t>(N_MPI_boundaries_);
@@ -60,7 +60,7 @@ SEM::Meshes::Mesh_host_t::Mesh_host_t(size_t N_elements, int initial_N, hostFloa
     build_faces(); // CHECK
 }
 
-void SEM::Meshes::Mesh_host_t::set_initial_conditions(const std::vector<std::vector<hostFloat>>& nodes) {
+void SEM::Host::Meshes::Mesh_t::set_initial_conditions(const std::vector<std::vector<hostFloat>>& nodes) {
     for (size_t i = 0; i < N_elements_; ++i) {
         for (int j = 0; j <= elements_[i].N_; ++j) {
             const hostFloat x = (0.5 + nodes[elements_[i].N_][j]/2.0f) * (elements_[i].x_[1] - elements_[i].x_[0]) + elements_[i].x_[0];
@@ -69,7 +69,7 @@ void SEM::Meshes::Mesh_host_t::set_initial_conditions(const std::vector<std::vec
     }
 }
 
-void SEM::Meshes::Mesh_host_t::print() {
+void SEM::Host::Meshes::Mesh_t::print() {
     std::cout << "N elements global: " << N_elements_global_ << std::endl;
     std::cout << "N elements local: " << N_elements_ << std::endl;
     std::cout << "N faces: " << faces_.size() << std::endl;
@@ -203,7 +203,7 @@ void SEM::Meshes::Mesh_host_t::print() {
     std::cout << std::endl;
 }
 
-void SEM::Meshes::Mesh_host_t::write_file_data(size_t n_interpolation_points, size_t N_elements, hostFloat time, int rank, const std::vector<hostFloat>& velocity, const std::vector<hostFloat>& coordinates, const std::vector<hostFloat>& du_dx, const std::vector<hostFloat>& intermediate, const std::vector<hostFloat>& x_L, const std::vector<hostFloat>& x_R, const std::vector<int>& N, const std::vector<hostFloat>& sigma, const std::vector<bool>& refine, const std::vector<bool>& coarsen, const std::vector<hostFloat>& error) {
+void SEM::Host::Meshes::Mesh_t::write_file_data(size_t n_interpolation_points, size_t N_elements, hostFloat time, int rank, const std::vector<hostFloat>& velocity, const std::vector<hostFloat>& coordinates, const std::vector<hostFloat>& du_dx, const std::vector<hostFloat>& intermediate, const std::vector<hostFloat>& x_L, const std::vector<hostFloat>& x_R, const std::vector<int>& N, const std::vector<hostFloat>& sigma, const std::vector<bool>& refine, const std::vector<bool>& coarsen, const std::vector<hostFloat>& error) {
     fs::path save_dir = fs::current_path() / "data";
     fs::create_directory(save_dir);
 
@@ -251,7 +251,7 @@ void SEM::Meshes::Mesh_host_t::write_file_data(size_t n_interpolation_points, si
     file_element.close();
 }
 
-void SEM::Meshes::Mesh_host_t::write_data(hostFloat time, size_t n_interpolation_points, const std::vector<std::vector<hostFloat>>& interpolation_matrices) {
+void SEM::Host::Meshes::Mesh_t::write_data(hostFloat time, size_t n_interpolation_points, const std::vector<std::vector<hostFloat>>& interpolation_matrices) {
     std::vector<hostFloat> phi(N_elements_ * n_interpolation_points);
     std::vector<hostFloat> x(N_elements_ * n_interpolation_points);
     std::vector<hostFloat> phi_prime(N_elements_ * n_interpolation_points);
@@ -272,11 +272,11 @@ void SEM::Meshes::Mesh_host_t::write_data(hostFloat time, size_t n_interpolation
     write_file_data(n_interpolation_points, N_elements_, time, global_rank, phi, x, phi_prime, intermediate, x_L, x_R, N, sigma, refine, coarsen, error);
 }
 
-template void SEM::Meshes::Mesh_host_t::solve(const hostFloat CFL, const std::vector<hostFloat> output_times, const SEM::Entities::NDG_host_t<SEM::Polynomials::ChebyshevPolynomial_host_t> &NDG, hostFloat viscosity); // Get with the times c++, it's crazy I have to do this
-template void SEM::Meshes::Mesh_host_t::solve(const hostFloat CFL, const std::vector<hostFloat> output_times, const SEM::Entities::NDG_host_t<SEM::Polynomials::LegendrePolynomial_host_t> &NDG, hostFloat viscosity);
+template void SEM::Host::Meshes::Mesh_t::solve(const hostFloat CFL, const std::vector<hostFloat> output_times, const SEM::Host::Entities::NDG_t<SEM::Host::Polynomials::ChebyshevPolynomial_t> &NDG, hostFloat viscosity); // Get with the times c++, it's crazy I have to do this
+template void SEM::Host::Meshes::Mesh_t::solve(const hostFloat CFL, const std::vector<hostFloat> output_times, const SEM::Host::Entities::NDG_t<SEM::Host::Polynomials::LegendrePolynomial_t> &NDG, hostFloat viscosity);
 
 template<typename Polynomial>
-void SEM::Meshes::Mesh_host_t::solve(const hostFloat CFL, const std::vector<hostFloat> output_times, const SEM::Entities::NDG_host_t<Polynomial> &NDG, hostFloat viscosity) {
+void SEM::Host::Meshes::Mesh_t::solve(const hostFloat CFL, const std::vector<hostFloat> output_times, const SEM::Host::Entities::NDG_t<Polynomial> &NDG, hostFloat viscosity) {
     int global_rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
     hostFloat time = 0.0;
@@ -370,7 +370,7 @@ void SEM::Meshes::Mesh_host_t::solve(const hostFloat CFL, const std::vector<host
     }
 }
 
-void SEM::Meshes::Mesh_host_t::build_elements(hostFloat x_min, hostFloat x_max) {
+void SEM::Host::Meshes::Mesh_t::build_elements(hostFloat x_min, hostFloat x_max) {
     for (size_t i = 0; i < N_elements_; ++i) {
         const size_t face_L = i;
         const size_t face_R = i + 1;
@@ -378,11 +378,11 @@ void SEM::Meshes::Mesh_host_t::build_elements(hostFloat x_min, hostFloat x_max) 
         const hostFloat element_x_min = x_min + i * delta_x;
         const hostFloat element_x_max = x_min + (i + 1) * delta_x;
 
-        elements_[i] = SEM::Entities::Element_host_t(initial_N_, face_L, face_R, element_x_min, element_x_max);
+        elements_[i] = SEM::Host::Entities::Element_t(initial_N_, face_L, face_R, element_x_min, element_x_max);
     }
 }
 
-void SEM::Meshes::Mesh_host_t::build_boundaries() {
+void SEM::Host::Meshes::Mesh_t::build_boundaries() {
     for (int i = 0; i < N_local_boundaries_; ++i) {
         size_t face_L;
         size_t face_R;
@@ -404,7 +404,7 @@ void SEM::Meshes::Mesh_host_t::build_boundaries() {
             local_boundary_to_element_[i] = 0;
         }
 
-        elements_[N_elements_ + i] = SEM::Entities::Element_host_t(0, face_L, face_R, element_x_min, element_x_max);
+        elements_[N_elements_ + i] = SEM::Host::Entities::Element_t(0, face_L, face_R, element_x_min, element_x_max);
     }
 
     for (int i = 0; i < N_MPI_boundaries_; ++i) {
@@ -430,11 +430,11 @@ void SEM::Meshes::Mesh_host_t::build_boundaries() {
             MPI_boundary_from_element_[i] = global_element_offset_ + N_elements_ - 1;
         }
 
-        elements_[N_elements_ + N_local_boundaries_ + i] = SEM::Entities::Element_host_t(0, face_L, face_R, element_x_min, element_x_max);
+        elements_[N_elements_ + N_local_boundaries_ + i] = SEM::Host::Entities::Element_t(0, face_L, face_R, element_x_min, element_x_max);
     }
 }
 
-void SEM::Meshes::Mesh_host_t::adjust_boundaries() {
+void SEM::Host::Meshes::Mesh_t::adjust_boundaries() {
     for (int i = 0; i < N_MPI_boundaries_; ++i) {
         if (i == 0) { // CHECK this is hardcoded for 1D
             MPI_boundary_to_element_[i] = (global_element_offset_ == 0) ? N_elements_global_ - 1 : global_element_offset_ - 1;
@@ -447,20 +447,20 @@ void SEM::Meshes::Mesh_host_t::adjust_boundaries() {
     }
 }
 
-void SEM::Meshes::Mesh_host_t::build_faces() {
+void SEM::Host::Meshes::Mesh_t::build_faces() {
     for (size_t i = 0; i < faces_.size(); ++i) {
         const size_t neighbour_L = (i > 0) ? i - 1 : faces_.size() - 1;
         const size_t neighbour_R = (i < faces_.size() - 1) ? i : faces_.size(); // Last face links last element to first element
-        faces_[i] = SEM::Entities::Face_host_t(neighbour_L, neighbour_R);
+        faces_[i] = SEM::Host::Entities::Face_t(neighbour_L, neighbour_R);
     }
 }
 
-hostFloat SEM::Meshes::Mesh_host_t::g(hostFloat x) {
+hostFloat SEM::Host::Meshes::Mesh_t::g(hostFloat x) {
     //return (x < -0.2f || x > 0.2f) ? 0.2f : 0.8f;
     return -std::sin(pi * x);
 }
 
-void SEM::Meshes::Mesh_host_t::get_solution(size_t n_interpolation_points, const std::vector<std::vector<hostFloat>>& interpolation_matrices, std::vector<hostFloat>& phi, std::vector<hostFloat>& x, std::vector<hostFloat>& phi_prime, std::vector<hostFloat>& intermediate, std::vector<hostFloat>& x_L, std::vector<hostFloat>& x_R, std::vector<int>& N, std::vector<hostFloat>& sigma, std::vector<bool>& refine, std::vector<bool>& coarsen, std::vector<hostFloat>& error) {
+void SEM::Host::Meshes::Mesh_t::get_solution(size_t n_interpolation_points, const std::vector<std::vector<hostFloat>>& interpolation_matrices, std::vector<hostFloat>& phi, std::vector<hostFloat>& x, std::vector<hostFloat>& phi_prime, std::vector<hostFloat>& intermediate, std::vector<hostFloat>& x_L, std::vector<hostFloat>& x_R, std::vector<int>& N, std::vector<hostFloat>& sigma, std::vector<bool>& refine, std::vector<bool>& coarsen, std::vector<hostFloat>& error) {
     for (size_t i = 0; i < N_elements_; ++i) {
         const size_t offset_interp_1D = i * n_interpolation_points;
         const size_t step = n_interpolation_points/(elements_[i].N_ + 1);
@@ -486,7 +486,7 @@ void SEM::Meshes::Mesh_host_t::get_solution(size_t n_interpolation_points, const
     }
 }
 
-void SEM::Meshes::Mesh_host_t::rk3_first_step(hostFloat delta_t, hostFloat g) {
+void SEM::Host::Meshes::Mesh_t::rk3_first_step(hostFloat delta_t, hostFloat g) {
     for (size_t i = 0; i < N_elements_; ++i) {
         for (int j = 0; j <= elements_[i].N_; ++j){
             elements_[i].intermediate_[j] = elements_[i].phi_prime_[j];
@@ -495,7 +495,7 @@ void SEM::Meshes::Mesh_host_t::rk3_first_step(hostFloat delta_t, hostFloat g) {
     }
 }
 
-void SEM::Meshes::Mesh_host_t::rk3_step(hostFloat delta_t, hostFloat a, hostFloat g) {
+void SEM::Host::Meshes::Mesh_t::rk3_step(hostFloat delta_t, hostFloat a, hostFloat g) {
     for (size_t i = 0; i < N_elements_; ++i) {
         for (int j = 0; j <= elements_[i].N_; ++j){
             elements_[i].intermediate_[j] = a * elements_[i].intermediate_[j] + elements_[i].phi_prime_[j];
@@ -504,7 +504,7 @@ void SEM::Meshes::Mesh_host_t::rk3_step(hostFloat delta_t, hostFloat a, hostFloa
     }
 }
 
-hostFloat SEM::Meshes::Mesh_host_t::get_delta_t(const hostFloat CFL) {   
+hostFloat SEM::Host::Meshes::Mesh_t::get_delta_t(const hostFloat CFL) {   
     double delta_t_min_local = std::numeric_limits<double>::infinity();
     for (int i = 0; i < N_elements_; ++i) {
         hostFloat phi_max = 0.0;
@@ -521,7 +521,7 @@ hostFloat SEM::Meshes::Mesh_host_t::get_delta_t(const hostFloat CFL) {
     return delta_t_min;
 }
 
-void SEM::Meshes::Mesh_host_t::boundary_conditions() {
+void SEM::Host::Meshes::Mesh_t::boundary_conditions() {
     local_boundaries();
     get_MPI_boundaries();
     
@@ -537,7 +537,7 @@ void SEM::Meshes::Mesh_host_t::boundary_conditions() {
     put_MPI_boundaries();
 }
 
-void SEM::Meshes::Mesh_host_t::local_boundaries() {
+void SEM::Host::Meshes::Mesh_t::local_boundaries() {
     for (size_t i = 0; i < N_local_boundaries_; ++i) {
         elements_[N_elements_ + i].phi_L_ = elements_[local_boundary_to_element_[i]].phi_L_;
         elements_[N_elements_ + i].phi_R_ = elements_[local_boundary_to_element_[i]].phi_R_;
@@ -546,11 +546,11 @@ void SEM::Meshes::Mesh_host_t::local_boundaries() {
     }
 }
 
-void SEM::Meshes::Mesh_host_t::get_MPI_boundaries() {
+void SEM::Host::Meshes::Mesh_t::get_MPI_boundaries() {
     for (size_t i = 0; i < N_MPI_boundaries_; ++i) {
-        const SEM::Entities::Element_host_t& boundary_element = elements_[N_elements_ + N_local_boundaries_ + i];
-        const SEM::Entities::Face_host_t& boundary_face = faces_[boundary_element.faces_[0]];
-        const SEM::Entities::Element_host_t& domain_element = elements_[boundary_face.elements_[boundary_face.elements_[0] == N_elements_ + N_local_boundaries_ + i]];
+        const SEM::Host::Entities::Element_t& boundary_element = elements_[N_elements_ + N_local_boundaries_ + i];
+        const SEM::Host::Entities::Face_t& boundary_face = faces_[boundary_element.faces_[0]];
+        const SEM::Host::Entities::Element_t& domain_element = elements_[boundary_face.elements_[boundary_face.elements_[0] == N_elements_ + N_local_boundaries_ + i]];
         
         send_buffers_[i] = {domain_element.phi_L_,
                             domain_element.phi_R_,
@@ -559,7 +559,7 @@ void SEM::Meshes::Mesh_host_t::get_MPI_boundaries() {
     }
 }
 
-void SEM::Meshes::Mesh_host_t::put_MPI_boundaries() {
+void SEM::Host::Meshes::Mesh_t::put_MPI_boundaries() {
     for (size_t i = 0; i < N_MPI_boundaries_; ++i) {
         elements_[N_elements_ + N_local_boundaries_ + i].phi_L_ = receive_buffers_[i][0];
         elements_[N_elements_ + N_local_boundaries_ + i].phi_R_ = receive_buffers_[i][1];
@@ -568,7 +568,7 @@ void SEM::Meshes::Mesh_host_t::put_MPI_boundaries() {
     }
 }
 
-void  SEM::Meshes::Mesh_host_t::move_elements(size_t N_elements, std::vector<SEM::Entities::Element_host_t>& temp_elements, size_t source_start_index, size_t destination_start_index) {
+void  SEM::Host::Meshes::Mesh_t::move_elements(size_t N_elements, std::vector<SEM::Host::Entities::Element_t>& temp_elements, size_t source_start_index, size_t destination_start_index) {
     for (size_t i = 0; i < N_elements; ++i) {
         elements_[i + destination_start_index] = std::move(temp_elements[i + source_start_index]);
 
@@ -577,7 +577,7 @@ void  SEM::Meshes::Mesh_host_t::move_elements(size_t N_elements, std::vector<SEM
     }
 }
 
-void SEM::Meshes::Mesh_host_t::calculate_fluxes() {
+void SEM::Host::Meshes::Mesh_t::calculate_fluxes() {
     for (auto& face: faces_) {
         hostFloat u;
         const hostFloat u_left = elements_[face.elements_[0]].phi_R_;
@@ -608,7 +608,7 @@ void SEM::Meshes::Mesh_host_t::calculate_fluxes() {
     }
 }
 
-void SEM::Meshes::Mesh_host_t::calculate_q_fluxes() {
+void SEM::Host::Meshes::Mesh_t::calculate_q_fluxes() {
     for (auto& face: faces_) {
         const hostFloat u_prime_left = elements_[face.elements_[0]].phi_prime_R_;
 
@@ -616,7 +616,7 @@ void SEM::Meshes::Mesh_host_t::calculate_q_fluxes() {
     }
 }
 
-void SEM::Meshes::Mesh_host_t::adapt(int N_max, const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& barycentric_weights) {
+void SEM::Host::Meshes::Mesh_t::adapt(int N_max, const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& barycentric_weights) {
     unsigned long long additional_elements = 0;
     for (size_t i = 0; i < N_elements_; ++i) {
         additional_elements += elements_[i].refine_ * (elements_[i].sigma_ < 1.0) * (elements_[i].delta_x_/2 >= delta_x_min_);
@@ -657,16 +657,16 @@ void SEM::Meshes::Mesh_host_t::adapt(int N_max, const std::vector<std::vector<ho
         return;
     }
 
-    std::vector<SEM::Entities::Element_host_t> new_elements(N_elements_ + additional_elements);
+    std::vector<SEM::Host::Entities::Element_t> new_elements(N_elements_ + additional_elements);
     hp_adapt(N_max, new_elements, nodes, barycentric_weights);
 
     const size_t N_elements_old = N_elements_;
     N_elements_ = (global_rank == global_size - 1) ? N_elements_per_process_ + N_elements_global_ - N_elements_per_process_ * global_size : N_elements_per_process_;
     const size_t N_faces = N_elements_ + N_local_boundaries_ + N_MPI_boundaries_ - 1;
 
-    faces_ = std::vector<SEM::Entities::Face_host_t>(N_faces);
+    faces_ = std::vector<SEM::Host::Entities::Face_t>(N_faces);
     build_faces();
-    elements_ = std::vector<SEM::Entities::Element_host_t>(N_elements_ + N_local_boundaries_ + N_MPI_boundaries_);
+    elements_ = std::vector<SEM::Host::Entities::Element_t>(N_elements_ + N_local_boundaries_ + N_MPI_boundaries_);
 
     const size_t N_elements_send_left = (global_element_offset_ > global_element_offset_current) ? global_element_offset_ - global_element_offset_current : 0;
     const size_t N_elements_recv_left = (global_element_offset_current > global_element_offset_) ? global_element_offset_current - global_element_offset_ : 0;
@@ -814,28 +814,28 @@ void SEM::Meshes::Mesh_host_t::adapt(int N_max, const std::vector<std::vector<ho
     build_boundaries();
 }
 
-void SEM::Meshes::Mesh_host_t::p_adapt(int N_max, const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& barycentric_weights) {
+void SEM::Host::Meshes::Mesh_t::p_adapt(int N_max, const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& barycentric_weights) {
     for (size_t i = 0; i < N_elements_; ++i) {
         if (elements_[i].refine_ && elements_[i].sigma_ >= 1.0 && elements_[i].N_ < N_max) {
-            SEM::Entities::Element_host_t new_element(std::min(elements_[i].N_ + 2, N_max), elements_[i].faces_[0], elements_[i].faces_[1], elements_[i].x_[0], elements_[i].x_[1]);
+            SEM::Host::Entities::Element_t new_element(std::min(elements_[i].N_ + 2, N_max), elements_[i].faces_[0], elements_[i].faces_[1], elements_[i].x_[0], elements_[i].x_[1]);
             new_element.interpolate_from(elements_[i], nodes, barycentric_weights);
             elements_[i] = std::move(new_element);
         }
     }
 }
 
-void SEM::Meshes::Mesh_host_t::hp_adapt(int N_max, std::vector<SEM::Entities::Element_host_t>& new_elements, const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& barycentric_weights) {
+void SEM::Host::Meshes::Mesh_t::hp_adapt(int N_max, std::vector<SEM::Host::Entities::Element_t>& new_elements, const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& barycentric_weights) {
     for (size_t i = 0; i < N_elements_; ++i) {
         const size_t element_index = i + refine_array_[i];
 
         if (elements_[i].refine_ && elements_[i].sigma_ < 1.0 && elements_[i].delta_x_/2 >= delta_x_min_) {
-            new_elements[element_index] = SEM::Entities::Element_host_t(elements_[i].N_, element_index, element_index + 1, elements_[i].x_[0], (elements_[i].x_[0] + elements_[i].x_[1]) * 0.5);
-            new_elements[element_index + 1] = SEM::Entities::Element_host_t(elements_[i].N_, element_index + 1, element_index + 2, (elements_[i].x_[0] + elements_[i].x_[1]) * 0.5, elements_[i].x_[1]);
+            new_elements[element_index] = SEM::Host::Entities::Element_t(elements_[i].N_, element_index, element_index + 1, elements_[i].x_[0], (elements_[i].x_[0] + elements_[i].x_[1]) * 0.5);
+            new_elements[element_index + 1] = SEM::Host::Entities::Element_t(elements_[i].N_, element_index + 1, element_index + 2, (elements_[i].x_[0] + elements_[i].x_[1]) * 0.5, elements_[i].x_[1]);
             new_elements[element_index].interpolate_from(elements_[i], nodes, barycentric_weights);
             new_elements[element_index + 1].interpolate_from(elements_[i], nodes, barycentric_weights);
         }
         else if (elements_[i].refine_ && elements_[i].sigma_ >= 1.0 && elements_[i].N_ < N_max) {
-            new_elements[element_index] = SEM::Entities::Element_host_t(std::min(elements_[i].N_ + 2, N_max), element_index, element_index + 1, elements_[i].x_[0], elements_[i].x_[1]);
+            new_elements[element_index] = SEM::Host::Entities::Element_t(std::min(elements_[i].N_ + 2, N_max), element_index, element_index + 1, elements_[i].x_[0], elements_[i].x_[1]);
             new_elements[element_index].interpolate_from(elements_[i], nodes, barycentric_weights);
         }
         else {
@@ -845,17 +845,17 @@ void SEM::Meshes::Mesh_host_t::hp_adapt(int N_max, std::vector<SEM::Entities::El
     }
 }
 
-template void SEM::Meshes::Mesh_host_t::estimate_error<SEM::Polynomials::ChebyshevPolynomial_host_t>(const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& weights);
-template void SEM::Meshes::Mesh_host_t::estimate_error<SEM::Polynomials::LegendrePolynomial_host_t>(const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& weights);
+template void SEM::Host::Meshes::Mesh_t::estimate_error<SEM::Host::Polynomials::ChebyshevPolynomial_t>(const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& weights);
+template void SEM::Host::Meshes::Mesh_t::estimate_error<SEM::Host::Polynomials::LegendrePolynomial_t>(const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& weights);
 
 template<typename Polynomial>
-void SEM::Meshes::Mesh_host_t::estimate_error(const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& weights) {
+void SEM::Host::Meshes::Mesh_t::estimate_error(const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& weights) {
     for (size_t i = 0; i < N_elements_; ++i) {
         elements_[i].estimate_error<Polynomial>(nodes, weights);
     }
 }
 
-void SEM::Meshes::matrix_vector_multiply(int N, const std::vector<hostFloat>& matrix, const std::vector<hostFloat>& vector, std::vector<hostFloat>& result) {
+void SEM::Host::Meshes::matrix_vector_multiply(int N, const std::vector<hostFloat>& matrix, const std::vector<hostFloat>& vector, std::vector<hostFloat>& result) {
     for (int i = 0; i < vector.size(); ++i) {
         result[i] = 0.0f;
         for (int j = 0; j < vector.size(); ++j) {
@@ -865,7 +865,7 @@ void SEM::Meshes::matrix_vector_multiply(int N, const std::vector<hostFloat>& ma
 }
 
 // Algorithm 19
-void SEM::Meshes::matrix_vector_derivative(int N, const std::vector<hostFloat>& derivative_matrices_hat,  const std::vector<hostFloat>& phi, std::vector<hostFloat>& phi_prime) {
+void SEM::Host::Meshes::matrix_vector_derivative(int N, const std::vector<hostFloat>& derivative_matrices_hat,  const std::vector<hostFloat>& phi, std::vector<hostFloat>& phi_prime) {
     // s = 0, e = N (p.55 says N - 1)
     
     for (size_t i = 0; i < phi.size(); ++i) {
@@ -877,12 +877,12 @@ void SEM::Meshes::matrix_vector_derivative(int N, const std::vector<hostFloat>& 
 }
 
 // Algorithm 60 (not really anymore)
-void SEM::Meshes::Mesh_host_t::compute_dg_derivative(const std::vector<std::vector<hostFloat>>& weights, const std::vector<std::vector<hostFloat>>& derivative_matrices_hat, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right) {
+void SEM::Host::Meshes::Mesh_t::compute_dg_derivative(const std::vector<std::vector<hostFloat>>& weights, const std::vector<std::vector<hostFloat>>& derivative_matrices_hat, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right) {
     for (size_t i = 0; i < N_elements_; ++i) {
         const hostFloat flux_L = faces_[elements_[i].faces_[0]].flux_;
         const hostFloat flux_R = faces_[elements_[i].faces_[1]].flux_;
 
-        SEM::Meshes::matrix_vector_multiply(elements_[i].N_, derivative_matrices_hat[elements_[i].N_], elements_[i].phi_, elements_[i].q_);
+        SEM::Host::Meshes::matrix_vector_multiply(elements_[i].N_, derivative_matrices_hat[elements_[i].N_], elements_[i].phi_, elements_[i].q_);
 
         for (int j = 0; j <= elements_[i].N_; ++j) {
             elements_[i].q_[j] = -elements_[i].q_[j] - (flux_R * lagrange_interpolant_right[elements_[i].N_][j]
@@ -893,15 +893,15 @@ void SEM::Meshes::Mesh_host_t::compute_dg_derivative(const std::vector<std::vect
 }
 
 // Algorithm 60 (not really anymore)
-void SEM::Meshes::Mesh_host_t::compute_dg_derivative2(hostFloat viscosity, const std::vector<std::vector<hostFloat>>& weights, const std::vector<std::vector<hostFloat>>& derivative_matrices_hat, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right) {
+void SEM::Host::Meshes::Mesh_t::compute_dg_derivative2(hostFloat viscosity, const std::vector<std::vector<hostFloat>>& weights, const std::vector<std::vector<hostFloat>>& derivative_matrices_hat, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right) {
     for (size_t i = 0; i < N_elements_; ++i) {
         const hostFloat derivative_flux_L = faces_[elements_[i].faces_[0]].derivative_flux_;
         const hostFloat derivative_flux_R = faces_[elements_[i].faces_[1]].derivative_flux_;
         const hostFloat nl_flux_L = faces_[elements_[i].faces_[0]].nl_flux_;
         const hostFloat nl_flux_R = faces_[elements_[i].faces_[1]].nl_flux_;
 
-        SEM::Meshes::matrix_vector_derivative(elements_[i].N_, derivative_matrices_hat[elements_[i].N_], elements_[i].phi_, elements_[i].ux_);
-        SEM::Meshes::matrix_vector_multiply(elements_[i].N_, derivative_matrices_hat[elements_[i].N_], elements_[i].q_, elements_[i].phi_prime_);
+        SEM::Host::Meshes::matrix_vector_derivative(elements_[i].N_, derivative_matrices_hat[elements_[i].N_], elements_[i].phi_, elements_[i].ux_);
+        SEM::Host::Meshes::matrix_vector_multiply(elements_[i].N_, derivative_matrices_hat[elements_[i].N_], elements_[i].q_, elements_[i].phi_prime_);
 
         for (int j = 0; j <= elements_[i].N_; ++j) {
             elements_[i].phi_prime_[j] = -elements_[i].phi_prime_[j] * viscosity
@@ -916,13 +916,13 @@ void SEM::Meshes::Mesh_host_t::compute_dg_derivative2(hostFloat viscosity, const
     }
 }
 
-void SEM::Meshes::Mesh_host_t::interpolate_to_boundaries(const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right) {
+void SEM::Host::Meshes::Mesh_t::interpolate_to_boundaries(const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right) {
     for (size_t i = 0; i < N_elements_; ++i) {
         elements_[i].interpolate_to_boundaries(lagrange_interpolant_left, lagrange_interpolant_right);
     }
 }
 
-void SEM::Meshes::Mesh_host_t::interpolate_q_to_boundaries(const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right) {
+void SEM::Host::Meshes::Mesh_t::interpolate_q_to_boundaries(const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right) {
     for (size_t i = 0; i < N_elements_; ++i) {
         elements_[i].interpolate_q_to_boundaries(lagrange_interpolant_left, lagrange_interpolant_right);
     }

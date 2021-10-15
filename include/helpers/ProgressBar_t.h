@@ -1,5 +1,5 @@
-#ifndef NDG_PROGRESSBAR_T_H
-#define NDG_PROGRESSBAR_T_H
+#ifndef NDG_HELPERS_PROGRESSBAR_T_H
+#define NDG_HELPERS_PROGRESSBAR_T_H
 
 #include "helpers/float_types.h"
 #include <atomic>

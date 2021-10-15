@@ -1,18 +1,18 @@
-#ifndef NDG_MESH_HOST_T_H
-#define NDG_MESH_HOST_T_H
+#ifndef NDG_MESHES_MESH_T_H
+#define NDG_MESHES_MESH_T_H
 
 #include "helpers/float_types.h"
-#include "entities/Element_host_t.h"
-#include "entities/Face_host_t.h"
-#include "entities/NDG_host_t.h"
+#include "entities/Element_t.h"
+#include "entities/Face_t.h"
+#include "entities/NDG_t.h"
 #include <vector>
 #include <mpi.h>
 #include <array>
 
-namespace SEM { namespace Meshes {
-    class Mesh_host_t {
+namespace SEM { namespace Host { namespace Meshes {
+    class Mesh_t {
         public:
-            Mesh_host_t(size_t N_elements, int initial_N, hostFloat delta_x_min, hostFloat x_min, hostFloat x_max, int adaptivity_interval);
+            Mesh_t(size_t N_elements, int initial_N, hostFloat delta_x_min, hostFloat x_min, hostFloat x_max, int adaptivity_interval);
 
             size_t N_elements_global_;
             size_t N_elements_;
@@ -23,8 +23,8 @@ namespace SEM { namespace Meshes {
             int initial_N_;
             hostFloat delta_x_min_;
             int adaptivity_interval_;
-            std::vector<SEM::Entities::Element_host_t> elements_;
-            std::vector<SEM::Entities::Face_host_t> faces_;
+            std::vector<SEM::Host::Entities::Element_t> elements_;
+            std::vector<SEM::Host::Entities::Face_t> faces_;
             std::vector<size_t> local_boundary_to_element_;
             std::vector<size_t> MPI_boundary_to_element_;
             std::vector<size_t> MPI_boundary_from_element_;
@@ -36,7 +36,7 @@ namespace SEM { namespace Meshes {
             hostFloat get_delta_t(const hostFloat CFL);
             
             template<typename Polynomial>
-            void solve(const hostFloat CFL, const std::vector<hostFloat> output_times, const SEM::Entities::NDG_host_t<Polynomial> &NDG, hostFloat viscosity);
+            void solve(const hostFloat CFL, const std::vector<hostFloat> output_times, const SEM::Host::Entities::NDG_t<Polynomial> &NDG, hostFloat viscosity);
 
             void build_elements(hostFloat x_min, hostFloat x_max);
             void build_boundaries();
@@ -65,7 +65,7 @@ namespace SEM { namespace Meshes {
 
             void put_MPI_boundaries();
 
-            void move_elements(size_t N_elements, std::vector<SEM::Entities::Element_host_t>& temp_elements, size_t source_start_index, size_t destination_start_index);
+            void move_elements(size_t N_elements, std::vector<SEM::Host::Entities::Element_t>& temp_elements, size_t source_start_index, size_t destination_start_index);
 
             void calculate_fluxes();
 
@@ -75,7 +75,7 @@ namespace SEM { namespace Meshes {
 
             void p_adapt(int N_max, const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& barycentric_weights);
 
-            void hp_adapt(int N_max, std::vector<SEM::Entities::Element_host_t>& new_elements, const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& barycentric_weights);
+            void hp_adapt(int N_max, std::vector<SEM::Host::Entities::Element_t>& new_elements, const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& barycentric_weights);
 
             // Algorithm 60 (not really anymore)
             void compute_dg_derivative(const std::vector<std::vector<hostFloat>>& weights, const std::vector<std::vector<hostFloat>>& derivative_matrices_hat, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right);
@@ -95,6 +95,6 @@ namespace SEM { namespace Meshes {
 
     // Algorithm 19
     void matrix_vector_derivative(int N, const std::vector<hostFloat>& derivative_matrices_hat,  const std::vector<hostFloat>& phi, std::vector<hostFloat>& phi_prime);
-}}
+}}}
 
 #endif

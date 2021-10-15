@@ -29,10 +29,12 @@ target_link_libraries(unit_tests PRIVATE
     SEM)
 
 set_target_properties(unit_tests PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-set_property(TARGET unit_tests PROPERTY CUDA_ARCHITECTURES 61) # sm_61 is GTX 10X0
+set_property(TARGET unit_tests PROPERTY CUDA_ARCHITECTURES "60;61;70") # sm_61 is GTX 10X0
 target_compile_features(unit_tests PRIVATE cxx_std_17)
 if(NOT ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug"))
-set_property(TARGET unit_tests PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
+    set_property(TARGET unit_tests PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
 endif()
+target_compile_options(unit_tests PUBLIC "$<$<AND:$<COMPILE_LANGUAGE:CUDA>,$<CONFIG:DEBUG>>:-lineinfo>")
+target_compile_options(unit_tests PUBLIC "$<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>")
 
 catch_discover_tests(unit_tests)

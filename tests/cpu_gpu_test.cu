@@ -6,9 +6,9 @@
 #include "entities/NDG_t.cuh"
 #include "polynomials/ChebyshevPolynomial_t.cuh"
 #include "polynomials/LegendrePolynomial_t.cuh"
-#include "entities/NDG_host_t.h"
-#include "polynomials/ChebyshevPolynomial_host_t.h"
-#include "polynomials/LegendrePolynomial_host_t.h"
+#include "entities/NDG_t.h"
+#include "polynomials/ChebyshevPolynomial_t.h"
+#include "polynomials/LegendrePolynomial_t.h"
 
 TEST_CASE("ChebyshevPolynomials_CPU_GPU", "Compares the Chebyshev polynomials between the CPU and GPU implementations."){
     const int N_max = 16;
@@ -18,8 +18,8 @@ TEST_CASE("ChebyshevPolynomials_CPU_GPU", "Compares the Chebyshev polynomials be
     cudaStream_t stream;
     cudaStreamCreate(&stream); 
     
-    SEM::Entities::NDG_t<SEM::Polynomials::ChebyshevPolynomial_t> NDG(N_max, n_interpolation_points, stream);
-    SEM::Entities::NDG_host_t<SEM::Polynomials::ChebyshevPolynomial_host_t> NDG_host(N_max, n_interpolation_points);
+    SEM::Device::Entities::NDG_t<SEM::Device::Polynomials::ChebyshevPolynomial_t> NDG(N_max, n_interpolation_points, stream);
+    SEM::Host::Entities::NDG_t<SEM::Host::Polynomials::ChebyshevPolynomial_t> NDG_host(N_max, n_interpolation_points);
 
     std::vector<deviceFloat> host_nodes(NDG.vector_length_);
     std::vector<deviceFloat> host_weights(NDG.vector_length_);
@@ -107,8 +107,8 @@ TEST_CASE("LegendrePolynomials_CPU_GPU", "Compares the Legendre polynomials betw
     cudaStream_t stream;
     cudaStreamCreate(&stream); 
     
-    SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> NDG(N_max, n_interpolation_points, stream);
-    SEM::Entities::NDG_host_t<SEM::Polynomials::LegendrePolynomial_host_t> NDG_host(N_max, n_interpolation_points);
+    SEM::Device::Entities::NDG_t<SEM::Device::Polynomials::LegendrePolynomial_t> NDG(N_max, n_interpolation_points, stream);
+    SEM::Host::Entities::NDG_t<SEM::Host::Polynomials::LegendrePolynomial_t> NDG_host(N_max, n_interpolation_points);
 
     std::vector<deviceFloat> host_nodes(NDG.vector_length_);
     std::vector<deviceFloat> host_weights(NDG.vector_length_);

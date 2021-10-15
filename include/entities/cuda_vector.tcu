@@ -4,21 +4,21 @@
 template <typename T>
 template<typename TI>
 __device__
-SEM::Entities::cuda_vector<T>::cuda_vector(TI size) : size_(size), data_(new T[size]) {}
+SEM::Device::Entities::cuda_vector<T>::cuda_vector(TI size) : size_(size), data_(new T[size]) {}
 
 template <typename T>
 __device__ __host__
-SEM::Entities::cuda_vector<T>::cuda_vector() : size_(0), data_(nullptr) {}
+SEM::Device::Entities::cuda_vector<T>::cuda_vector() : size_(0), data_(nullptr) {}
 
 template <typename T>
 __device__
-SEM::Entities::cuda_vector<T>::~cuda_vector() {
+SEM::Device::Entities::cuda_vector<T>::~cuda_vector() {
     delete[] data_;
 }
 
 template <typename T>
 __device__
-SEM::Entities::cuda_vector<T>::cuda_vector(const cuda_vector<T>& other) : size_(other.size()), data_(new T[other.size()]) { // copy constructor
+SEM::Device::Entities::cuda_vector<T>::cuda_vector(const cuda_vector<T>& other) : size_(other.size()), data_(new T[other.size()]) { // copy constructor
     for (size_t i = 0; i < size_; ++i) {
         data_[i] = other.data_[i];
     }
@@ -26,13 +26,13 @@ SEM::Entities::cuda_vector<T>::cuda_vector(const cuda_vector<T>& other) : size_(
 
 template <typename T>
 __device__
-SEM::Entities::cuda_vector<T>::cuda_vector(cuda_vector<T>&& other) noexcept : size_(other.size()), data_(other.data()) { // move constructor
+SEM::Device::Entities::cuda_vector<T>::cuda_vector(cuda_vector<T>&& other) noexcept : size_(other.size()), data_(other.data()) { // move constructor
     other.data_ = nullptr;
 }
 
 template <typename T>
 __device__
-auto SEM::Entities::cuda_vector<T>::operator=(const cuda_vector<T>& other) -> cuda_vector& { // copy assignment
+auto SEM::Device::Entities::cuda_vector<T>::operator=(const cuda_vector<T>& other) -> cuda_vector& { // copy assignment
     if (&other == this) {
         return *this;
     }
@@ -52,7 +52,7 @@ auto SEM::Entities::cuda_vector<T>::operator=(const cuda_vector<T>& other) -> cu
 
 template <typename T>
 __device__
-auto SEM::Entities::cuda_vector<T>::operator=(cuda_vector<T>&& other) noexcept -> cuda_vector& { // move assignment
+auto SEM::Device::Entities::cuda_vector<T>::operator=(cuda_vector<T>&& other) noexcept -> cuda_vector& { // move assignment
     size_ = other.size();
     thrust::swap(data_, other.data_);
 
@@ -62,38 +62,38 @@ auto SEM::Entities::cuda_vector<T>::operator=(cuda_vector<T>&& other) noexcept -
 template <typename T>
 template<typename TI>
 __device__
-auto SEM::Entities::cuda_vector<T>::operator[](TI index) -> T& {
+auto SEM::Device::Entities::cuda_vector<T>::operator[](TI index) -> T& {
     return data_[index];
 }
 
 template <typename T>
 template<typename TI>
 __device__
-auto SEM::Entities::cuda_vector<T>::operator[](TI index) const -> const T& {
+auto SEM::Device::Entities::cuda_vector<T>::operator[](TI index) const -> const T& {
     return data_[index];
 }
 
 template <typename T>
 __device__
-auto SEM::Entities::cuda_vector<T>::size() const -> size_t {
+auto SEM::Device::Entities::cuda_vector<T>::size() const -> size_t {
     return size_;
 }
 
 template <typename T>
 __device__
-auto SEM::Entities::cuda_vector<T>::data() -> T* {
+auto SEM::Device::Entities::cuda_vector<T>::data() -> T* {
     return data_;
 }
 
 template <typename T>
 __device__
-auto SEM::Entities::cuda_vector<T>::data() const -> const T* {
+auto SEM::Device::Entities::cuda_vector<T>::data() const -> const T* {
     return data_;
 }
 
 template <typename T>
 __device__
-auto SEM::Entities::cuda_vector<T>::clear() -> void {
+auto SEM::Device::Entities::cuda_vector<T>::clear() -> void {
     delete[] data_;
     data_ = nullptr;
     size_ = 0;
@@ -101,6 +101,6 @@ auto SEM::Entities::cuda_vector<T>::clear() -> void {
 
 template <typename T>
 __device__
-auto SEM::Entities::cuda_vector<T>::empty() const -> bool {
+auto SEM::Device::Entities::cuda_vector<T>::empty() const -> bool {
     return size_ == 0;
 }

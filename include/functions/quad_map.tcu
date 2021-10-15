@@ -1,9 +1,7 @@
 // Algorithm 95
-#if defined(__CUDA__)
-__host__ __device__
-#endif
 template <class T>
-auto SEM::quad_map(SEM::Entities::Vec2<T> local_coordinates, const std::array<SEM::Entities::Vec2<T>, 4>& points) -> SEM::Entities::Vec2<T> {
+__host__ __device__
+auto SEM::Device::quad_map(SEM::Device::Entities::Vec2<T> local_coordinates, const std::array<SEM::Device::Entities::Vec2<T>, 4>& points) -> SEM::Device::Entities::Vec2<T> {
     return (points[0] * (1 - local_coordinates.x()) * (1 - local_coordinates.y()) 
             + points[1] * (local_coordinates.x() + 1) * (1 - local_coordinates.y())
             + points[2] * (local_coordinates.x() + 1) * (local_coordinates.y() + 1)

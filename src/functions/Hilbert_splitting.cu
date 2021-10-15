@@ -1,38 +1,30 @@
 #include "functions/Hilbert_splitting.cuh"
 
-#if defined(__CUDA__)
 __host__ __device__
-#endif
-auto SEM::Hilbert::deduct_first_element_status(size_t outgoing_side) -> SEM::Hilbert::Status {
-    constexpr std::array<SEM::Hilbert::Status, 4> first_element_status {SEM::Hilbert::Status::B, SEM::Hilbert::Status::H, SEM::Hilbert::Status::A, SEM::Hilbert::Status::R};
+auto SEM::Device::Hilbert::deduct_first_element_status(size_t outgoing_side) -> SEM::Device::Hilbert::Status {
+    constexpr std::array<SEM::Device::Hilbert::Status, 4> first_element_status {SEM::Device::Hilbert::Status::B, SEM::Device::Hilbert::Status::H, SEM::Device::Hilbert::Status::A, SEM::Device::Hilbert::Status::R};
     return first_element_status[outgoing_side];
 }
 
-#if defined(__CUDA__)
 __host__ __device__
-#endif
-auto SEM::Hilbert::deduct_last_element_status(size_t incoming_side) -> SEM::Hilbert::Status {
-    constexpr std::array<SEM::Hilbert::Status, 4> last_element_status {SEM::Hilbert::Status::A, SEM::Hilbert::Status::R, SEM::Hilbert::Status::B, SEM::Hilbert::Status::H};
+auto SEM::Device::Hilbert::deduct_last_element_status(size_t incoming_side) -> SEM::Device::Hilbert::Status {
+    constexpr std::array<SEM::Device::Hilbert::Status, 4> last_element_status {SEM::Device::Hilbert::Status::A, SEM::Device::Hilbert::Status::R, SEM::Device::Hilbert::Status::B, SEM::Device::Hilbert::Status::H};
     return last_element_status[incoming_side];
 }
 
-#if defined(__CUDA__)
 __host__ __device__
-#endif
-auto SEM::Hilbert::deduct_element_status(size_t incoming_side, size_t outgoing_side) -> SEM::Hilbert::Status {
-    constexpr std::array<std::array<SEM::Hilbert::Status, 4>, 4> element_status {{
-        {SEM::Hilbert::Status::H, SEM::Hilbert::Status::H, SEM::Hilbert::Status::A, SEM::Hilbert::Status::A},
-        {SEM::Hilbert::Status::B, SEM::Hilbert::Status::B, SEM::Hilbert::Status::R, SEM::Hilbert::Status::R},
-        {SEM::Hilbert::Status::B, SEM::Hilbert::Status::B, SEM::Hilbert::Status::R, SEM::Hilbert::Status::R},
-        {SEM::Hilbert::Status::H, SEM::Hilbert::Status::H, SEM::Hilbert::Status::A, SEM::Hilbert::Status::A}
+auto SEM::Device::Hilbert::deduct_element_status(size_t incoming_side, size_t outgoing_side) -> SEM::Device::Hilbert::Status {
+    constexpr std::array<std::array<SEM::Device::Hilbert::Status, 4>, 4> element_status {{
+        {SEM::Device::Hilbert::Status::H, SEM::Device::Hilbert::Status::H, SEM::Device::Hilbert::Status::A, SEM::Device::Hilbert::Status::A},
+        {SEM::Device::Hilbert::Status::B, SEM::Device::Hilbert::Status::B, SEM::Device::Hilbert::Status::R, SEM::Device::Hilbert::Status::R},
+        {SEM::Device::Hilbert::Status::B, SEM::Device::Hilbert::Status::B, SEM::Device::Hilbert::Status::R, SEM::Device::Hilbert::Status::R},
+        {SEM::Device::Hilbert::Status::H, SEM::Device::Hilbert::Status::H, SEM::Device::Hilbert::Status::A, SEM::Device::Hilbert::Status::A}
     }};
     return element_status[incoming_side][outgoing_side];
 }
 
-#if defined(__CUDA__)
 __host__ __device__
-#endif
-auto SEM::Hilbert::child_order(SEM::Hilbert::Status parent_status, int rotation) -> std::array<size_t, 4> {
+auto SEM::Device::Hilbert::child_order(SEM::Device::Hilbert::Status parent_status, int rotation) -> std::array<size_t, 4> {
     constexpr std::array<std::array<std::array<size_t, 4>, 4>, 4> child_orders {{
         {{
             {0, 3, 2, 1},
@@ -62,34 +54,32 @@ auto SEM::Hilbert::child_order(SEM::Hilbert::Status parent_status, int rotation)
     return child_orders[rotation][parent_status];
 }
 
-#if defined(__CUDA__)
 __host__ __device__
-#endif
-auto SEM::Hilbert::child_statuses(SEM::Hilbert::Status parent_status, int rotation) -> std::array<SEM::Hilbert::Status, 4> {
-    constexpr std::array<std::array<std::array<SEM::Hilbert::Status, 4>, 4>, 4> child_statuses_array {{
+auto SEM::Device::Hilbert::child_statuses(SEM::Device::Hilbert::Status parent_status, int rotation) -> std::array<SEM::Device::Hilbert::Status, 4> {
+    constexpr std::array<std::array<std::array<SEM::Device::Hilbert::Status, 4>, 4>, 4> child_statuses_array {{
         {{
-            {SEM::Hilbert::Status::A, SEM::Hilbert::Status::B, SEM::Hilbert::Status::H, SEM::Hilbert::Status::H},
-            {SEM::Hilbert::Status::H, SEM::Hilbert::Status::A, SEM::Hilbert::Status::A, SEM::Hilbert::Status::R},
-            {SEM::Hilbert::Status::R, SEM::Hilbert::Status::R, SEM::Hilbert::Status::B, SEM::Hilbert::Status::A},
-            {SEM::Hilbert::Status::B, SEM::Hilbert::Status::H, SEM::Hilbert::Status::R, SEM::Hilbert::Status::B}
+            {SEM::Device::Hilbert::Status::A, SEM::Device::Hilbert::Status::B, SEM::Device::Hilbert::Status::H, SEM::Device::Hilbert::Status::H},
+            {SEM::Device::Hilbert::Status::H, SEM::Device::Hilbert::Status::A, SEM::Device::Hilbert::Status::A, SEM::Device::Hilbert::Status::R},
+            {SEM::Device::Hilbert::Status::R, SEM::Device::Hilbert::Status::R, SEM::Device::Hilbert::Status::B, SEM::Device::Hilbert::Status::A},
+            {SEM::Device::Hilbert::Status::B, SEM::Device::Hilbert::Status::H, SEM::Device::Hilbert::Status::R, SEM::Device::Hilbert::Status::B}
         }},
         {{
-            {SEM::Hilbert::Status::B, SEM::Hilbert::Status::H, SEM::Hilbert::Status::H, SEM::Hilbert::Status::A},
-            {SEM::Hilbert::Status::A, SEM::Hilbert::Status::A, SEM::Hilbert::Status::R, SEM::Hilbert::Status::H},
-            {SEM::Hilbert::Status::R, SEM::Hilbert::Status::B, SEM::Hilbert::Status::A, SEM::Hilbert::Status::R},
-            {SEM::Hilbert::Status::H, SEM::Hilbert::Status::R, SEM::Hilbert::Status::B, SEM::Hilbert::Status::B}
+            {SEM::Device::Hilbert::Status::B, SEM::Device::Hilbert::Status::H, SEM::Device::Hilbert::Status::H, SEM::Device::Hilbert::Status::A},
+            {SEM::Device::Hilbert::Status::A, SEM::Device::Hilbert::Status::A, SEM::Device::Hilbert::Status::R, SEM::Device::Hilbert::Status::H},
+            {SEM::Device::Hilbert::Status::R, SEM::Device::Hilbert::Status::B, SEM::Device::Hilbert::Status::A, SEM::Device::Hilbert::Status::R},
+            {SEM::Device::Hilbert::Status::H, SEM::Device::Hilbert::Status::R, SEM::Device::Hilbert::Status::B, SEM::Device::Hilbert::Status::B}
         }},
         {{
-            {SEM::Hilbert::Status::H, SEM::Hilbert::Status::H, SEM::Hilbert::Status::A, SEM::Hilbert::Status::B},
-            {SEM::Hilbert::Status::A, SEM::Hilbert::Status::R, SEM::Hilbert::Status::H, SEM::Hilbert::Status::A},
-            {SEM::Hilbert::Status::B, SEM::Hilbert::Status::A, SEM::Hilbert::Status::R, SEM::Hilbert::Status::R},
-            {SEM::Hilbert::Status::R, SEM::Hilbert::Status::B, SEM::Hilbert::Status::B, SEM::Hilbert::Status::H}
+            {SEM::Device::Hilbert::Status::H, SEM::Device::Hilbert::Status::H, SEM::Device::Hilbert::Status::A, SEM::Device::Hilbert::Status::B},
+            {SEM::Device::Hilbert::Status::A, SEM::Device::Hilbert::Status::R, SEM::Device::Hilbert::Status::H, SEM::Device::Hilbert::Status::A},
+            {SEM::Device::Hilbert::Status::B, SEM::Device::Hilbert::Status::A, SEM::Device::Hilbert::Status::R, SEM::Device::Hilbert::Status::R},
+            {SEM::Device::Hilbert::Status::R, SEM::Device::Hilbert::Status::B, SEM::Device::Hilbert::Status::B, SEM::Device::Hilbert::Status::H}
         }},
         {{
-            {SEM::Hilbert::Status::H, SEM::Hilbert::Status::A, SEM::Hilbert::Status::B, SEM::Hilbert::Status::H},
-            {SEM::Hilbert::Status::R, SEM::Hilbert::Status::H, SEM::Hilbert::Status::A, SEM::Hilbert::Status::A},
-            {SEM::Hilbert::Status::A, SEM::Hilbert::Status::R, SEM::Hilbert::Status::R, SEM::Hilbert::Status::B},
-            {SEM::Hilbert::Status::B, SEM::Hilbert::Status::B, SEM::Hilbert::Status::H, SEM::Hilbert::Status::R}
+            {SEM::Device::Hilbert::Status::H, SEM::Device::Hilbert::Status::A, SEM::Device::Hilbert::Status::B, SEM::Device::Hilbert::Status::H},
+            {SEM::Device::Hilbert::Status::R, SEM::Device::Hilbert::Status::H, SEM::Device::Hilbert::Status::A, SEM::Device::Hilbert::Status::A},
+            {SEM::Device::Hilbert::Status::A, SEM::Device::Hilbert::Status::R, SEM::Device::Hilbert::Status::R, SEM::Device::Hilbert::Status::B},
+            {SEM::Device::Hilbert::Status::B, SEM::Device::Hilbert::Status::B, SEM::Device::Hilbert::Status::H, SEM::Device::Hilbert::Status::R}
         }}
     }};
     return child_statuses_array[rotation][parent_status];

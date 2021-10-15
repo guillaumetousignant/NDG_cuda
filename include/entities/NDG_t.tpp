@@ -1,5 +1,5 @@
-#include "polynomials/ChebyshevPolynomial_host_t.h"
-#include "polynomials/LegendrePolynomial_host_t.h"
+#include "polynomials/ChebyshevPolynomial_t.h"
+#include "polynomials/LegendrePolynomial_t.h"
 #include <cmath>
 #include <cfloat>
 #include <iostream>
@@ -9,7 +9,7 @@
 #include <limits>
 
 template<typename Polynomial>
-SEM::Entities::NDG_host_t<Polynomial>::NDG_host_t(int N_max, std::size_t n_interpolation_points) : 
+SEM::Host::Entities::NDG_t<Polynomial>::NDG_t(int N_max, std::size_t n_interpolation_points) : 
         N_max_(N_max), 
         N_interpolation_points_(n_interpolation_points),
         nodes_(N_max + 1),
@@ -58,7 +58,7 @@ SEM::Entities::NDG_host_t<Polynomial>::NDG_host_t(int N_max, std::size_t n_inter
 }
    
 template<typename Polynomial>
-void SEM::Entities::NDG_host_t<Polynomial>::print() {
+void SEM::Host::Entities::NDG_t<Polynomial>::print() {
         std::cout << "Nodes: " << std::endl;
     for (int N = 0; N <= N_max_; ++N) {
         std::cout << '\t' << "N = " << N << ": ";
@@ -160,7 +160,7 @@ void SEM::Entities::NDG_host_t<Polynomial>::print() {
 
 // Algorithm 30
 template<typename Polynomial>
-void SEM::Entities::NDG_host_t<Polynomial>::calculate_barycentric_weights(int N, const std::vector<hostFloat>& nodes, std::vector<hostFloat>& barycentric_weights) {
+void SEM::Host::Entities::NDG_t<Polynomial>::calculate_barycentric_weights(int N, const std::vector<hostFloat>& nodes, std::vector<hostFloat>& barycentric_weights) {
     for (int j = 0; j <= N; ++j) {
         hostFloat xjxi = 1.0;
         for (int i = 0; i < j; ++i) {
@@ -182,7 +182,7 @@ bool almost_equal(float a, float b) {
 
 // From cppreference.com
 template<typename Polynomial>
-bool SEM::Entities::NDG_host_t<Polynomial>::almost_equal(hostFloat x, hostFloat y) {
+bool SEM::Host::Entities::NDG_t<Polynomial>::almost_equal(hostFloat x, hostFloat y) {
     constexpr int ulp = 2; // ULP
     // the machine epsilon has to be scaled to the magnitude of the values used
     // and multiplied by the desired precision in ULPs (units in the last place)
@@ -194,7 +194,7 @@ bool SEM::Entities::NDG_host_t<Polynomial>::almost_equal(hostFloat x, hostFloat 
 // This will not work if we are on a node, or at least be pretty inefficient
 // Algorithm 34
 template<typename Polynomial>
-void SEM::Entities::NDG_host_t<Polynomial>::lagrange_interpolating_polynomials(hostFloat x, int N, const std::vector<hostFloat>& nodes, const std::vector<hostFloat>& barycentric_weights, std::vector<hostFloat>& lagrange_interpolant) {
+void SEM::Host::Entities::NDG_t<Polynomial>::lagrange_interpolating_polynomials(hostFloat x, int N, const std::vector<hostFloat>& nodes, const std::vector<hostFloat>& barycentric_weights, std::vector<hostFloat>& lagrange_interpolant) {
     for (int i = 0; i <= N; ++i) {
         lagrange_interpolant[i] = barycentric_weights[i] / (x - nodes[i]);
     }
@@ -202,7 +202,7 @@ void SEM::Entities::NDG_host_t<Polynomial>::lagrange_interpolating_polynomials(h
 
 // Algorithm 34
 template<typename Polynomial>
-void SEM::Entities::NDG_host_t<Polynomial>::normalize_lagrange_interpolating_polynomials(int N, std::vector<hostFloat>& lagrange_interpolant) {
+void SEM::Host::Entities::NDG_t<Polynomial>::normalize_lagrange_interpolating_polynomials(int N, std::vector<hostFloat>& lagrange_interpolant) {
     hostFloat sum = 0.0;
     for (int i = 0; i <= N; ++i) {
         sum += lagrange_interpolant[i];
@@ -215,7 +215,7 @@ void SEM::Entities::NDG_host_t<Polynomial>::normalize_lagrange_interpolating_pol
 // This will not work if we are on a node, or at least be pretty inefficient
 // Algorithm 36
 template<typename Polynomial>
-void SEM::Entities::NDG_host_t<Polynomial>::lagrange_interpolating_derivative_polynomials(hostFloat x, int N, const std::vector<hostFloat>& nodes, const std::vector<hostFloat>& barycentric_weights, std::vector<hostFloat>& lagrange_derivative_interpolant) {
+void SEM::Host::Entities::NDG_t<Polynomial>::lagrange_interpolating_derivative_polynomials(hostFloat x, int N, const std::vector<hostFloat>& nodes, const std::vector<hostFloat>& barycentric_weights, std::vector<hostFloat>& lagrange_derivative_interpolant) {
     for (int i = 0; i <= N; ++i) {
         lagrange_derivative_interpolant[i] = barycentric_weights[i] / ((x - nodes[i]) * (x - nodes[i]));
     }
@@ -223,7 +223,7 @@ void SEM::Entities::NDG_host_t<Polynomial>::lagrange_interpolating_derivative_po
 
 // Algorithm 36
 template<typename Polynomial>
-void SEM::Entities::NDG_host_t<Polynomial>::normalize_lagrange_interpolating_derivative_polynomials(hostFloat x, int N, const std::vector<hostFloat>& nodes, const std::vector<hostFloat>& barycentric_weights, std::vector<hostFloat>& lagrange_derivative_interpolant) {
+void SEM::Host::Entities::NDG_t<Polynomial>::normalize_lagrange_interpolating_derivative_polynomials(hostFloat x, int N, const std::vector<hostFloat>& nodes, const std::vector<hostFloat>& barycentric_weights, std::vector<hostFloat>& lagrange_derivative_interpolant) {
     hostFloat sum = 0.0;
     for (int i = 0; i <= N; ++i) {
         sum += barycentric_weights[i]/(x - nodes[i]);
@@ -236,7 +236,7 @@ void SEM::Entities::NDG_host_t<Polynomial>::normalize_lagrange_interpolating_der
 // Be sure to compute the diagonal afterwards
 // Algorithm 37
 template<typename Polynomial>
-void SEM::Entities::NDG_host_t<Polynomial>::polynomial_derivative_matrices(int N, const std::vector<hostFloat>& nodes, const std::vector<hostFloat>& barycentric_weights, std::vector<hostFloat>& derivative_matrices) {
+void SEM::Host::Entities::NDG_t<Polynomial>::polynomial_derivative_matrices(int N, const std::vector<hostFloat>& nodes, const std::vector<hostFloat>& barycentric_weights, std::vector<hostFloat>& derivative_matrices) {
     for (int i = 0; i <= N; ++i) {
         for (int j = 0; j <= N; ++j) {
             if (i != j) { // CHECK remove for branchless, i == j will be overwritten anyway
@@ -248,7 +248,7 @@ void SEM::Entities::NDG_host_t<Polynomial>::polynomial_derivative_matrices(int N
 
 // Algorithm 37
 template<typename Polynomial>
-void SEM::Entities::NDG_host_t<Polynomial>::polynomial_derivative_matrices_diagonal(int N, std::vector<hostFloat>& derivative_matrices) {
+void SEM::Host::Entities::NDG_t<Polynomial>::polynomial_derivative_matrices_diagonal(int N, std::vector<hostFloat>& derivative_matrices) {
     for (int i = 0; i <= N; ++i) {
         derivative_matrices[i * (N + 2)] = 0.0;
         for (int j = 0; j < i; ++j) {
@@ -261,7 +261,7 @@ void SEM::Entities::NDG_host_t<Polynomial>::polynomial_derivative_matrices_diago
 }
 
 template<typename Polynomial>
-void SEM::Entities::NDG_host_t<Polynomial>::polynomial_derivative_matrices_hat(int N, const std::vector<hostFloat>& weights, const std::vector<hostFloat>& derivative_matrices, std::vector<hostFloat>& derivative_matrices_hat) {
+void SEM::Host::Entities::NDG_t<Polynomial>::polynomial_derivative_matrices_hat(int N, const std::vector<hostFloat>& weights, const std::vector<hostFloat>& derivative_matrices, std::vector<hostFloat>& derivative_matrices_hat) {
     for (int i = 0; i <= N; ++i) {
         for (int j = 0; j <= N; ++j) {
             derivative_matrices_hat[i * (N + 1) + j] = -derivative_matrices[j * (N + 1) + i] * weights[j] / weights[i];
@@ -271,7 +271,7 @@ void SEM::Entities::NDG_host_t<Polynomial>::polynomial_derivative_matrices_hat(i
 
 // Algorithm 57
 template<typename Polynomial>
-void SEM::Entities::NDG_host_t<Polynomial>::polynomial_cg_derivative_matrices(int N, const std::vector<hostFloat>& weights, const std::vector<hostFloat>& derivative_matrices, std::vector<hostFloat>& g_hat_derivative_matrices) {
+void SEM::Host::Entities::NDG_t<Polynomial>::polynomial_cg_derivative_matrices(int N, const std::vector<hostFloat>& weights, const std::vector<hostFloat>& derivative_matrices, std::vector<hostFloat>& g_hat_derivative_matrices) {
     for (int j = 0; j <= N; ++j) {
         for (int n = 0; n <= N; ++n) {
             hostFloat s = 0.0;
@@ -285,7 +285,7 @@ void SEM::Entities::NDG_host_t<Polynomial>::polynomial_cg_derivative_matrices(in
 
 // Will interpolate n_interpolation_points between -1 and 1
 template<typename Polynomial>
-void SEM::Entities::NDG_host_t<Polynomial>::create_interpolation_matrices(int N, std::size_t n_interpolation_points, const std::vector<hostFloat>& nodes, const std::vector<hostFloat>& barycentric_weights, std::vector<hostFloat>& interpolation_matrices) {
+void SEM::Host::Entities::NDG_t<Polynomial>::create_interpolation_matrices(int N, std::size_t n_interpolation_points, const std::vector<hostFloat>& nodes, const std::vector<hostFloat>& barycentric_weights, std::vector<hostFloat>& interpolation_matrices) {
     for (std::size_t j = 0; j < n_interpolation_points; ++j) {
         bool row_has_match = false;
         const hostFloat x_coord = 2.0 * j / (n_interpolation_points - 1) - 1.0;

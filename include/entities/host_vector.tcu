@@ -2,7 +2,7 @@
 
 template <typename T>
 template<typename TI>
-SEM::Entities::host_vector<T>::host_vector(TI size) : size_(size) {
+SEM::Device::Entities::host_vector<T>::host_vector(TI size) : size_(size) {
     if (size_ != 0) {
         cudaMallocHost(&data_, size_ * sizeof(T));
     }
@@ -12,12 +12,12 @@ SEM::Entities::host_vector<T>::host_vector(TI size) : size_(size) {
 }
 
 template <typename T>
-SEM::Entities::host_vector<T>::host_vector() : size_(0) {
+SEM::Device::Entities::host_vector<T>::host_vector() : size_(0) {
     data_ = nullptr;
 }
 
 template <typename T>
-SEM::Entities::host_vector<T>::~host_vector() {
+SEM::Device::Entities::host_vector<T>::~host_vector() {
     if (data_ != nullptr) {
         destroy();
     }
@@ -25,7 +25,7 @@ SEM::Entities::host_vector<T>::~host_vector() {
 }
 
 template <typename T>
-SEM::Entities::host_vector<T>::host_vector(const host_vector<T>& other) : size_(other.size()) { // copy constructor
+SEM::Device::Entities::host_vector<T>::host_vector(const host_vector<T>& other) : size_(other.size()) { // copy constructor
     if (size_ != 0) {
         cudaMallocHost(&data_, size_ * sizeof(T));
         memcpy(data_, other.data(), size_ * sizeof(T));
@@ -36,13 +36,13 @@ SEM::Entities::host_vector<T>::host_vector(const host_vector<T>& other) : size_(
 }
 
 template <typename T>
-SEM::Entities::host_vector<T>::host_vector(host_vector<T>&& other) noexcept : size_(other.size()) { // move constructor
+SEM::Device::Entities::host_vector<T>::host_vector(host_vector<T>&& other) noexcept : size_(other.size()) { // move constructor
     data_ = other.data();
     other.data_ = nullptr;
 }
 
 template <typename T>
-auto SEM::Entities::host_vector<T>::operator=(const host_vector<T>& other) -> host_vector& { // copy assignment
+auto SEM::Device::Entities::host_vector<T>::operator=(const host_vector<T>& other) -> host_vector& { // copy assignment
     if (&other == this) {
         return *this;
     }
@@ -65,7 +65,7 @@ auto SEM::Entities::host_vector<T>::operator=(const host_vector<T>& other) -> ho
 }
 
 template <typename T>
-auto SEM::Entities::host_vector<T>::operator=(host_vector<T>&& other) noexcept -> host_vector& { // move assignment
+auto SEM::Device::Entities::host_vector<T>::operator=(host_vector<T>&& other) noexcept -> host_vector& { // move assignment
     std::swap(data_, other.data_);
     std::swap(size_, other.size_);
 
@@ -74,33 +74,33 @@ auto SEM::Entities::host_vector<T>::operator=(host_vector<T>&& other) noexcept -
 
 template <typename T>
 template<typename TI>
-auto SEM::Entities::host_vector<T>::operator[](TI index) -> T& {
+auto SEM::Device::Entities::host_vector<T>::operator[](TI index) -> T& {
     return data_[index];
 }
 
 template <typename T>
 template<typename TI>
-auto SEM::Entities::host_vector<T>::operator[](TI index) const -> const T& {
+auto SEM::Device::Entities::host_vector<T>::operator[](TI index) const -> const T& {
     return data_[index];
 }
 
 template <typename T>
-auto SEM::Entities::host_vector<T>::size() const -> size_t {
+auto SEM::Device::Entities::host_vector<T>::size() const -> size_t {
     return size_;
 }
 
 template <typename T>
-auto SEM::Entities::host_vector<T>::data() -> T* {
+auto SEM::Device::Entities::host_vector<T>::data() -> T* {
     return data_;
 }
 
 template <typename T>
-auto SEM::Entities::host_vector<T>::data() const -> const T* {
+auto SEM::Device::Entities::host_vector<T>::data() const -> const T* {
     return data_;
 }
 
 template <typename T>
-auto SEM::Entities::host_vector<T>::clear() -> void {
+auto SEM::Device::Entities::host_vector<T>::clear() -> void {
     if (data_ != nullptr) {
         destroy();
     }
@@ -110,6 +110,6 @@ auto SEM::Entities::host_vector<T>::clear() -> void {
 }
 
 template <typename T>
-auto SEM::Entities::host_vector<T>::empty() const -> bool {
+auto SEM::Device::Entities::host_vector<T>::empty() const -> bool {
     return size_ == 0;
 }

@@ -6,7 +6,14 @@
  * 
  * All the different namespaces are pulled under this one. 
  */
-namespace SEM {}
+namespace SEM {
+    /**
+     * @brief Contains the host version of the objects and functions of the library.
+     * 
+     * All the different host namespaces are pulled under this one. 
+     */
+    namespace Host {}
+}
 
 #include "entities/entities.h"
 #include "functions/functions.h"

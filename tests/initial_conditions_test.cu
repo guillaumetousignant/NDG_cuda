@@ -27,8 +27,8 @@ TEST_CASE("Initial conditions solution value", "Checks the node values are corre
     cudaStream_t stream;
     cudaStreamCreate(&stream); 
     
-    SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> NDG(N_max, n_interpolation_points, stream);
-    SEM::Meshes::Mesh_t mesh(N_elements, N_test, delta_x_min, x_span[0], x_span[1], adaptivity_interval, stream);
+    SEM::Device::Entities::NDG_t<SEM::Device::Polynomials::LegendrePolynomial_t> NDG(N_max, n_interpolation_points, stream);
+    SEM::Device::Meshes::Mesh_t mesh(N_elements, N_test, delta_x_min, x_span[0], x_span[1], adaptivity_interval, stream);
     mesh.set_initial_conditions(NDG.nodes_.data());
     
     deviceFloat* x;
@@ -68,7 +68,7 @@ TEST_CASE("Initial conditions solution value", "Checks the node values are corre
     cudaMallocAsync(&error, mesh.N_elements_ * sizeof(deviceFloat), stream);
     cudaMallocAsync(&delta_x, mesh.N_elements_ * sizeof(deviceFloat), stream);
 
-    SEM::Entities::get_solution<<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, stream>>>(mesh.N_elements_, n_interpolation_points, mesh.elements_, NDG.interpolation_matrices_.data(), x, phi, phi_prime, intermediate, x_L, x_R, N, sigma, refine, coarsen, error, delta_x);
+    SEM::Device::Entities::get_solution<<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, stream>>>(mesh.N_elements_, n_interpolation_points, mesh.elements_, NDG.interpolation_matrices_.data(), x, phi, phi_prime, intermediate, x_L, x_R, N, sigma, refine, coarsen, error, delta_x);
     
     cudaMemcpy(host_x.data(), x , mesh.N_elements_ * n_interpolation_points * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_phi.data(), phi, mesh.N_elements_ * n_interpolation_points * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
@@ -84,7 +84,7 @@ TEST_CASE("Initial conditions solution value", "Checks the node values are corre
     cudaMemcpy(host_delta_x.data(), delta_x, mesh.N_elements_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
 
     for (int i = 0; i < N_elements * n_interpolation_points; ++i) {
-        const double expected = SEM::Entities::g(host_x[i]);
+        const double expected = SEM::Device::Entities::g(host_x[i]);
         REQUIRE(std::abs(expected - host_phi[i]) < max_error);
     }
 
@@ -122,19 +122,19 @@ TEST_CASE("Initial conditions boundary values", "Checks the extrapolated boundar
     cudaStream_t stream;
     cudaStreamCreate(&stream); 
     
-    SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> NDG(N_max, n_interpolation_points, stream);
-    SEM::Meshes::Mesh_t mesh(N_elements, N_test, delta_x_min, x_span[0], x_span[1], adaptivity_interval, stream);
+    SEM::Device::Entities::NDG_t<SEM::Device::Polynomials::LegendrePolynomial_t> NDG(N_max, n_interpolation_points, stream);
+    SEM::Device::Meshes::Mesh_t mesh(N_elements, N_test, delta_x_min, x_span[0], x_span[1], adaptivity_interval, stream);
     mesh.set_initial_conditions(NDG.nodes_.data());
-    SEM::Entities::interpolate_to_boundaries<<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, stream>>>(mesh.N_elements_, mesh.elements_, NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
+    SEM::Device::Entities::interpolate_to_boundaries<<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, stream>>>(mesh.N_elements_, mesh.elements_, NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
     mesh.boundary_conditions();
-    SEM::Meshes::calculate_fluxes<<<mesh.faces_numBlocks_, mesh.faces_blockSize_, 0, stream>>>(mesh.N_faces_, mesh.faces_, mesh.elements_);
-    SEM::Meshes::compute_dg_derivative<<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, stream>>>(mesh.N_elements_, mesh.elements_, mesh.faces_, NDG.weights_.data(), NDG.derivative_matrices_hat_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
-    SEM::Entities::interpolate_q_to_boundaries<<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, stream>>>(mesh.N_elements_, mesh.elements_, NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
+    SEM::Device::Meshes::calculate_fluxes<<<mesh.faces_numBlocks_, mesh.faces_blockSize_, 0, stream>>>(mesh.N_faces_, mesh.faces_, mesh.elements_);
+    SEM::Device::Meshes::compute_dg_derivative<<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, stream>>>(mesh.N_elements_, mesh.elements_, mesh.faces_, NDG.weights_.data(), NDG.derivative_matrices_hat_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
+    SEM::Device::Entities::interpolate_q_to_boundaries<<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, stream>>>(mesh.N_elements_, mesh.elements_, NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
 
-    std::vector<SEM::Entities::Face_t> host_faces(mesh.N_faces_);
-    std::vector<SEM::Entities::Element_t> host_elements(mesh.N_elements_ + mesh.N_local_boundaries_ + mesh.N_MPI_boundaries_);
-    cudaMemcpy(host_faces.data(), mesh.faces_, mesh.N_faces_ * sizeof(SEM::Entities::Face_t), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_elements.data(), mesh.elements_, (mesh.N_elements_ + mesh.N_local_boundaries_ + mesh.N_MPI_boundaries_) * sizeof(SEM::Entities::Element_t), cudaMemcpyDeviceToHost);
+    std::vector<SEM::Device::Entities::Face_t> host_faces(mesh.N_faces_);
+    std::vector<SEM::Device::Entities::Element_t> host_elements(mesh.N_elements_ + mesh.N_local_boundaries_ + mesh.N_MPI_boundaries_);
+    cudaMemcpy(host_faces.data(), mesh.faces_, mesh.N_faces_ * sizeof(SEM::Device::Entities::Face_t), cudaMemcpyDeviceToHost);
+    cudaMemcpy(host_elements.data(), mesh.elements_, (mesh.N_elements_ + mesh.N_local_boundaries_ + mesh.N_MPI_boundaries_) * sizeof(SEM::Device::Entities::Element_t), cudaMemcpyDeviceToHost);
 
     // Invalidate GPU pointers, or else they will be deleted on the CPU, where they point to random stuff
     for (size_t i = 0; i < mesh.N_elements_ + mesh.N_local_boundaries_ + mesh.N_MPI_boundaries_; ++i) {
@@ -146,16 +146,16 @@ TEST_CASE("Initial conditions boundary values", "Checks the extrapolated boundar
     }
     
     for (int i = 0; i < N_elements; ++i) {
-        const double phi_L_expected = SEM::Entities::g(host_elements[i].x_[0]);
-        const double phi_R_expected = SEM::Entities::g(host_elements[i].x_[1]);
+        const double phi_L_expected = SEM::Device::Entities::g(host_elements[i].x_[0]);
+        const double phi_R_expected = SEM::Device::Entities::g(host_elements[i].x_[1]);
 
         REQUIRE(std::abs(phi_L_expected - host_elements[i].phi_L_) < max_error);
         REQUIRE(std::abs(phi_R_expected - host_elements[i].phi_R_) < max_error);
     }
 
     for (int i = 0; i < N_elements; ++i) {
-        const double phi_prime_L_expected = SEM::Entities::g_prime(host_elements[i].x_[0]);
-        const double phi_prime_R_expected = SEM::Entities::g_prime(host_elements[i].x_[1]);
+        const double phi_prime_L_expected = SEM::Device::Entities::g_prime(host_elements[i].x_[0]);
+        const double phi_prime_R_expected = SEM::Device::Entities::g_prime(host_elements[i].x_[1]);
 
         REQUIRE(std::abs(phi_prime_L_expected + host_elements[i].phi_prime_L_) < max_error);
         REQUIRE(std::abs(phi_prime_R_expected + host_elements[i].phi_prime_R_) < max_error);

@@ -1,7 +1,7 @@
-#ifndef NDG_HOST_VECTOR_H
-#define NDG_HOST_VECTOR_H
+#ifndef NDG_ENTITIES_HOST_VECTOR_CUH
+#define NDG_ENTITIES_HOST_VECTOR_CUH
 
-namespace SEM { namespace Entities {
+namespace SEM { namespace Device { namespace Entities {
     template<typename T>
     class host_vector { 
         public: 
@@ -51,7 +51,7 @@ namespace SEM { namespace Entities {
 
             auto empty() const -> bool;
     };
-}}
+}}}
 
 #include "entities/host_vector.tcu"
 

@@ -245,9 +245,9 @@ auto main(int argc, char* argv[]) -> int {
     // Initialisation
     auto t_start_init = std::chrono::high_resolution_clock::now();
 
-    SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> NDG(N_max, n_interpolation_points, stream);
-    SEM::Meshes::Mesh2D_t mesh(mesh_file, N_initial, N_max, n_interpolation_points, max_splits, adaptivity_interval, load_balancing_interval, tolerance_min, tolerance_max, NDG.nodes_, stream);
-    SEM::Solvers::Solver2D_t solver(CFL, output_times, viscosity);
+    SEM::Device::Entities::NDG_t<SEM::Device::Polynomials::LegendrePolynomial_t> NDG(N_max, n_interpolation_points, stream);
+    SEM::Device::Meshes::Mesh2D_t mesh(mesh_file, N_initial, N_max, n_interpolation_points, max_splits, adaptivity_interval, load_balancing_interval, tolerance_min, tolerance_max, NDG.nodes_, stream);
+    SEM::Device::Solvers::Solver2D_t solver(CFL, output_times, viscosity);
     SEM::Helpers::DataWriter_t data_writer(output_file);
     mesh.initial_conditions(NDG.nodes_);
     cudaStreamSynchronize(stream);

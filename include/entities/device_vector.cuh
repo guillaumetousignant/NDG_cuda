@@ -1,18 +1,18 @@
-#ifndef NDG_DEVICE_VECTOR_H
-#define NDG_DEVICE_VECTOR_H
+#ifndef NDG_ENTITIES_DEVICE_VECTOR_CUH
+#define NDG_ENTITIES_DEVICE_VECTOR_CUH
 
 #include <vector>
 #include "entities/host_vector.cuh"
 #include "entities/Element2D_t.cuh"
 #include "entities/Face2D_t.cuh"
 
-namespace SEM { namespace Entities {
+namespace SEM { namespace Device { namespace Entities {
     template<typename T>
     __global__
     auto empty_device_vector(size_t size, T* data) -> void;
 
-    template __global__ auto empty_device_vector<SEM::Entities::Element2D_t>(size_t size, SEM::Entities::Element2D_t* data) -> void; // AAAAH why is this needed, for some reason it won't 
-    template __global__ auto empty_device_vector<SEM::Entities::Face2D_t>(size_t size, SEM::Entities::Face2D_t* data) -> void;       // automatically instantiate this when instantiating device vectors??
+    template __global__ auto empty_device_vector<SEM::Device::Entities::Element2D_t>(size_t size, SEM::Device::Entities::Element2D_t* data) -> void; // AAAAH why is this needed, for some reason it won't 
+    template __global__ auto empty_device_vector<SEM::Device::Entities::Face2D_t>(size_t size, SEM::Device::Entities::Face2D_t* data) -> void;       // automatically instantiate this when instantiating device vectors??
 
     template<typename T>
     class device_vector { 
@@ -38,7 +38,7 @@ namespace SEM { namespace Entities {
                 }
                 #else
                 const int numBlocks = (size_ + blockSize_ - 1) / blockSize_;
-                SEM::Entities::empty_device_vector<T><<<numBlocks, blockSize_, 0>>>(size_, data_);
+                SEM::Device::Entities::empty_device_vector<T><<<numBlocks, blockSize_, 0>>>(size_, data_);
                 #endif
             }
 
@@ -57,7 +57,7 @@ namespace SEM { namespace Entities {
                 }
                 #else
                 const int numBlocks = (size_ + blockSize_ - 1) / blockSize_;
-                SEM::Entities::empty_device_vector<T><<<numBlocks, blockSize_, 0, stream>>>(size_, data_);
+                SEM::Device::Entities::empty_device_vector<T><<<numBlocks, blockSize_, 0, stream>>>(size_, data_);
                 #endif
             }
 
@@ -168,7 +168,7 @@ namespace SEM { namespace Entities {
             __host__ __device__
             auto empty() const -> bool;
     };
-}}
+}}}
 
 #include "entities/device_vector.tcu"
 

@@ -1,10 +1,10 @@
-#include "polynomials/LegendrePolynomial_host_t.h"
+#include "polynomials/LegendrePolynomial_t.h"
 #include <cmath>
 
 constexpr hostFloat pi = 3.14159265358979323846;
 
 // Algorithm 22
-void SEM::Polynomials::LegendrePolynomial_host_t::legendre_polynomial_and_derivative(int N, hostFloat x, hostFloat &L_N, hostFloat &L_N_prime) {
+void SEM::Host::Polynomials::LegendrePolynomial_t::legendre_polynomial_and_derivative(int N, hostFloat x, hostFloat &L_N, hostFloat &L_N_prime) {
     if (N == 0) {
         L_N = 1.0;
         L_N_prime = 0.0;
@@ -30,7 +30,7 @@ void SEM::Polynomials::LegendrePolynomial_host_t::legendre_polynomial_and_deriva
     }
 }
 
-hostFloat SEM::Polynomials::LegendrePolynomial_host_t::polynomial(int N, hostFloat x) {
+hostFloat SEM::Host::Polynomials::LegendrePolynomial_t::polynomial(int N, hostFloat x) {
     if (N == 0) {
         return 1.0f;
     }
@@ -56,7 +56,7 @@ hostFloat SEM::Polynomials::LegendrePolynomial_host_t::polynomial(int N, hostFlo
 }
 
 // Algorithm 23
-void SEM::Polynomials::LegendrePolynomial_host_t::nodes_and_weights(int N, std::vector<hostFloat>& nodes, std::vector<hostFloat>& weights) {
+void SEM::Host::Polynomials::LegendrePolynomial_t::nodes_and_weights(int N, std::vector<hostFloat>& nodes, std::vector<hostFloat>& weights) {
     for (int i = 0; i < (N + 1)/2; ++i) {
         if (N == 1) { // CHECK will enter loop above
             nodes[0] = -std::sqrt(1.0/3.0);

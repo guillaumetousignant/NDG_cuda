@@ -1,5 +1,5 @@
-#ifndef NDG_DATAWRITER_T_H
-#define NDG_DATAWRITER_T_H
+#ifndef NDG_HELPERS_DATAWRITER_T_H
+#define NDG_HELPERS_DATAWRITER_T_H
 
 #include "helpers/float_types.h"
 #include <filesystem>

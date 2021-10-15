@@ -1,11 +1,11 @@
-#ifndef NDG_ELEMENT_T_H
-#define NDG_ELEMENT_T_H
+#ifndef NDG_ENTITIES_ELEMENT_T_CUH
+#define NDG_ENTITIES_ELEMENT_T_CUH
 
 #include "helpers/float_types.h"
 #include "Face_t.cuh"
 #include <array>
 
-namespace SEM { namespace Entities {
+namespace SEM { namespace Device { namespace Entities {
     class Element_t { // Turn this into separate vectors, because cache exists
         public:
             __device__ 
@@ -133,6 +133,6 @@ namespace SEM { namespace Entities {
 
     __global__
     void put_MPI_boundaries(size_t N_elements, size_t N_local_boundaries, size_t N_MPI_boundaries, Element_t* elements, const deviceFloat* phi_L, const deviceFloat* phi_R, const deviceFloat* phi_prime_L, const deviceFloat* phi_prime_R);
-}}
+}}}
 
 #endif

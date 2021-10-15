@@ -1,5 +1,5 @@
-#ifndef NDG_HILBERT_H
-#define NDG_HILBERT_H
+#ifndef NDG_FUNCTIONS_HILBERT_H
+#define NDG_FUNCTIONS_HILBERT_H
 
 #include <array>
 

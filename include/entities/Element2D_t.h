@@ -1,19 +1,19 @@
-#ifndef NDG_ELEMENT2D_HOST_T_H
-#define NDG_ELEMENT2D_HOST_T_H
+#ifndef NDG_ENTITIES_ELEMENT2D_T_H
+#define NDG_ENTITIES_ELEMENT2D_T_H
 
 #include "helpers/float_types.h"
-#include "entities/Vec2.cuh"
-#include "functions/Hilbert_splitting.cuh"
+#include "entities/Vec2.h"
+#include "functions/Hilbert_splitting.h"
 #include <array>
 #include <vector>
 #include <mpi.h>
 
-namespace SEM { namespace Entities {
-    class Element2D_host_t { // Turn this into separate vectors, because cache exists
+namespace SEM { namespace Host { namespace Entities {
+    class Element2D_t { // Turn this into separate vectors, because cache exists
         public: 
-            Element2D_host_t(int N, int split_level, SEM::Hilbert::Status status, int rotation, const std::array<std::vector<size_t>, 4>& faces, std::array<size_t, 4> nodes);
+            Element2D_t(int N, int split_level, SEM::Host::Hilbert::Status status, int rotation, const std::array<std::vector<size_t>, 4>& faces, std::array<size_t, 4> nodes);
 
-            Element2D_host_t();
+            Element2D_t();
 
             int N_;
 
@@ -22,9 +22,9 @@ namespace SEM { namespace Entities {
             std::array<size_t, 4> nodes_;
 
             // Geometry
-            SEM::Hilbert::Status status_;
+            SEM::Host::Hilbert::Status status_;
             hostFloat delta_xy_min_;
-            SEM::Entities::Vec2<hostFloat> center_;
+            SEM::Host::Entities::Vec2<hostFloat> center_;
             std::vector<hostFloat> dxi_dx_;
             std::vector<hostFloat> deta_dx_;
             std::vector<hostFloat> dxi_dy_;
@@ -95,14 +95,14 @@ namespace SEM { namespace Entities {
             auto estimate_error(hostFloat tolerance_min, hostFloat tolerance_max, const std::vector<hostFloat>& polynomial_nodes, const std::vector<hostFloat>& weights) -> void;
 
             // This is used when the elements have different points
-            auto interpolate_from(const std::array<SEM::Entities::Vec2<hostFloat>, 4>& points, const std::array<SEM::Entities::Vec2<hostFloat>, 4>& points_other, const Element2D_host_t& other, const std::vector<hostFloat>& polynomial_nodes, const std::vector<hostFloat>& barycentric_weights) -> void;
+            auto interpolate_from(const std::array<SEM::Host::Entities::Vec2<hostFloat>, 4>& points, const std::array<SEM::Host::Entities::Vec2<hostFloat>, 4>& points_other, const Element2D_t& other, const std::vector<std::vector<hostFloat>>& polynomial_nodes, const std::vector<std::vector<hostFloat>>& barycentric_weights) -> void;
 
             // This is used when the elements have the same points
-            auto interpolate_from(const Element2D_host_t& other, const std::vector<hostFloat>& polynomial_nodes, const std::vector<hostFloat>& barycentric_weights) -> void;
+            auto interpolate_from(const Element2D_t& other, const std::vector<std::vector<hostFloat>>& polynomial_nodes, const std::vector<std::vector<hostFloat>>& barycentric_weights) -> void;
 
-            auto interpolate_solution(size_t n_interpolation_points, const std::array<SEM::Entities::Vec2<hostFloat>, 4>& points, const std::vector<hostFloat>& interpolation_matrices, std::vector<hostFloat>& x, std::vector<hostFloat>& y, std::vector<hostFloat>& p, std::vector<hostFloat>& u, std::vector<hostFloat>& v) const -> void;
+            auto interpolate_solution(size_t n_interpolation_points, size_t output_offset, const std::array<SEM::Host::Entities::Vec2<hostFloat>, 4>& points, const std::vector<hostFloat>& interpolation_matrices, std::vector<hostFloat>& x, std::vector<hostFloat>& y, std::vector<hostFloat>& p, std::vector<hostFloat>& u, std::vector<hostFloat>& v) const -> void;
 
-            auto interpolate_complete_solution(size_t n_interpolation_points, hostFloat time, const std::array<SEM::Entities::Vec2<hostFloat>, 4>& points, const std::vector<hostFloat>& polynomial_nodes, const std::vector<hostFloat>& interpolation_matrices, std::vector<hostFloat>& x, std::vector<hostFloat>& y, std::vector<hostFloat>& p, std::vector<hostFloat>& u, std::vector<hostFloat>& v, std::vector<hostFloat>& dp_dt, std::vector<hostFloat>& du_dt, std::vector<hostFloat>& dv_dt, std::vector<hostFloat>& p_analytical_error, std::vector<hostFloat>& u_analytical_error, std::vector<hostFloat>& v_analytical_error) const -> void;
+            auto interpolate_complete_solution(size_t n_interpolation_points, hostFloat time, size_t output_offset, const std::array<SEM::Host::Entities::Vec2<hostFloat>, 4>& points, const std::vector<hostFloat>& polynomial_nodes, const std::vector<hostFloat>& interpolation_matrices, std::vector<hostFloat>& x, std::vector<hostFloat>& y, std::vector<hostFloat>& p, std::vector<hostFloat>& u, std::vector<hostFloat>& v, std::vector<hostFloat>& dp_dt, std::vector<hostFloat>& du_dt, std::vector<hostFloat>& dv_dt, std::vector<hostFloat>& p_analytical_error, std::vector<hostFloat>& u_analytical_error, std::vector<hostFloat>& v_analytical_error) const -> void;
 
             auto allocate_storage() -> void;
 
@@ -110,9 +110,9 @@ namespace SEM { namespace Entities {
 
             auto resize_boundary_storage(int N) -> void;
 
-            auto compute_geometry(const std::array<SEM::Entities::Vec2<hostFloat>, 4>& points, const std::vector<hostFloat>& polynomial_nodes) -> void;
+            auto compute_geometry(const std::array<SEM::Host::Entities::Vec2<hostFloat>, 4>& points, const std::vector<hostFloat>& polynomial_nodes) -> void;
 
-            auto compute_boundary_geometry(const std::array<SEM::Entities::Vec2<hostFloat>, 4>& points, const std::vector<hostFloat>& polynomial_nodes) -> void;
+            auto compute_boundary_geometry(const std::array<SEM::Host::Entities::Vec2<hostFloat>, 4>& points, const std::vector<hostFloat>& polynomial_nodes) -> void;
 
             // From cppreference.com
             static auto almost_equal(hostFloat x, hostFloat y) -> bool;
@@ -124,6 +124,6 @@ namespace SEM { namespace Entities {
         private:
             auto exponential_decay(int n_points_least_squares) -> std::array<hostFloat, 2>;
     };
-}}
+}}}
 
 #endif

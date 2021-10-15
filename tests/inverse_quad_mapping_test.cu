@@ -4,7 +4,7 @@
 #include "meshes/Mesh2D_t.cuh"
 #include "functions/inverse_quad_map.cuh"
 
-using SEM::Entities::Vec2;
+using SEM::Device::Entities::Vec2;
 
 TEST_CASE("Inverse quad mapping", "Checks the inverse quad mapping returns the right result.") {
     const double error = 1e-6;
@@ -69,7 +69,7 @@ TEST_CASE("Inverse quad mapping", "Checks the inverse quad mapping returns the r
     std::array<Vec2<deviceFloat>, 25> local_coordinates_computed;
 
     for (int i = 0; i < local_coordinates_computed.size(); ++i) {
-        local_coordinates_computed[i] = SEM::inverse_quad_map(global_coordinates[i], points);
+        local_coordinates_computed[i] = SEM::Device::inverse_quad_map(global_coordinates[i], points);
     }
 
     for (int i = 0; i < local_coordinates_computed.size(); ++i) {
@@ -142,7 +142,7 @@ TEST_CASE("Inverse quad mapping parallelogram", "Checks the inverse quad mapping
     std::array<Vec2<deviceFloat>, 25> local_coordinates_computed;
 
     for (int i = 0; i < local_coordinates_computed.size(); ++i) {
-        local_coordinates_computed[i] = SEM::inverse_quad_map(global_coordinates[i], points);
+        local_coordinates_computed[i] = SEM::Device::inverse_quad_map(global_coordinates[i], points);
     }
 
     for (int i = 0; i < local_coordinates_computed.size(); ++i) {
@@ -219,7 +219,7 @@ TEST_CASE("Inverse quad mapping trapezoid", "Checks the inverse quad mapping ret
     std::array<Vec2<deviceFloat>, 25> local_coordinates_computed;
 
     for (int i = 0; i < local_coordinates_computed.size(); ++i) {
-        local_coordinates_computed[i] = SEM::inverse_quad_map(global_coordinates[i], points);
+        local_coordinates_computed[i] = SEM::Device::inverse_quad_map(global_coordinates[i], points);
     }
 
     for (int i = 0; i < local_coordinates_computed.size(); ++i) {
