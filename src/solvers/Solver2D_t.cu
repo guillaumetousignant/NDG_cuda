@@ -1,7 +1,4 @@
 #include "solvers/Solver2D_t.cuh"
-#include "polynomials/ChebyshevPolynomial_t.cuh"
-#include "polynomials/LegendrePolynomial_t.cuh"
-#include "helpers/ProgressBar_t.h"
 #include "helpers/constants.cuh"
 #include <mpi.h>
 #include <limits>
@@ -16,140 +13,6 @@ SEM::Device::Solvers::Solver2D_t::Solver2D_t(deviceFloat CFL, std::vector<device
         output_times_{output_times},
         viscosity_{viscosity} {}
 
-template auto SEM::Device::Solvers::Solver2D_t::solve(const SEM::Device::Entities::NDG_t<SEM::Device::Polynomials::ChebyshevPolynomial_t> &NDG, SEM::Device::Meshes::Mesh2D_t& mesh, const SEM::Helpers::DataWriter_t& data_writer) const -> void; // Get with the times c++, it's crazy I have to do this
-template auto SEM::Device::Solvers::Solver2D_t::solve(const SEM::Device::Entities::NDG_t<SEM::Device::Polynomials::LegendrePolynomial_t> &NDG, SEM::Device::Meshes::Mesh2D_t& mesh, const SEM::Helpers::DataWriter_t& data_writer) const -> void;
-
-template<typename Polynomial>
-auto SEM::Device::Solvers::Solver2D_t::solve(const SEM::Device::Entities::NDG_t<Polynomial> &NDG, SEM::Device::Meshes::Mesh2D_t& mesh, const SEM::Helpers::DataWriter_t& data_writer) const -> void {
-    int global_rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
-    int global_size;
-    MPI_Comm_size(MPI_COMM_WORLD, &global_size);
-    deviceFloat time = 0.0;
-    const deviceFloat t_end = output_times_.back();
-    SEM::Helpers::ProgressBar_t bar;
-    size_t timestep = 0;
-    constexpr std::array<deviceFloat, 3> am {0, -5.0/9.0, -153.0/128.0};
-    constexpr std::array<deviceFloat, 3> bm {0, 1.0/3.0, 0.75};
-    constexpr std::array<deviceFloat, 3> gm {1.0/3.0, 15.0/16.0, 8.0/15.0};
-
-    deviceFloat delta_t = get_delta_t(mesh);
-
-    for (auto const& e : std::as_const(output_times_)) {
-        if ((time >= e) && (time < e + delta_t)) {
-            if (global_rank == 0) {
-                bar.set_status_text("Writing solution");
-                bar.update(0.0);
-            }
-            mesh.write_complete_data(time, NDG.nodes_, NDG.interpolation_matrices_, data_writer);
-        }
-    }
-    
-    if (global_rank == 0) {
-        bar.set_status_text("Iteration 0");
-        bar.update(0.0);
-    }
-    
-    while (time < t_end) {
-        ++timestep;
-        delta_t = get_delta_t(mesh);
-        if (time + delta_t > t_end) {
-            delta_t = t_end - time;
-        }
-
-        // Kinda algorithm 62
-        deviceFloat t = time + bm[0] * delta_t;
-        mesh.interpolate_to_boundaries(NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
-        mesh.boundary_conditions(t, NDG.nodes_, NDG.weights_, NDG.barycentric_weights_);
-        mesh.project_to_faces(NDG.nodes_, NDG.barycentric_weights_);
-        SEM::Device::Solvers::calculate_wave_fluxes<<<mesh.faces_numBlocks_, mesh.faces_blockSize_, 0, mesh.stream_>>>(mesh.faces_.size(), mesh.faces_.data());
-        mesh.project_to_elements(NDG.nodes_, NDG.weights_, NDG.barycentric_weights_);
-        SEM::Device::Solvers::compute_dg_wave_derivative<<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, mesh.stream_>>>(mesh.n_elements_, mesh.elements_.data(), mesh.faces_.data(), NDG.weights_.data(), NDG.derivative_matrices_hat_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
-        SEM::Device::Solvers::rk3_first_step<<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, mesh.stream_>>>(mesh.n_elements_, mesh.elements_.data(), delta_t, gm[0]);
-
-        t = time + bm[1] * delta_t;
-        mesh.interpolate_to_boundaries(NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
-        mesh.boundary_conditions(t, NDG.nodes_, NDG.weights_, NDG.barycentric_weights_);
-        mesh.project_to_faces(NDG.nodes_, NDG.barycentric_weights_);
-        SEM::Device::Solvers::calculate_wave_fluxes<<<mesh.faces_numBlocks_, mesh.faces_blockSize_, 0, mesh.stream_>>>(mesh.faces_.size(), mesh.faces_.data());
-        mesh.project_to_elements(NDG.nodes_, NDG.weights_, NDG.barycentric_weights_);
-        SEM::Device::Solvers::compute_dg_wave_derivative<<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, mesh.stream_>>>(mesh.n_elements_, mesh.elements_.data(), mesh.faces_.data(), NDG.weights_.data(), NDG.derivative_matrices_hat_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
-        SEM::Device::Solvers::rk3_step<<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, mesh.stream_>>>(mesh.n_elements_, mesh.elements_.data(), delta_t, am[1], gm[1]);
-
-        t = time + bm[2] * delta_t;
-        mesh.interpolate_to_boundaries(NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
-        mesh.boundary_conditions(t, NDG.nodes_, NDG.weights_, NDG.barycentric_weights_);
-        mesh.project_to_faces(NDG.nodes_, NDG.barycentric_weights_);
-        SEM::Device::Solvers::calculate_wave_fluxes<<<mesh.faces_numBlocks_, mesh.faces_blockSize_, 0, mesh.stream_>>>(mesh.faces_.size(), mesh.faces_.data());
-        mesh.project_to_elements(NDG.nodes_, NDG.weights_, NDG.barycentric_weights_);
-        SEM::Device::Solvers::compute_dg_wave_derivative<<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, mesh.stream_>>>(mesh.n_elements_, mesh.elements_.data(), mesh.faces_.data(), NDG.weights_.data(), NDG.derivative_matrices_hat_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
-        SEM::Device::Solvers::rk3_step<<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, mesh.stream_>>>(mesh.n_elements_, mesh.elements_.data(), delta_t, am[2], gm[2]);
-        
-        time += delta_t;
-        for (auto const& e : std::as_const(output_times_)) {
-            if ((time >= e) && (time < e + delta_t)) {
-                if (global_rank == 0) {
-                    bar.set_status_text("Writing solution");
-                    bar.update(time/t_end);
-                }
-                mesh.estimate_error<Polynomial>(NDG.nodes_, NDG.weights_);
-                mesh.write_complete_data(time, NDG.nodes_, NDG.interpolation_matrices_, data_writer);
-                break;
-            }
-        }
-
-        if (timestep % mesh.adaptivity_interval_ == 0) {
-            if (global_rank == 0) {
-                bar.set_status_text("Adapting");
-                bar.update(time/t_end);
-            }
-
-            mesh.estimate_error<Polynomial>(NDG.nodes_, NDG.weights_);
-            mesh.adapt(NDG.N_max_, NDG.nodes_, NDG.barycentric_weights_);
-        }
-
-        if (global_size > 1 && timestep % mesh.load_balancing_interval_ == 0) {
-            if (global_rank == 0) {
-                bar.set_status_text("Load Balancing");
-                bar.update(time/t_end);
-            }
-
-            mesh.load_balance(NDG.nodes_);
-        }
-
-        if (global_rank == 0) {
-            std::stringstream ss;
-            ss << "Iteration " << timestep;
-            bar.set_status_text(ss.str());
-            bar.update(time/t_end);
-        }
-    }
-
-    bool did_write = false;
-    for (auto const& e : std::as_const(output_times_)) {
-        if ((time >= e) && (time < e + delta_t)) {
-            did_write = true;
-            break;
-        }
-    }
-
-    if (!did_write) {
-        mesh.estimate_error<Polynomial>(NDG.nodes_, NDG.weights_);
-        if (global_rank == 0) {
-            bar.set_status_text("Writing solution");
-            bar.update(1.0);
-        }
-        mesh.write_complete_data(time, NDG.nodes_, NDG.interpolation_matrices_, data_writer);
-    }
-    if (global_rank == 0) {
-        bar.set_status_text("Done");
-        bar.update(1.0);
-    }
-    if (global_rank == 0) {
-        std::cout << std::endl;
-    }
-}
-
 auto SEM::Device::Solvers::Solver2D_t::get_delta_t(SEM::Device::Meshes::Mesh2D_t& mesh) const -> deviceFloat {   
     SEM::Device::Solvers::reduce_wave_delta_t<mesh.elements_blockSize_/2><<<mesh.elements_numBlocks_, mesh.elements_blockSize_/2, 0, mesh.stream_>>>(CFL_, mesh.n_elements_, mesh.elements_.data(), mesh.device_delta_t_array_.data());
     mesh.device_delta_t_array_.copy_to(mesh.host_delta_t_array_, mesh.stream_);
@@ -157,7 +20,7 @@ auto SEM::Device::Solvers::Solver2D_t::get_delta_t(SEM::Device::Meshes::Mesh2D_t
 
     deviceFloat delta_t_min_local = std::numeric_limits<deviceFloat>::infinity();
     for (int i = 0; i < mesh.elements_numBlocks_; ++i) {
-        delta_t_min_local = min(delta_t_min_local, mesh.host_delta_t_array_[i]);
+        delta_t_min_local = std::min(delta_t_min_local, mesh.host_delta_t_array_[i]);
     }
 
     deviceFloat delta_t_min;

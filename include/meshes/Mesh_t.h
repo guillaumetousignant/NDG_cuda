@@ -97,4 +97,6 @@ namespace SEM { namespace Host { namespace Meshes {
     void matrix_vector_derivative(int N, const std::vector<hostFloat>& derivative_matrices_hat,  const std::vector<hostFloat>& phi, std::vector<hostFloat>& phi_prime);
 }}}
 
+#include "meshes/Mesh_t.tpp"
+
 #endif

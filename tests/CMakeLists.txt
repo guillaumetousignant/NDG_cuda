@@ -26,6 +26,7 @@ add_executable(unit_tests
     
 target_link_libraries(unit_tests PRIVATE 
     Catch2::Catch2
+    SEM-CUDA
     SEM)
 
 set_target_properties(unit_tests PROPERTIES CUDA_SEPARABLE_COMPILATION ON)

@@ -12,9 +12,9 @@
 using SEM::Device::Entities::Vec2;
 
 __device__ const std::array<Vec2<deviceFloat>, 4> points {Vec2<deviceFloat>{1, -1},
-                                                              Vec2<deviceFloat>{1, 1},
-                                                              Vec2<deviceFloat>{-1, 1},
-                                                              Vec2<deviceFloat>{-1, -1}};
+                                                          Vec2<deviceFloat>{1, 1},
+                                                          Vec2<deviceFloat>{-1, 1},
+                                                          Vec2<deviceFloat>{-1, -1}};
 
 __global__
 auto elements_init(size_t n_elements, size_t n_interpolation_points, SEM::Device::Entities::Element2D_t* elements, const deviceFloat* NDG_nodes, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v) -> void {

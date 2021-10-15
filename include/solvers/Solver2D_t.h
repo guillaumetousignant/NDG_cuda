@@ -42,4 +42,6 @@ namespace SEM { namespace Host { namespace Solvers {
     auto rk3_step(size_t N_elements, SEM::Host::Entities::Element2D_t* elements, hostFloat delta_t, hostFloat a, hostFloat g) -> void;
 }}}
 
+#include "solvers/Solver2D_t.tpp"
+
 #endif

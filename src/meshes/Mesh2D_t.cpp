@@ -1,6 +1,4 @@
 #include "meshes/Mesh2D_t.h"
-#include "polynomials/ChebyshevPolynomial_t.h"
-#include "polynomials/LegendrePolynomial_t.h"
 #include "helpers/constants.h"
 #include "functions/Utilities.h"
 #include "functions/Hilbert_splitting.h"
@@ -3011,16 +3009,6 @@ for (size_t element_index = 0; element_index < n_elements_; ++element_index) {
                 }
             }
         }
-    }
-}
-
-template auto SEM::Host::Meshes::Mesh2D_t::estimate_error<SEM::Host::Polynomials::ChebyshevPolynomial_t>(const std::vector<std::vector<hostFloat>>& polynomial_nodes, const std::vector<std::vector<hostFloat>>& weights) -> void;
-template auto SEM::Host::Meshes::Mesh2D_t::estimate_error<SEM::Host::Polynomials::LegendrePolynomial_t>(const std::vector<std::vector<hostFloat>>& polynomial_nodes, const std::vector<std::vector<hostFloat>>& weights) -> void;
-
-template<typename Polynomial>
-auto SEM::Host::Meshes::Mesh2D_t::estimate_error(const std::vector<std::vector<hostFloat>>& polynomial_nodes, const std::vector<std::vector<hostFloat>>& weights) -> void {
-    for (size_t element_index = 0; element_index < n_elements_; ++element_index) {
-        elements_[element_index].estimate_error<Polynomial>(tolerance_min_, tolerance_max_, polynomial_nodes[elements_[element_index].N_], weights[elements_[element_index].N_]);
     }
 }
 

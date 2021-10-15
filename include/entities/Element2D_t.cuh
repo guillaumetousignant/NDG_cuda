@@ -151,4 +151,6 @@ namespace SEM { namespace Device { namespace Entities {
     };
 }}}
 
+#include "entities/Element2D_t.tcu"
+
 #endif

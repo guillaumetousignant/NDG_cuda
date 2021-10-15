@@ -1,7 +1,4 @@
 #include "meshes/Mesh_t.cuh"
-#include "polynomials/ChebyshevPolynomial_t.cuh"
-#include "polynomials/LegendrePolynomial_t.cuh"
-#include "helpers/ProgressBar_t.h"
 #include <iostream>
 #include <fstream>
 #include <sstream> 
@@ -352,111 +349,13 @@ void SEM::Device::Meshes::Mesh_t::write_data(deviceFloat time, size_t n_interpol
     cudaFree(delta_x);
 }
 
-template void SEM::Device::Meshes::Mesh_t::solve(const deviceFloat delta_t, const std::vector<deviceFloat> output_times, const SEM::Device::Entities::NDG_t<SEM::Device::Polynomials::ChebyshevPolynomial_t> &NDG, deviceFloat viscosity); // Get with the times c++, it's crazy I have to do this
-template void SEM::Device::Meshes::Mesh_t::solve(const deviceFloat delta_t, const std::vector<deviceFloat> output_times, const SEM::Device::Entities::NDG_t<SEM::Device::Polynomials::LegendrePolynomial_t> &NDG, deviceFloat viscosity);
-
-template<typename Polynomial>
-void SEM::Device::Meshes::Mesh_t::solve(const deviceFloat CFL, const std::vector<deviceFloat> output_times, const SEM::Device::Entities::NDG_t<Polynomial> &NDG, deviceFloat viscosity) {
-    int global_rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
-    deviceFloat time = 0.0;
-    const deviceFloat t_end = output_times.back();
-    SEM::Helpers::ProgressBar_t bar;
-    size_t timestep = 0;
-
-    deviceFloat delta_t = get_delta_t(CFL);
-    write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_.data());
-    if (global_rank == 0) {
-        bar.update(0.0);
-        bar.set_status_text("Iteration 0");
-    }
-    
-    while (time < t_end) {
-        ++timestep;
-        delta_t = get_delta_t(CFL);
-        if (time + delta_t > t_end) {
-            delta_t = t_end - time;
-        }
-
-        // Kinda algorithm 62
-        //deviceFloat t = time;
-        SEM::Device::Entities::interpolate_to_boundaries<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
-        boundary_conditions();
-        SEM::Device::Meshes::calculate_fluxes<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(N_faces_, faces_, elements_);
-        SEM::Device::Meshes::compute_dg_derivative<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, faces_, NDG.weights_.data(), NDG.derivative_matrices_hat_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
-        SEM::Device::Entities::interpolate_q_to_boundaries<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
-        boundary_conditions();
-        SEM::Device::Meshes::calculate_q_fluxes<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(N_faces_, faces_, elements_);
-        SEM::Device::Meshes::compute_dg_derivative2<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(viscosity, N_elements_, elements_, faces_, NDG.weights_.data(), NDG.derivative_matrices_hat_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
-        SEM::Device::Meshes::rk3_first_step<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, delta_t, 1.0/3.0);
-
-        //t = time + 0.33333333333f * delta_t;
-        SEM::Device::Entities::interpolate_to_boundaries<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
-        boundary_conditions();
-        SEM::Device::Meshes::calculate_fluxes<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(N_faces_, faces_, elements_);
-        SEM::Device::Meshes::compute_dg_derivative<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, faces_, NDG.weights_.data(), NDG.derivative_matrices_hat_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
-        SEM::Device::Entities::interpolate_q_to_boundaries<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
-        boundary_conditions();
-        SEM::Device::Meshes::calculate_q_fluxes<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(N_faces_, faces_, elements_);
-        SEM::Device::Meshes::compute_dg_derivative2<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(viscosity, N_elements_, elements_, faces_, NDG.weights_.data(), NDG.derivative_matrices_hat_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
-        SEM::Device::Meshes::rk3_step<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, delta_t, -5.0/9.0, 15.0/16.0);
-
-       // t = time + 0.75f * delta_t;
-        SEM::Device::Entities::interpolate_to_boundaries<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
-        boundary_conditions();
-        SEM::Device::Meshes::calculate_fluxes<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(N_faces_, faces_, elements_);
-        SEM::Device::Meshes::compute_dg_derivative<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, faces_, NDG.weights_.data(), NDG.derivative_matrices_hat_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
-        SEM::Device::Entities::interpolate_q_to_boundaries<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
-        boundary_conditions();
-        SEM::Device::Meshes::calculate_q_fluxes<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(N_faces_, faces_, elements_);
-        SEM::Device::Meshes::compute_dg_derivative2<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(viscosity, N_elements_, elements_, faces_, NDG.weights_.data(), NDG.derivative_matrices_hat_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
-        SEM::Device::Meshes::rk3_step<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, delta_t, -153.0/128.0, 8.0/15.0);
-
-        time += delta_t;
-        if (global_rank == 0) {
-            std::stringstream ss;
-            bar.update(time/t_end);
-            ss << "Iteration " << timestep;
-            bar.set_status_text(ss.str());
-        }
-        for (auto const& e : std::as_const(output_times)) {
-            if ((time >= e) && (time < e + delta_t)) {
-                SEM::Device::Entities::estimate_error<Polynomial><<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, NDG.nodes_.data(), NDG.weights_.data());
-                write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_.data());
-                break;
-            }
-        }
-
-        if (timestep % adaptivity_interval_ == 0) {
-            SEM::Device::Entities::estimate_error<Polynomial><<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, NDG.nodes_.data(), NDG.weights_.data());
-            adapt(NDG.N_max_, NDG.nodes_.data(), NDG.barycentric_weights_.data());
-        }
-    }
-    if (global_rank == 0) {
-        std::cout << std::endl;
-    }
-
-    bool did_write = false;
-    for (auto const& e : std::as_const(output_times)) {
-        if ((time >= e) && (time < e + delta_t)) {
-            did_write = true;
-            break;
-        }
-    }
-
-    if (!did_write) {
-        SEM::Device::Entities::estimate_error<Polynomial><<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, NDG.nodes_.data(), NDG.weights_.data());
-        write_data(time, NDG.N_interpolation_points_, NDG.interpolation_matrices_.data());
-    }
-}
-
 deviceFloat SEM::Device::Meshes::Mesh_t::get_delta_t(const deviceFloat CFL) {   
     SEM::Device::Meshes::reduce_delta_t<elements_blockSize_/2><<<elements_numBlocks_, elements_blockSize_/2, 0, stream_>>>(CFL, N_elements_, elements_, device_delta_t_array_);
     cudaMemcpy(host_delta_t_array_.data(), device_delta_t_array_, elements_numBlocks_ * sizeof(deviceFloat), cudaMemcpyDeviceToHost);
 
     double delta_t_min_local = std::numeric_limits<double>::infinity();
     for (int i = 0; i < elements_numBlocks_; ++i) {
-        delta_t_min_local = min(delta_t_min_local, host_delta_t_array_[i]);
+        delta_t_min_local = std::min(delta_t_min_local, host_delta_t_array_[i]);
     }
 
     double delta_t_min;
@@ -498,7 +397,7 @@ void SEM::Device::Meshes::Mesh_t::adapt(int N_max, const deviceFloat* nodes, con
     const size_t N_elements_per_process_old = N_elements_per_process_;
     N_elements_per_process_ = (N_elements_global_ + global_size - 1)/global_size;
     global_element_offset_ = global_rank * N_elements_per_process_;
-    const size_t global_element_offset_end = min(global_element_offset_ + N_elements_per_process_ - 1, N_elements_global_ - 1);
+    const size_t global_element_offset_end = std::min(global_element_offset_ + N_elements_per_process_ - 1, N_elements_global_ - 1);
 
     if ((additional_elements == 0) && (global_element_offset_ == global_element_offset_current) && (global_element_offset_end == global_element_offset_end_current)) {
         SEM::Device::Entities::p_adapt<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(N_elements_, elements_, N_max, nodes, barycentric_weights);

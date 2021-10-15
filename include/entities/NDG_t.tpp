@@ -1,5 +1,3 @@
-#include "polynomials/ChebyshevPolynomial_t.h"
-#include "polynomials/LegendrePolynomial_t.h"
 #include <cmath>
 #include <cfloat>
 #include <iostream>

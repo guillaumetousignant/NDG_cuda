@@ -1,0 +1,48 @@
+
+template<typename Polynomial>
+__device__
+void SEM::Device::Entities::Element_t::estimate_error<Polynomial>(const deviceFloat* nodes, const deviceFloat* weights) {
+    const int offset_1D = N_ * (N_ + 1) /2;
+
+    for (int k = 0; k <= N_; ++k) {
+        intermediate_[k] = 0.0;
+        for (int i = 0; i <= N_; ++i) {
+            const deviceFloat L_N = Polynomial::polynomial(k, nodes[offset_1D + i]);
+
+            intermediate_[k] += (2 * k + 1) * 0.5 * phi_[i] * L_N * weights[offset_1D + i];
+        }
+        intermediate_[k] = std::abs(intermediate_[k]);
+    }
+
+    constexpr deviceFloat tolerance_min = 1e-6;     // Refine above this
+    constexpr deviceFloat tolerance_max = 1e-14;    // Coarsen below this
+
+    const deviceFloat C = exponential_decay();
+
+    // sum of error
+    error_ = std::sqrt(C * C * 0.5/sigma_) * std::exp(-sigma_ * (N_ + 1));
+
+    if(error_ > tolerance_min) {	// need refine
+        refine_ = true;
+        coarsen_ = false;
+    }
+    else if(error_ <= tolerance_max ) {	// need coarsen
+        refine_ = false;
+        coarsen_ = true;
+    }
+    else {	// if error in between then do nothing
+        refine_ = false;
+        coarsen_ = false;
+    }
+}
+
+template<typename Polynomial>
+__global__
+void SEM::Device::Entities::estimate_error<Polynomial>(size_t N_elements, Element_t* elements, const deviceFloat* nodes, const deviceFloat* weights) {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t i = index; i < N_elements; i += stride) {
+        elements[i].estimate_error<Polynomial>(nodes, weights);
+    }
+}

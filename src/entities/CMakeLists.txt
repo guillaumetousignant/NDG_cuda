@@ -11,4 +11,5 @@ target_sources(SEM-CUDA
         Element2D_t.cu
         Face_t.cu
         Face2D_t.cu
+        NDG_t.cu
 )

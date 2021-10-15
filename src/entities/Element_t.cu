@@ -1,6 +1,4 @@
 #include "entities/Element_t.cuh"
-#include "polynomials/ChebyshevPolynomial_t.cuh"
-#include "polynomials/LegendrePolynomial_t.cuh"
 #include <cmath>
 #include <thrust/swap.h>
 #include <limits>
@@ -185,49 +183,9 @@ void SEM::Device::Entities::Element_t::interpolate_q_to_boundaries(const deviceF
     }
 }
 
-template __device__ void SEM::Device::Entities::Element_t::estimate_error<SEM::Device::Polynomials::ChebyshevPolynomial_t>(const deviceFloat* nodes, const deviceFloat* weights);
-template __device__ void SEM::Device::Entities::Element_t::estimate_error<SEM::Device::Polynomials::LegendrePolynomial_t>(const deviceFloat* nodes, const deviceFloat* weights);
-
-template<typename Polynomial>
-__device__
-void SEM::Device::Entities::Element_t::estimate_error<Polynomial>(const deviceFloat* nodes, const deviceFloat* weights) {
-    const int offset_1D = N_ * (N_ + 1) /2;
-
-    for (int k = 0; k <= N_; ++k) {
-        intermediate_[k] = 0.0;
-        for (int i = 0; i <= N_; ++i) {
-            const deviceFloat L_N = Polynomial::polynomial(k, nodes[offset_1D + i]);
-
-            intermediate_[k] += (2 * k + 1) * 0.5 * phi_[i] * L_N * weights[offset_1D + i];
-        }
-        intermediate_[k] = std::abs(intermediate_[k]);
-    }
-
-    constexpr deviceFloat tolerance_min = 1e-6;     // Refine above this
-    constexpr deviceFloat tolerance_max = 1e-14;    // Coarsen below this
-
-    const deviceFloat C = exponential_decay();
-
-    // sum of error
-    error_ = std::sqrt(C * C * 0.5/sigma_) * std::exp(-sigma_ * (N_ + 1));
-
-    if(error_ > tolerance_min) {	// need refine
-        refine_ = true;
-        coarsen_ = false;
-    }
-    else if(error_ <= tolerance_max ) {	// need coarsen
-        refine_ = false;
-        coarsen_ = true;
-    }
-    else {	// if error in between then do nothing
-        refine_ = false;
-        coarsen_ = false;
-    }
-}
-
 __device__
 deviceFloat SEM::Device::Entities::Element_t::exponential_decay() {
-    const int n_points_least_squares = min(N_, 4); // Number of points to use for thew least squares reduction, but don't go above N.
+    const int n_points_least_squares = std::min(N_, 4); // Number of points to use for thew least squares reduction, but don't go above N.
 
     deviceFloat x_avg = 0.0;
     deviceFloat y_avg = 0.0;
@@ -408,20 +366,6 @@ void SEM::Device::Entities::free_elements(size_t N_elements, Element_t* elements
     }
 }
 
-template __global__ void SEM::Device::Entities::estimate_error<SEM::Device::Polynomials::ChebyshevPolynomial_t>(size_t N_elements, Element_t* elements, const deviceFloat* nodes, const deviceFloat* weights);
-template __global__ void SEM::Device::Entities::estimate_error<SEM::Device::Polynomials::LegendrePolynomial_t>(size_t N_elements, Element_t* elements, const deviceFloat* nodes, const deviceFloat* weights);
-
-template<typename Polynomial>
-__global__
-void SEM::Device::Entities::estimate_error<Polynomial>(size_t N_elements, Element_t* elements, const deviceFloat* nodes, const deviceFloat* weights) {
-    const int index = blockIdx.x * blockDim.x + threadIdx.x;
-    const int stride = blockDim.x * gridDim.x;
-
-    for (size_t i = index; i < N_elements; i += stride) {
-        elements[i].estimate_error<Polynomial>(nodes, weights);
-    }
-}
-
 __host__ __device__
 deviceFloat SEM::Device::Entities::g(deviceFloat x) {
     //return (x < -0.2f || x > 0.2f) ? 0.2f : 0.8f;
@@ -529,7 +473,7 @@ void SEM::Device::Entities::get_solution(size_t N_elements, size_t n_interpolati
                 phi[offset_interp_1D + j] += interpolation_matrices[offset_interp + j * (elements[i].N_ + 1) + k] * elements[i].phi_[k];
                 phi_prime[offset_interp_1D + j] += interpolation_matrices[offset_interp + j * (elements[i].N_ + 1) + k] * elements[i].phi_prime_[k]; 
             }
-            intermediate[offset_interp_1D + j] = elements[i].intermediate_[min(static_cast<int>(j/step), elements[i].N_)];
+            intermediate[offset_interp_1D + j] = elements[i].intermediate_[std::min(static_cast<int>(j/step), elements[i].N_)];
             x[offset_interp_1D + j] = j * (elements[i].x_[1] - elements[i].x_[0]) / (n_interpolation_points - 1) + elements[i].x_[0];
         }
 
@@ -602,7 +546,7 @@ void SEM::Device::Entities::hp_adapt(unsigned long N_elements, Element_t* elemen
             new_elements[element_index].phi_prime_ = nullptr;
             new_elements[element_index].intermediate_ = nullptr;
 
-            new_elements[element_index] = Element_t(min(elements[i].N_ + 2, N_max), element_index, element_index + 1, elements[i].x_[0], elements[i].x_[1]);
+            new_elements[element_index] = Element_t(std::min(elements[i].N_ + 2, N_max), element_index, element_index + 1, elements[i].x_[0], elements[i].x_[1]);
             new_elements[element_index].interpolate_from(elements[i], nodes, barycentric_weights);
         }
         else {
@@ -626,7 +570,7 @@ void SEM::Device::Entities::p_adapt(unsigned long N_elements, Element_t* element
     
     for (unsigned long i = index; i < N_elements; i += stride) {
         if (elements[i].refine_ && elements[i].sigma_ >= 1.0 && elements[i].N_ < N_max) {
-            Element_t new_element(min(elements[i].N_ + 2, N_max), elements[i].faces_[0], elements[i].faces_[1], elements[i].x_[0], elements[i].x_[1]);
+            Element_t new_element(std::min(elements[i].N_ + 2, N_max), elements[i].faces_[0], elements[i].faces_[1], elements[i].x_[0], elements[i].x_[1]);
             new_element.interpolate_from(elements[i], nodes, barycentric_weights);
             elements[i] = std::move(new_element);
         }

@@ -126,4 +126,6 @@ namespace SEM { namespace Host { namespace Entities {
     };
 }}}
 
+#include "entities/Element2D_t.tpp"
+
 #endif

@@ -238,4 +238,6 @@ namespace SEM { namespace Host { namespace Meshes {
     auto move_required_mpi_origins(size_t n_domain_elements, size_t new_n_domain_elements, const std::vector<size_t>& mpi_origins, std::vector<size_t>& new_mpi_origins, const std::vector<size_t>& mpi_origins_side, std::vector<size_t>& new_mpi_origins_side, const std::vector<bool>& mpi_origins_to_delete, const std::vector<bool>& boundary_elements_to_delete) -> void;
 }}}
 
+#include "meshes/Mesh2D_t.tpp"
+
 #endif

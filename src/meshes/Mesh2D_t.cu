@@ -1,6 +1,4 @@
 #include "meshes/Mesh2D_t.cuh"
-#include "polynomials/ChebyshevPolynomial_t.cuh"
-#include "polynomials/LegendrePolynomial_t.cuh"
 #include "helpers/constants.cuh"
 #include "functions/Utilities.h"
 #include "functions/Hilbert_splitting.cuh"
@@ -3672,14 +3670,6 @@ auto SEM::Device::Meshes::Mesh2D_t::project_to_elements(const device_vector<devi
     SEM::Device::Meshes::project_to_elements<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, faces_.data(), elements_.data(), polynomial_nodes.data(), weights.data(), barycentric_weights.data());
 }
 
-template auto SEM::Device::Meshes::Mesh2D_t::estimate_error<SEM::Device::Polynomials::ChebyshevPolynomial_t>(const device_vector<deviceFloat>& polynomial_nodes, const device_vector<deviceFloat>& weights) -> void;
-template auto SEM::Device::Meshes::Mesh2D_t::estimate_error<SEM::Device::Polynomials::LegendrePolynomial_t>(const device_vector<deviceFloat>& polynomial_nodes, const device_vector<deviceFloat>& weights) -> void;
-
-template<typename Polynomial>
-auto SEM::Device::Meshes::Mesh2D_t::estimate_error<Polynomial>(const device_vector<deviceFloat>& polynomial_nodes, const device_vector<deviceFloat>& weights) -> void {
-    SEM::Device::Meshes::estimate_error<Polynomial><<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, elements_.data(), tolerance_min_, tolerance_max_, polynomial_nodes.data(), weights.data());
-}
-
 __global__
 auto SEM::Device::Meshes::allocate_element_storage(size_t n_elements, Element2D_t* elements) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
@@ -3994,20 +3984,6 @@ auto SEM::Device::Meshes::get_complete_solution(size_t n_elements, size_t n_inte
                                                        nodes[element.nodes_[3]]};
 
         element.interpolate_complete_solution(n_interpolation_points, time, points, polynomial_nodes, interpolation_matrices + offset_interp, x + offset_interp_2D, y + offset_interp_2D, p + offset_interp_2D, u + offset_interp_2D, v + offset_interp_2D, dp_dt + offset_interp_2D, du_dt + offset_interp_2D, dv_dt + offset_interp_2D, p_analytical_error + offset_interp_2D, u_analytical_error + offset_interp_2D, v_analytical_error + offset_interp_2D);
-    }
-}
-
-template __global__ auto SEM::Device::Meshes::estimate_error<SEM::Device::Polynomials::ChebyshevPolynomial_t>(size_t n_elements, Element2D_t* elements, deviceFloat tolerance_min, deviceFloat tolerance_max, const deviceFloat* polynomial_nodes, const deviceFloat* weights) -> void;
-template __global__ auto SEM::Device::Meshes::estimate_error<SEM::Device::Polynomials::LegendrePolynomial_t>(size_t n_elements, Element2D_t* elements, deviceFloat tolerance_min, deviceFloat tolerance_max, const deviceFloat* polynomial_nodes, const deviceFloat* weights) -> void;
-
-template<typename Polynomial>
-__global__
-auto SEM::Device::Meshes::estimate_error<Polynomial>(size_t n_elements, Element2D_t* elements, deviceFloat tolerance_min, deviceFloat tolerance_max, const deviceFloat* polynomial_nodes, const deviceFloat* weights) -> void {
-    const int index = blockIdx.x * blockDim.x + threadIdx.x;
-    const int stride = blockDim.x * gridDim.x;
-
-    for (size_t element_index = index; element_index < n_elements; element_index += stride) {
-        elements[element_index].estimate_error<Polynomial>(tolerance_min, tolerance_max, polynomial_nodes, weights);
     }
 }
 

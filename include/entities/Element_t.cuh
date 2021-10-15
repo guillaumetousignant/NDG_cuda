@@ -135,4 +135,6 @@ namespace SEM { namespace Device { namespace Entities {
     void put_MPI_boundaries(size_t N_elements, size_t N_local_boundaries, size_t N_MPI_boundaries, Element_t* elements, const deviceFloat* phi_L, const deviceFloat* phi_R, const deviceFloat* phi_prime_L, const deviceFloat* phi_prime_R);
 }}}
 
+#include "entities/Element_t.tcu"
+
 #endif

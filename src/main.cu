@@ -4,7 +4,6 @@
 #include "entities/NDG_t.cuh"
 #include "meshes/Mesh2D_t.cuh"
 #include "solvers/Solver2D_t.cuh"
-#include "polynomials/ChebyshevPolynomial_t.cuh"
 #include "polynomials/LegendrePolynomial_t.cuh"
 #include <filesystem>
 #include <iostream>

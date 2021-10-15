@@ -51,48 +51,14 @@ namespace SEM { namespace Device { namespace Solvers {
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>
     __device__ 
-    auto warp_reduce_delta_t_2D(volatile deviceFloat *sdata, unsigned int tid) -> void {
-        if (blockSize >= 64) sdata[tid] = min(sdata[tid], sdata[tid + 32]);
-        if (blockSize >= 32) sdata[tid] = min(sdata[tid], sdata[tid + 16]);
-        if (blockSize >= 16) sdata[tid] = min(sdata[tid], sdata[tid + 8]);
-        if (blockSize >= 8) sdata[tid] = min(sdata[tid], sdata[tid + 4]);
-        if (blockSize >= 4) sdata[tid] = min(sdata[tid], sdata[tid + 2]);
-        if (blockSize >= 2) sdata[tid] = min(sdata[tid], sdata[tid + 1]);
-    }
+    auto warp_reduce_delta_t_2D(volatile deviceFloat *sdata, unsigned int tid) -> void;
 
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>
     __global__ 
-    auto reduce_wave_delta_t(deviceFloat CFL, size_t N_elements, const SEM::Device::Entities::Element2D_t* elements, deviceFloat *g_odata) -> void {
-        __shared__ deviceFloat sdata[(blockSize >= 64) ? blockSize : blockSize + blockSize/2]; // Because within a warp there is no branching and this is read up until blockSize + blockSize/2
-        unsigned int tid = threadIdx.x;
-        size_t i = blockIdx.x*(blockSize*2) + tid;
-        unsigned int gridSize = blockSize*2*gridDim.x;
-        sdata[tid] = std::numeric_limits<deviceFloat>::infinity();
-
-        while (i < N_elements) { 
-            deviceFloat delta_t_wave = CFL * elements[i].delta_xy_min_/(elements[i].N_ * elements[i].N_);
-    
-            if (i+blockSize < N_elements) {
-                delta_t_wave = min(delta_t_wave, CFL * elements[i+blockSize].delta_xy_min_/(elements[i+blockSize].N_ * elements[i+blockSize].N_));
-            }
-
-            sdata[tid] = min(sdata[tid], delta_t_wave); 
-            i += gridSize; 
-        }
-        __syncthreads();
-
-        if (blockSize >= 8192) { if (tid < 4096) { sdata[tid] = min(sdata[tid], sdata[tid + 4096]); } __syncthreads(); }
-        if (blockSize >= 4096) { if (tid < 2048) { sdata[tid] = min(sdata[tid], sdata[tid + 2048]); } __syncthreads(); }
-        if (blockSize >= 2048) { if (tid < 1024) { sdata[tid] = min(sdata[tid], sdata[tid + 1024]); } __syncthreads(); }
-        if (blockSize >= 1024) { if (tid < 512) { sdata[tid] = min(sdata[tid], sdata[tid + 512]); } __syncthreads(); }
-        if (blockSize >= 512) { if (tid < 256) { sdata[tid] = min(sdata[tid], sdata[tid + 256]); } __syncthreads(); }
-        if (blockSize >= 256) { if (tid < 128) { sdata[tid] = min(sdata[tid], sdata[tid + 128]); } __syncthreads(); }
-        if (blockSize >= 128) { if (tid < 64) { sdata[tid] = min(sdata[tid], sdata[tid + 64]); } __syncthreads(); }
-
-        if (tid < 32) warp_reduce_delta_t_2D<blockSize>(sdata, tid);
-        if (tid == 0) g_odata[blockIdx.x] = sdata[0];
-    }
+    auto reduce_wave_delta_t(deviceFloat CFL, size_t N_elements, const SEM::Device::Entities::Element2D_t* elements, deviceFloat *g_odata) -> void;
 }}}
+
+#include "solvers/Solver2D_t.tcu"
 
 #endif

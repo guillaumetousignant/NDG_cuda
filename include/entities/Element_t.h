@@ -55,4 +55,6 @@ namespace SEM { namespace Host { namespace Entities {
     };
 }}}
 
+#include "entities/Element_t.tpp"
+
 #endif
