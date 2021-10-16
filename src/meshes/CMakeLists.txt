@@ -1,10 +1,14 @@
-target_sources(SEM
-    PRIVATE
-        Mesh_t.cpp
-        Mesh2D_t.cpp
-)
-target_sources(SEM-CUDA
-    PRIVATE
-        Mesh_t.cu
-        Mesh2D_t.cu
-)
+if (BUILD_CPU)
+    target_sources(SEM
+        PRIVATE
+            Mesh_t.cpp
+            Mesh2D_t.cpp
+    )
+endif()
+if (BUILD_GPU)
+    target_sources(SEM-CUDA
+        PRIVATE
+            Mesh_t.cu
+            Mesh2D_t.cu
+    )
+endif()
