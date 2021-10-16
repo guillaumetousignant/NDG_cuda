@@ -72,8 +72,6 @@ auto SEM::Device::Entities::Face2D_t::clear_storage() -> void {
 
 __device__
 auto SEM::Device::Entities::Face2D_t::compute_geometry(const std::array<SEM::Device::Entities::Vec2<deviceFloat>, 2>& elements_centres, const std::array<SEM::Device::Entities::Vec2<deviceFloat>, 2>& nodes, const std::array<std::array<SEM::Device::Entities::Vec2<deviceFloat>, 2>, 2>& element_nodes) -> void {
-    const std::array<SEM::Device::Entities::Vec2<deviceFloat>, 2> points {nodes[nodes_[0]], nodes[nodes_[1]]};
-    
     tangent_ = nodes[1] - nodes[0]; 
     length_ = tangent_.magnitude();
     tangent_ /= length_; // CHECK should be normalized or not?
