@@ -2,7 +2,6 @@
 
 template<typename Polynomial>
 auto SEM::Host::Entities::Element2D_t::estimate_error(hostFloat tolerance_min, hostFloat tolerance_max, const std::vector<hostFloat>& polynomial_nodes, const std::vector<hostFloat>& weights) -> void {
-    const int offset_1D = N_ * (N_ + 1) /2;
     const int n_points_least_squares = std::min(N_ + 1, SEM::Host::Constants::n_points_least_squares_max); // Number of points to use for thew least squares reduction, but don't go above N.
 
     refine_ = false;
@@ -18,15 +17,15 @@ auto SEM::Host::Entities::Element2D_t::estimate_error(hostFloat tolerance_min, h
             hostFloat local_spectrum = 0.0;
 
             for (int k = 0; k <= N_; ++k) {
-                const hostFloat L_N_x = Polynomial::polynomial(i, polynomial_nodes[offset_1D + k]);
+                const hostFloat L_N_x = Polynomial::polynomial(i, polynomial_nodes[k]);
 
                 for (int l = 0; l <= N_; ++l) {
-                    const hostFloat L_N_y = Polynomial::polynomial(p, polynomial_nodes[offset_1D + l]);
+                    const hostFloat L_N_y = Polynomial::polynomial(p, polynomial_nodes[l]);
 
                     local_spectrum += (2 * i + 1) * (2 * p + 1) * static_cast<hostFloat>(0.25) *
                                       p_[k * (N_ + 1) + l] *
                                       L_N_x * L_N_y * 
-                                      weights[offset_1D + k] * weights[offset_1D + l];
+                                      weights[k] * weights[l];
                 }
 
             }
@@ -38,15 +37,15 @@ auto SEM::Host::Entities::Element2D_t::estimate_error(hostFloat tolerance_min, h
             hostFloat local_spectrum = 0.0;
 
             for (int k = 0; k <= N_; ++k) {
-                const hostFloat L_N_x = Polynomial::polynomial(p, polynomial_nodes[offset_1D + k]);
+                const hostFloat L_N_x = Polynomial::polynomial(p, polynomial_nodes[k]);
 
                 for (int l = 0; l <= N_; ++l) {
-                    const hostFloat L_N_y = Polynomial::polynomial(j, polynomial_nodes[offset_1D + l]);
+                    const hostFloat L_N_y = Polynomial::polynomial(j, polynomial_nodes[l]);
 
                     local_spectrum += (2 * j + 1) * (2 * (double)p + 1.0) * static_cast<hostFloat>(0.25) *
                                       p_[k * (N_ + 1) + l] *
                                       L_N_x * L_N_y * 
-                                      weights[offset_1D + k] * weights[offset_1D + l];
+                                      weights[k] * weights[l];
                 }
             }
             spectrum_[node_index] += std::abs(local_spectrum);
@@ -77,15 +76,15 @@ auto SEM::Host::Entities::Element2D_t::estimate_error(hostFloat tolerance_min, h
             hostFloat local_spectrum = 0.0;
 
             for (int k = 0; k <= N_; ++k) {
-                const hostFloat L_N_x = Polynomial::polynomial(i, polynomial_nodes[offset_1D + k]);
+                const hostFloat L_N_x = Polynomial::polynomial(i, polynomial_nodes[k]);
 
                 for (int l = 0; l <= N_; ++l) {
-                    const hostFloat L_N_y = Polynomial::polynomial(p, polynomial_nodes[offset_1D + l]);
+                    const hostFloat L_N_y = Polynomial::polynomial(p, polynomial_nodes[l]);
 
                     local_spectrum += (2 * i + 1) * (2 * p + 1) * static_cast<hostFloat>(0.25) *
                                       u_[k * (N_ + 1) + l] *
                                       L_N_x * L_N_y * 
-                                      weights[offset_1D + k] * weights[offset_1D + l];
+                                      weights[k] * weights[l];
                 }
 
             }
@@ -97,15 +96,15 @@ auto SEM::Host::Entities::Element2D_t::estimate_error(hostFloat tolerance_min, h
             hostFloat local_spectrum = 0.0;
 
             for (int k = 0; k <= N_; ++k) {
-                const hostFloat L_N_x = Polynomial::polynomial(p, polynomial_nodes[offset_1D + k]);
+                const hostFloat L_N_x = Polynomial::polynomial(p, polynomial_nodes[k]);
 
                 for (int l = 0; l <= N_; ++l) {
-                    const hostFloat L_N_y = Polynomial::polynomial(j, polynomial_nodes[offset_1D + l]);
+                    const hostFloat L_N_y = Polynomial::polynomial(j, polynomial_nodes[l]);
 
                     local_spectrum += (2 * j + 1) * (2 * (double)p + 1.0) * static_cast<hostFloat>(0.25) *
                                       u_[k * (N_ + 1) + l] *
                                       L_N_x * L_N_y * 
-                                      weights[offset_1D + k] * weights[offset_1D + l];
+                                      weights[k] * weights[l];
                 }
             }
             spectrum_[node_index] += std::abs(local_spectrum);
@@ -136,15 +135,15 @@ auto SEM::Host::Entities::Element2D_t::estimate_error(hostFloat tolerance_min, h
             hostFloat local_spectrum = 0.0;
 
             for (int k = 0; k <= N_; ++k) {
-                const hostFloat L_N_x = Polynomial::polynomial(i, polynomial_nodes[offset_1D + k]);
+                const hostFloat L_N_x = Polynomial::polynomial(i, polynomial_nodes[k]);
 
                 for (int l = 0; l <= N_; ++l) {
-                    const hostFloat L_N_y = Polynomial::polynomial(p, polynomial_nodes[offset_1D + l]);
+                    const hostFloat L_N_y = Polynomial::polynomial(p, polynomial_nodes[l]);
 
                     local_spectrum += (2 * i + 1) * (2 * p + 1) * static_cast<hostFloat>(0.25) *
                                       v_[k * (N_ + 1) + l] *
                                       L_N_x * L_N_y * 
-                                      weights[offset_1D + k] * weights[offset_1D + l];
+                                      weights[k] * weights[l];
                 }
 
             }
@@ -156,15 +155,15 @@ auto SEM::Host::Entities::Element2D_t::estimate_error(hostFloat tolerance_min, h
             hostFloat local_spectrum = 0.0;
 
             for (int k = 0; k <= N_; ++k) {
-                const hostFloat L_N_x = Polynomial::polynomial(p, polynomial_nodes[offset_1D + k]);
+                const hostFloat L_N_x = Polynomial::polynomial(p, polynomial_nodes[k]);
 
                 for (int l = 0; l <= N_; ++l) {
-                    const hostFloat L_N_y = Polynomial::polynomial(j, polynomial_nodes[offset_1D + l]);
+                    const hostFloat L_N_y = Polynomial::polynomial(j, polynomial_nodes[l]);
 
                     local_spectrum += (2 * j + 1) * (2 * (double)p + 1.0) * static_cast<hostFloat>(0.25) *
                                       v_[k * (N_ + 1) + l] *
                                       L_N_x * L_N_y * 
-                                      weights[offset_1D + k] * weights[offset_1D + l];
+                                      weights[k] * weights[l];
                 }
             }
             spectrum_[node_index] += std::abs(local_spectrum);

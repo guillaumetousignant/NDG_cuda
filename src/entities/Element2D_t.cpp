@@ -156,9 +156,6 @@ auto SEM::Host::Entities::Element2D_t::exponential_decay(int n_points_least_squa
 }
 
 auto SEM::Host::Entities::Element2D_t::interpolate_from(const std::array<Vec2<hostFloat>, 4>& points, const std::array<Vec2<hostFloat>, 4>& points_other, const SEM::Host::Entities::Element2D_t& other, const std::vector<std::vector<hostFloat>>& polynomial_nodes, const std::vector<std::vector<hostFloat>>& barycentric_weights) -> void {
-    const int offset_1D = N_ * (N_ + 1) /2;
-    const int offset_1D_other = other.N_ * (other.N_ + 1) /2;
-
     for (int i = 0; i <= N_; ++i) {
         for (int j = 0; j <= N_; ++j) {
             // x and y
@@ -278,9 +275,6 @@ auto SEM::Host::Entities::Element2D_t::interpolate_from(const std::array<Vec2<ho
 }
 
 auto SEM::Host::Entities::Element2D_t::interpolate_from(const SEM::Host::Entities::Element2D_t& other, const std::vector<std::vector<hostFloat>>& polynomial_nodes, const std::vector<std::vector<hostFloat>>& barycentric_weights) -> void {
-    const int offset_1D = N_ * (N_ + 1) /2;
-    const int offset_1D_other = other.N_ * (other.N_ + 1) /2;
-
     for (int i = 0; i <= N_; ++i) {
         for (int j = 0; j <= N_; ++j) {
             // x and y
