@@ -62,3 +62,4 @@
 *.blg
 /received/*
 *.synctex(busy)
+/install/*
