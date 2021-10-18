@@ -1,5 +1,4 @@
 #include "meshes/Mesh_t.h"
-#include "helpers/ProgressBar_t.h"
 #include <iostream>
 #include <fstream>
 #include <sstream> 

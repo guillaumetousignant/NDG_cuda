@@ -1,3 +1,4 @@
+#include "helpers/ProgressBar_t.h"
 
 template<typename Polynomial>
 void SEM::Host::Meshes::Mesh_t::solve(const hostFloat CFL, const std::vector<hostFloat> output_times, const SEM::Host::Entities::NDG_t<Polynomial> &NDG, hostFloat viscosity) {
