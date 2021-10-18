@@ -1,3 +1,4 @@
+#include <cmath>
 
 template<typename Polynomial>
 void SEM::Host::Entities::Element_t::estimate_error(const std::vector<std::vector<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& weights) {
