@@ -24,10 +24,12 @@ namespace SEM { namespace Helpers {
             std::string filename_;
             std::string extension_;
             fs::path series_filename_;
+            fs::path series_element_filename_;
             vtkNew<vtkMPIController> mpi_controller_;
 
             auto create_time_series_file() const -> void;
             auto add_time_series_to_file(std::string filename, deviceFloat time) const -> void;
+            auto add_time_series_to_file(std::string filename, std::string filename_element, deviceFloat time) const -> void;
     };
 }}
 
