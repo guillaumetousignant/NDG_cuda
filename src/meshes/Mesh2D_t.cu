@@ -1924,16 +1924,14 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const SEM::Device::Entities::de
 
     std::vector<size_t> global_element_offset_current(global_size, 0);
     std::vector<size_t> global_element_offset_end_current(global_size);
-    global_element_offset_end_current[0] = n_elements_per_proc[0] - 1;
+    global_element_offset_end_current[0] = n_elements_per_proc[0];
 
     size_t n_elements_global_new = n_elements_per_proc[0];
     for (int i = 1; i < global_size; ++i) {
         global_element_offset_current[i] = global_element_offset_current[i - 1] + n_elements_per_proc[i - 1];
-        global_element_offset_end_current[i] = global_element_offset_current[i] + n_elements_per_proc[i] - 1;
+        global_element_offset_end_current[i] = global_element_offset_current[i] + n_elements_per_proc[i];
         n_elements_global_new += n_elements_per_proc[i];
     }
-    
-    const size_t n_elements_per_process_new = (n_elements_global_new + global_size - 1)/global_size;
 
     std::vector<size_t> global_element_offset_new(global_size); // This is the first element that is owned by the proc
     std::vector<size_t> global_element_offset_end_new(global_size); // This is the last element that is owned by the proc
@@ -1942,27 +1940,18 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const SEM::Device::Entities::de
     std::vector<size_t> n_elements_recv_left(global_size);
     std::vector<size_t> n_elements_send_right(global_size);
     std::vector<size_t> n_elements_recv_right(global_size);
+
+    const auto [n_elements_div, n_elements_mod] = std::div(n_elements_global_new, global_size);
     
     for (int i = 0; i < global_size; ++i) {
-        global_element_offset_new[i] = i * n_elements_per_process_new; // CHECK does this work for empty procs?
-         
-        if (n_elements_per_process_new * i >= n_elements_global_new) { 
-            n_elements_new[i] = 0;
-            global_element_offset_end_new[i] = global_element_offset_new[i];
-        }
-        else if (n_elements_per_process_new * (i + 1) > n_elements_global_new) {
-            n_elements_new[i] = n_elements_global_new - i * n_elements_per_process_new;
-            global_element_offset_end_new[i] = global_element_offset_new[i] + n_elements_new[i] - 1;
-        }
-        else {
-            n_elements_new[i] = n_elements_per_process_new;
-            global_element_offset_end_new[i] = global_element_offset_new[i] + n_elements_new[i] - 1;
-        } 
+        global_element_offset_new[i] = i * n_elements_div + std::min(i, n_elements_mod);
+        global_element_offset_end_new[i] = (i + 1) * n_elements_div + std::min(i + 1, n_elements_mod);
+        n_elements_new[i] = global_element_offset_end_new[i] - global_element_offset_new[i];
 
         n_elements_send_left[i] = (global_element_offset_new[i] > global_element_offset_current[i]) ? std::min(global_element_offset_new[i] - global_element_offset_current[i], n_elements_per_proc[i]) : 0; // CHECK what if more elements have to be moved than the number of elements in the proc?
-        n_elements_recv_left[i] = (global_element_offset_current[i] > global_element_offset_new[i]) ? std::min(global_element_offset_current[i] - global_element_offset_new[i], n_elements_per_process_new) : 0;
+        n_elements_recv_left[i] = (global_element_offset_current[i] > global_element_offset_new[i]) ? std::min(global_element_offset_current[i] - global_element_offset_new[i], n_elements_per_proc[i]) : 0;
         n_elements_send_right[i] = (global_element_offset_end_current[i] > global_element_offset_end_new[i]) ? std::min(global_element_offset_end_current[i] - global_element_offset_end_new[i], n_elements_per_proc[i]) : 0;
-        n_elements_recv_right[i] = (global_element_offset_end_new[i] > global_element_offset_end_current[i]) ? std::min(global_element_offset_end_new[i] - global_element_offset_end_current[i], n_elements_per_process_new) : 0;
+        n_elements_recv_right[i] = (global_element_offset_end_new[i] > global_element_offset_end_current[i]) ? std::min(global_element_offset_end_new[i] - global_element_offset_end_current[i], n_elements_per_proc[i]) : 0;
     }
 
     std::cout << "Process " << global_rank << " has n_elements_send_left: " << n_elements_send_left[global_rank] << ", n_elements_send_right: " << n_elements_send_right[global_rank] << ", n_elements_recv_left: " << n_elements_recv_left[global_rank] << ", n_elements_recv_right: " << n_elements_recv_right[global_rank] << std::endl;
@@ -1991,8 +1980,21 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const SEM::Device::Entities::de
         for (size_t i = 0; i < mpi_interfaces_new_local_index_outgoing.size(); ++i) {
             if (mpi_interfaces_new_local_index_outgoing[i] < n_elements_send_left[global_rank] || mpi_interfaces_new_local_index_outgoing[i] >= n_elements_per_proc[global_rank] - n_elements_send_right[global_rank]) {
                 const size_t element_global_index = mpi_interfaces_new_local_index_outgoing[i] + global_element_offset_current[global_rank];
-                mpi_interfaces_new_process_outgoing[i] = element_global_index/n_elements_per_process_new;
-                mpi_interfaces_new_local_index_outgoing[i] = element_global_index%n_elements_per_process_new;
+
+                mpi_interfaces_new_process_outgoing[i] = -1;
+
+                for (int process_index = 0; process_index < global_size; ++process_index) {
+                    if (element_global_index >= global_element_offset_new[process_index] && element_global_index < global_element_offset_end_new[process_index]) {
+                        mpi_interfaces_new_process_outgoing[i] = process_index;
+                        mpi_interfaces_new_local_index_outgoing[i] = element_global_index - global_element_offset_new[process_index];
+                        break;
+                    }
+                }
+
+                if (mpi_interfaces_new_process_outgoing[i] == -1) {
+                    std::cerr << "Error: MPI interfaces new local index outgoing, " << i << ", global element index " << element_global_index << " is not found in any process. Exiting." << std::endl;
+                    exit(62);
+                }
             }
             else {
                 mpi_interfaces_new_local_index_outgoing[i] += n_elements_recv_left[global_rank];
@@ -2031,11 +2033,37 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const SEM::Device::Entities::de
 
         // Finding out where to send elements
         for (size_t i = 0; i < n_elements_send_left[global_rank]; ++i) {
-            destination_process_send_left[i] = (global_element_offset_current[global_rank] + i)/n_elements_per_process_new;
+            const size_t element_global_index = global_element_offset_current[global_rank] + i;
+            destination_process_send_left[i] = -1;
+
+            for (int process_index = 0; process_index < global_size; ++process_index) {
+                if (element_global_index >= global_element_offset_new[process_index] && element_global_index < global_element_offset_end_new[process_index]) {
+                    destination_process_send_left[i] = process_index;
+                    break;
+                }
+            }
+
+            if (destination_process_send_left[i] == -1) {
+                std::cerr << "Error: Left element to send " << i << ", global element index " << element_global_index << " is not found in any process. Exiting." << std::endl;
+                exit(63);
+            }
         }
 
         for (size_t i = 0; i < n_elements_send_right[global_rank]; ++i) {
-            destination_process_send_right[i] = (global_element_offset_end_current[global_rank] + 1 - n_elements_send_right[global_rank] + i)/n_elements_per_process_new;
+            const size_t element_global_index = global_element_offset_end_current[global_rank] - n_elements_send_right[global_rank] + i;
+            destination_process_send_right[i] = -1;
+
+            for (int process_index = 0; process_index < global_size; ++process_index) {
+                if (element_global_index >= global_element_offset_new[process_index] && element_global_index < global_element_offset_end_new[process_index]) {
+                    destination_process_send_right[i] = process_index;
+                    break;
+                }
+            }
+
+            if (destination_process_send_right[i] == -1) {
+                std::cerr << "Error: Right element to send " << i << ", global element index " << element_global_index << " is not found in any process. Exiting." << std::endl;
+                exit(64);
+            }
         }
 
         size_t n_send_processes_left = 0;
@@ -2139,9 +2167,11 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const SEM::Device::Entities::de
             device_vector<size_t> n_elements_send_right_device(n_elements_send_right, stream_);
             device_vector<size_t> n_elements_recv_right_device(n_elements_recv_right, stream_);
             device_vector<size_t> global_element_offset_current_device(global_element_offset_current, stream_);
+            device_vector<size_t> global_element_offset_new_device(global_element_offset_new, stream_);
+            device_vector<size_t> global_element_offset_end_new_device(global_element_offset_end_new, stream_);
 
             const int send_numBlocks = (n_elements_send_left[global_rank] + boundaries_blockSize_ - 1) / boundaries_blockSize_;
-            SEM::Device::Meshes::get_neighbours<<<send_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_send_left[global_rank], 0, n_elements_per_proc[global_rank], wall_boundaries_.size(), symmetry_boundaries_.size(), inflow_boundaries_.size(), outflow_boundaries_.size(), interfaces_origin_.size(), mpi_interfaces_destination_.size(), global_rank, global_size, n_elements_per_process_new, elements_.data(), faces_.data(), wall_boundaries_.data(), symmetry_boundaries_.data(), inflow_boundaries_.data(), outflow_boundaries_.data(), interfaces_destination_.data(), interfaces_origin_.data(), mpi_interfaces_destination_.data(), mpi_interfaces_new_process_incoming_device.data(), mpi_interfaces_new_local_index_incoming_device.data(), mpi_interfaces_new_side_incoming_device.data(), neighbour_offsets_device.data(), n_elements_send_left_device.data(), n_elements_recv_left_device.data(), n_elements_send_right_device.data(), n_elements_recv_right_device.data(), global_element_offset_current_device.data(), neighbours_arrays.data(), neighbours_proc_arrays.data(), neighbours_side_arrays.data());
+            SEM::Device::Meshes::get_neighbours<<<send_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_send_left[global_rank], 0, n_elements_per_proc[global_rank], wall_boundaries_.size(), symmetry_boundaries_.size(), inflow_boundaries_.size(), outflow_boundaries_.size(), interfaces_origin_.size(), mpi_interfaces_destination_.size(), global_rank, global_size, elements_.data(), faces_.data(), wall_boundaries_.data(), symmetry_boundaries_.data(), inflow_boundaries_.data(), outflow_boundaries_.data(), interfaces_destination_.data(), interfaces_origin_.data(), mpi_interfaces_destination_.data(), mpi_interfaces_new_process_incoming_device.data(), mpi_interfaces_new_local_index_incoming_device.data(), mpi_interfaces_new_side_incoming_device.data(), neighbour_offsets_device.data(), n_elements_send_left_device.data(), n_elements_recv_left_device.data(), n_elements_send_right_device.data(), n_elements_recv_right_device.data(), global_element_offset_current_device.data(), global_element_offset_new_device.data(), global_element_offset_end_new_device.data(), neighbours_arrays.data(), neighbours_proc_arrays.data(), neighbours_side_arrays.data());
 
             neighbours_arrays.copy_to(neighbours_arrays_send_left, stream_);
             neighbours_proc_arrays.copy_to(neighbours_proc_arrays_send_left, stream_);
@@ -2204,6 +2234,8 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const SEM::Device::Entities::de
             n_elements_send_right_device.clear(stream_);
             n_elements_recv_right_device.clear(stream_);
             global_element_offset_current_device.clear(stream_);
+            global_element_offset_new_device.clear(stream_);
+            global_element_offset_end_new_device.clear(stream_);
         }       
 
         if (n_elements_send_right[global_rank] > 0) {
@@ -2226,9 +2258,11 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const SEM::Device::Entities::de
             device_vector<size_t> n_elements_send_right_device(n_elements_send_right, stream_);
             device_vector<size_t> n_elements_recv_right_device(n_elements_recv_right, stream_);
             device_vector<size_t> global_element_offset_current_device(global_element_offset_current, stream_);
+            device_vector<size_t> global_element_offset_new_device(global_element_offset_new, stream_);
+            device_vector<size_t> global_element_offset_end_new_device(global_element_offset_end_new, stream_);
 
             const int send_numBlocks = (n_elements_send_right[global_rank] + boundaries_blockSize_ - 1) / boundaries_blockSize_;
-            SEM::Device::Meshes::get_neighbours<<<send_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_send_right[global_rank], n_elements_per_proc[global_rank] - n_elements_send_right[global_rank], n_elements_per_proc[global_rank], wall_boundaries_.size(), symmetry_boundaries_.size(), inflow_boundaries_.size(), outflow_boundaries_.size(), interfaces_origin_.size(), mpi_interfaces_destination_.size(), global_rank, global_size, n_elements_per_process_new, elements_.data(), faces_.data(), wall_boundaries_.data(), symmetry_boundaries_.data(), inflow_boundaries_.data(), outflow_boundaries_.data(), interfaces_destination_.data(), interfaces_origin_.data(), mpi_interfaces_destination_.data(), mpi_interfaces_new_process_incoming_device.data(), mpi_interfaces_new_local_index_incoming_device.data(), mpi_interfaces_new_side_incoming_device.data(), neighbour_offsets_device.data(), n_elements_send_left_device.data(), n_elements_recv_left_device.data(), n_elements_send_right_device.data(), n_elements_recv_right_device.data(), global_element_offset_current_device.data(), neighbours_arrays.data(), neighbours_proc_arrays.data(), neighbours_side_arrays.data());
+            SEM::Device::Meshes::get_neighbours<<<send_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_send_right[global_rank], n_elements_per_proc[global_rank] - n_elements_send_right[global_rank], n_elements_per_proc[global_rank], wall_boundaries_.size(), symmetry_boundaries_.size(), inflow_boundaries_.size(), outflow_boundaries_.size(), interfaces_origin_.size(), mpi_interfaces_destination_.size(), global_rank, global_size, elements_.data(), faces_.data(), wall_boundaries_.data(), symmetry_boundaries_.data(), inflow_boundaries_.data(), outflow_boundaries_.data(), interfaces_destination_.data(), interfaces_origin_.data(), mpi_interfaces_destination_.data(), mpi_interfaces_new_process_incoming_device.data(), mpi_interfaces_new_local_index_incoming_device.data(), mpi_interfaces_new_side_incoming_device.data(), neighbour_offsets_device.data(), n_elements_send_left_device.data(), n_elements_recv_left_device.data(), n_elements_send_right_device.data(), n_elements_recv_right_device.data(), global_element_offset_current_device.data(), global_element_offset_new_device.data(), global_element_offset_end_new_device.data(), neighbours_arrays.data(), neighbours_proc_arrays.data(), neighbours_side_arrays.data());
 
             neighbours_arrays.copy_to(neighbours_arrays_send_right, stream_);
             neighbours_proc_arrays.copy_to(neighbours_proc_arrays_send_right, stream_);
@@ -2292,6 +2326,9 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const SEM::Device::Entities::de
             n_elements_send_right_device.clear(stream_);
             n_elements_recv_right_device.clear(stream_);
             global_element_offset_current_device.clear(stream_);
+            
+            global_element_offset_new_device.clear(stream_);
+            global_element_offset_end_new_device.clear(stream_);
         }
 
         std::vector<Element2D_t> elements_recv_left(n_elements_recv_left[global_rank]);
@@ -2314,7 +2351,7 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const SEM::Device::Entities::de
 
                 bool missing = true;
                 for (int j = 0; j < global_size; ++j) {
-                    if (global_element_indices_recv >= global_element_offset_current[j] && global_element_indices_recv <= global_element_offset_end_current[j]) {
+                    if (global_element_indices_recv >= global_element_offset_current[j] && global_element_indices_recv < global_element_offset_end_current[j]) {
                         origin_process_recv_left[i] = j;
                         missing = false;
                         break;
@@ -2338,11 +2375,11 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const SEM::Device::Entities::de
         if (n_elements_recv_right[global_rank] > 0) {
             // Compute the global indices of the elements using global_element_offset_new, and where they are coming from
             for (size_t i = 0; i < n_elements_recv_right[global_rank]; ++i) {
-                const size_t global_element_indices_recv = global_element_offset_end_new[global_rank] + 1 - n_elements_recv_right[global_rank] + i;
+                const size_t global_element_indices_recv = global_element_offset_end_new[global_rank] - n_elements_recv_right[global_rank] + i;
 
                 bool missing = true;
                 for (int j = 0; j < global_size; ++j) {
-                    if (global_element_indices_recv >= global_element_offset_current[j] && global_element_indices_recv <= global_element_offset_end_current[j]) {
+                    if (global_element_indices_recv >= global_element_offset_current[j] && global_element_indices_recv < global_element_offset_end_current[j]) {
                         origin_process_recv_right[i] = j;
                         missing = false;
                         break;
@@ -7112,8 +7149,7 @@ auto SEM::Device::Meshes::get_neighbours(size_t n_elements_send,
                                  size_t n_local_interfaces, 
                                  size_t n_MPI_interface_elements_receiving, 
                                  int rank, 
-                                 int n_procs, 
-                                 size_t n_elements_per_process,
+                                 int n_procs,
                                  const Element2D_t* elements, 
                                  const Face2D_t* faces, 
                                  const size_t* wall_boundaries, 
@@ -7132,6 +7168,8 @@ auto SEM::Device::Meshes::get_neighbours(size_t n_elements_send,
                                  const size_t* n_elements_received_right, 
                                  const size_t* n_elements_sent_right, 
                                  const size_t* global_element_offset,
+                                 const size_t* global_element_offset_new, 
+                                 const size_t* global_element_offset_end_new,
                                  size_t* neighbours, 
                                  int* neighbours_proc,
                                  size_t* neighbours_side) -> void {
@@ -7152,8 +7190,20 @@ auto SEM::Device::Meshes::get_neighbours(size_t n_elements_send,
                 if (other_element_index < n_domain_elements) {
                     if (other_element_index < n_elements_sent_left[rank] || other_element_index >= n_domain_elements - n_elements_sent_right[rank]) {
                         const size_t element_global_index = other_element_index + global_element_offset[rank];
-                        neighbours[element_offset] = element_global_index%n_elements_per_process;
-                        neighbours_proc[element_offset] = element_global_index/n_elements_per_process;
+                        neighbours[element_offset] = -1;
+
+                        for (int process_index = 0; process_index < n_procs; ++process_index) {
+                            if (element_global_index >= global_element_offset_new[process_index] && element_global_index < global_element_offset_end_new[process_index]) {
+                                neighbours[element_offset] = element_global_index - global_element_offset_new[process_index];
+                                neighbours_proc[element_offset] = process_index;
+
+                                break;
+                            }
+                        }
+
+                        if (neighbours[element_offset] == -1) {
+                            printf("Error: Element %llu, side %llu, face %llu with index %lly has other sent element %llu but it is not found in any process. Results are undefined.\n", element_index + start_index, side_index, side_face_index, face_index, element_global_index);
+                        }
                     }
                     else {
                         neighbours[element_offset] = other_element_index + n_elements_received_left[rank] - n_elements_sent_left[rank];
@@ -7169,8 +7219,20 @@ auto SEM::Device::Meshes::get_neighbours(size_t n_elements_send,
                         if (interfaces_destination[i] == other_element_index) {
                             if (interfaces_origin[i] < n_elements_sent_left[rank] || interfaces_origin[i] >= n_domain_elements - n_elements_sent_right[rank]) {
                                 const size_t element_global_index = interfaces_origin[i] + global_element_offset[rank];
-                                neighbours[element_offset] = element_global_index%n_elements_per_process;
-                                neighbours_proc[element_offset] = element_global_index/n_elements_per_process;
+                                neighbours[element_offset] = -1;
+
+                                for (int process_index = 0; process_index < n_procs; ++process_index) {
+                                    if (element_global_index >= global_element_offset_new[process_index] && element_global_index < global_element_offset_end_new[process_index]) {
+                                        neighbours[element_offset] = element_global_index - global_element_offset_new[process_index];
+                                        neighbours_proc[element_offset] = process_index;
+
+                                        break;
+                                    }
+                                }
+
+                                if (neighbours[element_offset] == -1) {
+                                    printf("Error: Element %llu, side %llu, face %llu with index %lly has other local sent element %llu but it is not found in any process. Results are undefined.\n", element_index + start_index, side_index, side_face_index, face_index, element_global_index);
+                                }
                             }
                             else {
                                 neighbours[element_offset] = interfaces_origin[i] + n_elements_received_left[rank] - n_elements_sent_left[rank];
