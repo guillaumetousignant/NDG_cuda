@@ -7190,7 +7190,7 @@ auto SEM::Device::Meshes::get_neighbours(size_t n_elements_send,
                 if (other_element_index < n_domain_elements) {
                     if (other_element_index < n_elements_sent_left[rank] || other_element_index >= n_domain_elements - n_elements_sent_right[rank]) {
                         const size_t element_global_index = other_element_index + global_element_offset[rank];
-                        neighbours[element_offset] = -1;
+                        neighbours_proc[element_offset] = -1;
 
                         for (int process_index = 0; process_index < n_procs; ++process_index) {
                             if (element_global_index >= global_element_offset_new[process_index] && element_global_index < global_element_offset_end_new[process_index]) {
@@ -7201,8 +7201,8 @@ auto SEM::Device::Meshes::get_neighbours(size_t n_elements_send,
                             }
                         }
 
-                        if (neighbours[element_offset] == -1) {
-                            printf("Error: Element %llu, side %llu, face %llu with index %lly has other sent element %llu but it is not found in any process. Results are undefined.\n", element_index + start_index, side_index, side_face_index, face_index, element_global_index);
+                        if (neighbours_proc[element_offset] == -1) {
+                            printf("Error: Element %llu, side %llu, face %llu with index %llu has other sent element %llu but it is not found in any process. Results are undefined.\n", element_index + start_index, side_index, side_face_index, face_index, element_global_index);
                         }
                     }
                     else {
@@ -7219,7 +7219,7 @@ auto SEM::Device::Meshes::get_neighbours(size_t n_elements_send,
                         if (interfaces_destination[i] == other_element_index) {
                             if (interfaces_origin[i] < n_elements_sent_left[rank] || interfaces_origin[i] >= n_domain_elements - n_elements_sent_right[rank]) {
                                 const size_t element_global_index = interfaces_origin[i] + global_element_offset[rank];
-                                neighbours[element_offset] = -1;
+                                neighbours_proc[element_offset] = -1;
 
                                 for (int process_index = 0; process_index < n_procs; ++process_index) {
                                     if (element_global_index >= global_element_offset_new[process_index] && element_global_index < global_element_offset_end_new[process_index]) {
@@ -7230,8 +7230,8 @@ auto SEM::Device::Meshes::get_neighbours(size_t n_elements_send,
                                     }
                                 }
 
-                                if (neighbours[element_offset] == -1) {
-                                    printf("Error: Element %llu, side %llu, face %llu with index %lly has other local sent element %llu but it is not found in any process. Results are undefined.\n", element_index + start_index, side_index, side_face_index, face_index, element_global_index);
+                                if (neighbours_proc[element_offset] == -1) {
+                                    printf("Error: Element %llu, side %llu, face %llu with index %llu has other local sent element %llu but it is not found in any process. Results are undefined.\n", element_index + start_index, side_index, side_face_index, face_index, element_global_index);
                                 }
                             }
                             else {
