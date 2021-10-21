@@ -3177,7 +3177,7 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const SEM::Device::Entities::de
 
         }
 
-        if (n_elements_send_left[global_rank] > 0) {
+        if (n_elements_send_right[global_rank] > 0) {
 
         }
 
