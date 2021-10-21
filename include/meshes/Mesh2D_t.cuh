@@ -373,6 +373,9 @@ namespace SEM { namespace Device { namespace Meshes {
 
     __global__
     auto move_required_mpi_origins(size_t n_mpi_origins, size_t n_domain_elements, size_t new_n_domain_elements, const size_t* mpi_origins, size_t* new_mpi_origins, const size_t* mpi_origins_side, size_t* new_mpi_origins_side, const bool* mpi_origins_to_delete, const size_t* mpi_origins_to_delete_block_offsets, const bool* boundary_elements_to_delete, const size_t* boundary_elements_block_offsets, int boundary_elements_blockSize) -> void;
+    
+    __global__
+    auto create_sent_mpi_boundaries_destinations(size_t n_sent_elements, size_t sent_elements_offset, size_t new_elements_offset, size_t mpi_interfaces_destination_offset, SEM::Device::Entities::Element2D_t* elements, SEM::Device::Entities::Element2D_t* new_elements, SEM::Device::Entities::Face2D_t* faces, const SEM::Device::Entities::Vec2<deviceFloat>* nodes, const size_t* elements_send_destinations_offset, const int* elements_send_destinations_keep, size_t* mpi_interfaces_destination, const deviceFloat* polynomial_nodes) -> void;
 
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>

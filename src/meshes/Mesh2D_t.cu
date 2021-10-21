@@ -2932,7 +2932,7 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const SEM::Device::Entities::de
 
         // Interfaces
         // MPI incoming interfaces to add
-        size_t n_mpi_destinations_to_add = 0;
+        size_t n_mpi_destinations_to_add_recv = 0;
         if (n_elements_recv_left[global_rank] + n_elements_recv_right[global_rank] > 0) {
             for (size_t i = 0; i < neighbours_proc_arrays_recv.size(); ++i) {
                 const int neighbour_proc = neighbours_proc_arrays_recv[i];
@@ -2949,19 +2949,20 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const SEM::Device::Entities::de
                         }
                     }
                     if (first_time) {
-                        ++n_mpi_destinations_to_add;
+                        ++n_mpi_destinations_to_add_recv;
                     }
                 }
             }
         }
 
+        size_t n_mpi_destinations_to_add_send = 0;
         size_t neighbour_mpi_index_send = 0;
         for (size_t i = 0; i < n_elements_send_left[global_rank]; ++i) {
             for (size_t j = 0; j < 4; ++j) {
                 const size_t side_n_neighbours = n_neighbours_arrays_send_left[4 * i + j];
                 for (size_t k = 0; k < side_n_neighbours; ++k) {
                     if (neighbours_proc_arrays_send_left[neighbour_mpi_index_send + k] == global_rank) {
-                        ++n_mpi_destinations_to_add;
+                        ++n_mpi_destinations_to_add_send;
                         break;
                     }
                 }
@@ -2975,13 +2976,15 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const SEM::Device::Entities::de
                 const size_t side_n_neighbours = n_neighbours_arrays_send_right[4 * i + j];
                 for (size_t k = 0; k < side_n_neighbours; ++k) {
                     if (neighbours_proc_arrays_send_right[neighbour_mpi_index_send + k] == global_rank) {
-                        ++n_mpi_destinations_to_add;
+                        ++n_mpi_destinations_to_add_send;
                         break;
                     }
                 }
                 neighbour_mpi_index_send += side_n_neighbours;
             }
         }
+
+        const size_t n_mpi_destinations_to_add = n_mpi_destinations_to_add_recv + n_mpi_destinations_to_add_send;
 
         // MPI incoming interfaces to delete
         size_t n_mpi_destinations_to_delete = 0;
@@ -3173,12 +3176,66 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const SEM::Device::Entities::de
 
         // And that's it hopefully
 
-        if (n_elements_send_left[global_rank] > 0) {
+        // Creating new boundary elements
+        std::vector<size_t> elements_send_destinations_offset_left(n_elements_send_left[global_rank]);
+        std::vector<size_t> elements_send_destinations_offset_right(n_elements_send_right[global_rank]);
+        std::vector<int> elements_send_destinations_keep_left(4 * n_elements_send_left[global_rank], 0);
+        std::vector<int> elements_send_destinations_keep_right(4 * n_elements_send_right[global_rank], 0);
 
+        neighbour_mpi_index_send = 0;
+        size_t n_mpi_destinations_to_add_send_left = 0;
+        for (size_t i = 0; i < n_elements_send_left[global_rank]; ++i) {
+            elements_send_destinations_offset_left[i] = n_mpi_destinations_to_add_send_left;
+            for (size_t j = 0; j < 4; ++j) {
+                const size_t side_n_neighbours = n_neighbours_arrays_send_left[4 * i + j];
+                for (size_t k = 0; k < side_n_neighbours; ++k) {
+                    if (neighbours_proc_arrays_send_left[neighbour_mpi_index_send + k] == global_rank) {
+                        ++n_mpi_destinations_to_add_send_left;
+                        elements_send_destinations_keep_left[4 * i + j] = 1;
+                        break;
+                    }
+                }
+                neighbour_mpi_index_send += side_n_neighbours;
+            }
+        }
+
+        neighbour_mpi_index_send = 0;
+        size_t n_mpi_destinations_to_add_send_right = 0;
+        for (size_t i = 0; i < n_elements_send_right[global_rank]; ++i) {
+            elements_send_destinations_offset_right[i] = n_mpi_destinations_to_add_send_right;
+            for (size_t j = 0; j < 4; ++j) {
+                const size_t side_n_neighbours = n_neighbours_arrays_send_right[4 * i + j];
+                for (size_t k = 0; k < side_n_neighbours; ++k) {
+                    if (neighbours_proc_arrays_send_right[neighbour_mpi_index_send + k] == global_rank) {
+                        ++n_mpi_destinations_to_add_send_right;
+                        elements_send_destinations_keep_right[4 * i + j] = 1;
+                        break;
+                    }
+                }
+                neighbour_mpi_index_send += side_n_neighbours;
+            }
+        }
+
+        if (n_elements_send_left[global_rank] > 0) {
+            device_vector<size_t> elements_send_destinations_offset_device(elements_send_destinations_offset_left, stream_);
+            device_vector<int> elements_send_destinations_keep_device(elements_send_destinations_keep_left, stream_);
+            int elements_send_numBlocks = (n_elements_send_left[global_rank] + elements_blockSize_ - 1) / elements_blockSize_;
+
+            SEM::Device::Meshes::create_sent_mpi_boundaries_destinations<<<elements_send_numBlocks, elements_blockSize_, 0, stream_>>>(n_elements_send_left[global_rank], 0, n_elements_new[global_rank] + elements_.size() - n_elements_ - n_boundary_elements_to_delete, mpi_interfaces_destination_.size() - n_mpi_destinations_to_delete, elements_.data(), new_elements.data(), new_faces.data(), nodes_.data(), elements_send_destinations_offset_device.data(), elements_send_destinations_keep_device.data(), new_mpi_interfaces_destination.data(), polynomial_nodes.data());
+
+            elements_send_destinations_offset_device.clear(stream_);
+            elements_send_destinations_keep_device.clear(stream_);
         }
 
         if (n_elements_send_right[global_rank] > 0) {
+            device_vector<size_t> elements_send_destinations_offset_device(elements_send_destinations_offset_right, stream_);
+            device_vector<int> elements_send_destinations_keep_device(elements_send_destinations_keep_right, stream_);
+            int elements_send_numBlocks = (n_elements_send_right[global_rank] + elements_blockSize_ - 1) / elements_blockSize_;
 
+            SEM::Device::Meshes::create_sent_mpi_boundaries_destinations<<<elements_send_numBlocks, elements_blockSize_, 0, stream_>>>(n_elements_send_left[global_rank], n_elements_ - n_elements_send_right[global_rank], n_elements_new[global_rank] + elements_.size() - n_elements_ - n_boundary_elements_to_delete + n_mpi_destinations_to_add_send_left, mpi_interfaces_destination_.size() - n_mpi_destinations_to_delete + n_mpi_destinations_to_add_send_left, elements_.data(), new_elements.data(), new_faces.data(), nodes_.data(), elements_send_destinations_offset_device.data(), elements_send_destinations_keep_device.data(), new_mpi_interfaces_destination.data(), polynomial_nodes.data());
+
+            elements_send_destinations_offset_device.clear(stream_);
+            elements_send_destinations_keep_device.clear(stream_);
         }
 
 
@@ -7883,5 +7940,58 @@ auto SEM::Device::Meshes::move_required_mpi_origins(size_t n_mpi_origins, size_t
             new_mpi_origins[new_mpi_origin_index] = new_boundary_element_index;
             new_mpi_origins_side[new_mpi_origin_index] = mpi_origins_side[i];
         }
+    }
+}
+
+__global__
+auto SEM::Device::Meshes::create_sent_mpi_boundaries_destinations(size_t n_sent_elements, size_t sent_elements_offset, size_t new_elements_offset, size_t mpi_interfaces_destination_offset, Element2D_t* elements, Element2D_t* new_elements, Face2D_t* faces, const Vec2<deviceFloat>* nodes, const size_t* elements_send_destinations_offset, const int* elements_send_destinations_keep, size_t* mpi_interfaces_destination,  const deviceFloat* polynomial_nodes) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t i = index; i < n_sent_elements; i += stride) {
+        const size_t element_index = sent_elements_offset + i;
+        const Element2D_t& element = elements[element_index];
+
+        size_t new_element_offset = elements_send_destinations_offset[i];
+
+        for (size_t j = 0; j < 4; ++j) { // CHECK only works with quadrilaterals
+            if (elements_send_destinations_keep[4 * i + j]) {
+                const size_t new_element_index = new_elements_offset + new_element_offset;
+                Element2D_t& new_element = new_elements[new_element_index];
+                const size_t next_side_index = (j + 1 >= 4) ? 0 : j + 1;
+
+                mpi_interfaces_destination[mpi_interfaces_destination_offset + new_element_offset] = new_element_index;
+
+                new_element.clear_storage();
+                new_element.N_ = element.N_;
+                new_element.status_ = Hilbert::Status::A;
+                new_element.rotation_ = 0;
+                new_element.nodes_ = {element.nodes_[j], element.nodes_[next_side_index], element.nodes_[next_side_index], element.nodes_[j]};
+                new_element.split_level_ = element.split_level_; // CHECK should set other variables?
+
+                new_element.allocate_boundary_storage();
+                new_element.faces_[0] = std::move(element.faces_[j]); // CHECK some faces could have been deleted, maybe check for -1?
+
+                // Geometry
+                std::array<Vec2<deviceFloat>, 4> points {nodes[new_element.nodes_[0]], 
+                                                         nodes[new_element.nodes_[1]], 
+                                                         nodes[new_element.nodes_[2]], 
+                                                         nodes[new_element.nodes_[3]]};
+                new_element.compute_boundary_geometry(points, polynomial_nodes);
+
+                for (size_t k = 0; k < new_element.faces_[0].size(); ++k) {
+                    const size_t face_index = new_element.faces_[0][k];
+                    Face2D_t& face = faces[face_index];
+
+                    const size_t face_side_index = face.elements_[1] == element_index && face.elements_side_[1] == j && face.nodes_[0] == new_element.nodes_[1] && face.nodes_[1] == new_element.nodes_[0];
+                    face.elements_[face_side_index] = new_element_index;
+                    face.elements_side_[face_side_index] = 0;
+                }
+                // Then add the new element to all faces, and set side to 0. Check side and index, since indices have been updated. Maybe check something with nodes?
+                // CHECK this could mix up new and old elements, as staying elements have already been moved and updated their indices in the faces
+
+                ++new_element_offset;
+            }
+        } 
     }
 }

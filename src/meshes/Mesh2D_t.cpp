@@ -2500,7 +2500,7 @@ auto SEM::Host::Meshes::Mesh2D_t::load_balance(const std::vector<std::vector<hos
         // Self interfaces to delete
         size_t n_self_interfaces_to_delete = 0;
 
-
+        // CHECK update below this, updated after ba5448d
 
 
         
