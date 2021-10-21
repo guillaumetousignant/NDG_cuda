@@ -8,6 +8,8 @@
 using SEM::Host::Entities::Vec2;
 using SEM::Host::Entities::Element2D_t;
 using SEM::Host::Entities::Face2D_t;
+using namespace SEM::Host::Constants;
+using std::vector;
 
 SEM::Host::Solvers::Solver2D_t::Solver2D_t(hostFloat CFL, std::vector<hostFloat> output_times, hostFloat viscosity) :
         CFL_{CFL},
@@ -27,11 +29,11 @@ auto SEM::Host::Solvers::Solver2D_t::get_delta_t(SEM::Host::Meshes::Mesh2D_t& me
 }
 
 auto SEM::Host::Solvers::Solver2D_t::x_flux(hostFloat p, hostFloat u, hostFloat v) -> std::array<hostFloat, 3> {
-    return {SEM::Host::Constants::c * u, p, 0};
+    return {Constants::c * u, p, 0};
 }
 
 auto SEM::Host::Solvers::Solver2D_t::y_flux(hostFloat p, hostFloat u, hostFloat v) -> std::array<hostFloat, 3> {
-    return {SEM::Host::Constants::c * v, 0, p};
+    return {Constants::c * v, 0, p};
 }
 
 void SEM::Host::Solvers::Solver2D_t::matrix_vector_multiply(int N, const std::vector<hostFloat>& matrix, const std::vector<hostFloat>& vector, std::vector<hostFloat>& result) {
@@ -43,17 +45,17 @@ void SEM::Host::Solvers::Solver2D_t::matrix_vector_multiply(int N, const std::ve
     }
 }
 
-auto SEM::Host::Solvers::Solver2D_t::calculate_wave_fluxes(std::vector<Face2D_t>& faces) -> void {
+auto SEM::Host::Solvers::Solver2D_t::calculate_wave_fluxes(vector<Face2D_t>& faces) -> void {
     for (auto& face : faces) {
         // Computing fluxes
         for (int i = 0; i <= face.N_; ++i) {
             const Vec2<hostFloat> u_L {face.u_[0][i], face.v_[0][i]};
             const Vec2<hostFloat> u_R {face.u_[1][i], face.v_[1][i]};
 
-            const hostFloat w_L = face.p_[0][i] + SEM::Host::Constants::c * u_L.dot(face.normal_);
-            const hostFloat w_R = face.p_[1][i] - SEM::Host::Constants::c * u_R.dot(face.normal_);
+            const hostFloat w_L = face.p_[0][i] + Constants::c * u_L.dot(face.normal_);
+            const hostFloat w_R = face.p_[1][i] - Constants::c * u_R.dot(face.normal_);
 
-            face.p_flux_[i] = SEM::Host::Constants::c * (w_L - w_R) / 2;
+            face.p_flux_[i] = Constants::c * (w_L - w_R) / 2;
             face.u_flux_[i] = face.normal_.x() * (w_L + w_R) / 2;
             face.v_flux_[i] = face.normal_.y() * (w_L + w_R) / 2;
         }

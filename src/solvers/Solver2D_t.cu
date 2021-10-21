@@ -7,6 +7,7 @@
 using SEM::Device::Entities::Vec2;
 using SEM::Device::Entities::Element2D_t;
 using SEM::Device::Entities::Face2D_t;
+using namespace SEM::Device::Constants;
 
 SEM::Device::Solvers::Solver2D_t::Solver2D_t(deviceFloat CFL, std::vector<deviceFloat> output_times, deviceFloat viscosity) :
         CFL_{CFL},
@@ -31,12 +32,12 @@ auto SEM::Device::Solvers::Solver2D_t::get_delta_t(SEM::Device::Meshes::Mesh2D_t
 
 __host__ __device__
 auto SEM::Device::Solvers::Solver2D_t::x_flux(deviceFloat p, deviceFloat u, deviceFloat v) -> std::array<deviceFloat, 3> {
-    return {SEM::Device::Constants::c * u, p, 0};
+    return {Constants::c * u, p, 0};
 }
 
 __host__ __device__
 auto SEM::Device::Solvers::Solver2D_t::y_flux(deviceFloat p, deviceFloat u, deviceFloat v) -> std::array<deviceFloat, 3> {
-    return {SEM::Device::Constants::c * v, 0, p};
+    return {Constants::c * v, 0, p};
 }
 
 __device__
@@ -62,10 +63,10 @@ auto SEM::Device::Solvers::calculate_wave_fluxes(size_t N_faces, Face2D_t* faces
             const Vec2<deviceFloat> u_L {face.u_[0][i], face.v_[0][i]};
             const Vec2<deviceFloat> u_R {face.u_[1][i], face.v_[1][i]};
 
-            const deviceFloat w_L = face.p_[0][i] + SEM::Device::Constants::c * u_L.dot(face.normal_);
-            const deviceFloat w_R = face.p_[1][i] - SEM::Device::Constants::c * u_R.dot(face.normal_);
+            const deviceFloat w_L = face.p_[0][i] + Constants::c * u_L.dot(face.normal_);
+            const deviceFloat w_R = face.p_[1][i] - Constants::c * u_R.dot(face.normal_);
 
-            face.p_flux_[i] = SEM::Device::Constants::c * (w_L - w_R) / 2;
+            face.p_flux_[i] = Constants::c * (w_L - w_R) / 2;
             face.u_flux_[i] = face.normal_.x() * (w_L + w_R) / 2;
             face.v_flux_[i] = face.normal_.y() * (w_L + w_R) / 2;
         }
