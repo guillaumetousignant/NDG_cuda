@@ -2571,47 +2571,45 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const SEM::Device::Entities::de
 
         // Faces
         // Faces to add
-        size_t n_faces_to_add = 0;
+        size_t n_faces_to_add_recv_left = 0;
         size_t neighbour_index = 0;
-        if (n_elements_recv_left[global_rank] > 0) {
-            for (size_t i = 0; i < n_elements_recv_left[global_rank]; ++i) {
-                const size_t element_index = i;
-                for (size_t j = 0; j < 4; ++j) {
-                    for (size_t k = 0; k < n_neighbours_arrays_recv_left[4 * i + j]; ++k) {
-                        const int neighbour_process = neighbours_proc_arrays_recv[neighbour_index];
-                        const size_t neighbour_element_index = neighbours_arrays_recv[neighbour_index];
-                        ++neighbour_index;
+        for (size_t i = 0; i < n_elements_recv_left[global_rank]; ++i) {
+            const size_t element_index = i;
+            for (size_t j = 0; j < 4; ++j) {
+                for (size_t k = 0; k < n_neighbours_arrays_recv_left[4 * i + j]; ++k) {
+                    const int neighbour_process = neighbours_proc_arrays_recv[neighbour_index];
+                    const size_t neighbour_element_index = neighbours_arrays_recv[neighbour_index];
+                    ++neighbour_index;
 
-                        if (neighbour_process != global_rank
-                                || neighbours_arrays_recv[i] < n_elements_recv_left[global_rank] && element_index < neighbour_element_index
-                                || neighbours_arrays_recv[i] > n_elements_new[global_rank] - n_elements_recv_right[global_rank] && element_index < neighbour_element_index) {
+                    if (neighbour_process != global_rank
+                            || neighbours_arrays_recv[i] < n_elements_recv_left[global_rank] && element_index < neighbour_element_index
+                            || neighbours_arrays_recv[i] > n_elements_new[global_rank] - n_elements_recv_right[global_rank] && element_index < neighbour_element_index) {
 
-                            ++n_faces_to_add;
-                        }
+                        ++n_faces_to_add_recv_left;
                     }
                 }
             }
         }
+        size_t n_faces_to_add_recv_right = 0;
         neighbour_index = n_neighbours_recv_total_left; // Maybe error check here? should already be there
-        if (n_elements_recv_right[global_rank] > 0) {
-            for (size_t i = 0; i < n_elements_recv_right[global_rank]; ++i) {
-                const size_t element_index = n_elements_new[global_rank] + 1 - n_elements_recv_right[global_rank] + i;
-                for (size_t j = 0; j < 4; ++j) {
-                    for (size_t k = 0; k < n_neighbours_arrays_recv_right[4 * i + j]; ++k) {
-                        const int neighbour_process = neighbours_proc_arrays_recv[neighbour_index];
-                        const size_t neighbour_element_index = neighbours_arrays_recv[neighbour_index];
-                        ++neighbour_index;
+        for (size_t i = 0; i < n_elements_recv_right[global_rank]; ++i) {
+            const size_t element_index = n_elements_new[global_rank] + 1 - n_elements_recv_right[global_rank] + i;
+            for (size_t j = 0; j < 4; ++j) {
+                for (size_t k = 0; k < n_neighbours_arrays_recv_right[4 * i + j]; ++k) {
+                    const int neighbour_process = neighbours_proc_arrays_recv[neighbour_index];
+                    const size_t neighbour_element_index = neighbours_arrays_recv[neighbour_index];
+                    ++neighbour_index;
 
-                        if (neighbour_process != global_rank
-                                || neighbours_arrays_recv[i] < n_elements_recv_left[global_rank] && element_index < neighbour_element_index
-                                || neighbours_arrays_recv[i] > n_elements_new[global_rank] - n_elements_recv_right[global_rank] && element_index < neighbour_element_index) {
+                    if (neighbour_process != global_rank
+                            || neighbours_arrays_recv[i] < n_elements_recv_left[global_rank] && element_index < neighbour_element_index
+                            || neighbours_arrays_recv[i] > n_elements_new[global_rank] - n_elements_recv_right[global_rank] && element_index < neighbour_element_index) {
 
-                            ++n_faces_to_add;
-                        }
+                        ++n_faces_to_add_recv_right;
                     }
                 }
             }
         }
+        const size_t n_faces_to_add = n_faces_to_add_recv_left + n_faces_to_add_recv_right;
 
         device_vector<Face2D_t> new_faces;
 
@@ -2717,7 +2715,11 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const SEM::Device::Entities::de
         SEM::Device::Meshes::find_boundary_elements_to_delete<<<ghosts_numBlocks_, boundaries_blockSize_, 0, stream_>>>(elements_.size() - n_elements_, n_elements_, n_elements_send_left[global_rank], n_elements_send_right[global_rank], elements_.data(), new_faces.data(), boundary_elements_to_delete.data());
 
         if (n_elements_recv_left[global_rank] + n_elements_recv_right[global_rank] > 0) {
-            SEM::Device::Meshes::find_mpi_interface_elements_to_delete<<<mpi_interfaces_incoming_numBlocks_, boundaries_blockSize_, 0, stream_>>>(mpi_interfaces_destination_.size(), n_elements_, global_rank, mpi_interfaces_destination_.data(), mpi_interfaces_new_process_incoming.data(), boundary_elements_to_delete.data());
+            device_vector<int> mpi_interfaces_new_process_incoming_device(mpi_interfaces_new_process_incoming, stream_);
+
+            SEM::Device::Meshes::find_mpi_interface_elements_to_delete<<<mpi_interfaces_incoming_numBlocks_, boundaries_blockSize_, 0, stream_>>>(mpi_interfaces_destination_.size(), n_elements_, global_rank, mpi_interfaces_destination_.data(), mpi_interfaces_new_process_incoming_device.data(), boundary_elements_to_delete.data());
+        
+            mpi_interfaces_new_process_incoming_device.clear(stream_);
         }
         device_vector<size_t> device_boundary_elements_to_delete_refine_array(ghosts_numBlocks_, stream_);
         SEM::Device::Meshes::reduce_bools<boundaries_blockSize_/2><<<ghosts_numBlocks_, boundaries_blockSize_/2, 0, stream_>>>(boundary_elements_to_delete.size(), boundary_elements_to_delete.data(), device_boundary_elements_to_delete_refine_array.data());
@@ -3237,6 +3239,21 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const SEM::Device::Entities::de
             elements_send_destinations_offset_device.clear(stream_);
             elements_send_destinations_keep_device.clear(stream_);
         }
+
+        // We reuse the faces for mpi destinations for received elements
+        if (n_elements_recv_left[global_rank] + n_elements_recv_right[global_rank] > 0) {
+            device_vector<int> mpi_interfaces_new_process_incoming_device(mpi_interfaces_new_process_incoming, stream_);
+            device_vector<size_t> mpi_interfaces_new_local_index_incoming_device(mpi_interfaces_new_local_index_incoming, stream_);
+            device_vector<size_t> mpi_interfaces_new_side_incoming_device(mpi_interfaces_new_side_incoming, stream_);
+
+            SEM::Device::Meshes::recv_mpi_boundaries_destinations_reuse_faces<<<mpi_interfaces_incoming_numBlocks_, boundaries_blockSize_, 0, stream_>>>(mpi_interfaces_destination_.size(), n_elements_new[global_rank], n_elements_recv_left[global_rank], n_elements_recv_right[global_rank], global_rank, elements_.data(), new_faces.data(), mpi_interfaces_destination_.data(), mpi_interfaces_new_process_incoming_device.data(), mpi_interfaces_new_local_index_incoming_device.data(), mpi_interfaces_new_side_incoming_device.data());
+        
+            mpi_interfaces_new_process_incoming_device.clear(stream_);
+            mpi_interfaces_new_local_index_incoming_device.clear(stream_);
+            mpi_interfaces_new_side_incoming_device.clear(stream_);
+        }
+
+
 
 
 
@@ -7972,6 +7989,31 @@ auto SEM::Device::Meshes::create_sent_mpi_boundaries_destinations(size_t n_sent_
                 new_element.allocate_boundary_storage();
                 new_element.faces_[0] = std::move(element.faces_[j]); // CHECK some faces could have been deleted, maybe check for -1?
 
+                // We update our index in faces, and discard deleted faces
+                size_t n_good_faces = 0;
+                for (size_t j = 0; j < new_element.faces_[0].size(); ++j) {
+                    const size_t face_index = new_element.faces_[0][j];
+                    if (face_index != static_cast<size_t>(-1)) {
+                        Face2D_t& face = faces[face_index];
+                        const size_t side_index = face.elements_[1] == element_index && face.elements_side_[1] == j && face.nodes_[0] == new_element.nodes_[1] && face.nodes_[1] == new_element.nodes_[0];
+                        face.elements_[side_index] = new_element_index;
+                        ++n_good_faces;
+                    }
+                }
+                if (n_good_faces != new_element.faces_[0].size()) {
+                    cuda_vector<size_t> new_faces(n_good_faces);
+                    size_t faces_index = 0;
+                    for (size_t j = 0; j < new_element.faces_[0].size(); ++j) {
+                        const size_t face_index = new_element.faces_[0][j];
+                        if (face_index != static_cast<size_t>(-1)) {
+                            new_faces[faces_index] = face_index;
+                            ++faces_index;
+                        }
+                    }
+
+                    new_element.faces_[0] = std::move(new_faces);
+                }
+
                 // Geometry
                 std::array<Vec2<deviceFloat>, 4> points {nodes[new_element.nodes_[0]], 
                                                          nodes[new_element.nodes_[1]], 
@@ -7979,19 +8021,32 @@ auto SEM::Device::Meshes::create_sent_mpi_boundaries_destinations(size_t n_sent_
                                                          nodes[new_element.nodes_[3]]};
                 new_element.compute_boundary_geometry(points, polynomial_nodes);
 
-                for (size_t k = 0; k < new_element.faces_[0].size(); ++k) {
-                    const size_t face_index = new_element.faces_[0][k];
-                    Face2D_t& face = faces[face_index];
-
-                    const size_t face_side_index = face.elements_[1] == element_index && face.elements_side_[1] == j && face.nodes_[0] == new_element.nodes_[1] && face.nodes_[1] == new_element.nodes_[0];
-                    face.elements_[face_side_index] = new_element_index;
-                    face.elements_side_[face_side_index] = 0;
-                }
-                // Then add the new element to all faces, and set side to 0. Check side and index, since indices have been updated. Maybe check something with nodes?
-                // CHECK this could mix up new and old elements, as staying elements have already been moved and updated their indices in the faces
-
                 ++new_element_offset;
             }
         } 
+    }
+}
+
+__global__
+auto SEM::Device::Meshes::recv_mpi_boundaries_destinations_reuse_faces(size_t n_mpi_interfaces_incoming, size_t n_domain_elements, size_t n_elements_recv_left, size_t n_elements_recv_right, int rank, const Element2D_t* elements, Face2D_t* new_faces, const size_t* mpi_interfaces_incoming, const int* mpi_interfaces_new_process_incoming, const size_t* mpi_interfaces_new_local_index_incoming, const size_t* mpi_interfaces_new_side_incoming_device) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t i = index; i < n_mpi_interfaces_incoming; i += stride) {
+        // This means we just received the element
+        if (mpi_interfaces_new_process_incoming[i] == rank && (mpi_interfaces_new_local_index_incoming[i] < n_elements_recv_left || mpi_interfaces_new_local_index_incoming[i] > n_domain_elements - n_elements_recv_right)) {
+            const size_t element_index = mpi_interfaces_incoming[i];
+            const Element2D_t& element = elements[element_index];
+
+            for (size_t j = 0; j < element.faces_[0].size(); ++j) {
+                const size_t face_index = element.faces_[0][j];
+                if (face_index != static_cast<size_t>(-1)) {
+                    Face2D_t& face = new_faces[face_index];
+                    const size_t side_index = face.elements_[1] == element_index && face.elements_side_[1] == 0 && face.nodes_[0] == element.nodes_[1] && face.nodes_[1] == element.nodes_[0];
+                    face.elements_[side_index] = mpi_interfaces_new_local_index_incoming[i];
+                    face.elements_side_[side_index] = mpi_interfaces_new_side_incoming_device[i];
+                }
+            }
+        }
     }
 }
