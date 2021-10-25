@@ -21,19 +21,30 @@
 % --------------------------------------------------------------------
 
 \usepackage{float}  % for figure "H"
+\usepackage{amsmath}    % math
 \usepackage[hidelinks]{hyperref} % hyperlinks
+\usepackage{graphicx}	% figure
+\usepackage{subfig}	
+\usepackage[nottoc]{tocbibind}	% put bib in the table of content 
+\usepackage{amsfonts} % for math equations
+\usepackage{array} % table
+\newcolumntype{M}[1]{>{\centering\arraybackslash}m{#1}}
+\usepackage{listings}	% code
+\usepackage{adjustbox} % adjust table width
+
 \usepackage[chapter]{algorithm}	% algorithm numbered by chapter
 \usepackage{algorithmicx}	% algorithm
+\usepackage{algpseudocode}
+\usepackage{varwidth}	% code indentation
+\usepackage[dvipsnames]{xcolor}	%color 
 
 % nonumberlist: no page number in glossary
 \usepackage[toc, nopostdot, nonumberlist, nogroupskip, acronym, order=letter]{glossaries} % [toc] put glossaries in content
-
 
 % add list of Greek symbols--------------------------------
 % [glg]{domain_name}{gls}{glo}{title_name}
 \newglossary[ch1]{greekstyle}{ch2}{ch3}{List of Greek Symbols}
 
-%\newglossary*{superscript}{Superscripts}
 \newglossary[ch4]{superscript}{ch5}{ch6}{Superscripts}
 \newglossary[ch10]{subscript}{ch11}{ch12}{Subscripts}
 
@@ -94,13 +105,13 @@
 	\setlength\LTright{0pt}
 	\setlength\glsdescwidth{1.0\hsize}
 	
-	\printglossary[title=List of Symbols]
+	\printnoidxglossary[title=List of Symbols]
 	\printnoidxglossary[sort=standard, type=greekstyle] % self-defined ordering 
-	\printglossary[type=othersymbol]
-	\printglossary[type=superscript]
-	\printglossary[type=subscript]
-	\printglossary[type=othernotation]
-	\printglossary[title=List of Acronyms, type=\acronymtype]
+	\printnoidxglossary[type=othersymbol]
+	\printnoidxglossary[type=superscript]
+	\printnoidxglossary[type=subscript]
+	\printnoidxglossary[type=othernotation]
+	\printnoidxglossary[title=List of Acronyms, type=\acronymtype]
 	
 	% start arabic page numbering here-------------------
  	\newpage
