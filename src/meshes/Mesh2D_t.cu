@@ -2708,7 +2708,6 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const SEM::Device::Entities::de
                 }
             }
         }
-        // CHECK there are also boundary elements that have to be created for mpi interfaces for leaving elements
 
         // Boundary elements to delete
         device_vector<bool> boundary_elements_to_delete(elements_.size() - n_elements_, stream_);
@@ -3163,20 +3162,10 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const SEM::Device::Entities::de
 
         // CHECK the same for self interfaces?
         // Self interfaces to add
-        size_t n_self_interfaces_to_add = 0;
+        size_t n_self_interfaces_to_add = 0; // Wow
 
         // Self interfaces to delete
-        size_t n_self_interfaces_to_delete = 0;
-
-
-
-
-        
-
-
-        // Now we create the new faces and boundary elements
-
-        // And that's it hopefully
+        size_t n_self_interfaces_to_delete = 0; // Wow 
 
         // Creating new boundary elements
         std::vector<size_t> elements_send_destinations_offset_left(n_elements_send_left[global_rank]);
@@ -3253,7 +3242,11 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const SEM::Device::Entities::de
             mpi_interfaces_new_side_incoming_device.clear(stream_);
         }
 
-
+        // We need to create received boundary elements for mpi destinations, and boundary conditions
+        // We need to create faces to those
+        // We need to create faces between received elements
+        // We need to create mpi origins for leaving data
+        // THEN we put the new elements in
 
 
 
