@@ -601,7 +601,7 @@ auto SEM::Host::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> v
         // Exchanging mpi interfaces destination
         std::vector<MPI_Request> adaptivity_requests(2 * n_mpi_interfaces);
         std::vector<MPI_Status> adaptivity_statuses(2 * n_mpi_interfaces);
-        constexpr MPI_Datatype size_t_data_type = (sizeof(size_t) == sizeof(unsigned long long)) ? MPI_UNSIGNED_LONG_LONG : (sizeof(size_t) == sizeof(unsigned long)) ? MPI_UNSIGNED_LONG : MPI_UNSIGNED; // CHECK this is a bad way of doing this
+        const MPI_Datatype size_t_data_type = (sizeof(size_t) == sizeof(unsigned long long)) ? MPI_UNSIGNED_LONG_LONG : (sizeof(size_t) == sizeof(unsigned long)) ? MPI_UNSIGNED_LONG : MPI_UNSIGNED; // CHECK this is a bad way of doing this
 
         for (size_t i = 0; i < n_mpi_interfaces; ++i) {
             MPI_Isend(mpi_interfaces_destination.data() + mpi_interfaces_outgoing_offset_[i], mpi_interfaces_outgoing_size_[i], size_t_data_type, mpi_interfaces_process_[i], global_size * global_rank + mpi_interfaces_process_[i], MPI_COMM_WORLD, &adaptivity_requests[n_mpi_interfaces + i]);
@@ -654,7 +654,7 @@ auto SEM::Host::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> v
 
     // Sharing number of elements to calculate offset
     std::vector<size_t> n_elements_per_process(global_size);
-    constexpr MPI_Datatype size_t_data_type = (sizeof(size_t) == sizeof(unsigned long long)) ? MPI_UNSIGNED_LONG_LONG : (sizeof(size_t) == sizeof(unsigned long)) ? MPI_UNSIGNED_LONG : MPI_UNSIGNED; // CHECK this is a bad way of doing this
+    const MPI_Datatype size_t_data_type = (sizeof(size_t) == sizeof(unsigned long long)) ? MPI_UNSIGNED_LONG_LONG : (sizeof(size_t) == sizeof(unsigned long)) ? MPI_UNSIGNED_LONG : MPI_UNSIGNED; // CHECK this is a bad way of doing this
     MPI_Allgather(&n_elements_, 1, size_t_data_type, n_elements_per_process.data(), 1, size_t_data_type, MPI_COMM_WORLD);
 
     size_t n_elements_global = 0;
@@ -875,7 +875,7 @@ auto SEM::Host::Meshes::print_element_faces(size_t n_elements, const Element2D_t
         }
 
 
-        printf("\tElement %llu has:\n\t\tBottom faces:%s\n\t\tRight faces:%s\n\t\tTop faces:%s\n\t\tLeft faces:%s\n", element_index, faces_string[0], faces_string[1], faces_string[2], faces_string[3]);
+        printf("\tElement %llu has:\n\t\tBottom faces:%s\n\t\tRight faces:%s\n\t\tTop faces:%s\n\t\tLeft faces:%s\n", static_cast<unsigned long long>(element_index), faces_string[0], faces_string[1], faces_string[2], faces_string[3]);
     }
 }
 
@@ -919,7 +919,7 @@ auto SEM::Host::Meshes::print_boundary_element_faces(size_t n_domain_elements, s
         }
 
 
-        printf("\tElement %llu has:\n\t\tFaces:%s\n", element_index, faces_string);
+        printf("\tElement %llu has:\n\t\tFaces:%s\n", static_cast<unsigned long long>(element_index), faces_string);
     }
 }
 
@@ -1511,7 +1511,7 @@ auto SEM::Host::Meshes::Mesh2D_t::load_balance(const std::vector<std::vector<hos
 
     std::vector<size_t> n_elements_per_proc(global_size);
 
-    constexpr MPI_Datatype size_t_data_type = (sizeof(size_t) == sizeof(unsigned long long)) ? MPI_UNSIGNED_LONG_LONG : (sizeof(size_t) == sizeof(unsigned long)) ? MPI_UNSIGNED_LONG : MPI_UNSIGNED; // CHECK this is a bad way of doing this
+    const MPI_Datatype size_t_data_type = (sizeof(size_t) == sizeof(unsigned long long)) ? MPI_UNSIGNED_LONG_LONG : (sizeof(size_t) == sizeof(unsigned long)) ? MPI_UNSIGNED_LONG : MPI_UNSIGNED; // CHECK this is a bad way of doing this
     MPI_Allgather(&n_elements_, 1, size_t_data_type, n_elements_per_proc.data(), 1, size_t_data_type, MPI_COMM_WORLD);
 
     std::vector<size_t> global_element_offset_current(global_size, 0);
@@ -1602,7 +1602,7 @@ auto SEM::Host::Meshes::Mesh2D_t::load_balance(const std::vector<std::vector<hos
         MPI_Waitall(n_mpi_transfers_per_interface * mpi_interfaces_process_.size(), mpi_interfaces_requests.data(), mpi_interfaces_statuses.data());
 
         constexpr size_t n_mpi_transfers_per_send = 8;
-        constexpr MPI_Datatype float_data_type = (sizeof(hostFloat) == sizeof(float)) ? MPI_FLOAT : MPI_DOUBLE;
+        const MPI_Datatype float_data_type = (sizeof(hostFloat) == sizeof(float)) ? MPI_FLOAT : MPI_DOUBLE;
         Element2D_t::Datatype element_data_type;
 
         // Sending and receiving
@@ -2806,7 +2806,7 @@ auto SEM::Host::Meshes::Mesh2D_t::boundary_conditions(hostFloat t, const std::ve
 
         SEM::Host::Meshes::get_MPI_interfaces(mpi_interfaces_origin_.size(), elements_.data(), mpi_interfaces_origin_.data(), mpi_interfaces_origin_side_.data(), maximum_N_, interfaces_p_.data(), interfaces_u_.data(), interfaces_v_.data());
         
-        constexpr MPI_Datatype float_data_type = (sizeof(hostFloat) == sizeof(float)) ? MPI_FLOAT : MPI_DOUBLE;
+        const MPI_Datatype float_data_type = (sizeof(hostFloat) == sizeof(float)) ? MPI_FLOAT : MPI_DOUBLE;
         for (size_t i = 0; i < mpi_interfaces_process_.size(); ++i) {
             MPI_Isend(interfaces_p_.data() + mpi_interfaces_outgoing_offset_[i] * (maximum_N_ + 1), mpi_interfaces_outgoing_size_[i] * (maximum_N_ + 1), float_data_type, mpi_interfaces_process_[i], 3 * (global_size * global_rank + mpi_interfaces_process_[i]), MPI_COMM_WORLD, &requests_[3 * (mpi_interfaces_process_.size() + i)]);
             MPI_Irecv(receiving_interfaces_p_.data() + mpi_interfaces_incoming_offset_[i] * (maximum_N_ + 1), mpi_interfaces_incoming_size_[i] * (maximum_N_ + 1), float_data_type, mpi_interfaces_process_[i], 3 * (global_size * mpi_interfaces_process_[i] + global_rank), MPI_COMM_WORLD, &requests_[3 * i]);
@@ -6100,7 +6100,7 @@ auto SEM::Host::Meshes::get_neighbours(size_t n_elements_send,
                                         }
             
                                         if (missing) {
-                                            printf("Error: Element %llu is not part of local or mpi interfaces, or boundaries. Results are undefined.\n", other_element_index);
+                                            printf("Error: Element %llu is not part of local or mpi interfaces, or boundaries. Results are undefined.\n", static_cast<unsigned long long>(other_element_index));
                                         }
                                     }
                                 }
@@ -6168,7 +6168,7 @@ auto SEM::Host::Meshes::get_interface_n_processes(size_t n_mpi_interfaces, size_
                 }
             }
             if (missing) {
-                printf("Error: Element %llu is not part of an mpi incoming interface. Results are undefined.\n", other_element_index);
+                printf("Error: Element %llu is not part of an mpi incoming interface. Results are undefined.\n", static_cast<unsigned long long>(other_element_index));
             }
 
             const int other_interface_process = mpi_interfaces_new_process_incoming[other_interface_index];
@@ -6190,7 +6190,7 @@ auto SEM::Host::Meshes::get_interface_n_processes(size_t n_mpi_interfaces, size_
                     }
                 }
                 if (previous_missing) {
-                    printf("Error: Previous element %llu is not part of an mpi incoming interface. Results are undefined.\n", other_element_index);
+                    printf("Error: Previous element %llu is not part of an mpi incoming interface. Results are undefined.\n", static_cast<unsigned long long>(other_element_index));
                 }
 
                 const int previous_other_interface_process = mpi_interfaces_new_process_incoming[previous_other_interface_index];
@@ -6244,7 +6244,7 @@ auto SEM::Host::Meshes::get_interface_processes(size_t n_mpi_interfaces, size_t 
                 }
             }
             if (missing) {
-                printf("Error: Element %llu is not part of an mpi incoming interface, its process is unknown. Results are undefined.\n", other_element_index);
+                printf("Error: Element %llu is not part of an mpi incoming interface, its process is unknown. Results are undefined.\n", static_cast<unsigned long long>(other_element_index));
             }
 
             const int other_interface_process = mpi_interfaces_new_process_incoming[other_interface_index];
@@ -6266,7 +6266,7 @@ auto SEM::Host::Meshes::get_interface_processes(size_t n_mpi_interfaces, size_t 
                     }
                 }
                 if (previous_missing) {
-                    printf("Error: Previous element %llu is not part of an mpi incoming interface, its process is unknown. Results are undefined.\n", other_element_index);
+                    printf("Error: Previous element %llu is not part of an mpi incoming interface, its process is unknown. Results are undefined.\n", static_cast<unsigned long long>(other_element_index));
                 }
 
                 const int previous_other_interface_process = mpi_interfaces_new_process_incoming[previous_other_interface_index];
@@ -6360,7 +6360,7 @@ auto SEM::Host::Meshes::move_required_faces(Face2D_t* faces, Face2D_t* new_faces
                 }
             }
             if (missing_L) {
-                printf("Error: Moving face %llu could not find itself in its left element, element %llu, side %llu. Results are undefined.\n", i, new_faces[new_face_index].elements_[0], side_index_L);
+                printf("Error: Moving face %llu could not find itself in its left element, element %llu, side %llu. Results are undefined.\n", static_cast<unsigned long long>(i), static_cast<unsigned long long>(new_faces[new_face_index].elements_[0]), static_cast<unsigned long long>(side_index_L));
             }
             for (size_t side_face_index = 0; side_face_index < element_R.faces_[side_index_R].size(); ++side_face_index) {
                 if (element_R.faces_[side_index_R][side_face_index] == i) {
@@ -6370,7 +6370,7 @@ auto SEM::Host::Meshes::move_required_faces(Face2D_t* faces, Face2D_t* new_faces
                 }
             }
             if (missing_R) {
-                printf("Error: Moving face %llu could not find itself in its right element, element %llu, side %llu. Results are undefined.\n", i, new_faces[new_face_index].elements_[1], side_index_R);
+                printf("Error: Moving face %llu could not find itself in its right element, element %llu, side %llu. Results are undefined.\n", static_cast<unsigned long long>(i), static_cast<unsigned long long>(new_faces[new_face_index].elements_[1]), static_cast<unsigned long long>(side_index_R));
             }
         }
         else {
@@ -6389,7 +6389,7 @@ auto SEM::Host::Meshes::move_required_faces(Face2D_t* faces, Face2D_t* new_faces
                 }
             }
             if (missing_L) {
-                printf("Error: Deleting face %llu could not find itself in its left element, element %llu, side %llu. Results are undefined.\n", i, faces[i].elements_[0], side_index_L);
+                printf("Error: Deleting face %llu could not find itself in its left element, element %llu, side %llu. Results are undefined.\n", static_cast<unsigned long long>(i), static_cast<unsigned long long>(faces[i].elements_[0]), static_cast<unsigned long long>(side_index_L));
             }
             for (size_t side_face_index = 0; side_face_index < element_R.faces_[side_index_R].size(); ++side_face_index) {
                 if (element_R.faces_[side_index_R][side_face_index] == i) {
@@ -6399,7 +6399,7 @@ auto SEM::Host::Meshes::move_required_faces(Face2D_t* faces, Face2D_t* new_faces
                 }
             }
             if (missing_R) {
-                printf("Error: Deleting face %llu could not find itself in its right element, element %llu, side %llu. Results are undefined.\n", i, faces[i].elements_[1], side_index_R);
+                printf("Error: Deleting face %llu could not find itself in its right element, element %llu, side %llu. Results are undefined.\n", static_cast<unsigned long long>(i), static_cast<unsigned long long>(faces[i].elements_[1]), static_cast<unsigned long long>(side_index_R));
             }
         }
     }

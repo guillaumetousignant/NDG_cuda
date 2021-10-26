@@ -23,7 +23,7 @@ auto SEM::Host::Solvers::Solver2D_t::get_delta_t(SEM::Host::Meshes::Mesh2D_t& me
     }
 
     hostFloat delta_t_min;
-    constexpr MPI_Datatype data_type = (sizeof(hostFloat) == sizeof(float)) ? MPI_FLOAT : MPI_DOUBLE; // CHECK this is a bad way of doing this
+    const MPI_Datatype data_type = (sizeof(hostFloat) == sizeof(float)) ? MPI_FLOAT : MPI_DOUBLE; // CHECK this is a bad way of doing this
     MPI_Allreduce(&delta_t_min_local, &delta_t_min, 1, data_type, MPI_MIN, MPI_COMM_WORLD);
     return delta_t_min;
 }
