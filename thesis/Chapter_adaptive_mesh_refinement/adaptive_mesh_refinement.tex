@@ -23,7 +23,23 @@ beforehand, or these areas may move as time advances if the problem is transient
 be higher in unforeseen areas that are not apparent.
 
 Adaptive mesh refinement is the process of mesh resolution as the computation goes, where the effect
-of that increase in resolution is most needed. 
+of that increase in resolution is most needed. To find out where to refine, the solution error must
+be estimated, and a refinement method must be chosen. The error can be estimated by extrapolating
+the value of the next mode, and the slope of the last few nodes can guide the choice of the
+refinement method. The two refinement methods studied here are h-refinement and p-refinement,
+increasing the number of elements and the polynomial order, respectively. 
+
+This whole process must be executed in parallel and with as much as the work as possible executed on
+the GPU. GPUs are more efficient at working with fixed workloads where all threads of a block
+execute the same instruction. Refining the mesh moves memory around and can introduce additional
+branching if the elements have different polynomial orders or non-conforming interfaces. The
+adaptivity process itself is also hard to implement on GPUs, as elements must either move, change
+their polynomial order or split into multiple elements in parallel. If the different threads are not
+perfectly coordinated, they could do these operations on the same destination memory location,
+creating race conditions.
+
+% mortar element method
+% need for load balancing
 
 \section{Strategies} \label{section:adaptive_mesh_refinement:adaptivity_strategies}
 
@@ -34,3 +50,7 @@ of that increase in resolution is most needed.
 \section{Mortar Element Method} \label{section:adaptive_mesh_refinement:mortar_element_method}
 
 \section{Implementation} \label{section:adaptive_mesh_refinement:implementation}
+
+As detailed in chapter~\ref{chapter:graphics_processing_units}, the grid is stored on the GPU as a
+flat array of elements, each element having pointers to its solution arrays, stored in GPU dynamic
+memory. This ensures the elements have a fixed size regardless of their polynomial order.
