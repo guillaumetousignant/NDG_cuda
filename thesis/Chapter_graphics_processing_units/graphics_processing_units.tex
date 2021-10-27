@@ -4,19 +4,20 @@
 % Talk about saturation, SEMs
 % GPU partitions
 % Say something about worker processes, to be general with cpu workers.
+% How it doesn't work well with adaptivity usually
+% Talk about dynamic memory
 
 \section{Process Parallelism} \label{section:process_parallelism}
-When trying to solve very large problems, a single node with a single \textit{GPU} will have
-insufficient processing power and memory to solve the problem in a reasonable time, or at all. To
-work with these larger problems, the work needs to be split at another level than \textit{GPU}
-parallelism. 
+When trying to solve very large problems, a single node with a single GPU will have insufficient
+processing power and memory to solve the problem in a reasonable time, or at all. To work with these
+larger problems, the work needs to be split at another level than GPU parallelism.  
 
-The program can use multi-block meshes, with each block being worked on by one process and one
-\textit{GPU}. If there are fewer \textit{GPUs} available on a system than there are processes, some
-processes will share a single \textit{GPU} by using asynchronous execution streams. The different
-processes communicate together using \textit{MPI} at their boundaries. Since the solution data
-resides on the \textit{GPU}, it must first be copied to the main \textit{CPU} memory before it is
-sent through the \textit{MPI} runtime. It then needs to be copied to the receiving process'
-\textit{GPU}. This exchange necessitates multiple transfers on different levels and should be
-optimised as much as possible. An approach to minimise the number of interfaces between the
-different mesh blocks is explained in chapter~\ref{chapter:load_balancing}.
+The program can use multi-block meshes, with each block being worked on by one process and one GPU.
+If there are fewer GPUs available on a system than there are processes, some processes will share a
+single GPU by using asynchronous execution streams. The different processes communicate together
+using \textit{Message Passing Interface (MPI)} at their boundaries. Since the solution data resides
+on the GPU, it must first be copied to the main \textit{Central Processing Unit (CPU)} memory before
+it is sent through the MPI runtime. It then needs to be copied to the receiving process' GPU. This
+exchange necessitates multiple transfers on different levels and should be optimised as much as
+possible. An approach to minimise the number of interfaces between the different mesh blocks is
+explained in chapter~\ref{chapter:load_balancing}.
