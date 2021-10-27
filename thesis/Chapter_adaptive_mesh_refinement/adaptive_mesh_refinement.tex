@@ -6,6 +6,24 @@
 
 Computers constantly increase in power, thanks to incremental progress made on known processes and
 new architectures such as that described in chapter~\ref{chapter:graphics_processing_units}.
+However, processing power and memory is still limited and the size of problems studied has
+increased in step with the available ressources. It is still necessary to carefully manage those
+limited ressources in order to maximise the efficiency of simulations. Some flow regions may be more
+interesting or harder to compute, benefiting from an increase in resolution. On the other hand, some
+flow regions may have less happening in them or be easier to compute, and a decrease in resolution
+may be acceptable.
+
+It is possible to increase the number of elements and/or the polynomial order of an entire mesh
+before solving the problem. This increases resolution in important areas of the flow, but also
+increases resolution everywhere else in the domain, where the increased computation cost provides no
+benefit. It is sometimes possible to predict where to refine before solving the problem, such as
+around static shock waves in predictable locations. In these cases, the mesh can be refined in those
+areas before computation has started. However, it is not always possible to know these areas
+beforehand, or these areas may move as time advances if the problem is transient. The error may also
+be higher in unforeseen areas that are not apparent.
+
+Adaptive mesh refinement is the process of mesh resolution as the computation goes, where the effect
+of that increase in resolution is most needed. 
 
 \section{Strategies} \label{section:adaptive_mesh_refinement:adaptivity_strategies}
 
