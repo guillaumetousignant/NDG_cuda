@@ -38,6 +38,19 @@ their polynomial order or split into multiple elements in parallel. If the diffe
 perfectly coordinated, they could do these operations on the same destination memory location,
 creating race conditions.
 
+Once the mesh has been refined, the element boundaries can become geometrically or functionally
+non-conforming. To compute fluxes between the elements, we use the mortar element method. Mortar, in
+the form of faces, is added between the elements, and the boundary solution is projected from the
+elements to the face's own collocation points. 
+
+When solving problems in parallel, the mesh will be split into blocks, each assigned to a process
+and its GPU. As the mesh is refined, it is possible that the blocks are refined unequally. This can
+lead to a load imbalance between the different GPUs. As the different GPUs need to synchronise at
+each timestep, lightly-loaded GPUs will always be waiting after heavily-loaded GPUs. The computation
+time will therefore be driven by the most heavily-loaded GPU, and the speedup incurred by
+parallelizing the program will be reduced. To improve this side effect of mesh refinement, a dynamic
+load balancing algorithm will be implemented in chapter~\ref{chapter:load_balancing}.
+
 % mortar element method
 % need for load balancing
 
