@@ -35,7 +35,6 @@
 /bin/*
 /images/*
 /assets/*
-*.png
 /.vs/*
 *.user
 /x64/*
@@ -63,3 +62,5 @@
 /received/*
 *.synctex(busy)
 /install/*
+*.pyc
+*__pycache__*
