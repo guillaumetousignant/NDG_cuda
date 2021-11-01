@@ -64,3 +64,5 @@
 /install/*
 *.pyc
 *__pycache__*
+/thesis/svg-inkscape/*
+*.dvi

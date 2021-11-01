@@ -88,7 +88,6 @@ for i in range(N[0] + 1):
 h_ax.arrow(1.5, 0, 1, 0, length_includes_head=False, width=0.05, head_length=0.1, color=outline_colour)
 
 h_fig.savefig(save_path / f"h-adaptivity_N{N[0]}.svg", format='svg', transparent=True)
-h_fig.savefig(save_path / f"h-adaptivity_N{N[0]}.png", format='png', transparent=True)
 
 plt.show()
     
