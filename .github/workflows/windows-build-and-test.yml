@@ -4,7 +4,6 @@ jobs:
   Windows:
     name: build-windows
     runs-on: ${{ matrix.os }}
-    uses: seanmiddleditch/gha-setup-ninja@master
     strategy:
       fail-fast: false
       # explicit include-based build matrix, of known valid options
@@ -15,6 +14,8 @@ jobs:
             cuda: "11.3.0"
             visual_studio: "Visual Studio 16 2019"
     steps:
+      - uses: seanmiddleditch/gha-setup-ninja@master
+
       - name: Checkout
         uses: actions/checkout@v2
       - name: Creating dependencies directory (Windows)
