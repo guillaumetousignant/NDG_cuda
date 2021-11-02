@@ -15,7 +15,9 @@ jobs:
             visual_studio: "Visual Studio 16 2019"
     steps:
       - name: Ninja setup
-        uses: seanmiddleditch/gha-setup-ninja@master
+        uses: ashutoshvarma/setup-ninja@master
+        with:
+          version: 1.10.2
 
       - name: Checkout
         uses: actions/checkout@v2
