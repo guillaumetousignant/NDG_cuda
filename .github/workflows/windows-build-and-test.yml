@@ -16,15 +16,22 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Install CUDA
-        env: 
-          cuda: ${{ matrix.cuda }}
-          visual_studio: ${{ matrix.visual_studio }}
-        shell: powershell
-        run: .\scripts\actions\install_cuda_windows.ps1
       - name: Creating dependencies directory (Windows)
         shell: powershell
         run: mkdir packages
+
+      - name: Creating cuda directory (Windows)
+        shell: powershell
+        run: mkdir cuda
+        working-directory: ${{ github.workspace }}/packages
+      - name: Downloading cuda (Windows)
+        shell: powershell
+        run: Invoke-WebRequest "https://developer.download.nvidia.com/compute/cuda/11.3.0/network_installers/cuda_11.3.0_win10_network.exe" -OutFile "cuda_11_3_0_win10_network.exe"
+        working-directory: ${{ github.workspace }}/packages/cuda
+      - name: Installing cuda (Windows)
+        shell: powershell
+        run: Start-Process -Wait -FilePath .\cuda_11_3_0_win10_network.exe -ArgumentList "-s nvcc_11.3.0 cudart_11.3.0"
+        working-directory: ${{ github.workspace }}/packages/cuda
 
       - name: Creating hdf5 directory (Windows)
         shell: powershell
