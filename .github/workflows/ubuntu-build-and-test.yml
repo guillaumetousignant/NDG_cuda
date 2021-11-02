@@ -1,0 +1,22 @@
+name: Ubuntu
+on: [push]
+jobs:
+  Ubuntu:
+    name: build-ubuntu
+    runs-on: ubuntu-latest
+    steps:
+      - name: Installing dependencies (Ubuntu)
+        run: sudo apt install freeglut3-dev
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Creating build directory (Ubuntu)
+        run: mkdir build
+      - name: Running CMake (Ubuntu)
+        run: cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
+        working-directory: ${{ github.workspace }}/build
+      - name: Build (Ubuntu)
+        run: cmake --build .
+        working-directory: ${{ github.workspace }}/build
+      - name: Tests (Ubuntu)
+        run: ctest
+        working-directory: ${{ github.workspace }}/build
