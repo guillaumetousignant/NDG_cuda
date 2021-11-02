@@ -14,16 +14,14 @@ jobs:
             cuda: "11.3.0"
             visual_studio: "Visual Studio 16 2019"
     steps:
-      - name: Ninja setup
-        uses: ashutoshvarma/setup-ninja@master
-        with:
-          version: 1.10.2
-
       - name: Checkout
         uses: actions/checkout@v2
       - name: Creating dependencies directory (Windows)
         shell: powershell
         run: mkdir packages
+      - name: Ninja setup
+        shell: powershell
+        run: choco install ninja
 
       - name: Creating cuda directory (Windows)
         shell: powershell
