@@ -54,11 +54,11 @@ jobs:
         working-directory: ${{ github.workspace }}/packages/mpi
       - name: Installing mpi (Windows)
         shell: powershell
-        run: Start-Process -Wait -FilePath .\msmpisetup.exe -ArgumentList ""
+        run: Start-Process -Wait -FilePath .\msmpisetup.exe
         working-directory: ${{ github.workspace }}/packages/mpi
       - name: Installing mpi sdk (Windows)
         shell: powershell
-        run: Start-Process -Wait -FilePath .\msmpisdk.msi -ArgumentList ""
+        run: Start-Process -Wait -FilePath .\msmpisdk.msi
         working-directory: ${{ github.workspace }}/packages/mpi
 
       - name: Creating hdf5 directory (Windows)
