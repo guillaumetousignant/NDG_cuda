@@ -22,6 +22,10 @@ jobs:
       - name: Ninja setup
         shell: powershell
         run: choco install ninja
+      - name: Set up Visual Studio shell
+        uses: egor-tensin/vs-shell@v2
+        with:
+          arch: x64
 
       - name: Creating cuda directory (Windows)
         shell: powershell
@@ -35,6 +39,27 @@ jobs:
         shell: powershell
         run: Start-Process -Wait -FilePath .\cuda_11_3_0_win10_network.exe -ArgumentList "-s nvcc_11.3.0 cudart_11.3.0"
         working-directory: ${{ github.workspace }}/packages/cuda
+
+      - name: Creating mpi directory (Windows)
+        shell: powershell
+        run: mkdir mpi
+        working-directory: ${{ github.workspace }}/packages
+      - name: Downloading mpi (Windows)
+        shell: powershell
+        run: Invoke-WebRequest "https://github.com/microsoft/Microsoft-MPI/releases/download/v10.1.1/msmpisetup.exe" -OutFile "msmpisetup.exe"
+        working-directory: ${{ github.workspace }}/packages/mpi
+      - name: Downloading mpi sdk (Windows)
+        shell: powershell
+        run: Invoke-WebRequest "https://github.com/microsoft/Microsoft-MPI/releases/download/v10.1.1/msmpisdk.msi" -OutFile "msmpisdk.msi"
+        working-directory: ${{ github.workspace }}/packages/mpi
+      - name: Installing mpi (Windows)
+        shell: powershell
+        run: Start-Process -Wait -FilePath .\msmpisetup.exe -ArgumentList ""
+        working-directory: ${{ github.workspace }}/packages/mpi
+      - name: Installing mpi sdk (Windows)
+        shell: powershell
+        run: Start-Process -Wait -FilePath .\msmpisdk.msi -ArgumentList ""
+        working-directory: ${{ github.workspace }}/packages/mpi
 
       - name: Creating hdf5 directory (Windows)
         shell: powershell
