@@ -56,9 +56,13 @@ jobs:
         shell: powershell
         run: Expand-Archive -Path cmake-hdf5-1-12-1.zip -DestinationPath HDF5
         working-directory: ${{ github.workspace }}/packages/hdf5
+      - name: What is path (Windows)
+        shell: powershell
+        run: echo $env:path -split ";"
+        working-directory: ${{ github.workspace }}/packages/hdf5/build
       - name: Configuring hdf5 (Windows)
         shell: powershell
-        run: cmake ../HDF5/CMake-hdf5-1.12.1/hdf5-1.12.1 -G${{ github.workspace }}/ninja-build/ninja.exe -DBUILD_SHARED_LIBS=OFF -DBUILD_STATIC_EXECS=ON -DBUILD_STATIC_LIBS=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/packages/hdf5/install" -DHDF5_BUILD_FORTRAN:BOOL=OFF -DHDF5_BUILD_JAVA:BOOL=OFF -DHDF5_ALLOW_EXTERNAL_SUPPORT:STRING=TGZ -DTGZPATH:PATH=${{ github.workspace }}/packages/hdf5/HDF5/CMake-hdf5-1.12.1 -DHDF5_ENABLE_Z_LIB_SUPPORT:BOOL=OFF -DHDF5_ENABLE_SZIP_SUPPORT:BOOL=OFF -DHDF5_ENABLE_SZIP_ENCODING:BOOL=OFF -DHDF5_ENABLE_PARALLEL:BOOL=ON -DHDF5_BUILD_CPP_LIB:BOOL=OFF -DHDF5_BUILD_JAVA:BOOL=OFF -DHDF5_ENABLE_THREADSAFE:BOOL=OFF -DHDF5_PACKAGE_EXTLIBS:BOOL=ON -DHDF5_BUILD_EXAMPLES=OFF 
+        run: cmake ../HDF5/CMake-hdf5-1.12.1/hdf5-1.12.1 -GNinja -DBUILD_SHARED_LIBS=OFF -DBUILD_STATIC_EXECS=ON -DBUILD_STATIC_LIBS=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/packages/hdf5/install" -DHDF5_BUILD_FORTRAN:BOOL=OFF -DHDF5_BUILD_JAVA:BOOL=OFF -DHDF5_ALLOW_EXTERNAL_SUPPORT:STRING=TGZ -DTGZPATH:PATH=${{ github.workspace }}/packages/hdf5/HDF5/CMake-hdf5-1.12.1 -DHDF5_ENABLE_Z_LIB_SUPPORT:BOOL=OFF -DHDF5_ENABLE_SZIP_SUPPORT:BOOL=OFF -DHDF5_ENABLE_SZIP_ENCODING:BOOL=OFF -DHDF5_ENABLE_PARALLEL:BOOL=ON -DHDF5_BUILD_CPP_LIB:BOOL=OFF -DHDF5_BUILD_JAVA:BOOL=OFF -DHDF5_ENABLE_THREADSAFE:BOOL=OFF -DHDF5_PACKAGE_EXTLIBS:BOOL=ON -DHDF5_BUILD_EXAMPLES=OFF 
         working-directory: ${{ github.workspace }}/packages/hdf5/build
       - name: Building hdf5 (Windows)
         shell: powershell
