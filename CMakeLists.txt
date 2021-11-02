@@ -29,6 +29,11 @@ set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 add_subdirectory(src)
 
+option(BUILD_DOC "Build documentation." OFF)
+if (BUILD_DOC)
+    add_subdirectory(docs)
+endif()
+
 option(BUILD_EXTRAS "Build extras, such as meshing tools." OFF)
 if (BUILD_EXTRAS)
     add_subdirectory(extras)

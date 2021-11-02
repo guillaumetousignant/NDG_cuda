@@ -1,5 +1,7 @@
 # cuda_test
 
+[![GitHub license](https://img.shields.io/github/license/guillaumetousignant/NDG_cuda.svg)](https://github.com/guillaumetousignant/NDG_cuda/blob/master/LICENSE) [![GitHub release](https://img.shields.io/github/release/guillaumetousignant/NDG_cuda.svg)](https://GitHub.com/guillaumetousignant/NDG_cuda/releases/) [![Documentation Status](https://readthedocs.org/projects/another-path-tracer/badge/?version=latest)](https://ndg-cuda.readthedocs.io/en/latest/?badge=latest) [![build-ubuntu Actions Status](https://github.com/guillaumetousignant/NDG_cuda/workflows/Ubuntu/badge.svg)](https://github.com/guillaumetousignant/NDG_cuda/actions) [![build-windows Actions Status](https://github.com/guillaumetousignant/NDG_cuda/workflows/Windows/badge.svg)](https://github.com/guillaumetousignant/NDG_cuda/actions) [![build-macos Actions Status](https://github.com/guillaumetousignant/NDG_cuda/workflows/macOS/badge.svg)](https://github.com/guillaumetousignant/NDG_cuda/actions)
+
 Installation:
 
 ```bash

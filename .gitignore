@@ -41,7 +41,6 @@
 *.tmp
 /html/*
 /latex/*
-/docs/*
 /build/*
 /meshes/*
 /data/*
