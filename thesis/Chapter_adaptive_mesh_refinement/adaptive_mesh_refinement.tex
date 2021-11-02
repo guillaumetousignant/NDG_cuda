@@ -13,6 +13,13 @@ interesting or harder to compute, benefiting from an increase in resolution. On 
 flow regions may have less happening in them or be easier to compute, and a decrease in resolution
 may be acceptable.
 
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.4\textwidth]{Chapter_adaptive_mesh_refinement/media/mesh_refinement}
+	\caption{Adaptive mesh refinement: The elements have split near the wave, where the solution is steeper}
+	\label{fig:mesh-refinement}
+\end{figure}
+
 It is possible to increase the number of elements and/or the polynomial order of an entire mesh
 before solving the problem. This increases resolution in important areas of the flow, but also
 increases resolution everywhere else in the domain, where the increased computation cost provides no
@@ -62,6 +69,11 @@ load balancing algorithm will be implemented in chapter~\ref{chapter:load_balanc
 	\label{fig:p-adaptivity}
 \end{figure}
 
+The first refinement strategy is p-adaptivity. When refining this way, elements increase their
+polynomial order to increase their resolution. The lower-order solution is projected to the
+higher-order collocation points. In this work, the polynomial order in increased in steps of 2, and
+the polynomial order stays the same in the x and y directions. 
+
 \subsection{h-adaptivity} \label{section:adaptive_mesh_refinement:adaptivity_strategies:h-adaptivity}
 
 \begin{figure}[H]
@@ -71,7 +83,45 @@ load balancing algorithm will be implemented in chapter~\ref{chapter:load_balanc
 	\label{fig:h-adaptivity}
 \end{figure}
 
+The second refinement strategy is h-adaptivity. h-adaptivity splits single elements into several
+elements occupying the same space. In this work we exclusively deal with quadrilaterals, and these
+elements split in 4 smaller elements when h-refining. The solution is projected from the initial big
+element to each of the 4 offspring elements.
+
 \subsection{hp-adaptivity} \label{section:adaptive_mesh_refinement:adaptivity_strategies:hp-adaptivity}
+
+In order to maximise computation efficiency, both p-adaptivity and h-adaptivity are used together.
+An hp-adaptive program uses either p-adaptivity or h-adaptivity on an element-by-element basis,
+depending on which is expected to reduce error the most. The choice between the two methods is
+detailed in section~\ref{section:adaptive_mesh_refinement:refinement_criteria}.
+
+\begin{figure}[H]
+	\centering
+	\includesvg[width=0.6\textwidth]{Chapter_adaptive_mesh_refinement/media/hp-adaptivity_N4_N6}
+	\caption{2D hp-adaptivity: Elements refining create non-conforming interfaces}
+	\label{fig:hp-adaptivity}
+\end{figure}
+
+Once the mesh has been refined, it is possible that the interfaces between elements become
+non-conforming. Recall from chapter~\ref{chapter:spectral_element_method} that fluxes are computed
+between the elements from the extrapolated values of the solution on collocation points matching the
+polynomial order of the elements. These would be the tips of the thin black lines in the figure
+above. This works directly if two neighbouring elements have the same polynomial order and they
+completely share an edge. However, after p-adaptivity interfaces can become functionally
+non-conforming, as seen with the rightmost blue line in the figure above. The nodes won't match
+anymore since one element has more points than the other. After h-adapting, interfaces can become
+geometrically non-conforming, as seen with the topmost blue line in the figure above. The nodes do
+not match because one edge is shorter than the other. Finally, interfaces can be both geometrically
+and functionally non-conforming, as seen with the bottom blue line in the figure above. We will have
+to find a way to connect those elements in a way that retains the spectral convergence of the
+method.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.4\textwidth]{Chapter_adaptive_mesh_refinement/media/load_imbalance}
+	\caption{Load imbalance: The elements have split unequally in the two worker GPUs, one having a higher computational load}
+	\label{fig:load-imbalance}
+\end{figure}
 
 \section{Error Estimation} \label{section:adaptive_mesh_refinement:error_estimation}
 
