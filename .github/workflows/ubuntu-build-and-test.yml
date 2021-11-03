@@ -21,7 +21,7 @@ jobs:
       - name: Creating dependencies directory (Ubuntu)
         shell: bash
         run: mkdir packages
-      -name: Finding mpi (Ubuntu)
+      - name: Finding mpi (Ubuntu)
         shell: bash
         run: find / -name mpiexec
 
