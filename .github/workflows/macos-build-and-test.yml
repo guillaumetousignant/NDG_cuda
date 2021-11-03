@@ -6,9 +6,12 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Installing dependencies (macOS)
-        run: brew install libomp freeglut
+        run: brew install ninja
       - name: Checkout
         uses: actions/checkout@v2
+      - name: Creating dependencies directory (Ubuntu)
+        run: mkdir packages
+
       - name: Creating build directory (macOS)
         run: mkdir build
       - name: Running CMake (macOS)
