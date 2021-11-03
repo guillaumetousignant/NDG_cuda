@@ -55,7 +55,7 @@ jobs:
       - name: Creating build directory (Ubuntu)
         run: mkdir build
       - name: Running CMake (Ubuntu)
-        run: cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
+        run: cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON -DCMAKE_CUDA_COMPILER="/usr/local/cuda-11.3/bin/nvcc"
         working-directory: ${{ github.workspace }}/build
       - name: Build (Ubuntu)
         run: cmake --build .
