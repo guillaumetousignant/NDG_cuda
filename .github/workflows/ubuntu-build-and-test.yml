@@ -48,7 +48,7 @@ jobs:
         run: sudo apt-get -y install cuda-11-3
       - name: Searching cuda (Ubuntu)
         shell: bash
-        run: which nvcc
+        run: find / -name nvcc 
 
         
 
