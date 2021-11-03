@@ -14,10 +14,8 @@ jobs:
             cuda: "11.3"
             gcc: 10
     steps:
-      - name: Searching dependencies (Ubuntu)
-        run: apt search openmpi
       - name: Installing dependencies (Ubuntu)
-        run: sudo apt install openmpi-devel ninja-build
+        run: sudo apt install openmpi-bin openmpi-common libopenmpi-dev ninja-build
       - name: Checkout
         uses: actions/checkout@v2
       - name: Creating dependencies directory (Ubuntu)
