@@ -3,12 +3,52 @@ on: [push]
 jobs:
   Ubuntu:
     name: build-ubuntu
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      # explicit include-based build matrix, of known valid options
+      matrix:
+        include:
+          # 20.04 supports CUDA 11.0+
+          - os: ubuntu-20.04
+            cuda: "11.3"
+            gcc: 10
     steps:
       - name: Installing dependencies (Ubuntu)
-        run: sudo apt install freeglut3-dev
+        run: sudo apt install openmpi openmpi-dev ninja
       - name: Checkout
         uses: actions/checkout@v2
+      - name: Creating dependencies directory (Ubuntu)
+        shell: bash
+        run: mkdir packages
+
+      - name: Creating cuda directory (Ubuntu)
+        shell: bash
+        run: mkdir cuda
+        working-directory: ${{ github.workspace }}/packages
+      - name: Downloading cuda pin (Ubuntu)
+        shell: bash
+        run: wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-ubuntu2004.pin
+        working-directory: ${{ github.workspace }}/packages/cuda
+      - name: Moving cuda pin (Ubuntu)
+        shell: bash
+        run: sudo mv cuda-ubuntu2004.pin /etc/apt/preferences.d/cuda-repository-pin-600
+        working-directory: ${{ github.workspace }}/packages/cuda
+      - name: Adding cuda key (Ubuntu)
+        shell: bash
+        run: sudo apt-key adv --fetch-keys "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/7fa2af80.pub"
+      - name: Adding cuda repository (Ubuntu)
+        shell: bash
+        run: sudo add-apt-repository https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-11-3_11.3.1-1_amd64.deb
+      - name: Apt update (Ubuntu)
+        shell: bash
+        run: sudo apt update
+      - name: Installing cuda (Ubuntu)
+        shell: bash
+        run: sudo apt install cuda
+
+        
+
       - name: Creating build directory (Ubuntu)
         run: mkdir build
       - name: Running CMake (Ubuntu)
