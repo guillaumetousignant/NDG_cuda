@@ -179,13 +179,17 @@ jobs:
         working-directory: ${{ github.workspace }}/packages/vtk/build
 
       - name: Creating build directory (Windows)
+        shell: powershell
         run: mkdir build
       - name: Running CMake (Windows)
+        shell: powershell
         run: cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CUDA_ARCHITECTURES=60 -DBUILD_TESTING=ON -DBUILD_EXTRAS=ON -DBUILD_GPU=ON -DBUILD_CPU=ON -DBUILD_DOC=ON -DHDF5_DIR="${{ github.workspace }}/packages/hdf5/install/share/cmake/hdf5" -DCGNS_DIR="${{ github.workspace }}/packages/cgns/install/lib/cmake/CGNS" -DVTK_DIR="${{ github.workspace }}/packages/vtk/install/lib/cmake/vtk-9.0"
         working-directory: ${{ github.workspace }}/build
       - name: Build (Windows)
+        shell: powershell
         run: cmake --build .
         working-directory: ${{ github.workspace }}/build
       - name: Tests (Windows)
+        shell: powershell
         run: ctest
         working-directory: ${{ github.workspace }}/build
