@@ -22,10 +22,6 @@ jobs:
       - name: Ninja setup
         shell: powershell
         run: choco install ninja
-      - name: Set up Visual Studio shell
-        uses: egor-tensin/vs-shell@v2
-        with:
-          arch: x64
 
       - name: Creating cuda directory (Windows)
         shell: powershell
@@ -60,6 +56,11 @@ jobs:
         shell: powershell
         run: Start-Process -Wait -FilePath .\msmpisdk.msi -ArgumentList "/qn"
         working-directory: ${{ github.workspace }}/packages/mpi
+
+      - name: Set up Visual Studio shell
+        uses: egor-tensin/vs-shell@v2
+        with:
+          arch: x64
 
       - name: Creating hdf5 directory (Windows)
         shell: powershell
