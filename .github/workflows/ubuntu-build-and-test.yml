@@ -45,10 +45,10 @@ jobs:
         run: sudo apt-get update
       - name: Installing cuda (Ubuntu)
         shell: bash
-        run: sudo apt-get -y install cuda
+        run: sudo apt-get -y install cuda-11-3
       - name: Searching cuda (Ubuntu)
         shell: bash
-        run: apt search cuda
+        run: which nvcc
 
         
 
