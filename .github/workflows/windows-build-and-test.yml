@@ -83,7 +83,7 @@ jobs:
         working-directory: ${{ github.workspace }}/packages/hdf5
       - name: Configuring hdf5 (Windows)
         shell: powershell
-        run: cmake ../HDF5/CMake-hdf5-1.12.1/hdf5-1.12.1 -GNinja -DBUILD_SHARED_LIBS=OFF -DBUILD_STATIC_EXECS=ON -DBUILD_STATIC_LIBS=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/packages/hdf5/install" -DHDF5_BUILD_FORTRAN:BOOL=OFF -DHDF5_BUILD_JAVA:BOOL=OFF -DHDF5_ALLOW_EXTERNAL_SUPPORT:STRING=TGZ -DTGZPATH:PATH=${{ github.workspace }}/packages/hdf5/HDF5/CMake-hdf5-1.12.1 -DHDF5_ENABLE_Z_LIB_SUPPORT:BOOL=OFF -DHDF5_ENABLE_SZIP_SUPPORT:BOOL=OFF -DHDF5_ENABLE_SZIP_ENCODING:BOOL=OFF -DHDF5_ENABLE_PARALLEL:BOOL=ON -DHDF5_BUILD_CPP_LIB:BOOL=OFF -DHDF5_BUILD_JAVA:BOOL=OFF -DHDF5_ENABLE_THREADSAFE:BOOL=OFF -DHDF5_PACKAGE_EXTLIBS:BOOL=ON -DHDF5_BUILD_EXAMPLES=OFF -DMPI_HOME="C:/Program Files (x86)/Microsoft SDKs/MPI" -DMPIEXEC_EXECUTABLE="C:/Program Files/Microsoft MPI/Bin/mpiexec.exe" -DMPI_C_HEADER_DIR="C:/Program Files (x86)/Microsoft SDKs/MPI/Include"
+        run: cmake ../HDF5/CMake-hdf5-1.12.1/hdf5-1.12.1 -GNinja -DBUILD_SHARED_LIBS=OFF -DBUILD_STATIC_EXECS=ON -DBUILD_STATIC_LIBS=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/packages/hdf5/install" -DHDF5_BUILD_FORTRAN:BOOL=OFF -DHDF5_BUILD_JAVA:BOOL=OFF -DHDF5_ALLOW_EXTERNAL_SUPPORT:STRING=TGZ -DTGZPATH:PATH=${{ github.workspace }}/packages/hdf5/HDF5/CMake-hdf5-1.12.1 -DHDF5_ENABLE_Z_LIB_SUPPORT:BOOL=OFF -DHDF5_ENABLE_SZIP_SUPPORT:BOOL=OFF -DHDF5_ENABLE_SZIP_ENCODING:BOOL=OFF -DHDF5_ENABLE_PARALLEL:BOOL=ON -DHDF5_BUILD_CPP_LIB:BOOL=OFF -DHDF5_BUILD_JAVA:BOOL=OFF -DHDF5_ENABLE_THREADSAFE:BOOL=OFF -DHDF5_PACKAGE_EXTLIBS:BOOL=ON -DHDF5_BUILD_EXAMPLES=OFF 
         working-directory: ${{ github.workspace }}/packages/hdf5/build
         env: 
           I_MPI_ROOT: "C:/Program Files (x86)/Microsoft SDKs/MPI"
@@ -124,6 +124,12 @@ jobs:
         shell: powershell
         run: cmake ../CGNS -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/packages/cgns/install" -DCGNS_BUILD_CGNS_TOOLS=OFF -DCGNS_BUILD_SHARED=OFF -DCGNS_BUILD_TESTING=OFF -DCGNS_ENABLE_64BITS=ON -DCMAKE_PREFIX_PATH:PATH="${{ github.workspace }}/packages/hdf5/install/share/cmake/hdf5" -DCGNS_ENABLE_FORTRAN:BOOL=OFF -DCMAKE_STATIC_LINKER_FLAGS:STRING="/NODEFAULTLIB:library" -DCMAKE_EXE_LINKER_FLAGS:STRING="/NODEFAULTLIB:library" -DCGNS_USE_SHARED:BOOL=OFF -DCGNS_ENABLE_LEGACY=OFF -DCGNS_ENABLE_TESTS:BOOL=OFF -DCGNS_ENABLE_HDF5:BOOL=ON -DCGNS_ENABLE_PARALLEL:BOOL=ON -DHDF5_BUILD_SHARED_LIBS:BOOL=OFF -DHDF5_NEED_MPI:BOOL=ON -DHDF5_NEED_ZLIB:BOOL=OFF -DHDF5_NEED_SZIP:BOOL=OFF
         working-directory: ${{ github.workspace }}/packages/cgns/build
+        env: 
+          I_MPI_ROOT: "C:/Program Files (x86)/Microsoft SDKs/MPI"
+          MSMPI_BENCHMARKS: "C:/Program Files/Microsoft MPI/Benchmarks"
+          MSMPI_BIN: "C:/Program Files/Microsoft MPI/Bin"
+          MSMPI_INC: "C:/Program Files (x86)/Microsoft SDKs/MPI/Include"
+          MSMPI_LIB64: "C:/Program Files (x86)/Microsoft SDKs/MPI/Lib/x64"
       - name: Building cgns (Windows)
         shell: powershell
         run: cmake --build .
