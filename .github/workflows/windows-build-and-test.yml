@@ -181,7 +181,7 @@ jobs:
       - name: Creating build directory (Windows)
         run: mkdir build
       - name: Running CMake (Windows)
-        run: cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CUDA_ARCHITECTURES=60 -DBUILD_TESTING=ON -DBUILD_EXTRAS=ON -DBUILD_GPU=ON -DBUILD_CPU=ON -DBUILD_DOC=ON -DHDF5_DIR="${{ github.workspace }}/packages/hdf5/install/HDF_Group/HDF5/1.12.1/cmake/hdf5" -DCGNS_DIR="${{ github.workspace }}/packages/cgns/install/lib/cmake/CGNS" -DVTK_DIR="${{ github.workspace }}/packages/vtk/install/lib/cmake/vtk-9.0"
+        run: cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CUDA_ARCHITECTURES=60 -DBUILD_TESTING=ON -DBUILD_EXTRAS=ON -DBUILD_GPU=ON -DBUILD_CPU=ON -DBUILD_DOC=ON -DHDF5_DIR="${{ github.workspace }}/packages/hdf5/install/share/cmake/hdf5" -DCGNS_DIR="${{ github.workspace }}/packages/cgns/install/lib/cmake/CGNS" -DVTK_DIR="${{ github.workspace }}/packages/vtk/install/lib/cmake/vtk-9.0"
         working-directory: ${{ github.workspace }}/build
       - name: Build (Windows)
         run: cmake --build .
