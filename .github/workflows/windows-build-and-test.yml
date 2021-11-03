@@ -87,6 +87,10 @@ jobs:
         working-directory: ${{ github.workspace }}/packages/hdf5/build
         env: 
           I_MPI_ROOT: "C:/Program Files (x86)/Microsoft SDKs/MPI"
+          MSMPI_BENCHMARKS: "C:/Program Files/Microsoft MPI/Benchmarks"
+          MSMPI_BIN: "C:/Program Files/Microsoft MPI/Bin"
+          MSMPI_INC: "C:/Program Files (x86)/Microsoft SDKs/MPI/Include"
+          MSMPI_LIB64: "C:/Program Files (x86)/Microsoft SDKs/MPI/Lib/x64"
       - name: Building hdf5 (Windows)
         shell: powershell
         run: cmake --build .
