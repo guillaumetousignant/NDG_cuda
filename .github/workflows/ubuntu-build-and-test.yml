@@ -15,7 +15,7 @@ jobs:
             gcc: 10
     steps:
       - name: Installing dependencies (Ubuntu)
-        run: sudo apt install openmpi-bin openmpi-common libopenmpi-dev ninja-build
+        run: sudo apt-get -y install openmpi-bin openmpi-common libopenmpi-dev ninja-build
       - name: Checkout
         uses: actions/checkout@v2
       - name: Creating dependencies directory (Ubuntu)
@@ -36,16 +36,16 @@ jobs:
         working-directory: ${{ github.workspace }}/packages/cuda
       - name: Adding cuda key (Ubuntu)
         shell: bash
-        run: sudo apt-key adv --fetch-keys "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/7fa2af80.pub"
+        run: sudo apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/7fa2af80.pub
       - name: Adding cuda repository (Ubuntu)
         shell: bash
-        run: sudo add-apt-repository https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-11-3_11.3.1-1_amd64.deb
+        run: sudo add-apt-repository "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/ /"
       - name: Apt update (Ubuntu)
         shell: bash
-        run: sudo apt update
+        run: sudo apt-get update
       - name: Installing cuda (Ubuntu)
         shell: bash
-        run: sudo apt install cuda
+        run: sudo apt-get -y install cuda
 
         
 
