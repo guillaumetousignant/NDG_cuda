@@ -60,6 +60,12 @@ jobs:
         shell: powershell
         run: Start-Process -Wait -FilePath .\msmpisdk.msi -ArgumentList "/qn"
         working-directory: ${{ github.workspace }}/packages/mpi
+      - name: Adding mpi to path
+        shell: powershell
+        run: echo "C:\Program Files\Microsoft MPI\Bin" >> $GITHUB_PATH
+      - name: What is path (Windows)
+        shell: powershell
+        run: echo $env:path
 
       - name: Creating hdf5 directory (Windows)
         shell: powershell
