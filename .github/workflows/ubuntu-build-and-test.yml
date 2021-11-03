@@ -48,7 +48,7 @@ jobs:
         run: sudo apt-get -y install cuda
       - name: Searching cuda (Ubuntu)
         shell: bash
-        run: sudo apt-get search cuda
+        run: apt search cuda
 
         
 
