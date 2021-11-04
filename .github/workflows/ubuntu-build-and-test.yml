@@ -15,7 +15,7 @@ jobs:
             gcc: 10
     steps:
       - name: Installing dependencies (Ubuntu)
-        run: sudo apt-get -y install openmpi-bin openmpi-common libopenmpi-dev ninja-build
+        run: sudo apt-get -y install openmpi-bin openmpi-common libopenmpi-dev ninja-build doxygen
       - name: Checkout
         uses: actions/checkout@v2
       - name: Creating dependencies directory (Ubuntu)
