@@ -23,7 +23,7 @@ jobs:
         run: mkdir packages
       - name: Finding mpi (Ubuntu)
         shell: bash
-        run: sudo find / -name mpi.h
+        run: sudo find / -name libmpi.so
 
       - name: Creating cuda directory (Ubuntu)
         shell: bash
