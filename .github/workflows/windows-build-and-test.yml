@@ -33,7 +33,7 @@ jobs:
         working-directory: ${{ github.workspace }}/packages/cuda
       - name: Installing cuda (Windows)
         shell: powershell
-        run: Start-Process -Wait -FilePath .\cuda_11_3_0_win10_network.exe -ArgumentList "-s nvcc_11.3.0 cudart_11.3.0 visual_studio_integration_11.3.0"
+        run: Start-Process -Wait -FilePath .\cuda_11_3_0_win10_network.exe -ArgumentList "-s nvcc_11.3 cudart_11.3 visual_studio_integration_11.3"
         working-directory: ${{ github.workspace }}/packages/cuda
       - name: Listing cuda (Windows)
         shell: powershell
