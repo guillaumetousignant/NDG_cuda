@@ -35,6 +35,10 @@ jobs:
         shell: powershell
         run: Start-Process -Wait -FilePath .\cuda_11_3_0_win10_network.exe -ArgumentList "-s nvcc_11.3.0 cudart_11.3.0 visual_studio_integration_11.3.0"
         working-directory: ${{ github.workspace }}/packages/cuda
+      - name: Listing cuda (Windows)
+        shell: powershell
+        run: ls "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.3"
+        working-directory: ${{ github.workspace }}/packages/cuda
       - name: Listing cuda integrations (Windows)
         shell: powershell
         run: ls "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.3/extras/visual_studio_integration/MSBuildExtensions"
