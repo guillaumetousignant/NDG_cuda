@@ -81,15 +81,7 @@ jobs:
         working-directory: ${{ github.workspace }}/packages/hdf5/build
       - name: what is happening please
         shell: bash
-        run: ls CMakeFiles
-        working-directory: ${{ github.workspace }}/packages/hdf5/build
-      - name: what is happening please
-        shell: bash
-        run: cat pac_Cconftest.out
-        working-directory: ${{ github.workspace }}/packages/hdf5/build
-      - name: what is happening please
-        shell: bash
-        run: cat CMakeError.log
+        run: cat CMakeFiles/CMakeError.log
         working-directory: ${{ github.workspace }}/packages/hdf5/build
       - name: Building hdf5 (Ubuntu)
         shell: bash
