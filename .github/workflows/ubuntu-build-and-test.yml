@@ -21,9 +21,6 @@ jobs:
       - name: Creating dependencies directory (Ubuntu)
         shell: bash
         run: mkdir packages
-      - name: ldconfig (Ubuntu)
-        shell: bash
-        run: sudo ldconfig
 
       - name: Creating cuda directory (Ubuntu)
         shell: bash
@@ -156,7 +153,7 @@ jobs:
         run: mkdir build
       - name: Running CMake (Ubuntu)
         shell: bash
-        run: cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CUDA_ARCHITECTURES=60 -DBUILD_TESTING=ON -DBUILD_EXTRAS=ON -DBUILD_GPU=ON -DBUILD_CPU=ON -DBUILD_DOC=ON -DHDF5_DIR="${{ github.workspace }}/packages/hdf5/install/share/cmake/hdf5" -DCGNS_DIR="${{ github.workspace }}/packages/cgns/install/lib/cmake/CGNS" -DVTK_DIR="${{ github.workspace }}/packages/vtk/install/lib/cmake/vtk-9.0"
+        run: cmake .. -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++ -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CUDA_ARCHITECTURES=60 -DBUILD_TESTING=ON -DBUILD_EXTRAS=ON -DBUILD_GPU=ON -DBUILD_CPU=ON -DBUILD_DOC=ON -DHDF5_DIR="${{ github.workspace }}/packages/hdf5/install/share/cmake/hdf5" -DCGNS_DIR="${{ github.workspace }}/packages/cgns/install/lib/cmake/CGNS" -DVTK_DIR="${{ github.workspace }}/packages/vtk/install/lib/cmake/vtk-9.0"
         working-directory: ${{ github.workspace }}/build
       - name: Build (Ubuntu)
         shell: bash
