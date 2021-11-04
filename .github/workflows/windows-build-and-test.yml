@@ -37,12 +37,19 @@ jobs:
         working-directory: ${{ github.workspace }}/packages/cuda
       - name: Listing cuda (Windows)
         shell: powershell
+        run: ls "C:/Program Files"
+      - name: Listing cuda (Windows)
+        shell: powershell
+        run: ls "C:/Program Files/NVIDIA GPU Computing Toolkit"
+      - name: Listing cuda (Windows)
+        shell: powershell
+        run: ls "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA"
+      - name: Listing cuda (Windows)
+        shell: powershell
         run: ls "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.3"
-        working-directory: ${{ github.workspace }}/packages/cuda
       - name: Listing cuda integrations (Windows)
         shell: powershell
         run: ls "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.3/extras/visual_studio_integration/MSBuildExtensions"
-        working-directory: ${{ github.workspace }}/packages/cuda
 
       - name: Creating mpi directory (Windows)
         shell: powershell
