@@ -205,10 +205,15 @@ jobs:
         run: mkdir build
       - name: Running CMake (Windows)
         shell: powershell
-        run: cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CUDA_ARCHITECTURES=60 -DBUILD_TESTING=ON -DBUILD_EXTRAS=ON -DBUILD_GPU=ON -DBUILD_CPU=ON -DBUILD_DOC=ON -DHDF5_DIR="${{ github.workspace }}/packages/hdf5/install/share/cmake/hdf5" -DCGNS_DIR="${{ github.workspace }}/packages/cgns/install/lib/cmake/CGNS" -DVTK_DIR="${{ github.workspace }}/packages/vtk/install/lib/cmake/vtk-9.0" -DCUDA_TOOLKIT_ROOT_DIR="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.3" -DCUDA_NVCC_EXECUTABLE="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.3/bin/nvcc.exe" -DCMAKE_CUDA_COMPILER="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.3/bin/nvcc.exe"
+        run: cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CUDA_ARCHITECTURES=60 -DBUILD_TESTING=ON -DBUILD_EXTRAS=ON -DBUILD_GPU=ON -DBUILD_CPU=ON -DBUILD_DOC=ON -DHDF5_DIR="${{ github.workspace }}/packages/hdf5/install/share/cmake/hdf5" -DCGNS_DIR="${{ github.workspace }}/packages/cgns/install/lib/cmake/CGNS" -DVTK_DIR="${{ github.workspace }}/packages/vtk/install/lib/cmake/vtk-9.0" -DCUDA_TOOLKIT_ROOT_DIR="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.3"
         working-directory: ${{ github.workspace }}/build
         env:
           CUDA_PATH_V11_3: "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.3"
+          I_MPI_ROOT: "C:/Program Files (x86)/Microsoft SDKs/MPI"
+          MSMPI_BENCHMARKS: "C:/Program Files/Microsoft MPI/Benchmarks"
+          MSMPI_BIN: "C:/Program Files/Microsoft MPI/Bin"
+          MSMPI_INC: "C:/Program Files (x86)/Microsoft SDKs/MPI/Include"
+          MSMPI_LIB64: "C:/Program Files (x86)/Microsoft SDKs/MPI/Lib/x64"
       - name: Build (Windows)
         shell: powershell
         run: cmake --build .
