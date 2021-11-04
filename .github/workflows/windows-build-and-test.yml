@@ -92,25 +92,25 @@ jobs:
         working-directory: ${{ github.workspace }}/packages/doxygen
       - name: Creating doxygen install folder (Windows)
         shell: powershell
-        run: mkdir C:/Program Files/doxygen
+        run: mkdir "C:/Program Files/doxygen"
       - name: Creating doxygen install bin folder (Windows)
         shell: powershell
-        run: mkdir C:/Program Files/doxygen/bin
+        run: mkdir "C:/Program Files/doxygen/bin"
       - name: Installing doxygen (Windows)
         shell: powershell
-        run: cp ./doxygen.exe C:/Program Files/doxygen/bin/doxygen.exe
+        run: cp ./doxygen.exe "C:/Program Files/doxygen/bin/doxygen.exe"
         working-directory: ${{ github.workspace }}/packages/doxygen/Doxygen
       - name: Installing doxygen (Windows)
         shell: powershell
-        run: cp ./doxyindexer.exe C:/Program Files/doxygen/bin/doxyindexer.exe
+        run: cp ./doxyindexer.exe "C:/Program Files/doxygen/bin/doxyindexer.exe"
         working-directory: ${{ github.workspace }}/packages/doxygen/Doxygen
       - name: Installing doxygen (Windows)
         shell: powershell
-        run: cp ./doxysearch.cgi.exe C:/Program Files/doxygen/bin/doxysearch.cgi.exe
+        run: cp ./doxysearch.cgi.exe "C:/Program Files/doxygen/bin/doxysearch.cgi.exe"
         working-directory: ${{ github.workspace }}/packages/doxygen/Doxygen
       - name: Installing doxygen (Windows)
         shell: powershell
-        run: cp ./libclang.dll C:/Program Files/doxygen/bin/libclang.dll
+        run: cp ./libclang.dll "C:/Program Files/doxygen/bin/libclang.dll"
         working-directory: ${{ github.workspace }}/packages/doxygen/Doxygen
 
       - name: Set up Visual Studio shell
