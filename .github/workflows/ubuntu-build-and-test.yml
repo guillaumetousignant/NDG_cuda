@@ -23,7 +23,7 @@ jobs:
         run: mkdir packages
       - name: ls
         shell: bash
-        run: sudo ls /usr/lib/x86_64-linux-gnu/openmpi/lib/
+        run: sudo ls /usr/lib/x86_64-linux-gnu/openmpi/
 
       - name: Creating cuda directory (Ubuntu)
         shell: bash
