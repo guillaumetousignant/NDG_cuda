@@ -37,7 +37,13 @@ jobs:
         working-directory: ${{ github.workspace }}/packages/cuda
       - name: Listing cuda (Windows)
         shell: powershell
+        run: ls "C:/Program Files (x86)"
+      - name: Listing cuda (Windows)
+        shell: powershell
         run: ls "C:/Program Files"
+      - name: Listing cuda (Windows)
+        shell: powershell
+        run: ls "C:/Program Files/NVIDIA Corporation"
       - name: Listing cuda (Windows)
         shell: powershell
         run: ls "C:/Program Files/NVIDIA GPU Computing Toolkit"
