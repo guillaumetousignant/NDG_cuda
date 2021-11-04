@@ -24,6 +24,9 @@ jobs:
       - name: ls
         shell: bash
         run: sudo ls /usr/lib/x86_64-linux-gnu/openmpi/
+      - name: Updating library path (Ubuntu)
+        shell: bash
+        run: echo '::set-env name=LD_LIBRARY_PATH::/usr/lib/x86_64-linux-gnu/openmpi/lib'
 
       - name: Creating cuda directory (Ubuntu)
         shell: bash
