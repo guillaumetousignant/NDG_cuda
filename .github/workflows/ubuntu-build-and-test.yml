@@ -21,6 +21,9 @@ jobs:
       - name: Creating dependencies directory (Ubuntu)
         shell: bash
         run: mkdir packages
+      - name: ls
+        shell: bash
+        run: sudo ls /usr/lib/x86_64-linux-gnu/openmpi/lib/
 
       - name: Creating cuda directory (Ubuntu)
         shell: bash
