@@ -21,9 +21,9 @@ jobs:
       - name: Creating dependencies directory (Ubuntu)
         shell: bash
         run: mkdir packages
-      - name: Finding mpi (Ubuntu)
+      - name: ldconfig (Ubuntu)
         shell: bash
-        run: sudo find / -name libmpi.so
+        run: sudo ldconfig
 
       - name: Creating cuda directory (Ubuntu)
         shell: bash
