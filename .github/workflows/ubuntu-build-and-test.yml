@@ -77,6 +77,10 @@ jobs:
         continue-on-error: true
       - name: what is happening please
         shell: bash
+        run: ls
+        working-directory: ${{ github.workspace }}/packages/hdf5/build
+      - name: what is happening please
+        shell: bash
         run: cat CMakeError.log
         working-directory: ${{ github.workspace }}/packages/hdf5/build
       - name: Building hdf5 (Ubuntu)
