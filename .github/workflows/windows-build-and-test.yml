@@ -78,6 +78,41 @@ jobs:
         run: Start-Process -Wait -FilePath .\msmpisdk.msi -ArgumentList "/qn"
         working-directory: ${{ github.workspace }}/packages/mpi
 
+      - name: Creating doxygen directory (Windows)
+        shell: powershell
+        run: mkdir doxygen
+        working-directory: ${{ github.workspace }}/packages
+      - name: Downloading doxygen (Windows)
+        shell: powershell
+        run: Invoke-WebRequest "https://www.doxygen.nl/files/doxygen-1.9.2.windows.x64.bin.zip" -OutFile "doxygen.zip"
+        working-directory: ${{ github.workspace }}/packages/doxygen
+      - name: Unzipping doxygen (Windows)
+        shell: powershell
+        run: Expand-Archive -Path doxygen.zip -DestinationPath Doxygen
+        working-directory: ${{ github.workspace }}/packages/doxygen
+      - name: Creating doxygen install folder (Windows)
+        shell: powershell
+        run: mkdir C:/Program Files/doxygen
+      - name: Creating doxygen install bin folder (Windows)
+        shell: powershell
+        run: mkdir C:/Program Files/doxygen/bin
+      - name: Installing doxygen (Windows)
+        shell: powershell
+        run: cp ./doxygen.exe C:/Program Files/doxygen/bin/doxygen.exe
+        working-directory: ${{ github.workspace }}/packages/doxygen/Doxygen
+      - name: Installing doxygen (Windows)
+        shell: powershell
+        run: cp ./doxyindexer.exe C:/Program Files/doxygen/bin/doxyindexer.exe
+        working-directory: ${{ github.workspace }}/packages/doxygen/Doxygen
+      - name: Installing doxygen (Windows)
+        shell: powershell
+        run: cp ./doxysearch.cgi.exe C:/Program Files/doxygen/bin/doxysearch.cgi.exe
+        working-directory: ${{ github.workspace }}/packages/doxygen/Doxygen
+      - name: Installing doxygen (Windows)
+        shell: powershell
+        run: cp ./libclang.dll C:/Program Files/doxygen/bin/libclang.dll
+        working-directory: ${{ github.workspace }}/packages/doxygen/Doxygen
+
       - name: Set up Visual Studio shell
         uses: egor-tensin/vs-shell@v2
         with:
@@ -205,7 +240,7 @@ jobs:
         run: mkdir build
       - name: Running CMake (Windows)
         shell: powershell
-        run: cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CUDA_ARCHITECTURES=60 -DBUILD_TESTING=ON -DBUILD_EXTRAS=ON -DBUILD_GPU=ON -DBUILD_CPU=ON -DBUILD_DOC=OFF -DHDF5_DIR="${{ github.workspace }}/packages/hdf5/install/share/cmake/hdf5" -DCGNS_DIR="${{ github.workspace }}/packages/cgns/install" -DVTK_DIR="${{ github.workspace }}/packages/vtk/install/lib/cmake/vtk-9.0" -DCUDA_TOOLKIT_ROOT_DIR="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.3"
+        run: cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CUDA_ARCHITECTURES=60 -DBUILD_TESTING=ON -DBUILD_EXTRAS=ON -DBUILD_GPU=ON -DBUILD_CPU=ON -DBUILD_DOC=ON -DHDF5_DIR="${{ github.workspace }}/packages/hdf5/install/share/cmake/hdf5" -DCGNS_DIR="${{ github.workspace }}/packages/cgns/install" -DVTK_DIR="${{ github.workspace }}/packages/vtk/install/lib/cmake/vtk-9.0" -DCUDA_TOOLKIT_ROOT_DIR="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.3"
         working-directory: ${{ github.workspace }}/build
         env:
           CUDA_PATH_V11_3: "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.3"
