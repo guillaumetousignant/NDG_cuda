@@ -5,10 +5,10 @@
 % Mortar here
 
 Computers constantly increase in power, thanks to incremental progress made on known processes and
-new architectures such as that described in chapter~\ref{chapter:graphics_processing_units}.
+new architectures such as that described in Chapter~\ref{chapter:graphics_processing_units}.
 However, processing power and memory is still limited and the size of problems studied has
-increased in step with the available ressources. It is still necessary to carefully manage those
-limited ressources in order to maximise the efficiency of simulations. Some flow regions may be more
+increased in step with the available resources. It is still necessary to carefully manage those
+limited resources in order to maximise the efficiency of simulations. Some flow regions may be more
 interesting or harder to compute, benefiting from an increase in resolution. On the other hand, some
 flow regions may have less happening in them or be easier to compute, and a decrease in resolution
 may be acceptable.
@@ -32,7 +32,7 @@ be higher in unforeseen areas that are not apparent.
 Adaptive mesh refinement is the process of mesh resolution as the computation goes, where the effect
 of that increase in resolution is most needed. To find out where to refine, the solution error must
 be estimated, and a refinement method must be chosen. The error can be estimated by extrapolating
-the value of the next mode, and the slope of the last few nodes can guide the choice of the
+the value of the next mode, and the slope of the last few modes can guide the choice of the
 refinement method. The two refinement methods studied here are h-refinement and p-refinement,
 increasing the number of elements and the polynomial order, respectively. 
 
@@ -56,7 +56,7 @@ lead to a load imbalance between the different GPUs. As the different GPUs need 
 each timestep, lightly-loaded GPUs will always be waiting after heavily-loaded GPUs. The computation
 time will therefore be driven by the most heavily-loaded GPU, and the speedup incurred by
 parallelizing the program will be reduced. To improve this side effect of mesh refinement, a dynamic
-load balancing algorithm will be implemented in chapter~\ref{chapter:load_balancing}.
+load balancing algorithm will be implemented in Chapter~\ref{chapter:load_balancing}.
 
 \section{Strategies} \label{section:adaptive_mesh_refinement:adaptivity_strategies}
 
@@ -65,14 +65,14 @@ load balancing algorithm will be implemented in chapter~\ref{chapter:load_balanc
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_adaptive_mesh_refinement/media/p-adaptivity_N4_N6}
-	\caption{2D p-adaptivity: The element's polynomial order is increased from 4 to 6}
+	\caption{2D p-adaptivity: The element's polynomial order is increased from 4 to 6, with 5 to 7 collocation points}
 	\label{fig:p-adaptivity}
 \end{figure}
 
 The first refinement strategy is p-adaptivity. When refining this way, elements increase their
 polynomial order to increase their resolution. The lower-order solution is projected to the
 higher-order collocation points. In this work, the polynomial order in increased in steps of 2, and
-the polynomial order stays the same in the x and y directions. 
+is required to be identical in the x and y directions. 
 
 \subsection{h-adaptivity} \label{section:adaptive_mesh_refinement:adaptivity_strategies:h-adaptivity}
 
@@ -93,7 +93,7 @@ element to each of the 4 offspring elements.
 In order to maximise computation efficiency, both p-adaptivity and h-adaptivity are used together.
 An hp-adaptive program uses either p-adaptivity or h-adaptivity on an element-by-element basis,
 depending on which is expected to reduce error the most. The choice between the two methods is
-detailed in section~\ref{section:adaptive_mesh_refinement:refinement_criteria}.
+detailed in Section~\ref{section:adaptive_mesh_refinement:refinement_criteria}.
 
 \begin{figure}[H]
 	\centering
@@ -103,18 +103,20 @@ detailed in section~\ref{section:adaptive_mesh_refinement:refinement_criteria}.
 \end{figure}
 
 Once the mesh has been refined, it is possible that the interfaces between elements become
-non-conforming. Recall from chapter~\ref{chapter:spectral_element_method} that fluxes are computed
-between the elements from the extrapolated values of the solution on collocation points matching the
-polynomial order of the elements. These would be the tips of the thin black lines in the figure
+non-conforming. Each interface is made up of two element edges, in bold black, and a face, in blue.
+Recall from Chapter~\ref{chapter:spectral_element_method} that fluxes are computed between the
+elements from the extrapolated values of the solution on collocation points corresponding to the
+polynomial order of the elements. These would be sitting on the bold black lines in the figure
 above. This works directly if two neighbouring elements have the same polynomial order and they
-completely share an edge. However, after p-adaptivity interfaces can become functionally
-non-conforming, as seen with the rightmost blue line in the figure above. The nodes won't match
+completely share an edge. However, after p-adaptivity, interfaces can become functionally
+non-conforming, as seen with the horizontal blue line in the figure above. The nodes won't match
 anymore since one element has more points than the other. After h-adapting, interfaces can become
 geometrically non-conforming, as seen with the topmost blue line in the figure above. The nodes do
-not match because one edge is shorter than the other. Finally, interfaces can be both geometrically
-and functionally non-conforming, as seen with the bottom blue line in the figure above. We will have
-to find a way to connect those elements in a way that retains the spectral convergence of the
-method.
+not match because one element edge is shorter than the other. Finally, interfaces can be both
+geometrically and functionally non-conforming, as seen with the bottom blue line in the figure
+above. We will have to find a way to connect those elements in a way that retains the spectral
+convergence of the method. Such a method is described in
+Section~\ref{section:adaptive_mesh_refinement:mortar_element_method}.
 
 \begin{figure}[H]
 	\centering
@@ -131,6 +133,6 @@ method.
 
 \section{Implementation} \label{section:adaptive_mesh_refinement:implementation}
 
-As detailed in chapter~\ref{chapter:graphics_processing_units}, the grid is stored on the GPU as a
+As detailed in Chapter~\ref{chapter:graphics_processing_units}, the grid is stored on the GPU as a
 flat array of elements, each element having pointers to its solution arrays, stored in GPU dynamic
 memory. This ensures the elements have a fixed size regardless of their polynomial order.
