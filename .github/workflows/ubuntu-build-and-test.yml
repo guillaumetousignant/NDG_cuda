@@ -25,6 +25,9 @@ jobs:
         shell: bash
         run: cmake --version
 
+      - name: search (Ubuntu)
+        shell: bash
+        run: sudo apt search openmpi
       - name: ls (Ubuntu)
         shell: bash
         run: sudo ls /usr/lib/x86_64-linux-gnu/openmpi
