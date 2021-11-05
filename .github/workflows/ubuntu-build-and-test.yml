@@ -21,6 +21,9 @@ jobs:
       - name: Creating dependencies directory (Ubuntu)
         shell: bash
         run: mkdir packages
+      - name: Cmake version (Ubuntu)
+        shell: bash
+        run: cmake --version
 
       - name: ls (Ubuntu)
         shell: bash
