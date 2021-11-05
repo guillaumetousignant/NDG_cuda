@@ -143,16 +143,21 @@ interfaces as possible between the GPUs. Interfaces need to be minimised because
 communicate every timestep when computing fluxes on these interfaces. This involves transfers from
 from the GPUs to their CPU, between CPUs, and finally back from the CPUs to their GPU for both
 directions. This is an expensive process, and improving locality of the elements will help reduce
-the runtime of that part of the computation. Chapter~\ref{chapter:load_balancing} is dedicated to
-solving this problem.
+the runtime of that part of the computation. This is dynamic load balancing, and
+Chapter~\ref{chapter:load_balancing} is dedicated to solving this problem.
 
 \section{Error Estimation} \label{section:adaptive_mesh_refinement:error_estimation}
 
+We can't simply refine everywhere in the domain at every occasion, else this is no better than
+having a finer mesh to start with. The mesh must only be refined
 
+\cite{Mavriplis1990}
 
 \section{Refinement Criteria} \label{section:adaptive_mesh_refinement:refinement_criteria}
 
 \section{Mortar Element Method} \label{section:adaptive_mesh_refinement:mortar_element_method}
+
+\cite{Maday1989}
 
 \section{Implementation} \label{section:adaptive_mesh_refinement:implementation}
 
