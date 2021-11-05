@@ -21,7 +21,7 @@ jobs:
         run: mkdir packages
       - name: Ninja setup
         shell: powershell
-        run: choco install ninja
+        run: choco install ninja graphviz doxygen.install
 
       - name: Creating cuda directory (Windows)
         shell: powershell
@@ -77,44 +77,6 @@ jobs:
         shell: powershell
         run: Start-Process -Wait -FilePath .\msmpisdk.msi -ArgumentList "/qn"
         working-directory: ${{ github.workspace }}/packages/mpi
-
-      - name: Creating doxygen directory (Windows)
-        shell: powershell
-        run: mkdir doxygen
-        working-directory: ${{ github.workspace }}/packages
-      - name: Downloading doxygen (Windows)
-        shell: powershell
-        run: Invoke-WebRequest "https://www.doxygen.nl/files/doxygen-1.9.2.windows.x64.bin.zip" -OutFile "doxygen.zip"
-        working-directory: ${{ github.workspace }}/packages/doxygen
-      - name: Unzipping doxygen (Windows)
-        shell: powershell
-        run: Expand-Archive -Path doxygen.zip -DestinationPath Doxygen
-        working-directory: ${{ github.workspace }}/packages/doxygen
-      - name: Creating doxygen install folder (Windows)
-        shell: powershell
-        run: mkdir "C:/Program Files/doxygen"
-      - name: Creating doxygen install bin folder (Windows)
-        shell: powershell
-        run: mkdir "C:/Program Files/doxygen/bin"
-      - name: Installing doxygen (Windows)
-        shell: powershell
-        run: cp ./doxygen.exe "C:/Program Files/doxygen/bin/doxygen.exe"
-        working-directory: ${{ github.workspace }}/packages/doxygen/Doxygen
-      - name: Installing doxygen (Windows)
-        shell: powershell
-        run: cp ./doxyindexer.exe "C:/Program Files/doxygen/bin/doxyindexer.exe"
-        working-directory: ${{ github.workspace }}/packages/doxygen/Doxygen
-      - name: Installing doxygen (Windows)
-        shell: powershell
-        run: cp ./doxysearch.cgi.exe "C:/Program Files/doxygen/bin/doxysearch.cgi.exe"
-        working-directory: ${{ github.workspace }}/packages/doxygen/Doxygen
-      - name: Installing doxygen (Windows)
-        shell: powershell
-        run: cp ./libclang.dll "C:/Program Files/doxygen/bin/libclang.dll"
-        working-directory: ${{ github.workspace }}/packages/doxygen/Doxygen
-      - name: Adding doxygen to path (Windows)
-        shell: powershell
-        run: echo "C:/Program Files/doxygen/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Set up Visual Studio shell
         uses: egor-tensin/vs-shell@v2
