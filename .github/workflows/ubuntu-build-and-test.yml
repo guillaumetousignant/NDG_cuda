@@ -98,6 +98,10 @@ jobs:
         shell: bash
         run: cat CMakeFiles/CMakeError.log
         working-directory: ${{ github.workspace }}/packages/hdf5/build
+      - name: what is happening please
+        shell: bash
+        run: cat /usr/local/share/cmake-3.21/Modules/FindMPI.cmake
+        working-directory: ${{ github.workspace }}/packages/hdf5/build
       - name: Building hdf5 (Ubuntu)
         shell: bash
         run: cmake --build .
