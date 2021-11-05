@@ -27,7 +27,7 @@ jobs:
 
       - name: ls (Ubuntu)
         shell: bash
-        run: sudo ls /usr/lib/x86_64-linux-gnu
+        run: sudo ls /usr/lib/x86_64-linux-gnu/openmpi/lib
       - name: Can ld find mpi (Ubuntu)
         shell: bash
         run: LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/lib/x86_64-linux-gnu/openmpi/lib/ ld -lmpi --verbose
