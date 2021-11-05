@@ -15,9 +15,13 @@ may be acceptable.
 
 \begin{figure}[H]
 	\centering
-	\includegraphics[width=0.4\textwidth]{Chapter_adaptive_mesh_refinement/media/mesh_refinement}
-	\caption{Adaptive mesh refinement: The elements have split near the wave, where the solution is steeper}
-	\label{fig:mesh-refinement}
+	\subfloat[Mesh before refining]
+	{\includegraphics[width=0.45\textwidth]{Chapter_adaptive_mesh_refinement/media/mesh_initial} \label{fig:mesh_initial}}
+	\hfill
+	\subfloat[Mesh after refining]
+	{\includegraphics[width=0.45\textwidth]{Chapter_adaptive_mesh_refinement/media/mesh_refinement} \label{fig:mesh_after_refinement}}
+	\caption{Adaptive mesh refinement: The elements have split near the wave, where the solution is steeper. (a) Before refining (b) After refining}.
+	\label{fig:mesh_refinement}
 \end{figure}
 
 It is possible to increase the number of elements and/or the polynomial order of an entire mesh
@@ -120,9 +124,13 @@ Section~\ref{section:adaptive_mesh_refinement:mortar_element_method}.
 
 \begin{figure}[H]
 	\centering
-	\includegraphics[width=0.4\textwidth]{Chapter_adaptive_mesh_refinement/media/load_imbalance}
-	\caption{Load imbalance: The elements have split unequally in the two worker GPUs, one having a higher computational load}
-	\label{fig:load-imbalance}
+	\subfloat[Mesh before refining]
+	{\includegraphics[width=0.45\textwidth]{Chapter_adaptive_mesh_refinement/media/load_imbalance_initial} \label{fig:mesh_imbalance_initial}}
+	\hfill
+	\subfloat[Mesh after refining]
+	{\includegraphics[width=0.45\textwidth]{Chapter_adaptive_mesh_refinement/media/load_imbalance} \label{fig:mesh_imbalance_after_refinement}}
+	\caption{Load imbalance: The elements have split unequally in the two worker GPUs, one having a higher computational load. (a) Before refining (b) After refining}.
+	\label{fig:load_imbalance}
 \end{figure}
 
 \section{Error Estimation} \label{section:adaptive_mesh_refinement:error_estimation}
