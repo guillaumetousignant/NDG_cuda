@@ -112,6 +112,9 @@ jobs:
         shell: powershell
         run: cp ./libclang.dll "C:/Program Files/doxygen/bin/libclang.dll"
         working-directory: ${{ github.workspace }}/packages/doxygen/Doxygen
+      - name: Adding doxygen to path (Windows)
+        shell: powershell
+        run: echo "C:/Program Files/doxygen/bin" >> $GITHUB_PATH
 
       - name: Set up Visual Studio shell
         uses: egor-tensin/vs-shell@v2
