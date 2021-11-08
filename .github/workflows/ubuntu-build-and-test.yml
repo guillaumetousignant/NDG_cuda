@@ -27,6 +27,9 @@ jobs:
 
       - name: modules (Ubuntu)
         shell: bash
+        run: source /usr/share/lmod/lmod/init/bash
+      - name: modules (Ubuntu)
+        shell: bash
         run: module avail
       - name: search (Ubuntu)
         shell: bash
