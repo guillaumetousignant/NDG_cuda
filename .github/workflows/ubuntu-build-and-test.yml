@@ -21,46 +21,6 @@ jobs:
       - name: Creating dependencies directory (Ubuntu)
         shell: bash
         run: mkdir packages
-      - name: Cmake version (Ubuntu)
-        shell: bash
-        run: cmake --version
-
-      - name: ls (Ubuntu)
-        shell: bash
-        run: sudo ls -lah /lib
-      - name: ls (Ubuntu)
-        shell: bash
-        run: sudo ls -lah /lib/x86_64-linux-gnu
-      - name: ls (Ubuntu)
-        shell: bash
-        run: sudo ls -lah /etc/alternatives/
-      - name: ls (Ubuntu)
-        shell: bash
-        run: sudo ls -lah /usr/lib
-      - name: ls (Ubuntu)
-        shell: bash
-        run: sudo ls -lah /usr/lib/modules
-      - name: ls (Ubuntu)
-        shell: bash
-        run: sudo ls -lah /usr/lib/x86_64-linux-gnu
-      - name: ls (Ubuntu)
-        shell: bash
-        run: sudo ls -lah /usr/lib/x86_64-linux-gnu/openmpi
-      - name: ls (Ubuntu)
-        shell: bash
-        run: sudo ls -lah /usr/lib/x86_64-linux-gnu/openmpi/lib
-      - name: ls (Ubuntu)
-        shell: bash
-        run: sudo ls -lah /usr/lib/x86_64-linux-gnu/openmpi/lib/openmpi3
-      - name: Can ld find mpi (Ubuntu)
-        shell: bash
-        run: LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/lib/x86_64-linux-gnu/openmpi/lib ld -lmpi --verbose
-      - name: Can ld find mpi (Ubuntu)
-        shell: bash
-        run: LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/openmpi/lib:${LD_LIBRARY_PATH} ld -lmpi --verbose
-      - name: Can ld find mpi (Ubuntu)
-        shell: bash
-        run: echo ${LD_LIBRARY_PATH}
 
       - name: Creating cuda directory (Ubuntu)
         shell: bash
@@ -122,10 +82,6 @@ jobs:
       - name: what is happening please
         shell: bash
         run: cat CMakeFiles/CMakeError.log
-        working-directory: ${{ github.workspace }}/packages/hdf5/build
-      - name: what is happening please
-        shell: bash
-        run: cat /usr/local/share/cmake-3.21/Modules/FindMPI.cmake
         working-directory: ${{ github.workspace }}/packages/hdf5/build
       - name: Building hdf5 (Ubuntu)
         shell: bash
