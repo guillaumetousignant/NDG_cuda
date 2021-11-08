@@ -30,6 +30,9 @@ jobs:
         run: sudo apt search openmpi
       - name: ls (Ubuntu)
         shell: bash
+        run: sudo ls -lah /usr/share
+      - name: ls (Ubuntu)
+        shell: bash
         run: sudo ls -lah /usr/lib
       - name: ls (Ubuntu)
         shell: bash
