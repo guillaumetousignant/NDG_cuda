@@ -212,6 +212,8 @@ jobs:
         working-directory: ${{ github.workspace }}/build
         env:
           CUDA_PATH_V11_3: "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.3"
+          CUDAToolkit_ROOT: "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.3"
+          CUDA_PATH: "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.3"
           I_MPI_ROOT: "C:/Program Files (x86)/Microsoft SDKs/MPI"
           MSMPI_BENCHMARKS: "C:/Program Files/Microsoft MPI/Benchmarks"
           MSMPI_BIN: "C:/Program Files/Microsoft MPI/Bin"
@@ -221,6 +223,15 @@ jobs:
         shell: powershell
         run: cmake --build .
         working-directory: ${{ github.workspace }}/build
+        env:
+          CUDA_PATH_V11_3: "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.3"
+          CUDAToolkit_ROOT: "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.3"
+          CUDA_PATH: "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.3"
+          I_MPI_ROOT: "C:/Program Files (x86)/Microsoft SDKs/MPI"
+          MSMPI_BENCHMARKS: "C:/Program Files/Microsoft MPI/Benchmarks"
+          MSMPI_BIN: "C:/Program Files/Microsoft MPI/Bin"
+          MSMPI_INC: "C:/Program Files (x86)/Microsoft SDKs/MPI/Include"
+          MSMPI_LIB64: "C:/Program Files (x86)/Microsoft SDKs/MPI/Lib/x64"
       - name: Tests (Windows)
         shell: powershell
         run: ctest
