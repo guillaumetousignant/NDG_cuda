@@ -355,6 +355,17 @@ increasing $K$.
 
 \section{Mortar Element Method} \label{section:adaptive_mesh_refinement:mortar_element_method}
 
+One issue that can arise from AMR is the presence of non-conforming interfaces. The flux
+calculations from Chapter~\ref{chapter:spectral_element_method} involve taking the extrapolated
+values of the solution of two elements at their interface
+
+\begin{figure}[H]
+	\centering
+	\includesvg[width=0.6\textwidth]{Chapter_adaptive_mesh_refinement/media/hp-adaptivity_N4_N6}
+	\caption{Non-conforming interfaces: Elements refining create non-conforming interfaces}
+	\label{fig:non_conforming_interfaces}
+\end{figure}
+
 \cite{Maday1989}
 
 \section{Implementation} \label{section:adaptive_mesh_refinement:implementation}
