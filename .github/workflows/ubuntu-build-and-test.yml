@@ -30,13 +30,22 @@ jobs:
         run: sudo apt search openmpi
       - name: ls (Ubuntu)
         shell: bash
-        run: sudo ls /usr/lib/x86_64-linux-gnu/openmpi
+        run: sudo ls -lah /usr/lib
       - name: ls (Ubuntu)
         shell: bash
-        run: sudo ls /usr/lib/x86_64-linux-gnu/openmpi/lib
+        run: sudo ls -lah /usr/lib/x86_64-linux-gnu
+      - name: ls (Ubuntu)
+        shell: bash
+        run: sudo ls -lah /usr/lib/x86_64-linux-gnu/openmpi
+      - name: ls (Ubuntu)
+        shell: bash
+        run: sudo ls -lah /usr/lib/x86_64-linux-gnu/openmpi/lib
+      - name: ls (Ubuntu)
+        shell: bash
+        run: sudo ls -lah /usr/lib/x86_64-linux-gnu/openmpi/lib/openmpi3
       - name: Can ld find mpi (Ubuntu)
         shell: bash
-        run: LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/lib/x86_64-linux-gnu/openmpi/lib/ ld -lmpi --verbose
+        run: LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/lib/x86_64-linux-gnu/openmpi/lib ld -lmpi --verbose
 
       - name: Creating cuda directory (Ubuntu)
         shell: bash
