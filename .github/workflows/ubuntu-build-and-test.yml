@@ -27,6 +27,12 @@ jobs:
 
       - name: ls (Ubuntu)
         shell: bash
+        run: sudo ls -lah /lib
+      - name: ls (Ubuntu)
+        shell: bash
+        run: sudo ls -lah /lib/x86_64-linux-gnu
+      - name: ls (Ubuntu)
+        shell: bash
         run: sudo ls -lah /usr/lib
       - name: ls (Ubuntu)
         shell: bash
