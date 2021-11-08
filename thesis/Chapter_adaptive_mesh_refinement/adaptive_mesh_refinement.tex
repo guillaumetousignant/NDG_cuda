@@ -149,11 +149,175 @@ Chapter~\ref{chapter:load_balancing} is dedicated to solving this problem.
 \section{Error Estimation} \label{section:adaptive_mesh_refinement:error_estimation}
 
 We can't simply refine everywhere in the domain at every occasion, else this is no better than
-having a finer mesh to start with. The mesh must only be refined
+having a finer mesh to start with. The mesh must only be refined where the expected error is higher.
+We must estimate the error of each element of the mesh, then refine those elements.
 
-\cite{Mavriplis1990}
+As seen in Chapter~\ref{chapter:spectral_element_method}, we represent the solution as an infinite
+series of polynomials. In this case we use the Legendre polynomials $L_n(x)$ of degree $n$, with the
+coefficients $a_n$ being the modes of the solution.
+
+\begin{equation} \label{equ:infinite_sum}
+	u(x) = \sum_{n = 0}^{\infty}a_n L_n(x)
+\end{equation}
+
+It is of course impossible to use an infinite sum on computers, therefore we truncate this sum to
+$N$, the polynomial order of the solution. The remaining terms, denoted by $\tau$, are the
+truncation error of the solution.
+
+\begin{equation} \label{equ:solution_approximation}
+	\begin{aligned}
+		u(x) &= \sum_{n = 0}^{\infty }a_n L_n(x) \\
+		&= \sum_{n = 0}^{N}a_n L_n(x) + \sum_{n = N + 1}^{\infty }a_n L_n(x) \\ 
+		&= \sum_{n = 0}^{N}a_n L_n(x) + \tau \\
+		&\approx \sum_{n = 0}^{N}a_n L_n(x)
+	\end{aligned}
+\end{equation}
+
+We want the norm of that error to estimate the quality of the solution. To find it, we will need
+the modes $a_n$ beyond $N$. We will extrapolate the known modes $a_n$. The polynomials we use are
+orthogonal, therefore the following relation gives the inner product of two of the polynomials.
+
+\begin{equation} \label{equ:polynomial_orthogonality}
+	\begin{aligned}
+		\left ( L_n, L_m \right ) &= \int_{-1}^{1}L_n(r)L_m(r)dr \\
+		&= \frac{2}{2n + 1}\delta _{nm}
+	\end{aligned}
+\end{equation}
+
+with $\delta_{nm}$ being the Kronecker delta. We start by computing the known modes by taking the
+inner product of the approximate solution $u_h(x)$ and  the corresponding Legendre polynomial
+$L_n(x)$.
+
+\begin{equation} \label{equ:modes_inner_product}
+	\begin{aligned}
+		\left ( u_h, L_n \right ) &= \int_{-1}^{1} u_h(x(r)) L_n(r) dr \\
+		&= \sum_{k = 0}^{N} a_k \int_{-1}^{1} L_k(r) L_n(r)dr \\
+		&= \frac{2}{2n + 1} a_n
+	\end{aligned}
+\end{equation}
+
+Rearranging, we get the modes $a_N$.
+
+\begin{equation} \label{equ:modes}
+	a_n = \frac{2n + 1}{2}\int_{-1}^{1}u_h(x(r))L_n(r)dr
+\end{equation}
+
+We now get predicted modes $\widetilde{a}_n$ from extrapolating our known nodes. The $L2$ norm of
+the truncation error can then be approximated.
+
+\begin{equation} \label{equ:error_norm}
+	\begin{aligned}
+		\left \| \tau \right \| &= \sqrt{\int_{-1}^{1} \sum_{n = N + 1}^{\infty }\left ( \widetilde{a}_n L_n(r) \right )^2 dr} \\
+		&= \sqrt{\sum_{n = N + 1}^{\infty }\widetilde{a}_n^2 \int_{-1}^{1} L_n(r) L_n(r) dr}
+	\end{aligned}
+\end{equation}
+
+We use the orthogonality of the Legendre polynomials shown in
+Equation~\ref{equ:polynomial_orthogonality} to obtain a simpler form of the truncation error norm.
+
+\begin{equation} \label{equ:error_norm_1D}
+	\left \| \tau \right \| = \sqrt{\sum_{n = N + 1}^{\infty } \frac{\widetilde{a}_{n}^2}{\frac{(2n + 1)}{2}}}
+\end{equation}
+
+In 2D, the solution is a tensor product of polynomials, the truncation error changes accordingly. 
+
+\begin{equation} \label{equ:error_norm_2D}
+	\left \| \tau \right \| = \sqrt{\sum_{n = N + 1}^{\infty } \sum_{m = M + 1}^{\infty}\frac{\widetilde{a}_{nm}^2}{\frac{(2n + 1)(2m + 1)}{2^2}}}
+\end{equation}
+
+As per~\cite{Mavriplis1990}, we examine the decay rate of the modes as a way to estimate the local
+error. This method indicates that for a sufficiently high polynomial order, $p \geq 5$, the modes
+$\widetilde{a}_n$ can have an exponential decay. We obtain these modes by extrapolating the known
+modes. 
+
+\begin{equation} \label{equ:exponential_decay}
+	\widetilde{a}_n = Ce^{-\sigma n}
+\end{equation}
+
+In order to fit a straight line to the data by linear least-squares, we want a linear relation
+between the decay rate $\sigma$ and the modes. We take the logarithm of both sides and get our
+linear relation.
+
+\begin{equation} \label{equ:exponential_decay_linear}
+	ln(\widetilde{a}_n) = ln(C) - \sigma n
+\end{equation}
+
+We apply a linear least-squares fit to the last points of the known modes $a_n$. The slope of the
+line, $\sigma$, is the error indicator. It will help choose a refinement strategy in
+Section~\ref{section:adaptive_mesh_refinement:refinement_criteria}. The linear least-squares finds a
+straight line by minimising the square of the distance between the fitted points and the line. The
+resulting line is given by:
+
+\begin{equation}
+	y = \alpha + \beta x,
+\end{equation}
+
+and its coefficients are computer by:
+
+\begin{gather}
+	\beta = \frac{\sum_{i = 1}^{n}(x_i - \overline{x})(y_i - \overline{y})}{\sum_{i = 1}^{n}(x_i -\overline{x})^2}, \\
+	\alpha = \overline{y} - \beta \overline{x},
+\end{gather}
+
+with $\overline{x}$ and $\overline{y}$ being the $x$ and $y$ averages of the data. The error
+indicator becomes $\sigma = - \beta$, and the constant becomes $C = e^\alpha$.
+
+Back to the error estimation, we can replace the sums of \ref{equ:error_norm_1D} and
+\ref{equ:error_norm_2D} by integrals and omit the denominators to provide an upper bound.
+
+\begin{align}
+	&1D: \quad \tau = \sqrt{\sum_{n = N + 1}^{\infty } \frac{\widetilde{a}_n^2}{\frac{2n + 1}{2}}}, \label{equ:error_1D_sums}
+	\\
+	&2D: \quad \tau = \sqrt{\sum_{n = N + 1}^{\infty }\sum_{m = M + 1}^{\infty}\frac{\widetilde{a}^2_{nm}}{\frac{(2n + 1)(2m + 1)}{2^2}}} \label{equ:error_2D_sums}
+	\\
+	&1D: \quad \tau = \sqrt{\int_{N + 1}^{\infty } a_n^2 dn}, \label{equ:error_1D_integrals}
+	\\
+	&2D: \quad \tau = \sqrt{\int_{M+1}^{\infty }\int_{N + 1 }^{\infty}(a_{nm})^2 dn dm} \label{equ:error_2D_integrals}
+\end{align}
+
+By adding the extrapolated modes from Equation~\ref{equ:exponential_decay}, the 1D case can be
+evaluated directly.
+
+\begin{equation}
+	\begin{aligned}
+		\tau_{est} &= \sqrt{\int_{N + 1}^{\infty } a_n^2 dn} \\
+		&= \sqrt{\int_{N + 1}^{\infty } \left ( Ce^{-\sigma n} \right )^2 dn} \\
+		&= \sqrt{\frac{C^2}{2\sigma }}e^{-\sigma (N + 1)}. 
+	\end{aligned}
+\end{equation}
+
+The same method cannot be applied to the 2D case, as the modes in Equation
+~\ref{equ:error_2D_integrals} are defined in two dimensions. We will need to shape these modes in 1D
+to find the error estimate as in the 1D case. We use the same polynomial order in both $x$ and $y$
+directions, and create a 1D equivalent modes $\overline{a}_n$.
+
+\begin{equation}
+	\overline{a}_n = \left| a_{n,n} \right| + \sum_{i = 0}^{n-1} \left( \left| a_{i, n} \right| + \left| a_{n, i} \right| \right)
+\end{equation}
+
+We use that equivalent modes to estimate the error.
+
+\begin{equation}
+	\begin{aligned}
+		\tau_{est} &= \sqrt{\int_{M+1}^{\infty }\int_{N + 1 }^{\infty}(a_{nm})^2 dn dm} \\
+		&= \sqrt{\int_{N + 1}^{\infty }\overline{a}_p^2 dp} \\
+		&= \sqrt{\int_{N + 1}^{\infty} Ce^{-2\sigma p}dp} \\
+		&= \sqrt{\frac{C}{2\sigma}e^{-2\sigma(N + 1)}} \\
+		&= \sqrt{\frac{C}{2\sigma}} e^{-\sigma (N + 1)}
+	\end{aligned}
+\end{equation}
+
+The error indicator $\sigma$ and $C$ are computed from the 1D equivalent modes $\overline{a}_n$.
+
+It is now possible to refine when the estimated error is past a certain threshold. We still need to
+choose one of the refinement strategies from
+Section~\ref{section:adaptive_mesh_refinement:adaptivity_strategies}.
+Section~\ref{section:adaptive_mesh_refinement:refinement_criteria} describes a method to choose the
+most appropriate strategy using the error indicator $\sigma$ we computed previously.
 
 \section{Refinement Criteria} \label{section:adaptive_mesh_refinement:refinement_criteria}
+
+\cite{Mavriplis1990}
 
 \section{Mortar Element Method} \label{section:adaptive_mesh_refinement:mortar_element_method}
 
