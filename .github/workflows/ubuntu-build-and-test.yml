@@ -15,7 +15,7 @@ jobs:
             gcc: 10
     steps:
       - name: Installing dependencies (Ubuntu)
-        run: sudo apt-get -y install openmpi-bin openmpi-common libopenmpi-dev ninja-build doxygen lmod
+        run: sudo apt-get -y install openmpi-bin libopenmpi-dev ninja-build doxygen lmod
       - name: Checkout
         uses: actions/checkout@v2
       - name: Creating dependencies directory (Ubuntu)
@@ -28,9 +28,6 @@ jobs:
       - name: modules (Ubuntu)
         shell: bash
         run: source /usr/share/lmod/lmod/init/bash ; module avail
-      - name: modules (Ubuntu)
-        shell: bash
-        run: module avail
       - name: search (Ubuntu)
         shell: bash
         run: sudo apt search openmpi
