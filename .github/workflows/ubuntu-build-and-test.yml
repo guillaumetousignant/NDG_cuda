@@ -27,6 +27,15 @@ jobs:
 
       - name: modules (Ubuntu)
         shell: bash
+        run: ls /etc/modulefiles
+      - name: modules (Ubuntu)
+        shell: bash
+        run: ls /usr/share/modulefiles
+      - name: modules (Ubuntu)
+        shell: bash
+        run: ls /usr/share/modulefiles/Core
+      - name: modules (Ubuntu)
+        shell: bash
         run: source /usr/share/lmod/lmod/init/bash ; module avail
       - name: search (Ubuntu)
         shell: bash
