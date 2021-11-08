@@ -52,6 +52,12 @@ jobs:
       - name: Can ld find mpi (Ubuntu)
         shell: bash
         run: LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/lib/x86_64-linux-gnu/openmpi/lib ld -lmpi --verbose
+      - name: Can ld find mpi (Ubuntu)
+        shell: bash
+        run: LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/openmpi/lib:${LD_LIBRARY_PATH} ld -lmpi --verbose
+      - name: Can ld find mpi (Ubuntu)
+        shell: bash
+        run: echo ${LD_LIBRARY_PATH}
 
       - name: Creating cuda directory (Ubuntu)
         shell: bash
