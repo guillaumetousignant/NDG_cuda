@@ -27,9 +27,6 @@ jobs:
 
       - name: modules (Ubuntu)
         shell: bash
-        run: ls /etc/modulefiles
-      - name: modules (Ubuntu)
-        shell: bash
         run: ls /usr/share/modulefiles
       - name: modules (Ubuntu)
         shell: bash
