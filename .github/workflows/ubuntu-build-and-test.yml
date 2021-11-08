@@ -33,6 +33,9 @@ jobs:
         run: sudo ls -lah /usr/lib
       - name: ls (Ubuntu)
         shell: bash
+        run: sudo ls -lah /usr/lib/modules
+      - name: ls (Ubuntu)
+        shell: bash
         run: sudo ls -lah /usr/lib/x86_64-linux-gnu
       - name: ls (Ubuntu)
         shell: bash
@@ -70,7 +73,7 @@ jobs:
         run: sudo apt-get update
       - name: Installing cuda (Ubuntu)
         shell: bash
-        run: sudo apt-get -y install cuda-11-3
+        run: sudo apt-get -y install cuda-command-line-tools-11-3 cuda-compiler-11-3 cuda-cudart-11-3 cuda-cudart-dev-11-3 cuda-gdb-11-3 cuda-libraries-11-3 cuda-libraries-dev-11-3 cuda-runtime-11-3
 
       - name: Creating hdf5 directory (Ubuntu)
         shell: bash
