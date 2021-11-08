@@ -92,7 +92,7 @@ jobs:
         continue-on-error: true
       - name: what is happening please
         shell: bash
-        run: ls
+        run: cat CMakeFiles/CMakeOutput.log
         working-directory: ${{ github.workspace }}/packages/hdf5/build
       - name: what is happening please
         shell: bash
