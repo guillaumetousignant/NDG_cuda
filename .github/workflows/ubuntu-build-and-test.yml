@@ -27,10 +27,7 @@ jobs:
 
       - name: modules (Ubuntu)
         shell: bash
-        run: ls /usr/share/modulefiles
-      - name: modules (Ubuntu)
-        shell: bash
-        run: ls /usr/share/modulefiles/Core
+        run: ls /usr/share/lmod/lmod/modulefiles
       - name: modules (Ubuntu)
         shell: bash
         run: ls /etc/profile.d
