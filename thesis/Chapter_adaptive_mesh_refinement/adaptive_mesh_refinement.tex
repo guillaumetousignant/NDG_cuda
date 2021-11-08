@@ -317,7 +317,41 @@ most appropriate strategy using the error indicator $\sigma$ we computed previou
 
 \section{Refinement Criteria} \label{section:adaptive_mesh_refinement:refinement_criteria}
 
-\cite{Mavriplis1990}
+Once we computed the error approximation on every element and know which elements we want to refine,
+we must choose in what way to refine them. Recall from
+Section~\ref{section:adaptive_mesh_refinement:adaptivity_strategies} that we can choose
+p-refinement, increasing the polynomial order $N$ of an element, or h-refinement, splitting the
+element in smaller elements to increase the total number of elements $K$.
+
+The method~\cite{Mavriplis1990} used here is to look at the decay rate of the modes $a_n$ of the
+solution. The error indicator $\sigma$ we computed in
+Section~\ref{section:adaptive_mesh_refinement:error_estimation} is the slope of the last few modes
+of the solution. A well-resolved solution should have a fast decay of the modes, with $\sigma > 1$.
+On the other hand, $\sigma \leqslant 1$ implies the solution is not well resolved as is.
+
+\begin{figure}[H]
+	\centering
+	\subfloat[Badly resolved solution]
+	{\includegraphics[width=0.4\textwidth]{Chapter_adaptive_mesh_refinement/media/decaying_modes_slow} \label{fig:decaying_modes_slow}}
+	\hfill
+	\subfloat[Well resolved solution]
+	{\includegraphics[width=0.4\textwidth]{Chapter_adaptive_mesh_refinement/media/decaying_modes_fast} \label{fig:decaying_modes_fast}}
+	\caption{Modes decaying: How the modes decay in an element, and the fitted line. (a) $\sigma \leqslant 1$ (b) $\sigma > 1$}.
+	\label{fig:decaying_modes}
+\end{figure}
+
+The truncation error is related to the value of the extrapolated nodes. If the slope of the modes is
+steep, each added mode is expected to reduce the error a lot. This is because the truncated modes
+have a smaller value, therefore the truncated part of the solution is also small. On the other hand,
+a flat slope indicates that the value of the modes does not decay fats, and adding additional modes
+is not expected to reduce the truncation error much. This is often the case in non-smooth parts of
+the solution.
+
+We choose the slope of the modes, $\sigma$, as our error indicator. If $\sigma > 1$, adding
+polynomial modes is expected to reduce the error a lot, so we use p-adaptivity and increase the
+polynomial order $N$ of the element. If $\sigma \leqslant 1$, adding more modes is not predicted to
+reduce the error by much, therefore we use h-adaptivity and split the element into smaller elements,
+increasing $K$.
 
 \section{Mortar Element Method} \label{section:adaptive_mesh_refinement:mortar_element_method}
 
