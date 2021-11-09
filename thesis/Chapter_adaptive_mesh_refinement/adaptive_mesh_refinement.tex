@@ -400,6 +400,13 @@ their own collocation points, unto which the extrapolated solution from the elem
 The flux computations can then be performed on the face's collocation points and be projected back
 to the elements afterwards.
 
+We define the faces as the smallest of the element side it connects to. This ensures each face only
+has one element on either side, their \textit{left} and \textit{right} elements. Elements can
+therefore have multiple faces on each of their sides. The functional of the face has the polynomial
+order of the highest-order of its neighbours. The next sections describe how to project to and from
+these new faces. The flux calculations are performed on the faces as described in
+Section~\ref{chapter:spectral_element_method}. 
+
 \subsection{Projection from Element to Mortar} \label{section:adaptive_mesh_refinement:mortar_element_method:element_to_mortar}
 
 
