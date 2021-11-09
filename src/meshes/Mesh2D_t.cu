@@ -2547,19 +2547,37 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const SEM::Device::Entities::de
         // Now everything is received
         // We can do something about the nodes
         device_vector<size_t> received_node_indices(4 * (n_elements_recv_left[global_rank] + n_elements_recv_right[global_rank]), stream_);
+        device_vector<size_t> received_neighbour_node_indices(2 * neighbours_arrays_recv.size(), stream_);
         if (n_elements_recv_left[global_rank] + n_elements_recv_right[global_rank] > 0) {
+            // Elements received nodes
+            device_vector<bool> missing_nodes(received_node_indices.size(), stream_);
             device_vector<bool> missing_received_nodes(received_node_indices.size(), stream_);
+            device_vector<size_t> received_node_received_indices(received_node_indices.size(), stream_); // Worst naming convention ever, these are nodes that have been found in other received nodes
             device_vector<deviceFloat> nodes_arrays_device(nodes_arrays_recv, stream_);
-            const int received_nodes_numBlocks = (missing_received_nodes.size() + elements_blockSize_ - 1) / elements_blockSize_;
+            const int received_nodes_numBlocks = (missing_nodes.size() + elements_blockSize_ - 1) / elements_blockSize_;
 
-            SEM::Device::Meshes::find_received_nodes<<<received_nodes_numBlocks, elements_blockSize_, 0, stream_>>>(missing_received_nodes.size(), nodes_.size(), nodes_.data(), nodes_arrays_device.data(), missing_received_nodes.data(), received_node_indices.data());
+            SEM::Device::Meshes::find_received_nodes<<<received_nodes_numBlocks, elements_blockSize_, 0, stream_>>>(missing_nodes.size(), nodes_.size(), nodes_.data(), nodes_arrays_device.data(), missing_nodes.data(), missing_received_nodes.data(), received_node_indices.data(), received_node_received_indices.data());
 
             device_vector<size_t> device_missing_received_nodes_refine_array(received_nodes_numBlocks, stream_);
-            SEM::Device::Meshes::reduce_bools<elements_blockSize_/2><<<received_nodes_numBlocks, elements_blockSize_/2, 0, stream_>>>(missing_received_nodes.size(), missing_received_nodes.data(), device_missing_received_nodes_refine_array.data());
+            SEM::Device::Meshes::reduce_bools<elements_blockSize_/2><<<received_nodes_numBlocks, elements_blockSize_/2, 0, stream_>>>(missing_nodes.size(), missing_nodes.data(), device_missing_received_nodes_refine_array.data());
             std::vector<size_t> host_missing_received_nodes_refine_array(received_nodes_numBlocks);
             device_missing_received_nodes_refine_array.copy_to(host_missing_received_nodes_refine_array, stream_);
 
-            cudaStreamSynchronize(stream_); // So the transfer to host_missing_received_nodes_refine_array is complete
+            // Neighbours received nodes
+            device_vector<bool> missing_neighbour_nodes(received_neighbour_node_indices.size(), stream_);
+            device_vector<bool> missing_received_neighbour_nodes(received_neighbour_node_indices.size(), stream_);
+            device_vector<size_t> received_neighbour_node_received_indices(received_neighbour_node_indices.size(), stream_); // Worst naming convention ever, these are nodes that have been found in other received nodes
+            device_vector<deviceFloat> neighbour_nodes_arrays_device(neighbours_nodes_arrays_recv, stream_);
+            const int received_neighbour_nodes_numBlocks = (missing_neighbour_nodes.size() + elements_blockSize_ - 1) / elements_blockSize_;
+
+            SEM::Device::Meshes::find_received_neighbour_nodes<<<received_neighbour_nodes_numBlocks, elements_blockSize_, 0, stream_>>>(missing_neighbour_nodes.size(), missing_nodes.size(), nodes_.size(), nodes_.data(), neighbour_nodes_arrays_device.data(), nodes_arrays_device.data(), missing_neighbour_nodes.data(), missing_received_neighbour_nodes.data(), received_neighbour_node_indices.data(), received_neighbour_node_received_indices.data());
+
+            device_vector<size_t> device_missing_received_neighbour_nodes_refine_array(received_neighbour_nodes_numBlocks, stream_);
+            SEM::Device::Meshes::reduce_bools<elements_blockSize_/2><<<received_neighbour_nodes_numBlocks, elements_blockSize_/2, 0, stream_>>>(missing_neighbour_nodes.size(), missing_neighbour_nodes.data(), device_missing_received_neighbour_nodes_refine_array.data());
+            std::vector<size_t> host_missing_received_neighbour_nodes_refine_array(received_neighbour_nodes_numBlocks);
+            device_missing_received_neighbour_nodes_refine_array.copy_to(host_missing_received_neighbour_nodes_refine_array, stream_);
+
+            cudaStreamSynchronize(stream_); // So the transfers to host_missing_received_nodes_refine_array and host_missing_received_neighbour_nodes_refine_array are complete
 
             size_t n_missing_received_nodes = 0;
             for (int i = 0; i < received_nodes_numBlocks; ++i) {
@@ -2568,17 +2586,32 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const SEM::Device::Entities::de
             }
             device_missing_received_nodes_refine_array.copy_from(host_missing_received_nodes_refine_array, stream_);
 
+            for (int i = 0; i < received_neighbour_nodes_numBlocks; ++i) {
+                n_missing_received_nodes += host_missing_received_neighbour_nodes_refine_array[i];
+                host_missing_received_neighbour_nodes_refine_array[i] = n_missing_received_nodes - host_missing_received_neighbour_nodes_refine_array[i]; // Current block offset
+            }
+            device_missing_received_neighbour_nodes_refine_array.copy_from(host_missing_received_neighbour_nodes_refine_array, stream_);
+
             device_vector<Vec2<deviceFloat>> new_nodes(nodes_.size() + n_missing_received_nodes, stream_);
             cudaMemcpyAsync(new_nodes.data(), nodes_.data(), nodes_.size() * sizeof(Vec2<deviceFloat>), cudaMemcpyDeviceToDevice, stream_); // Apparently slower than using a kernel
 
-            SEM::Device::Meshes::add_new_received_nodes<<<received_nodes_numBlocks, elements_blockSize_, 0, stream_>>>(missing_received_nodes.size(), nodes_.size(), new_nodes.data(), nodes_arrays_device.data(), missing_received_nodes.data(), received_node_indices.data(), device_missing_received_nodes_refine_array.data());
+            SEM::Device::Meshes::add_new_received_nodes<<<received_nodes_numBlocks, elements_blockSize_, 0, stream_>>>(missing_nodes.size(), nodes_.size(), new_nodes.data(), nodes_arrays_device.data(), missing_nodes.data(), missing_received_nodes.data(), received_node_indices.data(), received_node_received_indices.data(), device_missing_received_nodes_refine_array.data());
         
+            SEM::Device::Meshes::add_new_received_neighbour_nodes<<<received_neighbour_nodes_numBlocks, elements_blockSize_, 0, stream_>>>(missing_neighbour_nodes.size(), missing_nodes.size(), nodes_.size(), new_nodes.data(), neighbour_nodes_arrays_device.data(), missing_neighbour_nodes.data(), missing_nodes.data(), missing_received_neighbour_nodes.data(), received_neighbour_node_indices.data(), received_neighbour_node_received_indices.data(), device_missing_received_neighbour_nodes_refine_array.data(), device_missing_received_nodes_refine_array.data());
+
             nodes_ = std::move(new_nodes);
 
             new_nodes.clear(stream_);
+            missing_nodes.clear(stream_);
             missing_received_nodes.clear(stream_);
+            received_node_received_indices.clear(stream_);
             nodes_arrays_device.clear(stream_);
             device_missing_received_nodes_refine_array.clear(stream_);
+            missing_neighbour_nodes.clear(stream_);
+            missing_received_neighbour_nodes.clear(stream_);
+            received_neighbour_node_received_indices.clear(stream_);
+            neighbour_nodes_arrays_device.clear(stream_);
+            device_missing_received_neighbour_nodes_refine_array.clear(stream_);
         }
         // Now something similar for neighbours?
 
@@ -3425,6 +3458,7 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const SEM::Device::Entities::de
 
         // Clearing created arrays, so it is done asynchronously 
         received_node_indices.clear(stream_);
+        received_neighbour_node_indices.clear(stream_);
         boundary_elements_to_delete.clear(stream_);
         device_boundary_elements_to_delete_refine_array.clear(stream_);
         new_elements.clear(stream_);
@@ -7596,40 +7630,146 @@ auto SEM::Device::Meshes::get_interface_processes(size_t n_mpi_interfaces, size_
 }
 
 __global__
-auto SEM::Device::Meshes::find_received_nodes(size_t n_received_nodes, size_t n_nodes, const Vec2<deviceFloat>* nodes, const deviceFloat* received_nodes, bool* missing_received_nodes, size_t* received_nodes_indices) -> void {
+auto SEM::Device::Meshes::find_received_nodes(size_t n_received_nodes, size_t n_nodes, const Vec2<deviceFloat>* nodes, const deviceFloat* received_nodes, bool* missing_nodes, bool* missing_received_nodes, size_t* received_nodes_indices, size_t* received_node_received_indices) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
     for (size_t i = index; i < n_received_nodes; i += stride) {
         const Vec2<deviceFloat> received_node(received_nodes[2 * i], received_nodes[2 * i + 1]);
-        missing_received_nodes[i] = true;
+        missing_nodes[i] = true;
+        missing_received_nodes[i] = false;
 
         for (size_t j = 0; j < n_nodes; ++j) {
             if (received_node.almost_equal(nodes[j])) {
-                missing_received_nodes[i] = false;
+                missing_nodes[i] = false;
                 received_nodes_indices[i] = j;
                 break;
+            }
+        }
+
+        if (missing_nodes[i]) {
+            for (size_t j = 0; j < i; ++j) {
+                if (received_node.almost_equal(Vec2<deviceFloat>(received_nodes[2 * j], received_nodes[2 * j + 1]))) {
+                    missing_nodes[i] = false;
+                    missing_received_nodes[i] = true;
+                    received_node_received_indices[i] = j;
+                    break;
+                }
             }
         }
     }
 }
 
 __global__
-auto SEM::Device::Meshes::add_new_received_nodes(size_t n_received_nodes, size_t n_nodes, Vec2<deviceFloat>* nodes, const deviceFloat* received_nodes, const bool* missing_received_nodes, size_t* received_nodes_indices, const size_t* received_nodes_block_offsets) -> void {
+auto SEM::Device::Meshes::add_new_received_nodes(size_t n_received_nodes, size_t n_nodes, Vec2<deviceFloat>* nodes, const deviceFloat* received_nodes, const bool* missing_nodes, const bool* missing_received_nodes, size_t* received_nodes_indices, const size_t* received_node_received_indices, const size_t* received_nodes_block_offsets) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     const int thread_id = threadIdx.x;
     const int block_id = blockIdx.x;
 
     for (size_t i = index; i < n_received_nodes; i += stride) {
-        if (missing_received_nodes[i]) {
+        if (missing_nodes[i]) {
             size_t new_received_index = n_nodes + received_nodes_block_offsets[block_id];
             for (size_t j = i - thread_id; j < i; ++j) {
-                new_received_index += missing_received_nodes[j];
+                new_received_index += missing_nodes[j];
             }
 
             nodes[new_received_index] = Vec2<deviceFloat>(received_nodes[2 * i], received_nodes[2 * i + 1]);
             received_nodes_indices[i] = new_received_index;
+        }
+        else if (missing_received_nodes[i]) {
+            const auto [received_block, received_thread] = std::div(static_cast<long long>(received_node_received_indices[i]), blockDim.x);
+
+            size_t new_received_index = n_nodes + received_nodes_block_offsets[received_block];
+            for (size_t j = received_node_received_indices[i] - received_thread; j < received_node_received_indices[i]; ++j) {
+                new_received_index += missing_nodes[j];
+            }
+
+            received_nodes_indices[i] = new_received_index;
+        }
+    }
+}
+
+__global__
+auto SEM::Device::Meshes::find_received_neighbour_nodes(size_t n_received_neighbour_nodes, size_t n_received_nodes, size_t n_nodes, const Vec2<deviceFloat>* nodes, const deviceFloat* received_neighbour_nodes, const deviceFloat* received_nodes, bool* missing_neighbour_nodes, bool* missing_received_neighbour_nodes, size_t* received_neighbour_nodes_indices, size_t* received_neighbour_node_received_indices) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t i = index; i < n_received_neighbour_nodes; i += stride) {
+        const Vec2<deviceFloat> received_neighbour_node(received_neighbour_nodes[2 * i], received_neighbour_nodes[2 * i + 1]);
+        missing_neighbour_nodes[i] = true;
+        missing_received_neighbour_nodes[i] = false;
+
+        for (size_t j = 0; j < n_nodes; ++j) {
+            if (received_neighbour_node.almost_equal(nodes[j])) {
+                missing_neighbour_nodes[i] = false;
+                received_neighbour_nodes_indices[i] = j;
+                break;
+            }
+        }
+
+        if (missing_neighbour_nodes[i]) {
+            for (size_t j = 0; j < n_received_nodes; ++j) {
+                if (received_neighbour_node.almost_equal(Vec2<deviceFloat>(received_nodes[2 * j], received_nodes[2 * j + 1]))) {
+                    missing_neighbour_nodes[i] = false;
+                    missing_received_neighbour_nodes[i] = true;
+                    received_neighbour_node_received_indices[i] = j;
+                    break;
+                }
+            }
+        }
+
+        if (missing_neighbour_nodes[i]) {
+            for (size_t j = 0; j < i; ++j) {
+                if (received_neighbour_node.almost_equal(Vec2<deviceFloat>(received_neighbour_nodes[2 * j], received_neighbour_nodes[2 * j + 1]))) {
+                    missing_neighbour_nodes[i] = false;
+                    missing_received_neighbour_nodes[i] = true;
+                    received_neighbour_node_received_indices[i] = n_received_nodes + j;
+                    break;
+                }
+            }
+        }
+    }
+}
+
+__global__
+auto SEM::Device::Meshes::add_new_received_neighbour_nodes(size_t n_received_neighbour_nodes, size_t n_received_nodes, size_t n_nodes, Vec2<deviceFloat>* nodes, const deviceFloat* received_neighbour_nodes, const bool* missing_neighbour_nodes, const bool* missing_nodes, const bool* missing_received_neighbour_nodes, size_t* received_neighbour_nodes_indices, const size_t* received_neighbour_node_received_indices, const size_t* received_neighbour_nodes_block_offsets, const size_t* received_nodes_block_offsets) -> void {
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+    const int thread_id = threadIdx.x;
+    const int block_id = blockIdx.x;
+
+    for (size_t i = index; i < n_received_neighbour_nodes; i += stride) {
+        if (missing_neighbour_nodes[i]) {
+            size_t new_received_index = n_nodes + received_neighbour_nodes_block_offsets[block_id];
+            for (size_t j = i - thread_id; j < i; ++j) {
+                new_received_index += missing_neighbour_nodes[j];
+            }
+
+            nodes[new_received_index] = Vec2<deviceFloat>(received_neighbour_nodes[2 * i], received_neighbour_nodes[2 * i + 1]);
+            received_neighbour_nodes_indices[i] = new_received_index;
+        }
+        else if (missing_received_neighbour_nodes[i]) {
+            if (received_neighbour_node_received_indices[i] < n_received_nodes) {
+                const auto [received_block, received_thread] = std::div(static_cast<long long>(received_neighbour_node_received_indices[i]), blockDim.x);
+
+                size_t new_received_index = n_nodes + received_nodes_block_offsets[received_block];
+                for (size_t j = received_neighbour_node_received_indices[i] - received_thread; j < received_neighbour_node_received_indices[i]; ++j) {
+                    new_received_index += missing_nodes[j];
+                }
+
+                received_neighbour_nodes_indices[i] = new_received_index;
+            }
+            else {
+                const auto [received_block, received_thread] = std::div(static_cast<long long>(received_neighbour_node_received_indices[i] - n_received_nodes), blockDim.x);
+
+                size_t new_received_index = n_nodes + received_neighbour_nodes_block_offsets[received_block];
+                for (size_t j = received_neighbour_node_received_indices[i] - n_received_nodes - received_thread; j < received_neighbour_node_received_indices[i] - n_received_nodes; ++j) {
+                    new_received_index += missing_neighbour_nodes[j];
+                }
+
+                received_neighbour_nodes_indices[i] = new_received_index;
+            }
         }
     }
 }

@@ -333,10 +333,16 @@ namespace SEM { namespace Device { namespace Meshes {
     auto get_interface_processes(size_t n_mpi_interfaces, size_t n_mpi_interfaces_incoming, const SEM::Device::Entities::Element2D_t* elements, const SEM::Device::Entities::Face2D_t* faces, const size_t* mpi_interfaces_origin, const size_t* mpi_interfaces_origin_side, const size_t* mpi_interfaces_destination, const int* mpi_interfaces_new_process_incoming, const size_t* process_offsets, int* processes) -> void;
     
     __global__
-    auto find_received_nodes(size_t n_received_nodes, size_t n_nodes, const SEM::Device::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* received_nodes, bool* missing_received_nodes, size_t* received_nodes_indices) -> void;
+    auto find_received_nodes(size_t n_received_nodes, size_t n_nodes, const SEM::Device::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* received_nodes, bool* missing_nodes, bool* missing_received_nodes, size_t* received_nodes_indices, size_t* received_node_received_indices) -> void;
     
     __global__
-    auto add_new_received_nodes(size_t n_received_nodes, size_t n_nodes, SEM::Device::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* received_nodes, const bool* missing_received_nodes, size_t* received_nodes_indices, const size_t* received_nodes_block_offsets) -> void;
+    auto add_new_received_nodes(size_t n_received_nodes, size_t n_nodes, SEM::Device::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* received_nodes, const bool* missing_nodes, const bool* missing_received_nodes, size_t* received_nodes_indices, const size_t* received_node_received_indices, const size_t* received_nodes_block_offsets) -> void;
+
+    __global__
+    auto find_received_neighbour_nodes(size_t n_received_neighbour_nodes, size_t n_received_nodes, size_t n_nodes, const SEM::Device::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* received_neighbour_nodes, const deviceFloat* received_nodes, bool* missing_neighbour_nodes, bool* missing_received_neighbour_nodes, size_t* received_neighbour_nodes_indices, size_t* received_neighbour_node_received_indices) -> void;
+  
+    __global__
+    auto add_new_received_neighbour_nodes(size_t n_received_neighbour_nodes, size_t n_received_nodes, size_t n_nodes, SEM::Device::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* received_neighbour_nodes, const bool* missing_neighbour_nodes, const bool* missing_nodes, const bool* missing_received_neighbour_nodes, size_t* received_neighbour_nodes_indices, const size_t* received_neighbour_node_received_indices, const size_t* received_neighbour_nodes_block_offsets, const size_t* received_nodes_block_offsets) -> void;
 
     __global__
     auto find_faces_to_delete(size_t n_faces, size_t n_domain_elements, size_t n_elements_send_left, size_t n_elements_send_right, const SEM::Device::Entities::Face2D_t* faces, bool* faces_to_delete) -> void;
