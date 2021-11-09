@@ -231,5 +231,73 @@ for i in range(N[0] + 1):
 
 nonconf_fig.savefig(save_path / f"non_conforming_interfaces_N{N[0]}_N{N[1]}.svg", format='svg', transparent=True)
 
+mortar_fig = plt.figure(figsize=(6.85,3.55))
+mortar_ax = mortar_fig.add_subplot(1, 1, 1)
+mortar_ax.set_xlim(-1.1, 3.9)
+mortar_ax.set_ylim(-1.3, 1.3)
+mortar_ax.set_aspect(1)
+mortar_ax.axis('off')
+mortar_fig.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=1.0)
+
+mortar_ax.plot([-1, 1, 1, -1, -1], [-1, -1, 1, 1, -1], color=outline_colour, linewidth=outline_width)
+
+for i in range(N[0] + 1):
+    mortar_ax.plot([nodes[0][i], nodes[0][i]], [-1, 1], color=lines_colour, linewidth=lines_width)
+    mortar_ax.plot([-1, 1], [nodes[0][i], nodes[0][i]], color=lines_colour, linewidth=lines_width)
+
+for i in range(N[0] + 1):
+    for j in range(N[0] + 1):
+        mortar_ax.plot(nodes[0][i], nodes[0][j], color=points_colour, linewidth=points_width, marker=points_shape, markersize=points_size)
+
+mortar_ax.plot([1.4, 2.4, 2.4, 1.4, 1.4], [-1.2, -1.2, -0.2, -0.2, -1.2], color=outline_colour, linewidth=outline_width)
+mortar_ax.plot([2.8, 3.8, 3.8, 2.8, 2.8], [-1.2, -1.2, -0.2, -0.2, -1.2], color=outline_colour, linewidth=outline_width)
+mortar_ax.plot([2.8, 3.8, 3.8, 2.8, 2.8], [0.2, 0.2, 1.2, 1.2, 0.2], color=outline_colour, linewidth=outline_width)
+mortar_ax.plot([1.4, 2.4, 2.4, 1.4, 1.4], [0.2, 0.2, 1.2, 1.2, 0.2], color=outline_colour, linewidth=outline_width)
+
+for i in range(N[1] + 1):
+    mortar_ax.plot([nodes[1][i]/2 + 1.9, nodes[1][i]/2 + 1.9], [-1.2, -0.2], color=lines_colour, linewidth=lines_width)
+    mortar_ax.plot([1.4, 2.4], [nodes[1][i]/2 - 0.7, nodes[1][i]/2 - 0.7], color=lines_colour, linewidth=lines_width)
+
+for i in range(N[0] + 1):
+    mortar_ax.plot([nodes[0][i]/2 + 3.3, nodes[0][i]/2 + 3.3], [-1.2, -0.2], color=lines_colour, linewidth=lines_width)
+    mortar_ax.plot([2.8, 3.8], [nodes[0][i]/2 - 0.7, nodes[0][i]/2 - 0.7], color=lines_colour, linewidth=lines_width)
+
+    mortar_ax.plot([nodes[0][i]/2 + 3.3, nodes[0][i]/2 + 3.3], [0.2, 1.2], color=lines_colour, linewidth=lines_width)
+    mortar_ax.plot([2.8, 3.8], [nodes[0][i]/2 + 0.7, nodes[0][i]/2 + 0.7], color=lines_colour, linewidth=lines_width)
+
+    mortar_ax.plot([nodes[0][i]/2 + 1.9, nodes[0][i]/2 + 1.9], [0.2, 1.2], color=lines_colour, linewidth=lines_width)
+    mortar_ax.plot([1.4, 2.4], [nodes[0][i]/2 + 0.7, nodes[0][i]/2 + 0.7], color=lines_colour, linewidth=lines_width)
+
+for i in range(N[1] + 1):
+    for j in range(N[1] + 1):
+        mortar_ax.plot(nodes[1][i]/2 + 1.9, nodes[1][j]/2 - 0.7, color=points_colour, linewidth=points_width, marker=points_shape, markersize=points_size)
+
+for i in range(N[0] + 1):
+    for j in range(N[0] + 1):
+        mortar_ax.plot(nodes[0][i]/2 + 3.3, nodes[0][j]/2 - 0.7, color=points_colour, linewidth=points_width, marker=points_shape, markersize=points_size) 
+
+        mortar_ax.plot(nodes[0][i]/2 + 3.3, nodes[0][j]/2 + 0.7, color=points_colour, linewidth=points_width, marker=points_shape, markersize=points_size) 
+
+        mortar_ax.plot(nodes[0][i]/2 + 1.9, nodes[0][j]/2 + 0.7, color=points_colour, linewidth=points_width, marker=points_shape, markersize=points_size) 
+
+mortar_ax.plot([1.2, 1.2], [-1.1, -0.1], color=faces_colour, linewidth=faces_width)
+mortar_ax.plot([1.2, 1.2], [0.1, 1.1], color=faces_colour, linewidth=faces_width)
+mortar_ax.plot([1.4, 2.4], [0, 0], color=faces_colour, linewidth=faces_width)
+mortar_ax.plot([2.8, 3.8], [0, 0], color=faces_colour, linewidth=faces_width)
+mortar_ax.plot([2.6, 2.6], [-1.2, -0.2], color=faces_colour, linewidth=faces_width)
+mortar_ax.plot([2.6, 2.6], [0.2, 1.2], color=faces_colour, linewidth=faces_width)
+
+for i in range(N[0] + 1):
+    mortar_ax.plot(1.2, nodes[0][i]/2 + 0.6, color=face_points_colour, linewidth=points_width, marker=points_shape, markersize=points_size) 
+    mortar_ax.plot(2.6, nodes[0][i]/2 + 0.7, color=face_points_colour, linewidth=points_width, marker=points_shape, markersize=points_size) 
+    mortar_ax.plot(nodes[0][i]/2 + 3.3, 0, color=face_points_colour, linewidth=points_width, marker=points_shape, markersize=points_size) 
+
+for i in range(N[1] + 1):
+    mortar_ax.plot(1.2, nodes[1][i]/2 - 0.6, color=face_points_colour, linewidth=points_width, marker=points_shape, markersize=points_size) 
+    mortar_ax.plot(nodes[1][i]/2 + 1.9, 0, color=face_points_colour, linewidth=points_width, marker=points_shape, markersize=points_size) 
+    mortar_ax.plot(2.6, nodes[1][i]/2 - 0.7, color=face_points_colour, linewidth=points_width, marker=points_shape, markersize=points_size) 
+
+mortar_fig.savefig(save_path / f"mortar_element_method_N{N[0]}_N{N[1]}.svg", format='svg', transparent=True)
+
 plt.show()
     
