@@ -150,5 +150,86 @@ for i in range(N[1] + 1):
 
 hp_fig.savefig(save_path / f"hp-adaptivity_N{N[0]}_N{N[1]}.svg", format='svg', transparent=True)
 
+conf_fig = plt.figure(figsize=(5.75,3))
+conf_ax = conf_fig.add_subplot(1, 1, 1)
+conf_ax.set_xlim(-1.1, 3.1)
+conf_ax.set_ylim(-1.1, 1.1)
+conf_ax.set_aspect(1)
+conf_ax.axis('off')
+conf_fig.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=1.0)
+
+conf_ax.plot([-1, 1, 1, -1, -1], [-1, -1, 1, 1, -1], color=outline_colour, linewidth=outline_width)
+
+for i in range(N[0] + 1):
+    conf_ax.plot([nodes[0][i], nodes[0][i]], [-1, 1], color=lines_colour, linewidth=lines_width)
+    conf_ax.plot([-1, 1], [nodes[0][i], nodes[0][i]], color=lines_colour, linewidth=lines_width)
+
+for i in range(N[0] + 1):
+    for j in range(N[0] + 1):
+        conf_ax.plot(nodes[0][i], nodes[0][j], color=points_colour, linewidth=points_width, marker=points_shape, markersize=points_size)
+    
+conf_ax.plot([1, 3, 3, 1, 1], [-1, -1, 1, 1, -1], color=outline_colour, linewidth=outline_width)
+
+for i in range(N[0] + 1):
+    conf_ax.plot([nodes[0][i] + 2, nodes[0][i] + 2], [-1, 1], color=lines_colour, linewidth=lines_width)
+    conf_ax.plot([1, 3], [nodes[0][i], nodes[0][i]], color=lines_colour, linewidth=lines_width)
+
+for i in range(N[0] + 1):
+    for j in range(N[0] + 1):
+        conf_ax.plot(nodes[0][i] + 2, nodes[0][j], color=points_colour, linewidth=points_width, marker=points_shape, markersize=points_size)
+
+conf_fig.savefig(save_path / f"conforming_interface_N{N[0]}.svg", format='svg', transparent=True)
+
+nonconf_fig = plt.figure(figsize=(5.75,3))
+nonconf_ax = nonconf_fig.add_subplot(1, 1, 1)
+nonconf_ax.set_xlim(-1.1, 3.1)
+nonconf_ax.set_ylim(-1.1, 1.1)
+nonconf_ax.set_aspect(1)
+nonconf_ax.axis('off')
+nonconf_fig.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=1.0)
+
+nonconf_ax.plot([-1, 1, 1, -1, -1], [-1, -1, 1, 1, -1], color=outline_colour, linewidth=outline_width)
+
+for i in range(N[0] + 1):
+    nonconf_ax.plot([nodes[0][i], nodes[0][i]], [-1, 1], color=lines_colour, linewidth=lines_width)
+    nonconf_ax.plot([-1, 1], [nodes[0][i], nodes[0][i]], color=lines_colour, linewidth=lines_width)
+
+for i in range(N[0] + 1):
+    for j in range(N[0] + 1):
+        nonconf_ax.plot(nodes[0][i], nodes[0][j], color=points_colour, linewidth=points_width, marker=points_shape, markersize=points_size)
+
+nonconf_ax.plot([1, 2, 2, 1, 1], [-1, -1, 0, 0, -1], color=outline_colour, linewidth=outline_width)
+nonconf_ax.plot([2, 3, 3, 2, 2], [-1, -1, 0, 0, -1], color=outline_colour, linewidth=outline_width)
+nonconf_ax.plot([2, 3, 3, 2, 2], [0, 0, 1, 1, 0], color=outline_colour, linewidth=outline_width)
+nonconf_ax.plot([1, 2, 2, 1, 1], [0, 0, 1, 1, 0], color=outline_colour, linewidth=outline_width)
+
+for i in range(N[1] + 1):
+    nonconf_ax.plot([nodes[1][i]/2 + 1.5, nodes[1][i]/2 + 1.5], [-1, 0], color=lines_colour, linewidth=lines_width)
+    nonconf_ax.plot([1, 2], [nodes[1][i]/2 - 0.5, nodes[1][i]/2 - 0.5], color=lines_colour, linewidth=lines_width)
+
+for i in range(N[0] + 1):
+    nonconf_ax.plot([nodes[0][i]/2 + 2.5, nodes[0][i]/2 + 2.5], [-1, 0], color=lines_colour, linewidth=lines_width)
+    nonconf_ax.plot([2, 3], [nodes[0][i]/2 - 0.5, nodes[0][i]/2 - 0.5], color=lines_colour, linewidth=lines_width)
+
+    nonconf_ax.plot([nodes[0][i]/2 + 2.5, nodes[0][i]/2 + 2.5], [0, 1], color=lines_colour, linewidth=lines_width)
+    nonconf_ax.plot([2, 3], [nodes[0][i]/2 + 0.5, nodes[0][i]/2 + 0.5], color=lines_colour, linewidth=lines_width)
+
+    nonconf_ax.plot([nodes[0][i]/2 + 1.5, nodes[0][i]/2 + 1.5], [0, 1], color=lines_colour, linewidth=lines_width)
+    nonconf_ax.plot([1, 2], [nodes[0][i]/2 + 0.5, nodes[0][i]/2 + 0.5], color=lines_colour, linewidth=lines_width)
+
+for i in range(N[1] + 1):
+    for j in range(N[1] + 1):
+        nonconf_ax.plot(nodes[1][i]/2 + 1.5, nodes[1][j]/2 - 0.5, color=points_colour, linewidth=points_width, marker=points_shape, markersize=points_size)
+
+for i in range(N[0] + 1):
+    for j in range(N[0] + 1):
+        nonconf_ax.plot(nodes[0][i]/2 + 2.5, nodes[0][j]/2 - 0.5, color=points_colour, linewidth=points_width, marker=points_shape, markersize=points_size) 
+
+        nonconf_ax.plot(nodes[0][i]/2 + 2.5, nodes[0][j]/2 + 0.5, color=points_colour, linewidth=points_width, marker=points_shape, markersize=points_size) 
+
+        nonconf_ax.plot(nodes[0][i]/2 + 1.5, nodes[0][j]/2 + 0.5, color=points_colour, linewidth=points_width, marker=points_shape, markersize=points_size) 
+
+nonconf_fig.savefig(save_path / f"non_conforming_interfaces_N{N[0]}_N{N[1]}.svg", format='svg', transparent=True)
+
 plt.show()
     
