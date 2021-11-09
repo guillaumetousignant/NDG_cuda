@@ -299,5 +299,48 @@ for i in range(N[1] + 1):
 
 mortar_fig.savefig(save_path / f"mortar_element_method_N{N[0]}_N{N[1]}.svg", format='svg', transparent=True)
 
+e_to_m_fig = plt.figure(figsize=(4.95,3))
+e_to_m_ax = e_to_m_fig.add_subplot(1, 1, 1)
+e_to_m_ax.set_xlim(-1.1, 2.5)
+e_to_m_ax.set_ylim(-1.1, 1.1)
+e_to_m_ax.set_aspect(1)
+e_to_m_ax.axis('off')
+e_to_m_fig.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=1.0)
+
+e_to_m_ax.plot([-1, 1, 1, -1, -1], [-1, -1, 1, 1, -1], color=outline_colour, linewidth=outline_width)
+
+for i in range(N[0] + 1):
+    e_to_m_ax.plot([nodes[0][i], nodes[0][i]], [-1, 1], color=lines_colour, linewidth=lines_width)
+    e_to_m_ax.plot([-1, 1], [nodes[0][i], nodes[0][i]], color=lines_colour, linewidth=lines_width)
+
+for i in range(N[0] + 1):
+    for j in range(N[0] + 1):
+        e_to_m_ax.plot(nodes[0][i], nodes[0][j], color=points_colour, linewidth=points_width, marker=points_shape, markersize=points_size)
+
+e_to_m_ax.plot([1.4, 2.4, 2.4, 1.4, 1.4], [-1, -1, 0, 0, -1], color=outline_colour, linewidth=outline_width)
+
+for i in range(N[1] + 1):
+    e_to_m_ax.plot([nodes[1][i]/2 + 1.9, nodes[1][i]/2 + 1.9], [-1, 0], color=lines_colour, linewidth=lines_width)
+    e_to_m_ax.plot([1.4, 2.4], [nodes[1][i]/2 - 0.5, nodes[1][i]/2 - 0.5], color=lines_colour, linewidth=lines_width)
+
+for i in range(N[1] + 1):
+    for j in range(N[1] + 1):
+        e_to_m_ax.plot(nodes[1][i]/2 + 1.9, nodes[1][j]/2 - 0.5, color=points_colour, linewidth=points_width, marker=points_shape, markersize=points_size)
+
+e_to_m_ax.plot([1.2, 1.2], [-1, 0], color=faces_colour, linewidth=faces_width)
+
+for i in range(N[1] + 1):
+    e_to_m_ax.plot(1.2, nodes[1][i]/2 - 0.5, color=face_points_colour, linewidth=points_width, marker=points_shape, markersize=points_size) 
+
+e_to_m_ax.text(-0.02, 0.1, "$Ω^1$", fontfamily="Fira Code", fontsize=32, horizontalalignment="right")
+e_to_m_ax.text(1.96, 0.1, "$Ω^2$", fontfamily="Fira Code", fontsize=32, horizontalalignment="center")
+e_to_m_ax.text(1.26, 0.1, "$Ξ^1$", fontfamily="Fira Code", fontsize=32, horizontalalignment="center")
+
+for i in range(N[1] + 1):
+    e_to_m_ax.arrow(1.05, nodes[1][i]/2 - 0.5, 0.1, 0, length_includes_head=True, width=0.02, head_length=0.05, color=outline_colour)
+    e_to_m_ax.arrow(1.35, nodes[1][i]/2 - 0.5, -0.1, 0, length_includes_head=True, width=0.02, head_length=0.05, color=outline_colour)
+
+e_to_m_fig.savefig(save_path / f"element_to_mortar_N{N[0]}_N{N[1]}.svg", format='svg', transparent=True)
+
 plt.show()
     
