@@ -252,7 +252,7 @@ resulting line is given by:
 	y = \alpha + \beta x,
 \end{equation}
 
-and its coefficients are computer by:
+and its coefficients are computed by:
 
 \begin{gather}
 	\beta = \frac{\sum_{i = 1}^{n}(x_i - \overline{x})(y_i - \overline{y})}{\sum_{i = 1}^{n}(x_i -\overline{x})^2}, \\
@@ -418,6 +418,12 @@ Section~\ref{chapter:spectral_element_method}.
 
 \subsection{Projection from Mortar to Element} \label{section:adaptive_mesh_refinement:mortar_element_method:mortar_to_element}
 
+\begin{figure}[H]
+	\centering
+	\includesvg[width=0.6\textwidth]{Chapter_adaptive_mesh_refinement/media/mortar_to_element_N4_N6}
+	\caption{Mortar to Element projection: The faces' values are projected to the elements}
+	\label{fig:mortar_to_element}
+\end{figure}
 
 \section{Implementation} \label{section:adaptive_mesh_refinement:implementation}
 

@@ -342,5 +342,66 @@ for i in range(N[1] + 1):
 
 e_to_m_fig.savefig(save_path / f"element_to_mortar_N{N[0]}_N{N[1]}.svg", format='svg', transparent=True)
 
+m_to_e_fig = plt.figure(figsize=(4.95,4))
+m_to_e_ax = m_to_e_fig.add_subplot(1, 1, 1)
+m_to_e_ax.set_xlim(-1.1, 2.5)
+m_to_e_ax.set_ylim(-1.3, 1.3)
+m_to_e_ax.set_aspect(1)
+m_to_e_ax.axis('off')
+m_to_e_fig.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=1.0)
+
+m_to_e_ax.plot([-1, 1, 1, -1, -1], [-1, -1, 1, 1, -1], color=outline_colour, linewidth=outline_width)
+
+for i in range(N[0] + 1):
+    m_to_e_ax.plot([nodes[0][i], nodes[0][i]], [-1, 1], color=lines_colour, linewidth=lines_width)
+    m_to_e_ax.plot([-1, 1], [nodes[0][i], nodes[0][i]], color=lines_colour, linewidth=lines_width)
+
+for i in range(N[0] + 1):
+    for j in range(N[0] + 1):
+        m_to_e_ax.plot(nodes[0][i], nodes[0][j], color=points_colour, linewidth=points_width, marker=points_shape, markersize=points_size)
+
+m_to_e_ax.plot([1.4, 2.4, 2.4, 1.4, 1.4], [-1.1, -1.1, -0.1, -0.1, -1.1], color=outline_colour, linewidth=outline_width)
+m_to_e_ax.plot([1.4, 2.4, 2.4, 1.4, 1.4], [0.1, 0.1, 1.1, 1.1, 0.1], color=outline_colour, linewidth=outline_width)
+
+for i in range(N[1] + 1):
+    m_to_e_ax.plot([nodes[1][i]/2 + 1.9, nodes[1][i]/2 + 1.9], [-1.1, -0.1], color=lines_colour, linewidth=lines_width)
+    m_to_e_ax.plot([1.4, 2.4], [nodes[1][i]/2 - 0.6, nodes[1][i]/2 - 0.6], color=lines_colour, linewidth=lines_width)
+
+for i in range(N[0] + 1):
+    m_to_e_ax.plot([nodes[0][i]/2 + 1.9, nodes[0][i]/2 + 1.9], [0.1, 1.1], color=lines_colour, linewidth=lines_width)
+    m_to_e_ax.plot([1.4, 2.4], [nodes[0][i]/2 + 0.6, nodes[0][i]/2 + 0.6], color=lines_colour, linewidth=lines_width)
+
+for i in range(N[1] + 1):
+    for j in range(N[1] + 1):
+        m_to_e_ax.plot(nodes[1][i]/2 + 1.9, nodes[1][j]/2 - 0.6, color=points_colour, linewidth=points_width, marker=points_shape, markersize=points_size)
+
+for i in range(N[0] + 1):
+    for j in range(N[0] + 1):
+        m_to_e_ax.plot(nodes[0][i]/2 + 1.9, nodes[0][j]/2 + 0.6, color=points_colour, linewidth=points_width, marker=points_shape, markersize=points_size) 
+
+m_to_e_ax.plot([1.2, 1.2], [-1.05, -0.05], color=faces_colour, linewidth=faces_width)
+m_to_e_ax.plot([1.2, 1.2], [0.05, 1.05], color=faces_colour, linewidth=faces_width)
+
+for i in range(N[0] + 1):
+    m_to_e_ax.plot(1.2, nodes[0][i]/2 + 0.55, color=face_points_colour, linewidth=points_width, marker=points_shape, markersize=points_size) 
+
+for i in range(N[1] + 1):
+    m_to_e_ax.plot(1.2, nodes[1][i]/2 - 0.55, color=face_points_colour, linewidth=points_width, marker=points_shape, markersize=points_size) 
+
+m_to_e_ax.text(-0.02, 0.1, "$Ω^1$", fontfamily="Fira Code", fontsize=32, horizontalalignment="right")
+m_to_e_ax.text(1.92, -0.58, "$Ω^2$", fontfamily="Fira Code", fontsize=14, horizontalalignment="left")
+m_to_e_ax.text(1.94, 0.62, "$Ω^3$", fontfamily="Fira Code", fontsize=18, horizontalalignment="left")
+m_to_e_ax.text(1.28, 1.15, "$Ξ^1$", fontfamily="Fira Code", fontsize=32, horizontalalignment="center")
+m_to_e_ax.text(1.28, -1.45, "$Ξ^2$", fontfamily="Fira Code", fontsize=32, horizontalalignment="center")
+
+for i in range(N[0] + 1):
+    m_to_e_ax.arrow(1.15, nodes[0][i], -0.1, 0, length_includes_head=True, width=0.02, head_length=0.05, color=outline_colour)
+    m_to_e_ax.arrow(1.25, nodes[0][i]/2 + 0.6, 0.1, 0, length_includes_head=True, width=0.02, head_length=0.05, color=outline_colour)
+
+for i in range(N[1] + 1):
+    m_to_e_ax.arrow(1.25, nodes[1][i]/2 - 0.6, 0.1, 0, length_includes_head=True, width=0.02, head_length=0.05, color=outline_colour)
+
+m_to_e_fig.savefig(save_path / f"mortar_to_element_N{N[0]}_N{N[1]}.svg", format='svg', transparent=True)
+
 plt.show()
     
