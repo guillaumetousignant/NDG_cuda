@@ -28,6 +28,54 @@ auto SEM::Device::Meshes::warp_reduce_2D(volatile size_t *sdata, unsigned int ti
 
 // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
 template <unsigned int blockSize>
+__device__ 
+auto SEM::Device::Meshes::warp_reduce_2D(volatile size_t *sdata_0, volatile size_t *sdata_1, volatile size_t *sdata_2, volatile size_t *sdata_3, volatile size_t *sdata_4, unsigned int tid) -> void {
+    if (blockSize >= 64) { 
+        sdata_0[tid] += sdata_0[tid + 32];
+        sdata_1[tid] += sdata_1[tid + 32];
+        sdata_2[tid] += sdata_2[tid + 32];
+        sdata_3[tid] += sdata_3[tid + 32];
+        sdata_4[tid] += sdata_4[tid + 32];
+    }
+    if (blockSize >= 32) {
+        sdata_0[tid] += sdata_0[tid + 16];
+        sdata_1[tid] += sdata_1[tid + 16];
+        sdata_2[tid] += sdata_2[tid + 16];
+        sdata_3[tid] += sdata_3[tid + 16];
+        sdata_4[tid] += sdata_4[tid + 16];
+    }
+    if (blockSize >= 16) {
+        sdata_0[tid] += sdata_0[tid + 8];
+        sdata_1[tid] += sdata_1[tid + 8];
+        sdata_2[tid] += sdata_2[tid + 8];
+        sdata_3[tid] += sdata_3[tid + 8];
+        sdata_4[tid] += sdata_4[tid + 8];
+    }
+    if (blockSize >= 8) {
+        sdata_0[tid] += sdata_0[tid + 4];
+        sdata_1[tid] += sdata_1[tid + 4];
+        sdata_2[tid] += sdata_2[tid + 4];
+        sdata_3[tid] += sdata_3[tid + 4];
+        sdata_4[tid] += sdata_4[tid + 4];
+    }
+    if (blockSize >= 4) {
+        sdata_0[tid] += sdata_0[tid + 2];
+        sdata_1[tid] += sdata_1[tid + 2];
+        sdata_2[tid] += sdata_2[tid + 2];
+        sdata_3[tid] += sdata_3[tid + 2];
+        sdata_4[tid] += sdata_4[tid + 2];
+    }
+    if (blockSize >= 2) {
+        sdata_0[tid] += sdata_0[tid + 1];
+        sdata_1[tid] += sdata_1[tid + 1];
+        sdata_2[tid] += sdata_2[tid + 1];
+        sdata_3[tid] += sdata_3[tid + 1];
+        sdata_4[tid] += sdata_4[tid + 1];
+    }
+}
+
+// From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
+template <unsigned int blockSize>
 __global__ 
 auto SEM::Device::Meshes::reduce_refine_2D(size_t n_elements, int max_split_level, const SEM::Device::Entities::Element2D_t* elements, size_t* g_odata) -> void {
     __shared__ size_t sdata[(blockSize >= 64) ? blockSize : blockSize + blockSize/2]; // Because within a warp there is no branching and this is read up until blockSize + blockSize/2
@@ -195,4 +243,175 @@ auto SEM::Device::Meshes::reduce_bools(size_t n, const bool* data, size_t* g_oda
 
     if (tid < 32) warp_reduce_2D<blockSize>(sdata, tid);
     if (tid == 0) g_odata[blockIdx.x] = sdata[0];
+}
+
+// From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
+template <unsigned int blockSize>
+__global__ 
+auto SEM::Device::Meshes::reduce_received_neighbours(size_t n, size_t n_incoming, int rank, const int* neighbour_procs, const size_t* neighbour_indices, const size_t* neighbour_sides, const int* incoming_procs, const size_t* incoming_indices, const size_t* incoming_sides, size_t* wall_odata, size_t* symmetry_odata, size_t* inflow_odata, size_t* outflow_odata, size_t* mpi_destinations_odata) -> void {
+    __shared__ size_t wall_sdata[(blockSize >= 64) ? blockSize : blockSize + blockSize/2]; // Because within a warp there is no branching and this is read up until blockSize + blockSize/2
+    __shared__ size_t symmetry_sdata[(blockSize >= 64) ? blockSize : blockSize + blockSize/2]; // Because within a warp there is no branching and this is read up until blockSize + blockSize/2
+    __shared__ size_t inflow_sdata[(blockSize >= 64) ? blockSize : blockSize + blockSize/2]; // Because within a warp there is no branching and this is read up until blockSize + blockSize/2
+    __shared__ size_t outflow_sdata[(blockSize >= 64) ? blockSize : blockSize + blockSize/2]; // Because within a warp there is no branching and this is read up until blockSize + blockSize/2
+    __shared__ size_t mpi_destinations_sdata[(blockSize >= 64) ? blockSize : blockSize + blockSize/2]; // Because within a warp there is no branching and this is read up until blockSize + blockSize/2
+    
+    unsigned int tid = threadIdx.x;
+    size_t i = blockIdx.x*(blockSize*2) + tid;
+    unsigned int gridSize = blockSize*2*gridDim.x;
+    sdata[tid] = 0;
+
+    while (i < n) { 
+        const int neighbour_proc = neighbour_procs[i];
+
+        switch (neighbour_proc) {
+            case boundary_type::wall :
+                ++wall_sdata[i];
+                break;
+
+            case boundary_type::symmetry :
+                ++symmetry_sdata[i];
+                break;
+
+            case boundary_type::inflow :
+                ++inflow_sdata[i];
+                break;
+
+            case boundary_type::outflow :
+                ++outflow_sdata[i];
+                break;
+
+            default:
+                if (neighbour_proc != rank) {
+                    const size_t local_element_index = neighbour_indices[i];
+                    const size_t element_side_index = neighbour_sides[i];
+
+                    bool first_time = true;
+                    for (size_t j = 0; j < n_incoming; ++j) {
+                        if (incoming_procs[j] == neighbour_proc && incoming_indices[j] == local_element_index && incoming_sides[j] == element_side_index) {
+                            first_time = false;
+                            break;
+                        }
+                    }
+                    if (first_time) {
+                        for (size_t j = 0; j < i; ++j) {
+                            if (neighbour_procs[j] == neighbour_proc && neighbour_indices[j] == local_element_index && neighbour_sides[j] == element_side_index) {
+                                first_time = false;
+                                break;
+                            }
+                        }
+                    }
+                    if (first_time) {
+                        ++mpi_destinations_sdata[i];
+                    }
+                }
+        }
+
+        if (i+blockSize < n) {
+            const int neighbour2_proc = neighbour_procs[i+blockSize];
+            
+            switch (neighbour2_proc) {
+                case boundary_type::wall :
+                    ++wall_sdata[i+blockSize];
+                    break;
+
+                case boundary_type::symmetry :
+                    ++symmetry_sdata[i+blockSize];
+                    break;
+
+                case boundary_type::inflow :
+                    ++inflow_sdata[i+blockSize];
+                    break;
+
+                case boundary_type::outflow :
+                    ++outflow_sdata[i+blockSize];
+                    break;
+
+                default:
+                    if (neighbour2_proc != rank) {
+                        const size_t local_element_index = neighbour_indices[i+blockSize];
+                        const size_t element_side_index = neighbour_sides[i+blockSize];
+
+                        bool first_time = true;
+                        for (size_t j = 0; j < incoming_procs.size(); ++j) {
+                            if (incoming_procs[j] == neighbour2_proc && incoming_indices[j] == local_element_index && incoming_sides[j] == element_side_index) {
+                                first_time = false;
+                                break;
+                            }
+                        }
+                        if (first_time) {
+                            for (size_t j = 0; j < i; ++j) {
+                                if (neighbour_procs[j] == neighbour2_proc && neighbour_indices[j] == local_element_index && neighbour_sides[j] == element_side_index) {
+                                    first_time = false;
+                                    break;
+                                }
+                            }
+                        }
+                        if (first_time) {
+                            ++mpi_destinations_sdata[i+blockSize];
+                        }
+                    }
+            }
+        }
+        i += gridSize; 
+    }
+    __syncthreads();
+
+    if (blockSize >= 8192) { if (tid < 4096) { 
+        wall_sdata[tid] += wall_sdata[tid + 4096]; 
+        symmetry_sdata[tid] += symmetry_sdata[tid + 4096]; 
+        inflow_sdata[tid] += inflow_sdata[tid + 4096]; 
+        outflow_sdata[tid] += outflow_sdata[tid + 4096]; 
+        mpi_destinations_sdata[tid] += mpi_destinations_sdata[tid + 4096]; 
+    } __syncthreads(); }
+    if (blockSize >= 4096) { if (tid < 2048) { 
+        wall_sdata[tid] += wall_sdata[tid + 2048]; 
+        symmetry_sdata[tid] += symmetry_sdata[tid + 2048]; 
+        inflow_sdata[tid] += inflow_sdata[tid + 2048]; 
+        outflow_sdata[tid] += outflow_sdata[tid + 2048]; 
+        mpi_destinations_sdata[tid] += mpi_destinations_sdata[tid + 2048]; 
+    } __syncthreads(); }
+    if (blockSize >= 2048) { if (tid < 1024) { 
+        wall_sdata[tid] += wall_sdata[tid + 1024]; 
+        symmetry_sdata[tid] += symmetry_sdata[tid + 1024]; 
+        inflow_sdata[tid] += inflow_sdata[tid + 1024]; 
+        outflow_sdata[tid] += outflow_sdata[tid + 1024]; 
+        mpi_destinations_sdata[tid] += mpi_destinations_sdata[tid + 1024]; 
+    } __syncthreads(); }
+    if (blockSize >= 1024) { if (tid < 512) { 
+        wall_sdata[tid] += wall_sdata[tid + 512]; 
+        symmetry_sdata[tid] += symmetry_sdata[tid + 512]; 
+        inflow_sdata[tid] += inflow_sdata[tid + 512]; 
+        outflow_sdata[tid] += outflow_sdata[tid + 512]; 
+        mpi_destinations_sdata[tid] += mpi_destinations_sdata[tid + 512]; 
+    } __syncthreads(); }
+    if (blockSize >= 512) { if (tid < 256) { 
+        wall_sdata[tid] += wall_sdata[tid + 256]; 
+        symmetry_sdata[tid] += symmetry_sdata[tid + 256]; 
+        inflow_sdata[tid] += inflow_sdata[tid + 256]; 
+        outflow_sdata[tid] += outflow_sdata[tid + 256]; 
+        mpi_destinations_sdata[tid] += mpi_destinations_sdata[tid + 256]; 
+    } __syncthreads(); }
+    if (blockSize >= 256) { if (tid < 128) { 
+        wall_sdata[tid] += wall_sdata[tid + 128]; 
+        symmetry_sdata[tid] += symmetry_sdata[tid + 128]; 
+        inflow_sdata[tid] += inflow_sdata[tid + 128]; 
+        outflow_sdata[tid] += outflow_sdata[tid + 128]; 
+        mpi_destinations_sdata[tid] += mpi_destinations_sdata[tid + 128]; 
+    } __syncthreads(); }
+    if (blockSize >= 128) { if (tid < 64) { 
+        wall_sdata[tid] += wall_sdata[tid + 64]; 
+        symmetry_sdata[tid] += symmetry_sdata[tid + 64]; 
+        inflow_sdata[tid] += inflow_sdata[tid + 64]; 
+        outflow_sdata[tid] += outflow_sdata[tid + 64]; 
+        mpi_destinations_sdata[tid] += mpi_destinations_sdata[tid + 64]; 
+    } __syncthreads(); }
+
+    if (tid < 32) warp_reduce_2D<blockSize>(wall_sdata, symmetry_sdata, inflow_sdata, outflow_sdata, mpi_destinations_sdata, tid);
+    if (tid == 0) {
+        wall_odata[blockIdx.x] = wall_sdata[0];
+        symmetry_odata[blockIdx.x] = symmetry_sdata[0];
+        inflow_odata[blockIdx.x] = inflow_sdata[0];
+        outflow_odata[blockIdx.x] = outflow_sdata[0];
+        mpi_destinations_odata[blockIdx.x] = mpi_destinations_sdata[0];
+    }
 }

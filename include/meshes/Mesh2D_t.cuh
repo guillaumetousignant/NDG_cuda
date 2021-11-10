@@ -358,6 +358,9 @@ namespace SEM { namespace Device { namespace Meshes {
 
     __global__
     auto find_mpi_interface_elements_to_delete(size_t n_mpi_interface_elements, size_t n_domain_elements, int rank, const size_t* mpi_interfaces_destination, const int* mpi_interfaces_new_process_incoming, bool* boundary_elements_to_delete) -> void;
+    
+    __global__
+    auto find_mpi_interface_elements_to_keep(size_t n, size_t n_incoming, int rank, size_t n_domain_elements, const int* neighbour_procs, const size_t* neighbour_indices, const size_t* neighbour_sides, const int* incoming_procs, const size_t* incoming_indices, const size_t* incoming_sides, const size_t* mpi_interfaces_destination, bool* boundary_elements_to_delete) -> void;
 
     __global__
     auto move_boundary_elements(size_t n_boundary_elements, size_t n_domain_elements, size_t new_n_domain_elements, SEM::Device::Entities::Element2D_t* elements, SEM::Device::Entities::Element2D_t* new_elements, SEM::Device::Entities::Face2D_t* faces, const bool* boundary_elements_to_delete, const size_t* boundary_elements_to_delete_block_offsets) -> void;
@@ -386,10 +389,18 @@ namespace SEM { namespace Device { namespace Meshes {
     __global__
     auto recv_mpi_boundaries_destinations_reuse_faces(size_t n_mpi_interfaces_incoming, size_t n_domain_elements, size_t n_elements_recv_left, size_t n_elements_recv_right, int rank, const SEM::Device::Entities::Element2D_t* elements, SEM::Device::Entities::Face2D_t* new_faces, const size_t* mpi_interfaces_incoming, const int* mpi_interfaces_new_process_incoming, const size_t* mpi_interfaces_new_local_index_incoming, const size_t* mpi_interfaces_new_side_incoming_device) -> void;
 
+    __global__
+    auto create_received_neighbours(size_t n_neighbours, size_t elements_offset, size_t wall_offset, size_t symmetry_offset, size_t inflow_offset, size_t outflow_offset, size_t mpi_destinations_offset, size_t n_new_wall, size_t n_new_symmetry, size_t n_new_inflow, size_t n_new_outflow, size_t n_new_mpi_destinations, const size_t* neighbour_indices, const int* neighbour_procs, const size_t* neighbour_sides, const size_t* neighbour_node_indices, SEM::Device::Entities::Element2D_t* elements, const SEM::Device::Entities::Vec2<deviceFloat>* nodes, size_t* neighbour_given_indices, size_t* neighbour_given_sides, size_t* wall_boundaries, size_t* symmetry_boundaries, size_t* inflow_boundaries, size_t* outflow_boundaries, size_t* mpi_destinations, const size_t* wall_block_offsets, const size_t* symmetry_block_offsets, const size_t* inflow_block_offsets, const size_t* outflow_block_offsets, const size_t* mpi_destinations_block_offsets) -> void;
+
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>
     __device__ 
     auto warp_reduce_2D(volatile size_t *sdata, unsigned int tid) -> void;
+
+    // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
+    template <unsigned int blockSize>
+    __device__ 
+    auto warp_reduce_2D(volatile size_t *sdata_0, volatile size_t *sdata_1, volatile size_t *sdata_2, volatile size_t *sdata_3, volatile size_t *sdata_4, unsigned int tid) -> void;
 
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>
@@ -415,6 +426,11 @@ namespace SEM { namespace Device { namespace Meshes {
     template <unsigned int blockSize>
     __global__ 
     auto reduce_bools(size_t n, const bool* data, size_t* g_odata) -> void;
+
+    // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
+    template <unsigned int blockSize>
+    __global__ 
+    auto reduce_received_neighbours(size_t n, size_t n_incoming, int rank, const int* neighbour_procs, const size_t* neighbour_indices, const size_t* neighbour_sides, const int* incoming_procs, const size_t* incoming_indices, const size_t* incoming_sides, size_t* wall_odata, size_t* symmetry_odata, size_t* inflow_odata, size_t* outflow_odata, size_t* mpi_destinations_odata) -> void;
 }}}
 
 #include "meshes/Mesh2D_t.tcu"
