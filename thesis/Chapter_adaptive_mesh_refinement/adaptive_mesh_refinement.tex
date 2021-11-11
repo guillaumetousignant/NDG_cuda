@@ -416,6 +416,117 @@ Section~\ref{chapter:spectral_element_method}.
 	\label{fig:element_to_mortar}
 \end{figure}
 
+Elements are denoted $\Omega$ and faces are denoted $\Xi$. We will use two coordinates, $s$ for the
+element side coordinate and $z$ for the face side coordinate. We project to the faces, therefore the
+face space will be used as a reference, $z \in [-1, 1]$. The coordinate change from element to face
+has the form $s = a + bz$, where $a$ and $b$ are scalars computer for each face side when generating
+the mesh. We can then define the element boundary solution $U$ and its projection on the face
+$\Psi$. 
+
+\begin{gather} 
+	U(s) = \sum_{k = 0}^{N} U(s_k) l_k(s), \label{equ:element_boundary_solution} \\
+	\Psi (z) = \sum_{k = 0}^{J} \Psi(z_k) l_k(z) \label{equ:face_projected_solution}
+\end{gather}
+
+With $l$ being the Lagrange polynomials, $N$ being the element polynomial order, and $J$ being the
+face polynomial order. We then require that the integral of the error between the solution and its
+projection multiplied by the Lagrange polynomials be zero. 
+
+\begin{equation} \label{equ:zero_error}
+	\int_{-1}^{1} \left ( \Psi (z) - U(a + bz) \right ) l_j^\Xi dz = 0, \quad j = 0, ...,J
+\end{equation}
+
+Incorporating Equation (\ref{equ:element_boundary_solution}) and (\ref{equ:face_projected_solution}),
+we get a relation for the boundary and projected solutions.
+
+\begin{equation} \label{equ:boundarry_and_projected}
+	\int_{-1}^{1} \sum_{m = 0}^{J} \Psi (z_m) l_m^\Xi (z) l_j ^ \Xi(z) dz = \\
+	\int_{-1}^{1} \sum_{k = 0}^{N} U(a + b z_k) l_k^\Omega (a + b z) l_j ^ \Xi (z) dz, \\ \quad
+	j = 0, ..., J
+\end{equation}
+
+Or, in matrix form:
+
+\begin{equation}
+	M \Psi = S U
+\end{equation}
+
+We can isolate the projected solution.
+
+\begin{equation}
+	\Psi = M^{-1} S U
+\end{equation}
+
+We use \textit{Gaussian quadrature} to evaluate $M$ and $S$. The orthogonality of the Legendre polynomials
+will be used to simplify the matrices.
+
+\begin{equation} \label{equ:orthogonality_M}
+	l_m (z_k) l_j (z_k) = \\
+	\delta _{mk} \delta _{j k} = \left\{\begin{matrix*}[l]
+	& 1, & if & m = k = j \\ 
+	& 0, & if & m \neq k \; or \; j \neq k
+	\end{matrix*}\right.
+\end{equation}
+
+\begin{equation} \label{equ:matrix_M}
+	\begin{aligned}
+		M_{jm} &= \int_{-1}^{1} l_m ^ \Xi (z) l_j ^ \Xi (z) dz \\
+		&= \sum_{k = 0}^{J} l_m ^ \Xi (z_k) l_j ^ \Xi (z_k)w_k ^ \Xi \\
+		&= \sum_{k = 0}^{J} w_k ^ \Xi \delta_{mk}\delta_{jk}, & j, m = 0, ..., J
+	\end{aligned}
+\end{equation}
+
+Where $w_k$ are the same Gauss-Legendre weights used in
+Chapter~\ref{chapter:spectral_element_method}. We use Equation~(\ref{equ:orthogonality_M}) to simplify
+the matrix $M$ to a diagonal matrix.
+
+\begin{equation}
+	M_{jm} = \left\{\begin{matrix}
+	w_j^{\Xi }, &  m = j \\ 
+	0, & m \neq  j
+	\end{matrix}\right.
+\end{equation}
+
+The same can be done for $S$, with the following orthogonality relation:
+
+\begin{equation} \label{equ:orthogonality_S}
+	l_j ^ \Xi (z_m) = \delta_{jm} = \left\{\begin{matrix*}[l]
+	& 1, & if & m = j\\ 
+	& 0, & if & m \neq j
+	\end{matrix*}\right.
+\end{equation}
+
+\begin{equation} \label{equ:matrix_S}
+	\begin{aligned}
+		S_{jk} &= \int_{-1}^{1} l_k ^ \Omega (a + b z) l_j ^ \Xi (z)dz \\
+		&= \sum_{m = 0}^{J} l_k ^ \Omega (a + b z_m) l_j ^ \Xi (z_m) w_m ^ \Xi \\
+		&= \sum_{m = 0}^{J} l_k ^ \Omega (a + b z_m) w_m ^{\Xi} \delta_{jm}, \quad j = 0, ..., J, \: k = 0, ..., N.
+	\end{aligned}
+\end{equation}
+
+We use Equation~(\ref{equ:orthogonality_S}) to simplify the matrix $S$.
+
+\begin{equation}
+	S_{jk} = l_k^{\Omega }\left ( a + bz_j \right )w_j^{\Xi}, \quad j = 0, ..., J, \: k = 0, ..., N.
+\end{equation}
+
+With $M$ and $S$, we can define a projection matrix from element boundary space to face space.
+
+\begin{equation}
+	\begin{aligned}
+		P_{jk} ^ {\Omega  \rightarrow \Xi} &= M^{-1}S \\
+		&= (w_j ^{-1})^{\Xi }  l_k ^ \Omega (a + b z_j)(w_j)^{\Xi} \\
+		&= l_k ^ \Omega (a + b z_j), \quad j = 0, ..., J, \: k = 0, ..., N.
+	\end{aligned}
+\end{equation}
+
+The projection operation from element to mortar is therefore:
+
+\begin{align}  \label{equ4.14}
+	\Psi &= P_{jk}^{\Omega \rightarrow \Xi} U_k  \\
+	&= \sum_{k = 0}^{N}l_k ^ \Omega(a+ b z_j) U(a + b z_k), \quad j = 0, ..., J.
+\end{align}
+
 \subsection{Projection from Mortar to Element} \label{section:adaptive_mesh_refinement:mortar_element_method:mortar_to_element}
 
 \begin{figure}[H]
