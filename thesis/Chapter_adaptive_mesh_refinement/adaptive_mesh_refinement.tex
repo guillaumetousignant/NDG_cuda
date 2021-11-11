@@ -254,10 +254,10 @@ resulting line is given by:
 
 and its coefficients are computed by:
 
-\begin{gather}
-	\beta = \frac{\sum_{i = 1}^{n}(x_i - \overline{x})(y_i - \overline{y})}{\sum_{i = 1}^{n}(x_i -\overline{x})^2}, \\
-	\alpha = \overline{y} - \beta \overline{x},
-\end{gather}
+\begin{align}
+	& \beta = \frac{\sum_{i = 1}^{n}(x_i - \overline{x})(y_i - \overline{y})}{\sum_{i = 1}^{n}(x_i -\overline{x})^2}, \\
+	& \alpha = \overline{y} - \beta \overline{x},
+\end{align}
 
 with $\overline{x}$ and $\overline{y}$ being the $x$ and $y$ averages of the data. The error
 indicator becomes $\sigma = - \beta$, and the constant becomes $C = e^\alpha$.
@@ -423,10 +423,10 @@ has the form $s = a + bz$, where $a$ and $b$ are scalars computer for each face 
 the mesh. We can then define the element boundary solution $U$ and its projection on the face
 $\Psi$. 
 
-\begin{gather} 
-	U(s) = \sum_{k = 0}^{N} U(s_k) l_k(s), \label{equ:element_boundary_solution} \\
-	\Psi (z) = \sum_{k = 0}^{J} \Psi(z_k) l_k(z) \label{equ:face_projected_solution}
-\end{gather}
+\begin{align} 
+	& U(s) = \sum_{k = 0}^{N} U(s_k) l_k(s), \label{equ:element_boundary_solution} \\
+	& \Psi (z) = \sum_{k = 0}^{J} \Psi(z_k) l_k(z) \label{equ:face_projected_solution}
+\end{align}
 
 With $l$ being the Lagrange polynomials, $N$ being the element polynomial order, and $J$ being the
 face polynomial order. We then require that the integral of the error between the solution and its
@@ -520,9 +520,9 @@ With $M$ and $S$, we can define a projection matrix from element boundary space 
 	\end{aligned}
 \end{equation}
 
-The projection operation from element to mortar is therefore:
+The projection operation from element to faces is therefore:
 
-\begin{align}  \label{equ4.14}
+\begin{align}  \label{projection_element_to_face}
 	\Psi &= P_{jk}^{\Omega \rightarrow \Xi} U_k  \\
 	&= \sum_{k = 0}^{N}l_k ^ \Omega(a+ b z_j) U(a + b z_k), \quad j = 0, ..., J.
 \end{align}
@@ -535,6 +535,112 @@ The projection operation from element to mortar is therefore:
 	\caption{Mortar to Element projection: The faces' values are projected to the elements}
 	\label{fig:mortar_to_element}
 \end{figure}
+
+After projecting the element boundary solution to the faces, the fluxes can be computed on the
+faces. The result then needs to be projected back to the element boundaries to be useful. The
+projection from faces to elements is slightly more complicated than the other way around because we
+defined faces to have the size of the smallest elements they connect to. This means that while each
+face can only have one element on either side, elements can have multiple faces on each of their
+sides. The flux solution must then be projected from multiple faces unto each element edge.
+
+This time, we take the element coordinates as a basis, $s \in [-1, 1]$. The coordinate change is the
+inverse of that of the element to face projection, $z = \frac{s - a}{b}$. Here $\Phi$ is the
+computed flux on the face, and $F$ is the projection on the element side. As in the last subsection,
+we require that the integral of the error between the flux solution and its projection multiplied by
+the test function, the Lagrange polynomials here, be zero.
+
+\begin{equation} \label{equ:zero_error_to_element}
+	\int_{-1}^{o'}\left ( F(s) - \Phi (\frac{s - a}{b}) \right ) l_j^\Omega(s)ds + \\
+	\int_{o'}^{1} \left ( F(s) - \Phi (\frac{s - a}{b}) \right )l_j^\Omega (s)ds = 0, \\
+	\quad j = 0...N,
+\end{equation}
+
+This looks very much like the condition we imposed for the element to face projection, except that
+the coordinate change is reversed and there are as many integrals as there are faces connecting to
+the element edge. In this case there are two, but there could be an arbitrary number. We can get the
+projection solution $F$ out of the each face's integral to an integral over the whole element edge.
+
+\begin{equation} \label{equ:zero_error_to_element_rewritten}
+	\int_{-1}^{1}F(s)l_j^\Omega(s)ds = \\
+	\int_{-1}^{o'} \Phi (\frac{s -a}{b}) l_j^\Omega(s)ds + 
+	\int_{o'}^{1} \Phi(\frac{s-a}{b})l_j^\Omega(s)ds.
+\end{equation}
+
+We then rewrite the solutions in Lagrange form.
+
+\begin{gather}
+	F(s) = \sum_{m = 0}^{N}F(s_m)l_m^\Omega(s), \\
+	\Phi(\frac{s -a}{b}) = \sum_{m = 0}^{J}\Phi(\frac{s_m -a}{b})l_m^\Xi(\frac{s -a}{b}).
+\end{gather}
+
+Incorporating those in Equation~(\ref{equ:zero_error_to_element_rewritten}):
+
+\begin{equation} 
+	\begin{aligned}
+		\int_{-1}^{1}F(s_m)l_m^\Omega(s) l_j^\Omega(s)ds &= \int_{-1}^{o'} \Phi(\frac{s_m -a}{b})l_m^\Xi(\frac{s -a}{b}) l_j^\Omega(s)ds \\
+		&+ \int_{o'}^{1} \Phi(\frac{s_m -a}{b})l_m^\Xi(\frac{s -a}{b}) l_j^\Omega(s)ds
+	\end{aligned}
+\end{equation}
+
+Or in matrix form:
+
+\begin{equation} 
+	MF = S \Phi
+\end{equation}
+
+We can again isolate the projected solution.
+
+\begin{equation} 
+	F = M^{-1} S \Phi
+\end{equation}
+
+The $M$ matrix is the same as for the element to face projection.
+
+\begin{equation} \label{equ:matrix_M_face_to_element}
+	\begin{aligned}
+		M_{jm} &= \int_{-1}^{1}l_m^{\Omega}(s)l_j^{\Omega}(s)ds \\
+		&= \sum_{k = 0}^{N} w_k ^{\Omega} \delta_{mk}\delta_{jk}, & j, m = 0, ..., J \\
+		&= \left\{\begin{matrix}
+			w_j^{\Omega }, & j = m \\ 
+			0 & j \neq m.
+			\end{matrix}\right.
+	\end{aligned}
+\end{equation}
+
+The $S$ matrix needs a change of referential from element space $s$ to face space $z$ to have it
+integrate on faces.
+
+\begin{equation}
+	\int_{-1}^{o'} \Phi(\frac{s_m -a}{b})l_m^\Xi(\frac{s -a}{b}) l_j^\Omega(s)ds
+	= b\int_{-1}^{1}\sum_{m = 0}^{J} \Phi(z_m)l_m^{\Xi}l_j^{\Omega}(a + bz)dz
+\end{equation}
+
+$S$ then becomes: 
+
+\begin{equation}
+	\begin{aligned}
+		S_{jm} &=  b\int_{-1}^{1}l_m^{\Xi}(z)l_j^{\Omega}(a + bz)dz
+		= b\sum_{k = 0}^{J}l_m^{\Xi}(z_k)l_j^{\Omega}(a +b z_k)w_k^{\Xi}, \\
+		&= b l_j^{\Omega}(a + bz_m)w_m^{\Xi}, \quad j = 0, ..., N, \quad m = 0, ..., J.
+	\end{aligned}
+\end{equation}
+
+With $M$ and $S$, we can finally define a projection matrix from face space to element boundary space.
+
+\begin{equation}
+	\begin{aligned}
+		P^{\Xi \rightarrow \Omega}_{jm} &= M^{-1}S \\
+		&= (w_j^{-1})^{\Omega } \: b \: l_j^{\Omega }(a + bz_m)w_m^{\Xi}\\
+		&= b \: l_j^{\Omega}(a + bz_m)\frac{w_m^{\Xi}}{w_j^{\Omega}}, \quad j = 0, ..., N, \: m = 0, ... J. 
+	\end{aligned}
+\end{equation} 
+
+The projection operation from faces to elements is therefore:
+
+\begin{align} \label{projection_face_to_element}
+	F &= P^{\Xi \rightarrow \Omega}_{jm} \Phi_m  \\
+	&= \sum_{m = 0}^{N} b \: l_j^{\Omega}(a + bz_m)\frac{w_m^{\Xi}}{w_j^{\Omega}} \Phi (a + b z_j), \quad j = 0, ..., J.
+\end{align}
 
 \section{Implementation} \label{section:adaptive_mesh_refinement:implementation}
 
