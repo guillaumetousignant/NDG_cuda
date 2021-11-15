@@ -655,4 +655,29 @@ element on either side, and the elements can have one or multiple faces on each 
 
 With that structure in mind, adaptive mesh refinement must be able to add elements to the mesh,
 change the polynomial order of elements, replace elements that have split, create, replace and
-change the polynomial order of faces, and keep the element and face references coherent. 
+change the polynomial order of faces, and keep the element and face references coherent. The whole
+adaptivity process happens in parallel on each GPU, each on its mesh block. The adaptivity process
+starts by calculating the error in parallel on each element on the GPU. The elements store their
+estimated error $\tau$ and their error indicator $\sigma$.
+
+\subsection{Counting refining elements} \label{section:adaptive_mesh_refinement:implementation:counting_refining_elements}
+
+% Add reduction figure here
+
+We start by finding out the total number of h-adapting elements. A reduction~\cite{Harris2007} is
+computed on the GPU on a per-block basis. In this reduction each thread examines the estimated error
+$\tau$ of an element against a set threshold and marks it as adapting or not. If adapting, the error
+indicator $\sigma$ is read to mark it as h or p adapting. If h-adapting, the thread sets to 1 the
+value of an intermediate array at the thread's index within the bock. Then, through a sequence of
+synchronisations and additions, the threads add up those values until the block total is known. The
+block total is then written to an output vector at the block's index within the mesh.
+
+Once this is done, the array with each block's total number of h-adapting elements is copied to the
+CPU and the total number of splitting elements is computed by adding all the values. If no elements
+split in the mesh, we can skip the next steps and only p-refine the elements in place. In this case,
+a kernel is launched on the GPU and p-refining elements will resize their solution arrays and
+project their solution unto the new array. The faces can then increase their polynomial order if
+either of their neighbour elements has increased their polynomial order beyond that of the face.
+
+If any element h-adapts, it will create more elements and the element vector will need to be
+resized. 

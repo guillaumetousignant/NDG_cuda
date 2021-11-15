@@ -1,5 +1,6 @@
 \chapter{Graphics Processing Units} \label{chapter:graphics_processing_units} 
 % Talk about parallelism here. Also mesh design? Another section for the whole architecture?
+% Talk about treads and blocks
 % thread warps, branching
 % Talk about saturation, SEMs
 % GPU partitions
@@ -9,6 +10,9 @@
 % Talk about data structure? The fact we use unstructured meshes, are the worse case for GPU
 % Talk about how data is allocated
 % Talk about reduce operations, data transfers for boundaries
+% Start by saying each GPU has an associated CPU
+% Talk about reductions
+% Talk about kernels
 
 \section{Process Parallelism} \label{section:process_parallelism}
 When trying to solve very large problems, a single node with a single GPU will have insufficient

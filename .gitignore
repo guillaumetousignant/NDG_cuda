@@ -65,3 +65,4 @@
 *__pycache__*
 /thesis/svg-inkscape/*
 *.dvi
+*.synctex-*.gz
