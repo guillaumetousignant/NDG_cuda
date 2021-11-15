@@ -679,5 +679,34 @@ a kernel is launched on the GPU and p-refining elements will resize their soluti
 project their solution unto the new array. The faces can then increase their polynomial order if
 either of their neighbour elements has increased their polynomial order beyond that of the face.
 
+\subsection{Moving elements} \label{section:adaptive_mesh_refinement:implementation:moving_elements}
+
+% Add splitting elements index figure here
+
 If any element h-adapts, it will create more elements and the element vector will need to be
-resized. 
+resized. A new vector is created in GPU memory by the CPU with the new increased size. A prefix sum
+vector is created for each block of threads, indicating how many elements have split before it. This
+tells threads where to put existing and new elements in the new vector. A kernel is launched on the
+GPU, and all elements are assigned to threads and will either move, p-refine or h-refine.
+
+Non-refining elements are simply moved to their new index in the new vector. This is not a very
+costly operation because the element structure only contains geometric data, error data and pointers
+to solution data. The solution data itself, representing most of the element's size, is stored in
+dynamic memory on the GPU. It does not need to be copied, only the pointer to it needs to be copied
+in the new element vector. 
+
+P-refining elements act a bit like non-refining elements, except that they need to create new
+solution arrays with their new polynomial order and project their solution to it.
+
+H-refining elements create four smaller elements in the new vector. They are placed consecutively at
+the new index of the splitting element, in an order determined by the space-filling curve used,
+detailed in~\ref{chapter:adaptive_mesh_refinement}. The solution of the splitting element is
+projected on the smaller elements. Four associated faces have to be created to connect the smaller
+elements to each other, as well as a node in the center. 
+
+Once the elements have been moved, their index has changed. All faces need to correct their
+neighbour elements indices to reflect their new indices. The faces use the same block prefix sum as
+the elements to find the new index of their neighbours.
+
+% faces
+% boundaries
