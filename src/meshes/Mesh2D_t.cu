@@ -2815,34 +2815,6 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const SEM::Device::Entities::de
         SEM::Device::Meshes::move_boundary_elements<<<ghosts_numBlocks_, boundaries_blockSize_, 0, stream_>>>(boundary_elements_to_delete.size(), n_elements_, n_elements_new[global_rank], elements_.data(), new_elements.data(), new_faces.data(), boundary_elements_to_delete.data(), device_boundary_elements_to_delete_refine_array.data());
 
         // Boundaries
-        // Boundaries to add
-        size_t n_wall_boundaries_to_add = 0;
-        size_t n_symmetry_boundaries_to_add = 0;
-        size_t n_inflow_boundaries_to_add = 0;
-        size_t n_outflow_boundaries_to_add = 0;
-
-        if (n_elements_recv_left[global_rank] + n_elements_recv_right[global_rank] > 0) {
-            for (const auto neighbour_proc : neighbours_proc_arrays_recv) {
-                switch (neighbour_proc) {
-                    case boundary_type::wall :
-                        ++n_wall_boundaries_to_add;
-                        break;
-        
-                    case boundary_type::symmetry :
-                        ++n_symmetry_boundaries_to_add;
-                        break;
-        
-                    case boundary_type::inflow :
-                        ++n_inflow_boundaries_to_add;
-                        break;
-        
-                    case boundary_type::outflow :
-                        ++n_outflow_boundaries_to_add;
-                        break;
-                }
-            }
-        }
-
         // Boundaries to delete
         size_t n_wall_boundaries_to_delete = 0;
         size_t n_symmetry_boundaries_to_delete = 0;
