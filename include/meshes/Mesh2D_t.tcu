@@ -258,7 +258,11 @@ auto SEM::Device::Meshes::reduce_received_neighbours(size_t n, size_t n_incoming
     unsigned int tid = threadIdx.x;
     size_t i = blockIdx.x*(blockSize*2) + tid;
     unsigned int gridSize = blockSize*2*gridDim.x;
-    sdata[tid] = 0;
+    wall_sdata[tid] = 0;
+    symmetry_sdata[tid] = 0;
+    inflow_sdata[tid] = 0;
+    outflow_sdata[tid] = 0;
+    mpi_destinations_sdata[tid] = 0;
 
     while (i < n) { 
         const int neighbour_proc = neighbour_procs[i];

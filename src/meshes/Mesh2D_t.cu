@@ -7929,7 +7929,6 @@ auto SEM::Device::Meshes::find_mpi_interface_elements_to_keep(size_t n, size_t n
             const size_t local_element_index = neighbour_indices[i];
             const size_t element_side_index = neighbour_sides[i];
 
-            bool first_time = true;
             for (size_t j = 0; j < n_incoming; ++j) {
                 if (incoming_procs[j] == neighbour_proc && incoming_indices[j] == local_element_index && incoming_sides[j] == element_side_index) {
                     boundary_elements_to_delete[mpi_interfaces_destination[j] - n_domain_elements] = false;
@@ -8234,7 +8233,7 @@ auto SEM::Device::Meshes::create_received_neighbours(size_t n_neighbours, size_t
     const int stride = blockDim.x * gridDim.x;
 
     for (size_t i = index; i < n_neighbours; i += stride) {
-         const int neighbour_proc = neighbour_procs[i];
+        const int neighbour_proc = neighbour_procs[i];
 
         switch (neighbour_proc) {
             case SEM::Device::Meshes::Mesh2D_t::boundary_type::wall :
@@ -8254,7 +8253,7 @@ auto SEM::Device::Meshes::create_received_neighbours(size_t n_neighbours, size_t
                 break;
 
             default:
-
+                (void)0;
         }
     }
 }
