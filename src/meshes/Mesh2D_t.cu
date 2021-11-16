@@ -7748,7 +7748,8 @@ auto SEM::Device::Meshes::add_new_received_neighbour_nodes(size_t n_received_nei
         }
         else if (missing_received_neighbour_nodes[i]) {
             if (received_neighbour_node_received_indices[i] < n_received_nodes) {
-                const auto [received_block, received_thread] = std::div(static_cast<long long>(received_neighbour_node_received_indices[i]), blockDim.x);
+                const int received_block = received_neighbour_node_received_indices[i]/blockDim.x;
+                const int received_thread = received_neighbour_node_received_indices[i]/blockDim.x;
 
                 size_t new_received_index = n_nodes + received_nodes_block_offsets[received_block];
                 for (size_t j = received_neighbour_node_received_indices[i] - received_thread; j < received_neighbour_node_received_indices[i]; ++j) {
