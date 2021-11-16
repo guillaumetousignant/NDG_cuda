@@ -716,8 +716,10 @@ the elements to find the new index of their neighbours.
 This section is prone to race conditions. The new element indices must be computed in parallel to be
 efficient, and cannot loop over all elements to find their offset. This would be very slow, and data
 residing in other blocks of threads is not as easily accessible. This is where the prefix sum vector
-enters. EEach thread will know the offset of its block and only need to add the additional number of
-elements splitting before it within its block, which is accessible in block-shared memory.
+enters. Each thread will know the offset of its block and only need to add the additional number of
+elements splitting before it within its block, which is accessible in block-shared memory. This
+ensures no threads read or write the same memory location, and can all move their elements directly
+to the correct location concurrently.
 
 \subsection{Moving faces} \label{section:adaptive_mesh_refinement:implementation:moving_faces}
 
