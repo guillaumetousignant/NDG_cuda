@@ -336,7 +336,7 @@ auto SEM::Device::Meshes::reduce_received_neighbours(size_t n, size_t n_incoming
                         const size_t element_side_index = neighbour_sides[i+blockSize];
 
                         bool first_time = true;
-                        for (size_t j = 0; j < incoming_procs.size(); ++j) {
+                        for (size_t j = 0; j < n_incoming; ++j) {
                             if (incoming_procs[j] == neighbour2_proc && incoming_indices[j] == local_element_index && incoming_sides[j] == element_side_index) {
                                 first_time = false;
                                 break;
