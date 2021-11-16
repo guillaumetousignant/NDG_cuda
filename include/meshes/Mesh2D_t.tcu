@@ -268,19 +268,19 @@ auto SEM::Device::Meshes::reduce_received_neighbours(size_t n, size_t n_incoming
         const int neighbour_proc = neighbour_procs[i];
 
         switch (neighbour_proc) {
-            case boundary_type::wall :
+            case SEM::Device::Meshes::Mesh2D_t::boundary_type::wall :
                 ++wall_sdata[i];
                 break;
 
-            case boundary_type::symmetry :
+            case SEM::Device::Meshes::Mesh2D_t::boundary_type::symmetry :
                 ++symmetry_sdata[i];
                 break;
 
-            case boundary_type::inflow :
+            case SEM::Device::Meshes::Mesh2D_t::boundary_type::inflow :
                 ++inflow_sdata[i];
                 break;
 
-            case boundary_type::outflow :
+            case SEM::Device::Meshes::Mesh2D_t::boundary_type::outflow :
                 ++outflow_sdata[i];
                 break;
 
@@ -314,19 +314,19 @@ auto SEM::Device::Meshes::reduce_received_neighbours(size_t n, size_t n_incoming
             const int neighbour2_proc = neighbour_procs[i+blockSize];
             
             switch (neighbour2_proc) {
-                case boundary_type::wall :
+                case SEM::Device::Meshes::Mesh2D_t::boundary_type::wall :
                     ++wall_sdata[i+blockSize];
                     break;
 
-                case boundary_type::symmetry :
+                case SEM::Device::Meshes::Mesh2D_t::boundary_type::symmetry :
                     ++symmetry_sdata[i+blockSize];
                     break;
 
-                case boundary_type::inflow :
+                case SEM::Device::Meshes::Mesh2D_t::boundary_type::inflow :
                     ++inflow_sdata[i+blockSize];
                     break;
 
-                case boundary_type::outflow :
+                case SEM::Device::Meshes::Mesh2D_t::boundary_type::outflow :
                     ++outflow_sdata[i+blockSize];
                     break;
 
