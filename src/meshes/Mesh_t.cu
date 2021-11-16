@@ -355,7 +355,7 @@ deviceFloat SEM::Device::Meshes::Mesh_t::get_delta_t(const deviceFloat CFL) {
 
     double delta_t_min_local = std::numeric_limits<double>::infinity();
     for (int i = 0; i < elements_numBlocks_; ++i) {
-        delta_t_min_local = std::min(delta_t_min_local, host_delta_t_array_[i]);
+        delta_t_min_local = std::min(delta_t_min_local, static_cast<double>(host_delta_t_array_[i]));
     }
 
     double delta_t_min;
