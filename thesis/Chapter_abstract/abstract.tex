@@ -4,7 +4,7 @@
 	\vspace*{0.5cm} % vertical gap. *" makes sure Latex does not ignore the command. 
 	\phantomsection\addcontentsline{toc}{chapter}{Abstract}
 	{ \Large
-		\textbf{A Graphics Processing Unit based \\ 
+		\textbf{A Graphics Processing Unit Based \\ 
 			Discontinuous Galerkin Wave Equation Solver \\
 			with hp-adaptivity and Load Balancing \\
 		}
@@ -22,36 +22,32 @@
 \end{center}
 
 In order to simulate complex fluid flows, high-order methods can be used to obtain very fine 
-results. However,these methods are computationally expensive, and care should be taken to optimise 
+results. However, these methods are computationally expensive, and care should be taken to optimise 
 their execution time. \textit{Graphics Processing Units (GPUs)} are a relatively new architecture 
 in the domain of scientific computing, leveraging massive parallelism at the expense of reduced 
-flexibility. To achieve the resolution of high-order methods with the throughput of GPUs, we use 
-the \textit{discontinuous Galerkin spectral element method (DG-SEM)} coupled with parallel 
-\textit{adaptive mesh refinement (AMR)} to solve the two-dimensional wave equation. 
+flexibility. To achieve the resolution of high-order methods with the throughput of GPUs, we present
+in this thesis a GPU implementation of the \textit{discontinuous Galerkin spectral element method}
+coupled with parallel \textit{adaptive mesh refinement} to solve the two-dimensional wave equation. 
 
-The \textit{discontinuous Galerkin spectral element method (DG-SEM)} splits the domain in elements, 
-within which the solution is represented as a weighted series of orthogonal polynomials, the 
-\textit{Legendre polynomials} in this case. To insure no resources are wasted, the 
-\textit{adaptive mesh refinement (AMR)} aims to increase the resolution in regions of interest, via 
-two mechanisms: \textit{h-refinement}, where elements are split in multiple smaller ones, and 
-\textit{p-refinement}, where the polynomial order within an element is increased. In order to retain 
+The \textit{discontinuous Galerkin spectral element method} splits the domain into elements,  within
+which the solution is represented as a weighted series of orthogonal polynomials, the
+\textit{Legendre polynomials} in this case. To insure no resources are wasted, the \textit{adaptive
+mesh refinement} aims to increase the resolution in regions of interest, via two mechanisms:
+\textit{h-refinement}, where elements are split into multiple smaller ones, and
+\textit{p-refinement}, where the polynomial order within an element is increased. In order to retain
 the fast convergence high-order methods are known for, the \textit{mortar element method} is used to
 resolve the fluxes between geometrically or functionally non-conforming elements.
 
 Since mesh refinement can increase resolution anywhere in the domain, it is possible that some nodes
 end up with more work to perform than others. Since the nodes need to synchronise multiple times 
 during the calculation, the computation time will be determined by the most heavily loaded node. To 
-remedy this imbalance, a \textit{space-filling curve (SFC) based} repartitioning algorithm is used 
-to even out the computational load and to keep a node's elements together, limiting the number of 
-interfaces between nodes, as these transfers are particularly costly when the data also has to be 
-transferred from and to the GPUs in addition to between the nodes.
+remedy this imbalance, a \textit{space-filling curve} based repartitioning algorithm is used to even
+out the computational load and to keep a node's elements together, limiting the number of interfaces
+between nodes, as these transfers are particularly costly when the data also has to be  transferred
+from and to the GPUs in addition to between the nodes.
 
 % Add stuff about viscosity when it works
-
-
-% -------------------------------------------------
-% add sth about the scaling performance 
-% -------------------------------------------------
+% Add some results
 
 \textbf{Keywords}: Spectral element method, graphics processing units, adaptive mesh refinement, space-filling curves, Hilbert curve, dynamic load balancing, large-scale scientific computing.
 
