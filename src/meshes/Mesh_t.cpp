@@ -410,7 +410,7 @@ hostFloat SEM::Host::Meshes::Mesh_t::get_delta_t(const hostFloat CFL) {
         for (int j = 0; j <= elements_[i].N_; ++j) {
             phi_max = std::max(phi_max, std::abs(elements_[i].phi_[j]));
         }
-        const hostFloat delta_t = CFL * elements_[i].delta_x_ * elements_[i].delta_x_/(phi_max * elements_[i].N_ * elements_[i].N_);
+        const double delta_t = CFL * elements_[i].delta_x_ * elements_[i].delta_x_/(phi_max * elements_[i].N_ * elements_[i].N_);
         delta_t_min_local = std::min(delta_t_min_local, delta_t);
     }
 
