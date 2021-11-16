@@ -1,20 +1,22 @@
 \chapter{Graphics Processing Units} \label{chapter:graphics_processing_units} 
-% Talk about parallelism here. Also mesh design? Another section for the whole architecture?
+
+\section{Architecture} \label{section:graphics_processing_units:architecture}
+% Start by saying each GPU has an associated CPU
 % Talk about treads and blocks
 % thread warps, branching
 % Talk about saturation, SEMs
-% GPU partitions
-% Say something about worker processes, to be general with cpu workers.
 % How it doesn't work well with adaptivity usually
+
+\section{Data structure} \label{section:graphics_processing_units:data_structure}
+% Mesh design, unstructured
 % Talk about dynamic memory
 % Talk about data structure? The fact we use unstructured meshes, are the worse case for GPU
 % Talk about how data is allocated
-% Talk about reduce operations, data transfers for boundaries
-% Start by saying each GPU has an associated CPU
-% Talk about reductions
-% Talk about kernels
 
-\section{Process Parallelism} \label{section:process_parallelism}
+\section{Process Parallelism} \label{section:graphics_processing_units:process_parallelism}
+% GPU partitions
+% Say something about worker processes, to be general with cpu workers.
+
 When trying to solve very large problems, a single node with a single GPU will have insufficient
 processing power and memory to solve the problem in a reasonable time, or at all. To work with these
 larger problems, the work needs to be split at another level than GPU parallelism.  
@@ -28,3 +30,8 @@ it is sent through the MPI runtime. It then needs to be copied to the receiving 
 exchange necessitates multiple transfers on different levels and should be optimised as much as
 possible. An approach to minimise the number of interfaces between the different mesh blocks is
 explained in Chapter~\ref{chapter:load_balancing}.
+
+\section{Implementation} \label{section:graphics_processing_units:implementation}
+% Talk about reductions
+% Talk about kernels
+% Talk about reduce operations, data transfers for boundaries

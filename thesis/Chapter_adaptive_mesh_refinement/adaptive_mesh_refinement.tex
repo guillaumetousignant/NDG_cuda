@@ -673,11 +673,16 @@ synchronisations and additions, the threads add up those values until the block 
 block total is then written to an output vector at the block's index within the mesh.
 
 Once this is done, the array with each block's total number of h-adapting elements is copied to the
-CPU and the total number of splitting elements is computed by adding all the values. If no elements
-split in the mesh, we can skip the next steps and only p-refine the elements in place. In this case,
-a kernel is launched on the GPU and p-refining elements will resize their solution arrays and
-project their solution unto the new array. The faces can then increase their polynomial order if
-either of their neighbour elements has increased their polynomial order beyond that of the face.
+CPU and the total number of splitting elements is computed by adding all the values. It would be
+possible to launch this kernel again with fewer blocks on the resulting vector to reduce further to
+fewer values. This would not fill the GPU, and having the sum be defined with the same blocks as the
+elements will help us later when we want to know where to place new elements in the element vector.
+
+If no elements split in the mesh, we can skip the next steps and only p-refine the elements in
+place. In this case, a kernel is launched on the GPU and p-refining elements will resize their
+solution arrays and project their solution unto the new array. The faces can then increase their
+polynomial order if either of their neighbour elements has increased their polynomial order beyond
+that of the face. 
 
 \subsection{Moving elements} \label{section:adaptive_mesh_refinement:implementation:moving_elements}
 
@@ -708,5 +713,13 @@ Once the elements have been moved, their index has changed. All faces need to co
 neighbour elements indices to reflect their new indices. The faces use the same block prefix sum as
 the elements to find the new index of their neighbours.
 
-% faces
-% boundaries
+This section is prone to race conditions. The new element indices must be computed in parallel to be
+efficient, and cannot loop over all elements to find their offset. This would be very slow, and data
+residing in other blocks of threads is not as easily accessible. This is where the prefix sum vector
+enters. EEach thread will know the offset of its block and only need to add the additional number of
+elements splitting before it within its block, which is accessible in block-shared memory.
+
+\subsection{Moving faces} \label{section:adaptive_mesh_refinement:implementation:moving_faces}
+
+
+\subsection{Moving boundaries} \label{section:adaptive_mesh_refinement:implementation:moving_boundaries}
