@@ -1909,7 +1909,7 @@ auto SEM::Device::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceF
     new_device_mpi_interfaces_incoming_refine_array.clear(stream_);
 }
 
-auto SEM::Device::Meshes::Mesh2D_t::load_balance(const SEM::Device::Entities::device_vector<deviceFloat>& polynomial_nodes) -> void {
+auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat>& polynomial_nodes) -> void {
     int global_rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
     int global_size;
@@ -3268,7 +3268,7 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const SEM::Device::Entities::de
             const size_t outflow_boundaries_start_index = outflow_boundaries_.size() - n_outflow_boundaries_to_delete;
             const size_t mpi_destinations_start_index = mpi_interfaces_destination_.size() + n_mpi_destinations_to_add_send - n_mpi_destinations_to_delete;
             // What about faces?
-            SEM::Device::Meshes::create_received_neighbours<<<neighbours_numBlocks, elements_blockSize_, 0, stream_>>>(neighbours_arrays_recv.size(), new_elements_start_index, wall_boundaries_start_index, symmetry_boundaries_start_index, inflow_boundaries_start_index, outflow_boundaries_start_index, mpi_destinations_start_index, n_wall_boundaries_to_add, n_symmetry_boundaries_to_add, n_inflow_boundaries_to_add, n_outflow_boundaries_to_add, n_mpi_destinations_to_add_recv, neighbours_arrays_recv_device.data(), neighbours_proc_arrays_recv_device.data(), neighbours_side_arrays_recv_device.data(), received_neighbour_node_indices.data(), new_elements.data(), nodes_.data(), neighbours_element_indices.data(), neighbours_element_side.data(), new_wall_boundaries.data(), new_symmetry_boundaries.data(), new_inflow_boundaries.data(), new_outflow_boundaries.data(), new_mpi_interfaces_destination.data(), wall_boundaries_to_add_refine_array.data(), symmetry_boundaries_to_add_refine_array.data(), inflow_boundaries_to_add_refine_array.data(), outflow_boundaries_to_add_refine_array.data(), mpi_destinations_to_add_refine_array.data());
+            SEM::Device::Meshes::create_received_neighbours<<<neighbours_numBlocks, elements_blockSize_, 0, stream_>>>(neighbours_arrays_recv.size(), global_rank, new_elements_start_index, wall_boundaries_start_index, symmetry_boundaries_start_index, inflow_boundaries_start_index, outflow_boundaries_start_index, mpi_destinations_start_index, n_wall_boundaries_to_add, n_symmetry_boundaries_to_add, n_inflow_boundaries_to_add, n_outflow_boundaries_to_add, n_mpi_destinations_to_add_recv, neighbours_arrays_recv_device.data(), neighbours_proc_arrays_recv_device.data(), neighbours_side_arrays_recv_device.data(), received_neighbour_node_indices.data(), new_elements.data(), nodes_.data(), neighbours_element_indices.data(), neighbours_element_side.data(), new_wall_boundaries.data(), new_symmetry_boundaries.data(), new_inflow_boundaries.data(), new_outflow_boundaries.data(), new_mpi_interfaces_destination.data(), wall_boundaries_to_add_refine_array.data(), symmetry_boundaries_to_add_refine_array.data(), inflow_boundaries_to_add_refine_array.data(), outflow_boundaries_to_add_refine_array.data(), mpi_destinations_to_add_refine_array.data(), polynomial_nodes.data());
 
             neighbours_arrays_recv_device.clear(stream_);
             neighbours_proc_arrays_recv_device.clear(stream_);
@@ -8140,7 +8140,7 @@ auto SEM::Device::Meshes::move_required_mpi_origins(size_t n_mpi_origins, size_t
 }
 
 __global__
-auto SEM::Device::Meshes::create_sent_mpi_boundaries_destinations(size_t n_sent_elements, size_t sent_elements_offset, size_t new_elements_offset, size_t mpi_interfaces_destination_offset, Element2D_t* elements, Element2D_t* new_elements, Face2D_t* faces, const Vec2<deviceFloat>* nodes, const size_t* elements_send_destinations_offset, const int* elements_send_destinations_keep, size_t* mpi_interfaces_destination,  const deviceFloat* polynomial_nodes) -> void {
+auto SEM::Device::Meshes::create_sent_mpi_boundaries_destinations(size_t n_sent_elements, size_t sent_elements_offset, size_t new_elements_offset, size_t mpi_interfaces_destination_offset, Element2D_t* elements, Element2D_t* new_elements, Face2D_t* faces, const Vec2<deviceFloat>* nodes, const size_t* elements_send_destinations_offset, const int* elements_send_destinations_keep, size_t* mpi_interfaces_destination, const deviceFloat* polynomial_nodes) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -8154,7 +8154,7 @@ auto SEM::Device::Meshes::create_sent_mpi_boundaries_destinations(size_t n_sent_
             if (elements_send_destinations_keep[4 * i + j]) {
                 const size_t new_element_index = new_elements_offset + new_element_offset;
                 Element2D_t& new_element = new_elements[new_element_index];
-                const size_t next_side_index = (j + 1 >= 4) ? 0 : j + 1;
+                const size_t next_side_index = (j + 1 >= element.nodes_.size()) ? 0 : j + 1;
 
                 mpi_interfaces_destination[mpi_interfaces_destination_offset + new_element_offset] = new_element_index;
 
@@ -8231,32 +8231,137 @@ auto SEM::Device::Meshes::recv_mpi_boundaries_destinations_reuse_faces(size_t n_
 }
 
 __global__
-auto SEM::Device::Meshes::create_received_neighbours(size_t n_neighbours, size_t elements_offset, size_t wall_offset, size_t symmetry_offset, size_t inflow_offset, size_t outflow_offset, size_t mpi_destinations_offset, size_t n_new_wall, size_t n_new_symmetry, size_t n_new_inflow, size_t n_new_outflow, size_t n_new_mpi_destinations, const size_t* neighbour_indices, const int* neighbour_procs, const size_t* neighbour_sides, const size_t* neighbour_node_indices, Element2D_t* elements, const Vec2<deviceFloat>* nodes, size_t* neighbour_given_indices, size_t* neighbour_given_sides, size_t* wall_boundaries, size_t* symmetry_boundaries, size_t* inflow_boundaries, size_t* outflow_boundaries, size_t* mpi_destinations, const size_t* wall_block_offsets, const size_t* symmetry_block_offsets, const size_t* inflow_block_offsets, const size_t* outflow_block_offsets, const size_t* mpi_destinations_block_offsets) -> void {
+auto SEM::Device::Meshes::create_received_neighbours(
+        size_t n_neighbours, 
+        int rank, 
+        size_t elements_offset, 
+        size_t wall_offset, 
+        size_t symmetry_offset, 
+        size_t inflow_offset, 
+        size_t outflow_offset, 
+        size_t mpi_destinations_offset, 
+        size_t n_new_wall, 
+        size_t n_new_symmetry, 
+        size_t n_new_inflow, 
+        size_t n_new_outflow, 
+        size_t n_new_mpi_destinations, 
+        const size_t* neighbour_indices, 
+        const int* neighbour_procs, 
+        const size_t* neighbour_sides, 
+        const size_t* neighbour_node_indices, 
+        Element2D_t* elements, 
+        const Vec2<deviceFloat>* nodes, 
+        size_t* neighbour_given_indices, 
+        size_t* neighbour_given_sides, 
+        size_t* wall_boundaries, 
+        size_t* symmetry_boundaries, 
+        size_t* inflow_boundaries, 
+        size_t* outflow_boundaries, 
+        size_t* mpi_destinations, 
+        const size_t* wall_block_offsets, 
+        const size_t* symmetry_block_offsets, 
+        const size_t* inflow_block_offsets, 
+        const size_t* outflow_block_offsets, 
+        const size_t* mpi_destinations_block_offsets,
+        const deviceFloat* polynomial_nodes) -> void {
+    
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
+    const int thread_id = threadIdx.x;
+    const int block_id = blockIdx.x;
 
     for (size_t i = index; i < n_neighbours; i += stride) {
         const int neighbour_proc = neighbour_procs[i];
 
         switch (neighbour_proc) {
             case SEM::Device::Meshes::Mesh2D_t::boundary_type::wall :
-                
+                size_t n_additional_before = 0;
+                for (size_t j = i - thread_id; j < i; ++j) {
+                    n_additional_before += (neighbour_procs[j] == SEM::Device::Meshes::Mesh2D_t::boundary_type::wall);
+                }
+
+                const size_t new_element_index = elements_offset + n_new_mpi_destinations + wall_block_offsets[block_id] + n_additional_before;
+                const size_t new_boundary_index = wall_offset + wall_block_offsets[block_id] + n_additional_before;
+
+                wall_boundaries[new_boundary_index] = new_element_index;
+                neighbour_given_indices[i] = new_element_index;
+                neighbour_given_sides[i] = 0;
+
+                Element2D_t& element = elements[new_element_index];
+                element.clear_storage();
+                element.N_ = noot.N_;
+                element.status_ = Hilbert::Status::A;
+                element.rotation_ = 0;
+                element.nodes_ = {neighbour_node_indices[2 * i], neighbour_node_indices[2 * i + 1], neighbour_node_indices[2 * i + 1], neighbour_node_indices[2 * i]};
+                element.split_level_ = 0; // CHECK should set other variables?
+
+                element.allocate_boundary_storage();
+
+                std::array<Vec2<deviceFloat>, 4> points {nodes[element.nodes_[0]], 
+                                                         nodes[element.nodes_[1]], 
+                                                         nodes[element.nodes_[2]], 
+                                                         nodes[element.nodes_[3]]};
+                element.compute_boundary_geometry(points, polynomial_nodes);
+
                 break;
 
             case SEM::Device::Meshes::Mesh2D_t::boundary_type::symmetry :
+                size_t n_additional_before = 0;
+                for (size_t j = i - thread_id; j < i; ++j) {
+                    n_additional_before += (neighbour_procs[j] == SEM::Device::Meshes::Mesh2D_t::boundary_type::symmetry);
+                }
+
+                const size_t new_element_index = elements_offset + n_new_mpi_destinations + n_new_wall + symmetry_block_offsets[block_id] + n_additional_before;
+                const size_t new_boundary_index = symmetry_offset + symmetry_block_offsets[block_id] + n_additional_before;
                 
+                symmetry_boundaries[new_boundary_index] = new_element_index;
+                neighbour_given_indices[i] = new_element_index;
+                neighbour_given_sides[i] = 0;
+
                 break;
 
             case SEM::Device::Meshes::Mesh2D_t::boundary_type::inflow :
+                size_t n_additional_before = 0;
+                for (size_t j = i - thread_id; j < i; ++j) {
+                    n_additional_before += (neighbour_procs[j] == SEM::Device::Meshes::Mesh2D_t::boundary_type::inflow);
+                }
+
+                const size_t new_element_index = elements_offset + n_new_mpi_destinations + n_new_wall + n_new_symmetry + inflow_block_offsets[block_id] + n_additional_before;
+                const size_t new_boundary_index = inflow_offset + inflow_block_offsets[block_id] + n_additional_before;
                 
+                inflow_boundaries[new_boundary_index] = new_element_index;
+                neighbour_given_indices[i] = new_element_index;
+                neighbour_given_sides[i] = 0;
+
                 break;
 
             case SEM::Device::Meshes::Mesh2D_t::boundary_type::outflow :
+                size_t n_additional_before = 0;
+                for (size_t j = i - thread_id; j < i; ++j) {
+                    n_additional_before += (neighbour_procs[j] == SEM::Device::Meshes::Mesh2D_t::boundary_type::outflow);
+                }
                 
+                const size_t new_element_index = elements_offset + n_new_mpi_destinations + n_new_wall + n_new_symmetry + n_new_inflow + outflow_block_offsets[block_id] + n_additional_before;
+                const size_t new_boundary_index = outflow_offset + outflow_block_offsets[block_id] + n_additional_before;
+             
+                outflow_boundaries[new_boundary_index] = new_element_index;
+                neighbour_given_indices[i] = new_element_index;
+                neighbour_given_sides[i] = 0;
+
                 break;
 
-            default:
-                (void)0;
+            default: // Not so simple!
+                if (neighbour_proc >= 0) {
+                    if (neighbour_proc != rank) {
+                        size_t n_additional_before = 0;
+                        for (size_t j = i - thread_id; j < i; ++j) {
+                            n_additional_before += (neighbour_procs[j] >= 0 && neighbour_procs[j] != rank);
+                        }
+                    }
+                    else {
+
+                    }
+                }
         }
     }
 }
