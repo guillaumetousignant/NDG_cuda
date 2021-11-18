@@ -3284,7 +3284,45 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
             const size_t outflow_boundaries_start_index = outflow_boundaries_.size() - n_outflow_boundaries_to_delete;
             const size_t mpi_destinations_start_index = mpi_interfaces_destination_.size() + n_mpi_destinations_to_add_send - n_mpi_destinations_to_delete;
             // What about faces?
-            SEM::Device::Meshes::create_received_neighbours<<<neighbours_numBlocks, elements_blockSize_, 0, stream_>>>(neighbours_arrays_recv.size(), global_rank, new_elements_start_index, wall_boundaries_start_index, symmetry_boundaries_start_index, inflow_boundaries_start_index, outflow_boundaries_start_index, mpi_destinations_start_index, n_wall_boundaries_to_add, n_symmetry_boundaries_to_add, n_inflow_boundaries_to_add, n_outflow_boundaries_to_add, n_mpi_destinations_to_add_recv, neighbours_arrays_recv_device.data(), neighbours_proc_arrays_recv_device.data(), neighbours_side_arrays_recv_device.data(), neighbours_N_arrays_recv_device.data(), received_neighbour_node_indices.data(), new_elements.data(), nodes_.data(), neighbours_element_indices.data(), neighbours_element_side.data(), new_wall_boundaries.data(), new_symmetry_boundaries.data(), new_inflow_boundaries.data(), new_outflow_boundaries.data(), new_mpi_interfaces_destination.data(), wall_boundaries_to_add_refine_array.data(), symmetry_boundaries_to_add_refine_array.data(), inflow_boundaries_to_add_refine_array.data(), outflow_boundaries_to_add_refine_array.data(), mpi_destinations_to_add_refine_array.data(), polynomial_nodes.data());
+            SEM::Device::Meshes::create_received_neighbours<<<neighbours_numBlocks, elements_blockSize_, 0, stream_>>>(
+                neighbours_arrays_recv.size(), 
+                global_rank, 
+                mpi_interfaces_new_process_incoming_device.size(), 
+                new_elements_start_index, 
+                wall_boundaries_start_index, 
+                symmetry_boundaries_start_index, 
+                inflow_boundaries_start_index, 
+                outflow_boundaries_start_index, 
+                mpi_destinations_start_index, 
+                n_wall_boundaries_to_add, 
+                n_symmetry_boundaries_to_add, 
+                n_inflow_boundaries_to_add, 
+                n_outflow_boundaries_to_add, 
+                n_mpi_destinations_to_add_recv, 
+                neighbours_arrays_recv_device.data(), 
+                neighbours_proc_arrays_recv_device.data(), 
+                neighbours_side_arrays_recv_device.data(), 
+                neighbours_N_arrays_recv_device.data(), 
+                received_neighbour_node_indices.data(), 
+                mpi_interfaces_new_local_index_incoming_device.data(), 
+                mpi_interfaces_new_process_incoming_device.data(), 
+                mpi_interfaces_new_side_incoming_device.data(), 
+                new_elements.data(), 
+                nodes_.data(), 
+                mpi_interfaces_destination_.data(),
+                neighbours_element_indices.data(), 
+                neighbours_element_side.data(), 
+                new_wall_boundaries.data(), 
+                new_symmetry_boundaries.data(), 
+                new_inflow_boundaries.data(), 
+                new_outflow_boundaries.data(), 
+                new_mpi_interfaces_destination.data(), 
+                wall_boundaries_to_add_refine_array.data(), 
+                symmetry_boundaries_to_add_refine_array.data(), 
+                inflow_boundaries_to_add_refine_array.data(), 
+                outflow_boundaries_to_add_refine_array.data(), 
+                mpi_destinations_to_add_refine_array.data(), 
+                polynomial_nodes.data());
 
             neighbours_arrays_recv_device.clear(stream_);
             neighbours_proc_arrays_recv_device.clear(stream_);
@@ -8254,6 +8292,7 @@ __global__
 auto SEM::Device::Meshes::create_received_neighbours(
         size_t n_neighbours, 
         int rank, 
+        size_t n_mpi_destinations,
         size_t elements_offset, 
         size_t wall_offset, 
         size_t symmetry_offset, 
@@ -8270,8 +8309,12 @@ auto SEM::Device::Meshes::create_received_neighbours(
         const size_t* neighbour_sides, 
         const int* neighbour_N,
         const size_t* neighbour_node_indices, 
+        const size_t* mpi_destinations_indices,
+        const int* mpi_destinations_procs,
+        const size_t* mpi_destinations_sides,
         Element2D_t* elements, 
         const Vec2<deviceFloat>* nodes, 
+        const size_t* old_mpi_destinations,
         size_t* neighbour_given_indices, 
         size_t* neighbour_given_sides, 
         size_t* wall_boundaries, 
@@ -8422,13 +8465,103 @@ auto SEM::Device::Meshes::create_received_neighbours(
             default: // Not so simple!
                 if (neighbour_proc >= 0) {
                     if (neighbour_proc != rank) {
-                        size_t n_additional_before = 0;
-                        for (size_t j = i - thread_id; j < i; ++j) {
-                            n_additional_before += (neighbour_procs[j] >= 0 && neighbour_procs[j] != rank);
+                        // Check if creating or reusing
+                        neighbour_given_sides[i] = 0;
+
+                        const size_t local_element_index = neighbour_indices[i];
+                        const size_t element_side_index = neighbour_sides[i];
+
+                        bool first_time = true;
+                        for (size_t j = 0; j < n_mpi_destinations; ++j) {
+                            if (mpi_destinations_procs[j] == neighbour_proc && mpi_destinations_indices[j] == local_element_index && mpi_destinations_sides[j] == element_side_index) {
+                                neighbour_given_indices[i] = old_mpi_destinations[j];
+                                first_time = false;
+                                break;
+                            }
+                        }
+                        if (first_time) {
+                            for (size_t j = 0; j < i; ++j) {
+                                if (neighbour_procs[j] == neighbour_proc && neighbour_indices[j] == local_element_index && neighbour_sides[j] == element_side_index) {
+                                    other_block = j / blockDim.x;
+                                    other_thread = j % blockDim.x;
+
+                                    size_t n_additional_before = 0;
+                                    for (size_t k = j - other_thread; k < j; ++k) {
+                                        bool other_first_time = true;
+                                        for (size_t l = 0; l < n_mpi_destinations; ++l) {
+                                            if (mpi_destinations_procs[l] == neighbour_procs[k] && mpi_destinations_indices[l] == neighbour_indices[k] && mpi_destinations_sides[l] == neighbour_sides[k]) {
+                                                other_first_time = false;
+                                                break;
+                                            }
+                                        }
+                                        if (other_first_time) {
+                                            for (size_t l = 0; l < k; ++l) {
+                                                if (neighbour_procs[l] == neighbour_procs[k] && neighbour_indices[l] == neighbour_indices[k] && neighbour_sides[l] == neighbour_sides[k]) {
+                                                    other_first_time = false;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        if (other_first_time) {
+                                            ++n_additional_before;
+                                        }
+                                    }
+
+                                    neighbour_given_indices[i] = elements_offset + mpi_destinations_block_offsets[other_block] + n_additional_before;
+                                    first_time = false;
+                                    break;
+                                }
+                            }
+                        }
+                        if (first_time) {
+                            size_t n_additional_before = 0;
+                            for (size_t k = i - thread_id; k < i; ++k) {
+                                bool other_first_time = true;
+                                for (size_t l = 0; l < n_mpi_destinations; ++l) {
+                                    if (mpi_destinations_procs[l] == neighbour_procs[k] && mpi_destinations_indices[l] == neighbour_indices[k] && mpi_destinations_sides[l] == neighbour_sides[k]) {
+                                        other_first_time = false;
+                                        break;
+                                    }
+                                }
+                                if (other_first_time) {
+                                    for (size_t l = 0; l < k; ++l) {
+                                        if (neighbour_procs[l] == neighbour_procs[k] && neighbour_indices[l] == neighbour_indices[k] && neighbour_sides[l] == neighbour_sides[k]) {
+                                            other_first_time = false;
+                                            break;
+                                        }
+                                    }
+                                }
+                                if (other_first_time) {
+                                    ++n_additional_before;
+                                }
+                            }
+
+                            const size_t new_element_index = elements_offset + mpi_destinations_block_offsets[block_id] + n_additional_before;
+                            const size_t new_mpi_destination_index = mpi_destinations_offset + mpi_destinations_block_offsets[block_id] + n_additional_before;
+
+                            mpi_destinations[new_mpi_destination_index] = new_element_index;
+                            neighbour_given_indices[i] = new_element_index;
+
+                            Element2D_t& element = elements[new_element_index];
+                            element.clear_storage();
+                            element.N_ = neighbour_N[i];
+                            element.status_ = Hilbert::Status::A;
+                            element.rotation_ = 0;
+                            element.nodes_ = {neighbour_node_indices[2 * i], neighbour_node_indices[2 * i + 1], neighbour_node_indices[2 * i + 1], neighbour_node_indices[2 * i]};
+                            element.split_level_ = 0; // CHECK should set other variables?
+
+                            element.allocate_boundary_storage();
+
+                            std::array<Vec2<deviceFloat>, 4> points {nodes[element.nodes_[0]], 
+                                                                     nodes[element.nodes_[1]], 
+                                                                     nodes[element.nodes_[2]], 
+                                                                     nodes[element.nodes_[3]]};
+                            element.compute_boundary_geometry(points, polynomial_nodes);
                         }
                     }
                     else {
-
+                        neighbour_given_indices[i] = neighbour_indices[i];
+                        neighbour_given_sides[i] = neighbour_sides[i];
                     }
                 }
         }
