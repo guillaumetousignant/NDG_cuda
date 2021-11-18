@@ -3353,7 +3353,7 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
             device_vector<size_t> neighbour_offsets(neighbour_offsets_left, stream_);
 
             const int recv_numBlocks = (n_elements_recv_left[global_rank] + boundaries_blockSize_ - 1) / boundaries_blockSize_;
-            SEM::Device::Meshes::fill_received_elements<<<recv_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_recv_left[global_rank], n_elements_new[global_rank], n_elements_recv_left[global_rank], n_elements_recv_right[global_rank], new_elements.data(), maximum_N_, nodes_.data(), solution_arrays.data(), n_neighbours_arrays.data(), neighbour_offsets.data(), received_node_indices.data(), neighbours_element_indices.data(), neighbours_element_side.data(), polynomial_nodes.data());
+            SEM::Device::Meshes::fill_received_elements<<<recv_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_recv_left[global_rank], 0, n_elements_new[global_rank], n_elements_recv_left[global_rank], n_elements_recv_right[global_rank], new_elements.data(), maximum_N_, nodes_.data(), solution_arrays.data(), n_neighbours_arrays.data(), neighbour_offsets.data(), received_node_indices.data(), neighbours_element_indices.data(), neighbours_element_side.data(), polynomial_nodes.data());
 
             // Then we must figure out faces etc
             // Maybe we do all this before we put the solution back, as to do it at the same time
@@ -3373,7 +3373,7 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
             device_vector<size_t> neighbour_offsets(neighbour_offsets_right, stream_);
 
             const int recv_numBlocks = (n_elements_recv_right[global_rank] + boundaries_blockSize_ - 1) / boundaries_blockSize_;
-            SEM::Device::Meshes::fill_received_elements<<<recv_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_recv_right[global_rank], n_elements_new[global_rank], n_elements_recv_left[global_rank], n_elements_recv_right[global_rank], new_elements.data() + n_elements_new[global_rank] - n_elements_recv_right[global_rank], maximum_N_, nodes_.data(), solution_arrays.data(), n_neighbours_arrays.data(), received_node_indices.data() + 4 * n_elements_recv_left[global_rank], neighbour_offsets.data() + n_elements_recv_left[global_rank], neighbours_element_indices.data(), neighbours_element_side.data(), polynomial_nodes.data());
+            SEM::Device::Meshes::fill_received_elements<<<recv_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_recv_right[global_rank], n_elements_new[global_rank] - n_elements_recv_right[global_rank], n_elements_new[global_rank], n_elements_recv_left[global_rank], n_elements_recv_right[global_rank], new_elements.data(), maximum_N_, nodes_.data(), solution_arrays.data(), n_neighbours_arrays.data(), received_node_indices.data() + 4 * n_elements_recv_left[global_rank], neighbour_offsets.data() + n_elements_recv_left[global_rank], neighbours_element_indices.data(), neighbours_element_side.data(), polynomial_nodes.data());
 
             // Then we must figure out faces etc
             // Maybe we do all this before we put the solution back, as to do it at the same time
@@ -7274,6 +7274,7 @@ auto SEM::Device::Meshes::get_transfer_solution(size_t n_elements, const Element
 __global__
 auto SEM::Device::Meshes::fill_received_elements(
         size_t n_elements, 
+        size_t element_offset,
         size_t n_domain_elements,
         size_t n_elements_recv_left, 
         size_t n_elements_recv_right,
@@ -7291,12 +7292,13 @@ auto SEM::Device::Meshes::fill_received_elements(
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (size_t element_index = index; element_index < n_elements; element_index += stride) {
-        const size_t p_offset =  3 * element_index      * std::pow(maximum_N + 1, 2);
-        const size_t u_offset = (3 * element_index + 1) * std::pow(maximum_N + 1, 2);
-        const size_t v_offset = (3 * element_index + 2) * std::pow(maximum_N + 1, 2);
-        const size_t neighbours_offset = 4 * element_index;
+    for (size_t i = index; i < n_elements; i += stride) {
+        const size_t p_offset =  3 * i      * std::pow(maximum_N + 1, 2);
+        const size_t u_offset = (3 * i + 1) * std::pow(maximum_N + 1, 2);
+        const size_t v_offset = (3 * i + 2) * std::pow(maximum_N + 1, 2);
+        const size_t neighbours_offset = 4 * i;
 
+        const size_t element_index = element_offset + i;
         Element2D_t& element = elements[element_index];
         element.clear_storage();
         element.allocate_storage();
@@ -7322,29 +7324,22 @@ auto SEM::Device::Meshes::fill_received_elements(
         element.compute_geometry(received_element_nodes, polynomial_nodes);
 
         // Filling faces
-        size_t neighbours_index = neighbours_offsets[element_index];
-        for (size_t i = 0; i < element.faces_.size(); ++i) {
-            const size_t side_n_neighbours = n_neighbours[neighbours_offset + i];
-            element.faces_[i] = cuda_vector<size_t>(side_n_neighbours);
+        size_t neighbours_index = neighbours_offsets[i];
+        for (size_t j = 0; j < element.faces_.size(); ++j) {
+            const size_t side_n_neighbours = n_neighbours[neighbours_offset + j];
+            element.faces_[j] = cuda_vector<size_t>(side_n_neighbours);
 
             for (size_t j = 0; j < side_n_neighbours; ++j) {
                 const size_t neighbour_index = neighbours_index + j;
                 const size_t neighbour_element_index = neighbours_indices[neighbour_index];
                 const size_t neighbour_side = neighbours_sides[neighbour_index];
                 
-                if (neighbour_element_index < n_domain_elements) {
-                    if (neighbour_element_index < n_elements_recv_left || neighbour_element_index > n_domain_elements - n_elements_recv_right) {
-
-                    }
-                    else {
-
-                    }
+                if (neighbour_element_index >= n_domain_elements) {
+                    
                 }
-                else {
+                else if (neighbour_element_index < n_elements_recv_left || neighbour_element_index > n_domain_elements - n_elements_recv_right) {
 
                 }
-
-
             }
 
             neighbours_index += side_n_neighbours;
