@@ -3353,7 +3353,7 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
             device_vector<size_t> neighbour_offsets(neighbour_offsets_left, stream_);
 
             const int recv_numBlocks = (n_elements_recv_left[global_rank] + boundaries_blockSize_ - 1) / boundaries_blockSize_;
-            SEM::Device::Meshes::fill_received_elements<<<recv_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_recv_left[global_rank], new_elements.data(), maximum_N_, nodes_.data(), solution_arrays.data(), n_neighbours_arrays.data(), neighbour_offsets.data(), received_node_indices.data(), neighbours_element_indices.data(), neighbours_element_side.data(), polynomial_nodes.data());
+            SEM::Device::Meshes::fill_received_elements<<<recv_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_recv_left[global_rank], n_elements_new[global_rank], n_elements_recv_left[global_rank], n_elements_recv_right[global_rank], new_elements.data(), maximum_N_, nodes_.data(), solution_arrays.data(), n_neighbours_arrays.data(), neighbour_offsets.data(), received_node_indices.data(), neighbours_element_indices.data(), neighbours_element_side.data(), polynomial_nodes.data());
 
             // Then we must figure out faces etc
             // Maybe we do all this before we put the solution back, as to do it at the same time
@@ -3373,7 +3373,7 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
             device_vector<size_t> neighbour_offsets(neighbour_offsets_right, stream_);
 
             const int recv_numBlocks = (n_elements_recv_right[global_rank] + boundaries_blockSize_ - 1) / boundaries_blockSize_;
-            SEM::Device::Meshes::fill_received_elements<<<recv_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_recv_right[global_rank], new_elements.data() + n_elements_new[global_rank] - n_elements_recv_right[global_rank], maximum_N_, nodes_.data(), solution_arrays.data(), n_neighbours_arrays.data(), received_node_indices.data() + 4 * n_elements_recv_left[global_rank], neighbour_offsets.data() + n_elements_recv_left[global_rank], neighbours_element_indices.data(), neighbours_element_side.data(), polynomial_nodes.data());
+            SEM::Device::Meshes::fill_received_elements<<<recv_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_recv_right[global_rank], n_elements_new[global_rank], n_elements_recv_left[global_rank], n_elements_recv_right[global_rank], new_elements.data() + n_elements_new[global_rank] - n_elements_recv_right[global_rank], maximum_N_, nodes_.data(), solution_arrays.data(), n_neighbours_arrays.data(), received_node_indices.data() + 4 * n_elements_recv_left[global_rank], neighbour_offsets.data() + n_elements_recv_left[global_rank], neighbours_element_indices.data(), neighbours_element_side.data(), polynomial_nodes.data());
 
             // Then we must figure out faces etc
             // Maybe we do all this before we put the solution back, as to do it at the same time
@@ -7274,6 +7274,9 @@ auto SEM::Device::Meshes::get_transfer_solution(size_t n_elements, const Element
 __global__
 auto SEM::Device::Meshes::fill_received_elements(
         size_t n_elements, 
+        size_t n_domain_elements,
+        size_t n_elements_recv_left, 
+        size_t n_elements_recv_right,
         Element2D_t* elements, 
         int maximum_N, 
         const Vec2<deviceFloat>* nodes, 
@@ -7329,6 +7332,19 @@ auto SEM::Device::Meshes::fill_received_elements(
                 const size_t neighbour_element_index = neighbours_indices[neighbour_index];
                 const size_t neighbour_side = neighbours_sides[neighbour_index];
                 
+                if (neighbour_element_index < n_domain_elements) {
+                    if (neighbour_element_index < n_elements_recv_left || neighbour_element_index > n_domain_elements - n_elements_recv_right) {
+
+                    }
+                    else {
+
+                    }
+                }
+                else {
+
+                }
+
+
             }
 
             neighbours_index += side_n_neighbours;
