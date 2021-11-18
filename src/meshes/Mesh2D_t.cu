@@ -3353,18 +3353,33 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
             // Now we must store these elements
             cudaMemcpyAsync(new_elements.data(), elements_recv_left.data(), n_elements_recv_left[global_rank] * sizeof(Element2D_t), cudaMemcpyHostToDevice, stream_);
             device_vector<deviceFloat> solution_arrays(solution_arrays_recv_left, stream_);
+
+            const int recv_numBlocks = (n_elements_recv_left[global_rank] + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+            SEM::Device::Meshes::fill_received_elements<<<recv_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_recv_left[global_rank], 0, new_elements.data(), maximum_N_, nodes_.data(), solution_arrays.data(), received_node_indices.data(), polynomial_nodes.data());
+
+            solution_arrays.clear(stream_);
+        }
+
+        if (n_elements_recv_right[global_rank] > 0) {
+            // Now we must store these elements
+            cudaMemcpyAsync(new_elements.data() + n_elements_new[global_rank] - n_elements_recv_right[global_rank], elements_recv_right.data(), n_elements_recv_right[global_rank] * sizeof(Element2D_t), cudaMemcpyHostToDevice, stream_);
+            device_vector<deviceFloat> solution_arrays(solution_arrays_recv_right, stream_);
+
+            const int recv_numBlocks = (n_elements_recv_right[global_rank] + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+            SEM::Device::Meshes::fill_received_elements<<<recv_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_recv_right[global_rank], n_elements_new[global_rank] - n_elements_recv_right[global_rank], new_elements.data(), maximum_N_, nodes_.data(), solution_arrays.data(), received_node_indices.data() + 4 * n_elements_recv_left[global_rank], polynomial_nodes.data());
+
+            solution_arrays.clear(stream_);
+        }
+
+        if (n_elements_recv_left[global_rank] > 0) {
+            // Now we must store these elements
+            cudaMemcpyAsync(new_elements.data(), elements_recv_left.data(), n_elements_recv_left[global_rank] * sizeof(Element2D_t), cudaMemcpyHostToDevice, stream_);
             device_vector<size_t> n_neighbours_arrays(n_neighbours_arrays_recv_left, stream_);
             device_vector<size_t> neighbour_offsets(neighbour_offsets_left, stream_);
 
             const int recv_numBlocks = (n_elements_recv_left[global_rank] + boundaries_blockSize_ - 1) / boundaries_blockSize_;
-            SEM::Device::Meshes::fill_received_elements<<<recv_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_recv_left[global_rank], 0, n_elements_new[global_rank], n_elements_recv_left[global_rank], n_elements_recv_right[global_rank], new_elements.data(), maximum_N_, nodes_.data(), solution_arrays.data(), n_neighbours_arrays.data(), neighbour_offsets.data(), received_node_indices.data(), neighbours_element_indices.data(), neighbours_element_side.data(), face_offsets_left.data(), face_offsets_left.data(), face_offsets_right.data(), polynomial_nodes.data());
+            SEM::Device::Meshes::fill_received_elements_faces<<<recv_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_recv_left[global_rank], 0, faces_.size() - n_faces_to_delete, n_elements_new[global_rank], n_elements_recv_left[global_rank], n_elements_recv_right[global_rank], new_elements.data(), new_faces.data(), nodes_.data(), n_neighbours_arrays.data(), neighbour_offsets.data(), neighbours_element_indices.data(), neighbours_element_side.data(), face_offsets_left.data(), face_offsets_left.data(), face_offsets_right.data());
 
-            // Then we must figure out faces etc
-            // Maybe we do all this before we put the solution back, as to do it at the same time
-
-
-
-            solution_arrays.clear(stream_);
             n_neighbours_arrays.clear(stream_);
             neighbour_offsets.clear(stream_);
         }
@@ -3372,19 +3387,12 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
         if (n_elements_recv_right[global_rank] > 0) {
             // Now we must store these elements
             cudaMemcpyAsync(new_elements.data() + n_elements_new[global_rank] - n_elements_recv_right[global_rank], elements_recv_right.data(), n_elements_recv_right[global_rank] * sizeof(Element2D_t), cudaMemcpyHostToDevice, stream_);
-            device_vector<deviceFloat> solution_arrays(solution_arrays_recv_right, stream_);
             device_vector<size_t> n_neighbours_arrays(n_neighbours_arrays_recv_right, stream_);
             device_vector<size_t> neighbour_offsets(neighbour_offsets_right, stream_);
 
             const int recv_numBlocks = (n_elements_recv_right[global_rank] + boundaries_blockSize_ - 1) / boundaries_blockSize_;
-            SEM::Device::Meshes::fill_received_elements<<<recv_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_recv_right[global_rank], n_elements_new[global_rank] - n_elements_recv_right[global_rank], n_elements_new[global_rank], n_elements_recv_left[global_rank], n_elements_recv_right[global_rank], new_elements.data(), maximum_N_, nodes_.data(), solution_arrays.data(), n_neighbours_arrays.data(), received_node_indices.data() + 4 * n_elements_recv_left[global_rank], neighbour_offsets.data() + n_elements_recv_left[global_rank], neighbours_element_indices.data(), neighbours_element_side.data(), face_offsets_right.data(), face_offsets_left.data(), face_offsets_right.data(), polynomial_nodes.data());
+            SEM::Device::Meshes::fill_received_elements_faces<<<recv_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_recv_right[global_rank], n_elements_new[global_rank] - n_elements_recv_right[global_rank], faces_.size() - n_faces_to_delete, n_elements_new[global_rank], n_elements_recv_left[global_rank], n_elements_recv_right[global_rank], new_elements.data(), new_faces.data(), nodes_.data(), n_neighbours_arrays.data(), neighbour_offsets.data() + n_elements_recv_left[global_rank], neighbours_element_indices.data(), neighbours_element_side.data(), face_offsets_right.data(), face_offsets_left.data(), face_offsets_right.data());
 
-            // Then we must figure out faces etc
-            // Maybe we do all this before we put the solution back, as to do it at the same time
-
-
-
-            solution_arrays.clear(stream_);
             n_neighbours_arrays.clear(stream_);
             neighbour_offsets.clear(stream_);
         }
@@ -7279,21 +7287,11 @@ __global__
 auto SEM::Device::Meshes::fill_received_elements(
         size_t n_elements, 
         size_t element_offset,
-        size_t n_domain_elements,
-        size_t n_elements_recv_left, 
-        size_t n_elements_recv_right,
-        Element2D_t* elements, 
+        Element2D_t* elements,
         int maximum_N, 
         const Vec2<deviceFloat>* nodes, 
         const deviceFloat* solution, 
-        const size_t* n_neighbours, 
-        const size_t* neighbours_offsets, 
         const size_t* received_node_indices, 
-        const size_t* neighbours_indices, 
-        const size_t* neighbours_sides,
-        const size_t* face_offsets,
-        const size_t* face_offsets_left,
-        const size_t* face_offsets_right,
         const deviceFloat* polynomial_nodes) -> void {
 
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
@@ -7329,10 +7327,39 @@ auto SEM::Device::Meshes::fill_received_elements(
         };
 
         element.compute_geometry(received_element_nodes, polynomial_nodes);
+    }
+}
 
-        // Filling faces
+__global__
+auto SEM::Device::Meshes::fill_received_elements_faces(
+        size_t n_elements, 
+        size_t element_offset,
+        size_t face_offset,
+        size_t n_domain_elements,
+        size_t n_elements_recv_left, 
+        size_t n_elements_recv_right,
+        Element2D_t* elements,
+        Face2D_t* faces, 
+        const Vec2<deviceFloat>* nodes, 
+        const size_t* n_neighbours, 
+        const size_t* neighbours_offsets, 
+        const size_t* neighbours_indices, 
+        const size_t* neighbours_sides,
+        const size_t* face_offsets,
+        const size_t* face_offsets_left,
+        const size_t* face_offsets_right) -> void {
+
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+
+    for (size_t i = index; i < n_elements; i += stride) {
+        const size_t neighbours_offset = 4 * i;
+
+        const size_t element_index = element_offset + i;
+        Element2D_t& element = elements[element_index];
+        
         size_t neighbours_index = neighbours_offsets[i];
-        size_t face_offset = face_offsets[i];
+        size_t face_index = face_offset + face_offsets[i];
         for (size_t j = 0; j < element.faces_.size(); ++j) {
             const size_t side_n_neighbours = n_neighbours[neighbours_offset + j];
             element.faces_[j] = cuda_vector<size_t>(side_n_neighbours);
@@ -7343,16 +7370,18 @@ auto SEM::Device::Meshes::fill_received_elements(
                 const size_t neighbour_side = neighbours_sides[neighbour_index];
                 
                 if (neighbour_element_index >= n_domain_elements) { // We create
+                    Face2D_t& face = faces[face_index];
                     
-                    ++face_offset;
+                    ++face_index;
                 }
                 else if (neighbour_element_index < n_elements_recv_left) {
                     if (neighbour_index < element_index) { // They create
 
                     }
                     else { // We create
+                        Face2D_t& face = faces[face_index];
 
-                        ++face_offset;
+                        ++face_index;
                     }
                 } 
                 else if (neighbour_element_index > n_domain_elements - n_elements_recv_right) {
@@ -7360,8 +7389,9 @@ auto SEM::Device::Meshes::fill_received_elements(
 
                     }
                     else { // We create
+                        Face2D_t& face = faces[face_index];
 
-                        ++face_offset;
+                        ++face_index;
                     }
                 }
             }
