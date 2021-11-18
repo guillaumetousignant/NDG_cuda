@@ -3353,7 +3353,7 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
             device_vector<size_t> neighbour_offsets(neighbour_offsets_left, stream_);
 
             const int recv_numBlocks = (n_elements_recv_left[global_rank] + boundaries_blockSize_ - 1) / boundaries_blockSize_;
-            SEM::Device::Meshes::fill_received_elements<<<recv_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_recv_left[global_rank], new_elements.data(), maximum_N_, nodes_.data(), solution_arrays.data(), n_neighbours_arrays.data(), neighbour_offsets.data(), received_node_indices.data(), polynomial_nodes.data());
+            SEM::Device::Meshes::fill_received_elements<<<recv_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_recv_left[global_rank], new_elements.data(), maximum_N_, nodes_.data(), solution_arrays.data(), n_neighbours_arrays.data(), neighbour_offsets.data(), received_node_indices.data(), neighbours_element_indices.data(), neighbours_element_side.data(), polynomial_nodes.data());
 
             // Then we must figure out faces etc
             // Maybe we do all this before we put the solution back, as to do it at the same time
@@ -3373,7 +3373,7 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
             device_vector<size_t> neighbour_offsets(neighbour_offsets_right, stream_);
 
             const int recv_numBlocks = (n_elements_recv_right[global_rank] + boundaries_blockSize_ - 1) / boundaries_blockSize_;
-            SEM::Device::Meshes::fill_received_elements<<<recv_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_recv_right[global_rank], new_elements.data() + n_elements_new[global_rank] - n_elements_recv_right[global_rank], maximum_N_, nodes_.data(), solution_arrays.data(), n_neighbours_arrays.data(), received_node_indices.data() + 4 * n_elements_recv_left[global_rank], neighbour_offsets.data() + n_elements_recv_left[global_rank], polynomial_nodes.data());
+            SEM::Device::Meshes::fill_received_elements<<<recv_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_recv_right[global_rank], new_elements.data() + n_elements_new[global_rank] - n_elements_recv_right[global_rank], maximum_N_, nodes_.data(), solution_arrays.data(), n_neighbours_arrays.data(), received_node_indices.data() + 4 * n_elements_recv_left[global_rank], neighbour_offsets.data() + n_elements_recv_left[global_rank], neighbours_element_indices.data(), neighbours_element_side.data(), polynomial_nodes.data());
 
             // Then we must figure out faces etc
             // Maybe we do all this before we put the solution back, as to do it at the same time
@@ -7272,7 +7272,19 @@ auto SEM::Device::Meshes::get_transfer_solution(size_t n_elements, const Element
 }
 
 __global__
-auto SEM::Device::Meshes::fill_received_elements(size_t n_elements, Element2D_t* elements, int maximum_N, const Vec2<deviceFloat>* nodes, const deviceFloat* solution, const size_t* n_neighbours, const size_t neighbours_offsets, const size_t* received_node_indices, const deviceFloat* polynomial_nodes) -> void {
+auto SEM::Device::Meshes::fill_received_elements(
+        size_t n_elements, 
+        Element2D_t* elements, 
+        int maximum_N, 
+        const Vec2<deviceFloat>* nodes, 
+        const deviceFloat* solution, 
+        const size_t* n_neighbours, 
+        const size_t* neighbours_offsets, 
+        const size_t* received_node_indices, 
+        const size_t* neighbours_indices, 
+        const size_t* neighbours_sides,
+        const deviceFloat* polynomial_nodes) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -7286,10 +7298,10 @@ auto SEM::Device::Meshes::fill_received_elements(size_t n_elements, Element2D_t*
         element.clear_storage();
         element.allocate_storage();
 
-        element.nodes_[0] = received_node_indices[4 * element_index];
-        element.nodes_[1] = received_node_indices[4 * element_index + 1];
-        element.nodes_[2] = received_node_indices[4 * element_index + 2];
-        element.nodes_[3] = received_node_indices[4 * element_index + 3];
+        element.nodes_[0] = received_node_indices[neighbours_offset];
+        element.nodes_[1] = received_node_indices[neighbours_offset + 1];
+        element.nodes_[2] = received_node_indices[neighbours_offset + 2];
+        element.nodes_[3] = received_node_indices[neighbours_offset + 3];
 
         for (int i = 0; i < std::pow(element.N_ + 1, 2); ++i) {
             element.p_[i] = solution[p_offset + i];
@@ -7314,7 +7326,8 @@ auto SEM::Device::Meshes::fill_received_elements(size_t n_elements, Element2D_t*
 
             for (size_t j = 0; j < side_n_neighbours; ++j) {
                 const size_t neighbour_index = neighbours_index + j;
-
+                const size_t neighbour_element_index = neighbours_indices[neighbour_index];
+                const size_t neighbour_side = neighbours_sides[neighbour_index];
                 
             }
 
@@ -8359,127 +8372,131 @@ auto SEM::Device::Meshes::create_received_neighbours(
 
         switch (neighbour_proc) {
             case SEM::Device::Meshes::Mesh2D_t::boundary_type::wall :
-                size_t n_additional_before = 0;
-                for (size_t j = i - thread_id; j < i; ++j) {
-                    n_additional_before += (neighbour_procs[j] == SEM::Device::Meshes::Mesh2D_t::boundary_type::wall);
+                {
+                    size_t n_additional_before = 0;
+                    for (size_t j = i - thread_id; j < i; ++j) {
+                        n_additional_before += (neighbour_procs[j] == SEM::Device::Meshes::Mesh2D_t::boundary_type::wall);
+                    }
+
+                    const size_t new_element_index = elements_offset + n_new_mpi_destinations + wall_block_offsets[block_id] + n_additional_before;
+                    const size_t new_boundary_index = wall_offset + wall_block_offsets[block_id] + n_additional_before;
+
+                    wall_boundaries[new_boundary_index] = new_element_index;
+                    neighbour_given_indices[i] = new_element_index;
+                    neighbour_given_sides[i] = 0;
+
+                    Element2D_t& element = elements[new_element_index];
+                    element.clear_storage();
+                    element.N_ = neighbour_N[i];
+                    element.status_ = Hilbert::Status::A;
+                    element.rotation_ = 0;
+                    element.nodes_ = {neighbour_node_indices[2 * i], neighbour_node_indices[2 * i + 1], neighbour_node_indices[2 * i + 1], neighbour_node_indices[2 * i]};
+                    element.split_level_ = 0; // CHECK should set other variables?
+
+                    element.allocate_boundary_storage();
+
+                    std::array<Vec2<deviceFloat>, 4> points {nodes[element.nodes_[0]], 
+                                                            nodes[element.nodes_[1]], 
+                                                            nodes[element.nodes_[2]], 
+                                                            nodes[element.nodes_[3]]};
+                    element.compute_boundary_geometry(points, polynomial_nodes);
                 }
-
-                const size_t new_element_index = elements_offset + n_new_mpi_destinations + wall_block_offsets[block_id] + n_additional_before;
-                const size_t new_boundary_index = wall_offset + wall_block_offsets[block_id] + n_additional_before;
-
-                wall_boundaries[new_boundary_index] = new_element_index;
-                neighbour_given_indices[i] = new_element_index;
-                neighbour_given_sides[i] = 0;
-
-                Element2D_t& element = elements[new_element_index];
-                element.clear_storage();
-                element.N_ = neighbour_N[i];
-                element.status_ = Hilbert::Status::A;
-                element.rotation_ = 0;
-                element.nodes_ = {neighbour_node_indices[2 * i], neighbour_node_indices[2 * i + 1], neighbour_node_indices[2 * i + 1], neighbour_node_indices[2 * i]};
-                element.split_level_ = 0; // CHECK should set other variables?
-
-                element.allocate_boundary_storage();
-
-                std::array<Vec2<deviceFloat>, 4> points {nodes[element.nodes_[0]], 
-                                                         nodes[element.nodes_[1]], 
-                                                         nodes[element.nodes_[2]], 
-                                                         nodes[element.nodes_[3]]};
-                element.compute_boundary_geometry(points, polynomial_nodes);
-
                 break;
 
             case SEM::Device::Meshes::Mesh2D_t::boundary_type::symmetry :
-                size_t n_additional_before = 0;
-                for (size_t j = i - thread_id; j < i; ++j) {
-                    n_additional_before += (neighbour_procs[j] == SEM::Device::Meshes::Mesh2D_t::boundary_type::symmetry);
+                {
+                    size_t n_additional_before = 0;
+                    for (size_t j = i - thread_id; j < i; ++j) {
+                        n_additional_before += (neighbour_procs[j] == SEM::Device::Meshes::Mesh2D_t::boundary_type::symmetry);
+                    }
+
+                    const size_t new_element_index = elements_offset + n_new_mpi_destinations + n_new_wall + symmetry_block_offsets[block_id] + n_additional_before;
+                    const size_t new_boundary_index = symmetry_offset + symmetry_block_offsets[block_id] + n_additional_before;
+                    
+                    symmetry_boundaries[new_boundary_index] = new_element_index;
+                    neighbour_given_indices[i] = new_element_index;
+                    neighbour_given_sides[i] = 0;
+
+                    Element2D_t& element = elements[new_element_index];
+                    element.clear_storage();
+                    element.N_ = neighbour_N[i];
+                    element.status_ = Hilbert::Status::A;
+                    element.rotation_ = 0;
+                    element.nodes_ = {neighbour_node_indices[2 * i], neighbour_node_indices[2 * i + 1], neighbour_node_indices[2 * i + 1], neighbour_node_indices[2 * i]};
+                    element.split_level_ = 0; // CHECK should set other variables?
+
+                    element.allocate_boundary_storage();
+
+                    std::array<Vec2<deviceFloat>, 4> points {nodes[element.nodes_[0]], 
+                                                            nodes[element.nodes_[1]], 
+                                                            nodes[element.nodes_[2]], 
+                                                            nodes[element.nodes_[3]]};
+                    element.compute_boundary_geometry(points, polynomial_nodes);
                 }
-
-                const size_t new_element_index = elements_offset + n_new_mpi_destinations + n_new_wall + symmetry_block_offsets[block_id] + n_additional_before;
-                const size_t new_boundary_index = symmetry_offset + symmetry_block_offsets[block_id] + n_additional_before;
-                
-                symmetry_boundaries[new_boundary_index] = new_element_index;
-                neighbour_given_indices[i] = new_element_index;
-                neighbour_given_sides[i] = 0;
-
-                Element2D_t& element = elements[new_element_index];
-                element.clear_storage();
-                element.N_ = neighbour_N[i];
-                element.status_ = Hilbert::Status::A;
-                element.rotation_ = 0;
-                element.nodes_ = {neighbour_node_indices[2 * i], neighbour_node_indices[2 * i + 1], neighbour_node_indices[2 * i + 1], neighbour_node_indices[2 * i]};
-                element.split_level_ = 0; // CHECK should set other variables?
-
-                element.allocate_boundary_storage();
-
-                std::array<Vec2<deviceFloat>, 4> points {nodes[element.nodes_[0]], 
-                                                         nodes[element.nodes_[1]], 
-                                                         nodes[element.nodes_[2]], 
-                                                         nodes[element.nodes_[3]]};
-                element.compute_boundary_geometry(points, polynomial_nodes);
-
                 break;
 
             case SEM::Device::Meshes::Mesh2D_t::boundary_type::inflow :
-                size_t n_additional_before = 0;
-                for (size_t j = i - thread_id; j < i; ++j) {
-                    n_additional_before += (neighbour_procs[j] == SEM::Device::Meshes::Mesh2D_t::boundary_type::inflow);
+                {
+                    size_t n_additional_before = 0;
+                    for (size_t j = i - thread_id; j < i; ++j) {
+                        n_additional_before += (neighbour_procs[j] == SEM::Device::Meshes::Mesh2D_t::boundary_type::inflow);
+                    }
+
+                    const size_t new_element_index = elements_offset + n_new_mpi_destinations + n_new_wall + n_new_symmetry + inflow_block_offsets[block_id] + n_additional_before;
+                    const size_t new_boundary_index = inflow_offset + inflow_block_offsets[block_id] + n_additional_before;
+                    
+                    inflow_boundaries[new_boundary_index] = new_element_index;
+                    neighbour_given_indices[i] = new_element_index;
+                    neighbour_given_sides[i] = 0;
+
+                    Element2D_t& element = elements[new_element_index];
+                    element.clear_storage();
+                    element.N_ = neighbour_N[i];
+                    element.status_ = Hilbert::Status::A;
+                    element.rotation_ = 0;
+                    element.nodes_ = {neighbour_node_indices[2 * i], neighbour_node_indices[2 * i + 1], neighbour_node_indices[2 * i + 1], neighbour_node_indices[2 * i]};
+                    element.split_level_ = 0; // CHECK should set other variables?
+
+                    element.allocate_boundary_storage();
+
+                    std::array<Vec2<deviceFloat>, 4> points {nodes[element.nodes_[0]], 
+                                                            nodes[element.nodes_[1]], 
+                                                            nodes[element.nodes_[2]], 
+                                                            nodes[element.nodes_[3]]};
+                    element.compute_boundary_geometry(points, polynomial_nodes);
                 }
-
-                const size_t new_element_index = elements_offset + n_new_mpi_destinations + n_new_wall + n_new_symmetry + inflow_block_offsets[block_id] + n_additional_before;
-                const size_t new_boundary_index = inflow_offset + inflow_block_offsets[block_id] + n_additional_before;
-                
-                inflow_boundaries[new_boundary_index] = new_element_index;
-                neighbour_given_indices[i] = new_element_index;
-                neighbour_given_sides[i] = 0;
-
-                Element2D_t& element = elements[new_element_index];
-                element.clear_storage();
-                element.N_ = neighbour_N[i];
-                element.status_ = Hilbert::Status::A;
-                element.rotation_ = 0;
-                element.nodes_ = {neighbour_node_indices[2 * i], neighbour_node_indices[2 * i + 1], neighbour_node_indices[2 * i + 1], neighbour_node_indices[2 * i]};
-                element.split_level_ = 0; // CHECK should set other variables?
-
-                element.allocate_boundary_storage();
-
-                std::array<Vec2<deviceFloat>, 4> points {nodes[element.nodes_[0]], 
-                                                         nodes[element.nodes_[1]], 
-                                                         nodes[element.nodes_[2]], 
-                                                         nodes[element.nodes_[3]]};
-                element.compute_boundary_geometry(points, polynomial_nodes);
-
                 break;
 
             case SEM::Device::Meshes::Mesh2D_t::boundary_type::outflow :
-                size_t n_additional_before = 0;
-                for (size_t j = i - thread_id; j < i; ++j) {
-                    n_additional_before += (neighbour_procs[j] == SEM::Device::Meshes::Mesh2D_t::boundary_type::outflow);
-                }
+                {
+                    size_t n_additional_before = 0;
+                    for (size_t j = i - thread_id; j < i; ++j) {
+                        n_additional_before += (neighbour_procs[j] == SEM::Device::Meshes::Mesh2D_t::boundary_type::outflow);
+                    }
+                    
+                    const size_t new_element_index = elements_offset + n_new_mpi_destinations + n_new_wall + n_new_symmetry + n_new_inflow + outflow_block_offsets[block_id] + n_additional_before;
+                    const size_t new_boundary_index = outflow_offset + outflow_block_offsets[block_id] + n_additional_before;
                 
-                const size_t new_element_index = elements_offset + n_new_mpi_destinations + n_new_wall + n_new_symmetry + n_new_inflow + outflow_block_offsets[block_id] + n_additional_before;
-                const size_t new_boundary_index = outflow_offset + outflow_block_offsets[block_id] + n_additional_before;
-             
-                outflow_boundaries[new_boundary_index] = new_element_index;
-                neighbour_given_indices[i] = new_element_index;
-                neighbour_given_sides[i] = 0;
+                    outflow_boundaries[new_boundary_index] = new_element_index;
+                    neighbour_given_indices[i] = new_element_index;
+                    neighbour_given_sides[i] = 0;
 
-                Element2D_t& element = elements[new_element_index];
-                element.clear_storage();
-                element.N_ = neighbour_N[i];
-                element.status_ = Hilbert::Status::A;
-                element.rotation_ = 0;
-                element.nodes_ = {neighbour_node_indices[2 * i], neighbour_node_indices[2 * i + 1], neighbour_node_indices[2 * i + 1], neighbour_node_indices[2 * i]};
-                element.split_level_ = 0; // CHECK should set other variables?
+                    Element2D_t& element = elements[new_element_index];
+                    element.clear_storage();
+                    element.N_ = neighbour_N[i];
+                    element.status_ = Hilbert::Status::A;
+                    element.rotation_ = 0;
+                    element.nodes_ = {neighbour_node_indices[2 * i], neighbour_node_indices[2 * i + 1], neighbour_node_indices[2 * i + 1], neighbour_node_indices[2 * i]};
+                    element.split_level_ = 0; // CHECK should set other variables?
 
-                element.allocate_boundary_storage();
+                    element.allocate_boundary_storage();
 
-                std::array<Vec2<deviceFloat>, 4> points {nodes[element.nodes_[0]], 
-                                                         nodes[element.nodes_[1]], 
-                                                         nodes[element.nodes_[2]], 
-                                                         nodes[element.nodes_[3]]};
-                element.compute_boundary_geometry(points, polynomial_nodes);
-
+                    std::array<Vec2<deviceFloat>, 4> points {nodes[element.nodes_[0]], 
+                                                            nodes[element.nodes_[1]], 
+                                                            nodes[element.nodes_[2]], 
+                                                            nodes[element.nodes_[3]]};
+                    element.compute_boundary_geometry(points, polynomial_nodes);
+                }
                 break;
 
             default: // Not so simple!
@@ -8502,8 +8519,8 @@ auto SEM::Device::Meshes::create_received_neighbours(
                         if (first_time) {
                             for (size_t j = 0; j < i; ++j) {
                                 if (neighbour_procs[j] == neighbour_proc && neighbour_indices[j] == local_element_index && neighbour_sides[j] == element_side_index) {
-                                    other_block = j / blockDim.x;
-                                    other_thread = j % blockDim.x;
+                                    const int other_block = j / blockDim.x;
+                                    const int other_thread = j % blockDim.x;
 
                                     size_t n_additional_before = 0;
                                     for (size_t k = j - other_thread; k < j; ++k) {
