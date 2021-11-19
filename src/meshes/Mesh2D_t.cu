@@ -3374,27 +3374,75 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
         if (n_elements_recv_left[global_rank] > 0) {
             // Now we must store these elements
             cudaMemcpyAsync(new_elements.data(), elements_recv_left.data(), n_elements_recv_left[global_rank] * sizeof(Element2D_t), cudaMemcpyHostToDevice, stream_);
-            device_vector<size_t> n_neighbours_arrays(n_neighbours_arrays_recv_left, stream_);
-            device_vector<size_t> neighbour_offsets(neighbour_offsets_left, stream_);
+            device_vector<size_t> n_neighbours_arrays_left_device(n_neighbours_arrays_recv_left, stream_);
+            device_vector<size_t> n_neighbours_arrays_right_device(n_neighbours_arrays_recv_right, stream_);
+            device_vector<size_t> neighbour_offsets_left_device(neighbour_offsets_left, stream_);
+            device_vector<size_t> neighbour_offsets_right_device(neighbour_offsets_right, stream_);
 
             const int recv_numBlocks = (n_elements_recv_left[global_rank] + boundaries_blockSize_ - 1) / boundaries_blockSize_;
-            SEM::Device::Meshes::fill_received_elements_faces<<<recv_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_recv_left[global_rank], 0, faces_.size() - n_faces_to_delete, n_elements_new[global_rank], n_elements_recv_left[global_rank], n_elements_recv_right[global_rank], new_elements.data(), new_faces.data(), nodes_.data(), n_neighbours_arrays.data(), neighbour_offsets.data(), neighbours_element_indices.data(), neighbours_element_side.data(), face_offsets_left.data(), face_offsets_left.data(), face_offsets_right.data());
+            SEM::Device::Meshes::fill_received_elements_faces<<<recv_numBlocks, boundaries_blockSize_, 0, stream_>>>(
+                n_elements_recv_left[global_rank], 
+                0, 
+                faces_.size() - n_faces_to_delete, 
+                n_elements_new[global_rank], 
+                n_elements_recv_left[global_rank], 
+                n_elements_recv_right[global_rank], 
+                new_elements.data(), 
+                new_faces.data(), 
+                nodes_.data(), 
+                n_neighbours_arrays_left_device.data(), 
+                n_neighbours_arrays_left_device.data(), 
+                n_neighbours_arrays_right_device.data(), 
+                neighbour_offsets_left_device.data(), 
+                neighbour_offsets_left_device.data(),
+                neighbour_offsets_right_device.data(),
+                neighbours_element_indices.data(), 
+                neighbours_element_side.data(), 
+                face_offsets_left.data(), 
+                face_offsets_left.data(), 
+                face_offsets_right.data());
 
-            n_neighbours_arrays.clear(stream_);
-            neighbour_offsets.clear(stream_);
+            n_neighbours_arrays_left_device.clear(stream_);
+            n_neighbours_arrays_right_device.clear(stream_);
+            neighbour_offsets_left_device.clear(stream_);
+            neighbour_offsets_right_device.clear(stream_);
         }
 
         if (n_elements_recv_right[global_rank] > 0) {
             // Now we must store these elements
             cudaMemcpyAsync(new_elements.data() + n_elements_new[global_rank] - n_elements_recv_right[global_rank], elements_recv_right.data(), n_elements_recv_right[global_rank] * sizeof(Element2D_t), cudaMemcpyHostToDevice, stream_);
-            device_vector<size_t> n_neighbours_arrays(n_neighbours_arrays_recv_right, stream_);
-            device_vector<size_t> neighbour_offsets(neighbour_offsets_right, stream_);
+            device_vector<size_t> n_neighbours_arrays_left_device(n_neighbours_arrays_recv_left, stream_);
+            device_vector<size_t> n_neighbours_arrays_right_device(n_neighbours_arrays_recv_right, stream_);
+            device_vector<size_t> neighbour_offsets_left_device(neighbour_offsets_left, stream_);
+            device_vector<size_t> neighbour_offsets_right_device(neighbour_offsets_right, stream_);
 
             const int recv_numBlocks = (n_elements_recv_right[global_rank] + boundaries_blockSize_ - 1) / boundaries_blockSize_;
-            SEM::Device::Meshes::fill_received_elements_faces<<<recv_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_recv_right[global_rank], n_elements_new[global_rank] - n_elements_recv_right[global_rank], faces_.size() - n_faces_to_delete, n_elements_new[global_rank], n_elements_recv_left[global_rank], n_elements_recv_right[global_rank], new_elements.data(), new_faces.data(), nodes_.data(), n_neighbours_arrays.data(), neighbour_offsets.data() + n_elements_recv_left[global_rank], neighbours_element_indices.data(), neighbours_element_side.data(), face_offsets_right.data(), face_offsets_left.data(), face_offsets_right.data());
+            SEM::Device::Meshes::fill_received_elements_faces<<<recv_numBlocks, boundaries_blockSize_, 0, stream_>>>(
+                n_elements_recv_right[global_rank], 
+                n_elements_new[global_rank] - n_elements_recv_right[global_rank], 
+                faces_.size() - n_faces_to_delete, 
+                n_elements_new[global_rank], 
+                n_elements_recv_left[global_rank], 
+                n_elements_recv_right[global_rank], 
+                new_elements.data(), 
+                new_faces.data(), 
+                nodes_.data(), 
+                n_neighbours_arrays_right_device.data(), 
+                n_neighbours_arrays_left_device.data(), 
+                n_neighbours_arrays_right_device.data(), 
+                neighbour_offsets_right_device.data(), 
+                neighbour_offsets_left_device.data(),
+                neighbour_offsets_right_device.data(),
+                neighbours_element_indices.data(), 
+                neighbours_element_side.data(), 
+                face_offsets_right.data(), 
+                face_offsets_left.data(), 
+                face_offsets_right.data());
 
-            n_neighbours_arrays.clear(stream_);
-            neighbour_offsets.clear(stream_);
+            n_neighbours_arrays_left_device.clear(stream_);
+            n_neighbours_arrays_right_device.clear(stream_);
+            neighbour_offsets_left_device.clear(stream_);
+            neighbour_offsets_right_device.clear(stream_);
         }
         
 
@@ -7342,7 +7390,11 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
         Face2D_t* faces, 
         const Vec2<deviceFloat>* nodes, 
         const size_t* n_neighbours, 
+        const size_t* n_neighbours_left, 
+        const size_t* n_neighbours_right,
         const size_t* neighbours_offsets, 
+        const size_t* neighbours_offsets_left, 
+        const size_t* neighbours_offsets_right,
         const size_t* neighbours_indices, 
         const size_t* neighbours_sides,
         const size_t* face_offsets,
@@ -7368,20 +7420,20 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
                 const size_t neighbour_index = neighbours_index + k;
                 const size_t neighbour_element_index = neighbours_indices[neighbour_index];
                 const size_t neighbour_side = neighbours_sides[neighbour_index];
+                const Element2D_t& neighbour_element = elements[neighbour_element_index];
                 
                 if (neighbour_element_index >= n_domain_elements 
                         || (neighbour_element_index < n_elements_recv_left && neighbour_element_index >= element_index)
                         || (neighbour_element_index > n_domain_elements - n_elements_recv_right && neighbour_element_index >= element_index)) { 
                     
                     // We create
-                    const Element2D_t& other_element = elements[neighbour_element_index];
                     const size_t next_side = (j + 1 < element.nodes_.size()) ? j + 1 : 0;
-                    const size_t neighbour_next_side = (neighbour_side + 1 < other_element.nodes_.size()) ? neighbour_side + 1 : 0;
+                    const size_t neighbour_next_side = (neighbour_side + 1 < neighbour_element.nodes_.size()) ? neighbour_side + 1 : 0;
 
-                    const int face_N = std::max(element.N_, other_element.N_);
+                    const int face_N = std::max(element.N_, neighbour_element.N_);
                     const std::array<std::array<size_t, 2>, 2> node_indices {
                         std::array<size_t, 2>{element.nodes_[j], element.nodes_[next_side]},
-                        std::array<size_t, 2>{other_element.nodes_[neighbour_next_side], other_element.nodes_[neighbour_side]}
+                        std::array<size_t, 2>{neighbour_element.nodes_[neighbour_next_side], neighbour_element.nodes_[neighbour_side]}
                     };
                     const std::array<std::array<Vec2<deviceFloat>, 2>, 2> element_nodes {
                         std::array<Vec2<deviceFloat>, 2> {nodes[node_indices[0][0]], nodes[node_indices[0][1]]},
@@ -7399,18 +7451,83 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
 
                     const std::array<Vec2<deviceFloat>, 2> face_nodes {nodes[face_node_indices[0]], nodes[face_node_indices[1]]};
 
-                    faces[face_index].compute_geometry({element.center_, other_element.center_}, face_nodes, element_nodes);
+                    faces[face_index].compute_geometry({element.center_, neighbour_element.center_}, face_nodes, element_nodes);
                     
                     element.faces_[j][k] = face_index;
                     ++face_index;
                 }
                 else if (neighbour_element_index < n_elements_recv_left && neighbour_element_index < element_index) {
                     // They create
-                    
+                    size_t neighbour_face_index = face_offset + face_offsets_left[neighbour_element_index];
+                    const size_t neighbours_neighbour_offset = 4 * neighbour_element_index;
+                    size_t neighbours_neighbour_index = neighbours_offsets_left[neighbour_element_index];
+                    bool found_self = false;
+
+                    // This is insane
+                    for (size_t m = 0; m < neighbour_element.faces_.size(); ++m) {
+                        const size_t neighbour_side_n_neighbours = n_neighbours_left[neighbours_neighbour_offset + m];
+                        for (size_t n = 0; n < neighbour_side_n_neighbours; ++n) {
+                            const size_t neighbour_neighbour_index = neighbours_neighbour_index + n;
+                            const size_t neighbour_neighbour_element_index = neighbours_indices[neighbour_neighbour_index];
+                            const size_t neighbour_neighbour_side = neighbours_sides[neighbour_neighbour_index];
+
+                            if (neighbour_neighbour_element_index >= n_domain_elements 
+                                || (neighbour_neighbour_element_index < n_elements_recv_left && neighbour_neighbour_element_index >= element_index)
+                                || (neighbour_neighbour_element_index > n_domain_elements - n_elements_recv_right && neighbour_neighbour_element_index >= element_index)) { 
+
+                                if (neighbour_neighbour_element_index == element_index && neighbour_neighbour_side && j) {
+                                    element.faces_[j][k] = neighbour_face_index;
+                                    found_self = true;
+                                    break;
+                                }
+                                ++neighbour_face_index;
+                            }
+
+                        }
+
+                        if (found_self) {
+                            break;
+                        }
+
+                        neighbours_neighbour_index += neighbour_side_n_neighbours;
+                    }                    
                 } 
                 else if (neighbour_element_index > n_domain_elements - n_elements_recv_right && neighbour_element_index < element_index) {
                     // They create
-                    
+                    const size_t neighbour_recv_index = neighbour_element_index + n_elements_recv_right - n_domain_elements;
+                    size_t neighbour_face_index = face_offset + face_offsets_right[neighbour_recv_index];
+                    const size_t neighbours_neighbour_offset = 4 * neighbour_recv_index;
+                    size_t neighbours_neighbour_index = neighbours_offsets_right[neighbour_recv_index];
+                    bool found_self = false;
+
+                    // This is insane
+                    for (size_t m = 0; m < neighbour_element.faces_.size(); ++m) {
+                        const size_t neighbour_side_n_neighbours = n_neighbours_right[neighbours_neighbour_offset + m];
+                        for (size_t n = 0; n < neighbour_side_n_neighbours; ++n) {
+                            const size_t neighbour_neighbour_index = neighbours_neighbour_index + n;
+                            const size_t neighbour_neighbour_element_index = neighbours_indices[neighbour_neighbour_index];
+                            const size_t neighbour_neighbour_side = neighbours_sides[neighbour_neighbour_index];
+
+                            if (neighbour_neighbour_element_index >= n_domain_elements 
+                                || (neighbour_neighbour_element_index < n_elements_recv_left && neighbour_neighbour_element_index >= element_index)
+                                || (neighbour_neighbour_element_index > n_domain_elements - n_elements_recv_right && neighbour_neighbour_element_index >= element_index)) { 
+
+                                if (neighbour_neighbour_element_index == element_index && neighbour_neighbour_side && j) {
+                                    element.faces_[j][k] = neighbour_face_index;
+                                    found_self = true;
+                                    break;
+                                }
+                                ++neighbour_face_index;
+                            }
+
+                        }
+
+                        if (found_self) {
+                            break;
+                        }
+
+                        neighbours_neighbour_index += neighbour_side_n_neighbours;
+                    }  
                 }
             }
 
