@@ -3340,15 +3340,6 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
             neighbours_N_arrays_recv_device.clear(stream_);
         }
 
-
-        // We need to create faces to those
-        // We need to create faces between received elements
-        // We need to create mpi origins for leaving data
-        // THEN we put the new elements in
-
-
-
-
         if (n_elements_recv_left[global_rank] > 0) {
             // Now we must store these elements
             cudaMemcpyAsync(new_elements.data(), elements_recv_left.data(), n_elements_recv_left[global_rank] * sizeof(Element2D_t), cudaMemcpyHostToDevice, stream_);
@@ -3446,7 +3437,7 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
         }
         
 
-
+        // We need to create mpi origins for leaving data
 
 
         
