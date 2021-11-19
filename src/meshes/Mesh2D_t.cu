@@ -7364,35 +7364,53 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
             const size_t side_n_neighbours = n_neighbours[neighbours_offset + j];
             element.faces_[j] = cuda_vector<size_t>(side_n_neighbours);
 
-            for (size_t j = 0; j < side_n_neighbours; ++j) {
-                const size_t neighbour_index = neighbours_index + j;
+            for (size_t k = 0; k < side_n_neighbours; ++k) {
+                const size_t neighbour_index = neighbours_index + k;
                 const size_t neighbour_element_index = neighbours_indices[neighbour_index];
                 const size_t neighbour_side = neighbours_sides[neighbour_index];
                 
-                if (neighbour_element_index >= n_domain_elements) { // We create
-                    Face2D_t& face = faces[face_index];
+                if (neighbour_element_index >= n_domain_elements 
+                        || (neighbour_element_index < n_elements_recv_left && neighbour_element_index >= element_index)
+                        || (neighbour_element_index > n_domain_elements - n_elements_recv_right && neighbour_element_index >= element_index)) { 
                     
+                    // We create
+                    const Element2D_t& other_element = elements[neighbour_element_index];
+                    const size_t next_side = (j + 1 < element.nodes_.size()) ? j + 1 : 0;
+                    const size_t neighbour_next_side = (neighbour_side + 1 < other_element.nodes_.size()) ? neighbour_side + 1 : 0;
+
+                    const int face_N = std::max(element.N_, other_element.N_);
+                    const std::array<std::array<size_t, 2>, 2> node_indices {
+                        std::array<size_t, 2>{element.nodes_[j], element.nodes_[next_side]},
+                        std::array<size_t, 2>{other_element.nodes_[neighbour_next_side], other_element.nodes_[neighbour_side]}
+                    };
+                    const std::array<std::array<Vec2<deviceFloat>, 2>, 2> element_nodes {
+                        std::array<Vec2<deviceFloat>, 2> {nodes[node_indices[0][0]], nodes[node_indices[0][1]]},
+                        std::array<Vec2<deviceFloat>, 2> {nodes[node_indices[1][0]], nodes[node_indices[1][1]]}
+                    };
+                    const std::array<deviceFloat, 2> side_lengths {
+                        (element_nodes[0][1] - element_nodes[0][0]).magnitude(),
+                        (element_nodes[1][1] - element_nodes[1][0]).magnitude()
+                    };
+
+                    const std::array<size_t, 2> face_node_indices = node_indices[side_lengths[0] > side_lengths[1]];
+
+                    faces[face_index].clear_storage();
+                    faces[face_index] = Face2D_t(face_N, face_node_indices, {element_index, neighbour_element_index}, {j, neighbour_side});
+
+                    const std::array<Vec2<deviceFloat>, 2> face_nodes {nodes[face_node_indices[0]], nodes[face_node_indices[1]]};
+
+                    faces[face_index].compute_geometry({element.center_, other_element.center_}, face_nodes, element_nodes);
+                    
+                    element.faces_[j][k] = face_index;
                     ++face_index;
                 }
-                else if (neighbour_element_index < n_elements_recv_left) {
-                    if (neighbour_index < element_index) { // They create
-
-                    }
-                    else { // We create
-                        Face2D_t& face = faces[face_index];
-
-                        ++face_index;
-                    }
+                else if (neighbour_element_index < n_elements_recv_left && neighbour_element_index < element_index) {
+                    // They create
+                    
                 } 
-                else if (neighbour_element_index > n_domain_elements - n_elements_recv_right) {
-                    if (neighbour_index < element_index) { // They create
-
-                    }
-                    else { // We create
-                        Face2D_t& face = faces[face_index];
-
-                        ++face_index;
-                    }
+                else if (neighbour_element_index > n_domain_elements - n_elements_recv_right && neighbour_element_index < element_index) {
+                    // They create
+                    
                 }
             }
 
