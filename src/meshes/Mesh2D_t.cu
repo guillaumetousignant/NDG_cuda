@@ -8499,8 +8499,8 @@ auto SEM::Device::Meshes::create_sent_mpi_boundaries_destinations(size_t n_sent_
 
                 // We update our index in faces, and discard deleted faces
                 size_t n_good_faces = 0;
-                for (size_t j = 0; j < new_element.faces_[0].size(); ++j) {
-                    const size_t face_index = new_element.faces_[0][j];
+                for (size_t k = 0; k < new_element.faces_[0].size(); ++k) {
+                    const size_t face_index = new_element.faces_[0][k];
                     if (face_index != static_cast<size_t>(-1)) {
                         Face2D_t& face = faces[face_index];
                         const size_t side_index = face.elements_[1] == element_index && face.elements_side_[1] == j && face.nodes_[0] == new_element.nodes_[1] && face.nodes_[1] == new_element.nodes_[0];
@@ -8511,8 +8511,8 @@ auto SEM::Device::Meshes::create_sent_mpi_boundaries_destinations(size_t n_sent_
                 if (n_good_faces != new_element.faces_[0].size()) {
                     cuda_vector<size_t> new_faces(n_good_faces);
                     size_t faces_index = 0;
-                    for (size_t j = 0; j < new_element.faces_[0].size(); ++j) {
-                        const size_t face_index = new_element.faces_[0][j];
+                    for (size_t k = 0; k < new_element.faces_[0].size(); ++k) {
+                        const size_t face_index = new_element.faces_[0][k];
                         if (face_index != static_cast<size_t>(-1)) {
                             new_faces[faces_index] = face_index;
                             ++faces_index;
