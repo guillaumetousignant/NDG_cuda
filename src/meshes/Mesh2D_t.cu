@@ -8503,7 +8503,7 @@ auto SEM::Device::Meshes::create_sent_mpi_boundaries_destinations(size_t n_sent_
                     const size_t face_index = new_element.faces_[0][k];
                     if (face_index != static_cast<size_t>(-1)) {
                         Face2D_t& face = faces[face_index];
-                        const size_t side_index = face.elements_[1] == element_index && face.elements_side_[1] == j && face.nodes_[0] == new_element.nodes_[1] && face.nodes_[1] == new_element.nodes_[0];
+                        const size_t side_index = face.elements_[1] == element_index && face.elements_side_[1] == j; // This is bad, some elements have been moved already, so it is possible that the element index is another element, and there are the same index multiple times
                         printf("Sent element %llu with index %llu, side %llu, face %llu with index %llu has side index %llu element %llu, setting to %llu\n", i, element_index, j, k, face_index, side_index, face.elements_[side_index], new_element_index);
                         face.elements_[side_index] = new_element_index;
                         ++n_good_faces;
