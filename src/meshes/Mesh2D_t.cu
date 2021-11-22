@@ -1916,7 +1916,6 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
     MPI_Comm_size(MPI_COMM_WORLD, &global_size);
 
     std::cout << std::endl << "Process " << global_rank << " load balancing" << std::endl;
-    print();
 
     std::vector<size_t> n_elements_per_proc(global_size);
 
