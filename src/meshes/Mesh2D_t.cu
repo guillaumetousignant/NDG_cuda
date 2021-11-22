@@ -8225,7 +8225,7 @@ auto SEM::Device::Meshes::find_boundary_elements_to_delete(size_t n_boundary_ele
 
             printf("Ghost element %llu, index %llu has face %llu, index %llu. Face side %llu, other element index %llu\n", i, element_index, j, face_index, side_index, other_element_index);
 
-            if (other_element_index > n_elements_send_left && other_element_index < n_domain_elements - n_elements_send_right) {
+            if (other_element_index >= n_elements_send_left && other_element_index < n_domain_elements - n_elements_send_right) {
                 boundary_elements_to_delete[i] = false;
                 break;
             }
