@@ -1915,7 +1915,7 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
     int global_size;
     MPI_Comm_size(MPI_COMM_WORLD, &global_size);
 
-    std::cout << "Process " << global_rank << " load balancing" << std::endl;
+    std::cout << std::endl << "Process " << global_rank << " load balancing" << std::endl;
 
     std::vector<size_t> n_elements_per_proc(global_size);
 
@@ -2216,6 +2216,18 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
             }
 
             for (size_t i = 0; i < destination_processes.size(); ++i) {
+                std::cout << "Process " << global_rank << " sending to process " << destination_processes[i] << " with tags: n_neighbours " << 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) 
+                 << " n_neighbours_arrays " << 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 1 
+                 << " neighbours_arrays " << 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 2
+                 << " neighbour_nodes " << 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 8
+                 << " neighbour_procs " << 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 3
+                 << " neighbour_sides " << 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 7
+                 << " neighbour_N " << 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 9
+                 << " nodes " << 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 4
+                 << " solution " << 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 5
+                 << " elements " << 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 6 
+                 << std::endl;
+
                 // Neighbours
                 MPI_Isend(&process_n_neighbours_send_left[i], 1, size_t_data_type, destination_processes[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]), MPI_COMM_WORLD, &mpi_interfaces_send_requests[n_mpi_transfers_per_send * i]);
                 MPI_Isend(n_neighbours_arrays_send_left.data() + 4 * process_offset[i], 4 * process_size[i], size_t_data_type, destination_processes[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 1, MPI_COMM_WORLD, &mpi_interfaces_send_requests[n_mpi_transfers_per_send * i + 1]);
@@ -2312,6 +2324,19 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
 
 
             for (size_t i = 0; i < destination_processes.size(); ++i) {
+
+                std::cout << "Process " << global_rank << " sending to process " << destination_processes[i] << " with tags: n_neighbours " << 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) 
+                 << " n_neighbours_arrays " << 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 1 
+                 << " neighbours_arrays " << 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 2
+                 << " neighbour_nodes " << 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 8
+                 << " neighbour_procs " << 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 3
+                 << " neighbour_sides " << 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 7
+                 << " neighbour_N " << 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 9
+                 << " nodes " << 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 4
+                 << " solution " << 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 5
+                 << " elements " << 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 6 
+                 << std::endl;
+
                 // Neighbours
                 MPI_Isend(&process_n_neighbours_send_right[i], 1, size_t_data_type, destination_processes[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]), MPI_COMM_WORLD, &mpi_interfaces_send_requests[n_mpi_transfers_per_send * (i + n_send_processes_left)]);
                 MPI_Isend(n_neighbours_arrays_send_right.data() + 4 * process_offset[i], 4 * process_size[i], size_t_data_type, destination_processes[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 1, MPI_COMM_WORLD, &mpi_interfaces_send_requests[n_mpi_transfers_per_send * (i + n_send_processes_left) + 1]);
@@ -2447,6 +2472,13 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
             }
 
             for (size_t i = 0; i < origin_processes_left.size(); ++i) {
+                std::cout << "Process " << global_rank << " receiving from process " << origin_processes_left[i] << " with tags: n_neighbours " << 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank)
+                 << " n_neighbours_arrays " << 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank) + 1
+                 << " nodes " << 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank) + 4
+                 << " solution " << 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank) + 5
+                 << " elements " << 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank) + 6
+                 << std::endl;
+
                 // Neighbours
                 MPI_Irecv(&process_n_neighbours_recv_left[i], 1, size_t_data_type, origin_processes_left[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank), MPI_COMM_WORLD, &n_neighbours_recv_requests[i]);
                 MPI_Irecv(n_neighbours_arrays_recv_left.data() + 4 * process_offset[i], 4 * process_size[i], size_t_data_type, origin_processes_left[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank) + 1, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * i]);
@@ -2484,6 +2516,13 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
             }
 
             for (size_t i = 0; i < origin_processes_right.size(); ++i) {
+                std::cout << "Process " << global_rank << " receiving from process " << origin_processes_right[i] << " with tags: n_neighbours " << 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank)
+                 << " n_neighbours_arrays " << 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 1
+                 << " nodes " << 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 4
+                 << " solution " << 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 5
+                 << " elements " << 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 6
+                 << std::endl;
+                 
                 // Neighbours
                 MPI_Irecv(&process_n_neighbours_recv_right[i], 1, size_t_data_type, origin_processes_right[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank), MPI_COMM_WORLD, &n_neighbours_recv_requests[origin_processes_left.size() + i]);
                 MPI_Irecv(n_neighbours_arrays_recv_right.data() + 4 * process_offset[i], 4 * process_size[i], size_t_data_type, origin_processes_right[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 1, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * (i + origin_processes_left.size())]);
@@ -2539,6 +2578,14 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
         std::vector<int> neighbours_N_arrays_recv(neighbours_arrays_recv.size());
 
         for (size_t i = 0; i < origin_processes_left.size(); ++i) {
+            std::cout << "Process " << global_rank << " receiving from process " << origin_processes_left[i] << " with tags: "
+                 << " neighbours_arrays " << 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank) + 2
+                 << " neighbours_nodes " << 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank) + 8
+                 << " neighbours_proc " << 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank) + 3
+                 << " neighbours_side " << 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank) + 7
+                 << " neighbours_N " << 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank) + 9
+                 << std::endl;
+
             // Neighbours
             MPI_Irecv(neighbours_arrays_recv.data() + process_neighbour_offset_left[i], process_n_neighbours_recv_left[i], size_t_data_type, origin_processes_left[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank) + 2, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * i + 4]);
             MPI_Irecv(neighbours_nodes_arrays_recv.data() + 4 * process_neighbour_offset_left[i], 4 * process_n_neighbours_recv_left[i], float_data_type, origin_processes_left[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank) + 8, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * i + 7]);
@@ -2548,6 +2595,14 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
         }
 
         for (size_t i = 0; i < origin_processes_right.size(); ++i) {
+            std::cout << "Process " << global_rank << " receiving from process " << origin_processes_right[i] << " with tags: "
+                 << " neighbours_arrays " << 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 2
+                 << " neighbours_nodes " << 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 8
+                 << " neighbours_proc " << 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 3
+                 << " neighbours_side " << 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 7
+                 << " neighbours_N " << 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 9
+                 << std::endl;
+
             // Neighbours
             MPI_Irecv(neighbours_arrays_recv.data() + n_neighbours_recv_total_left + process_neighbour_offset_right[i], process_n_neighbours_recv_right[i], size_t_data_type, origin_processes_right[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 2, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * (origin_processes_left.size() + i) + 4]);
             MPI_Irecv(neighbours_nodes_arrays_recv.data() + 4 * (n_neighbours_recv_total_left + process_neighbour_offset_right[i]), 4 * process_n_neighbours_recv_right[i], float_data_type, origin_processes_right[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 8, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * (origin_processes_left.size() + i) + 7]);
@@ -3894,6 +3949,8 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
 
     n_elements_global_ = n_elements_global_new;
     global_element_offset_ = global_element_offset_new[global_rank];
+
+    print();
 
     // Adjust boundaries etc, maybe send new index and process to everyone?
 }
