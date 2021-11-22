@@ -8114,6 +8114,7 @@ auto SEM::Device::Meshes::find_faces_to_delete(size_t n_faces, size_t n_domain_e
         };
 
         faces_to_delete[i] = elements_leaving[0] && elements_leaving[1] || elements_leaving[0] && boundary_elements[1] || elements_leaving[1] && boundary_elements[0];
+        printf("Face %llu has delete %d\n", i, faces_to_delete[i]);
     }
 }
 
