@@ -7610,14 +7610,15 @@ auto SEM::Device::Meshes::get_neighbours(size_t n_elements_send,
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (size_t element_index = index; element_index < n_elements_send; element_index += stride) {
-        const Element2D_t& element = elements[element_index + start_index];
-        size_t element_offset = offsets[element_index];
+    for (size_t i = index; i < n_elements_send; i += stride) {
+        const size_t element_index = i + start_index;
+        const Element2D_t& element = elements[element_index];
+        size_t element_offset = offsets[i];
         for (size_t side_index = 0; side_index < element.faces_.size(); ++side_index) {
             for (size_t side_face_index = 0; side_face_index < element.faces_[side_index].size(); ++side_face_index) {
                 const size_t face_index = element.faces_[side_index][side_face_index];
                 const Face2D_t& face = faces[face_index];
-                const size_t face_side_index = face.elements_[0] == element_index + start_index;
+                const size_t face_side_index = face.elements_[0] == element_index;
                 const size_t other_element_index = face.elements_[face_side_index];
                 const Element2D_t& other_element = elements[other_element_index];
 
@@ -7647,7 +7648,7 @@ auto SEM::Device::Meshes::get_neighbours(size_t n_elements_send,
                         }
 
                         if (neighbours_proc[element_offset] == -1) {
-                            printf("Error: Element %llu, side %llu, face %llu with index %llu has other sent element %llu but it is not found in any process. Results are undefined.\n", element_index + start_index, side_index, side_face_index, face_index, element_global_index);
+                            printf("Error: Element %llu, side %llu, face %llu with index %llu has other sent element %llu but it is not found in any process. Results are undefined.\n", element_index, side_index, side_face_index, face_index, element_global_index);
                         }
                     }
                     else {
@@ -7676,7 +7677,7 @@ auto SEM::Device::Meshes::get_neighbours(size_t n_elements_send,
                                 }
 
                                 if (neighbours_proc[element_offset] == -1) {
-                                    printf("Error: Element %llu, side %llu, face %llu with index %llu has other local sent element %llu but it is not found in any process. Results are undefined.\n", element_index + start_index, side_index, side_face_index, face_index, element_global_index);
+                                    printf("Error: Element %llu, side %llu, face %llu with index %llu has other local sent element %llu but it is not found in any process. Results are undefined.\n", element_index, side_index, side_face_index, face_index, element_global_index);
                                 }
                             }
                             else {
