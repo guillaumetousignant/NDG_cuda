@@ -3062,38 +3062,6 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
         }
 
         // Interfaces
-        // MPI incoming interfaces to add
-        size_t n_mpi_destinations_to_add_send = 0;
-        size_t neighbour_mpi_index_send = 0;
-        for (size_t i = 0; i < n_elements_send_left[global_rank]; ++i) {
-            for (size_t j = 0; j < 4; ++j) {
-                const size_t side_n_neighbours = n_neighbours_arrays_send_left[4 * i + j];
-                for (size_t k = 0; k < side_n_neighbours; ++k) {
-                    if (neighbours_proc_arrays_send_left[neighbour_mpi_index_send + k] == global_rank) {
-                        ++n_mpi_destinations_to_add_send;
-                        break;
-                    }
-                }
-                neighbour_mpi_index_send += side_n_neighbours;
-            }
-        }
-
-        neighbour_mpi_index_send = 0;
-        for (size_t i = 0; i < n_elements_send_right[global_rank]; ++i) {
-            for (size_t j = 0; j < 4; ++j) {
-                const size_t side_n_neighbours = n_neighbours_arrays_send_right[4 * i + j];
-                for (size_t k = 0; k < side_n_neighbours; ++k) {
-                    if (neighbours_proc_arrays_send_right[neighbour_mpi_index_send + k] == global_rank) {
-                        ++n_mpi_destinations_to_add_send;
-                        break;
-                    }
-                }
-                neighbour_mpi_index_send += side_n_neighbours;
-            }
-        }
-
-        const size_t n_mpi_destinations_to_add = n_mpi_destinations_to_add_recv + n_mpi_destinations_to_add_send;
-
         // MPI incoming interfaces to delete
         size_t n_mpi_destinations_to_delete = 0;
 
