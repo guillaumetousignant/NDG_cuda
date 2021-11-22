@@ -8482,6 +8482,7 @@ auto SEM::Device::Meshes::create_sent_mpi_boundaries_destinations(size_t n_sent_
         for (size_t j = 0; j < 4; ++j) { // CHECK only works with quadrilaterals
             if (elements_send_destinations_keep[4 * i + j]) {
                 const size_t new_element_index = new_elements_offset + new_element_offset;
+                printf("Sent element %llu at index %llu, keeping side %llu and placing it at new index %llu\n", i, element_index, j, new_element_index);
                 Element2D_t& new_element = new_elements[new_element_index];
                 const size_t next_side_index = (j + 1 >= element.nodes_.size()) ? 0 : j + 1;
 
