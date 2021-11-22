@@ -2781,8 +2781,8 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
         size_t n_mpi_destinations_to_add_send_left = 0;
         size_t neighbour_index_send = 0;
         for (size_t i = 0; i < n_elements_send_left[global_rank]; ++i) {
+            elements_send_destinations_offset_left[i] = n_mpi_destinations_to_add_send_left;
             for (size_t j = 0; j < 4; ++j) {
-                elements_send_destinations_offset_left[i] = n_mpi_destinations_to_add_send_left;
                 const size_t side_n_neighbours = n_neighbours_arrays_send_left[4 * i + j];
                 for (size_t k = 0; k < side_n_neighbours; ++k) {
                     if (neighbours_proc_arrays_send_left[neighbour_index_send + k] == global_rank) {
@@ -2798,8 +2798,8 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
         size_t n_mpi_destinations_to_add_send_right = 0;
         neighbour_index_send = 0;
         for (size_t i = 0; i < n_elements_send_right[global_rank]; ++i) {
+            elements_send_destinations_offset_right[i] = n_mpi_destinations_to_add_send_right;
             for (size_t j = 0; j < 4; ++j) {
-                elements_send_destinations_offset_right[i] = n_mpi_destinations_to_add_send_right;
                 const size_t side_n_neighbours = n_neighbours_arrays_send_right[4 * i + j];
                 for (size_t k = 0; k < side_n_neighbours; ++k) {
                     if (neighbours_proc_arrays_send_right[neighbour_index_send + k] == global_rank) {
