@@ -8245,6 +8245,7 @@ auto SEM::Device::Meshes::find_mpi_interface_elements_to_delete(size_t n_mpi_int
         if (mpi_interfaces_new_process_incoming[i] == rank) {
             boundary_elements_to_delete[mpi_interfaces_destination[i] - n_domain_elements] = true;
         }
+        printf("MPI interface element %llu has delete %i, at index %llu\n", i, boundary_elements_to_delete[mpi_interfaces_destination[i] - n_domain_elements], mpi_interfaces_destination[i] - n_domain_elements);
     }
 }
 
