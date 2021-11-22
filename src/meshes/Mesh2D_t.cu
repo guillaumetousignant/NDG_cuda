@@ -2717,7 +2717,7 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
 
         // Boundary elements
         // Boundary elements to add
-        size_t n_boundary_elements_to_add = 0;
+        size_t n_mpi_destinations_to_add_send = 0;
 
         size_t neighbour_index_send = 0;
         for (size_t i = 0; i < n_elements_send_left[global_rank]; ++i) {
@@ -2725,7 +2725,7 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
                 const size_t side_n_neighbours = n_neighbours_arrays_send_left[4 * i + j];
                 for (size_t k = 0; k < side_n_neighbours; ++k) {
                     if (neighbours_proc_arrays_send_left[neighbour_index_send + k] == global_rank) {
-                        ++n_boundary_elements_to_add;
+                        ++n_mpi_destinations_to_add_send;
                         break;
                     }
                 }
@@ -2739,7 +2739,7 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
                 const size_t side_n_neighbours = n_neighbours_arrays_send_right[4 * i + j];
                 for (size_t k = 0; k < side_n_neighbours; ++k) {
                     if (neighbours_proc_arrays_send_right[neighbour_index_send + k] == global_rank) {
-                        ++n_boundary_elements_to_add;
+                        ++n_mpi_destinations_to_add_send;
                         break;
                     }
                 }
@@ -2764,10 +2764,10 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
         std::vector<size_t> host_outflow_boundaries_to_add_refine_array(neighbours_numBlocks);
         std::vector<size_t> host_mpi_destinations_to_add_refine_array(neighbours_numBlocks);
 
-        size_t n_wall_boundaries_to_add = 0;
-        size_t n_symmetry_boundaries_to_add = 0;
-        size_t n_inflow_boundaries_to_add = 0;
-        size_t n_outflow_boundaries_to_add = 0;
+        size_t n_wall_boundaries_to_add_recv = 0;
+        size_t n_symmetry_boundaries_to_add_recv = 0;
+        size_t n_inflow_boundaries_to_add_recv = 0;
+        size_t n_outflow_boundaries_to_add_recv = 0;
         size_t n_mpi_destinations_to_add_recv = 0;
 
         device_vector<int> neighbours_proc_arrays_recv_device(neighbours_proc_arrays_recv, stream_);
@@ -2787,17 +2787,17 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
             cudaStreamSynchronize(stream_); // So the transfers to host_wall_boundaries_to_add_refine_array etc are complete
 
             for (int i = 0; i < neighbours_numBlocks; ++i) {
-                n_wall_boundaries_to_add += host_wall_boundaries_to_add_refine_array[i];
-                host_wall_boundaries_to_add_refine_array[i] = n_wall_boundaries_to_add - host_wall_boundaries_to_add_refine_array[i]; // Current block offset
+                n_wall_boundaries_to_add_recv += host_wall_boundaries_to_add_refine_array[i];
+                host_wall_boundaries_to_add_refine_array[i] = n_wall_boundaries_to_add_recv - host_wall_boundaries_to_add_refine_array[i]; // Current block offset
                 
-                n_symmetry_boundaries_to_add += host_symmetry_boundaries_to_add_refine_array[i];
-                host_symmetry_boundaries_to_add_refine_array[i] = n_symmetry_boundaries_to_add - host_symmetry_boundaries_to_add_refine_array[i]; // Current block offset
+                n_symmetry_boundaries_to_add_recv += host_symmetry_boundaries_to_add_refine_array[i];
+                host_symmetry_boundaries_to_add_refine_array[i] = n_symmetry_boundaries_to_add_recv - host_symmetry_boundaries_to_add_refine_array[i]; // Current block offset
 
-                n_inflow_boundaries_to_add += host_inflow_boundaries_to_add_refine_array[i];
-                host_inflow_boundaries_to_add_refine_array[i] = n_inflow_boundaries_to_add - host_inflow_boundaries_to_add_refine_array[i]; // Current block offset
+                n_inflow_boundaries_to_add_recv += host_inflow_boundaries_to_add_refine_array[i];
+                host_inflow_boundaries_to_add_refine_array[i] = n_inflow_boundaries_to_add_recv - host_inflow_boundaries_to_add_refine_array[i]; // Current block offset
 
-                n_outflow_boundaries_to_add += host_outflow_boundaries_to_add_refine_array[i];
-                host_outflow_boundaries_to_add_refine_array[i] = n_outflow_boundaries_to_add - host_outflow_boundaries_to_add_refine_array[i]; // Current block offset
+                n_outflow_boundaries_to_add_recv += host_outflow_boundaries_to_add_refine_array[i];
+                host_outflow_boundaries_to_add_refine_array[i] = n_outflow_boundaries_to_add_recv - host_outflow_boundaries_to_add_refine_array[i]; // Current block offset
 
                 n_mpi_destinations_to_add_recv += host_mpi_destinations_to_add_refine_array[i];
                 host_mpi_destinations_to_add_refine_array[i] = n_mpi_destinations_to_add_recv - host_mpi_destinations_to_add_refine_array[i]; // Current block offset
@@ -2816,7 +2816,13 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
             neighbours_side_arrays_recv_device.clear(stream_);
         }
 
-        n_boundary_elements_to_add += n_wall_boundaries_to_add + n_symmetry_boundaries_to_add + n_inflow_boundaries_to_add + n_outflow_boundaries_to_add + n_mpi_destinations_to_add_recv;
+        const size_t n_wall_boundaries_to_add = n_wall_boundaries_to_add_recv;
+        const size_t n_symmetry_boundaries_to_add = n_symmetry_boundaries_to_add_recv;
+        const size_t n_inflow_boundaries_to_add = n_inflow_boundaries_to_add_recv;
+        const size_t n_outflow_boundaries_to_add = n_outflow_boundaries_to_add_recv;
+        const size_t n_mpi_destinations_to_add = n_mpi_destinations_to_add_recv + n_mpi_destinations_to_add_send;
+
+        const size_t n_boundary_elements_to_add = n_wall_boundaries_to_add + n_symmetry_boundaries_to_add + n_inflow_boundaries_to_add + n_outflow_boundaries_to_add + n_mpi_destinations_to_add_recv;
 
         device_vector<size_t> device_boundary_elements_to_delete_refine_array(ghosts_numBlocks_, stream_);
         SEM::Device::Meshes::reduce_bools<boundaries_blockSize_/2><<<ghosts_numBlocks_, boundaries_blockSize_/2, 0, stream_>>>(boundary_elements_to_delete.size(), boundary_elements_to_delete.data(), device_boundary_elements_to_delete_refine_array.data());
