@@ -136,9 +136,13 @@ auto main(int argc, char* argv[]) -> int {
 
     MPI_Init(&argc, &argv);
 
-    volatile bool dodo = true;
-    while (dodo) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    int global_dodo_rank = -1;
+    MPI_Comm_rank(MPI_COMM_WORLD, &global_dodo_rank);
+    if (global_dodo_rank == 1) {
+        volatile bool dodo = true;
+        while (dodo) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
     }
 
     // Argument parsing
