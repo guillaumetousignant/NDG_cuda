@@ -3460,12 +3460,12 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
 
         if (n_elements_recv_left[global_rank] > 0) {
             const int recv_numBlocks = (n_elements_recv_left[global_rank] + boundaries_blockSize_ - 1) / boundaries_blockSize_;
-            SEM::Device::Meshes::add_received_mpi_origins<<<recv_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_recv_left[global_rank], 0, n_neighbours_arrays_left_device.data(), neighbours_proc_arrays_recv_device.data(), new_mpi_interfaces_origin.data(), new_mpi_interfaces_origin_process.data(), neighbour_offsets_left_device.data(), mpi_origins_offsets_recv_left.data());
+            SEM::Device::Meshes::add_received_mpi_origins<<<recv_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_recv_left[global_rank], 0, n_neighbours_arrays_left_device.data(), neighbours_proc_arrays_recv_device.data(), new_mpi_interfaces_origin.data(), new_mpi_interfaces_origin_side.data(), new_mpi_interfaces_origin_process.data(), neighbour_offsets_left_device.data(), mpi_origins_offsets_recv_left.data());
         }
 
         if (n_elements_recv_right[global_rank] > 0) {
             const int recv_numBlocks = (n_elements_recv_right[global_rank] + boundaries_blockSize_ - 1) / boundaries_blockSize_;
-            SEM::Device::Meshes::add_received_mpi_origins<<<recv_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_recv_right[global_rank], n_elements_new[global_rank] - n_elements_recv_right[global_rank], n_neighbours_arrays_right_device.data(), neighbours_proc_arrays_recv_device.data(), new_mpi_interfaces_origin.data(), new_mpi_interfaces_origin_process.data(), neighbour_offsets_right_device.data(), mpi_origins_offsets_recv_right.data());
+            SEM::Device::Meshes::add_received_mpi_origins<<<recv_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_recv_right[global_rank], n_elements_new[global_rank] - n_elements_recv_right[global_rank], n_neighbours_arrays_right_device.data(), neighbours_proc_arrays_recv_device.data(), new_mpi_interfaces_origin.data(), new_mpi_interfaces_origin_side.data(), new_mpi_interfaces_origin_process.data(), neighbour_offsets_right_device.data(), mpi_origins_offsets_recv_right.data());
         }
 
         if (n_elements_send_left[global_rank] > 0) {
@@ -3473,16 +3473,18 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
             device_vector<int> neighbours_proc_arrays_device(neighbours_proc_arrays_send_left, stream_);
             device_vector<size_t> neighbour_offsets_device(neighbour_offsets_send_left, stream_);
             device_vector<size_t> neighbours_arrays_device(neighbours_arrays_send_left, stream_);
+            device_vector<size_t> neighbours_sides_device(neighbours_side_arrays_send_left, stream_);
             device_vector<size_t> mpi_origins_offsets_device(mpi_origins_offsets_send_left, stream_);
             device_vector<int> destination_process_device(destination_process_send_left, stream_);
 
             const int send_numBlocks = (n_elements_send_left[global_rank] + boundaries_blockSize_ - 1) / boundaries_blockSize_;
-            SEM::Device::Meshes::add_send_mpi_origins<<<send_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_send_left[global_rank], global_rank, n_neighbours_arrays_device.data(), neighbours_arrays_device.data(), neighbours_proc_arrays_device.data(), destination_process_device.data(), new_mpi_interfaces_origin.data(), new_mpi_interfaces_origin_process.data(), neighbour_offsets_device.data(), mpi_origins_offsets_device.data());
+            SEM::Device::Meshes::add_send_mpi_origins<<<send_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_send_left[global_rank], global_rank, n_neighbours_arrays_device.data(), neighbours_arrays_device.data(), neighbours_sides_device.data(), neighbours_proc_arrays_device.data(), destination_process_device.data(), new_mpi_interfaces_origin.data(), new_mpi_interfaces_origin_side.data(), new_mpi_interfaces_origin_process.data(), neighbour_offsets_device.data(), mpi_origins_offsets_device.data());
         
             n_neighbours_arrays_device.clear(stream_);
             neighbours_proc_arrays_device.clear(stream_);
             neighbour_offsets_device.clear(stream_);
             neighbours_arrays_device.clear(stream_);
+            neighbours_sides_device.clear(stream_);
             mpi_origins_offsets_device.clear(stream_);
             destination_process_device.clear(stream_);
         }
@@ -3492,16 +3494,18 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
             device_vector<int> neighbours_proc_arrays_device(neighbours_proc_arrays_send_right, stream_);
             device_vector<size_t> neighbour_offsets_device(neighbour_offsets_send_right, stream_);
             device_vector<size_t> neighbours_arrays_device(neighbours_arrays_send_right, stream_);
+            device_vector<size_t> neighbours_sides_device(neighbours_side_arrays_send_right, stream_);
             device_vector<size_t> mpi_origins_offsets_device(mpi_origins_offsets_send_right, stream_);
             device_vector<int> destination_process_device(destination_process_send_right, stream_);
 
             const int send_numBlocks = (n_elements_send_right[global_rank] + boundaries_blockSize_ - 1) / boundaries_blockSize_;
-            SEM::Device::Meshes::add_send_mpi_origins<<<send_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_send_right[global_rank], global_rank, n_neighbours_arrays_device.data(), neighbours_arrays_device.data(), neighbours_proc_arrays_device.data(),destination_process_device.data(),  new_mpi_interfaces_origin.data(), new_mpi_interfaces_origin_process.data(), neighbour_offsets_device.data(), mpi_origins_offsets_device.data());
+            SEM::Device::Meshes::add_send_mpi_origins<<<send_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_send_right[global_rank], global_rank, n_neighbours_arrays_device.data(), neighbours_arrays_device.data(), neighbours_sides_device.data(), neighbours_proc_arrays_device.data(), destination_process_device.data(), new_mpi_interfaces_origin.data(), new_mpi_interfaces_origin_side.data(), new_mpi_interfaces_origin_process.data(), neighbour_offsets_device.data(), mpi_origins_offsets_device.data());
         
             n_neighbours_arrays_device.clear(stream_);
             neighbours_proc_arrays_device.clear(stream_);
             neighbour_offsets_device.clear(stream_);
             neighbours_arrays_device.clear(stream_);
+            neighbours_sides_device.clear(stream_);
             mpi_origins_offsets_device.clear(stream_);
             destination_process_device.clear(stream_);
         }
@@ -8678,7 +8682,7 @@ auto SEM::Device::Meshes::move_required_mpi_origins(size_t n_mpi_origins, size_t
             }
 
             new_mpi_origins[new_mpi_origin_index] = new_boundary_element_index;
-            new_mpi_origins[new_mpi_origin_index] = new_boundary_element_index;
+            new_mpi_origins_side[new_mpi_origin_index] = mpi_origins_side[i];
             new_mpi_origins_process[new_mpi_origin_index] = mpi_interfaces_process[process_index];
         }
     }
@@ -9065,7 +9069,7 @@ auto SEM::Device::Meshes::create_received_neighbours(
 }
 
 __global__
-auto SEM::Device::Meshes::add_received_mpi_origins(size_t n_received_elements, size_t element_offset, const size_t* element_n_neighbours, const int* neighbour_procs, size_t* mpi_origins, int* mpi_process, const size_t* neighbour_offsets, const size_t* mpi_origins_offsets) -> void {
+auto SEM::Device::Meshes::add_received_mpi_origins(size_t n_received_elements, size_t element_offset, const size_t* element_n_neighbours, const int* neighbour_procs, size_t* mpi_origins, size_t* mpi_sides, int* mpi_process, const size_t* neighbour_offsets, const size_t* mpi_origins_offsets) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -9085,6 +9089,7 @@ auto SEM::Device::Meshes::add_received_mpi_origins(size_t n_received_elements, s
                 }
                 if (first_time) {
                     mpi_origins[origins_index] = element_index;
+                    mpi_sides[origins_index] = j;
                     mpi_process[origins_index] = neighbour_process;
                     ++origins_index;
                 }
@@ -9094,7 +9099,7 @@ auto SEM::Device::Meshes::add_received_mpi_origins(size_t n_received_elements, s
 }
 
 __global__
-auto SEM::Device::Meshes::add_send_mpi_origins(size_t n_send_elements, int rank, const size_t* element_n_neighbours, const size_t* neighbour_indices, const int* neighbour_procs, const int* destination_process, size_t* mpi_origins, int* mpi_process, const size_t* neighbour_offsets, const size_t* mpi_origins_offsets) -> void {
+auto SEM::Device::Meshes::add_send_mpi_origins(size_t n_send_elements, int rank, const size_t* element_n_neighbours, const size_t* neighbour_indices, const size_t* neighbour_sides, const int* neighbour_procs, const int* destination_process, size_t* mpi_origins, size_t* mpi_sides, int* mpi_process, const size_t* neighbour_offsets, const size_t* mpi_origins_offsets) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -9105,6 +9110,7 @@ auto SEM::Device::Meshes::add_send_mpi_origins(size_t n_send_elements, int rank,
             for (size_t k = 0; k < side_n_neighbours; ++k) {
                 if (neighbour_procs[neighbour_offsets[i] + k] == rank) {
                     mpi_origins[origins_index] = neighbour_indices[neighbour_offsets[i] + k];
+                    mpi_sides[origins_index] = neighbour_sides[neighbour_offsets[i] + k];
                     mpi_process[origins_index] = destination_process[i];
                     ++origins_index;
                 }
