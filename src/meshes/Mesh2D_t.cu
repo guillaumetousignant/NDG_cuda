@@ -8300,8 +8300,6 @@ auto SEM::Device::Meshes::move_faces(size_t n_faces, Face2D_t* faces, Face2D_t* 
         new_faces[i].clear_storage();
 
         new_faces[i] = std::move(faces[i]);
-
-        printf("Face %llu moved to %llu\n", i, i);
     }
 }
 
