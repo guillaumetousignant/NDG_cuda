@@ -9112,18 +9112,21 @@ auto SEM::Device::Meshes::add_send_mpi_origins(size_t n_send_elements, int rank,
 
     for (size_t i = index; i < n_send_elements; i += stride) {
         size_t origins_index = mpi_origins_offsets[i];
+        size_t neighbour_index = neighbour_offsets[i];
         for (size_t j = 0; j < 4; ++j) {
             const size_t side_n_neighbours = element_n_neighbours[4 * i + j];
             for (size_t k = 0; k < side_n_neighbours; ++k) {
-                if (neighbour_procs[neighbour_offsets[i] + k] == rank) {
-                    mpi_origins[origins_index] = neighbour_indices[neighbour_offsets[i] + k];
-                    mpi_sides[origins_index] = neighbour_sides[neighbour_offsets[i] + k];
+                if (neighbour_procs[neighbour_index + k] == rank) {
+                    mpi_origins[origins_index] = neighbour_indices[neighbour_index + k];
+                    mpi_sides[origins_index] = neighbour_sides[neighbour_index + k];
                     mpi_process[origins_index] = destination_process[i];
 
                     printf("Sent element mpi origin added sent element %llu, side %llu, number %llu. Put element %llu at index %llu, with destination process %i\n", i, j, k, neighbour_indices[neighbour_offsets[i] + k], origins_index, destination_process[i]);
                     ++origins_index;
                 }
             }
+
+            neighbour_index += side_n_neighbours;
         }
     }
 }
