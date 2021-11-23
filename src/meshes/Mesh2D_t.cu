@@ -8578,11 +8578,11 @@ auto SEM::Device::Meshes::move_required_boundaries(size_t n_boundary_elements, s
             }
 
             size_t process_index = 0;
-            for (size_t j = n_processes - 1; j >= 0; --j) {
-                if (mpi_interfaces_offset[j] <= i) {
-                    process_index = j;
+            for (size_t j = 1; j < n_processes; ++j) {
+                if (mpi_interfaces_offset[j] > i) {
                     break;
                 }
+                ++process_index;
             }
 
             new_boundary[new_boundary_index] = new_boundary_element_index;
@@ -8674,11 +8674,11 @@ auto SEM::Device::Meshes::move_required_mpi_origins(size_t n_mpi_origins, size_t
             }
 
             size_t process_index = 0;
-            for (size_t j = n_processes - 1; j >= 0; --j) {
-                if (mpi_interfaces_offset[j] <= i) {
-                    process_index = j;
+            for (size_t j = 1; j < n_processes; ++j) {
+                if (mpi_interfaces_offset[j] > i) {
                     break;
                 }
+                ++process_index;
             }
 
             new_mpi_origins[new_mpi_origin_index] = new_boundary_element_index;
