@@ -8458,6 +8458,8 @@ auto SEM::Device::Meshes::move_boundary_elements(size_t n_boundary_elements, siz
                 new_boundary_element_index -= boundary_elements_to_delete[j];
             }
 
+            printf("Boundary element %llu, index %llu moved to %llu\n", i, i + n_domain_elements, new_boundary_element_index);
+
             new_elements[new_boundary_element_index].clear_storage();
             new_elements[new_boundary_element_index] = std::move(elements[i + n_domain_elements]);
 
