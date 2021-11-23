@@ -9111,8 +9111,8 @@ auto SEM::Device::Meshes::add_send_mpi_origins(size_t n_send_elements, int rank,
     const int stride = blockDim.x * gridDim.x;
 
     for (size_t i = index; i < n_send_elements; i += stride) {
-        size_t origins_index = mpi_origins_offsets[i];
-        size_t neighbour_index = origins_offset + neighbour_offsets[i];
+        size_t origins_index = origins_offset + mpi_origins_offsets[i];
+        size_t neighbour_index = neighbour_offsets[i];
         for (size_t j = 0; j < 4; ++j) {
             const size_t side_n_neighbours = element_n_neighbours[4 * i + j];
             printf("Sent element mpi origin %llu side %llu has %llu neighbours and neighbour index %llu\n", i, j, side_n_neighbours, neighbour_index);
