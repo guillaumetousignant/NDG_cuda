@@ -9119,6 +9119,8 @@ auto SEM::Device::Meshes::add_send_mpi_origins(size_t n_send_elements, int rank,
                     mpi_origins[origins_index] = neighbour_indices[neighbour_offsets[i] + k];
                     mpi_sides[origins_index] = neighbour_sides[neighbour_offsets[i] + k];
                     mpi_process[origins_index] = destination_process[i];
+
+                    printf("Sent element mpi origin added sent element %llu, side %llu, number %llu. Put element %llu at index %llu, with destination process %i\n", i, j, k, neighbour_indices[neighbour_offsets[i] + k], origins_index, destination_process[i]);
                     ++origins_index;
                 }
             }
