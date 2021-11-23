@@ -3251,7 +3251,7 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
             new_mpi_interfaces_origin_process = std::move(new_new_mpi_interfaces_origin_process);
 
             // move the sides too please
-            SEM::Device::Meshes::move_required_mpi_origins<<<mpi_interfaces_outgoing_numBlocks_, boundaries_blockSize_, 0, stream_>>>(mpi_interfaces_origin_.size(), n_elements_, n_elements_new[global_rank], mpi_interfaces_process_device.size(), mpi_interfaces_origin_.data(), new_mpi_interfaces_origin.data(), mpi_interfaces_origin_side_.data(), new_mpi_interfaces_origin_side.data(), new_mpi_interfaces_origin_process.data(), mpi_origins_to_delete.data(), device_mpi_origins_to_delete_refine_array.data(), boundary_elements_to_delete.data(), mpi_interfaces_process_device.data(), mpi_interfaces_outgoing_offset_device.data(), device_boundary_elements_to_delete_refine_array.data(), boundaries_blockSize_);
+            SEM::Device::Meshes::move_required_mpi_origins<<<mpi_interfaces_outgoing_numBlocks_, boundaries_blockSize_, 0, stream_>>>(mpi_interfaces_origin_.size(), mpi_interfaces_process_device.size(), n_elements_send_left[global_rank], n_elements_recv_left[global_rank], mpi_interfaces_origin_.data(), new_mpi_interfaces_origin.data(), mpi_interfaces_origin_side_.data(), new_mpi_interfaces_origin_side.data(), new_mpi_interfaces_origin_process.data(), mpi_origins_to_delete.data(), device_mpi_origins_to_delete_refine_array.data(), mpi_interfaces_process_device.data(), mpi_interfaces_outgoing_offset_device.data());
 
             mpi_origins_to_delete.clear(stream_);
             device_mpi_origins_to_delete_refine_array.clear(stream_);
@@ -3263,7 +3263,7 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
         else if (n_mpi_origins_to_add > 0) {
             device_vector<size_t> new_new_mpi_interfaces_origin(n_mpi_origins_to_add, stream_);
             device_vector<size_t> new_new_mpi_interfaces_origin_side(n_mpi_origins_to_add, stream_);
-            device_vector<size_t> new_new_mpi_interfaces_origin_process(n_mpi_origins_to_add, stream_);
+            device_vector<int> new_new_mpi_interfaces_origin_process(n_mpi_origins_to_add, stream_);
             new_mpi_interfaces_origin = std::move(new_new_mpi_interfaces_origin);
             new_mpi_interfaces_origin_side = std::move(new_new_mpi_interfaces_origin_side);
             new_mpi_interfaces_origin_process = std::move(new_new_mpi_interfaces_origin_process);
@@ -8651,7 +8651,21 @@ auto SEM::Device::Meshes::find_obstructed_mpi_origins_to_delete(size_t n_mpi_ori
 }
 
 __global__
-auto SEM::Device::Meshes::move_required_mpi_origins(size_t n_mpi_origins, size_t n_domain_elements, size_t new_n_domain_elements, size_t n_processes, const size_t* mpi_origins, size_t* new_mpi_origins, const size_t* mpi_origins_side, size_t* new_mpi_origins_side, int* new_mpi_origins_process, const bool* mpi_origins_to_delete, const size_t* mpi_origins_to_delete_block_offsets, const bool* boundary_elements_to_delete, const int* mpi_interfaces_process, const size_t* mpi_interfaces_offset, const size_t* boundary_elements_block_offsets, int boundary_elements_blockSize) -> void {
+auto SEM::Device::Meshes::move_required_mpi_origins(
+        size_t n_mpi_origins,
+        size_t n_processes, 
+        size_t n_elements_send_left, 
+        size_t n_elements_recv_left, 
+        const size_t* mpi_origins, 
+        size_t* new_mpi_origins, 
+        const size_t* mpi_origins_side, 
+        size_t* new_mpi_origins_side, 
+        int* new_mpi_origins_process, 
+        const bool* mpi_origins_to_delete, 
+        const size_t* mpi_origins_to_delete_block_offsets, 
+        const int* mpi_interfaces_process, 
+        const size_t* mpi_interfaces_offset) -> void {
+    
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     const int thread_id = threadIdx.x;
@@ -8664,14 +8678,7 @@ auto SEM::Device::Meshes::move_required_mpi_origins(size_t n_mpi_origins, size_t
                 new_mpi_origin_index -= mpi_origins_to_delete[j];
             }
 
-            const size_t boundary_element_index = mpi_origins[i] - n_domain_elements;
-            const int boundary_element_block_id = boundary_element_index/boundary_elements_blockSize;
-            const int boundary_element_thread_id = boundary_element_index%boundary_elements_blockSize;
-
-            size_t new_boundary_element_index = new_n_domain_elements + boundary_element_index - boundary_elements_block_offsets[boundary_element_block_id];
-            for (size_t j = boundary_element_index - boundary_element_thread_id; j < boundary_element_index; ++j) {
-                new_boundary_element_index -= boundary_elements_to_delete[j];
-            }
+            const size_t element_index = mpi_origins[i] + n_elements_recv_left - n_elements_send_left;
 
             size_t process_index = 0;
             for (size_t j = 1; j < n_processes; ++j) {
@@ -8681,7 +8688,7 @@ auto SEM::Device::Meshes::move_required_mpi_origins(size_t n_mpi_origins, size_t
                 ++process_index;
             }
 
-            new_mpi_origins[new_mpi_origin_index] = new_boundary_element_index;
+            new_mpi_origins[new_mpi_origin_index] = element_index;
             new_mpi_origins_side[new_mpi_origin_index] = mpi_origins_side[i];
             new_mpi_origins_process[new_mpi_origin_index] = mpi_interfaces_process[process_index];
         }
