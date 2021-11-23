@@ -3492,14 +3492,78 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
         }
 
         // We just need to sort the mpi destinations and origins
-        std::vector<int> new_mpi_interfaces_process(mpi_interfaces_process_);
         std::vector<size_t> new_mpi_interfaces_outgoing_size(mpi_interfaces_outgoing_size_);
-        std::vector<size_t> new_mpi_interfaces_incoming_size(mpi_interfaces_incoming_size_);
         std::vector<size_t> new_mpi_interfaces_outgoing_offset(mpi_interfaces_outgoing_offset_);
-        std::vector<size_t> new_mpi_interfaces_incoming_offset(mpi_interfaces_incoming_offset_);
+
+        // We must use new_mpi_interfaces_destination_process to sort new_mpi_interfaces_destination! else the elements are not sorted by process and can't be sent!
+        // And do the same with origins
+        // This is one of the first things we do in the no elements moving branch of this function
+
+        // Sorting mpi destinations
+        std::vector<int> new_mpi_interfaces_destination_process_host(new_mpi_interfaces_destination_process.size());
+        new_mpi_interfaces_destination_process.copy_to(new_mpi_interfaces_destination_process_host, stream_);
+
+        std::vector<int> new_mpi_interfaces_process;
+        std::vector<size_t> new_mpi_interfaces_incoming_size;
+
+        cudaStreamSynchronize(stream_); // So the transfer to new_mpi_interfaces_destination_process_host is complete
+
+        for (size_t i = 0; i < new_mpi_interfaces_destination_process_host.size(); ++i) {
+            bool missing = true;
+            for (size_t j = 0; j < new_mpi_interfaces_process.size(); ++j) {
+                if (new_mpi_interfaces_process[j] == new_mpi_interfaces_destination_process_host[i]) {
+                    ++new_mpi_interfaces_incoming_size[j];
+                    missing = false;
+                    break;
+                }
+            }
+
+            if (missing) {
+                new_mpi_interfaces_process.push_back(new_mpi_interfaces_destination_process_host[i]);
+                new_mpi_interfaces_incoming_size.push_back(1);
+            }
+        }
+
+        std::vector<size_t> new_mpi_interfaces_incoming_offset(new_mpi_interfaces_process.size());
+        size_t mpi_interface_offset = 0;
+        for (size_t i = 0; i < new_mpi_interfaces_incoming_offset.size(); ++i) {
+            new_mpi_interfaces_incoming_offset[i] = mpi_interface_offset;
+            mpi_interface_offset += new_mpi_interfaces_incoming_size[i];
+        }
+        if (mpi_interface_offset != new_mpi_interfaces_destination_process_host.size()) {
+            std::cerr << "Error: Process " << global_rank << " had " << new_mpi_interfaces_destination_process_host.size() << " mpi interface elements, but now has " << mpi_interface_offset << ". Exiting." << std::endl;
+            exit(67);
+        }
+        
+        std::vector<size_t> new_mpi_interfaces_destination_host(new_mpi_interfaces_destination.size());
+        new_mpi_interfaces_destination.copy_to(new_mpi_interfaces_destination_host, stream_);
+
+        std::vector<size_t> new_mpi_interfaces_destination_host_ordered(new_mpi_interfaces_destination_process_host.size());
+        std::vector<size_t> mpi_interfaces_destination_indices(new_mpi_interfaces_process.size(), 0);
+
+        cudaStreamSynchronize(stream_); // So the transfer to new_mpi_interfaces_destination_host is completed
+
+        for (size_t i = 0; i < new_mpi_interfaces_destination_process_host.size(); ++i) {
+            bool missing = true;
+            for (size_t j = 0; j < new_mpi_interfaces_process.size(); ++j) {
+                if (new_mpi_interfaces_process[j] == new_mpi_interfaces_destination_process_host[i]) {
+                    new_mpi_interfaces_destination_host_ordered[new_mpi_interfaces_incoming_offset[j] + mpi_interfaces_destination_indices[j]] = new_mpi_interfaces_destination_host[i];
+                    ++mpi_interfaces_destination_indices[j];
+
+                    missing = false;
+                    break;
+                }
+            }
+
+            if (missing) {
+                std::cerr << "Error: Process " << global_rank << " got sent new process " << new_mpi_interfaces_destination_process_host[i] << " for mpi interface element " << i << ", local id " << new_mpi_interfaces_destination_host[i] << ", but the process is not in this process' mpi interfaces destinations. Exiting." << std::endl;
+                exit(68);
+            }
+        }
+
+        new_mpi_interfaces_destination.copy_from(new_mpi_interfaces_destination_host_ordered, stream_);
 
         
-
 
         // Swapping out the old arrays for the new ones
         elements_ = std::move(new_elements);
