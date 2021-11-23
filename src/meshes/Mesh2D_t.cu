@@ -8105,8 +8105,8 @@ auto SEM::Device::Meshes::find_faces_to_delete(size_t n_faces, size_t n_domain_e
     for (size_t i = index; i < n_faces; i += stride) {
         const Face2D_t& face = faces[i];
         const std::array<bool, 2> elements_leaving {
-            face.elements_[0] < n_elements_send_left || face.elements_[0] > n_domain_elements - n_elements_send_right && face.elements_[0] < n_domain_elements,
-            face.elements_[1] < n_elements_send_left || face.elements_[1] > n_domain_elements - n_elements_send_right && face.elements_[1] < n_domain_elements
+            face.elements_[0] < n_elements_send_left || face.elements_[0] >= n_domain_elements - n_elements_send_right && face.elements_[0] < n_domain_elements,
+            face.elements_[1] < n_elements_send_left || face.elements_[1] >= n_domain_elements - n_elements_send_right && face.elements_[1] < n_domain_elements
         };
         const std::array<bool, 2> boundary_elements {
             face.elements_[0] >= n_domain_elements,
