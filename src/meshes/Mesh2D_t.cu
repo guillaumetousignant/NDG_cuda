@@ -8288,7 +8288,6 @@ auto SEM::Device::Meshes::find_faces_to_delete(size_t n_faces, size_t n_domain_e
         };
 
         faces_to_delete[i] = elements_leaving[0] && elements_leaving[1] || elements_leaving[0] && boundary_elements[1] || elements_leaving[1] && boundary_elements[0];
-        printf("Face %llu has delete %d, elements leaving [%d, %d], boundary_elements[%d, %d]\n", i, faces_to_delete[i], elements_leaving[0], elements_leaving[1], boundary_elements[0], boundary_elements[1]);
     }
 }
 
@@ -8399,14 +8398,11 @@ auto SEM::Device::Meshes::find_boundary_elements_to_delete(size_t n_boundary_ele
             const size_t side_index = face.elements_[0] == element_index;
             const size_t other_element_index = face.elements_[side_index];
 
-            printf("Ghost element %llu, index %llu has face %llu, index %llu. Face side %llu, other element index %llu\n", i, element_index, j, face_index, side_index, other_element_index);
-
             if (other_element_index >= n_elements_send_left && other_element_index < n_domain_elements - n_elements_send_right) {
                 boundary_elements_to_delete[i] = false;
                 break;
             }
         }
-        printf("Ghost element %llu, index %llu has delete %i\n", i, element_index, boundary_elements_to_delete[i]);
     }
 }
 
@@ -8419,7 +8415,6 @@ auto SEM::Device::Meshes::find_mpi_interface_elements_to_delete(size_t n_mpi_int
         if (mpi_interfaces_new_process_incoming[i] == rank) {
             boundary_elements_to_delete[mpi_interfaces_destination[i] - n_domain_elements] = true;
         }
-        printf("MPI interface element %llu has delete %i, at index %llu\n", i, boundary_elements_to_delete[mpi_interfaces_destination[i] - n_domain_elements], mpi_interfaces_destination[i] - n_domain_elements);
     }
 }
 
@@ -8709,7 +8704,6 @@ auto SEM::Device::Meshes::create_sent_mpi_boundaries_destinations(size_t n_sent_
         for (size_t j = 0; j < 4; ++j) { // CHECK only works with quadrilaterals
             if (elements_send_destinations_keep[4 * i + j]) {
                 const size_t new_element_index = new_elements_offset + new_element_offset;
-                printf("Sent element %llu at index %llu, keeping side %llu and placing it at new index %llu and at index %llu in mpi destinations\n", i, element_index, j, new_element_index, mpi_interfaces_destination_offset + new_element_offset);
                 Element2D_t& new_element = new_elements[new_element_index];
                 const size_t next_side_index = (j + 1 >= element.nodes_.size()) ? 0 : j + 1;
 
@@ -8733,7 +8727,6 @@ auto SEM::Device::Meshes::create_sent_mpi_boundaries_destinations(size_t n_sent_
                     if (face_index != static_cast<size_t>(-1)) {
                         Face2D_t& face = faces[face_index];
                         const size_t side_index = face.elements_[1] == element_index && face.elements_side_[1] == j; // This is bad, some elements have been moved already, so it is possible that the element index is another element, and there are the same index multiple times
-                        printf("Sent element %llu with index %llu, side %llu, face %llu with index %llu has side index %llu element %llu, setting to %llu\n", i, element_index, j, k, face_index, side_index, face.elements_[side_index], new_element_index);
                         face.elements_[side_index] = new_element_index;
                         ++n_good_faces;
                     }
@@ -9115,14 +9108,12 @@ auto SEM::Device::Meshes::add_send_mpi_origins(size_t n_send_elements, int rank,
         size_t neighbour_index = neighbour_offsets[i];
         for (size_t j = 0; j < 4; ++j) {
             const size_t side_n_neighbours = element_n_neighbours[4 * i + j];
-            printf("Sent element mpi origin %llu side %llu has %llu neighbours and neighbour index %llu\n", i, j, side_n_neighbours, neighbour_index);
             for (size_t k = 0; k < side_n_neighbours; ++k) {
                 if (neighbour_procs[neighbour_index + k] == rank) {
                     mpi_origins[origins_index] = neighbour_indices[neighbour_index + k];
                     mpi_sides[origins_index] = neighbour_sides[neighbour_index + k];
                     mpi_process[origins_index] = destination_process[i];
 
-                    printf("Sent element mpi origin added sent element %llu, side %llu, number %llu. Put element %llu at index %llu, with side %llu and destination process %i\n", i, j, k, neighbour_indices[neighbour_index + k], origins_index, neighbour_sides[neighbour_index + k], destination_process[i]);
                     ++origins_index;
                 }
             }
