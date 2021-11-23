@@ -8396,16 +8396,17 @@ auto SEM::Device::Meshes::find_boundary_elements_to_delete(size_t n_boundary_ele
 
         for (size_t j = 0; j < element.faces_[0].size(); ++j) {
             const size_t face_index = element.faces_[0][j];
-            printf("Boundary element %llu, index %llu, face %llu has index %llu\n", i, element_index, j, face_index);
             const Face2D_t& face = faces[face_index];
             const size_t side_index = face.elements_[0] == element_index;
             const size_t other_element_index = face.elements_[side_index];
+            printf("Boundary element %llu, index %llu, face %llu has index %llu. Side index %llu, other element index %llu\n", i, element_index, j, face_index, side_index, other_element_index);
 
             if (other_element_index >= n_elements_send_left && other_element_index < n_domain_elements - n_elements_send_right) {
                 boundary_elements_to_delete[i] = false;
                 break;
             }
         }
+        printf("    Boundary element %llu has delete: %i\n", i, boundary_elements_to_delete[i]);
     }
 }
 
