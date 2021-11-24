@@ -3131,15 +3131,17 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
                 const size_t side_n_neighbours = n_neighbours_arrays_recv_left[4 * i + j];
                 for (size_t k = 0; k < side_n_neighbours; ++k) {
                     const int neighbour_process = neighbours_proc_arrays_recv[neighbour_offsets_left[i] + k];
-                    bool first_time = true;
-                    for (size_t m = 0; m < k; ++m) {
-                        if (neighbours_proc_arrays_recv[neighbour_offsets_left[i] + m] == neighbour_process) {
-                            first_time = false;
-                            break;
+                    if (neighbour_process >= 0 && neighbour_process != global_rank) {
+                        bool first_time = true;
+                        for (size_t m = 0; m < k; ++m) {
+                            if (neighbours_proc_arrays_recv[neighbour_offsets_left[i] + m] == neighbour_process) {
+                                first_time = false;
+                                break;
+                            }
                         }
-                    }
-                    if (first_time) {
-                        ++n_mpi_origins_to_add_recv_left;
+                        if (first_time) {
+                            ++n_mpi_origins_to_add_recv_left;
+                        }
                     }
                 }
             }
@@ -3153,21 +3155,24 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
                 const size_t side_n_neighbours = n_neighbours_arrays_recv_right[4 * i + j];
                 for (size_t k = 0; k < side_n_neighbours; ++k) {
                     const int neighbour_process = neighbours_proc_arrays_recv[neighbour_offsets_right[j] + k];
-                    bool first_time = true;
-                    for (size_t m = 0; m < k; ++m) {
-                        if (neighbours_proc_arrays_recv[neighbour_offsets_right[j] + m] == neighbour_process) {
-                            first_time = false;
-                            break;
+                    if (neighbour_process >= 0 && neighbour_process != global_rank) {
+                        bool first_time = true;
+                        for (size_t m = 0; m < k; ++m) {
+                            if (neighbours_proc_arrays_recv[neighbour_offsets_right[j] + m] == neighbour_process) {
+                                first_time = false;
+                                break;
+                            }
                         }
-                    }
-                    if (first_time) {
-                        ++n_mpi_origins_to_add_recv_right;
+                        if (first_time) {
+                            ++n_mpi_origins_to_add_recv_right;
+                        }
                     }
                 }
             }
         }
 
         // This is not right // no it's left hahahahahahahahahahhahahahahah
+        // CHECK add a first time here, but must check for local index, in case we send two small elements linking to one big element here
         size_t n_mpi_origins_to_add_send_left = 0;
         neighbour_index_send = 0;
         std::vector<size_t> mpi_origins_offsets_send_left(n_elements_send_left[global_rank], n_mpi_origins_to_add_recv_left + n_mpi_origins_to_add_recv_right);
@@ -3184,6 +3189,7 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
             }
         }
 
+        // CHECK add a first time here, but must check for local index, in case we send two small elements linking to one big element here
         size_t n_mpi_origins_to_add_send_right = 0;
         neighbour_index_send = 0;
         std::vector<size_t> mpi_origins_offsets_send_right(n_elements_send_right[global_rank], n_mpi_origins_to_add_recv_left + n_mpi_origins_to_add_recv_right + n_mpi_origins_to_add_send_left);
