@@ -7950,6 +7950,8 @@ auto SEM::Device::Meshes::move_elements(size_t n_elements_move, size_t n_element
         const size_t source_element_index = element_index + n_elements_send_left;
         const size_t destination_element_index = element_index + n_elements_recv_left;
 
+        printf("Element %llu moved to %llu\n", source_element_index, destination_element_index);
+
         new_elements[destination_element_index].clear_storage();
         new_elements[destination_element_index] = std::move(elements[source_element_index]);
 
