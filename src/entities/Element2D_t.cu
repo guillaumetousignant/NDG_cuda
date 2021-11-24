@@ -728,7 +728,12 @@ SEM::Device::Entities::Element2D_t::Datatype::Datatype() {
     constexpr std::array<MPI_Aint, n> displacements {offsetof(SEM::Device::Entities::Element2D_t, status_), offsetof(SEM::Device::Entities::Element2D_t, rotation_), offsetof(SEM::Device::Entities::Element2D_t, split_level_)};
     const std::array<MPI_Datatype, n> types {MPI_INT, MPI_INT, MPI_INT}; // Ok I could just send those as packed ints, but who knows if something will have to be added.
     
-    MPI_Type_create_struct(n, lengths.data(), displacements.data(), types.data(), &datatype_);
+    MPI_Datatype tmp_type;
+    MPI_Aint lb, extent;
+
+    MPI_Type_create_struct(n, lengths.data(), displacements.data(), types.data(), &tmp_type );
+    MPI_Type_get_extent(tmp_type, &lb, &extent);
+    MPI_Type_create_resized(tmp_type, lb, extent, &datatype_);
     MPI_Type_commit(&datatype_);
 }
 
