@@ -3246,7 +3246,7 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
             new_mpi_interfaces_origin_process = std::move(new_new_mpi_interfaces_origin_process);
 
             // move the sides too please
-            SEM::Device::Meshes::move_required_mpi_origins<<<mpi_interfaces_outgoing_numBlocks_, boundaries_blockSize_, 0, stream_>>>(mpi_interfaces_origin_.size(), mpi_interfaces_process_device.size(), n_elements_send_left[global_rank], n_elements_recv_left[global_rank], mpi_interfaces_origin_.data(), new_mpi_interfaces_origin.data(), mpi_interfaces_origin_side_.data(), new_mpi_interfaces_origin_side.data(), new_mpi_interfaces_origin_process.data(), mpi_origins_to_delete.data(), device_mpi_origins_to_delete_refine_array.data(), mpi_interfaces_process_device.data(), mpi_interfaces_outgoing_offset_device.data());
+            SEM::Device::Meshes::move_required_mpi_origins<<<mpi_interfaces_outgoing_numBlocks_, boundaries_blockSize_, 0, stream_>>>(mpi_interfaces_origin_.size(), n_elements_send_left[global_rank], n_elements_recv_left[global_rank], mpi_interfaces_origin_.data(), new_mpi_interfaces_origin.data(), mpi_interfaces_origin_side_.data(), new_mpi_interfaces_origin_side.data(), new_mpi_interfaces_origin_process.data(), mpi_origins_to_delete.data(), device_mpi_origins_to_delete_refine_array.data(), mpi_interfaces_outgoing_offset_device.data());
 
             mpi_origins_to_delete.clear(stream_);
             device_mpi_origins_to_delete_refine_array.clear(stream_);
@@ -8686,7 +8686,6 @@ auto SEM::Device::Meshes::find_obstructed_mpi_origins_to_delete(
 __global__
 auto SEM::Device::Meshes::move_required_mpi_origins(
         size_t n_mpi_origins,
-        size_t n_processes, 
         size_t n_elements_send_left, 
         size_t n_elements_recv_left, 
         const size_t* mpi_origins, 
@@ -8696,7 +8695,6 @@ auto SEM::Device::Meshes::move_required_mpi_origins(
         int* new_mpi_origins_process, 
         const bool* mpi_origins_to_delete, 
         const size_t* mpi_origins_to_delete_block_offsets, 
-        const int* mpi_interfaces_process, 
         const size_t* mpi_interfaces_offset) -> void {
     
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
