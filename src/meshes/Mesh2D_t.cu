@@ -2874,7 +2874,8 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
             mpi_destinations_to_add_refine_array.copy_from(host_mpi_destinations_to_add_refine_array, stream_);
 
             SEM::Device::Meshes::find_mpi_interface_elements_to_delete<<<mpi_interfaces_incoming_numBlocks_, boundaries_blockSize_, 0, stream_>>>(mpi_interfaces_destination_.size(), n_elements_, global_rank, mpi_interfaces_destination_.data(), mpi_interfaces_new_process_incoming_device.data(), boundary_elements_to_delete.data());
-            SEM::Device::Meshes::find_mpi_interface_elements_to_keep<<<neighbours_numBlocks, elements_blockSize_, 0, stream_>>>(neighbours_proc_arrays_recv_device.size(), mpi_interfaces_new_process_incoming_device.size(), global_rank, n_elements_, neighbours_proc_arrays_recv_device.data(), neighbours_arrays_recv_device.data(), neighbours_side_arrays_recv_device.data(), mpi_interfaces_new_process_incoming_device.data(), mpi_interfaces_new_local_index_incoming_device.data(), mpi_interfaces_new_side_incoming_device.data(), mpi_interfaces_destination_.data(), boundary_elements_to_delete.data());
+            //SEM::Device::Meshes::find_mpi_interface_elements_to_keep<<<neighbours_numBlocks, elements_blockSize_, 0, stream_>>>(neighbours_proc_arrays_recv_device.size(), mpi_interfaces_new_process_incoming_device.size(), global_rank, n_elements_, neighbours_proc_arrays_recv_device.data(), neighbours_arrays_recv_device.data(), neighbours_side_arrays_recv_device.data(), mpi_interfaces_new_process_incoming_device.data(), mpi_interfaces_new_local_index_incoming_device.data(), mpi_interfaces_new_side_incoming_device.data(), mpi_interfaces_destination_.data(), boundary_elements_to_delete.data());
+            SEM::Device::Meshes::find_mpi_interface_elements_to_keep<<<mpi_interfaces_incoming_numBlocks_, elements_blockSize_, 0, stream_>>>(mpi_interfaces_destination_.size(), neighbours_proc_arrays_recv_device.size(), global_rank, n_elements_, neighbours_proc_arrays_recv_device.data(), neighbours_arrays_recv_device.data(), neighbours_side_arrays_recv_device.data(), mpi_interfaces_new_process_incoming_device.data(), mpi_interfaces_new_local_index_incoming_device.data(), mpi_interfaces_new_side_incoming_device.data(), mpi_interfaces_destination_.data(), boundary_elements_to_delete.data());
 
             neighbours_arrays_recv_device.clear(stream_);
             neighbours_side_arrays_recv_device.clear(stream_);
@@ -8417,24 +8418,30 @@ auto SEM::Device::Meshes::find_mpi_interface_elements_to_delete(size_t n_mpi_int
         if (mpi_interfaces_new_process_incoming[i] == rank) {
             boundary_elements_to_delete[mpi_interfaces_destination[i] - n_domain_elements] = true;
         }
+        printf("MPI destination %llu, boundary %llu, has delete %i after find_mpi_to_delete\n", i, mpi_interfaces_destination[i] - n_domain_elements, boundary_elements_to_delete[mpi_interfaces_destination[i] - n_domain_elements]);
     }
 }
 
 __global__
-auto SEM::Device::Meshes::find_mpi_interface_elements_to_keep(size_t n, size_t n_incoming, int rank, size_t n_domain_elements, const int* neighbour_procs, const size_t* neighbour_indices, const size_t* neighbour_sides, const int* incoming_procs, const size_t* incoming_indices, const size_t* incoming_sides, const size_t* mpi_interfaces_destination, bool* boundary_elements_to_delete) -> void {
+auto SEM::Device::Meshes::find_mpi_interface_elements_to_keep(size_t n_mpi_destinations, size_t n_neighbours, int rank, size_t n_domain_elements, const int* neighbour_procs, const size_t* neighbour_indices, const size_t* neighbour_sides, const int* mpi_destination_procs, const size_t* mpi_destination_local_indices, const size_t* mpi_destination_sides, const size_t* mpi_interfaces_destination, bool* boundary_elements_to_delete) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (size_t i = index; i < n; i += stride) {
-        const int neighbour_proc = neighbour_procs[i];
+    for (size_t i = index; i < n_mpi_destinations; i += stride) {
+        const int mpi_proc = mpi_destination_procs[i];
 
-        if (neighbour_proc > 0 && neighbour_proc != rank) {
-            const size_t local_element_index = neighbour_indices[i];
-            const size_t element_side_index = neighbour_sides[i];
+        // The element is marked for deletion because either all linking elements are sent
+        // Maybe we received an element that links to it, then we must keep it
+        if (mpi_proc != rank && boundary_elements_to_delete[mpi_interfaces_destination[i] - n_domain_elements]) {
+            const size_t mpi_index = mpi_destination_local_indices[i];
+            const size_t mpi_side = mpi_destination_sides[i];
+            for (size_t j = 0; j < n_neighbours; ++j) {
+                const int neighbour_proc = neighbour_procs[i];
+                const size_t neighbour_index = neighbour_indices[i];
+                const size_t neighbour_side = neighbour_sides[i];
 
-            for (size_t j = 0; j < n_incoming; ++j) {
-                if (incoming_procs[j] == neighbour_proc && incoming_indices[j] == local_element_index && incoming_sides[j] == element_side_index) {
-                    boundary_elements_to_delete[mpi_interfaces_destination[j] - n_domain_elements] = false;
+                if (mpi_proc == neighbour_proc && mpi_index == neighbour_index && mpi_side == neighbour_side) {
+                    boundary_elements_to_delete[mpi_interfaces_destination[i] - n_domain_elements] = false; 
                     break;
                 }
             }

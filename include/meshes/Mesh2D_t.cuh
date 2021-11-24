@@ -363,7 +363,7 @@ namespace SEM { namespace Device { namespace Meshes {
     auto find_mpi_interface_elements_to_delete(size_t n_mpi_interface_elements, size_t n_domain_elements, int rank, const size_t* mpi_interfaces_destination, const int* mpi_interfaces_new_process_incoming, bool* boundary_elements_to_delete) -> void;
     
     __global__
-    auto find_mpi_interface_elements_to_keep(size_t n, size_t n_incoming, int rank, size_t n_domain_elements, const int* neighbour_procs, const size_t* neighbour_indices, const size_t* neighbour_sides, const int* incoming_procs, const size_t* incoming_indices, const size_t* incoming_sides, const size_t* mpi_interfaces_destination, bool* boundary_elements_to_delete) -> void;
+    auto find_mpi_interface_elements_to_keep(size_t n_mpi_destinations, size_t n_neighbours, int rank, size_t n_domain_elements, const int* neighbour_procs, const size_t* neighbour_indices, const size_t* neighbour_sides, const int* mpi_destination_procs, const size_t* mpi_destination_local_indices, const size_t* mpi_destination_sides, const size_t* mpi_interfaces_destination, bool* boundary_elements_to_delete) -> void;
 
     __global__
     auto move_boundary_elements(size_t n_boundary_elements, size_t n_domain_elements, size_t new_n_domain_elements, SEM::Device::Entities::Element2D_t* elements, SEM::Device::Entities::Element2D_t* new_elements, SEM::Device::Entities::Face2D_t* faces, const bool* boundary_elements_to_delete, const size_t* boundary_elements_to_delete_block_offsets) -> void;
