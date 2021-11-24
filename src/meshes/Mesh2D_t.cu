@@ -3227,6 +3227,7 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
 
             // This will have to be done with the other stuff
             if (n_elements_recv_left[global_rank] + n_elements_recv_right[global_rank] > 0) {
+                // CHECK this is wrong, the process can have changed.
                 std::vector<int> mpi_origins_process_host(mpi_interfaces_origin_.size()); // This seems like a bad solution.
                 for (size_t i = 0; i < mpi_interfaces_process_.size(); ++i) {
                     const size_t process_offset = mpi_interfaces_outgoing_offset_[i];
@@ -8638,6 +8639,8 @@ auto SEM::Device::Meshes::find_obstructed_mpi_origins_to_delete(size_t n_mpi_ori
         const Element2D_t& element = elements[element_index];
         const size_t side_index = mpi_interfaces_origin_side[i];
         const size_t side_n_faces = element.faces_[side_index].size();
+
+        printf("Boundary element %llu, index %llu, side %llu has %llu faces.\n", i, element_index, side_index, side_n_faces);
 
         bool missing = true;
         for (size_t j = 0; j < side_n_faces; ++j) {
