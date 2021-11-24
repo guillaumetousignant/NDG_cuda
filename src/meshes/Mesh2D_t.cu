@@ -8513,6 +8513,7 @@ auto SEM::Device::Meshes::find_boundaries_to_delete(size_t n_boundary_elements, 
         else {
             boundaries_to_delete[i] = false;
         }
+        printf("Boundary %llu at boundary element index %llu has delete %i\n", i, boundary_element_index, boundaries_to_delete[i]);
     }
 }
 
@@ -8594,6 +8595,8 @@ auto SEM::Device::Meshes::move_required_boundaries(size_t n_boundary_elements, s
                 }
                 ++process_index;
             }
+
+            printf("Boundary %llu moved to %llu, with element index %llu and process %d\n", i, new_boundary_index, new_boundary_element_index, mpi_interfaces_process[process_index]);
 
             new_boundary[new_boundary_index] = new_boundary_element_index;
             new_boundary_process[new_boundary_index] = mpi_interfaces_process[process_index];
