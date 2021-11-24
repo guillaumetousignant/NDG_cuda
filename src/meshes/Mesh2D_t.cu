@@ -8623,6 +8623,8 @@ auto SEM::Device::Meshes::find_mpi_origins_to_delete(size_t n_mpi_origins, size_
         const size_t element_index = mpi_interfaces_origin[i];
 
         mpi_origins_to_delete[i] = element_index < n_elements_send_left || element_index >= n_domain_elements - n_elements_send_right;
+
+        printf("MPI origin %llu has delete %i\n", i, mpi_origins_to_delete[i]);
     }
 }
 
@@ -8670,6 +8672,8 @@ auto SEM::Device::Meshes::find_obstructed_mpi_origins_to_delete(size_t n_mpi_ori
         if (missing) {
             mpi_origins_to_delete[i] = true;
         }
+
+        printf("MPI origin %llu has delete %i after obstruction check\n", i, mpi_origins_to_delete[i]);
     }
 }
 
