@@ -8731,7 +8731,7 @@ auto SEM::Device::Meshes::create_received_neighbours(
                             const size_t new_element_index = elements_offset + mpi_destinations_block_offsets[block_id] + n_additional_before;
                             const size_t new_mpi_destination_index = mpi_destinations_offset + mpi_destinations_block_offsets[block_id] + n_additional_before;
 
-                            printf("neighbour %llu created mpi destination %llu with new element index %lly, proc %i\n", i, new_mpi_destination_index, new_element_index, neighbour_proc);
+                            printf("neighbour %llu created mpi destination %llu with new element index %llu, proc %i\n", i, new_mpi_destination_index, new_element_index, neighbour_proc);
 
                             mpi_destinations[new_mpi_destination_index] = new_element_index;
                             mpi_destinations_process[new_mpi_destination_index] = neighbour_proc;
