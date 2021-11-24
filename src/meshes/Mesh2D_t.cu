@@ -8708,23 +8708,25 @@ auto SEM::Device::Meshes::create_received_neighbours(
                         if (first_time) {
                             size_t n_additional_before = 0;
                             for (size_t k = i - thread_id; k < i; ++k) {
-                                bool other_first_time = true;
-                                for (size_t l = 0; l < n_mpi_destinations; ++l) {
-                                    if (mpi_destinations_procs[l] == neighbour_procs[k] && mpi_destinations_indices[l] == neighbour_indices[k] && mpi_destinations_sides[l] == neighbour_sides[k]) {
-                                        other_first_time = false;
-                                        break;
-                                    }
-                                }
-                                if (other_first_time) {
-                                    for (size_t l = 0; l < k; ++l) {
-                                        if (neighbour_procs[l] == neighbour_procs[k] && neighbour_indices[l] == neighbour_indices[k] && neighbour_sides[l] == neighbour_sides[k]) {
+                                if (neighbour_procs[k] >= 0 && neighbour_procs[k] != rank) {
+                                    bool other_first_time = true;
+                                    for (size_t l = 0; l < n_mpi_destinations; ++l) {
+                                        if (mpi_destinations_procs[l] == neighbour_procs[k] && mpi_destinations_indices[l] == neighbour_indices[k] && mpi_destinations_sides[l] == neighbour_sides[k]) {
                                             other_first_time = false;
                                             break;
                                         }
                                     }
-                                }
-                                if (other_first_time) {
-                                    ++n_additional_before;
+                                    if (other_first_time) {
+                                        for (size_t l = 0; l < k; ++l) {
+                                            if (neighbour_procs[l] == neighbour_procs[k] && neighbour_indices[l] == neighbour_indices[k] && neighbour_sides[l] == neighbour_sides[k]) {
+                                                other_first_time = false;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    if (other_first_time) {
+                                        ++n_additional_before;
+                                    }
                                 }
                             }
 
