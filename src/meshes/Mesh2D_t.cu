@@ -8442,6 +8442,7 @@ auto SEM::Device::Meshes::find_mpi_interface_elements_to_keep(size_t n_mpi_desti
 
                 if (mpi_proc == neighbour_proc && mpi_index == neighbour_index && mpi_side == neighbour_side) {
                     boundary_elements_to_delete[mpi_interfaces_destination[i] - n_domain_elements] = false; 
+                    printf("MPI destination %llu, at index %llu, has been kept\n", i, mpi_interfaces_destination[i] - n_domain_elements);
                     break;
                 }
             }
