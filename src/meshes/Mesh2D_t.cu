@@ -8531,6 +8531,7 @@ auto SEM::Device::Meshes::move_all_boundaries(size_t n_boundary_elements, size_t
             new_boundary_element_index -= boundary_elements_to_delete[j];
         }
 
+        printf("Boundary %llu moved to %llu, with new element index %llu\n", i, i, new_boundary_element_index);
         new_boundary[i] = new_boundary_element_index;
     }
 }
