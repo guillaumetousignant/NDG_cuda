@@ -8394,6 +8394,8 @@ auto SEM::Device::Meshes::create_sent_mpi_boundaries_destinations(
                 Element2D_t& new_element = new_elements[new_element_index];
                 const size_t next_side_index = (j + 1 >= element.nodes_.size()) ? 0 : j + 1;
 
+                printf("Sent element %llu, index %llu created destination %llu with new element index %llu, and process %d\n", i, element_index, mpi_interfaces_destination_offset + new_element_offset, new_element_index, destination_process[i]);
+
                 mpi_interfaces_destination[mpi_interfaces_destination_offset + new_element_offset] = new_element_index;
                 mpi_interfaces_destination_process[mpi_interfaces_destination_offset + new_element_offset] = destination_process[i];
                 mpi_interfaces_destination_local_index[mpi_interfaces_destination_offset + new_element_offset] = destination_local_index[i];
@@ -8728,6 +8730,8 @@ auto SEM::Device::Meshes::create_received_neighbours(
 
                             const size_t new_element_index = elements_offset + mpi_destinations_block_offsets[block_id] + n_additional_before;
                             const size_t new_mpi_destination_index = mpi_destinations_offset + mpi_destinations_block_offsets[block_id] + n_additional_before;
+
+                            printf("neighbour %llu crrreated mpi destination %llu with new element index %lly, proc %d\n", i, new_mpi_destination_index, new_element_index, neighbour_proc);
 
                             mpi_destinations[new_mpi_destination_index] = new_element_index;
                             mpi_destinations_process[new_mpi_destination_index] = neighbour_proc;
