@@ -2556,21 +2556,6 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
             n_neighbours_recv_total_right += process_n_neighbours_recv_right[i];
         }
 
-        std::vector<size_t> neighbour_offsets_left(n_elements_recv_left[global_rank], 0);
-        std::vector<size_t> neighbour_offsets_right(n_elements_recv_right[global_rank], 0);
-
-        size_t neighbours_index = 0;
-        for (size_t i = 0; i < n_elements_recv_left[global_rank]; ++i) {
-            neighbour_offsets_left[i] = neighbours_index;
-            neighbours_index += n_neighbours_arrays_recv_left[4 * i] + n_neighbours_arrays_recv_left[4 * i + 1] + n_neighbours_arrays_recv_left[4 * i + 2] + n_neighbours_arrays_recv_left[4 * i + 3];
-        }
-
-        neighbours_index = 0;
-        for (size_t i = 0; i < n_elements_recv_right[global_rank]; ++i) {
-            neighbour_offsets_right[i] = neighbours_index;
-            neighbours_index += n_neighbours_arrays_recv_right[4 * i] + n_neighbours_arrays_recv_right[4 * i + 1] + n_neighbours_arrays_recv_right[4 * i + 2] + n_neighbours_arrays_recv_right[4 * i + 3];
-        }
-
         std::vector<size_t> neighbours_arrays_recv(n_neighbours_recv_total_left + n_neighbours_recv_total_right);
         std::vector<deviceFloat> neighbours_nodes_arrays_recv(4 * neighbours_arrays_recv.size());
         std::vector<int> neighbours_proc_arrays_recv(neighbours_arrays_recv.size());
@@ -2613,6 +2598,21 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
 
         std::vector<MPI_Status> mpi_interfaces_recv_statuses(mpi_interfaces_recv_requests.size());
         MPI_Waitall(mpi_interfaces_recv_requests.size(), mpi_interfaces_recv_requests.data(), mpi_interfaces_recv_statuses.data());
+
+        std::vector<size_t> neighbour_offsets_left(n_elements_recv_left[global_rank], 0);
+        std::vector<size_t> neighbour_offsets_right(n_elements_recv_right[global_rank], 0);
+
+        size_t neighbours_index = 0;
+        for (size_t i = 0; i < n_elements_recv_left[global_rank]; ++i) {
+            neighbour_offsets_left[i] = neighbours_index;
+            neighbours_index += n_neighbours_arrays_recv_left[4 * i] + n_neighbours_arrays_recv_left[4 * i + 1] + n_neighbours_arrays_recv_left[4 * i + 2] + n_neighbours_arrays_recv_left[4 * i + 3];
+        }
+
+        neighbours_index = 0;
+        for (size_t i = 0; i < n_elements_recv_right[global_rank]; ++i) {
+            neighbour_offsets_right[i] = neighbours_index;
+            neighbours_index += n_neighbours_arrays_recv_right[4 * i] + n_neighbours_arrays_recv_right[4 * i + 1] + n_neighbours_arrays_recv_right[4 * i + 2] + n_neighbours_arrays_recv_right[4 * i + 3];
+        }
     
         // Now everything is received
         // We can do something about the nodes
