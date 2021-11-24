@@ -3127,14 +3127,15 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
         std::vector<size_t> mpi_origins_offsets_recv_left(n_elements_recv_left[global_rank], 0);
         for (size_t i = 0; i < n_elements_recv_left[global_rank]; ++i) {
             mpi_origins_offsets_recv_left[i] += n_mpi_origins_to_add_recv_left;
+            size_t element_neighbour_index = neighbour_offsets_left[i];
             for (size_t j = 0; j < 4; ++j) {
                 const size_t side_n_neighbours = n_neighbours_arrays_recv_left[4 * i + j];
                 for (size_t k = 0; k < side_n_neighbours; ++k) {
-                    const int neighbour_process = neighbours_proc_arrays_recv[neighbour_offsets_left[i] + k];
+                    const int neighbour_process = neighbours_proc_arrays_recv[element_neighbour_index + k];
                     if (neighbour_process >= 0 && neighbour_process != global_rank) {
                         bool first_time = true;
                         for (size_t m = 0; m < k; ++m) {
-                            if (neighbours_proc_arrays_recv[neighbour_offsets_left[i] + m] == neighbour_process) {
+                            if (neighbours_proc_arrays_recv[element_neighbour_index + m] == neighbour_process) {
                                 first_time = false;
                                 break;
                             }
@@ -3144,6 +3145,7 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
                         }
                     }
                 }
+                element_neighbour_index += side_n_neighbours;
             }
         }
 
@@ -3151,14 +3153,15 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
         std::vector<size_t> mpi_origins_offsets_recv_right(n_elements_recv_right[global_rank], n_mpi_origins_to_add_recv_left);
         for (size_t i = 0; i  < n_elements_recv_right[global_rank]; ++i) {
             mpi_origins_offsets_recv_right[i] += n_mpi_origins_to_add_recv_right;
+            size_t element_neighbour_index = neighbour_offsets_right[i];
             for (size_t j = 0; j < 4; ++j) {
                 const size_t side_n_neighbours = n_neighbours_arrays_recv_right[4 * i + j];
                 for (size_t k = 0; k < side_n_neighbours; ++k) {
-                    const int neighbour_process = neighbours_proc_arrays_recv[neighbour_offsets_right[j] + k];
+                    const int neighbour_process = neighbours_proc_arrays_recv[element_neighbour_index + k];
                     if (neighbour_process >= 0 && neighbour_process != global_rank) {
                         bool first_time = true;
                         for (size_t m = 0; m < k; ++m) {
-                            if (neighbours_proc_arrays_recv[neighbour_offsets_right[j] + m] == neighbour_process) {
+                            if (neighbours_proc_arrays_recv[element_neighbour_index + m] == neighbour_process) {
                                 first_time = false;
                                 break;
                             }
@@ -3168,6 +3171,7 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
                         }
                     }
                 }
+                element_neighbour_index += side_n_neighbours;
             }
         }
 
