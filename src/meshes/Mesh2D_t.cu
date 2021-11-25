@@ -8616,7 +8616,7 @@ auto SEM::Device::Meshes::create_received_neighbours(
                                                             nodes[element.nodes_[3]]};
                     element.compute_boundary_geometry(points, polynomial_nodes);
 
-                    printf("neighbour %llu created inflow %llu with new element index %llu, proc %i, n_additional_before %llu. Nodes [%llu, %llu] \n", i, new_boundary_index, new_element_index, n_additional_before, neighbour_node_indices[2 * i], neighbour_node_indices[2 * i + 1]);
+                    printf("neighbour %llu created inflow %llu with new element index %llu, n_additional_before %llu. Nodes [%llu, %llu] \n", i, new_boundary_index, new_element_index, n_additional_before, neighbour_node_indices[2 * i], neighbour_node_indices[2 * i + 1]);
                 }
                 break;
 
