@@ -3319,7 +3319,6 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
                 face_offsets_right_device.data());
         }
 
-
         // Sizing mpi destinations
         std::vector<int> new_mpi_interfaces_destination_process_host(new_mpi_interfaces_destination_process.size());
         std::vector<size_t> new_mpi_interfaces_destination_local_index_host(new_mpi_interfaces_destination_local_index.size());
