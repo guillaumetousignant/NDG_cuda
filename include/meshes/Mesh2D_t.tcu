@@ -264,12 +264,9 @@ auto SEM::Device::Meshes::reduce_received_neighbours(size_t n, size_t n_incoming
     outflow_sdata[tid] = 0;
     mpi_destinations_sdata[tid] = 0;
 
-    printf("Block %u, thread %u accessing %u\n", blockIdx.x, tid, tid);
-
     while (i < n) { 
         const int neighbour_proc = neighbour_procs[i];
-        printf("    Block %u, thread %u accessing %llu\n", blockIdx.x, tid, i);
-
+        
         switch (neighbour_proc) {
             case SEM::Device::Meshes::Mesh2D_t::boundary_type::wall :
                 ++wall_sdata[tid];

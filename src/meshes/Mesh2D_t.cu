@@ -1915,8 +1915,6 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
     int global_size;
     MPI_Comm_size(MPI_COMM_WORLD, &global_size);
 
-    std::cout << std::endl << "Process " << global_rank << " load balancing" << std::endl;
-
     std::vector<size_t> n_elements_per_proc(global_size);
 
     constexpr MPI_Datatype size_t_data_type = (sizeof(size_t) == sizeof(unsigned long long)) ? MPI_UNSIGNED_LONG_LONG : (sizeof(size_t) == sizeof(unsigned long)) ? MPI_UNSIGNED_LONG : MPI_UNSIGNED; // CHECK this is a bad way of doing this
@@ -1954,11 +1952,7 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
         n_elements_recv_right[i] = (global_element_offset_end_new[i] > global_element_offset_end_current[i]) ? std::min(global_element_offset_end_new[i] - global_element_offset_end_current[i], n_elements_per_proc[i]) : 0;
     }
 
-    std::cout << "Process " << global_rank << " has n_elements_send_left: " << n_elements_send_left[global_rank] << ", n_elements_send_right: " << n_elements_send_right[global_rank] << ", n_elements_recv_left: " << n_elements_recv_left[global_rank] << ", n_elements_recv_right: " << n_elements_recv_right[global_rank] << std::endl;
-    
     if (n_elements_send_left[global_rank] + n_elements_recv_left[global_rank] + n_elements_send_right[global_rank] + n_elements_recv_right[global_rank] > 0) {
-        std::cout << "Process " << global_rank << " has elements to send or receive" << std::endl;
-        
         // MPI interfaces
         std::vector<int> mpi_interfaces_new_process_outgoing(mpi_interfaces_origin_.size(), global_rank);
         std::vector<size_t> mpi_interfaces_new_local_index_outgoing(mpi_interfaces_origin_.size());
@@ -2218,18 +2212,6 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
             }
 
             for (size_t i = 0; i < destination_processes.size(); ++i) {
-                std::cout << "Process " << global_rank << " sending to process " << destination_processes[i] << " with tags: n_neighbours " << 8 * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes[i]) 
-                 << " n_neighbours_arrays " << 8 * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes[i]) + 1 
-                 << " neighbours_arrays " << 8 * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes[i]) + 2
-                 << " neighbour_nodes " << 8 * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes[i]) + 8
-                 << " neighbour_procs " << 8 * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes[i]) + 3
-                 << " neighbour_sides " << 8 * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes[i]) + 7
-                 << " neighbour_N " << 8 * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes[i]) + 9
-                 << " nodes " << 8 * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes[i]) + 4
-                 << " solution " << 8 * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes[i]) + 5
-                 << " elements " << 8 * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes[i]) + 6 
-                 << std::endl;
-
                 // Neighbours
                 MPI_Isend(&process_n_neighbours_send_left[i], 1, size_t_data_type, destination_processes[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes[i]), MPI_COMM_WORLD, &mpi_interfaces_send_requests[mpi_load_balancing_solution_n_transfers * i]);
                 MPI_Isend(n_neighbours_arrays_send_left.data() + 4 * process_offset[i], 4 * process_size[i], size_t_data_type, destination_processes[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes[i]) + 1, MPI_COMM_WORLD, &mpi_interfaces_send_requests[mpi_load_balancing_solution_n_transfers * i + 1]);
@@ -2326,19 +2308,6 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
 
 
             for (size_t i = 0; i < destination_processes.size(); ++i) {
-
-                std::cout << "Process " << global_rank << " sending to process " << destination_processes[i] << " with tags: n_neighbours " << 8 * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes[i]) 
-                 << " n_neighbours_arrays " << 8 * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes[i]) + 1 
-                 << " neighbours_arrays " << 8 * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes[i]) + 2
-                 << " neighbour_nodes " << 8 * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes[i]) + 8
-                 << " neighbour_procs " << 8 * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes[i]) + 3
-                 << " neighbour_sides " << 8 * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes[i]) + 7
-                 << " neighbour_N " << 8 * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes[i]) + 9
-                 << " nodes " << 8 * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes[i]) + 4
-                 << " solution " << 8 * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes[i]) + 5
-                 << " elements " << 8 * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes[i]) + 6 
-                 << std::endl;
-
                 // Neighbours
                 MPI_Isend(&process_n_neighbours_send_right[i], 1, size_t_data_type, destination_processes[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes[i]), MPI_COMM_WORLD, &mpi_interfaces_send_requests[mpi_load_balancing_solution_n_transfers * (i + n_send_processes_left)]);
                 MPI_Isend(n_neighbours_arrays_send_right.data() + 4 * process_offset[i], 4 * process_size[i], size_t_data_type, destination_processes[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes[i]) + 1, MPI_COMM_WORLD, &mpi_interfaces_send_requests[mpi_load_balancing_solution_n_transfers * (i + n_send_processes_left) + 1]);
@@ -2474,13 +2443,6 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
             }
 
             for (size_t i = 0; i < origin_processes_left.size(); ++i) {
-                std::cout << "Process " << global_rank << " receiving from process " << origin_processes_left[i] << " with tags: n_neighbours " << 8 * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_left[i] + global_rank)
-                 << " n_neighbours_arrays " << 8 * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_left[i] + global_rank) + 1
-                 << " nodes " << 8 * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_left[i] + global_rank) + 4
-                 << " solution " << 8 * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_left[i] + global_rank) + 5
-                 << " elements " << 8 * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_left[i] + global_rank) + 6
-                 << std::endl;
-
                 // Neighbours
                 MPI_Irecv(&process_n_neighbours_recv_left[i], 1, size_t_data_type, origin_processes_left[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_left[i] + global_rank), MPI_COMM_WORLD, &n_neighbours_recv_requests[i]);
                 MPI_Irecv(n_neighbours_arrays_recv_left.data() + 4 * process_offset[i], 4 * process_size[i], size_t_data_type, origin_processes_left[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_left[i] + global_rank) + 1, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(mpi_load_balancing_solution_n_transfers - 1) * i]);
@@ -2518,13 +2480,6 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
             }
 
             for (size_t i = 0; i < origin_processes_right.size(); ++i) {
-                std::cout << "Process " << global_rank << " receiving from process " << origin_processes_right[i] << " with tags: n_neighbours " << 8 * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_right[i] + global_rank)
-                 << " n_neighbours_arrays " << 8 * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_right[i] + global_rank) + 1
-                 << " nodes " << 8 * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_right[i] + global_rank) + 4
-                 << " solution " << 8 * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_right[i] + global_rank) + 5
-                 << " elements " << 8 * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_right[i] + global_rank) + 6
-                 << std::endl;
-                 
                 // Neighbours
                 MPI_Irecv(&process_n_neighbours_recv_right[i], 1, size_t_data_type, origin_processes_right[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_right[i] + global_rank), MPI_COMM_WORLD, &n_neighbours_recv_requests[origin_processes_left.size() + i]);
                 MPI_Irecv(n_neighbours_arrays_recv_right.data() + 4 * process_offset[i], 4 * process_size[i], size_t_data_type, origin_processes_right[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_right[i] + global_rank) + 1, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(mpi_load_balancing_solution_n_transfers - 1) * (i + origin_processes_left.size())]);
@@ -2565,14 +2520,6 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
         std::vector<int> neighbours_N_arrays_recv(neighbours_arrays_recv.size());
 
         for (size_t i = 0; i < origin_processes_left.size(); ++i) {
-            std::cout << "Process " << global_rank << " receiving from process " << origin_processes_left[i] << " with tags: "
-                 << " neighbours_arrays " << 8 * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_left[i] + global_rank) + 2
-                 << " neighbours_nodes " << 8 * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_left[i] + global_rank) + 8
-                 << " neighbours_proc " << 8 * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_left[i] + global_rank) + 3
-                 << " neighbours_side " << 8 * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_left[i] + global_rank) + 7
-                 << " neighbours_N " << 8 * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_left[i] + global_rank) + 9
-                 << std::endl;
-
             // Neighbours
             MPI_Irecv(neighbours_arrays_recv.data() + process_neighbour_offset_left[i], process_n_neighbours_recv_left[i], size_t_data_type, origin_processes_left[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_left[i] + global_rank) + 2, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(mpi_load_balancing_solution_n_transfers - 1) * i + 4]);
             MPI_Irecv(neighbours_nodes_arrays_recv.data() + 4 * process_neighbour_offset_left[i], 4 * process_n_neighbours_recv_left[i], float_data_type, origin_processes_left[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_left[i] + global_rank) + 8, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(mpi_load_balancing_solution_n_transfers - 1) * i + 7]);
@@ -2582,14 +2529,6 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
         }
 
         for (size_t i = 0; i < origin_processes_right.size(); ++i) {
-            std::cout << "Process " << global_rank << " receiving from process " << origin_processes_right[i] << " with tags: "
-                 << " neighbours_arrays " << 8 * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_right[i] + global_rank) + 2
-                 << " neighbours_nodes " << 8 * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_right[i] + global_rank) + 8
-                 << " neighbours_proc " << 8 * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_right[i] + global_rank) + 3
-                 << " neighbours_side " << 8 * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_right[i] + global_rank) + 7
-                 << " neighbours_N " << 8 * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_right[i] + global_rank) + 9
-                 << std::endl;
-
             // Neighbours
             MPI_Irecv(neighbours_arrays_recv.data() + n_neighbours_recv_total_left + process_neighbour_offset_right[i], process_n_neighbours_recv_right[i], size_t_data_type, origin_processes_right[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_right[i] + global_rank) + 2, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(mpi_load_balancing_solution_n_transfers - 1) * (origin_processes_left.size() + i) + 4]);
             MPI_Irecv(neighbours_nodes_arrays_recv.data() + 4 * (n_neighbours_recv_total_left + process_neighbour_offset_right[i]), 4 * process_n_neighbours_recv_right[i], float_data_type, origin_processes_right[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_right[i] + global_rank) + 8, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(mpi_load_balancing_solution_n_transfers - 1) * (origin_processes_left.size() + i) + 7]);
@@ -3629,8 +3568,6 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
         MPI_Waitall(mpi_interfaces_send_requests.size(), mpi_interfaces_send_requests.data(), mpi_interfaces_send_statuses.data());
     }
     else {
-        std::cout << "Process " << global_rank << " has no elements to send" << std::endl;
-
         // MPI interfaces
         std::vector<int> mpi_interfaces_new_process_outgoing(mpi_interfaces_origin_.size(), global_rank);
         std::vector<size_t> mpi_interfaces_new_local_index_outgoing(mpi_interfaces_origin_.size());
@@ -3660,8 +3597,6 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
         }
 
         MPI_Waitall(mpi_load_balancing_interfaces_n_transfers * mpi_interfaces_process_.size(), mpi_interfaces_requests.data(), mpi_interfaces_statuses.data());
-
-        std::cout << "Process " << global_rank << " sent and received mpi interfaces" << std::endl;
 
         std::vector<int> new_mpi_interfaces_process;
         std::vector<size_t> new_mpi_interfaces_incoming_size;
@@ -7407,8 +7342,7 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
                     faces[face_index].compute_geometry({element.center_, neighbour_element.center_}, face_nodes, element_nodes);
                     
                     element.faces_[j][k] = face_index;
-                    printf("Received element %llu index %llu, side %llu face %llu connects to element %llu. I create a face at %llu\n", i, element_index, j, k, neighbour_element_index, face_index);
-                    
+                   
                     if (neighbours_procs[neighbour_index] < 0) {
                         elements[neighbour_element_index].faces_[0][0] = face_index;
                     }
@@ -7450,8 +7384,6 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
 
                         neighbours_neighbour_index += neighbour_side_n_neighbours;
                     }   
-
-                    printf("Received element %llu index %llu, side %llu face %llu connects to element %llu. Left other creates a face at %llu\n", i, element_index, j, k, neighbour_element_index, neighbour_face_index);                 
                 } 
                 else if (neighbour_element_index > n_domain_elements - n_elements_recv_right && neighbour_element_index < element_index) {
                     // They create
@@ -7489,8 +7421,6 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
 
                         neighbours_neighbour_index += neighbour_side_n_neighbours;
                     }  
-
-                    printf("Received element %llu index %llu, side %llu face %llu connects to element %llu. Right other creates a face at %llu\n", i, element_index, j, k, neighbour_element_index, neighbour_face_index);                 
                 }
                 else { // In domain, we reuse a face. The face will already have the correct info
                     const size_t neighbour_n_faces = neighbour_element.faces_[neighbour_side].size();
@@ -7720,8 +7650,6 @@ auto SEM::Device::Meshes::move_elements(size_t n_elements_move, size_t n_element
         const size_t source_element_index = element_index + n_elements_send_left;
         const size_t destination_element_index = element_index + n_elements_recv_left;
 
-        printf("Element %llu moved to %llu\n", source_element_index, destination_element_index);
-
         new_elements[destination_element_index].clear_storage();
         new_elements[destination_element_index] = std::move(elements[source_element_index]);
 
@@ -7731,7 +7659,6 @@ auto SEM::Device::Meshes::move_elements(size_t n_elements_move, size_t n_element
                 Face2D_t& face = faces[new_elements[destination_element_index].faces_[i][j]];
                 const size_t side_index = face.elements_[1] == source_element_index;
                 face.elements_[side_index] = destination_element_index;
-                printf("Element %llu moved to %llu, set face %llu side %llu to %llu\n", source_element_index, destination_element_index, new_elements[destination_element_index].faces_[i][j], side_index, destination_element_index);
             }
         }
     }
@@ -7911,7 +7838,6 @@ auto SEM::Device::Meshes::find_received_nodes(size_t n_received_nodes, size_t n_
             if (received_node.almost_equal(nodes[j])) {
                 missing_nodes[i] = false;
                 received_nodes_indices[i] = j;
-                printf("Received node %llu, [%f, %f] found in existing nodes at %llu, [%f, %f]\n", i, received_node.x(), received_node.y(), j, nodes[j].x(), nodes[j].y());
                 break;
             }
         }
@@ -7922,12 +7848,10 @@ auto SEM::Device::Meshes::find_received_nodes(size_t n_received_nodes, size_t n_
                     missing_nodes[i] = false;
                     missing_received_nodes[i] = true;
                     received_node_received_indices[i] = j;
-                    printf("Received node %llu, [%f, %f] found in received nodes at %llu, [%f, %f]\n", i, received_node.x(), received_node.y(), j, received_nodes[2 * j], received_nodes[2 * j + 1]);
                     break;
                 }
             }
         }
-        printf("Received node %llu, [%f, %f] has missing %d\n", i, received_node.x(), received_node.y(), missing_nodes[i]);
     }
 }
 
@@ -7947,7 +7871,6 @@ auto SEM::Device::Meshes::add_new_received_nodes(size_t n_received_nodes, size_t
 
             nodes[new_received_index] = Vec2<deviceFloat>(received_nodes[2 * i], received_nodes[2 * i + 1]);
             received_nodes_indices[i] = new_received_index;
-            printf("Received node %llu [%f, %f] created at %llu [%f, %f]\n", i, received_nodes[2 * i], received_nodes[2 * i + 1], new_received_index, nodes[new_received_index].x(), nodes[new_received_index].y());
         }
         else if (missing_received_nodes[i]) {
             const int received_block = received_node_received_indices[i]/blockDim.x;
@@ -7959,8 +7882,6 @@ auto SEM::Device::Meshes::add_new_received_nodes(size_t n_received_nodes, size_t
             }
 
             received_nodes_indices[i] = new_received_index;
-
-            printf("Received node %llu [%f, %f] using received node %llu at %llu [%f, %f]\n", i, received_nodes[2 * i], received_nodes[2 * i + 1], received_node_received_indices[i], new_received_index, nodes[new_received_index].x(), nodes[new_received_index].y());
         }
     }
 }
@@ -7979,7 +7900,6 @@ auto SEM::Device::Meshes::find_received_neighbour_nodes(size_t n_received_neighb
             if (received_neighbour_node.almost_equal(nodes[j])) {
                 missing_neighbour_nodes[i] = false;
                 received_neighbour_nodes_indices[i] = j;
-                printf("Received neighbour node %llu, [%f, %f] found in existing nodes at %llu, [%f, %f]\n", i, received_neighbour_node.x(), received_neighbour_node.y(), j, nodes[j].x(), nodes[j].y());
                 break;
             }
         }
@@ -7990,7 +7910,6 @@ auto SEM::Device::Meshes::find_received_neighbour_nodes(size_t n_received_neighb
                     missing_neighbour_nodes[i] = false;
                     missing_received_neighbour_nodes[i] = true;
                     received_neighbour_node_received_indices[i] = j;
-                    printf("Received neighbour node %llu, [%f, %f] found in received nodes at %llu, [%f, %f]\n", i, received_neighbour_node.x(), received_neighbour_node.y(), j, received_nodes[2 * j], received_nodes[2 * j + 1]);
                     break;
                 }
             }
@@ -8002,12 +7921,10 @@ auto SEM::Device::Meshes::find_received_neighbour_nodes(size_t n_received_neighb
                     missing_neighbour_nodes[i] = false;
                     missing_received_neighbour_nodes[i] = true;
                     received_neighbour_node_received_indices[i] = n_received_nodes + j;
-                    printf("Received neighbour node %llu, [%f, %f] found in received neighbour nodes at %llu, [%f, %f]\n", i, received_neighbour_node.x(), received_neighbour_node.y(), j, received_neighbour_nodes[2 * j], received_neighbour_nodes[2 * j + 1]);
                     break;
                 }
             }
         }
-        printf("Received neighbour node %llu, [%f, %f] has missing %d\n", i, received_neighbour_node.x(), received_neighbour_node.y(), missing_neighbour_nodes[i]);
     }
 }
 
@@ -8027,7 +7944,6 @@ auto SEM::Device::Meshes::add_new_received_neighbour_nodes(size_t n_received_nei
 
             nodes[new_received_index] = Vec2<deviceFloat>(received_neighbour_nodes[2 * i], received_neighbour_nodes[2 * i + 1]);
             received_neighbour_nodes_indices[i] = new_received_index;
-            printf("Received neighbour node %llu [%f, %f] created at %llu [%f, %f]\n", i, received_neighbour_nodes[2 * i], received_neighbour_nodes[2 * i + 1], new_received_index, nodes[new_received_index].x(), nodes[new_received_index].y());
         }
         else if (missing_received_neighbour_nodes[i]) {
             if (received_neighbour_node_received_indices[i] < n_received_nodes) {
@@ -8040,7 +7956,6 @@ auto SEM::Device::Meshes::add_new_received_neighbour_nodes(size_t n_received_nei
                 }
 
                 received_neighbour_nodes_indices[i] = new_received_index;
-                printf("Received neighbour node %llu [%f, %f] using received node %llu at %llu [%f, %f]. Received block %i, received thread %i\n", i, received_neighbour_nodes[2 * i], received_neighbour_nodes[2 * i + 1], received_neighbour_node_received_indices[i], new_received_index, nodes[new_received_index].x(), nodes[new_received_index].y(), received_block, received_thread);
             }
             else {
                 const int received_block = (received_neighbour_node_received_indices[i] - n_received_nodes)/blockDim.x;
@@ -8052,7 +7967,6 @@ auto SEM::Device::Meshes::add_new_received_neighbour_nodes(size_t n_received_nei
                 }
 
                 received_neighbour_nodes_indices[i] = new_received_index;
-                printf("Received neighbour node %llu [%f, %f] using received neighbour node %llu at %llu [%f, %f]\n", i, received_neighbour_nodes[2 * i], received_neighbour_nodes[2 * i + 1], received_neighbour_node_received_indices[i] - n_received_nodes, new_received_index, nodes[new_received_index].x(), nodes[new_received_index].y());
             }
         }
     }
@@ -8182,19 +8096,16 @@ auto SEM::Device::Meshes::find_boundary_elements_to_delete(size_t n_boundary_ele
         for (size_t j = 0; j < element.faces_[0].size(); ++j) {
             const size_t face_index = element.faces_[0][j];
             if (face_index != static_cast<size_t>(-1)) { // This means the face has been deleted
-                printf("Element %llu trying to access face %llu\n", element_index, face_index);
                 const Face2D_t& face = faces[face_index];
                 const size_t side_index = face.elements_[0] == element_index;
                 const size_t other_element_index = face.elements_[side_index];
-                printf("Boundary element %llu, index %llu, face %llu has index %llu. Side index %llu, other element index %llu\n", i, element_index, j, face_index, side_index, other_element_index);
-
+                
                 if (other_element_index >= n_elements_send_left && other_element_index < n_domain_elements - n_elements_send_right) {
                     boundary_elements_to_delete[i] = false;
                     break;
                 }
             }
         }
-        printf("    Boundary element %llu has delete: %i\n", i, boundary_elements_to_delete[i]);
     }
 }
 
@@ -8207,7 +8118,6 @@ auto SEM::Device::Meshes::find_mpi_interface_elements_to_delete(size_t n_mpi_int
         if (mpi_interfaces_new_process_incoming[i] == rank) {
             boundary_elements_to_delete[mpi_interfaces_destination[i] - n_domain_elements] = true;
         }
-        printf("MPI destination %llu, boundary %llu, has delete %i after find_mpi_to_delete\n", i, mpi_interfaces_destination[i] - n_domain_elements, boundary_elements_to_delete[mpi_interfaces_destination[i] - n_domain_elements]);
     }
 }
 
@@ -8231,7 +8141,6 @@ auto SEM::Device::Meshes::find_mpi_interface_elements_to_keep(size_t n_mpi_desti
 
                 if (mpi_proc == neighbour_proc && mpi_index == neighbour_index && mpi_side == neighbour_side) {
                     boundary_elements_to_delete[mpi_interfaces_destination[i] - n_domain_elements] = false; 
-                    printf("MPI destination %llu, at index %llu, has been kept\n", i, mpi_interfaces_destination[i] - n_domain_elements);
                     break;
                 }
             }
@@ -8252,8 +8161,6 @@ auto SEM::Device::Meshes::move_boundary_elements(size_t n_boundary_elements, siz
             for (size_t j = i - thread_id; j < i; ++j) {
                 new_boundary_element_index -= boundary_elements_to_delete[j];
             }
-
-            printf("Boundary element %llu, index %llu moved to %llu\n", i, i + n_domain_elements, new_boundary_element_index);
 
             new_elements[new_boundary_element_index].clear_storage();
             new_elements[new_boundary_element_index] = std::move(elements[i + n_domain_elements]);
@@ -8300,7 +8207,6 @@ auto SEM::Device::Meshes::find_boundaries_to_delete(size_t n_boundary_elements, 
         else {
             boundaries_to_delete[i] = false;
         }
-        printf("Boundary %llu at boundary element index %llu has delete %i\n", i, boundary_element_index, boundaries_to_delete[i]);
     }
 }
 
@@ -8319,7 +8225,6 @@ auto SEM::Device::Meshes::move_all_boundaries(size_t n_boundary_elements, size_t
             new_boundary_element_index -= boundary_elements_to_delete[j];
         }
 
-        printf("Boundary %llu moved to %llu, with new element index %llu\n", i, i, new_boundary_element_index);
         new_boundary[i] = new_boundary_element_index;
     }
 }
@@ -8392,8 +8297,6 @@ auto SEM::Device::Meshes::move_required_boundaries(
                 new_boundary_element_index -= boundary_elements_to_delete[j];
             }
 
-            printf("Boundary %llu moved to %llu, with element index %llu and process %d\n", i, new_boundary_index, new_boundary_element_index, mpi_interfaces_process[i]);
-
             new_boundary[new_boundary_index] = new_boundary_element_index;
             new_boundary_process[new_boundary_index] = mpi_interfaces_process[i];
             new_local_index[new_boundary_index] = mpi_interfaces_local_index[i];
@@ -8436,8 +8339,6 @@ auto SEM::Device::Meshes::create_sent_mpi_boundaries_destinations(
                 const size_t new_element_index = new_elements_offset + new_element_offset;
                 Element2D_t& new_element = new_elements[new_element_index];
                 const size_t next_side_index = (j + 1 >= element.nodes_.size()) ? 0 : j + 1;
-
-                printf("Sent element %llu, index %llu created destination %llu with new element index %llu, and process %d\n", i, element_index, mpi_interfaces_destination_offset + new_element_offset, new_element_index, destination_process[i]);
 
                 mpi_interfaces_destination[mpi_interfaces_destination_offset + new_element_offset] = new_element_index;
                 mpi_interfaces_destination_process[mpi_interfaces_destination_offset + new_element_offset] = destination_process[i];
@@ -8512,8 +8413,6 @@ auto SEM::Device::Meshes::recv_mpi_boundaries_destinations_reuse_faces(size_t n_
                     face.elements_side_[side_index] = mpi_interfaces_new_side_incoming_device[i];
                 }
             }
-
-            printf("MPI destination %llu, element index %llu received its element, giving element index %llu and side %llu\n", i, element_index, mpi_interfaces_new_local_index_incoming[i], mpi_interfaces_new_side_incoming_device[i]);
         }
     }
 }
@@ -8664,8 +8563,6 @@ auto SEM::Device::Meshes::create_received_neighbours(
                                                             nodes[element.nodes_[2]], 
                                                             nodes[element.nodes_[3]]};
                     element.compute_boundary_geometry(points, polynomial_nodes);
-
-                    printf("neighbour %llu created inflow %llu with new element index %llu, n_additional_before %llu. Nodes [%llu, %llu] \n", i, new_boundary_index, new_element_index, n_additional_before, neighbour_node_indices[2 * i], neighbour_node_indices[2 * i + 1]);
                 }
                 break;
 
@@ -8802,8 +8699,6 @@ auto SEM::Device::Meshes::create_received_neighbours(
                                                                      nodes[element.nodes_[2]], 
                                                                      nodes[element.nodes_[3]]};
                             element.compute_boundary_geometry(points, polynomial_nodes);
-
-                            printf("neighbour %llu created mpi destination %llu with new element index %llu, proc %i, n_additional_before %llu. Nodes [%llu, %llu]\n", i, new_mpi_destination_index, new_element_index, neighbour_proc, n_additional_before, neighbour_node_indices[2 * i], neighbour_node_indices[2 * i + 1]);
                         }
                     }
                     else {
