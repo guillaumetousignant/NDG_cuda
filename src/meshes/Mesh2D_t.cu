@@ -7349,7 +7349,7 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
                         elements[neighbour_element_index].faces_[0][0] = face_index;
                     }
 
-                    printf("Received element %llu with index %llu created face %llu with: N %d\n, p: [%p, %p], u: [%p, %p], v: [%p, %p]", i, element_index, face_index, faces[face_index].N_, faces[face_index].p_[0], faces[face_index].p_[1], faces[face_index].u_[0], faces[face_index].u_[1], faces[face_index].v_[0], faces[face_index].v_[1]);
+                    printf("Received element %llu with index %llu created face %llu with: N %d\n, p: [%p, %p], u: [%p, %p], v: [%p, %p]\n", i, element_index, face_index, faces[face_index].N_, faces[face_index].p_[0], faces[face_index].p_[1], faces[face_index].u_[0], faces[face_index].u_[1], faces[face_index].v_[0], faces[face_index].v_[1]);
 
                     ++face_index;
                 }
