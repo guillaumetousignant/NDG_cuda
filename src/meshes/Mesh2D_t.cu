@@ -3289,6 +3289,7 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
                 neighbour_offsets_right_device.data(),
                 neighbours_element_indices.data(), 
                 neighbours_element_side.data(), 
+                neighbours_proc_arrays_recv_device.data(),
                 face_offsets_left_device.data(), 
                 face_offsets_left_device.data(), 
                 face_offsets_right_device.data());
@@ -3314,6 +3315,7 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
                 neighbour_offsets_right_device.data(),
                 neighbours_element_indices.data(), 
                 neighbours_element_side.data(), 
+                neighbours_proc_arrays_recv_device.data(),
                 face_offsets_right_device.data(), 
                 face_offsets_left_device.data(), 
                 face_offsets_right_device.data());
@@ -3803,8 +3805,6 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
     global_element_offset_ = global_element_offset_new[global_rank];
 
     print();
-
-    // Adjust boundaries etc, maybe send new index and process to everyone?
 }
 
 auto SEM::Device::Meshes::Mesh2D_t::boundary_conditions(deviceFloat t, const device_vector<deviceFloat>& polynomial_nodes, const device_vector<deviceFloat>& weights, const device_vector<deviceFloat>& barycentric_weights) -> void {
@@ -7342,6 +7342,7 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
         const size_t* neighbours_offsets_right,
         const size_t* neighbours_indices, 
         const size_t* neighbours_sides,
+        const int* neighbours_procs,
         const size_t* face_offsets,
         const size_t* face_offsets_left,
         const size_t* face_offsets_right) -> void {
@@ -7400,6 +7401,11 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
                     
                     element.faces_[j][k] = face_index;
                     printf("Received element %llu index %llu, side %llu face %llu connects to element %llu. I create a face at %llu\n", i, element_index, j, k, neighbour_element_index, face_index);
+                    
+                    if (neighbours_procs[neighbour_index] < 0) {
+                        elements[neighbour_element_index].faces_[0][0] = face_index;
+                    }
+
                     ++face_index;
                 }
                 else if (neighbour_element_index < n_elements_recv_left && neighbour_element_index < element_index) {
@@ -8782,6 +8788,7 @@ auto SEM::Device::Meshes::create_received_neighbours(
                             element.split_level_ = 0; // CHECK should set other variables?
 
                             element.allocate_boundary_storage();
+                            element.faces_[0] = cuda_vector<size_t>();
 
                             std::array<Vec2<deviceFloat>, 4> points {nodes[element.nodes_[0]], 
                                                                      nodes[element.nodes_[1]], 
