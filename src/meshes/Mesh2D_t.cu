@@ -7943,7 +7943,7 @@ auto SEM::Device::Meshes::find_received_neighbour_nodes(size_t n_received_neighb
             if (received_neighbour_node.almost_equal(nodes[j])) {
                 missing_neighbour_nodes[i] = false;
                 received_neighbour_nodes_indices[i] = j;
-                printf("Received neeighbour node %llu, [%f, %f] found in existing nodes at %llu, [%f, %f]\n", i, received_neighbour_node.x(), received_neighbour_node.y(), j, nodes[j].x(), nodes[j].y());
+                printf("Received neighbour node %llu, [%f, %f] found in existing nodes at %llu, [%f, %f]\n", i, received_neighbour_node.x(), received_neighbour_node.y(), j, nodes[j].x(), nodes[j].y());
                 break;
             }
         }
