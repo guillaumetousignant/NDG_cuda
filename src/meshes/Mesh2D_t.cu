@@ -8463,6 +8463,8 @@ auto SEM::Device::Meshes::recv_mpi_boundaries_destinations_reuse_faces(size_t n_
                     face.elements_side_[side_index] = mpi_interfaces_new_side_incoming_device[i];
                 }
             }
+
+            printf("MPI destination %llu, element index %llu received its element, giving element index %llu and side %llu\n", i, element_index, mpi_interfaces_new_local_index_incoming[i], mpi_interfaces_new_side_incoming_device[i]);
         }
     }
 }
