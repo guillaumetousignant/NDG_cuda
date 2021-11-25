@@ -7943,6 +7943,7 @@ auto SEM::Device::Meshes::find_received_neighbour_nodes(size_t n_received_neighb
             if (received_neighbour_node.almost_equal(nodes[j])) {
                 missing_neighbour_nodes[i] = false;
                 received_neighbour_nodes_indices[i] = j;
+                printf("Received neeighbour node %llu, [%f, %f] found in existing nodes at %llu, [%f, %f]\n", i, received_neighbour_node.x(), received_neighbour_node.y(), j, nodes[j].x(), nodes[j].y());
                 break;
             }
         }
@@ -7953,6 +7954,7 @@ auto SEM::Device::Meshes::find_received_neighbour_nodes(size_t n_received_neighb
                     missing_neighbour_nodes[i] = false;
                     missing_received_neighbour_nodes[i] = true;
                     received_neighbour_node_received_indices[i] = j;
+                    printf("Received neighbour node %llu, [%f, %f] found in received nodes at %llu, [%f, %f]\n", i, received_neighbour_node.x(), received_neighbour_node.y(), j, received_nodes[2 * j], received_nodes[2 * j + 1]);
                     break;
                 }
             }
@@ -7964,10 +7966,12 @@ auto SEM::Device::Meshes::find_received_neighbour_nodes(size_t n_received_neighb
                     missing_neighbour_nodes[i] = false;
                     missing_received_neighbour_nodes[i] = true;
                     received_neighbour_node_received_indices[i] = n_received_nodes + j;
+                    printf("Received neighbour node %llu, [%f, %f] found in received neighbour nodes at %llu, [%f, %f]\n", i, received_neighbour_node.x(), received_neighbour_node.y(), j, received_neighbour_nodes[2 * j], received_neighbour_nodes[2 * j + 1]);
                     break;
                 }
             }
         }
+        printf("Received neighbour node %llu, [%f, %f] has missing %d\n", i, received_neighbour_node.x(), received_neighbour_node.y(), missing_neighbour_nodes[i]);
     }
 }
 
