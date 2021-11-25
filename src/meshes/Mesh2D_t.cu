@@ -7398,9 +7398,8 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
                     faces[face_index].compute_geometry({element.center_, neighbour_element.center_}, face_nodes, element_nodes);
                     
                     element.faces_[j][k] = face_index;
+                    printf("Received element %llu index %llu, side %llu face %llu connects to element %llu. I create a face at %llu\n", i, element_index, j, k, neighbour_element_index, face_index);
                     ++face_index;
-
-                    printf("Received element %llu index %llu, side %llu face %llu connects to element %llu. I create a face\n", i, element_index, j, k, neighbour_element_index);
                 }
                 else if (neighbour_element_index < n_elements_recv_left && neighbour_element_index < element_index) {
                     // They create
@@ -7438,7 +7437,7 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
                         neighbours_neighbour_index += neighbour_side_n_neighbours;
                     }   
 
-                    printf("Received element %llu index %llu, side %llu face %llu connects to element %llu. Left other creates a face\n", i, element_index, j, k, neighbour_element_index);                 
+                    printf("Received element %llu index %llu, side %llu face %llu connects to element %llu. Left other creates a face at %llu\n", i, element_index, j, k, neighbour_element_index, neighbour_face_index);                 
                 } 
                 else if (neighbour_element_index > n_domain_elements - n_elements_recv_right && neighbour_element_index < element_index) {
                     // They create
@@ -7477,7 +7476,7 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
                         neighbours_neighbour_index += neighbour_side_n_neighbours;
                     }  
 
-                    printf("Received element %llu index %llu, side %llu face %llu connects to element %llu. Right other creates a face\n", i, element_index, j, k, neighbour_element_index);                 
+                    printf("Received element %llu index %llu, side %llu face %llu connects to element %llu. Right other creates a face at %llu\n", i, element_index, j, k, neighbour_element_index, neighbour_face_index);                 
                 }
             }
 
