@@ -8450,7 +8450,7 @@ auto SEM::Device::Meshes::recv_mpi_boundaries_destinations_reuse_faces(size_t n_
 
     for (size_t i = index; i < n_mpi_interfaces_incoming; i += stride) {
         // This means we just received the element
-        if (mpi_interfaces_new_process_incoming[i] == rank && (mpi_interfaces_new_local_index_incoming[i] < n_elements_recv_left || mpi_interfaces_new_local_index_incoming[i] > n_domain_elements - n_elements_recv_right)) {
+        if (mpi_interfaces_new_process_incoming[i] == rank && (mpi_interfaces_new_local_index_incoming[i] < n_elements_recv_left || mpi_interfaces_new_local_index_incoming[i] >= n_domain_elements - n_elements_recv_right)) {
             const size_t element_index = mpi_interfaces_incoming[i];
             const Element2D_t& element = elements[element_index];
 
