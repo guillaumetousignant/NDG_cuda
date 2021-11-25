@@ -7696,7 +7696,7 @@ auto SEM::Device::Meshes::move_elements(size_t n_elements_move, size_t n_element
         // We update indices
         for (size_t i = 0; i < new_elements[destination_element_index].faces_.size(); ++i) {
             for (size_t j = 0; j < new_elements[destination_element_index].faces_[i].size(); ++j) {
-                Face2D_t face = faces[new_elements[destination_element_index].faces_[i][j]];
+                Face2D_t& face = faces[new_elements[destination_element_index].faces_[i][j]];
                 const size_t side_index = face.elements_[1] == source_element_index;
                 face.elements_[side_index] = destination_element_index;
                 printf("Element %llu moved to %llu, set face %llu side %llu to %llu\n", source_element_index, destination_element_index, new_elements[destination_element_index].faces_[i][j], side_index, destination_element_index);
