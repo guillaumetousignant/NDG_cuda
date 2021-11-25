@@ -405,6 +405,9 @@ namespace SEM { namespace Device { namespace Meshes {
     __global__
     auto create_received_neighbours(size_t n_neighbours, int rank, size_t n_mpi_destinations, size_t elements_offset, size_t wall_offset, size_t symmetry_offset, size_t inflow_offset, size_t outflow_offset, size_t mpi_destinations_offset, size_t n_new_wall, size_t n_new_symmetry, size_t n_new_inflow, size_t n_new_outflow, size_t n_new_mpi_destinations, const size_t* neighbour_indices, const int* neighbour_procs, const size_t* neighbour_sides, const int* neighbour_N, const size_t* neighbour_node_indices, const size_t* mpi_destinations_indices, const int* mpi_destinations_procs, const size_t* mpi_destinations_sides, SEM::Device::Entities::Element2D_t* elements, const SEM::Device::Entities::Vec2<deviceFloat>* nodes, const size_t* old_mpi_destinations, size_t* neighbour_given_indices, size_t* neighbour_given_sides, size_t* wall_boundaries, size_t* symmetry_boundaries, size_t* inflow_boundaries, size_t* outflow_boundaries, size_t* mpi_destinations, int* mpi_destinations_process, size_t* mpi_destinations_local_index, size_t* mpi_destinations_side, const size_t* wall_block_offsets, const size_t* symmetry_block_offsets, const size_t* inflow_block_offsets, const size_t* outflow_block_offsets, const size_t* mpi_destinations_block_offsets, const deviceFloat* polynomial_nodes) -> void;
    
+    __global__
+    auto add_new_faces_to_mpi_destination_elements(size_t n_mpi_destinations, size_t face_offset, size_t n_new_faces, const size_t* mpi_destinations, SEM::Device::Entities::Element2D_t* elements, const SEM::Device::Entities::Face2D_t* faces) -> void;
+   
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>
     __device__ 

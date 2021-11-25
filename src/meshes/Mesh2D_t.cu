@@ -3321,6 +3321,13 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
                 face_offsets_right_device.data());
         }
 
+        // MPI destinations faces
+        // This is a bad way of doing this
+        if (n_elements_recv_left[global_rank] + n_elements_recv_right[global_rank] > 0 && new_mpi_interfaces_destination.size() > 0) {
+            const int new_mpi_interfaces_destination_numBlocks = (new_mpi_interfaces_destination.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+            SEM::Device::Meshes::add_new_faces_to_mpi_destination_elements<<<new_mpi_interfaces_destination_numBlocks, boundaries_blockSize_, 0, stream_>>>(new_mpi_interfaces_destination.size(), faces_.size() - n_faces_to_delete, n_faces_to_add, new_mpi_interfaces_destination.data(), new_elements.data(), new_faces.data());
+        }
+
         // Sizing mpi destinations
         std::vector<int> new_mpi_interfaces_destination_process_host(new_mpi_interfaces_destination_process.size());
         std::vector<size_t> new_mpi_interfaces_destination_local_index_host(new_mpi_interfaces_destination_local_index.size());
@@ -8804,6 +8811,53 @@ auto SEM::Device::Meshes::create_received_neighbours(
                         neighbour_given_sides[i] = neighbour_sides[i];
                     }
                 }
+        }
+    }
+}
+__global__
+auto SEM::Device::Meshes::add_new_faces_to_mpi_destination_elements(
+        size_t n_mpi_destinations, 
+        size_t face_offset, 
+        size_t n_new_faces,
+        const size_t* mpi_destinations, 
+        Element2D_t* elements,
+        const Face2D_t* faces) -> void {
+    
+    const int index = blockIdx.x * blockDim.x + threadIdx.x;
+    const int stride = blockDim.x * gridDim.x;
+    
+    for (size_t i = index; i < n_mpi_destinations; i += stride) {
+        const size_t element_index = mpi_destinations[i];
+        Element2D_t& element = elements[element_index];
+
+        size_t n_aditionnal_faces = 0;
+        for (size_t j = 0; j < n_new_faces; ++j) {
+            const size_t face_index = face_offset + j;
+            const Face2D_t& face = faces[face_index];
+
+            if (face.elements_[0] == element_index || face.elements_[1] == element_index) {
+                ++n_aditionnal_faces;
+            }
+        }
+
+        if (n_aditionnal_faces > 0) {
+            cuda_vector<size_t> new_faces(element.faces_[0].size() + n_aditionnal_faces);
+            for (size_t j = 0; j < element.faces_[0].size(); ++j) {
+                new_faces[j] = element.faces_[0][j];
+            }
+
+            size_t added_face_index = 0;
+            for (size_t j = 0; j < n_new_faces; ++j) {
+                const size_t face_index = face_offset + j;
+                const Face2D_t& face = faces[face_index];
+
+                if (face.elements_[0] == element_index || face.elements_[1] == element_index) {
+                    new_faces[element.faces_[0].size() + added_face_index] = face_index;
+                    ++added_face_index;
+                }
+            }
+
+            element.faces_[0] = std::move(new_faces);
         }
     }
 }
