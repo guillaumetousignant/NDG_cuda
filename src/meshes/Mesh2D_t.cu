@@ -2696,18 +2696,19 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
             const size_t element_index = i;
             face_offsets_left[i] = n_faces_to_add_recv_left;
             for (size_t j = 0; j < 4; ++j) {
+                const size_t side_n_neighbours = n_neighbours_arrays_recv_left[4 * i + j];
                 for (size_t k = 0; k < n_neighbours_arrays_recv_left[4 * i + j]; ++k) {
-                    const int neighbour_process = neighbours_proc_arrays_recv[neighbour_index];
-                    const size_t neighbour_element_index = neighbours_arrays_recv[neighbour_index];
-                    ++neighbour_index;
+                    const int neighbour_process = neighbours_proc_arrays_recv[neighbour_index + k];
+                    const size_t neighbour_element_index = neighbours_arrays_recv[neighbour_index + k];
 
                     if (neighbour_process != global_rank
-                            || neighbours_arrays_recv[i] < n_elements_recv_left[global_rank] && neighbour_element_index >= element_index
-                            || neighbours_arrays_recv[i] >= n_elements_new[global_rank] - n_elements_recv_right[global_rank] && neighbour_element_index >= element_index) {
+                            || neighbour_element_index < n_elements_recv_left[global_rank] && neighbour_element_index >= element_index
+                            || neighbour_element_index >= n_elements_new[global_rank] - n_elements_recv_right[global_rank] && neighbour_element_index >= element_index) {
                         
                         ++n_faces_to_add_recv_left;
                     }
                 }
+                neighbour_index += side_n_neighbours;
             }
         }
         size_t n_faces_to_add_recv_right = 0;
@@ -2717,18 +2718,19 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
             const size_t element_index = n_elements_new[global_rank] + 1 - n_elements_recv_right[global_rank] + i;
             face_offsets_right[i] = n_faces_to_add_recv_left + n_faces_to_add_recv_right;
             for (size_t j = 0; j < 4; ++j) {
-                for (size_t k = 0; k < n_neighbours_arrays_recv_right[4 * i + j]; ++k) {
-                    const int neighbour_process = neighbours_proc_arrays_recv[neighbour_index];
-                    const size_t neighbour_element_index = neighbours_arrays_recv[neighbour_index];
-                    ++neighbour_index;
+                const size_t side_n_neighbours = n_neighbours_arrays_recv_right[4 * i + j];
+                for (size_t k = 0; k < side_n_neighbours; ++k) {
+                    const int neighbour_process = neighbours_proc_arrays_recv[neighbour_index + k];
+                    const size_t neighbour_element_index = neighbours_arrays_recv[neighbour_index + k];
 
                     if (neighbour_process != global_rank
-                            || neighbours_arrays_recv[i] < n_elements_recv_left[global_rank] && neighbour_element_index >= element_index
-                            || neighbours_arrays_recv[i] >= n_elements_new[global_rank] - n_elements_recv_right[global_rank] && neighbour_element_index >= element_index) {
+                            || neighbour_element_index < n_elements_recv_left[global_rank] && neighbour_element_index >= element_index
+                            || neighbour_element_index >= n_elements_new[global_rank] - n_elements_recv_right[global_rank] && neighbour_element_index >= element_index) {
 
                         ++n_faces_to_add_recv_right;
                     }
                 }
+                neighbour_index += side_n_neighbours;
             }
         }
         const size_t n_faces_to_add = n_faces_to_add_recv_left + n_faces_to_add_recv_right;
