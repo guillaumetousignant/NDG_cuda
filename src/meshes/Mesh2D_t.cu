@@ -2702,8 +2702,8 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
                     ++neighbour_index;
 
                     if (neighbour_process != global_rank
-                            || neighbours_arrays_recv[i] < n_elements_recv_left[global_rank] && element_index < neighbour_element_index
-                            || neighbours_arrays_recv[i] > n_elements_new[global_rank] - n_elements_recv_right[global_rank] && element_index < neighbour_element_index) {
+                            || neighbours_arrays_recv[i] < n_elements_recv_left[global_rank] && neighbour_element_index >= element_index
+                            || neighbours_arrays_recv[i] >= n_elements_new[global_rank] - n_elements_recv_right[global_rank] && neighbour_element_index >= element_index) {
                         
                         ++n_faces_to_add_recv_left;
                     }
@@ -2723,8 +2723,8 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
                     ++neighbour_index;
 
                     if (neighbour_process != global_rank
-                            || neighbours_arrays_recv[i] < n_elements_recv_left[global_rank] && element_index < neighbour_element_index
-                            || neighbours_arrays_recv[i] > n_elements_new[global_rank] - n_elements_recv_right[global_rank] && element_index < neighbour_element_index) {
+                            || neighbours_arrays_recv[i] < n_elements_recv_left[global_rank] && neighbour_element_index >= element_index
+                            || neighbours_arrays_recv[i] >= n_elements_new[global_rank] - n_elements_recv_right[global_rank] && neighbour_element_index >= element_index) {
 
                         ++n_faces_to_add_recv_right;
                     }
@@ -7368,7 +7368,7 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
                 
                 if (neighbour_element_index >= n_domain_elements 
                         || (neighbour_element_index < n_elements_recv_left && neighbour_element_index >= element_index)
-                        || (neighbour_element_index > n_domain_elements - n_elements_recv_right && neighbour_element_index >= element_index)) { 
+                        || (neighbour_element_index >= n_domain_elements - n_elements_recv_right && neighbour_element_index >= element_index)) { 
                     
                     // We create
                     const size_t next_side = (j + 1 < element.nodes_.size()) ? j + 1 : 0;
@@ -7418,7 +7418,7 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
 
                             if (neighbour_neighbour_element_index >= n_domain_elements 
                                 || (neighbour_neighbour_element_index < n_elements_recv_left && neighbour_neighbour_element_index >= element_index)
-                                || (neighbour_neighbour_element_index > n_domain_elements - n_elements_recv_right && neighbour_neighbour_element_index >= element_index)) { 
+                                || (neighbour_neighbour_element_index >= n_domain_elements - n_elements_recv_right && neighbour_neighbour_element_index >= element_index)) { 
 
                                 if (neighbour_neighbour_element_index == element_index && neighbour_neighbour_side && j) {
                                     element.faces_[j][k] = neighbour_face_index;
@@ -7457,7 +7457,7 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
 
                             if (neighbour_neighbour_element_index >= n_domain_elements 
                                 || (neighbour_neighbour_element_index < n_elements_recv_left && neighbour_neighbour_element_index >= element_index)
-                                || (neighbour_neighbour_element_index > n_domain_elements - n_elements_recv_right && neighbour_neighbour_element_index >= element_index)) { 
+                                || (neighbour_neighbour_element_index >= n_domain_elements - n_elements_recv_right && neighbour_neighbour_element_index >= element_index)) { 
 
                                 if (neighbour_neighbour_element_index == element_index && neighbour_neighbour_side && j) {
                                     element.faces_[j][k] = neighbour_face_index;
