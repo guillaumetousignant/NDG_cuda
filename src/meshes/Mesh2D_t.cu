@@ -7422,7 +7422,7 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
                                 || (neighbour_neighbour_element_index < n_elements_recv_left && neighbour_neighbour_element_index >= element_index)
                                 || (neighbour_neighbour_element_index >= n_domain_elements - n_elements_recv_right && neighbour_neighbour_element_index >= element_index)) { 
 
-                                if (neighbour_neighbour_element_index == element_index && neighbour_neighbour_side && j) {
+                                if (neighbour_neighbour_element_index == element_index && neighbour_neighbour_side == j) {
                                     element.faces_[j][k] = neighbour_face_index;
                                     found_self = true;
                                     break;
@@ -7461,7 +7461,7 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
                                 || (neighbour_neighbour_element_index < n_elements_recv_left && neighbour_neighbour_element_index >= element_index)
                                 || (neighbour_neighbour_element_index >= n_domain_elements - n_elements_recv_right && neighbour_neighbour_element_index >= element_index)) { 
 
-                                if (neighbour_neighbour_element_index == element_index && neighbour_neighbour_side && j) {
+                                if (neighbour_neighbour_element_index == element_index && neighbour_neighbour_side == j) {
                                     element.faces_[j][k] = neighbour_face_index;
                                     found_self = true;
                                     break;
