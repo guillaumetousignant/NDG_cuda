@@ -722,18 +722,16 @@ auto SEM::Device::Entities::Element2D_t::clear_storage() -> void {
 
 __host__
 SEM::Device::Entities::Element2D_t::Datatype::Datatype() {
-    constexpr int n = 3;
+    constexpr int n = 4;
 
-    constexpr std::array<int, n> lengths {1, 1, 1};
-    constexpr std::array<MPI_Aint, n> displacements {offsetof(SEM::Device::Entities::Element2D_t, status_), offsetof(SEM::Device::Entities::Element2D_t, rotation_), offsetof(SEM::Device::Entities::Element2D_t, split_level_)};
-    const std::array<MPI_Datatype, n> types {MPI_INT, MPI_INT, MPI_INT}; // Ok I could just send those as packed ints, but who knows if something will have to be added.
+    constexpr std::array<int, n> lengths {1, 1, 1, 1};
+    constexpr std::array<MPI_Aint, n> displacements {offsetof(SEM::Device::Entities::Element2D_t, N_), offsetof(SEM::Device::Entities::Element2D_t, status_), offsetof(SEM::Device::Entities::Element2D_t, rotation_), offsetof(SEM::Device::Entities::Element2D_t, split_level_)};
+    const std::array<MPI_Datatype, n> types {MPI_INT, MPI_INT, MPI_INT, MPI_INT}; // Ok I could just send those as packed ints, but who knows if something will have to be added.
     
     MPI_Datatype tmp_type;
-    MPI_Aint lb, extent;
 
-    MPI_Type_create_struct(n, lengths.data(), displacements.data(), types.data(), &tmp_type );
-    MPI_Type_get_extent(tmp_type, &lb, &extent);
-    MPI_Type_create_resized(tmp_type, lb, extent, &datatype_);
+    MPI_Type_create_struct(n, lengths.data(), displacements.data(), types.data(), &tmp_type);
+    MPI_Type_create_resized(tmp_type, 0, sizeof(SEM::Device::Entities::Element2D_t), &datatype_); // To be able to send arrays of elements
     MPI_Type_commit(&datatype_);
 }
 
