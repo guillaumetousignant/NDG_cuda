@@ -7473,6 +7473,8 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
                         neighbours_neighbour_index += neighbour_side_n_neighbours;
                     }  
                 }
+
+                printf("Received element %llu index %llu, side %llu face %llu connects to element %llu\n", i, element_index, j, k, neighbour_element_index);
             }
 
             neighbours_index += side_n_neighbours;
