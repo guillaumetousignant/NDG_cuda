@@ -8149,6 +8149,7 @@ auto SEM::Device::Meshes::find_boundary_elements_to_delete(size_t n_boundary_ele
 
         for (size_t j = 0; j < element.faces_[0].size(); ++j) {
             const size_t face_index = element.faces_[0][j];
+            printf("Element %llu trying to access face %llu\n", element_index, face_index);
             const Face2D_t& face = faces[face_index];
             const size_t side_index = face.elements_[0] == element_index;
             const size_t other_element_index = face.elements_[side_index];
