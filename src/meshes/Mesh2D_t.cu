@@ -8007,7 +8007,7 @@ auto SEM::Device::Meshes::add_new_received_neighbour_nodes(size_t n_received_nei
                 }
 
                 received_neighbour_nodes_indices[i] = new_received_index;
-                printf("Received neighbour node %llu [%f, %f] using received node %llu at %llu [%f, %f]\n", i, received_neighbour_nodes[2 * i], received_neighbour_nodes[2 * i + 1], received_neighbour_node_received_indices[i], new_received_index, nodes[new_received_index].x(), nodes[new_received_index].y());
+                printf("Received neighbour node %llu [%f, %f] using received node %llu at %llu [%f, %f]. Received block %i, received thread %i\n", i, received_neighbour_nodes[2 * i], received_neighbour_nodes[2 * i + 1], received_neighbour_node_received_indices[i], new_received_index, nodes[new_received_index].x(), nodes[new_received_index].y(), received_block, received_thread);
             }
             else {
                 const int received_block = (received_neighbour_node_received_indices[i] - n_received_nodes)/blockDim.x;
