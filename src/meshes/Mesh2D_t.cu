@@ -7878,6 +7878,7 @@ auto SEM::Device::Meshes::find_received_nodes(size_t n_received_nodes, size_t n_
             if (received_node.almost_equal(nodes[j])) {
                 missing_nodes[i] = false;
                 received_nodes_indices[i] = j;
+                printf("Received node %llu, [%f, %f] found in existing nodes at %llu, [%f, %f]\n", i, received_node.x(), received_node.y(), j, nodes[j].x(), nodes[j].y());
                 break;
             }
         }
@@ -7888,10 +7889,12 @@ auto SEM::Device::Meshes::find_received_nodes(size_t n_received_nodes, size_t n_
                     missing_nodes[i] = false;
                     missing_received_nodes[i] = true;
                     received_node_received_indices[i] = j;
+                    printf("Received node %llu, [%f, %f] found in received nodes at %llu, [%f, %f]\n", i, received_node.x(), received_node.y(), j, received_nodes[2 * j], received_nodes[2 * j + 1]);
                     break;
                 }
             }
         }
+        printf("Received node %llu, [%f, %f] has missing %d\n", i, received_node.x(), received_node.y(), missing_nodes[i]);
     }
 }
 
