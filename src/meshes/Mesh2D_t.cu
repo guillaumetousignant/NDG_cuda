@@ -4224,6 +4224,8 @@ auto SEM::Device::Meshes::project_to_faces(size_t n_faces, Face2D_t* faces, cons
             const size_t offset_1D = face.N_ * (face.N_ + 1) /2;
             const size_t offset_1D_other = element_R.N_ * (element_R.N_ + 1) /2;
 
+            printf("Projecting to face %llu\n", face_index);
+
             for (int i = 0; i <= face.N_; ++i) {
                 const deviceFloat coordinate = (polynomial_nodes[offset_1D + face.N_ - i] + 1) * face.scale_[1] + 2 * face.offset_[1] - 1;
 
@@ -7346,6 +7348,8 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
                     if (neighbours_procs[neighbour_index] < 0) {
                         elements[neighbour_element_index].faces_[0][0] = face_index;
                     }
+
+                    printf("Received element %llu with index %llu created face %llu with: N %d\n, p: [%p, %p], u: [%p, %p], v: [%p, %p]", i, element_index, face_index, faces[face_index].N_, faces[face_index].p_[0], faces[face_index].p_[1], faces[face_index].u_[0], faces[face_index].u_[1], faces[face_index].v_[0], faces[face_index].v_[1]);
 
                     ++face_index;
                 }
