@@ -7480,6 +7480,19 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
 
                     printf("Received element %llu index %llu, side %llu face %llu connects to element %llu. Right other creates a face at %llu\n", i, element_index, j, k, neighbour_element_index, neighbour_face_index);                 
                 }
+                else { // In domain, we reuse a face. The face will already have the correct info
+                    const size_t neighbour_n_faces = neighbour_element.faces_[neighbour_side].size();
+
+                    for (size_t m = 0; m < neighbour_n_faces; ++m) {
+                        const size_t neighbour_face_index = neighbour_element.faces_[neighbour_side][m];
+                        const Face2D_t& face = faces[neighbour_face_index];
+                        const size_t face_side_index = face.elements_[0] == neighbour_element_index;
+                        if (face.elements_[face_side_index] == element_index && face.elements_side_[face_side_index] == j) {
+                            element.faces_[j][k] = neighbour_face_index;
+                            break;
+                        }
+                    }
+                }
             }
 
             neighbours_index += side_n_neighbours;
