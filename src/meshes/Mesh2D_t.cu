@@ -3268,9 +3268,6 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
         device_vector<size_t> neighbour_offsets_right_device(neighbour_offsets_right, stream_);
 
         if (n_elements_recv_left[global_rank] > 0) {
-            // Now we must store these elements
-            cudaMemcpyAsync(new_elements.data(), elements_recv_left.data(), n_elements_recv_left[global_rank] * sizeof(Element2D_t), cudaMemcpyHostToDevice, stream_);
-            
             const int recv_numBlocks = (n_elements_recv_left[global_rank] + boundaries_blockSize_ - 1) / boundaries_blockSize_;
             SEM::Device::Meshes::fill_received_elements_faces<<<recv_numBlocks, boundaries_blockSize_, 0, stream_>>>(
                 n_elements_recv_left[global_rank], 
@@ -3296,9 +3293,6 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
         }
 
         if (n_elements_recv_right[global_rank] > 0) {
-            // Now we must store these elements
-            cudaMemcpyAsync(new_elements.data() + n_elements_new[global_rank] - n_elements_recv_right[global_rank], elements_recv_right.data(), n_elements_recv_right[global_rank] * sizeof(Element2D_t), cudaMemcpyHostToDevice, stream_);
-            
             const int recv_numBlocks = (n_elements_recv_right[global_rank] + boundaries_blockSize_ - 1) / boundaries_blockSize_;
             SEM::Device::Meshes::fill_received_elements_faces<<<recv_numBlocks, boundaries_blockSize_, 0, stream_>>>(
                 n_elements_recv_right[global_rank], 
