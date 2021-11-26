@@ -1911,6 +1911,8 @@ auto SEM::Device::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceF
 }
 
 auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat>& polynomial_nodes) -> void {
+    print();
+
     int global_rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
     int global_size;
