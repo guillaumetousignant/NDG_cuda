@@ -7325,7 +7325,7 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
                     };
                     const std::array<std::array<Vec2<deviceFloat>, 2>, 2> element_nodes {
                         std::array<Vec2<deviceFloat>, 2> {nodes[node_indices[0][0]], nodes[node_indices[0][1]]},
-                        std::array<Vec2<deviceFloat>, 2> {nodes[node_indices[1][0]], nodes[node_indices[1][1]]}
+                        std::array<Vec2<deviceFloat>, 2> {nodes[node_indices[1][1]], nodes[node_indices[1][0]]}
                     };
                     const std::array<deviceFloat, 2> side_lengths {
                         (element_nodes[0][1] - element_nodes[0][0]).magnitude(),
