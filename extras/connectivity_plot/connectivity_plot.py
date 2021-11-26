@@ -21,8 +21,6 @@ def read_file(filename: Path):
         n_interfaces_finder = re.compile(r"N interfaces: \d*")
         n_mpi_origins_finder = re.compile(r"N mpi incoming interfaces: \d*")
         n_mpi_destinations_finder = re.compile(r"N mpi outgoing interfaces: \d*")
-        node_x_finder = re.compile(r" :      [[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?")
-        node_y_finder = re.compile(r", [[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?")
 
         n_elements_match = n_elements_finder.search(lines[0])
         n_elements_total_match = n_elements_total_finder.search(lines[1])
@@ -60,9 +58,17 @@ def read_file(filename: Path):
             nodes_x[i] = float(words[3][1:-1])
             nodes_y[i] = float(words[4][0:-1])
 
-    
+    points_colour = np.array([197, 134, 192])/255
+    points_width = 12
+    points_size = 12
+    points_shape = "."
 
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1)
 
+    ax.plot(nodes_x, nodes_y, color=points_colour, linewidth=points_width, marker=points_shape, markersize=points_size)
+
+    plt.show()
 
 def main(argv):
     inputfile = Path.cwd() / "input.log"
