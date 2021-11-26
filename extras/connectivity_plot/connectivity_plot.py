@@ -65,8 +65,9 @@ def read_file(filename: Path):
 
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
+    ax.set_aspect(1)
 
-    ax.plot(nodes_x, nodes_y, color=points_colour, linewidth=points_width, marker=points_shape, markersize=points_size)
+    ax.plot(nodes_x, nodes_y, color=points_colour, linestyle="None", linewidth=points_width, marker=points_shape, markersize=points_size)
 
     plt.show()
 
