@@ -48,6 +48,7 @@ def read_file(filename: Path):
 
         nodes_x = np.zeros(n_nodes)
         nodes_y = np.zeros(n_nodes)
+        elements_nodes = np.zeros(4 * n_elements_total, dtype=np.uint64)
 
         line_index = 15
 
@@ -57,9 +58,22 @@ def read_file(filename: Path):
 
             nodes_x[i] = float(words[3][1:-1])
             nodes_y[i] = float(words[4][0:-1])
+        
+        line_index += n_nodes + 2
+
+        for i in range(n_elements_total):
+            line = lines[line_index + i]
+            words = line.split()
+
+            elements_nodes[4 * i]     = int(words[3])
+            elements_nodes[4 * i + 1] = int(words[4])
+            elements_nodes[4 * i + 2] = int(words[5])
+            elements_nodes[4 * i + 3] = int(words[6])
 
     points_colour = np.array([197, 134, 192])/255
+    elements_colour = np.array([37, 37, 37])/255
     points_width = 12
+    elements_width = 1
     points_size = 12
     points_shape = "."
 
@@ -68,6 +82,9 @@ def read_file(filename: Path):
     ax.set_aspect(1)
 
     ax.plot(nodes_x, nodes_y, color=points_colour, linestyle="None", linewidth=points_width, marker=points_shape, markersize=points_size)
+
+    for i in range(n_elements):
+        ax.plot([nodes_x[elements_nodes[4 * i]], nodes_x[elements_nodes[4 * i + 1]], nodes_x[elements_nodes[4 * i + 2]], nodes_x[elements_nodes[4 * i + 3]], nodes_x[elements_nodes[4 * i]]], [nodes_y[elements_nodes[4 * i]], nodes_y[elements_nodes[4 * i + 1]], nodes_y[elements_nodes[4 * i + 2]], nodes_y[elements_nodes[4 * i + 3]], nodes_y[elements_nodes[4 * i]]], color=elements_colour, linewidth=elements_width)
 
     plt.show()
 
