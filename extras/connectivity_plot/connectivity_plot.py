@@ -58,6 +58,14 @@ def read_file(filename: Path):
         elements_N = np.zeros(n_elements_total, dtype=np.int64)
         faces_N = np.zeros(n_faces, dtype=np.int64)
         faces_length = np.zeros(n_faces)
+        face_normals_x = np.zeros(n_faces)
+        face_normals_y = np.zeros(n_faces)
+        face_tangents_x = np.zeros(n_faces)
+        face_tangents_y = np.zeros(n_faces)
+        face_offsets_L = np.zeros(n_faces)
+        face_offsets_R = np.zeros(n_faces)
+        face_scales_L = np.zeros(n_faces)
+        face_scales_R = np.zeros(n_faces)
 
         line_index = 15
 
@@ -153,6 +161,42 @@ def read_file(filename: Path):
             words = line.split()
 
             faces_length[i] = float(words[3][0])
+
+        line_index += n_faces + 2
+
+        for i in range(n_faces):
+            line = lines[line_index + i]
+            words = line.split()
+
+            face_normals_x[i] = float(words[3][1:-1])
+            face_normals_y[i] = float(words[4][0:-1])
+
+        line_index += n_faces + 2
+
+        for i in range(n_faces):
+            line = lines[line_index + i]
+            words = line.split()
+
+            face_tangents_x[i] = float(words[3][1:-1])
+            face_tangents_y[i] = float(words[4][0:-1])
+
+        line_index += n_faces + 2
+
+        for i in range(n_faces):
+            line = lines[line_index + i]
+            words = line.split()
+
+            face_offsets_L[i] = float(words[3])
+            face_offsets_R[i] = float(words[4])
+
+        line_index += n_faces + 2
+
+        for i in range(n_faces):
+            line = lines[line_index + i]
+            words = line.split()
+
+            face_scales_L[i] = float(words[3])
+            face_scales_R[i] = float(words[4])
 
         line_index += n_faces + 2
 
