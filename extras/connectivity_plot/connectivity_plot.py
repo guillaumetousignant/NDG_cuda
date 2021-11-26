@@ -66,6 +66,7 @@ def read_file(filename: Path):
         face_offsets_R = np.zeros(n_faces)
         face_scales_L = np.zeros(n_faces)
         face_scales_R = np.zeros(n_faces)
+        face_refine = np.zeros(n_faces, dtype=np.bool8)
 
         line_index = 15
 
@@ -199,6 +200,14 @@ def read_file(filename: Path):
             face_scales_R[i] = float(words[4])
 
         line_index += n_faces + 2
+
+        for i in range(n_faces):
+            line = lines[line_index + i]
+            words = line.split()
+
+            face_refine[i] = bool(words[3])
+
+        line_index += n_faces + 4
 
 
 
