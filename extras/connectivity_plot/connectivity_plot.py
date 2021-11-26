@@ -21,6 +21,8 @@ def read_file(filename: Path):
         n_interfaces_finder = re.compile(r"N interfaces: \d*")
         n_mpi_origins_finder = re.compile(r"N mpi incoming interfaces: \d*")
         n_mpi_destinations_finder = re.compile(r"N mpi outgoing interfaces: \d*")
+        node_x_finder = re.compile(r" :      [[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?")
+        node_y_finder = re.compile(r", [[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?")
 
         n_elements_match = n_elements_finder.search(lines[0])
         n_elements_total_match = n_elements_total_finder.search(lines[1])
@@ -34,14 +36,41 @@ def read_file(filename: Path):
         n_mpi_origins_match = n_mpi_origins_finder.search(lines[9])
         n_mpi_destinations_match = n_mpi_destinations_finder.search(lines[10])
 
+        n_elements = int(n_elements_match.group(0)[12:])
+        n_elements_total = int(n_elements_total_match.group(0)[23:])
+        n_faces = int(n_faces_match.group(0)[9:])
+        n_nodes = int(n_nodes_match.group(0)[9:])
+        n_walls = int(n_walls_match.group(0)[19:])
+        n_symmetries = int(n_symmetries_match.group(0)[23:])
+        n_inflows = int(n_inflows_match.group(0)[21:])
+        n_outflows = int(n_outflows_match.group(0)[22:])
+        n_interfaces = int(n_interfaces_match.group(0)[14:])
+        n_mpi_origins = int(n_mpi_origins_match.group(0)[27:])
+        n_mpi_destinations = int(n_mpi_destinations_match.group(0)[27:])
+
+        nodes_x = np.zeros(n_nodes)
+        nodes_y = np.zeros(n_nodes)
+
+        line_index = 15
+
+        for i in range(n_nodes):
+            line = lines[line_index + i]
+            words = line.split()
+
+            nodes_x[i] = float(words[3][1:-1])
+            nodes_y[i] = float(words[4][0:-1])
+
+    
+
+
 
 def main(argv):
     inputfile = Path.cwd() / "input.log"
 
     try:
         opts, args = getopt.getopt(argv,"hi:",["input=","help"])
-    except getopt.GetoptError:
-        print("connectivity_plot.py -i <inputfile>")
+    except getopt.error as err:
+        print (str(err))
         exit(2)
 
     for opt, arg in opts:
