@@ -49,6 +49,10 @@ def read_file(filename: Path):
         nodes_x = np.zeros(n_nodes)
         nodes_y = np.zeros(n_nodes)
         elements_nodes = np.zeros(4 * n_elements_total, dtype=np.uint64)
+        faces_nodes = np.zeros(2 * n_faces, dtype=np.uint64)
+        faces_elements = np.zeros(2 * n_faces, dtype=np.uint64)
+        faces_elements_side = np.zeros(2 * n_faces, dtype=np.uint64)
+        elements_type = np.zeros(n_elements_total, dtype=np.unicode_)
 
         line_index = 15
 
@@ -69,6 +73,45 @@ def read_file(filename: Path):
             elements_nodes[4 * i + 1] = int(words[4])
             elements_nodes[4 * i + 2] = int(words[5])
             elements_nodes[4 * i + 3] = int(words[6])
+
+        line_index += n_elements_total + 2
+
+        for i in range(n_faces):
+            line = lines[line_index + i]
+            words = line.split()
+
+            faces_nodes[2 * i]     = int(words[3])
+            faces_nodes[2 * i + 1] = int(words[4])
+
+        line_index += n_faces + 2
+
+        for i in range(n_faces):
+            line = lines[line_index + i]
+            words = line.split()
+
+            faces_elements[2 * i]     = int(words[3])
+            faces_elements[2 * i + 1] = int(words[4])
+
+        line_index += n_faces + 2
+
+        for i in range(n_faces):
+            line = lines[line_index + i]
+            words = line.split()
+
+            faces_elements_side[2 * i]     = int(words[3])
+            faces_elements_side[2 * i + 1] = int(words[4])
+
+        line_index += n_faces + 3
+
+        for i in range(n_elements_total):
+            line = lines[line_index + i]
+            words = line.split()
+
+            elements_type[i] = words[3][0]
+
+        line_index += n_elements_total + 2
+
+
 
     points_colour = np.array([197, 134, 192])/255
     elements_colour = np.array([37, 37, 37])/255
