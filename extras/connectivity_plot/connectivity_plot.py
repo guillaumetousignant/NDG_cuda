@@ -53,6 +53,11 @@ def read_file(filename: Path):
         faces_elements = np.zeros(2 * n_faces, dtype=np.uint64)
         faces_elements_side = np.zeros(2 * n_faces, dtype=np.uint64)
         elements_type = np.zeros(n_elements_total, dtype=np.unicode_)
+        elements_rotation = np.zeros(n_elements_total, dtype=np.uint8)
+        elements_min_length = np.zeros(n_elements_total)
+        elements_N = np.zeros(n_elements_total, dtype=np.int64)
+        faces_N = np.zeros(n_faces, dtype=np.int64)
+        faces_length = np.zeros(n_faces)
 
         line_index = 15
 
@@ -110,6 +115,46 @@ def read_file(filename: Path):
             elements_type[i] = words[3][0]
 
         line_index += n_elements_total + 2
+
+        for i in range(n_elements_total):
+            line = lines[line_index + i]
+            words = line.split()
+
+            elements_rotation[i] = int(words[3][0])
+
+        line_index += n_elements_total + 2
+
+        for i in range(n_elements_total):
+            line = lines[line_index + i]
+            words = line.split()
+
+            elements_min_length[i] = float(words[3][0])
+
+        line_index += n_elements_total + 2
+
+        for i in range(n_elements_total):
+            line = lines[line_index + i]
+            words = line.split()
+
+            elements_N[i] = int(words[3][0])
+
+        line_index += n_elements_total + 2
+
+        for i in range(n_faces):
+            line = lines[line_index + i]
+            words = line.split()
+
+            faces_N[i] = int(words[3][0])
+
+        line_index += n_faces + 2
+
+        for i in range(n_faces):
+            line = lines[line_index + i]
+            words = line.split()
+
+            faces_length[i] = float(words[3][0])
+
+        line_index += n_faces + 2
 
 
 
