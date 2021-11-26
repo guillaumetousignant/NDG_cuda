@@ -8367,6 +8367,7 @@ auto SEM::Device::Meshes::create_sent_mpi_boundaries_destinations(
                         Face2D_t& face = faces[face_index];
                         const size_t side_index = face.elements_[1] == element_index && face.elements_side_[1] == j; // This is bad, some elements have been moved already, so it is possible that the element index is another element, and there are the same index multiple times
                         face.elements_[side_index] = new_element_index;
+                        face.elements_side_[side_index] = 0;
                         ++n_good_faces;
                     }
                 }
