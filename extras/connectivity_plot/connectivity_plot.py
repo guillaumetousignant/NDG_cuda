@@ -72,6 +72,9 @@ def read_file(filename: Path):
         face_scales_L = np.zeros(n_faces)
         face_scales_R = np.zeros(n_faces)
         face_refine = np.zeros(n_faces, dtype=np.bool8)
+        self_interfaces_destinations = np.zeros(n_interfaces, dtype=np.uint64)
+        self_interfaces_origins = np.zeros(n_interfaces, dtype=np.uint64)
+        self_interfaces_origins_side = np.zeros(n_interfaces, dtype=np.uint64)
         wall_boundaries = np.zeros(n_walls, dtype=np.uint64)
         symmetry_boundaries = np.zeros(n_symmetries, dtype=np.uint64)
         inflow_boundaries = np.zeros(n_inflows, dtype=np.uint64)
@@ -216,7 +219,17 @@ def read_file(filename: Path):
 
             face_refine[i] = bool(words[3])
 
-        line_index += n_faces + 4
+        line_index += n_faces + 2
+
+        for i in range(n_interfaces):
+            line = lines[line_index + i]
+            words = line.split()
+
+            self_interfaces_destinations[i] = bool(words[3])
+            self_interfaces_origins[i] = bool(words[4])
+            self_interfaces_origins_side[i] = bool(words[5])
+
+        line_index += n_interfaces + 2
 
         n_mp_interfaces = 0
 
