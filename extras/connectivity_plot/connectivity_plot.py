@@ -4,6 +4,7 @@ import re
 from pathlib import Path
 import sys
 import getopt
+import math
 
 def read_file(filename: Path):
     with open(filename, 'r') as file:
@@ -335,8 +336,10 @@ def read_file(filename: Path):
     ghost_offset = 0.3
     points_font_size = 12
     elements_font_size = 14
+    faces_font_size = 10
     points_text_offset = [-0.005, -0.005]
     elements_text_offset = [0, 0]
+    faces_text_offset = 0.02
 
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
@@ -368,6 +371,7 @@ def read_file(filename: Path):
         x = [x[0] * (1 - faces_offset) + x_avg * faces_offset, x[1] * (1 - faces_offset) + x_avg * faces_offset]
         y = [y[0] * (1 - faces_offset) + y_avg * faces_offset, y[1] * (1 - faces_offset) + y_avg * faces_offset]
         ax.plot(x, y, color=faces_colour, linewidth=faces_width)
+        ax.text((nodes_x[faces_nodes[2 * i]] + nodes_x[faces_nodes[2 * i + 1]])/2 + face_normals_x[i] * faces_text_offset, (nodes_y[faces_nodes[2 * i]] + nodes_y[faces_nodes[2 * i + 1]])/2 + face_normals_y[i] * faces_text_offset, f"{i}", fontfamily="Fira Code", fontsize=faces_font_size, horizontalalignment="center", verticalalignment="center", color=faces_colour)
 
     plt.show()
 
