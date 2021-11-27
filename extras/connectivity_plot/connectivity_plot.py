@@ -341,7 +341,7 @@ def read_file(filename: Path):
     points_text_offset = [-0.005, -0.005]
     elements_text_offset = [0, 0]
     faces_text_offset = 0.02
-    ghosts_text_offset = 0.07
+    ghosts_text_offset = 0.06
 
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
