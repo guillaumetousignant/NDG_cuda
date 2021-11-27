@@ -340,8 +340,8 @@ def read_file(filename: Path):
     ghosts_font_size = 14
     points_text_offset = [-0.005, -0.005]
     elements_text_offset = [0, 0]
-    faces_text_offset = 0.02
-    ghosts_text_offset = 0.06
+    faces_text_offset = 0.1
+    ghosts_text_offset = 0.2
 
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
@@ -369,7 +369,7 @@ def read_file(filename: Path):
         normal = [-dy, dx]
 
         ax.plot(x, y, color=ghosts_colour, linewidth=ghosts_width)
-        ax.text(x_avg + normal[0] * ghosts_text_offset, y_avg + normal[1] * ghosts_text_offset, f"{i}", fontfamily="Fira Code", fontsize=ghosts_font_size, horizontalalignment="center", verticalalignment="center", color=ghosts_colour)
+        ax.text(x_avg + normal[0] * ghosts_text_offset * elements_min_length[i], y_avg + normal[1] * ghosts_text_offset * elements_min_length[i], f"{i}", fontfamily="Fira Code", fontsize=ghosts_font_size, horizontalalignment="center", verticalalignment="center", color=ghosts_colour)
 
     for i in range(n_elements):
         ax.plot([nodes_x[elements_nodes[4 * i]], nodes_x[elements_nodes[4 * i + 1]], nodes_x[elements_nodes[4 * i + 2]], nodes_x[elements_nodes[4 * i + 3]], nodes_x[elements_nodes[4 * i]]], [nodes_y[elements_nodes[4 * i]], nodes_y[elements_nodes[4 * i + 1]], nodes_y[elements_nodes[4 * i + 2]], nodes_y[elements_nodes[4 * i + 3]], nodes_y[elements_nodes[4 * i]]], color=elements_colour, linewidth=elements_width)
@@ -383,7 +383,7 @@ def read_file(filename: Path):
         x = [x[0] * (1 - faces_offset) + x_avg * faces_offset, x[1] * (1 - faces_offset) + x_avg * faces_offset]
         y = [y[0] * (1 - faces_offset) + y_avg * faces_offset, y[1] * (1 - faces_offset) + y_avg * faces_offset]
         ax.plot(x, y, color=faces_colour, linewidth=faces_width)
-        ax.text((nodes_x[faces_nodes[2 * i]] + nodes_x[faces_nodes[2 * i + 1]])/2 + face_normals_x[i] * faces_text_offset, (nodes_y[faces_nodes[2 * i]] + nodes_y[faces_nodes[2 * i + 1]])/2 + face_normals_y[i] * faces_text_offset, f"{i}", fontfamily="Fira Code", fontsize=faces_font_size, horizontalalignment="center", verticalalignment="center", color=faces_colour)
+        ax.text((nodes_x[faces_nodes[2 * i]] + nodes_x[faces_nodes[2 * i + 1]])/2 + face_normals_x[i] * faces_text_offset * faces_length[i], (nodes_y[faces_nodes[2 * i]] + nodes_y[faces_nodes[2 * i + 1]])/2 + face_normals_y[i] * faces_text_offset * faces_length[i], f"{i}", fontfamily="Fira Code", fontsize=faces_font_size, horizontalalignment="center", verticalalignment="center", color=faces_colour)
 
     plt.show()
 
