@@ -324,18 +324,31 @@ def read_file(filename: Path):
     points_colour = np.array([197, 134, 192])/255
     elements_colour = np.array([37, 37, 37])/255
     faces_colour = np.array([86, 156, 214])/255
+    ghosts_colour = np.array([244, 71, 71])/255
     points_width = 12
     elements_width = 3
     faces_width = 1
+    ghosts_width = 5
     points_size = 12
     points_shape = "."
     faces_offset = 0.2
+    ghost_offset = 0.3
 
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
     ax.set_aspect(1)
 
     ax.plot(nodes_x, nodes_y, color=points_colour, linestyle="None", linewidth=points_width, marker=points_shape, markersize=points_size)
+
+    for i in range(n_elements, n_elements_total):
+        x = [nodes_x[elements_nodes[4 * i]], nodes_x[elements_nodes[4 * i + 1]]]
+        y = [nodes_y[elements_nodes[4 * i]], nodes_y[elements_nodes[4 * i + 1]]]
+        x_avg = (x[0] + x[1])/2
+        y_avg = (y[0] + y[1])/2
+        x = [x[0] * (1 - ghost_offset) + x_avg * ghost_offset, x[1] * (1 - ghost_offset) + x_avg * ghost_offset]
+        y = [y[0] * (1 - ghost_offset) + y_avg * ghost_offset, y[1] * (1 - ghost_offset) + y_avg * ghost_offset]
+        
+        ax.plot(x, y, color=ghosts_colour, linewidth=ghosts_width)
 
     for i in range(n_elements):
         ax.plot([nodes_x[elements_nodes[4 * i]], nodes_x[elements_nodes[4 * i + 1]], nodes_x[elements_nodes[4 * i + 2]], nodes_x[elements_nodes[4 * i + 3]], nodes_x[elements_nodes[4 * i]]], [nodes_y[elements_nodes[4 * i]], nodes_y[elements_nodes[4 * i + 1]], nodes_y[elements_nodes[4 * i + 2]], nodes_y[elements_nodes[4 * i + 3]], nodes_y[elements_nodes[4 * i]]], color=elements_colour, linewidth=elements_width)
@@ -348,9 +361,6 @@ def read_file(filename: Path):
         x = [x[0] * (1 - faces_offset) + x_avg * faces_offset, x[1] * (1 - faces_offset) + x_avg * faces_offset]
         y = [y[0] * (1 - faces_offset) + y_avg * faces_offset, y[1] * (1 - faces_offset) + y_avg * faces_offset]
         ax.plot(x, y, color=faces_colour, linewidth=faces_width)
-
-    for i in range(n_elements, n_elements_total):
-        pass
 
     plt.show()
 
