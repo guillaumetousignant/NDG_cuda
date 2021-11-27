@@ -21,6 +21,11 @@ def read_file(filename: Path):
         n_interfaces_finder = re.compile(r"N interfaces: \d*")
         n_mpi_origins_finder = re.compile(r"N mpi incoming interfaces: \d*")
         n_mpi_destinations_finder = re.compile(r"N mpi outgoing interfaces: \d*")
+        process_finder = re.compile(r"MPI interface to process \d*")
+        outgoing_size_finder = re.compile(r" of outgoing size \d*")
+        incoming_size_finder = re.compile(r", incoming size \d*")
+        outgoing_offset_finder = re.compile(r", outgoing offset \d*")
+        incoming_offset_finder = re.compile(r" and incoming offset \d*")
 
         n_elements_match = n_elements_finder.search(lines[0])
         n_elements_total_match = n_elements_total_finder.search(lines[1])
@@ -129,7 +134,7 @@ def read_file(filename: Path):
             line = lines[line_index + i]
             words = line.split()
 
-            elements_rotation[i] = int(words[3][0])
+            elements_rotation[i] = int(words[3])
 
         line_index += n_elements_total + 2
 
@@ -137,7 +142,7 @@ def read_file(filename: Path):
             line = lines[line_index + i]
             words = line.split()
 
-            elements_min_length[i] = float(words[3][0])
+            elements_min_length[i] = float(words[3])
 
         line_index += n_elements_total + 2
 
@@ -145,7 +150,7 @@ def read_file(filename: Path):
             line = lines[line_index + i]
             words = line.split()
 
-            elements_N[i] = int(words[3][0])
+            elements_N[i] = int(words[3])
 
         line_index += n_elements_total + 2
 
@@ -153,7 +158,7 @@ def read_file(filename: Path):
             line = lines[line_index + i]
             words = line.split()
 
-            faces_N[i] = int(words[3][0])
+            faces_N[i] = int(words[3])
 
         line_index += n_faces + 2
 
@@ -161,7 +166,7 @@ def read_file(filename: Path):
             line = lines[line_index + i]
             words = line.split()
 
-            faces_length[i] = float(words[3][0])
+            faces_length[i] = float(words[3])
 
         line_index += n_faces + 2
 
@@ -208,6 +213,62 @@ def read_file(filename: Path):
             face_refine[i] = bool(words[3])
 
         line_index += n_faces + 4
+
+        n_mp_interfaces = 0
+
+        mpi_interfaces_process = []
+        mpi_interfaces_outgoing_size = []
+        mpi_interfaces_incoming_size = []
+        mpi_interfaces_outgoing_offset = []
+        mpi_interfaces_incoming_offset = []
+        mpi_interfaces_outgoing_index = []
+        mpi_interfaces_outgoing_side = []
+        mpi_interfaces_incoming_index = []
+
+        while lines[line_index].startswith("	MPI interface to process"):
+            process_match = process_finder.search(lines[line_index])
+            outgoing_size_match = outgoing_size_finder.search(lines[line_index])
+            incoming_size_match = incoming_size_finder.search(lines[line_index])
+            outgoing_offset_match = outgoing_offset_finder.search(lines[line_index])
+            incoming_offset_match = incoming_offset_finder.search(lines[line_index])
+
+            process = int(process_match.group(0)[25:])
+            outgoing_size = int(outgoing_size_match.group(0)[18:])
+            incoming_size = int(incoming_size_match.group(0)[16:])
+            outgoing_offset = int(outgoing_offset_match.group(0)[18:])
+            incoming_offset = int(incoming_offset_match.group(0)[21:])
+
+            mpi_interfaces_process.append(process)
+            mpi_interfaces_outgoing_size.append(outgoing_size)
+            mpi_interfaces_incoming_size.append(incoming_size)
+            mpi_interfaces_outgoing_offset.append(outgoing_offset)
+            mpi_interfaces_incoming_offset.append(incoming_offset)
+            mpi_interfaces_outgoing_index.append(np.zeros(outgoing_size, dtype=np.uint64))
+            mpi_interfaces_outgoing_side.append(np.zeros(outgoing_size, dtype=np.uint64))
+            mpi_interfaces_incoming_index.append(np.zeros(incoming_size, dtype=np.uint64))
+
+            line_index += 2
+
+            for i in range(outgoing_size):
+                line = lines[line_index + i]
+                words = line.split()
+
+                mpi_interfaces_outgoing_index[n_mp_interfaces][i] = int(words[4])
+                mpi_interfaces_outgoing_side[n_mp_interfaces][i] = int(words[5])
+
+            line_index += outgoing_size + 1
+
+            for i in range(incoming_size):
+                line = lines[line_index + i]
+                words = line.split()
+
+                mpi_interfaces_incoming_index[n_mp_interfaces][i] = int(words[4])
+
+            line_index += incoming_size
+
+            n_mp_interfaces += 1
+
+        line_index += 2
 
 
 
