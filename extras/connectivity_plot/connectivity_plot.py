@@ -337,9 +337,11 @@ def read_file(filename: Path):
     points_font_size = 12
     elements_font_size = 14
     faces_font_size = 10
+    ghosts_font_size = 14
     points_text_offset = [-0.005, -0.005]
     elements_text_offset = [0, 0]
     faces_text_offset = 0.02
+    ghosts_text_offset = 0.07
 
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
@@ -356,8 +358,18 @@ def read_file(filename: Path):
         y_avg = (y[0] + y[1])/2
         x = [x[0] * (1 - ghost_offset) + x_avg * ghost_offset, x[1] * (1 - ghost_offset) + x_avg * ghost_offset]
         y = [y[0] * (1 - ghost_offset) + y_avg * ghost_offset, y[1] * (1 - ghost_offset) + y_avg * ghost_offset]
-        
+        norm = math.sqrt(x_avg**2 + y_avg**2)
+
+        dx = x[1] - x[0]
+        dy = y[1] - y[0]
+        if (abs(dx) > 0 or abs(dy) > 0):
+            norm = math.sqrt(dx**2 + dy**2)
+            dx /= norm
+            dy /= norm
+        normal = [-dy, dx]
+
         ax.plot(x, y, color=ghosts_colour, linewidth=ghosts_width)
+        ax.text(x_avg + normal[0] * ghosts_text_offset, y_avg + normal[1] * ghosts_text_offset, f"{i}", fontfamily="Fira Code", fontsize=ghosts_font_size, horizontalalignment="center", verticalalignment="center", color=ghosts_colour)
 
     for i in range(n_elements):
         ax.plot([nodes_x[elements_nodes[4 * i]], nodes_x[elements_nodes[4 * i + 1]], nodes_x[elements_nodes[4 * i + 2]], nodes_x[elements_nodes[4 * i + 3]], nodes_x[elements_nodes[4 * i]]], [nodes_y[elements_nodes[4 * i]], nodes_y[elements_nodes[4 * i + 1]], nodes_y[elements_nodes[4 * i + 2]], nodes_y[elements_nodes[4 * i + 3]], nodes_y[elements_nodes[4 * i]]], color=elements_colour, linewidth=elements_width)
