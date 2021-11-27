@@ -72,6 +72,7 @@ def read_file(filename: Path):
         face_scales_L = np.zeros(n_faces)
         face_scales_R = np.zeros(n_faces)
         face_refine = np.zeros(n_faces, dtype=np.bool8)
+        wall_boundaries = np.zeros(n_walls, dtype=np.uint64)
 
         line_index = 15
 
@@ -269,6 +270,14 @@ def read_file(filename: Path):
             n_mp_interfaces += 1
 
         line_index += 2
+
+        for i in range(n_walls):
+            line = lines[line_index + i]
+            words = line.split()
+
+            wall_boundaries[i] = int(words[3])
+
+        line_index += n_walls + 2
 
 
 
