@@ -333,12 +333,16 @@ def read_file(filename: Path):
     points_shape = "."
     faces_offset = 0.2
     ghost_offset = 0.3
+    points_font_size = 12
+    points_text_offset = [-0.005, -0.005]
 
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
     ax.set_aspect(1)
 
     ax.plot(nodes_x, nodes_y, color=points_colour, linestyle="None", linewidth=points_width, marker=points_shape, markersize=points_size)
+    for i in range(n_nodes):
+        ax.text(nodes_x[i] + points_text_offset[0], nodes_y[i] + points_text_offset[1], f"{i}", fontfamily="Fira Code", fontsize=points_font_size, horizontalalignment="right", verticalalignment="top", color=points_colour)
 
     for i in range(n_elements, n_elements_total):
         x = [nodes_x[elements_nodes[4 * i]], nodes_x[elements_nodes[4 * i + 1]]]
