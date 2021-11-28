@@ -6,7 +6,187 @@ import sys
 import getopt
 import math
 
-def read_file(filename: Path):
+class Elements:
+    def __init__(self,
+                n,
+                n_total,
+                nodes, 
+                type,
+                rotation,
+                min_length,
+                N) :
+
+        self.n = n
+        self.n_total = n_total
+        self.nodes = nodes
+        self.type = type
+        self.rotation = rotation
+        self.min_length = min_length
+        self.N = N
+
+class Face_elements:
+    def __init__(self,
+                L,
+                R):
+
+        self.L = L
+        self.R = R
+
+class Face_elements_side:
+    def __init__(self,
+                L,
+                R):
+
+        self.L = L
+        self.R = R
+
+class Face_normals:
+    def __init__(self,
+                x,
+                y):
+
+        self.x = x
+        self.y = y
+
+class Face_tangents:
+    def __init__(self,
+                x,
+                y):
+
+        self.x = x
+        self.y = y
+
+class Face_offsets:
+    def __init__(self,
+                L,
+                R):
+
+        self.L = L
+        self.R = R
+
+class Face_scales:
+    def __init__(self,
+                L,
+                R):
+
+        self.L = L
+        self.R = R
+        
+class Faces:
+    def __init__(self,
+                n,
+                nodes, 
+                elements_L,
+                elements_R,
+                elements_side_L,
+                elements_side_R,
+                N,
+                length,
+                normals_x,
+                normals_y,
+                tangents_x,
+                tangents_y,
+                offsets_L,
+                offsets_R,
+                scales_L,
+                scales_R,
+                refine) :
+
+        self.n = n
+        self.nodes = nodes
+        self.elements = Face_elements(elements_L, elements_R)
+        self.elements_side = Face_elements_side(elements_side_L, elements_side_R)
+        self.N = N
+        self.length = length
+        self.normals = Face_normals(normals_x, normals_y)
+        self.tangents = Face_tangents(tangents_x, tangents_y)
+        self.offsets = Face_offsets(offsets_L, offsets_R)
+        self.scales = Face_offsets(scales_L, scales_R)
+        self.refine = refine 
+
+class Mesh:
+    def __init__(self, 
+                n_elements, 
+                n_elements_total, 
+                n_faces, 
+                n_nodes, 
+                n_walls, 
+                n_symmetries, 
+                n_inflows, 
+                n_outflows, 
+                n_interfaces, 
+                n_mpi_origins, 
+                n_mpi_destinations, 
+                nodes_x, 
+                nodes_y, 
+                elements_nodes,
+                faces_nodes,
+                faces_elements_L,
+                faces_elements_R,
+                faces_elements_side_L,
+                faces_elements_side_R,
+                elements_type,
+                elements_rotation,
+                elements_min_length,
+                elements_N,
+                faces_N,
+                faces_length,
+                face_normals_x,
+                face_normals_y,
+                face_tangents_x,
+                face_tangents_y,
+                face_offsets_L,
+                face_offsets_R,
+                face_scales_L,
+                face_scales_R,
+                face_refine,
+                self_interfaces_destinations,
+                self_interfaces_origins,
+                self_interfaces_origins_side,
+                wall_boundaries,
+                symmetry_boundaries,
+                inflow_boundaries,
+                outflow_boundaries,
+                n_mp_interfaces,
+                mpi_interfaces_process,
+                mpi_interfaces_outgoing_size,
+                mpi_interfaces_incoming_size,
+                mpi_interfaces_outgoing_offset,
+                mpi_interfaces_incoming_offset,
+                mpi_interfaces_outgoing_index,
+                mpi_interfaces_outgoing_side,
+                mpi_interfaces_incoming_index):
+
+        self.elements = Elements(n_elements, n_elements_total, elements_nodes, elements_type, elements_rotation, elements_min_length, elements_N)
+        self.faces = Faces(n_faces, faces_nodes, faces_elements_L, faces_elements_R, faces_elements_side_L, faces_elements_side_R, faces_N, faces_length,face_normals_x, face_normals_y, face_tangents_x, face_tangents_y, face_offsets_L, face_offsets_R, face_scales_L, face_scales_R, face_refine)
+        self.nodes.n = n_nodes
+        self.wall.n = n_walls
+        self.symmetry.n = n_symmetries
+        self.inflow.n = n_inflows
+        self.outflow.n = n_outflows
+        self.interfaces.n = n_interfaces
+        self.mpi_interfaces.origin.n = n_mpi_origins
+        self.mpi_interfaces.destination.n = n_mpi_destinations
+        self.nodes.x = nodes_x
+        self.nodes.y = nodes_y
+        self.interfaces.destination = self_interfaces_destinations
+        self.interfaces.origin = self_interfaces_origins
+        self.interfaces.origin_side = self_interfaces_origins_side
+        self.wall.elements = wall_boundaries
+        self.symmetry.elements = symmetry_boundaries
+        self.inflow.elements = inflow_boundaries
+        self.outflow.elements = outflow_boundaries
+        self.mpi_interfaces.n = n_mp_interfaces
+        self.mpi_interfaces.process = mpi_interfaces_process
+        self.mpi_interfaces.outgoing.size = mpi_interfaces_outgoing_size
+        self.mpi_interfaces.incoming.size = mpi_interfaces_incoming_size
+        self.mpi_interfaces.outgoing.offset = mpi_interfaces_outgoing_offset
+        self.mpi_interfaces.incoming.offset = mpi_interfaces_incoming_offset
+        self.mpi_interfaces.outgoing.elements = mpi_interfaces_outgoing_index
+        self.mpi_interfaces.outgoing.elements_side = mpi_interfaces_outgoing_side
+        self.mpi_interfaces.incoming.elements = mpi_interfaces_incoming_index
+
+def read_file(filename: Path) -> Mesh:
     with open(filename, 'r') as file:
         lines = file.readlines()
 
@@ -56,8 +236,10 @@ def read_file(filename: Path):
         nodes_y = np.zeros(n_nodes)
         elements_nodes = np.zeros(4 * n_elements_total, dtype=np.uint64)
         faces_nodes = np.zeros(2 * n_faces, dtype=np.uint64)
-        faces_elements = np.zeros(2 * n_faces, dtype=np.uint64)
-        faces_elements_side = np.zeros(2 * n_faces, dtype=np.uint64)
+        faces_elements_L = np.zeros(n_faces, dtype=np.uint64)
+        faces_elements_R = np.zeros(n_faces, dtype=np.uint64)
+        faces_elements_side_L = np.zeros(n_faces, dtype=np.uint64)
+        faces_elements_side_R = np.zeros(n_faces, dtype=np.uint64)
         elements_type = np.zeros(n_elements_total, dtype=np.unicode_)
         elements_rotation = np.zeros(n_elements_total, dtype=np.uint8)
         elements_min_length = np.zeros(n_elements_total)
@@ -116,8 +298,8 @@ def read_file(filename: Path):
             line = lines[line_index + i]
             words = line.split()
 
-            faces_elements[2 * i]     = int(words[3])
-            faces_elements[2 * i + 1] = int(words[4])
+            faces_elements_L[i] = int(words[3])
+            faces_elements_R[i] = int(words[4])
 
         line_index += n_faces + 2
 
@@ -125,8 +307,8 @@ def read_file(filename: Path):
             line = lines[line_index + i]
             words = line.split()
 
-            faces_elements_side[2 * i]     = int(words[3])
-            faces_elements_side[2 * i + 1] = int(words[4])
+            faces_elements_side_L[i] = int(words[3])
+            faces_elements_side_R[i] = int(words[4])
 
         line_index += n_faces + 3
 
@@ -320,8 +502,58 @@ def read_file(filename: Path):
 
         line_index += n_outflows + 2
 
+    return Mesh(n_elements, 
+                n_elements_total, 
+                n_faces, 
+                n_nodes, 
+                n_walls, 
+                n_symmetries, 
+                n_inflows, 
+                n_outflows, 
+                n_interfaces, 
+                n_mpi_origins, 
+                n_mpi_destinations, 
+                nodes_x, 
+                nodes_y, 
+                elements_nodes,
+                faces_nodes,
+                faces_elements_L,
+                faces_elements_R,
+                faces_elements_side_L,
+                faces_elements_side_R,
+                elements_type,
+                elements_rotation,
+                elements_min_length,
+                elements_N,
+                faces_N,
+                faces_length,
+                face_normals_x,
+                face_normals_y,
+                face_tangents_x,
+                face_tangents_y,
+                face_offsets_L,
+                face_offsets_R,
+                face_scales_L,
+                face_scales_R,
+                face_refine,
+                self_interfaces_destinations,
+                self_interfaces_origins,
+                self_interfaces_origins_side,
+                wall_boundaries,
+                symmetry_boundaries,
+                inflow_boundaries,
+                outflow_boundaries,
+                n_mp_interfaces,
+                mpi_interfaces_process,
+                mpi_interfaces_outgoing_size,
+                mpi_interfaces_incoming_size,
+                mpi_interfaces_outgoing_offset,
+                mpi_interfaces_incoming_offset,
+                mpi_interfaces_outgoing_index,
+                mpi_interfaces_outgoing_side,
+                mpi_interfaces_incoming_index)
 
-
+def plot_mesh(mesh: Mesh):
     points_colour = np.array([197, 134, 192])/255
     elements_colour = np.array([37, 37, 37])/255
     faces_colour = np.array([86, 156, 214])/255
@@ -347,9 +579,9 @@ def read_file(filename: Path):
     ax = fig.add_subplot(1, 1, 1)
     ax.set_aspect(1)
 
-    for i in range(n_elements, n_elements_total):
-        x = [nodes_x[elements_nodes[4 * i]], nodes_x[elements_nodes[4 * i + 1]]]
-        y = [nodes_y[elements_nodes[4 * i]], nodes_y[elements_nodes[4 * i + 1]]]
+    for i in range(mesh.elements.n, mesh.elements.n_total):
+        x = [mesh.nodes.x[mesh.elements.nodes[4 * i]], mesh.nodes.x[mesh.elements.nodes[4 * i + 1]]]
+        y = [mesh.nodes.y[mesh.elements.nodes[4 * i]], mesh.nodes.y[mesh.elements.nodes[4 * i + 1]]]
         x_avg = (x[0] + x[1])/2
         y_avg = (y[0] + y[1])/2
         x = [x[0] * (1 - ghost_offset) + x_avg * ghost_offset, x[1] * (1 - ghost_offset) + x_avg * ghost_offset]
@@ -365,25 +597,25 @@ def read_file(filename: Path):
         normal = [-dy, dx]
 
         ax.plot(x, y, color=ghosts_colour, linewidth=ghosts_width)
-        ax.text(x_avg + normal[0] * ghosts_text_offset * elements_min_length[i], y_avg + normal[1] * ghosts_text_offset * elements_min_length[i], f"{i}", fontfamily="Fira Code", fontsize=ghosts_font_size, horizontalalignment="center", verticalalignment="center", color=ghosts_colour)
+        ax.text(x_avg + normal[0] * ghosts_text_offset * mesh.elements.min_length[i], y_avg + normal[1] * ghosts_text_offset * mesh.elements.min_length[i], f"{i}", fontfamily="Fira Code", fontsize=ghosts_font_size, horizontalalignment="center", verticalalignment="center", color=ghosts_colour)
 
-    for i in range(n_elements):
-        ax.plot([nodes_x[elements_nodes[4 * i]], nodes_x[elements_nodes[4 * i + 1]], nodes_x[elements_nodes[4 * i + 2]], nodes_x[elements_nodes[4 * i + 3]], nodes_x[elements_nodes[4 * i]]], [nodes_y[elements_nodes[4 * i]], nodes_y[elements_nodes[4 * i + 1]], nodes_y[elements_nodes[4 * i + 2]], nodes_y[elements_nodes[4 * i + 3]], nodes_y[elements_nodes[4 * i]]], color=elements_colour, linewidth=elements_width)
-        ax.text((nodes_x[elements_nodes[4 * i]] + nodes_x[elements_nodes[4 * i + 1]] + nodes_x[elements_nodes[4 * i + 2]] + nodes_x[elements_nodes[4 * i + 3]])/4 + elements_text_offset[0], (nodes_y[elements_nodes[4 * i]] + nodes_y[elements_nodes[4 * i + 1]] + nodes_y[elements_nodes[4 * i + 2]] + nodes_y[elements_nodes[4 * i + 3]])/4 + elements_text_offset[1], f"{i}", fontfamily="Fira Code", fontsize=elements_font_size, horizontalalignment="center", verticalalignment="center", color=elements_colour)
+    for i in range(mesh.elements.n):
+        ax.plot([mesh.nodes.x[mesh.elements.nodes[4 * i]], mesh.nodes.x[mesh.elements.nodes[4 * i + 1]], mesh.nodes.x[mesh.elements.nodes[4 * i + 2]], mesh.nodes.x[mesh.elements.nodes[4 * i + 3]], mesh.nodes.x[mesh.elements.nodes[4 * i]]], [mesh.nodes.y[mesh.elements.nodes[4 * i]], mesh.nodes.y[mesh.elements.nodes[4 * i + 1]], mesh.nodes.y[mesh.elements.nodes[4 * i + 2]], mesh.nodes.y[mesh.elements.nodes[4 * i + 3]], mesh.nodes.y[mesh.elements.nodes[4 * i]]], color=elements_colour, linewidth=elements_width)
+        ax.text((mesh.nodes.x[mesh.elements.nodes[4 * i]] + mesh.nodes.x[mesh.elements.nodes[4 * i + 1]] + mesh.nodes.x[mesh.elements.nodes[4 * i + 2]] + mesh.nodes.x[mesh.elements.nodes[4 * i + 3]])/4 + elements_text_offset[0], (mesh.nodes.y[mesh.elements.nodes[4 * i]] + mesh.nodes.y[mesh.elements.nodes[4 * i + 1]] + mesh.nodes.y[mesh.elements.nodes[4 * i + 2]] + mesh.nodes.y[mesh.elements.nodes[4 * i + 3]])/4 + elements_text_offset[1], f"{i}", fontfamily="Fira Code", fontsize=elements_font_size, horizontalalignment="center", verticalalignment="center", color=elements_colour)
 
-    for i in range(n_faces):
-        x = [nodes_x[faces_nodes[2 * i]], nodes_x[faces_nodes[2 * i + 1]]]
-        y = [nodes_y[faces_nodes[2 * i]], nodes_y[faces_nodes[2 * i + 1]]]
+    for i in range(mesh.faces.n):
+        x = [mesh.nodes.x[mesh.faces.nodes[2 * i]], mesh.nodes.x[mesh.faces.nodes[2 * i + 1]]]
+        y = [mesh.nodes.y[mesh.faces.nodes[2 * i]], mesh.nodes.y[mesh.faces.nodes[2 * i + 1]]]
         x_avg = (x[0] + x[1])/2
         y_avg = (y[0] + y[1])/2
         x = [x[0] * (1 - faces_offset) + x_avg * faces_offset, x[1] * (1 - faces_offset) + x_avg * faces_offset]
         y = [y[0] * (1 - faces_offset) + y_avg * faces_offset, y[1] * (1 - faces_offset) + y_avg * faces_offset]
         ax.plot(x, y, color=faces_colour, linewidth=faces_width)
-        ax.text((nodes_x[faces_nodes[2 * i]] + nodes_x[faces_nodes[2 * i + 1]])/2 + face_normals_x[i] * faces_text_offset * faces_length[i], (nodes_y[faces_nodes[2 * i]] + nodes_y[faces_nodes[2 * i + 1]])/2 + face_normals_y[i] * faces_text_offset * faces_length[i], f"{i}", fontfamily="Fira Code", fontsize=faces_font_size, horizontalalignment="center", verticalalignment="center", color=faces_colour)
+        ax.text((mesh.nodes.x[mesh.faces.nodes[2 * i]] + mesh.nodes.x[mesh.faces.nodes[2 * i + 1]])/2 + mesh.faces.normals.x[i] * faces_text_offset * mesh.faces.length[i], (mesh.nodes.y[mesh.faces.nodes[2 * i]] + mesh.nodes.y[mesh.faces.nodes[2 * i + 1]])/2 + mesh.faces.normals.y[i] * faces_text_offset * mesh.faces.length[i], f"{i}", fontfamily="Fira Code", fontsize=faces_font_size, horizontalalignment="center", verticalalignment="center", color=faces_colour)
 
-    ax.plot(nodes_x, nodes_y, color=points_colour, linestyle="None", linewidth=points_width, marker=points_shape, markersize=points_size)
-    for i in range(n_nodes):
-        ax.text(nodes_x[i] + points_text_offset[0], nodes_y[i] + points_text_offset[1], f"{i}", fontfamily="Fira Code", fontsize=points_font_size, horizontalalignment="right", verticalalignment="top", color=points_colour)
+    ax.plot(mesh.nodes.x, mesh.nodes.y, color=points_colour, linestyle="None", linewidth=points_width, marker=points_shape, markersize=points_size)
+    for i in range(mesh.nodes.n):
+        ax.text(mesh.nodes.x[i] + points_text_offset[0], mesh.nodes.y[i] + points_text_offset[1], f"{i}", fontfamily="Fira Code", fontsize=points_font_size, horizontalalignment="right", verticalalignment="top", color=points_colour)
 
     plt.show()
 
@@ -403,8 +635,8 @@ def main(argv):
         elif opt in ("-i", "--input"):
             inputfile = arg
 
-    read_file(inputfile)
-
+    mesh = read_file(inputfile)
+    plot_mesh(mesh)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
