@@ -347,10 +347,6 @@ def read_file(filename: Path):
     ax = fig.add_subplot(1, 1, 1)
     ax.set_aspect(1)
 
-    ax.plot(nodes_x, nodes_y, color=points_colour, linestyle="None", linewidth=points_width, marker=points_shape, markersize=points_size)
-    for i in range(n_nodes):
-        ax.text(nodes_x[i] + points_text_offset[0], nodes_y[i] + points_text_offset[1], f"{i}", fontfamily="Fira Code", fontsize=points_font_size, horizontalalignment="right", verticalalignment="top", color=points_colour)
-
     for i in range(n_elements, n_elements_total):
         x = [nodes_x[elements_nodes[4 * i]], nodes_x[elements_nodes[4 * i + 1]]]
         y = [nodes_y[elements_nodes[4 * i]], nodes_y[elements_nodes[4 * i + 1]]]
@@ -384,6 +380,10 @@ def read_file(filename: Path):
         y = [y[0] * (1 - faces_offset) + y_avg * faces_offset, y[1] * (1 - faces_offset) + y_avg * faces_offset]
         ax.plot(x, y, color=faces_colour, linewidth=faces_width)
         ax.text((nodes_x[faces_nodes[2 * i]] + nodes_x[faces_nodes[2 * i + 1]])/2 + face_normals_x[i] * faces_text_offset * faces_length[i], (nodes_y[faces_nodes[2 * i]] + nodes_y[faces_nodes[2 * i + 1]])/2 + face_normals_y[i] * faces_text_offset * faces_length[i], f"{i}", fontfamily="Fira Code", fontsize=faces_font_size, horizontalalignment="center", verticalalignment="center", color=faces_colour)
+
+    ax.plot(nodes_x, nodes_y, color=points_colour, linestyle="None", linewidth=points_width, marker=points_shape, markersize=points_size)
+    for i in range(n_nodes):
+        ax.text(nodes_x[i] + points_text_offset[0], nodes_y[i] + points_text_offset[1], f"{i}", fontfamily="Fira Code", fontsize=points_font_size, horizontalalignment="right", verticalalignment="top", color=points_colour)
 
     plt.show()
 
