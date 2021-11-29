@@ -1,3 +1,5 @@
+# Plots meshes with the data returned from the Mesh2D_t print() function
+
 import matplotlib.pyplot as plt
 import numpy as np
 import re
@@ -695,7 +697,12 @@ def main(argv):
 
     for opt, arg in opts:
         if opt in ("-h", "--help"):
-            print("connectivity_plot.py -i <inputfile>")
+            print("Mesh plotter")
+            print("\tPlots meshes with the data returned from the Mesh2D_t print() function")
+            print("Usage: connectivity_plot.py -i <inputfile> -i <inputfile1> -i <inputfile2> [...]")
+            print("Available options:")
+            print("\t-i, --input\tPath to a mesh to display. May be present multiple times.")
+            print("\t-h, --help\tShow this help message.")
             exit()
         elif opt in ("-i", "--input"):
             inputfile = arg
