@@ -933,7 +933,8 @@ auto SEM::Host::Meshes::Mesh2D_t::print() const -> void {
     std::cout << "N inflow boundaries: " << inflow_boundaries_.size() << std::endl;
     std::cout << "N outflow boundaries: " << outflow_boundaries_.size() << std::endl;
     std::cout << "N interfaces: " << interfaces_origin_.size() << std::endl;
-    std::cout << "N mpi interfaces: " << mpi_interfaces_origin_.size() << std::endl;
+    std::cout << "N mpi incoming interfaces: " << mpi_interfaces_origin_.size() << std::endl;
+    std::cout << "N mpi outgoing interfaces: " << mpi_interfaces_destination_.size() << std::endl;
     std::cout << "Initial N: " << initial_N_ << std::endl;
 
     std::cout << std::endl <<  "Connectivity" << std::endl;
@@ -985,12 +986,12 @@ auto SEM::Host::Meshes::Mesh2D_t::print() const -> void {
         std::cout << '\t' << '\t' << "element " << std::setw(6) << i << " : " << status_letter[elements_[i].status_] << std::endl;
     }
 
-    std::cout << '\t' <<  "Element rotation:" << std::endl;
+    std::cout << std::endl << '\t' <<  "Element rotation:" << std::endl;
     for (size_t i = 0; i < elements_.size(); ++i) {
         std::cout << '\t' << '\t' << "element " << std::setw(6) << i << " : " << elements_[i].rotation_ << std::endl;
     }
 
-    std::cout << '\t' <<  "Element min length:" << std::endl;
+    std::cout << std::endl << '\t' <<  "Element min length:" << std::endl;
     for (size_t i = 0; i < elements_.size(); ++i) {
         std::cout << '\t' << '\t' << "element " << std::setw(6) << i << " : " << elements_[i].delta_xy_min_ << std::endl;
     }
