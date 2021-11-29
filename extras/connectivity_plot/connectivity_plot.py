@@ -636,7 +636,7 @@ def plot_mesh(mesh: Mesh, title: str = "Mesh"):
     faces_text_offset = 0.1
     ghosts_text_offset = 0.2
     incoming_boundaries_text_offset = [0.2, 0.15]
-    outgoing_boundaries_text_offset = [0.0, -0.000]
+    outgoing_boundaries_text_offset = [0.2, -0.000]
 
     fig = plt.figure()
     fig.canvas.manager.set_window_title(title)
@@ -701,7 +701,7 @@ def plot_mesh(mesh: Mesh, title: str = "Mesh"):
         for j in range(mesh.mpi_interfaces.outgoing.size[i]):
             element_index = mesh.mpi_interfaces.outgoing.elements[i][j]
             element_side = mesh.mpi_interfaces.outgoing.elements_side[i][j]
-            next_side = element_side + 1 if element_side + 1 > 3 else 0
+            next_side = element_side + 1 if element_side + 1 < 4 else 0
             element_node0_x = mesh.nodes.x[mesh.elements.nodes[4 * element_index + element_side]]
             element_node1_x = mesh.nodes.x[mesh.elements.nodes[4 * element_index + next_side]]
             element_node0_y = mesh.nodes.y[mesh.elements.nodes[4 * element_index + element_side]]
