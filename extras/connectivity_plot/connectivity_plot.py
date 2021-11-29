@@ -2,6 +2,7 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.typing as npt
 import re
 from pathlib import Path
 import sys
@@ -10,13 +11,13 @@ import math
 
 class Elements:
     def __init__(self,
-                n,
-                n_total,
-                nodes, 
-                type,
-                rotation,
-                min_length,
-                N) :
+                n: int,
+                n_total: int,
+                nodes: npt.ArrayLike, 
+                type: npt.ArrayLike,
+                rotation: npt.ArrayLike,
+                min_length: npt.ArrayLike,
+                N: npt.ArrayLike) :
 
         self.n = n
         self.n_total = n_total
@@ -28,71 +29,71 @@ class Elements:
 
 class Face_elements:
     def __init__(self,
-                L,
-                R):
+                L: npt.ArrayLike,
+                R: npt.ArrayLike):
 
         self.L = L
         self.R = R
 
 class Face_elements_side:
     def __init__(self,
-                L,
-                R):
+                L: npt.ArrayLike,
+                R: npt.ArrayLike):
 
         self.L = L
         self.R = R
 
 class Face_normals:
     def __init__(self,
-                x,
-                y):
+                x: npt.ArrayLike,
+                y: npt.ArrayLike):
 
         self.x = x
         self.y = y
 
 class Face_tangents:
     def __init__(self,
-                x,
-                y):
+                x: npt.ArrayLike,
+                y: npt.ArrayLike):
 
         self.x = x
         self.y = y
 
 class Face_offsets:
     def __init__(self,
-                L,
-                R):
+                L: npt.ArrayLike,
+                R: npt.ArrayLike):
 
         self.L = L
         self.R = R
 
 class Face_scales:
     def __init__(self,
-                L,
-                R):
+                L: npt.ArrayLike,
+                R: npt.ArrayLike):
 
         self.L = L
         self.R = R
         
 class Faces:
     def __init__(self,
-                n,
-                nodes, 
-                elements_L,
-                elements_R,
-                elements_side_L,
-                elements_side_R,
-                N,
-                length,
-                normals_x,
-                normals_y,
-                tangents_x,
-                tangents_y,
-                offsets_L,
-                offsets_R,
-                scales_L,
-                scales_R,
-                refine) :
+                n: int,
+                nodes: npt.ArrayLike, 
+                elements_L: npt.ArrayLike,
+                elements_R: npt.ArrayLike,
+                elements_side_L: npt.ArrayLike,
+                elements_side_R: npt.ArrayLike,
+                N: npt.ArrayLike,
+                length: npt.ArrayLike,
+                normals_x: npt.ArrayLike,
+                normals_y: npt.ArrayLike,
+                tangents_x: npt.ArrayLike,
+                tangents_y: npt.ArrayLike,
+                offsets_L: npt.ArrayLike,
+                offsets_R: npt.ArrayLike,
+                scales_L: npt.ArrayLike,
+                scales_R: npt.ArrayLike,
+                refine: npt.ArrayLike) :
 
         self.n = n
         self.nodes = nodes
@@ -108,9 +109,9 @@ class Faces:
 
 class Nodes:
     def __init__(self,
-                n,
-                x,
-                y):
+                n: int,
+                x: npt.ArrayLike,
+                y: npt.ArrayLike):
 
         self.n = n
         self.x = x
@@ -118,18 +119,18 @@ class Nodes:
 
 class Boundary:
     def __init__(self,
-                n,
-                elements):
+                n: int,
+                elements: npt.ArrayLike):
 
         self.n = n
         self.elements = elements
 
 class Interfaces:
     def __init__(self,
-                n,
-                destination,
-                origin,
-                origin_side):
+                n: int,
+                destination: npt.ArrayLike,
+                origin: npt.ArrayLike,
+                origin_side: npt.ArrayLike):
 
         self.n = n
         self.destination = destination
@@ -138,11 +139,11 @@ class Interfaces:
 
 class Outgoing_MPI_Interfaces:
     def __init__(self,
-                n_elements,
-                size,
-                offset,
-                elements,
-                elements_side):
+                n_elements: int,
+                size: npt.ArrayLike,
+                offset: npt.ArrayLike,
+                elements: npt.ArrayLike,
+                elements_side: npt.ArrayLike):
 
         self.n_elements = n_elements
         self.size = size
@@ -152,10 +153,10 @@ class Outgoing_MPI_Interfaces:
 
 class Incoming_MPI_Interfaces:
     def __init__(self,
-                n_elements,
-                size,
-                offset,
-                elements):
+                n_elements: int,
+                size: npt.ArrayLike,
+                offset: npt.ArrayLike,
+                elements: npt.ArrayLike):
 
         self.n_elements = n_elements
         self.size = size
@@ -164,17 +165,17 @@ class Incoming_MPI_Interfaces:
 
 class MPI_Interfaces:
     def __init__(self,
-                n,
-                process,
-                n_outgoing,
-                n_incoming,
-                size_outgoing,
-                size_incoming,
-                offset_outgoing,
-                offset_incoming,
-                elements_outgoing,
-                elements_incoming,
-                elements_side_outgoing):
+                n: int,
+                process: npt.ArrayLike,
+                n_outgoing: int,
+                n_incoming: int,
+                size_outgoing: npt.ArrayLike,
+                size_incoming: npt.ArrayLike,
+                offset_outgoing: npt.ArrayLike,
+                offset_incoming: npt.ArrayLike,
+                elements_outgoing: npt.ArrayLike,
+                elements_incoming: npt.ArrayLike,
+                elements_side_outgoing: npt.ArrayLike):
 
         self.n = n
         self.process = process
@@ -183,56 +184,56 @@ class MPI_Interfaces:
 
 class Mesh:
     def __init__(self, 
-                n_elements, 
-                n_elements_total, 
-                n_faces, 
-                n_nodes, 
-                n_walls, 
-                n_symmetries, 
-                n_inflows, 
-                n_outflows, 
-                n_interfaces, 
-                n_mpi_origins, 
-                n_mpi_destinations, 
-                nodes_x, 
-                nodes_y, 
-                elements_nodes,
-                faces_nodes,
-                faces_elements_L,
-                faces_elements_R,
-                faces_elements_side_L,
-                faces_elements_side_R,
-                elements_type,
-                elements_rotation,
-                elements_min_length,
-                elements_N,
-                faces_N,
-                faces_length,
-                face_normals_x,
-                face_normals_y,
-                face_tangents_x,
-                face_tangents_y,
-                face_offsets_L,
-                face_offsets_R,
-                face_scales_L,
-                face_scales_R,
-                face_refine,
-                self_interfaces_destinations,
-                self_interfaces_origins,
-                self_interfaces_origins_side,
-                wall_boundaries,
-                symmetry_boundaries,
-                inflow_boundaries,
-                outflow_boundaries,
-                n_mp_interfaces,
-                mpi_interfaces_process,
-                mpi_interfaces_outgoing_size,
-                mpi_interfaces_incoming_size,
-                mpi_interfaces_outgoing_offset,
-                mpi_interfaces_incoming_offset,
-                mpi_interfaces_outgoing_index,
-                mpi_interfaces_outgoing_side,
-                mpi_interfaces_incoming_index):
+                n_elements: int, 
+                n_elements_total: int, 
+                n_faces: int, 
+                n_nodes: int, 
+                n_walls: int, 
+                n_symmetries: int, 
+                n_inflows: int, 
+                n_outflows: int, 
+                n_interfaces: int, 
+                n_mpi_origins: int, 
+                n_mpi_destinations: int, 
+                nodes_x: npt.ArrayLike, 
+                nodes_y: npt.ArrayLike, 
+                elements_nodes: npt.ArrayLike,
+                faces_nodes: npt.ArrayLike,
+                faces_elements_L: npt.ArrayLike,
+                faces_elements_R: npt.ArrayLike,
+                faces_elements_side_L: npt.ArrayLike,
+                faces_elements_side_R: npt.ArrayLike,
+                elements_type: npt.ArrayLike,
+                elements_rotation: npt.ArrayLike,
+                elements_min_length: npt.ArrayLike,
+                elements_N: npt.ArrayLike,
+                faces_N: npt.ArrayLike,
+                faces_length: npt.ArrayLike,
+                face_normals_x: npt.ArrayLike,
+                face_normals_y: npt.ArrayLike,
+                face_tangents_x: npt.ArrayLike,
+                face_tangents_y: npt.ArrayLike,
+                face_offsets_L: npt.ArrayLike,
+                face_offsets_R: npt.ArrayLike,
+                face_scales_L: npt.ArrayLike,
+                face_scales_R: npt.ArrayLike,
+                face_refine: npt.ArrayLike,
+                self_interfaces_destinations: npt.ArrayLike,
+                self_interfaces_origins: npt.ArrayLike,
+                self_interfaces_origins_side: npt.ArrayLike,
+                wall_boundaries: npt.ArrayLike,
+                symmetry_boundaries: npt.ArrayLike,
+                inflow_boundaries: npt.ArrayLike,
+                outflow_boundaries: npt.ArrayLike,
+                n_mp_interfaces: int,
+                mpi_interfaces_process: npt.ArrayLike,
+                mpi_interfaces_outgoing_size: npt.ArrayLike,
+                mpi_interfaces_incoming_size: npt.ArrayLike,
+                mpi_interfaces_outgoing_offset: npt.ArrayLike,
+                mpi_interfaces_incoming_offset: npt.ArrayLike,
+                mpi_interfaces_outgoing_index: npt.ArrayLike,
+                mpi_interfaces_outgoing_side: npt.ArrayLike,
+                mpi_interfaces_incoming_index: npt.ArrayLike):
 
         self.elements = Elements(n_elements, n_elements_total, elements_nodes, elements_type, elements_rotation, elements_min_length, elements_N)
         self.faces = Faces(n_faces, faces_nodes, faces_elements_L, faces_elements_R, faces_elements_side_L, faces_elements_side_R, faces_N, faces_length,face_normals_x, face_normals_y, face_tangents_x, face_tangents_y, face_offsets_L, face_offsets_R, face_scales_L, face_scales_R, face_refine)
@@ -681,7 +682,7 @@ def plot_mesh(mesh: Mesh, title: str = "Mesh"):
 
     ax.legend()
 
-def main(argv):
+def main(argv: list[str]):
     inputfile = Path.cwd() / "input.log"
 
     try:
