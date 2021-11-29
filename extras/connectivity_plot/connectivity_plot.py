@@ -683,8 +683,6 @@ def plot_mesh(mesh: Mesh, title: str = "Mesh"):
     ax.legend()
 
 def main(argv: list[str]):
-    inputfile = Path.cwd() / "input.log"
-
     try:
         opts, args = getopt.getopt(argv,"hi:",["input=","help"])
     except getopt.error as err:
@@ -695,6 +693,9 @@ def main(argv: list[str]):
         print(f"Warning: Unrecognised command-line argument \"{arg}\"")
 
     meshes = []
+
+    if len(opts) == 0:
+        opts = [("-h", "")]
 
     for opt, arg in opts:
         if opt in ("-h", "--help"):
