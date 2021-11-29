@@ -770,6 +770,8 @@ def plot_mesh(mesh: Mesh, title: str = "Mesh"):
         normal_y = dx
         ax.text(x_avg + normal_x * boundaries_text_offset[0] + abs(dx) * boundaries_text_offset[1], y_avg + normal_y * boundaries_text_offset[0] + abs(dy) * boundaries_text_offset[1], f"outflow {i}", fontfamily="Fira Code", fontsize=boundaries_font_size, horizontalalignment="center", verticalalignment="center", color=boundaries_colour)
 
+    ax.plot([], [], color=boundaries_colour, linestyle="None", linewidth=0, marker="$n$", markersize=boundaries_font_size, label="Boundary conditions")
+
     ax.legend()
 
 def main(argv: list[str]):
