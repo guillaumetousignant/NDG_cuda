@@ -6,7 +6,7 @@ import numpy.typing as npt
 import re
 from pathlib import Path
 import sys
-import getopt
+import argparse
 import math
 
 class Elements:
@@ -804,32 +804,13 @@ def plot_mesh(mesh: Mesh, title: str = "Mesh"):
     ax.legend()
 
 def main(argv: list[str]):
-    try:
-        opts, args = getopt.getopt(argv,"hi:",["input=","help"])
-    except getopt.error as err:
-        print (str(err))
-        exit(2)
-
-    for arg in args:
-        print(f"Warning: Unrecognised command-line argument \"{arg}\"")
+    parser = argparse.ArgumentParser(description="Plots meshes with the data returned from the Mesh2D_t print() function.")
+    parser.add_argument('meshes', metavar='mesh', type=Path, nargs='+', help='path to a mesh to display')
+    args = parser.parse_args(argv)
 
     meshes = []
-
-    if len(opts) == 0:
-        opts = [("-h", "")]
-
-    for opt, arg in opts:
-        if opt in ("-h", "--help"):
-            print("Mesh plotter")
-            print("\tPlots meshes with the data returned from the Mesh2D_t print() function")
-            print("Usage: connectivity_plot.py -i <inputfile> -i <inputfile1> -i <inputfile2> [...]")
-            print("Available options:")
-            print("\t-i, --input\tPath to a mesh to display. May be present multiple times.")
-            print("\t-h, --help\tShow this help message.")
-            exit()
-        elif opt in ("-i", "--input"):
-            inputfile = arg
-            meshes.append((read_file(inputfile), inputfile))
+    for mesh_file in args.meshes:
+        meshes.append((read_file(mesh_file), mesh_file))
 
     for mesh, inputfile in meshes:
         plot_mesh(mesh, inputfile)
