@@ -635,7 +635,7 @@ def plot_mesh(mesh: Mesh, title: str = "Mesh"):
     elements_text_offset = [0, 0]
     faces_text_offset = 0.1
     ghosts_text_offset = 0.2
-    incoming_boundaries_text_offset = [0.2, 0.5]
+    incoming_boundaries_text_offset = [0.2, 0.15]
     outgoing_boundaries_text_offset = [0.0, -0.000]
 
     fig = plt.figure()
