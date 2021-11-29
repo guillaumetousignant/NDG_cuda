@@ -682,6 +682,9 @@ def main(argv):
         print (str(err))
         exit(2)
 
+    for arg in args:
+        print(f"Warning: Unrecognised command-line argument: \"{arg}\"")
+
     for opt, arg in opts:
         if opt in ("-h", "--help"):
             print("connectivity_plot.py -i <inputfile>")
