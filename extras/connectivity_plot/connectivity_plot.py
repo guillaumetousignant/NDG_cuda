@@ -104,6 +104,81 @@ class Faces:
         self.scales = Face_offsets(scales_L, scales_R)
         self.refine = refine 
 
+class Nodes:
+    def __init__(self,
+                n,
+                x,
+                y):
+
+        self.n = n
+        self.x = x
+        self.y = y
+
+class Boundary:
+    def __init__(self,
+                n,
+                elements):
+
+        self.n = n
+        self.elements = elements
+
+class Interfaces:
+    def __init__(self,
+                n,
+                destination,
+                origin,
+                origin_side):
+
+        self.n = n
+        self.destination = destination
+        self.origin = origin
+        self.origin_side = origin_side
+
+class Outgoing_MPI_Interfaces:
+    def __init__(self,
+                n_elements,
+                size,
+                offset,
+                elements,
+                elements_side):
+
+        self.n_elements = n_elements
+        self.size = size
+        self.offset = offset
+        self.elements = elements
+        self.elements_side = elements_side
+
+class Incoming_MPI_Interfaces:
+    def __init__(self,
+                n_elements,
+                size,
+                offset,
+                elements):
+
+        self.n_elements = n_elements
+        self.size = size
+        self.offset = offset
+        self.elements = elements
+
+class MPI_Interfaces:
+    def __init__(self,
+                n,
+                process,
+                n_outgoing,
+                n_incoming,
+                size_outgoing,
+                size_incoming,
+                offset_outgoing,
+                offset_incoming,
+                elements_outgoing,
+                elements_incoming,
+                elements_side_outgoing):
+
+        self.n = n
+        self.process = process
+        self.outgoing =  Outgoing_MPI_Interfaces(n_outgoing, size_outgoing, offset_outgoing, elements_outgoing, elements_side_outgoing)
+        self.incoming =  Incoming_MPI_Interfaces(n_incoming, size_incoming, offset_incoming, elements_incoming)
+
 class Mesh:
     def __init__(self, 
                 n_elements, 
@@ -159,32 +234,13 @@ class Mesh:
 
         self.elements = Elements(n_elements, n_elements_total, elements_nodes, elements_type, elements_rotation, elements_min_length, elements_N)
         self.faces = Faces(n_faces, faces_nodes, faces_elements_L, faces_elements_R, faces_elements_side_L, faces_elements_side_R, faces_N, faces_length,face_normals_x, face_normals_y, face_tangents_x, face_tangents_y, face_offsets_L, face_offsets_R, face_scales_L, face_scales_R, face_refine)
-        self.nodes.n = n_nodes
-        self.wall.n = n_walls
-        self.symmetry.n = n_symmetries
-        self.inflow.n = n_inflows
-        self.outflow.n = n_outflows
-        self.interfaces.n = n_interfaces
-        self.mpi_interfaces.origin.n = n_mpi_origins
-        self.mpi_interfaces.destination.n = n_mpi_destinations
-        self.nodes.x = nodes_x
-        self.nodes.y = nodes_y
-        self.interfaces.destination = self_interfaces_destinations
-        self.interfaces.origin = self_interfaces_origins
-        self.interfaces.origin_side = self_interfaces_origins_side
-        self.wall.elements = wall_boundaries
-        self.symmetry.elements = symmetry_boundaries
-        self.inflow.elements = inflow_boundaries
-        self.outflow.elements = outflow_boundaries
-        self.mpi_interfaces.n = n_mp_interfaces
-        self.mpi_interfaces.process = mpi_interfaces_process
-        self.mpi_interfaces.outgoing.size = mpi_interfaces_outgoing_size
-        self.mpi_interfaces.incoming.size = mpi_interfaces_incoming_size
-        self.mpi_interfaces.outgoing.offset = mpi_interfaces_outgoing_offset
-        self.mpi_interfaces.incoming.offset = mpi_interfaces_incoming_offset
-        self.mpi_interfaces.outgoing.elements = mpi_interfaces_outgoing_index
-        self.mpi_interfaces.outgoing.elements_side = mpi_interfaces_outgoing_side
-        self.mpi_interfaces.incoming.elements = mpi_interfaces_incoming_index
+        self.nodes = Nodes(n_nodes, nodes_x, nodes_y)
+        self.wall = Boundary(n_walls, wall_boundaries)
+        self.symmetry = Boundary(n_symmetries, symmetry_boundaries)
+        self.inflow = Boundary(n_inflows, inflow_boundaries)
+        self.outflow = Boundary(n_outflows, outflow_boundaries)
+        self.interfaces = Interfaces(n_interfaces, self_interfaces_destinations, self_interfaces_origins, self_interfaces_origins_side)
+        self.mpi_interfaces = MPI_Interfaces(n_mp_interfaces, mpi_interfaces_process, n_mpi_origins, n_mpi_destinations, mpi_interfaces_outgoing_size, mpi_interfaces_incoming_size, mpi_interfaces_outgoing_offset, mpi_interfaces_incoming_offset, mpi_interfaces_outgoing_index, mpi_interfaces_incoming_index, mpi_interfaces_outgoing_side)
 
 def read_file(filename: Path) -> Mesh:
     with open(filename, 'r') as file:
@@ -617,8 +673,6 @@ def plot_mesh(mesh: Mesh):
     for i in range(mesh.nodes.n):
         ax.text(mesh.nodes.x[i] + points_text_offset[0], mesh.nodes.y[i] + points_text_offset[1], f"{i}", fontfamily="Fira Code", fontsize=points_font_size, horizontalalignment="right", verticalalignment="top", color=points_colour)
 
-    plt.show()
-
 def main(argv):
     inputfile = Path.cwd() / "input.log"
 
@@ -637,6 +691,7 @@ def main(argv):
 
     mesh = read_file(inputfile)
     plot_mesh(mesh)
+    plt.show()
 
 if __name__ == "__main__":
     main(sys.argv[1:])
