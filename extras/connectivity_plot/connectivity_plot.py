@@ -635,8 +635,8 @@ def plot_mesh(mesh: Mesh, title: str = "Mesh"):
     elements_text_offset = [0, 0]
     faces_text_offset = 0.1
     ghosts_text_offset = 0.2
-    incoming_boundaries_text_offset = [0.2, 0.15]
-    outgoing_boundaries_text_offset = [0.2, -0.000]
+    boundaries_text_offset = [0.2, 0.15]
+    outgoing_boundaries_text_offset = [0.2, 0]
 
     fig = plt.figure()
     fig.canvas.manager.set_window_title(title)
@@ -697,7 +697,7 @@ def plot_mesh(mesh: Mesh, title: str = "Mesh"):
             dy = element_node1_y - element_node0_y
             normal_x = -dy
             normal_y = dx
-            ax.text(x_avg + normal_x * incoming_boundaries_text_offset[0] + abs(dx) * incoming_boundaries_text_offset[1], y_avg + normal_y * incoming_boundaries_text_offset[0] + abs(dy) * incoming_boundaries_text_offset[1], f"mpi in{i} {j}", fontfamily="Fira Code", fontsize=boundaries_font_size, horizontalalignment="center", verticalalignment="center", color=boundaries_colour)
+            ax.text(x_avg + normal_x * boundaries_text_offset[0] + abs(dx) * boundaries_text_offset[1], y_avg + normal_y * boundaries_text_offset[0] + abs(dy) * boundaries_text_offset[1], f"mpi in{i} {j}", fontfamily="Fira Code", fontsize=boundaries_font_size, horizontalalignment="center", verticalalignment="center", color=boundaries_colour)
         for j in range(mesh.mpi_interfaces.outgoing.size[i]):
             element_index = mesh.mpi_interfaces.outgoing.elements[i][j]
             element_side = mesh.mpi_interfaces.outgoing.elements_side[i][j]
@@ -713,7 +713,63 @@ def plot_mesh(mesh: Mesh, title: str = "Mesh"):
             normal_x = -dy
             normal_y = dx
             ax.text(x_avg + normal_x * outgoing_boundaries_text_offset[0] + abs(dx) * outgoing_boundaries_text_offset[1], y_avg + normal_y * outgoing_boundaries_text_offset[0] + abs(dy) * outgoing_boundaries_text_offset[1], f"mpi out{i} {j}", fontfamily="Fira Code", fontsize=boundaries_font_size, horizontalalignment="center", verticalalignment="center", color=boundaries_colour)
-        
+
+    for i in range(mesh.wall.n):
+        element_index = mesh.wall.elements[i]
+        element_node0_x = mesh.nodes.x[mesh.elements.nodes[4 * element_index]]
+        element_node1_x = mesh.nodes.x[mesh.elements.nodes[4 * element_index + 1]]
+        element_node0_y = mesh.nodes.y[mesh.elements.nodes[4 * element_index]]
+        element_node1_y = mesh.nodes.y[mesh.elements.nodes[4 * element_index + 1]]
+        x_avg = (element_node0_x + element_node1_x)/2
+        y_avg = (element_node0_y + element_node1_y)/2
+        dx = element_node1_x - element_node0_x
+        dy = element_node1_y - element_node0_y
+        normal_x = -dy
+        normal_y = dx
+        ax.text(x_avg + normal_x * boundaries_text_offset[0] + abs(dx) * boundaries_text_offset[1], y_avg + normal_y * boundaries_text_offset[0] + abs(dy) * boundaries_text_offset[1], f"wall {i}", fontfamily="Fira Code", fontsize=boundaries_font_size, horizontalalignment="center", verticalalignment="center", color=boundaries_colour)
+    
+    for i in range(mesh.symmetry.n):
+        element_index = mesh.symmetry.elements[i]
+        element_node0_x = mesh.nodes.x[mesh.elements.nodes[4 * element_index]]
+        element_node1_x = mesh.nodes.x[mesh.elements.nodes[4 * element_index + 1]]
+        element_node0_y = mesh.nodes.y[mesh.elements.nodes[4 * element_index]]
+        element_node1_y = mesh.nodes.y[mesh.elements.nodes[4 * element_index + 1]]
+        x_avg = (element_node0_x + element_node1_x)/2
+        y_avg = (element_node0_y + element_node1_y)/2
+        dx = element_node1_x - element_node0_x
+        dy = element_node1_y - element_node0_y
+        normal_x = -dy
+        normal_y = dx
+        ax.text(x_avg + normal_x * boundaries_text_offset[0] + abs(dx) * boundaries_text_offset[1], y_avg + normal_y * boundaries_text_offset[0] + abs(dy) * boundaries_text_offset[1], f"symm {i}", fontfamily="Fira Code", fontsize=boundaries_font_size, horizontalalignment="center", verticalalignment="center", color=boundaries_colour)
+    
+    for i in range(mesh.inflow.n):
+        element_index = mesh.inflow.elements[i]
+        element_node0_x = mesh.nodes.x[mesh.elements.nodes[4 * element_index]]
+        element_node1_x = mesh.nodes.x[mesh.elements.nodes[4 * element_index + 1]]
+        element_node0_y = mesh.nodes.y[mesh.elements.nodes[4 * element_index]]
+        element_node1_y = mesh.nodes.y[mesh.elements.nodes[4 * element_index + 1]]
+        x_avg = (element_node0_x + element_node1_x)/2
+        y_avg = (element_node0_y + element_node1_y)/2
+        dx = element_node1_x - element_node0_x
+        dy = element_node1_y - element_node0_y
+        normal_x = -dy
+        normal_y = dx
+        ax.text(x_avg + normal_x * boundaries_text_offset[0] + abs(dx) * boundaries_text_offset[1], y_avg + normal_y * boundaries_text_offset[0] + abs(dy) * boundaries_text_offset[1], f"inflow {i}", fontfamily="Fira Code", fontsize=boundaries_font_size, horizontalalignment="center", verticalalignment="center", color=boundaries_colour)
+    
+    for i in range(mesh.outflow.n):
+        element_index = mesh.outflow.elements[i]
+        element_node0_x = mesh.nodes.x[mesh.elements.nodes[4 * element_index]]
+        element_node1_x = mesh.nodes.x[mesh.elements.nodes[4 * element_index + 1]]
+        element_node0_y = mesh.nodes.y[mesh.elements.nodes[4 * element_index]]
+        element_node1_y = mesh.nodes.y[mesh.elements.nodes[4 * element_index + 1]]
+        x_avg = (element_node0_x + element_node1_x)/2
+        y_avg = (element_node0_y + element_node1_y)/2
+        dx = element_node1_x - element_node0_x
+        dy = element_node1_y - element_node0_y
+        normal_x = -dy
+        normal_y = dx
+        ax.text(x_avg + normal_x * boundaries_text_offset[0] + abs(dx) * boundaries_text_offset[1], y_avg + normal_y * boundaries_text_offset[0] + abs(dy) * boundaries_text_offset[1], f"outflow {i}", fontfamily="Fira Code", fontsize=boundaries_font_size, horizontalalignment="center", verticalalignment="center", color=boundaries_colour)
+
     ax.legend()
 
 def main(argv: list[str]):
