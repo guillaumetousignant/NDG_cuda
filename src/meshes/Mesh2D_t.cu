@@ -2762,7 +2762,7 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
         SEM::Device::Meshes::find_boundary_elements_to_delete<<<ghosts_numBlocks_, boundaries_blockSize_, 0, stream_>>>(elements_.size() - n_elements_, n_elements_, n_elements_send_left[global_rank], n_elements_send_right[global_rank], elements_.data(), new_faces.data(), boundary_elements_to_delete.data());
 
         // Boundary elements to add for received elements
-        const int neighbours_numBlocks = (n_elements_recv_left[global_rank] + n_elements_recv_right[global_rank] + elements_blockSize_ - 1) / elements_blockSize_;
+        const int neighbours_numBlocks = (neighbours_arrays_recv.size() + elements_blockSize_ - 1) / elements_blockSize_;
         device_vector<size_t> wall_boundaries_to_add_refine_array(neighbours_numBlocks, stream_);
         device_vector<size_t> symmetry_boundaries_to_add_refine_array(neighbours_numBlocks, stream_);
         device_vector<size_t> inflow_boundaries_to_add_refine_array(neighbours_numBlocks, stream_);
