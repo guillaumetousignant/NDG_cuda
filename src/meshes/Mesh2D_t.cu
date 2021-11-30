@@ -3574,7 +3574,7 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
         // MPI interfaces
         std::vector<int> mpi_interfaces_new_process_outgoing(mpi_interfaces_origin_.size(), global_rank);
         std::vector<size_t> mpi_interfaces_new_local_index_outgoing(mpi_interfaces_origin_.size());
-        std::vector<size_t> mpi_interfaces_new_side_outgoing(mpi_interfaces_origin_.size());
+        std::vector<size_t> mpi_interfaces_new_side_outgoing(interfaces_origin_side_.size());
 
         mpi_interfaces_origin_.copy_to(mpi_interfaces_new_local_index_outgoing, stream_);
         interfaces_origin_side_.copy_to(mpi_interfaces_new_side_outgoing, stream_);
@@ -6656,8 +6656,14 @@ auto SEM::Device::Meshes::split_mpi_incoming_interfaces(size_t n_MPI_interface_e
                     splitting_face_index += faces[j].refine_;
                 }
 
-                new_elements[new_element_index].faces_[0][0] = splitting_face_index; // Should always be the case
-                new_elements[new_element_index + 1].faces_[0][0] = face_index; // Should always be the case
+                if (faces[face_index].elements_[0] == destination_element_index) {
+                    new_elements[new_element_index].faces_[0][0] = face_index;
+                    new_elements[new_element_index + 1].faces_[0][0] = splitting_face_index;
+                }
+                else {
+                    new_elements[new_element_index].faces_[0][0] = splitting_face_index;
+                    new_elements[new_element_index + 1].faces_[0][0] = face_index;
+                }
             }
             else {
                 std::array<size_t, 2> n_side_faces {0, 0};
