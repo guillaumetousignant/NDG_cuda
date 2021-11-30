@@ -131,6 +131,7 @@ auto main(int argc, char* argv[]) -> int {
         std::cout << '\t' <<  "--memory"                  <<  '\t' <<  "Fraction of the GPu memory requested, from 0 to 1. Defaults to [0.5]" << std::endl;
         std::cout << '\t' <<  "--tolerance_min"           <<  '\t' <<  "Estimated error above which elements will refine. Defaults to [1e-6]" << std::endl;
         std::cout << '\t' <<  "--tolerance_max"           <<  '\t' <<  "Estimated error below which elements will coarsen. Defaults to [1e-14]" << std::endl;
+        std::cout << '\t' <<  "--help"                    <<  '\t' <<  "Show this help message." << std::endl;
         exit(0);
     }
 
