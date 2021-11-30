@@ -3574,7 +3574,7 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
         // MPI interfaces
         std::vector<int> mpi_interfaces_new_process_outgoing(mpi_interfaces_origin_.size(), global_rank);
         std::vector<size_t> mpi_interfaces_new_local_index_outgoing(mpi_interfaces_origin_.size());
-        std::vector<size_t> mpi_interfaces_new_side_outgoing(interfaces_origin_side_.size());
+        std::vector<size_t> mpi_interfaces_new_side_outgoing(mpi_interfaces_origin_side_.size());
 
         mpi_interfaces_origin_.copy_to(mpi_interfaces_new_local_index_outgoing, stream_);
         interfaces_origin_side_.copy_to(mpi_interfaces_new_side_outgoing, stream_);
