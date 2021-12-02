@@ -65,6 +65,9 @@ namespace SEM { namespace Device { namespace Meshes {
             SEM::Device::Entities::device_vector<bool> device_interfaces_refine_;
             SEM::Device::Entities::device_vector<int> device_receiving_interfaces_N_;
             SEM::Device::Entities::device_vector<bool> device_receiving_interfaces_refine_;
+            SEM::Device::Entities::device_vector<bool> device_receiving_interfaces_refine_without_splitting_;
+            SEM::Device::Entities::device_vector<bool> device_receiving_interfaces_creating_node_;
+            SEM::Device::Entities::device_vector<bool> device_interfaces_refine_without_splitting_;
             SEM::Device::Entities::host_vector<bool> host_interfaces_refine_;
             SEM::Device::Entities::host_vector<bool> host_receiving_interfaces_refine_;
 
@@ -147,6 +150,8 @@ namespace SEM { namespace Device { namespace Meshes {
             std::vector<size_t> host_mpi_interfaces_outgoing_refine_array_;
             SEM::Device::Entities::device_vector<size_t> device_mpi_interfaces_incoming_refine_array_;
             std::vector<size_t> host_mpi_interfaces_incoming_refine_array_;
+            SEM::Device::Entities::device_vector<size_t> device_mpi_interfaces_incoming_creating_nodes_refine_array_;
+            std::vector<size_t> host_mpi_interfaces_incoming_creating_nodes_array_;
 
             const cudaStream_t &stream_;
 
@@ -256,13 +261,13 @@ namespace SEM { namespace Device { namespace Meshes {
     auto get_MPI_interfaces_N(size_t n_MPI_interface_elements, int N_max, const SEM::Device::Entities::Element2D_t* elements, const size_t* MPI_interfaces_origin, int* N) -> void;
 
     __global__
-    auto get_MPI_interfaces_adaptivity(size_t n_MPI_interface_elements, const SEM::Device::Entities::Element2D_t* elements, const size_t* MPI_interfaces_origin, int* N, bool* elements_splitting, int max_split_level, int N_max) -> void;
+    auto get_MPI_interfaces_adaptivity(size_t n_MPI_interface_elements, size_t n_domain_elements, size_t n_processes, const SEM::Device::Entities::Element2D_t* elements, const SEM::Device::Entities::Face2D_t* faces, const SEM::Device::Entities::Vec2<deviceFloat>* nodes, const size_t* MPI_interfaces_origin, const size_t* MPI_interfaces_origin_side, const size_t* MPI_interfaces_destination, const int* MPI_process, const size_t* origin_process_size, const size_t* destination_process_size, const size_t* destination_process_offset, int* N, bool* elements_splitting, bool* elements_refining_without_splitting, int max_split_level, int N_max) -> void;
 
     __global__
     auto put_MPI_interfaces(size_t n_MPI_interface_elements, SEM::Device::Entities::Element2D_t* elements, const size_t* MPI_interfaces_destination, int maximum_N, const deviceFloat* p, const deviceFloat* u, const deviceFloat* v) -> void;
 
     __global__
-    auto adjust_MPI_incoming_interfaces(size_t n_MPI_interface_elements, SEM::Device::Entities::Element2D_t* elements, const size_t* MPI_interfaces_destination, const int* N, const SEM::Device::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes) -> void;
+    auto adjust_MPI_incoming_interfaces(size_t n_MPI_interface_elements, size_t nodes_offset, SEM::Device::Entities::Element2D_t* elements, const SEM::Device::Entities::Face2D_t* faces, const size_t* MPI_interfaces_destination, const int* N, SEM::Device::Entities::Vec2<deviceFloat>* nodes, const bool* refine, const bool* refine_without_splitting, const bool* creating_node, const size_t* creating_node_block_offsets, const deviceFloat* polynomial_nodes) -> void;
     
     __global__
     auto p_adapt(size_t n_elements, SEM::Device::Entities::Element2D_t* elements, int N_max, const SEM::Device::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void;
@@ -292,7 +297,7 @@ namespace SEM { namespace Device { namespace Meshes {
     auto copy_interfaces_error(size_t n_local_interfaces, SEM::Device::Entities::Element2D_t* elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_origin_side, const size_t* local_interfaces_destination) -> void;
     
     __global__
-    auto copy_mpi_interfaces_error(size_t n_MPI_interface_elements, SEM::Device::Entities::Element2D_t* elements, const SEM::Device::Entities::Face2D_t* faces, const SEM::Device::Entities::Vec2<deviceFloat>* nodes, const size_t* MPI_interfaces_destination, const int* N, const bool* elements_splitting) -> void;
+    auto copy_mpi_interfaces_error(size_t n_MPI_interface_elements, SEM::Device::Entities::Element2D_t* elements, const SEM::Device::Entities::Face2D_t* faces, const SEM::Device::Entities::Vec2<deviceFloat>* nodes, const size_t* MPI_interfaces_destination, const int* N, const bool* elements_splitting, bool* elements_refining_without_splitting, bool* elements_creating_node) -> void;
 
     __global__
     auto split_boundaries(size_t n_boundaries, size_t n_faces, size_t n_nodes, size_t n_splitting_elements, size_t offset, SEM::Device::Entities::Element2D_t* elements, SEM::Device::Entities::Element2D_t* new_elements, const size_t* boundaries, size_t* new_boundaries, const SEM::Device::Entities::Face2D_t* faces, const SEM::Device::Entities::Vec2<deviceFloat>* nodes, const size_t* faces_block_offsets, const size_t* boundary_block_offsets, const deviceFloat* polynomial_nodes, int faces_blockSize, size_t* elements_new_indices) -> void;
@@ -301,10 +306,10 @@ namespace SEM { namespace Device { namespace Meshes {
     auto split_interfaces(size_t n_local_interfaces, size_t n_faces, size_t n_nodes, size_t n_splitting_elements, size_t offset, SEM::Device::Entities::Element2D_t* elements, SEM::Device::Entities::Element2D_t* new_elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_origin_side, const size_t* local_interfaces_destination, size_t* new_local_interfaces_origin, size_t* new_local_interfaces_origin_side, size_t* new_local_interfaces_destination, const SEM::Device::Entities::Face2D_t* faces, const SEM::Device::Entities::Vec2<deviceFloat>* nodes, const size_t* block_offsets, const size_t* faces_block_offsets, const size_t* interface_block_offsets, int max_split_level, int N_max, const deviceFloat* polynomial_nodes, int elements_blockSize, int faces_blockSize, size_t* elements_new_indices) -> void;
     
     __global__
-    auto split_mpi_outgoing_interfaces(size_t n_MPI_interface_elements, const SEM::Device::Entities::Element2D_t* elements, const size_t* mpi_interfaces_origin, const size_t* mpi_interfaces_origin_side, size_t* new_mpi_interfaces_origin, size_t* new_mpi_interfaces_origin_side, const size_t* mpi_interface_block_offsets, int max_split_level, const size_t* block_offsets, int elements_blockSize) -> void;
+    auto split_mpi_outgoing_interfaces(size_t n_MPI_interface_elements, size_t n_domain_elements, size_t n_processes, const SEM::Device::Entities::Element2D_t* elements, const SEM::Device::Entities::Face2D_t* faces, const SEM::Device::Entities::Vec2<deviceFloat>* nodes, const size_t* mpi_interfaces_origin, const size_t* mpi_interfaces_origin_side, const size_t* MPI_interfaces_destination, size_t* new_mpi_interfaces_origin, size_t* new_mpi_interfaces_origin_side, const int* MPI_process, const size_t* origin_process_size, const size_t* destination_process_size, const size_t* destination_process_offset, const bool* elements_splitting, const bool* elements_refining_without_splitting, const size_t* mpi_interface_block_offsets, int max_split_level, const size_t* block_offsets, int elements_blockSize) -> void;
     
     __global__
-    auto split_mpi_incoming_interfaces(size_t n_MPI_interface_elements, size_t n_faces, size_t n_nodes, size_t n_splitting_elements, size_t offset, SEM::Device::Entities::Element2D_t* elements, SEM::Device::Entities::Element2D_t* new_elements, const size_t* mpi_interfaces_destination, size_t* new_mpi_interfaces_destination, const SEM::Device::Entities::Face2D_t* faces, const SEM::Device::Entities::Vec2<deviceFloat>* nodes, const size_t* faces_block_offsets, const size_t* mpi_interface_block_offsets, const deviceFloat* polynomial_nodes, int faces_blockSize, const int* N, const bool* elements_splitting, size_t* elements_new_indices) -> void;
+    auto split_mpi_incoming_interfaces(size_t n_MPI_interface_elements, size_t n_faces, size_t n_nodes, size_t n_splitting_elements, size_t n_splitting_faces, size_t offset, SEM::Device::Entities::Element2D_t* elements, SEM::Device::Entities::Element2D_t* new_elements, const size_t* mpi_interfaces_destination, size_t* new_mpi_interfaces_destination, const SEM::Device::Entities::Face2D_t* faces, SEM::Device::Entities::Vec2<deviceFloat>* nodes, const size_t* faces_block_offsets, const size_t* mpi_interface_block_offsets, const deviceFloat* polynomial_nodes, int faces_blockSize, const int* N, const bool* elements_splitting, const bool* elements_refining_without_splitting, const bool* elements_creating_node, const size_t* creating_node_block_offsets, size_t* elements_new_indices) -> void;
 
     __global__
     auto adjust_boundaries(size_t n_boundaries, SEM::Device::Entities::Element2D_t* elements, const size_t* boundaries, const SEM::Device::Entities::Face2D_t* faces) -> void;
@@ -416,6 +421,11 @@ namespace SEM { namespace Device { namespace Meshes {
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>
     __device__ 
+    auto warp_reduce_2D(volatile size_t *sdata_0, volatile size_t *sdata_1, unsigned int tid) -> void;
+
+    // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
+    template <unsigned int blockSize>
+    __device__ 
     auto warp_reduce_2D(volatile size_t *sdata_0, volatile size_t *sdata_1, volatile size_t *sdata_2, volatile size_t *sdata_3, volatile size_t *sdata_4, unsigned int tid) -> void;
 
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
@@ -447,6 +457,21 @@ namespace SEM { namespace Device { namespace Meshes {
     template <unsigned int blockSize>
     __global__ 
     auto reduce_received_neighbours(size_t n, size_t n_incoming, int rank, const int* neighbour_procs, const size_t* neighbour_indices, const size_t* neighbour_sides, const int* incoming_procs, const size_t* incoming_indices, const size_t* incoming_sides, size_t* wall_odata, size_t* symmetry_odata, size_t* inflow_odata, size_t* outflow_odata, size_t* mpi_destinations_odata) -> void;
+    
+    // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
+    template <unsigned int blockSize>
+    __global__ 
+    auto reduce_splitting_incoming_interfaces(size_t n, const size_t* mpi_interfaces_destination, const SEM::Device::Entities::Element2D_t* elements, const SEM::Device::Entities::Face2D_t* faces, const SEM::Device::Entities::Vec2<deviceFloat>* nodes, const bool* data, size_t* g_odata) -> void;
+
+    // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
+    template <unsigned int blockSize>
+    __global__ 
+    auto reduce_mpi_refine(size_t n, const bool* refine, const bool* refine_without_splitting, const bool* creating_node, size_t* splitting_odata, size_t* creating_node_odata) -> void;
+    
+    // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
+    template <unsigned int blockSize>
+    __global__ 
+    auto reduce_mpi_outgoing_refine(size_t n, const bool* refine, const bool* refine_without_splitting, size_t* g_odata) -> void;
 }}}
 
 #include "meshes/Mesh2D_t.tcu"
