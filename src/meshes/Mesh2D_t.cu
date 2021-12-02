@@ -685,11 +685,13 @@ auto SEM::Device::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) ->
         host_interfaces_v_ = host_vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
         host_interfaces_N_ = std::vector<int>(mpi_interfaces_origin.size());
         host_interfaces_refine_ = host_vector<bool>(mpi_interfaces_origin.size());
+        host_interfaces_refine_without_splitting_ = host_vector<bool>(mpi_interfaces_origin.size());
         host_receiving_interfaces_p_ = host_vector<deviceFloat>(mpi_interfaces_destination.size() * (maximum_N_ + 1));
         host_receiving_interfaces_u_ = host_vector<deviceFloat>(mpi_interfaces_destination.size() * (maximum_N_ + 1));
         host_receiving_interfaces_v_ = host_vector<deviceFloat>(mpi_interfaces_destination.size() * (maximum_N_ + 1));
         host_receiving_interfaces_N_ = std::vector<int>(mpi_interfaces_destination.size());
         host_receiving_interfaces_refine_ = host_vector<bool>(mpi_interfaces_destination.size());
+        host_receiving_interfaces_refine_without_splitting_ = host_vector<bool>(mpi_interfaces_destination.size());
 
         requests_ = std::vector<MPI_Request>(n_mpi_interfaces * 6);
         statuses_ = std::vector<MPI_Status>(n_mpi_interfaces * 6);
@@ -1333,6 +1335,7 @@ auto SEM::Device::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceF
             SEM::Device::Meshes::reduce_mpi_refine<boundaries_blockSize_/2><<<mpi_interfaces_incoming_numBlocks_, boundaries_blockSize_/2, 0, stream_>>>(mpi_interfaces_destination_.size(), device_receiving_interfaces_refine_.data(), device_receiving_interfaces_refine_without_splitting_.data(), device_receiving_interfaces_creating_node_.data(), device_mpi_interfaces_incoming_refine_array_.data(), device_mpi_interfaces_incoming_creating_nodes_refine_array_.data());
             device_mpi_interfaces_incoming_refine_array_.copy_to(host_mpi_interfaces_incoming_refine_array_, stream_);
             device_mpi_interfaces_incoming_creating_nodes_refine_array_.copy_to(host_mpi_interfaces_incoming_creating_nodes_array_, stream_);
+            device_receiving_interfaces_refine_without_splitting_.copy_to(host_receiving_interfaces_refine_without_splitting_, stream_);
 
             cudaStreamSynchronize(stream_); // So transfers to host_mpi_interfaces_incoming_refine_array_ and host_mpi_interfaces_incoming_creating_nodes_array_ are complete
 
@@ -1486,12 +1489,12 @@ auto SEM::Device::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceF
             // Updating quantities
             if (!mpi_interfaces_destination_.empty()) {
                 size_t interface_offset = 0;
-                for (size_t interface_index = 0; interface_index < mpi_interfaces_incoming_size_.size(); ++interface_index) {
-                    for (size_t interface_element_index = 0; interface_element_index < mpi_interfaces_incoming_size_[interface_index]; ++interface_element_index) {
-                        mpi_interfaces_incoming_size_[interface_index] += host_receiving_interfaces_refine_[mpi_interfaces_incoming_offset_[interface_index] + interface_element_index];
+                for (size_t i = 0; i < mpi_interfaces_incoming_size_.size(); ++i) {
+                    for (size_t j = 0; j < mpi_interfaces_incoming_size_[i]; ++j) {
+                        mpi_interfaces_incoming_size_[i] += host_receiving_interfaces_refine_[mpi_interfaces_incoming_offset_[i] + j] && !host_receiving_interfaces_refine_without_splitting_[mpi_interfaces_incoming_offset_[i] + j];
                     }
-                    mpi_interfaces_incoming_offset_[interface_index] = interface_offset;
-                    interface_offset += mpi_interfaces_incoming_size_[interface_index];
+                    mpi_interfaces_incoming_offset_[i] = interface_offset;
+                    interface_offset += mpi_interfaces_incoming_size_[i];
                 }
             }
 
@@ -1590,6 +1593,8 @@ auto SEM::Device::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceF
         device_mpi_interfaces_incoming_refine_array_.copy_to(host_mpi_interfaces_incoming_refine_array_, stream_);
         device_mpi_interfaces_incoming_creating_nodes_refine_array_.copy_to(host_mpi_interfaces_incoming_creating_nodes_array_, stream_);
         device_mpi_interfaces_outgoing_refine_array_.copy_to(host_mpi_interfaces_outgoing_refine_array_, stream_);
+        device_interfaces_refine_without_splitting_.copy_to(host_interfaces_refine_without_splitting_, stream_);
+        device_receiving_interfaces_refine_without_splitting_.copy_to(host_receiving_interfaces_refine_without_splitting_, stream_);
 
         cudaStreamSynchronize(stream_); // So transfers to host_mpi_interfaces_incoming_refine_array_, host_mpi_interfaces_incoming_creating_nodes_array_ and host_mpi_interfaces_outgoing_refine_array_ are complete
 
@@ -1795,25 +1800,25 @@ auto SEM::Device::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceF
     // Updating quantities
     if (!mpi_interfaces_origin_.empty()) {
         size_t interface_offset = 0;
-        for (size_t interface_index = 0; interface_index < mpi_interfaces_incoming_size_.size(); ++interface_index) {
+        for (size_t i = 0; i < mpi_interfaces_incoming_size_.size(); ++i) {
             size_t splitting_incoming_elements = 0;
-            for (size_t interface_element_index = 0; interface_element_index < mpi_interfaces_incoming_size_[interface_index]; ++interface_element_index) {
-                splitting_incoming_elements += host_receiving_interfaces_refine_[mpi_interfaces_incoming_offset_[interface_index] + interface_element_index];
+            for (size_t j = 0; j < mpi_interfaces_incoming_size_[i]; ++j) {
+                splitting_incoming_elements += host_receiving_interfaces_refine_[mpi_interfaces_incoming_offset_[i] + j] && !host_receiving_interfaces_refine_without_splitting_[mpi_interfaces_incoming_offset_[i] + j];
             }
-            mpi_interfaces_incoming_offset_[interface_index] = interface_offset;
-            mpi_interfaces_incoming_size_[interface_index] += splitting_incoming_elements;
-            interface_offset += mpi_interfaces_incoming_size_[interface_index];
+            mpi_interfaces_incoming_offset_[i] = interface_offset;
+            mpi_interfaces_incoming_size_[i] += splitting_incoming_elements;
+            interface_offset += mpi_interfaces_incoming_size_[i];
         }
 
         interface_offset = 0;
-        for (size_t interface_index = 0; interface_index < mpi_interfaces_outgoing_size_.size(); ++interface_index) {
+        for (size_t i = 0; i < mpi_interfaces_outgoing_size_.size(); ++i) {
             size_t splitting_incoming_elements = 0;
-            for (size_t interface_element_index = 0; interface_element_index < mpi_interfaces_outgoing_size_[interface_index]; ++interface_element_index) {
-                splitting_incoming_elements += host_interfaces_refine_[mpi_interfaces_outgoing_offset_[interface_index] + interface_element_index];
+            for (size_t j = 0; j < mpi_interfaces_outgoing_size_[i]; ++j) {
+                splitting_incoming_elements += host_interfaces_refine_[mpi_interfaces_outgoing_offset_[i] + j] && !host_interfaces_refine_without_splitting_[mpi_interfaces_outgoing_offset_[i] + j];
             }
-            mpi_interfaces_outgoing_offset_[interface_index] = interface_offset;
-            mpi_interfaces_outgoing_size_[interface_index] += splitting_incoming_elements;
-            interface_offset += mpi_interfaces_outgoing_size_[interface_index];
+            mpi_interfaces_outgoing_offset_[i] = interface_offset;
+            mpi_interfaces_outgoing_size_[i] += splitting_incoming_elements;
+            interface_offset += mpi_interfaces_outgoing_size_[i];
         }
     }
 
@@ -1854,12 +1859,14 @@ auto SEM::Device::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceF
     host_interfaces_v_ = host_vector<deviceFloat>(mpi_interfaces_origin_.size() * (maximum_N_ + 1));
     host_interfaces_N_ = std::vector<int>(mpi_interfaces_origin_.size());
     host_interfaces_refine_ = host_vector<bool>(mpi_interfaces_origin_.size());
+    host_interfaces_refine_without_splitting_ = host_vector<bool>(mpi_interfaces_origin_.size());
 
     host_receiving_interfaces_p_ = host_vector<deviceFloat>(mpi_interfaces_destination_.size() * (maximum_N_ + 1));
     host_receiving_interfaces_u_ = host_vector<deviceFloat>(mpi_interfaces_destination_.size() * (maximum_N_ + 1));
     host_receiving_interfaces_v_ = host_vector<deviceFloat>(mpi_interfaces_destination_.size() * (maximum_N_ + 1));
     host_receiving_interfaces_N_ = std::vector<int>(mpi_interfaces_destination_.size());
     host_receiving_interfaces_refine_ = host_vector<bool>(mpi_interfaces_destination_.size());
+    host_receiving_interfaces_refine_without_splitting_ = host_vector<bool>(mpi_interfaces_destination_.size());
 
     device_vector<deviceFloat> new_device_interfaces_p(mpi_interfaces_origin_.size() * (maximum_N_ + 1), stream_);
     device_vector<deviceFloat> new_device_interfaces_u(mpi_interfaces_origin_.size() * (maximum_N_ + 1), stream_);
@@ -3496,12 +3503,14 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
         host_interfaces_v_ = host_vector<deviceFloat>(mpi_interfaces_origin_.size() * (maximum_N_ + 1));
         host_interfaces_N_ = std::vector<int>(mpi_interfaces_origin_.size());
         host_interfaces_refine_ = host_vector<bool>(mpi_interfaces_origin_.size());
+        host_interfaces_refine_without_splitting_ = host_vector<bool>(mpi_interfaces_origin_.size());
 
         host_receiving_interfaces_p_ = host_vector<deviceFloat>(mpi_interfaces_destination_.size() * (maximum_N_ + 1));
         host_receiving_interfaces_u_ = host_vector<deviceFloat>(mpi_interfaces_destination_.size() * (maximum_N_ + 1));
         host_receiving_interfaces_v_ = host_vector<deviceFloat>(mpi_interfaces_destination_.size() * (maximum_N_ + 1));
         host_receiving_interfaces_N_ = std::vector<int>(mpi_interfaces_destination_.size());
         host_receiving_interfaces_refine_ = host_vector<bool>(mpi_interfaces_destination_.size());
+        host_receiving_interfaces_refine_without_splitting_ = host_vector<bool>(mpi_interfaces_destination_.size());
 
         device_vector<deviceFloat> new_device_interfaces_p(mpi_interfaces_origin_.size() * (maximum_N_ + 1), stream_);
         device_vector<deviceFloat> new_device_interfaces_u(mpi_interfaces_origin_.size() * (maximum_N_ + 1), stream_);
@@ -3794,6 +3803,7 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
         device_interfaces_refine_ = std::move(new_device_interfaces_refine);
         host_interfaces_N_ = std::vector<int>(new_mpi_interfaces_origin.size());
         host_interfaces_refine_ = host_vector<bool>(new_mpi_interfaces_origin.size());
+        host_interfaces_refine_without_splitting_ = host_vector<bool>(new_mpi_interfaces_origin.size());
 
         mpi_interfaces_destination_.copy_from(new_mpi_interfaces_destination, stream_);
         mpi_interfaces_origin_ = std::move(new_mpi_interfaces_origin);

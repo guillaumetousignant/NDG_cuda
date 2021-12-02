@@ -70,6 +70,8 @@ namespace SEM { namespace Device { namespace Meshes {
             SEM::Device::Entities::device_vector<bool> device_interfaces_refine_without_splitting_;
             SEM::Device::Entities::host_vector<bool> host_interfaces_refine_;
             SEM::Device::Entities::host_vector<bool> host_receiving_interfaces_refine_;
+            SEM::Device::Entities::host_vector<bool> host_interfaces_refine_without_splitting_;
+            SEM::Device::Entities::host_vector<bool> host_receiving_interfaces_refine_without_splitting_;
 
             // Output
             std::vector<deviceFloat> x_output_host_;
