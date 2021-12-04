@@ -9239,6 +9239,7 @@ auto SEM::Device::Meshes::create_received_neighbours(
                         for (size_t j = 0; j < n_mpi_destinations; ++j) {
                             if (mpi_destinations_procs[j] == neighbour_proc && mpi_destinations_indices[j] == local_element_index && mpi_destinations_sides[j] == element_side_index) {
                                 neighbour_given_indices[i] = old_mpi_destinations[j];
+                                printf("Neighbour %llu, proc %i, local index %llu, side %llu found in old mpi destinations %llu, element index %llu\n", i, neighbour_proc, local_element_index, element_side_index, j, old_mpi_destinations[j]);
                                 first_time = false;
                                 break;
                             }
@@ -9273,6 +9274,7 @@ auto SEM::Device::Meshes::create_received_neighbours(
 
                                     neighbour_given_indices[i] = elements_offset + mpi_destinations_block_offsets[other_block] + n_additional_before;
                                     first_time = false;
+                                    printf("Neighbour %llu, proc %i, local index %llu, side %llu found in other neighbour %llu, element index %llu\n", i, neighbour_proc, local_element_index, element_side_index, j, elements_offset + mpi_destinations_block_offsets[other_block] + n_additional_before);
                                     break;
                                 }
                             }
@@ -9327,6 +9329,8 @@ auto SEM::Device::Meshes::create_received_neighbours(
                                                                      nodes[element.nodes_[2]], 
                                                                      nodes[element.nodes_[3]]};
                             element.compute_boundary_geometry(points, polynomial_nodes);
+
+                            printf("Neighbour %llu, proc %i, local index %llu, side %llu created at element index %llu, element index %llu, mpi destination index %llu\n", i, neighbour_proc, local_element_index, element_side_index, new_element_index, new_mpi_destination_index);
                         }
                     }
                     else {
