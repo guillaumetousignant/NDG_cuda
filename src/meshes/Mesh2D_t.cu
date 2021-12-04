@@ -1290,6 +1290,8 @@ auto SEM::Device::Meshes::Mesh2D_t::write_complete_data(deviceFloat time, const 
 }
 
 auto SEM::Device::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& polynomial_nodes, const device_vector<deviceFloat>& barycentric_weights) -> void {
+    print();
+    
     SEM::Device::Meshes::reduce_refine_2D<elements_blockSize_/2><<<elements_numBlocks_, elements_blockSize_/2, 0, stream_>>>(n_elements_, max_split_level_, elements_.data(), device_refine_array_.data());
     device_refine_array_.copy_to(host_refine_array_, stream_);
     cudaStreamSynchronize(stream_);
@@ -1509,7 +1511,6 @@ auto SEM::Device::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceF
             device_vector<bool> new_device_receiving_interfaces_refine(mpi_interfaces_destination_.size() * (maximum_N_ + 1), stream_);
             device_vector<bool> new_device_receiving_interfaces_refine_without_splitting(mpi_interfaces_destination_.size() * (maximum_N_ + 1), stream_);
             device_vector<bool> new_device_receiving_interfaces_creating_node(mpi_interfaces_destination_.size() * (maximum_N_ + 1), stream_);
-            device_vector<bool> new_device_interfaces_refine_without_splitting(mpi_interfaces_origin_.size() * (maximum_N_ + 1), stream_);
             device_receiving_interfaces_p_ = std::move(new_device_receiving_interfaces_p);
             device_receiving_interfaces_u_ = std::move(new_device_receiving_interfaces_u);
             device_receiving_interfaces_v_ = std::move(new_device_receiving_interfaces_v);
@@ -1517,13 +1518,13 @@ auto SEM::Device::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceF
             device_receiving_interfaces_refine_ = std::move(new_device_receiving_interfaces_refine);
             device_receiving_interfaces_refine_without_splitting_ = std::move(new_device_receiving_interfaces_refine_without_splitting);
             device_receiving_interfaces_creating_node_ = std::move(new_device_receiving_interfaces_creating_node);
-            device_interfaces_refine_without_splitting_ = std::move(new_device_interfaces_refine_without_splitting);
 
             host_receiving_interfaces_p_ = host_vector<deviceFloat>(mpi_interfaces_destination_.size() * (maximum_N_ + 1));
             host_receiving_interfaces_u_ = host_vector<deviceFloat>(mpi_interfaces_destination_.size() * (maximum_N_ + 1));
             host_receiving_interfaces_v_ = host_vector<deviceFloat>(mpi_interfaces_destination_.size() * (maximum_N_ + 1));
             host_receiving_interfaces_N_ = std::vector<int>(mpi_interfaces_destination_.size());
             host_receiving_interfaces_refine_ = host_vector<bool>(mpi_interfaces_destination_.size());
+            host_receiving_interfaces_refine_without_splitting_ = host_vector<bool>(mpi_interfaces_destination_.size());
 
             // Transfer arrays
             host_mpi_interfaces_incoming_refine_array_ = std::vector<size_t>(mpi_interfaces_incoming_numBlocks_);
@@ -1545,7 +1546,6 @@ auto SEM::Device::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceF
             new_device_mpi_interfaces_incoming_creating_nodes_array.clear(stream_);
             new_device_receiving_interfaces_refine_without_splitting.clear(stream_);
             new_device_receiving_interfaces_creating_node.clear(stream_);
-            new_device_interfaces_refine_without_splitting.clear(stream_);
         }
 
         return;
@@ -1873,6 +1873,7 @@ auto SEM::Device::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceF
     device_vector<deviceFloat> new_device_interfaces_v(mpi_interfaces_origin_.size() * (maximum_N_ + 1), stream_);
     device_vector<int> new_device_interfaces_N(mpi_interfaces_origin_.size(), stream_);
     device_vector<bool> new_device_interfaces_refine(mpi_interfaces_origin_.size(), stream_);
+    device_vector<bool> new_device_interfaces_refine_without_splitting(mpi_interfaces_origin_.size(), stream_);
 
     device_vector<deviceFloat> new_device_receiving_interfaces_p(mpi_interfaces_destination_.size() * (maximum_N_ + 1), stream_);
     device_vector<deviceFloat> new_device_receiving_interfaces_u(mpi_interfaces_destination_.size() * (maximum_N_ + 1), stream_);
@@ -1881,13 +1882,13 @@ auto SEM::Device::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceF
     device_vector<bool> new_device_receiving_interfaces_refine(mpi_interfaces_destination_.size(), stream_);
     device_vector<bool> new_device_receiving_interfaces_refine_without_splitting(mpi_interfaces_destination_.size(), stream_);
     device_vector<bool> new_device_receiving_interfaces_creating_node(mpi_interfaces_destination_.size(), stream_);
-    device_vector<bool> new_device_interfaces_refine_without_splitting(mpi_interfaces_origin_.size(), stream_);
 
     device_interfaces_p_ = std::move(new_device_interfaces_p);
     device_interfaces_u_ = std::move(new_device_interfaces_u);
     device_interfaces_v_ = std::move(new_device_interfaces_v);
     device_interfaces_N_ = std::move(new_device_interfaces_N);
     device_interfaces_refine_ = std::move(new_device_interfaces_refine);
+    device_interfaces_refine_without_splitting_ = std::move(new_device_interfaces_refine_without_splitting);
 
     device_receiving_interfaces_p_ = std::move(new_device_receiving_interfaces_p);
     device_receiving_interfaces_u_ = std::move(new_device_receiving_interfaces_u);
@@ -1896,7 +1897,6 @@ auto SEM::Device::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceF
     device_receiving_interfaces_refine_ = std::move(new_device_receiving_interfaces_refine);
     device_receiving_interfaces_refine_without_splitting_ = std::move(new_device_receiving_interfaces_refine_without_splitting);
     device_receiving_interfaces_creating_node_ = std::move(new_device_receiving_interfaces_creating_node);
-    device_interfaces_refine_without_splitting_ = std::move(new_device_interfaces_refine_without_splitting);
 
     // Transfer arrays
     host_delta_t_array_ = host_vector<deviceFloat>(elements_numBlocks_);
@@ -1956,7 +1956,7 @@ auto SEM::Device::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceF
     new_device_receiving_interfaces_refine.clear(stream_);
     new_device_receiving_interfaces_refine_without_splitting.clear(stream_);
     new_device_receiving_interfaces_creating_node.clear(stream_);
-    device_interfaces_refine_without_splitting_.clear(stream_);
+    new_device_interfaces_refine_without_splitting.clear(stream_);
     new_device_delta_t_array.clear(stream_);
     new_device_refine_array.clear(stream_);
     new_device_faces_refine_array.clear(stream_);
@@ -1972,6 +1972,8 @@ auto SEM::Device::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceF
     device_mpi_interfaces_outgoing_size.clear(stream_);
     device_mpi_interfaces_incoming_size.clear(stream_);
     device_mpi_interfaces_incoming_offset.clear(stream_);
+
+    print();
 }
 
 auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat>& polynomial_nodes) -> void {
@@ -2405,7 +2407,6 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
             n_elements_send_right_device.clear(stream_);
             n_elements_recv_right_device.clear(stream_);
             global_element_offset_current_device.clear(stream_);
-            
             global_element_offset_new_device.clear(stream_);
             global_element_offset_end_new_device.clear(stream_);
         }
@@ -3517,6 +3518,7 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
         device_vector<deviceFloat> new_device_interfaces_v(mpi_interfaces_origin_.size() * (maximum_N_ + 1), stream_);
         device_vector<int> new_device_interfaces_N(mpi_interfaces_origin_.size(), stream_);
         device_vector<bool> new_device_interfaces_refine(mpi_interfaces_origin_.size(), stream_);
+        device_vector<bool> new_device_interfaces_refine_without_splitting(mpi_interfaces_origin_.size(), stream_);
 
         device_vector<deviceFloat> new_device_receiving_interfaces_p(mpi_interfaces_destination_.size() * (maximum_N_ + 1), stream_);
         device_vector<deviceFloat> new_device_receiving_interfaces_u(mpi_interfaces_destination_.size() * (maximum_N_ + 1), stream_);
@@ -3525,13 +3527,13 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
         device_vector<bool> new_device_receiving_interfaces_refine(mpi_interfaces_destination_.size(), stream_);
         device_vector<bool> new_device_receiving_interfaces_refine_without_splitting(mpi_interfaces_destination_.size(), stream_);
         device_vector<bool> new_device_receiving_interfaces_creating_node(mpi_interfaces_destination_.size(), stream_);
-        device_vector<bool> new_device_interfaces_refine_without_splitting(mpi_interfaces_origin_.size(), stream_);
 
         device_interfaces_p_ = std::move(new_device_interfaces_p);
         device_interfaces_u_ = std::move(new_device_interfaces_u);
         device_interfaces_v_ = std::move(new_device_interfaces_v);
         device_interfaces_N_ = std::move(new_device_interfaces_N);
         device_interfaces_refine_ = std::move(new_device_interfaces_refine);
+        device_interfaces_refine_without_splitting_ = std::move(new_device_interfaces_refine_without_splitting);
 
         device_receiving_interfaces_p_ = std::move(new_device_receiving_interfaces_p);
         device_receiving_interfaces_u_ = std::move(new_device_receiving_interfaces_u);
@@ -3540,7 +3542,6 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
         device_receiving_interfaces_refine_ = std::move(new_device_receiving_interfaces_refine);
         device_receiving_interfaces_refine_without_splitting_ = std::move(new_device_receiving_interfaces_refine_without_splitting);
         device_receiving_interfaces_creating_node_ = std::move(new_device_receiving_interfaces_creating_node);
-        device_interfaces_refine_without_splitting_ = std::move(new_device_interfaces_refine_without_splitting);
 
         // Transfer arrays
         host_delta_t_array_ = host_vector<deviceFloat>(elements_numBlocks_);
@@ -3804,6 +3805,8 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
         host_interfaces_N_ = std::vector<int>(new_mpi_interfaces_origin.size());
         host_interfaces_refine_ = host_vector<bool>(new_mpi_interfaces_origin.size());
         host_interfaces_refine_without_splitting_ = host_vector<bool>(new_mpi_interfaces_origin.size());
+        device_vector<bool> new_device_interfaces_refine_without_splitting(new_mpi_interfaces_origin.size(), stream_);
+        device_interfaces_refine_without_splitting_ = std::move(new_device_interfaces_refine_without_splitting);
 
         mpi_interfaces_destination_.copy_from(new_mpi_interfaces_destination, stream_);
         mpi_interfaces_origin_ = std::move(new_mpi_interfaces_origin);
@@ -3823,6 +3826,7 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
         new_device_interfaces_v.clear(stream_);
         new_device_interfaces_N.clear(stream_);
         new_device_interfaces_refine.clear(stream_);
+        new_device_interfaces_refine_without_splitting.clear(stream_);
         MPI_Waitall(mpi_load_balancing_interfaces_n_transfers * mpi_interfaces_process_.size(), mpi_interfaces_requests.data() + mpi_load_balancing_interfaces_n_transfers * mpi_interfaces_process_.size(), mpi_interfaces_statuses.data() + mpi_load_balancing_interfaces_n_transfers * mpi_interfaces_process_.size());
     }
 
@@ -4988,19 +4992,20 @@ auto SEM::Device::Meshes::get_MPI_interfaces_adaptivity(size_t n_MPI_interface_e
                                 AD[1].dot(AB[1]) * AB_dot_inv[1]
                             };
 
+                            // CHECK this projection is different than the one used for splitting, maybe wrong
                             // The face is within the first element
-                            if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                                && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                                && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                                && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                            if ((C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                                && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0))
+                                || (D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                                && C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0))) {
 
                                 ++n_side_faces[0];
                             }
                             // The face is within the second element
-                            if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                                && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                                && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                                && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                            if ((C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                                && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0))
+                                || (D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                                && C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0))) {
 
                                 ++n_side_faces[1];
                             }
@@ -5102,19 +5107,20 @@ auto SEM::Device::Meshes::adjust_MPI_incoming_interfaces(size_t n_MPI_interface_
                     AD[1].dot(AB[1]) * AB_dot_inv[1]
                 };
 
+                // CHECK this projection is different than the one used for splitting, maybe wrong
                 // The face is within the first element
-                if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                    && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                if ((C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                    && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0))
+                    || (D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                    && C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0))) {
 
                     ++n_side_faces[0];
                 }
                 // The face is within the second element
-                if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                    && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                if ((C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                    && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0))
+                    || (D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                    && C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0))) {
 
                     ++n_side_faces[1];
                 }
@@ -6264,19 +6270,20 @@ auto SEM::Device::Meshes::copy_mpi_interfaces_error(size_t n_MPI_interface_eleme
                     AD[1].dot(AB[1]) * AB_dot_inv[1]
                 };
 
+                // CHECK this projection is different than the one used for splitting, maybe wrong
                 // The face is within the first element
-                if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                    && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                if ((C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                    && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0))
+                    || (D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                    && C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0))) {
 
                     ++n_side_faces[0];
                 }
                 // The face is within the second element
-                if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                    && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                if ((C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                    && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0))
+                    || (D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                    && C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0))) {
 
                     ++n_side_faces[1];
                 }
@@ -6304,12 +6311,14 @@ auto SEM::Device::Meshes::copy_mpi_interfaces_error(size_t n_MPI_interface_eleme
             element.v_sigma_ = 1000;
             element.additional_nodes_[0] = false;
             elements_refining_without_splitting[interface_index] = false;
+            elements_creating_node[interface_index] = false;
         }
         else {
             element.refine_ = false;
             element.coarsen_ = false;
             element.additional_nodes_[0] = false;
             elements_refining_without_splitting[interface_index] = false;
+            elements_creating_node[interface_index] = false;
         }
     }
 }
@@ -6924,20 +6933,21 @@ auto SEM::Device::Meshes::split_mpi_outgoing_interfaces(size_t n_MPI_interface_e
                                 AD[1].dot(AB[1]) * AB_dot_inv[1]
                             };
 
+                            // CHECK this projection is different than the one used for splitting, maybe wrong
                             // The face is within the first element
-                            if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                                && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                                && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                                && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                            if ((C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                                && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0))
+                                || (D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                                && C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0))) {
 
                                 ++n_side_faces[0];
                                 found_face = true;
                             }
                             // The face is within the second element
-                            if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                                && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                                && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                                && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                            if ((C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                                && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0))
+                                || (D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                                && C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0))) {
 
                                 ++n_side_faces[1];
                                 found_face = true;
@@ -7080,20 +7090,21 @@ auto SEM::Device::Meshes::split_mpi_incoming_interfaces(size_t n_MPI_interface_e
                     AD[1].dot(AB[1]) * AB_dot_inv[1]
                 };
 
+                // CHECK this projection is different than the one used for splitting, maybe wrong
                 // The face is within the first element
-                if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                    && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                if ((C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                    && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0))
+                    || (D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                    && C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0))) {
 
                     ++n_side_faces[0];
                     break; // We can break here because we know only one side has faces, so this is it
                 }
                 // The face is within the second element
-                if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                    && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                if ((C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                    && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0))
+                    || (D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
+                    && C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0))) {
 
                     ++n_side_faces[1];
                     break; // We can break here because we know only one side has faces, so this is it
@@ -7925,8 +7936,6 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
                 const size_t neighbour_element_index = neighbours_indices[neighbour_index];
                 const size_t neighbour_side = neighbours_sides[neighbour_index];
                 const Element2D_t& neighbour_element = elements[neighbour_element_index];
-
-                printf("Received element %llu, index %llu, filling side %llu neighbour %llu, index %llu side %llu\n", i, element_index, j, k, neighbour_element_index, neighbour_side);
                 
                 if (neighbour_element_index >= n_domain_elements 
                         || (neighbour_element_index < n_elements_recv_left && neighbour_element_index >= element_index)
