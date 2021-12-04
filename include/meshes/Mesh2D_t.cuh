@@ -463,11 +463,6 @@ namespace SEM { namespace Device { namespace Meshes {
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>
     __global__ 
-    auto reduce_splitting_incoming_interfaces(size_t n, const size_t* mpi_interfaces_destination, const SEM::Device::Entities::Element2D_t* elements, const SEM::Device::Entities::Face2D_t* faces, const SEM::Device::Entities::Vec2<deviceFloat>* nodes, const bool* data, size_t* g_odata) -> void;
-
-    // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
-    template <unsigned int blockSize>
-    __global__ 
     auto reduce_mpi_refine(size_t n, const bool* refine, const bool* refine_without_splitting, const bool* creating_node, size_t* splitting_odata, size_t* creating_node_odata) -> void;
     
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf

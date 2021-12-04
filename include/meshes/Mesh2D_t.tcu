@@ -453,46 +453,6 @@ auto SEM::Device::Meshes::reduce_received_neighbours(size_t n, size_t n_incoming
 // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
 template <unsigned int blockSize>
 __global__ 
-auto SEM::Device::Meshes::reduce_splitting_incoming_interfaces(size_t n, const size_t* mpi_interfaces_destination, const SEM::Device::Entities::Element2D_t* elements, const SEM::Device::Entities::Face2D_t* faces, const SEM::Device::Entities::Vec2<deviceFloat>* nodes, const bool* data, size_t* g_odata) -> void {
-    __shared__ size_t sdata[(blockSize >= 64) ? blockSize : blockSize + blockSize/2]; // Because within a warp there is no branching and this is read up until blockSize + blockSize/2
-    unsigned int tid = threadIdx.x;
-    size_t i = blockIdx.x*(blockSize*2) + tid;
-    unsigned int gridSize = blockSize*2*gridDim.x;
-    sdata[tid] = 0;
-
-    while (i < n) { 
-        if (data[i]) {
-            const size_t element_index = mpi_interfaces_destination[i];
-            const SEM::Device::Entities::Element2D_t& element = elements[element_index];
-
-            ++sdata[tid]; // Not always, check for faces
-        }
-        if (i+blockSize < n) {
-            if (data[i+blockSize]) {
-                const size_t element_index = mpi_interfaces_destination[i+blockSize];
-                const SEM::Device::Entities::Element2D_t& element = elements[element_index];
-
-                ++sdata[tid]; // Not always, check for faces
-            }
-        }
-        i += gridSize; 
-    }
-    __syncthreads();
-
-    if (blockSize >= 8192) { if (tid < 4096) { sdata[tid] += sdata[tid + 4096]; } __syncthreads(); }
-    if (blockSize >= 4096) { if (tid < 2048) { sdata[tid] += sdata[tid + 2048]; } __syncthreads(); }
-    if (blockSize >= 2048) { if (tid < 1024) { sdata[tid] += sdata[tid + 1024]; } __syncthreads(); }
-    if (blockSize >= 1024) { if (tid < 512) { sdata[tid] += sdata[tid + 512]; } __syncthreads(); }
-    if (blockSize >= 512) { if (tid < 256) { sdata[tid] += sdata[tid + 256]; } __syncthreads(); }
-    if (blockSize >= 256) { if (tid < 128) { sdata[tid] += sdata[tid + 128]; } __syncthreads(); }
-    if (blockSize >= 128) { if (tid < 64) { sdata[tid] += sdata[tid + 64]; } __syncthreads(); }
-
-    if (tid < 32) warp_reduce_2D<blockSize>(sdata, tid);
-    if (tid == 0) g_odata[blockIdx.x] = sdata[0];
-}
-// From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
-template <unsigned int blockSize>
-__global__ 
 auto SEM::Device::Meshes::reduce_mpi_refine(size_t n, const bool* refine, const bool* refine_without_splitting, const bool* creating_node, size_t* splitting_odata, size_t* creating_node_odata) -> void {
     __shared__ size_t splitting_sdata[(blockSize >= 64) ? blockSize : blockSize + blockSize/2]; // Because within a warp there is no branching and this is read up until blockSize + blockSize/2
     __shared__ size_t creating_node_sdata[(blockSize >= 64) ? blockSize : blockSize + blockSize/2]; // Because within a warp there is no branching and this is read up until blockSize + blockSize/2
