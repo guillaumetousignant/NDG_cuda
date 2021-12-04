@@ -1290,8 +1290,6 @@ auto SEM::Device::Meshes::Mesh2D_t::write_complete_data(deviceFloat time, const 
 }
 
 auto SEM::Device::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& polynomial_nodes, const device_vector<deviceFloat>& barycentric_weights) -> void {
-    print();
-    
     SEM::Device::Meshes::reduce_refine_2D<elements_blockSize_/2><<<elements_numBlocks_, elements_blockSize_/2, 0, stream_>>>(n_elements_, max_split_level_, elements_.data(), device_refine_array_.data());
     device_refine_array_.copy_to(host_refine_array_, stream_);
     cudaStreamSynchronize(stream_);
@@ -1972,8 +1970,6 @@ auto SEM::Device::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceF
     device_mpi_interfaces_outgoing_size.clear(stream_);
     device_mpi_interfaces_incoming_size.clear(stream_);
     device_mpi_interfaces_incoming_offset.clear(stream_);
-
-    print();
 }
 
 auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat>& polynomial_nodes) -> void {
@@ -7938,6 +7934,8 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
                 const size_t neighbour_element_index = neighbours_indices[neighbour_index];
                 const size_t neighbour_side = neighbours_sides[neighbour_index];
                 const Element2D_t& neighbour_element = elements[neighbour_element_index];
+
+                printf("Filling faces for received element %llu, index %llu, side %llu, neighbour %llu. Its neighbour index is %llu, element index %llu, side %llu\n", i, element_index, j, k, neighbour_index, neighbour_element_index, neighbour_side);
                 
                 if (neighbour_element_index >= n_domain_elements 
                         || (neighbour_element_index < n_elements_recv_left && neighbour_element_index >= element_index)
