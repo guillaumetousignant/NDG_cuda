@@ -4994,18 +4994,18 @@ auto SEM::Device::Meshes::get_MPI_interfaces_adaptivity(size_t n_MPI_interface_e
 
                             // CHECK this projection is different than the one used for splitting, maybe wrong
                             // The face is within the first element
-                            if ((C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                                && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0))
-                                || (D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                                && C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0))) {
+                            if ((C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1) 
+                                && D_proj[0] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())
+                                || (D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
+                                && C_proj[0] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())) {
 
                                 ++n_side_faces[0];
                             }
                             // The face is within the second element
-                            if ((C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                                && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0))
-                                || (D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                                && C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0))) {
+                            if ((C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
+                                && D_proj[1] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())
+                                || (D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
+                                && C_proj[1] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())) {
 
                                 ++n_side_faces[1];
                             }
@@ -5109,18 +5109,18 @@ auto SEM::Device::Meshes::adjust_MPI_incoming_interfaces(size_t n_MPI_interface_
 
                 // CHECK this projection is different than the one used for splitting, maybe wrong
                 // The face is within the first element
-                if ((C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                    && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0))
-                    || (D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                    && C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0))) {
+                if ((C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1) 
+                    && D_proj[0] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())
+                    || (D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
+                    && C_proj[0] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())) {
 
                     ++n_side_faces[0];
                 }
                 // The face is within the second element
-                if ((C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                    && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0))
-                    || (D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                    && C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0))) {
+                if ((C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
+                    && D_proj[1] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())
+                    || (D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
+                    && C_proj[1] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())) {
 
                     ++n_side_faces[1];
                 }
@@ -6210,21 +6210,21 @@ auto SEM::Device::Meshes::copy_mpi_interfaces_error(size_t n_MPI_interface_eleme
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
-    for (size_t interface_index = index; interface_index < n_MPI_interface_elements; interface_index += stride) {
-        Element2D_t& element = elements[MPI_interfaces_destination[interface_index]];
+    for (size_t i = index; i < n_MPI_interface_elements; i += stride) {
+        Element2D_t& element = elements[MPI_interfaces_destination[i]];
 
-        if (elements_splitting[interface_index]) {            
+        if (elements_splitting[i]) {            
             const std::array<Vec2<deviceFloat>, 2> side_nodes = {nodes[element.nodes_[0]], nodes[element.nodes_[1]]};
             const Vec2<deviceFloat> new_node = (side_nodes[0] + side_nodes[1])/2;
 
             // Here we check if the new node already exists
             element.additional_nodes_[0] = true;
-            elements_creating_node[interface_index] = true;
+            elements_creating_node[i] = true;
             for (size_t face_index = 0; face_index < element.faces_[0].size(); ++face_index) {
                 const Face2D_t& face = faces[element.faces_[0][face_index]];
                 if (nodes[face.nodes_[0]].almost_equal(new_node) || nodes[face.nodes_[1]].almost_equal(new_node)) {
                     element.additional_nodes_[0] = false;
-                    elements_creating_node[interface_index] = false;
+                    elements_creating_node[i] = false;
                     break;
                 }
             }
@@ -6232,7 +6232,7 @@ auto SEM::Device::Meshes::copy_mpi_interfaces_error(size_t n_MPI_interface_eleme
                 for (size_t face_index = 0; face_index < element.faces_[0].size(); ++face_index) {
                     const Face2D_t& face = faces[element.faces_[0][face_index]];
                     if (((nodes[face.nodes_[0]] + nodes[face.nodes_[1]])/2).almost_equal(new_node)) {
-                        elements_creating_node[interface_index] = false;
+                        elements_creating_node[i] = false;
                         break;
                     }
                 }
@@ -6272,30 +6272,32 @@ auto SEM::Device::Meshes::copy_mpi_interfaces_error(size_t n_MPI_interface_eleme
 
                 // CHECK this projection is different than the one used for splitting, maybe wrong
                 // The face is within the first element
-                if ((C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                    && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0))
-                    || (D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                    && C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0))) {
+                if ((C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1) 
+                    && D_proj[0] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())
+                    || (D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
+                    && C_proj[0] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())) {
 
                     ++n_side_faces[0];
                 }
                 // The face is within the second element
-                if ((C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                    && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0))
-                    || (D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                    && C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0))) {
+                if ((C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
+                    && D_proj[1] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())
+                    || (D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
+                    && C_proj[1] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())) {
 
                     ++n_side_faces[1];
                 }
             }
 
+            printf("MPI destination %llu, index %llu splitting, has n_side_faces [%llu, %llu]\n", i, MPI_interfaces_destination[i], n_side_faces[0], n_side_faces[1]);
+
             if (n_side_faces[0] == 0 || n_side_faces[1] == 0) {
-                elements_refining_without_splitting[interface_index] = true;
+                elements_refining_without_splitting[i] = true;
                 element.refine_ = false;
                 element.coarsen_ = false;
             }
             else  {
-                elements_refining_without_splitting[interface_index] = false;
+                elements_refining_without_splitting[i] = false;
                 element.refine_ = true;
                 element.coarsen_ = false;
                 element.p_sigma_ = 0; // CHECK this is not relative to the cutoff, but it should stay above this
@@ -6303,22 +6305,22 @@ auto SEM::Device::Meshes::copy_mpi_interfaces_error(size_t n_MPI_interface_eleme
                 element.v_sigma_ = 0;
             }
         }
-        else if (element.N_ < N[interface_index]) {
+        else if (element.N_ < N[i]) {
             element.refine_ = true;
             element.coarsen_ = false;
             element.p_sigma_ = 1000; // CHECK this is not relative to the cutoff, but it should stay below this
             element.u_sigma_ = 1000;
             element.v_sigma_ = 1000;
             element.additional_nodes_[0] = false;
-            elements_refining_without_splitting[interface_index] = false;
-            elements_creating_node[interface_index] = false;
+            elements_refining_without_splitting[i] = false;
+            elements_creating_node[i] = false;
         }
         else {
             element.refine_ = false;
             element.coarsen_ = false;
             element.additional_nodes_[0] = false;
-            elements_refining_without_splitting[interface_index] = false;
-            elements_creating_node[interface_index] = false;
+            elements_refining_without_splitting[i] = false;
+            elements_creating_node[i] = false;
         }
     }
 }
@@ -6935,19 +6937,19 @@ auto SEM::Device::Meshes::split_mpi_outgoing_interfaces(size_t n_MPI_interface_e
 
                             // CHECK this projection is different than the one used for splitting, maybe wrong
                             // The face is within the first element
-                            if ((C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                                && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0))
-                                || (D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                                && C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0))) {
+                            if ((C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1) 
+                                && D_proj[0] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())
+                                || (D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
+                                && C_proj[0] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())) {
 
                                 ++n_side_faces[0];
                                 found_face = true;
                             }
                             // The face is within the second element
-                            if ((C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                                && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0))
-                                || (D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                                && C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0))) {
+                            if ((C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
+                                && D_proj[1] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())
+                                || (D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
+                                && C_proj[1] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())) {
 
                                 ++n_side_faces[1];
                                 found_face = true;
@@ -7092,19 +7094,19 @@ auto SEM::Device::Meshes::split_mpi_incoming_interfaces(size_t n_MPI_interface_e
 
                 // CHECK this projection is different than the one used for splitting, maybe wrong
                 // The face is within the first element
-                if ((C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                    && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0))
-                    || (D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                    && C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0))) {
+                if ((C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1) 
+                    && D_proj[0] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())
+                    || (D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
+                    && C_proj[0] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())) {
 
                     ++n_side_faces[0];
                     break; // We can break here because we know only one side has faces, so this is it
                 }
                 // The face is within the second element
-                if ((C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                    && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0))
-                    || (D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                    && C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0))) {
+                if ((C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
+                    && D_proj[1] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())
+                    || (D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
+                    && C_proj[1] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())) {
 
                     ++n_side_faces[1];
                     break; // We can break here because we know only one side has faces, so this is it
