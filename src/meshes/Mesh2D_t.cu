@@ -9274,7 +9274,7 @@ auto SEM::Device::Meshes::create_received_neighbours(
 
                                     neighbour_given_indices[i] = elements_offset + mpi_destinations_block_offsets[other_block] + n_additional_before;
                                     first_time = false;
-                                    printf("Neighbour %llu, proc %i, local index %llu, side %llu found in other neighbour %llu, element index %llu\n", i, neighbour_proc, local_element_index, element_side_index, j, elements_offset + mpi_destinations_block_offsets[other_block] + n_additional_before);
+                                    printf("Neighbour %llu, proc %i, local index %llu, side %llu found in other neighbour %llu, element index %llu. n_additional_before %llu, other block offset %llu, element offset %llu\n", i, neighbour_proc, local_element_index, element_side_index, j, neighbour_given_indices[i], n_additional_before, mpi_destinations_block_offsets[other_block], elements_offset);
                                     break;
                                 }
                             }
