@@ -373,7 +373,7 @@ auto SEM::Device::Meshes::reduce_received_neighbours(size_t n, size_t n_incoming
                             }
                         }
                         if (first_time) {
-                            for (size_t j = 0; j < i; ++j) {
+                            for (size_t j = 0; j < i+blockSize; ++j) { // This
                                 if (neighbour_procs[j] == neighbour2_proc && neighbour_indices[j] == local_element_index && neighbour_sides[j] == element_side_index) {
                                     first_time = false;
                                     break;
