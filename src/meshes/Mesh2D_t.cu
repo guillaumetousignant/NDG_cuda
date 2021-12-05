@@ -9330,7 +9330,7 @@ auto SEM::Device::Meshes::create_received_neighbours(
                                                                      nodes[element.nodes_[3]]};
                             element.compute_boundary_geometry(points, polynomial_nodes);
 
-                            printf("Neighbour %llu, proc %i, local index %llu, side %llu created at element index %llu, element index %llu, mpi destination index %llu\n", i, neighbour_proc, local_element_index, element_side_index, new_element_index, new_mpi_destination_index);
+                            printf("Neighbour %llu, proc %i, local index %llu, side %llu created at element index %llu, mpi destination index %llu\n", i, neighbour_proc, local_element_index, element_side_index, new_element_index, new_mpi_destination_index);
                         }
                     }
                     else {
