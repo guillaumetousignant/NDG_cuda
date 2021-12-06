@@ -8049,7 +8049,7 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
 
                         neighbours_neighbour_index += neighbour_side_n_neighbours;
                     }  
-                    printf("   Received element %llu, side %llu, #%llu has neighbour index %llu, links to element %llu side %llu and found face %llu in right received elements\n", i, j, k, neighbour_index, neighbour_element_index, neighbour_side, neighbour_face_index);
+                    printf("Received element %llu, side %llu, #%llu has neighbour index %llu, links to element %llu side %llu and found face %llu in right received elements\n", i, j, k, neighbour_index, neighbour_element_index, neighbour_side, neighbour_face_index);
                 }
                 else { // In domain, we reuse a face. The face will already have the correct info
                     for (size_t m = 0; m < neighbour_element.faces_[neighbour_side].size(); ++m) {
