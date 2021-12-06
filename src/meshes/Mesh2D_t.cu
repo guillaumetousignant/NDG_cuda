@@ -6285,8 +6285,6 @@ auto SEM::Device::Meshes::copy_mpi_interfaces_error(size_t n_MPI_interface_eleme
                 }
             }
 
-            printf("MPI destination %llu, index %llu splitting, has n_side_faces [%llu, %llu]\n", i, MPI_interfaces_destination[i], n_side_faces[0], n_side_faces[1]);
-
             if (n_side_faces[0] == 0 || n_side_faces[1] == 0) {
                 elements_refining_without_splitting[i] = true;
                 element.refine_ = false;
@@ -7972,8 +7970,6 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
                         elements[neighbour_element_index].faces_[0][0] = face_index;
                     }
 
-                    printf("Received element %llu, side %llu, #%llu has neighbour index %llu, links to element %llu side %llu and created face %llu\n", i, j, k, neighbour_index, neighbour_element_index, neighbour_side, face_index);
-
                     ++face_index;
                 }
                 else if (neighbour_element_index < n_elements_recv_left && neighbour_element_index < element_index) {
@@ -8011,7 +8007,6 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
 
                         neighbours_neighbour_index += neighbour_side_n_neighbours;
                     }   
-                    printf("Received element %llu, side %llu, #%llu has neighbour index %llu, links to element %llu side %llu and found face %llu in left received elements\n", i, j, k, neighbour_index, neighbour_element_index, neighbour_side, neighbour_face_index);
                 } 
                 else if (neighbour_element_index > n_domain_elements - n_elements_recv_right && neighbour_element_index < element_index) {
                     // They create
@@ -8049,7 +8044,6 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
 
                         neighbours_neighbour_index += neighbour_side_n_neighbours;
                     }  
-                    printf("Received element %llu, side %llu, #%llu has neighbour index %llu, links to element %llu side %llu and found face %llu in right received elements\n", i, j, k, neighbour_index, neighbour_element_index, neighbour_side, neighbour_face_index);
                 }
                 else { // In domain, we reuse a face. The face will already have the correct info
                     for (size_t m = 0; m < neighbour_element.faces_[neighbour_side].size(); ++m) {
@@ -8061,7 +8055,6 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
                             break;
                         }
                     }
-                    printf("Received element %llu, side %llu, #%llu has neighbour index %llu, links to element %llu side %llu and found face %llu in domain elements\n", i, j, k, neighbour_index, neighbour_element_index, neighbour_side, element.faces_[j][k]);
                 }
             }
 
@@ -9240,7 +9233,6 @@ auto SEM::Device::Meshes::create_received_neighbours(
                         for (size_t j = 0; j < n_mpi_destinations; ++j) {
                             if (mpi_destinations_procs[j] == neighbour_proc && mpi_destinations_indices[j] == local_element_index && mpi_destinations_sides[j] == element_side_index) {
                                 neighbour_given_indices[i] = old_mpi_destinations[j];
-                                printf("Neighbour %llu, proc %i, local index %llu, side %llu found in old mpi destinations %llu, element index %llu\n", i, neighbour_proc, local_element_index, element_side_index, j, old_mpi_destinations[j]);
                                 first_time = false;
                                 break;
                             }
@@ -9277,7 +9269,6 @@ auto SEM::Device::Meshes::create_received_neighbours(
 
                                     neighbour_given_indices[i] = elements_offset + mpi_destinations_block_offsets[other_block] + n_additional_before;
                                     first_time = false;
-                                    printf("Neighbour %llu, proc %i, local index %llu, side %llu found in other neighbour %llu, element index %llu. n_additional_before %llu, other block offset %llu, element offset %llu\n", i, neighbour_proc, local_element_index, element_side_index, j, neighbour_given_indices[i], n_additional_before, mpi_destinations_block_offsets[other_block], elements_offset);
                                     break;
                                 }
                             }
@@ -9332,8 +9323,6 @@ auto SEM::Device::Meshes::create_received_neighbours(
                                                                      nodes[element.nodes_[2]], 
                                                                      nodes[element.nodes_[3]]};
                             element.compute_boundary_geometry(points, polynomial_nodes);
-
-                            printf("Neighbour %llu, proc %i, local index %llu, side %llu created at element index %llu, mpi destination index %llu\n", i, neighbour_proc, local_element_index, element_side_index, new_element_index, new_mpi_destination_index);
                         }
                     }
                     else {
