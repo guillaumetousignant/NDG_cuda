@@ -8278,7 +8278,9 @@ auto SEM::Device::Meshes::move_elements(size_t n_elements_move, size_t n_element
         for (size_t i = 0; i < new_elements[destination_element_index].faces_.size(); ++i) {
             for (size_t j = 0; j < new_elements[destination_element_index].faces_[i].size(); ++j) {
                 Face2D_t& face = faces[new_elements[destination_element_index].faces_[i][j]];
-                const size_t side_index = face.elements_[1] == source_element_index;
+                // CHECK this is a band-aid solution! Can still fail if the two elements present the same side to the face. 
+                // Race condition
+                const size_t side_index = (face.elements_[1] == source_element_index) && (face.elements_side_[1] == j);
                 face.elements_[side_index] = destination_element_index;
             }
         }
