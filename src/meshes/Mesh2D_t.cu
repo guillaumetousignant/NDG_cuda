@@ -7974,6 +7974,8 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
                         elements[neighbour_element_index].faces_[0][0] = face_index;
                     }
 
+                    printf("    Received element %llu, side %llu, #%llu has neighbour index %llu, links to element %llu side %llu and created face %llu\n", i, j, k, neighbour_index, neighbour_element_index, neighbour_side, face_index);
+
                     ++face_index;
                 }
                 else if (neighbour_element_index < n_elements_recv_left && neighbour_element_index < element_index) {
@@ -8011,6 +8013,7 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
 
                         neighbours_neighbour_index += neighbour_side_n_neighbours;
                     }   
+                    printf("    Received element %llu, side %llu, #%llu has neighbour index %llu, links to element %llu side %llu and found face %llu in left received elements\n", i, j, k, neighbour_index, neighbour_element_index, neighbour_side, neighbour_face_index);
                 } 
                 else if (neighbour_element_index > n_domain_elements - n_elements_recv_right && neighbour_element_index < element_index) {
                     // They create
@@ -8048,11 +8051,10 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
 
                         neighbours_neighbour_index += neighbour_side_n_neighbours;
                     }  
+                    printf("    Received element %llu, side %llu, #%llu has neighbour index %llu, links to element %llu side %llu and found face %llu in right received elements\n", i, j, k, neighbour_index, neighbour_element_index, neighbour_side, neighbour_face_index);
                 }
                 else { // In domain, we reuse a face. The face will already have the correct info
-                    const size_t neighbour_n_faces = neighbour_element.faces_[neighbour_side].size();
-
-                    for (size_t m = 0; m < neighbour_n_faces; ++m) {
+                    for (size_t m = 0; m < neighbour_element.faces_[neighbour_side].size(); ++m) {
                         const size_t neighbour_face_index = neighbour_element.faces_[neighbour_side][m];
                         const Face2D_t& face = faces[neighbour_face_index];
                         const size_t face_side_index = face.elements_[0] == neighbour_element_index;
@@ -8061,6 +8063,7 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
                             break;
                         }
                     }
+                    printf("    Received element %llu, side %llu, #%llu has neighbour index %llu, links to element %llu side %llu and found face %llu in domain elements\n", i, j, k, neighbour_index, neighbour_element_index, neighbour_side, element.faces_[j][k]);
                 }
             }
 
