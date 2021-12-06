@@ -7992,8 +7992,8 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
                             const size_t neighbour_neighbour_side = neighbours_sides[neighbour_neighbour_index];
 
                             if (neighbour_neighbour_element_index >= n_domain_elements 
-                                || (neighbour_neighbour_element_index < n_elements_recv_left && neighbour_neighbour_element_index >= element_index)
-                                || (neighbour_neighbour_element_index >= n_domain_elements - n_elements_recv_right && neighbour_neighbour_element_index >= element_index)) { 
+                                || (neighbour_neighbour_element_index < n_elements_recv_left && neighbour_neighbour_element_index >= neighbour_element_index)
+                                || (neighbour_neighbour_element_index >= n_domain_elements - n_elements_recv_right && neighbour_neighbour_element_index >= neighbour_element_index)) { 
 
                                 if (neighbour_neighbour_element_index == element_index && neighbour_neighbour_side == j) {
                                     element.faces_[j][k] = neighbour_face_index;
@@ -8030,8 +8030,8 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
                             const size_t neighbour_neighbour_side = neighbours_sides[neighbour_neighbour_index];
 
                             if (neighbour_neighbour_element_index >= n_domain_elements 
-                                || (neighbour_neighbour_element_index < n_elements_recv_left && neighbour_neighbour_element_index >= element_index)
-                                || (neighbour_neighbour_element_index >= n_domain_elements - n_elements_recv_right && neighbour_neighbour_element_index >= element_index)) { 
+                                || (neighbour_neighbour_element_index < n_elements_recv_left && neighbour_neighbour_element_index >= neighbour_element_index)
+                                || (neighbour_neighbour_element_index >= n_domain_elements - n_elements_recv_right && neighbour_neighbour_element_index >= neighbour_element_index)) { 
 
                                 if (neighbour_neighbour_element_index == element_index && neighbour_neighbour_side == j) {
                                     element.faces_[j][k] = neighbour_face_index;
