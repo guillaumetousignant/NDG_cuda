@@ -7935,8 +7935,6 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
                 const size_t neighbour_side = neighbours_sides[neighbour_index];
                 const Element2D_t& neighbour_element = elements[neighbour_element_index];
 
-                printf("Filling faces for received element %llu, index %llu, side %llu, neighbour %llu. Its neighbour index is %llu, element index %llu, side %llu\n", i, element_index, j, k, neighbour_index, neighbour_element_index, neighbour_side);
-                
                 if (neighbour_element_index >= n_domain_elements 
                         || (neighbour_element_index < n_elements_recv_left && neighbour_element_index >= element_index)
                         || (neighbour_element_index >= n_domain_elements - n_elements_recv_right && neighbour_element_index >= element_index)) { 
@@ -7974,7 +7972,7 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
                         elements[neighbour_element_index].faces_[0][0] = face_index;
                     }
 
-                    printf("    Received element %llu, side %llu, #%llu has neighbour index %llu, links to element %llu side %llu and created face %llu\n", i, j, k, neighbour_index, neighbour_element_index, neighbour_side, face_index);
+                    printf("Received element %llu, side %llu, #%llu has neighbour index %llu, links to element %llu side %llu and created face %llu\n", i, j, k, neighbour_index, neighbour_element_index, neighbour_side, face_index);
 
                     ++face_index;
                 }
@@ -8013,7 +8011,7 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
 
                         neighbours_neighbour_index += neighbour_side_n_neighbours;
                     }   
-                    printf("    Received element %llu, side %llu, #%llu has neighbour index %llu, links to element %llu side %llu and found face %llu in left received elements\n", i, j, k, neighbour_index, neighbour_element_index, neighbour_side, neighbour_face_index);
+                    printf("Received element %llu, side %llu, #%llu has neighbour index %llu, links to element %llu side %llu and found face %llu in left received elements\n", i, j, k, neighbour_index, neighbour_element_index, neighbour_side, neighbour_face_index);
                 } 
                 else if (neighbour_element_index > n_domain_elements - n_elements_recv_right && neighbour_element_index < element_index) {
                     // They create
@@ -8051,7 +8049,7 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
 
                         neighbours_neighbour_index += neighbour_side_n_neighbours;
                     }  
-                    printf("    Received element %llu, side %llu, #%llu has neighbour index %llu, links to element %llu side %llu and found face %llu in right received elements\n", i, j, k, neighbour_index, neighbour_element_index, neighbour_side, neighbour_face_index);
+                    printf("   Received element %llu, side %llu, #%llu has neighbour index %llu, links to element %llu side %llu and found face %llu in right received elements\n", i, j, k, neighbour_index, neighbour_element_index, neighbour_side, neighbour_face_index);
                 }
                 else { // In domain, we reuse a face. The face will already have the correct info
                     for (size_t m = 0; m < neighbour_element.faces_[neighbour_side].size(); ++m) {
@@ -8063,7 +8061,7 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
                             break;
                         }
                     }
-                    printf("    Received element %llu, side %llu, #%llu has neighbour index %llu, links to element %llu side %llu and found face %llu in domain elements\n", i, j, k, neighbour_index, neighbour_element_index, neighbour_side, element.faces_[j][k]);
+                    printf("Received element %llu, side %llu, #%llu has neighbour index %llu, links to element %llu side %llu and found face %llu in domain elements\n", i, j, k, neighbour_index, neighbour_element_index, neighbour_side, element.faces_[j][k]);
                 }
             }
 
