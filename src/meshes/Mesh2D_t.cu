@@ -2246,7 +2246,45 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
             device_vector<size_t> global_element_offset_end_new_device(global_element_offset_end_new, stream_);
 
             const int send_numBlocks = (n_elements_send_left[global_rank] + boundaries_blockSize_ - 1) / boundaries_blockSize_;
-            SEM::Device::Meshes::get_neighbours<<<send_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_send_left[global_rank], 0, n_elements_new[global_rank], n_elements_per_proc[global_rank], wall_boundaries_.size(), symmetry_boundaries_.size(), inflow_boundaries_.size(), outflow_boundaries_.size(), interfaces_origin_.size(), mpi_interfaces_destination_.size(), global_rank, global_size, elements_.data(), faces_.data(), nodes_.data(), wall_boundaries_.data(), symmetry_boundaries_.data(), inflow_boundaries_.data(), outflow_boundaries_.data(), interfaces_destination_.data(), interfaces_origin_.data(), mpi_interfaces_destination_.data(), mpi_interfaces_new_process_incoming_device.data(), mpi_interfaces_new_local_index_incoming_device.data(), mpi_interfaces_new_side_incoming_device.data(), neighbour_offsets_device.data(), n_elements_send_left_device.data(), n_elements_recv_left_device.data(), n_elements_send_right_device.data(), n_elements_recv_right_device.data(), global_element_offset_current_device.data(), global_element_offset_new_device.data(), global_element_offset_end_new_device.data(), neighbours_arrays.data(), neighbours_nodes_arrays.data(), neighbours_proc_arrays.data(), neighbours_side_arrays.data(), neighbours_N_arrays.data());
+            SEM::Device::Meshes::get_neighbours<<<send_numBlocks, boundaries_blockSize_, 0, stream_>>>(
+                n_elements_send_left[global_rank], 
+                0, 
+                n_elements_new[global_rank], 
+                n_elements_per_proc[global_rank], 
+                wall_boundaries_.size(), 
+                symmetry_boundaries_.size(), 
+                inflow_boundaries_.size(), 
+                outflow_boundaries_.size(), 
+                interfaces_origin_.size(), 
+                mpi_interfaces_destination_.size(), 
+                global_rank, 
+                global_size, 
+                elements_.data(), 
+                faces_.data(), 
+                nodes_.data(), 
+                wall_boundaries_.data(), 
+                symmetry_boundaries_.data(), 
+                inflow_boundaries_.data(), 
+                outflow_boundaries_.data(), 
+                interfaces_destination_.data(), 
+                interfaces_origin_.data(), 
+                mpi_interfaces_destination_.data(), 
+                mpi_interfaces_new_process_incoming_device.data(), 
+                mpi_interfaces_new_local_index_incoming_device.data(), 
+                mpi_interfaces_new_side_incoming_device.data(), 
+                neighbour_offsets_device.data(), 
+                n_elements_send_left_device.data(), 
+                n_elements_recv_left_device.data(), 
+                n_elements_send_right_device.data(), 
+                n_elements_recv_right_device.data(), 
+                global_element_offset_current_device.data(), 
+                global_element_offset_new_device.data(), 
+                global_element_offset_end_new_device.data(), 
+                neighbours_arrays.data(), 
+                neighbours_nodes_arrays.data(), 
+                neighbours_proc_arrays.data(), 
+                neighbours_side_arrays.data(), 
+                neighbours_N_arrays.data());
 
             neighbours_arrays.copy_to(neighbours_arrays_send_left, stream_);
             neighbours_nodes_arrays.copy_to(neighbours_nodes_arrays_send_left, stream_);
@@ -2316,7 +2354,45 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
             device_vector<size_t> global_element_offset_end_new_device(global_element_offset_end_new, stream_);
 
             const int send_numBlocks = (n_elements_send_right[global_rank] + boundaries_blockSize_ - 1) / boundaries_blockSize_;
-            SEM::Device::Meshes::get_neighbours<<<send_numBlocks, boundaries_blockSize_, 0, stream_>>>(n_elements_send_right[global_rank], n_elements_per_proc[global_rank] - n_elements_send_right[global_rank], n_elements_new[global_rank], n_elements_per_proc[global_rank], wall_boundaries_.size(), symmetry_boundaries_.size(), inflow_boundaries_.size(), outflow_boundaries_.size(), interfaces_origin_.size(), mpi_interfaces_destination_.size(), global_rank, global_size, elements_.data(), faces_.data(), nodes_.data(), wall_boundaries_.data(), symmetry_boundaries_.data(), inflow_boundaries_.data(), outflow_boundaries_.data(), interfaces_destination_.data(), interfaces_origin_.data(), mpi_interfaces_destination_.data(), mpi_interfaces_new_process_incoming_device.data(), mpi_interfaces_new_local_index_incoming_device.data(), mpi_interfaces_new_side_incoming_device.data(), neighbour_offsets_device.data(), n_elements_send_left_device.data(), n_elements_recv_left_device.data(), n_elements_send_right_device.data(), n_elements_recv_right_device.data(), global_element_offset_current_device.data(), global_element_offset_new_device.data(), global_element_offset_end_new_device.data(), neighbours_arrays.data(), neighbours_nodes_arrays.data(), neighbours_proc_arrays.data(), neighbours_side_arrays.data(), neighbours_N_arrays.data());
+            SEM::Device::Meshes::get_neighbours<<<send_numBlocks, boundaries_blockSize_, 0, stream_>>>(
+                n_elements_send_right[global_rank], 
+                n_elements_per_proc[global_rank] - n_elements_send_right[global_rank], 
+                n_elements_new[global_rank], 
+                n_elements_per_proc[global_rank], 
+                wall_boundaries_.size(), 
+                symmetry_boundaries_.size(), 
+                inflow_boundaries_.size(), 
+                outflow_boundaries_.size(), 
+                interfaces_origin_.size(), 
+                mpi_interfaces_destination_.size(), 
+                global_rank, 
+                global_size, 
+                elements_.data(), 
+                faces_.data(), 
+                nodes_.data(), 
+                wall_boundaries_.data(), 
+                symmetry_boundaries_.data(), 
+                inflow_boundaries_.data(), 
+                outflow_boundaries_.data(), 
+                interfaces_destination_.data(), 
+                interfaces_origin_.data(), 
+                mpi_interfaces_destination_.data(), 
+                mpi_interfaces_new_process_incoming_device.data(), 
+                mpi_interfaces_new_local_index_incoming_device.data(), 
+                mpi_interfaces_new_side_incoming_device.data(), 
+                neighbour_offsets_device.data(), 
+                n_elements_send_left_device.data(), 
+                n_elements_recv_left_device.data(), 
+                n_elements_send_right_device.data(), 
+                n_elements_recv_right_device.data(), 
+                global_element_offset_current_device.data(), 
+                global_element_offset_new_device.data(), 
+                global_element_offset_end_new_device.data(), 
+                neighbours_arrays.data(), 
+                neighbours_nodes_arrays.data(), 
+                neighbours_proc_arrays.data(), 
+                neighbours_side_arrays.data(), 
+                neighbours_N_arrays.data());
 
             neighbours_arrays.copy_to(neighbours_arrays_send_right, stream_);
             neighbours_nodes_arrays.copy_to(neighbours_nodes_arrays_send_right, stream_);
