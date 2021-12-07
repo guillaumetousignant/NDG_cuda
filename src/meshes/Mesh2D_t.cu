@@ -3303,6 +3303,8 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
                 n_inflow_boundaries_to_add, 
                 n_outflow_boundaries_to_add, 
                 n_mpi_destinations_to_add_recv, 
+                n_elements_,
+                n_elements_new[global_rank],
                 neighbours_arrays_recv_device.data(), 
                 neighbours_proc_arrays_recv_device.data(), 
                 neighbours_side_arrays_recv_device.data(), 
@@ -3329,7 +3331,10 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
                 inflow_boundaries_to_add_refine_array.data(), 
                 outflow_boundaries_to_add_refine_array.data(), 
                 mpi_destinations_to_add_refine_array.data(), 
-                polynomial_nodes.data());
+                polynomial_nodes.data(),
+                boundary_elements_to_delete.data(), 
+                device_boundary_elements_to_delete_refine_array.data(), 
+                boundaries_blockSize_);
 
             neighbours_arrays_recv_device.clear(stream_);
             neighbours_side_arrays_recv_device.clear(stream_);
@@ -9285,6 +9290,8 @@ auto SEM::Device::Meshes::create_received_neighbours(
         size_t n_new_inflow, 
         size_t n_new_outflow, 
         size_t n_new_mpi_destinations, 
+        size_t n_domain_elements,
+        size_t new_n_domain_elements,
         const size_t* neighbour_indices, 
         const int* neighbour_procs, 
         const size_t* neighbour_sides, 
@@ -9311,7 +9318,10 @@ auto SEM::Device::Meshes::create_received_neighbours(
         const size_t* inflow_block_offsets, 
         const size_t* outflow_block_offsets, 
         const size_t* mpi_destinations_block_offsets,
-        const deviceFloat* polynomial_nodes) -> void {
+        const deviceFloat* polynomial_nodes, 
+        const bool* boundary_elements_to_delete, 
+        const size_t* boundary_elements_to_delete_block_offsets, 
+        int boundary_blockSize) -> void {
     
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
@@ -9466,8 +9476,21 @@ auto SEM::Device::Meshes::create_received_neighbours(
                         bool first_time = true;
                         for (size_t j = 0; j < n_mpi_destinations; ++j) {
                             if (mpi_destinations_procs[j] == neighbour_proc && mpi_destinations_indices[j] == local_element_index && mpi_destinations_sides[j] == element_side_index) {
-                                neighbour_given_indices[i] = old_mpi_destinations[j];
+                                const size_t boundary_element_index = old_mpi_destinations[j] - n_domain_elements;
+                                if (!boundary_elements_to_delete[boundary_element_index]) { // Should always be the case
+                                    const int boundary_block_id = boundary_element_index/boundary_blockSize;
+                                    const int boundary_thread_id = boundary_element_index%boundary_blockSize;
+
+                                    size_t new_boundary_element_index = new_n_domain_elements + boundary_element_index - boundary_elements_to_delete_block_offsets[boundary_block_id];
+                                    for (size_t j = boundary_element_index - boundary_thread_id; j < boundary_element_index; ++j) {
+                                        new_boundary_element_index -= boundary_elements_to_delete[j];
+                                    }
+
+                                    neighbour_given_indices[i] = new_boundary_element_index;
+                                }
+                                
                                 first_time = false;
+                                printf("Neighbour %llu found neighbour in mpi destinations at %llu, index %llu to proc %i, local index %llu, side %llu\n", i, j, old_mpi_destinations[j], neighbour_proc, local_element_index, element_side_index);
                                 break;
                             }
                         }
