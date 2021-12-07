@@ -2273,10 +2273,10 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
                 mpi_interfaces_new_local_index_incoming_device.data(), 
                 mpi_interfaces_new_side_incoming_device.data(), 
                 neighbour_offsets_device.data(), 
-                n_elements_send_left_device.data(), 
                 n_elements_recv_left_device.data(), 
-                n_elements_send_right_device.data(), 
+                n_elements_send_left_device.data(), 
                 n_elements_recv_right_device.data(), 
+                n_elements_send_right_device.data(), 
                 global_element_offset_current_device.data(), 
                 global_element_offset_new_device.data(), 
                 global_element_offset_end_new_device.data(), 
@@ -2381,10 +2381,10 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
                 mpi_interfaces_new_local_index_incoming_device.data(), 
                 mpi_interfaces_new_side_incoming_device.data(), 
                 neighbour_offsets_device.data(), 
-                n_elements_send_left_device.data(), 
                 n_elements_recv_left_device.data(), 
-                n_elements_send_right_device.data(), 
+                n_elements_send_left_device.data(), 
                 n_elements_recv_right_device.data(), 
+                n_elements_send_right_device.data(), 
                 global_element_offset_current_device.data(), 
                 global_element_offset_new_device.data(), 
                 global_element_offset_end_new_device.data(), 
@@ -8224,7 +8224,7 @@ auto SEM::Device::Meshes::get_neighbours(size_t n_elements_send,
                 neighbours_N[element_offset] = other_element.N_;
 
                 if (other_element_index < n_domain_elements_old) {
-                    if (other_element_index < n_elements_sent_left[rank] || other_element_index >= n_domain_elements - n_elements_sent_right[rank]) {
+                    if (other_element_index < n_elements_sent_left[rank] || other_element_index >= n_domain_elements_old - n_elements_sent_right[rank]) {
                         const size_t element_global_index = other_element_index + global_element_offset[rank];
                         neighbours_proc[element_offset] = -1;
 
@@ -8237,6 +8237,8 @@ auto SEM::Device::Meshes::get_neighbours(size_t n_elements_send,
                             }
                         }
 
+                        printf("Sent element %llu, index %llu, side %llu, face #%llu, index %llu has leaving neighbour %llu, with new local index %llu, prov %d\n", i, element_index, side_index, side_face_index, face_index, other_element_index, neighbours[element_offset], neighbours_proc[element_offset]);
+
                         if (neighbours_proc[element_offset] == -1) {
                             printf("Error: Element %llu, side %llu, face %llu with index %llu has other sent element %llu but it is not found in any process. Results are undefined.\n", element_index, side_index, side_face_index, face_index, element_global_index);
                         }
@@ -8244,6 +8246,7 @@ auto SEM::Device::Meshes::get_neighbours(size_t n_elements_send,
                     else {
                         neighbours[element_offset] = other_element_index + n_elements_received_left[rank] - n_elements_sent_left[rank];
                         neighbours_proc[element_offset] = rank;
+                        printf("Sent element %llu, index %llu, side %llu, face #%llu, index %llu has domain neighbour %llu, with new index %llu. Cutoff is %llu, n_domain_old is %llu, n_sent_right is %llu\n", i, element_index, side_index, side_face_index, face_index, other_element_index, neighbours[element_offset], n_domain_elements_old - n_elements_sent_right[rank], n_domain_elements_old, n_elements_sent_right[rank]);
                     }
                     neighbours_side[element_offset] = face.elements_side_[face_side_index];
                 }
@@ -8253,7 +8256,7 @@ auto SEM::Device::Meshes::get_neighbours(size_t n_elements_send,
                     bool missing = true;
                     for (size_t i = 0; i < n_local_interfaces; ++i) {
                         if (interfaces_destination[i] == other_element_index) {
-                            if (interfaces_origin[i] < n_elements_sent_left[rank] || interfaces_origin[i] >= n_domain_elements - n_elements_sent_right[rank]) {
+                            if (interfaces_origin[i] < n_elements_sent_left[rank] || interfaces_origin[i] >= n_domain_elements_old - n_elements_sent_right[rank]) {
                                 const size_t element_global_index = interfaces_origin[i] + global_element_offset[rank];
                                 neighbours_proc[element_offset] = -1;
 
@@ -8266,6 +8269,8 @@ auto SEM::Device::Meshes::get_neighbours(size_t n_elements_send,
                                     }
                                 }
 
+                                printf("Sent element %llu, index %llu, side %llu, face #%llu, index %llu has leaving self-interface neighbour %llu, with new local index %llu, prov %d\n", i, element_index, side_index, side_face_index, face_index, other_element_index, neighbours[element_offset], neighbours_proc[element_offset]);
+
                                 if (neighbours_proc[element_offset] == -1) {
                                     printf("Error: Element %llu, side %llu, face %llu with index %llu has other local sent element %llu but it is not found in any process. Results are undefined.\n", element_index, side_index, side_face_index, face_index, element_global_index);
                                 }
@@ -8273,6 +8278,7 @@ auto SEM::Device::Meshes::get_neighbours(size_t n_elements_send,
                             else {
                                 neighbours[element_offset] = interfaces_origin[i] + n_elements_received_left[rank] - n_elements_sent_left[rank];
                                 neighbours_proc[element_offset] = rank;
+                                printf("Sent element %llu, index %llu, side %llu, face #%llu, index %llu has self-interface neighbour %llu, with new index %llu \n", i, element_index, side_index, side_face_index, face_index, other_element_index, neighbours[element_offset]);
                             }
                             neighbours_side[element_offset] = mpi_interfaces_side[i];
 
@@ -8287,6 +8293,8 @@ auto SEM::Device::Meshes::get_neighbours(size_t n_elements_send,
                                 neighbours[element_offset] = mpi_interfaces_local_indices[i];
                                 neighbours_proc[element_offset] = mpi_interfaces_process[i];
                                 neighbours_side[element_offset] = mpi_interfaces_side[i];
+
+                                printf("Sent element %llu, index %llu, side %llu, face #%llu, index %llu has mpi destination neighbour %llu, with new local index %llu, prov %d\n", i, element_index, side_index, side_face_index, face_index, other_element_index, neighbours[element_offset], neighbours_proc[element_offset]);
     
                                 missing = false;
                                 break;
@@ -9534,7 +9542,7 @@ auto SEM::Device::Meshes::create_received_neighbours(
                             neighbour_given_indices[i] = new_element_index;
 
                             Element2D_t& element = elements[new_element_index];
-                            printf("Neighbour %llu created neighbour mpi destination at %llu to proc %llu, local index %llu, side %llu\n", i, new_element_index, neighbour_proc, local_element_index, element_side_index);
+                            printf("Neighbour %llu created neighbour mpi destination at %llu to proc %i, local index %llu, side %llu\n", i, new_element_index, neighbour_proc, local_element_index, element_side_index);
                             element.clear_storage();
                             element.N_ = neighbour_N[i];
                             element.status_ = Hilbert::Status::A;
