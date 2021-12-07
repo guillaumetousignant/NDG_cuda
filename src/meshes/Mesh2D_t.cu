@@ -8254,10 +8254,10 @@ auto SEM::Device::Meshes::get_neighbours(size_t n_elements_send,
                     // It could also be a boundary condition
                     // This is a nightmare
                     bool missing = true;
-                    for (size_t i = 0; i < n_local_interfaces; ++i) {
-                        if (interfaces_destination[i] == other_element_index) {
-                            if (interfaces_origin[i] < n_elements_sent_left[rank] || interfaces_origin[i] >= n_domain_elements_old - n_elements_sent_right[rank]) {
-                                const size_t element_global_index = interfaces_origin[i] + global_element_offset[rank];
+                    for (size_t j = 0; j < n_local_interfaces; ++j) {
+                        if (interfaces_destination[j] == other_element_index) {
+                            if (interfaces_origin[j] < n_elements_sent_left[rank] || interfaces_origin[j] >= n_domain_elements_old - n_elements_sent_right[rank]) {
+                                const size_t element_global_index = interfaces_origin[j] + global_element_offset[rank];
                                 neighbours_proc[element_offset] = -1;
 
                                 for (int process_index = 0; process_index < n_procs; ++process_index) {
@@ -8276,11 +8276,11 @@ auto SEM::Device::Meshes::get_neighbours(size_t n_elements_send,
                                 }
                             }
                             else {
-                                neighbours[element_offset] = interfaces_origin[i] + n_elements_received_left[rank] - n_elements_sent_left[rank];
+                                neighbours[element_offset] = interfaces_origin[j] + n_elements_received_left[rank] - n_elements_sent_left[rank];
                                 neighbours_proc[element_offset] = rank;
                                 printf("Sent element %llu, index %llu, side %llu, face #%llu, index %llu has self-interface neighbour %llu, with new index %llu \n", i, element_index, side_index, side_face_index, face_index, other_element_index, neighbours[element_offset]);
                             }
-                            neighbours_side[element_offset] = mpi_interfaces_side[i];
+                            neighbours_side[element_offset] = mpi_interfaces_side[j];
 
                             missing = false;
                             break;
@@ -8288,11 +8288,11 @@ auto SEM::Device::Meshes::get_neighbours(size_t n_elements_send,
                     }
 
                     if (missing) {
-                        for (size_t i = 0; i < n_MPI_interface_elements_receiving; ++i) {
-                            if (mpi_interfaces_destination[i] == other_element_index) {
-                                neighbours[element_offset] = mpi_interfaces_local_indices[i];
-                                neighbours_proc[element_offset] = mpi_interfaces_process[i];
-                                neighbours_side[element_offset] = mpi_interfaces_side[i];
+                        for (size_t j = 0; j < n_MPI_interface_elements_receiving; ++j) {
+                            if (mpi_interfaces_destination[j] == other_element_index) {
+                                neighbours[element_offset] = mpi_interfaces_local_indices[j];
+                                neighbours_proc[element_offset] = mpi_interfaces_process[j];
+                                neighbours_side[element_offset] = mpi_interfaces_side[j];
 
                                 printf("Sent element %llu, index %llu, side %llu, face #%llu, index %llu has mpi destination neighbour %llu, with new local index %llu, prov %d\n", i, element_index, side_index, side_face_index, face_index, other_element_index, neighbours[element_offset], neighbours_proc[element_offset]);
     
@@ -8302,8 +8302,8 @@ auto SEM::Device::Meshes::get_neighbours(size_t n_elements_send,
                         }
 
                         if (missing) {
-                            for (size_t i = 0; i < n_wall_boundaries; ++i) {
-                                if (wall_boundaries[i] == other_element_index) {
+                            for (size_t j = 0; j < n_wall_boundaries; ++j) {
+                                if (wall_boundaries[j] == other_element_index) {
                                     neighbours[element_offset] = static_cast<size_t>(-1);
                                     neighbours_proc[element_offset] = SEM::Device::Meshes::Mesh2D_t::boundary_type::wall;
                                     neighbours_side[element_offset] = static_cast<size_t>(-1);
@@ -8314,8 +8314,8 @@ auto SEM::Device::Meshes::get_neighbours(size_t n_elements_send,
                             }
 
                             if (missing) {
-                                for (size_t i = 0; i < n_symmetry_boundaries; ++i) {
-                                    if (symmetry_boundaries[i] == other_element_index) {
+                                for (size_t j = 0; j < n_symmetry_boundaries; ++j) {
+                                    if (symmetry_boundaries[j] == other_element_index) {
                                         neighbours[element_offset] = static_cast<size_t>(-1);
                                         neighbours_proc[element_offset] = SEM::Device::Meshes::Mesh2D_t::boundary_type::symmetry;
                                         neighbours_side[element_offset] = static_cast<size_t>(-1);
@@ -8326,8 +8326,8 @@ auto SEM::Device::Meshes::get_neighbours(size_t n_elements_send,
                                 }
     
                                 if (missing) {
-                                    for (size_t i = 0; i < n_inflow_boundaries; ++i) {
-                                        if (inflow_boundaries[i] == other_element_index) {
+                                    for (size_t j = 0; j < n_inflow_boundaries; ++j) {
+                                        if (inflow_boundaries[j] == other_element_index) {
                                             neighbours[element_offset] = static_cast<size_t>(-1);
                                             neighbours_proc[element_offset] = SEM::Device::Meshes::Mesh2D_t::boundary_type::inflow;
                                             neighbours_side[element_offset] = static_cast<size_t>(-1);
@@ -8338,8 +8338,8 @@ auto SEM::Device::Meshes::get_neighbours(size_t n_elements_send,
                                     }
         
                                     if (missing) {
-                                        for (size_t i = 0; i < n_outflow_boundaries; ++i) {
-                                            if (outflow_boundaries[i] == other_element_index) {
+                                        for (size_t j = 0; j < n_outflow_boundaries; ++j) {
+                                            if (outflow_boundaries[j] == other_element_index) {
                                                 neighbours[element_offset] = static_cast<size_t>(-1);
                                                 neighbours_proc[element_offset] = SEM::Device::Meshes::Mesh2D_t::boundary_type::outflow;
                                                 neighbours_side[element_offset] = static_cast<size_t>(-1);
