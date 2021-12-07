@@ -350,7 +350,7 @@ namespace SEM { namespace Device { namespace Meshes {
     auto get_neighbours(size_t n_elements_send, size_t start_index, size_t n_domain_elements, size_t n_domain_elements_old, size_t n_wall_boundaries, size_t n_symmetry_boundaries, size_t n_inflow_boundaries, size_t n_outflow_boundaries, size_t n_local_interfaces, size_t n_MPI_interface_elements_receiving, int rank, int n_procs, const SEM::Device::Entities::Element2D_t* elements, const SEM::Device::Entities::Face2D_t* faces, const SEM::Device::Entities::Vec2<deviceFloat>* nodes, const size_t* wall_boundaries, const size_t* symmetry_boundaries, const size_t* inflow_boundaries, const size_t* outflow_boundaries, const size_t* interfaces_destination, const size_t* interfaces_origin, const size_t* mpi_interfaces_destination, const int* mpi_interfaces_process, const size_t* mpi_interfaces_local_indices, const size_t* mpi_interfaces_side, const size_t* offsets, const size_t* n_elements_received_left, const size_t* n_elements_sent_left, const size_t* n_elements_received_right, const size_t* n_elements_sent_right, const size_t* global_element_offset, const size_t* global_element_offset_new, const size_t* global_element_offset_end_new, size_t* neighbours, deviceFloat* neighbours_nodes, int* neighbours_proc, size_t* neighbours_side, int* neighbours_N) -> void;
 
     __global__
-    auto move_elements(size_t n_elements_move, size_t n_elements_send_left, size_t n_elements_recv_left, SEM::Device::Entities::Element2D_t* elements, SEM::Device::Entities::Element2D_t* new_elements, SEM::Device::Entities::Face2D_t* faces) -> void;
+    auto move_elements(size_t n_elements_move, size_t n_elements_send_left, size_t n_elements_recv_left, SEM::Device::Entities::Element2D_t* elements, SEM::Device::Entities::Element2D_t* new_elements, const bool* faces_to_delete, const size_t* faces_to_delete_block_offsets, int faces_blockSize) -> void;
 
     __global__
     auto get_interface_n_processes(size_t n_mpi_interfaces, size_t n_mpi_interfaces_incoming, const SEM::Device::Entities::Element2D_t* elements, const SEM::Device::Entities::Face2D_t* faces, const size_t* mpi_interfaces_origin, const size_t* mpi_interfaces_origin_side, const size_t* mpi_interfaces_destination, const int* mpi_interfaces_new_process_incoming, size_t* n_processes) -> void;
@@ -372,15 +372,18 @@ namespace SEM { namespace Device { namespace Meshes {
 
     __global__
     auto find_faces_to_delete(size_t n_faces, size_t n_domain_elements, size_t n_elements_send_left, size_t n_elements_send_right, const SEM::Device::Entities::Face2D_t* faces, bool* faces_to_delete) -> void;
+    
+    __global__
+    auto no_faces_to_delete(size_t n_faces, bool* faces_to_delete) -> void;
 
     __global__
-    auto move_faces(size_t n_faces, SEM::Device::Entities::Face2D_t* faces, SEM::Device::Entities::Face2D_t* new_faces) -> void;
+    auto move_faces(size_t n_faces, size_t n_domain_elements, size_t new_n_domain_elements, size_t n_elements_recv_left, SEM::Device::Entities::Face2D_t* faces, SEM::Device::Entities::Face2D_t* new_faces, const bool* boundary_elements_to_delete, const size_t* boundary_elements_to_delete_block_offsets, int boundary_blockSize) -> void;
 
     __global__
-    auto move_required_faces(size_t n_faces, SEM::Device::Entities::Face2D_t* faces, SEM::Device::Entities::Face2D_t* new_faces, SEM::Device::Entities::Element2D_t* elements, const bool* faces_to_delete, const size_t* faces_to_delete_block_offsets) -> void;
+    auto move_required_faces(size_t n_faces, size_t n_domain_elements, size_t new_n_domain_elements, size_t n_elements_send_left, size_t n_elements_send_right, size_t n_elements_recv_left, size_t new_elements_offset_left, size_t new_elements_offset_right, SEM::Device::Entities::Face2D_t* faces, SEM::Device::Entities::Face2D_t* new_faces, const bool* faces_to_delete, const size_t* faces_to_delete_block_offsets, const bool* boundary_elements_to_delete, const size_t* boundary_elements_to_delete_block_offsets, int boundary_blockSize, const size_t* elements_send_destinations_offset_left, const size_t* elements_send_destinations_offset_right, const int* elements_send_destinations_keep_left, const int* elements_send_destinations_keep_right) -> void;
 
     __global__
-    auto find_boundary_elements_to_delete(size_t n_boundary_elements, size_t n_domain_elements, size_t n_elements_send_left, size_t n_elements_send_right, const SEM::Device::Entities::Element2D_t* elements, const SEM::Device::Entities::Face2D_t* faces, bool* boundary_elements_to_delete) -> void;
+    auto find_boundary_elements_to_delete(size_t n_boundary_elements, size_t n_domain_elements, size_t n_elements_send_left, size_t n_elements_send_right, const SEM::Device::Entities::Element2D_t* elements, const SEM::Device::Entities::Face2D_t* faces, bool* boundary_elements_to_delete, const bool* faces_to_delete) -> void;
 
     __global__
     auto find_mpi_interface_elements_to_delete(size_t n_mpi_interface_elements, size_t n_domain_elements, int rank, const size_t* mpi_interfaces_destination, const int* mpi_interfaces_new_process_incoming, bool* boundary_elements_to_delete) -> void;
@@ -389,7 +392,7 @@ namespace SEM { namespace Device { namespace Meshes {
     auto find_mpi_interface_elements_to_keep(size_t n_mpi_destinations, size_t n_neighbours, int rank, size_t n_domain_elements, const int* neighbour_procs, const size_t* neighbour_indices, const size_t* neighbour_sides, const int* mpi_destination_procs, const size_t* mpi_destination_local_indices, const size_t* mpi_destination_sides, const size_t* mpi_interfaces_destination, bool* boundary_elements_to_delete) -> void;
 
     __global__
-    auto move_boundary_elements(size_t n_boundary_elements, size_t n_domain_elements, size_t new_n_domain_elements, SEM::Device::Entities::Element2D_t* elements, SEM::Device::Entities::Element2D_t* new_elements, SEM::Device::Entities::Face2D_t* faces, const bool* boundary_elements_to_delete, const size_t* boundary_elements_to_delete_block_offsets) -> void;
+    auto move_boundary_elements(size_t n_boundary_elements, size_t n_domain_elements, size_t new_n_domain_elements, SEM::Device::Entities::Element2D_t* elements, SEM::Device::Entities::Element2D_t* new_elements, const bool* boundary_elements_to_delete, const size_t* boundary_elements_to_delete_block_offsets, const bool* faces_to_delete, const size_t* faces_to_delete_block_offsets, int faces_blockSize) -> void;
 
     __global__
     auto find_boundaries_to_delete(size_t n_boundary_elements, size_t n_domain_elements, const size_t* boundary, const bool* boundary_elements_to_delete, bool* boundaries_to_delete) -> void;
@@ -404,7 +407,7 @@ namespace SEM { namespace Device { namespace Meshes {
     auto move_required_boundaries(size_t n_boundary_elements, size_t n_domain_elements, size_t new_n_domain_elements, const size_t* boundary, size_t* new_boundary, int* new_boundary_process, size_t* new_local_index, size_t* new_side, const int* mpi_interfaces_process, const size_t* mpi_interfaces_local_index, const size_t* mpi_interfaces_side, const bool* boundaries_to_delete, const size_t* boundaries_to_delete_block_offsets, const bool* boundary_elements_to_delete, const size_t* boundary_elements_block_offsets, int boundary_elements_blockSize) -> void;
 
     __global__
-    auto create_sent_mpi_boundaries_destinations(size_t n_sent_elements, size_t sent_elements_offset, size_t new_elements_offset, size_t mpi_interfaces_destination_offset, SEM::Device::Entities::Element2D_t* elements, SEM::Device::Entities::Element2D_t* new_elements, SEM::Device::Entities::Face2D_t* faces, const SEM::Device::Entities::Vec2<deviceFloat>* nodes, const size_t* elements_send_destinations_offset, const int* elements_send_destinations_keep, const int* destination_process, const size_t* destination_local_index, size_t* mpi_interfaces_destination, int* mpi_interfaces_destination_process, size_t* mpi_interfaces_destination_local_index, size_t* mpi_interfaces_destination_side, const deviceFloat* polynomial_nodes) -> void;
+    auto create_sent_mpi_boundaries_destinations(size_t n_sent_elements, size_t sent_elements_offset, size_t new_elements_offset, size_t mpi_interfaces_destination_offset, SEM::Device::Entities::Element2D_t* elements, SEM::Device::Entities::Element2D_t* new_elements, const SEM::Device::Entities::Vec2<deviceFloat>* nodes, const size_t* elements_send_destinations_offset, const int* elements_send_destinations_keep, const int* destination_process, const size_t* destination_local_index, size_t* mpi_interfaces_destination, int* mpi_interfaces_destination_process, size_t* mpi_interfaces_destination_local_index, size_t* mpi_interfaces_destination_side, const deviceFloat* polynomial_nodes, const bool* faces_to_delete, const size_t* faces_to_delete_block_offsets, int faces_blockSize) -> void;
     
     __global__
     auto recv_mpi_boundaries_destinations_reuse_faces(size_t n_mpi_interfaces_incoming, size_t n_domain_elements, size_t n_elements_recv_left, size_t n_elements_recv_right, int rank, const SEM::Device::Entities::Element2D_t* elements, SEM::Device::Entities::Face2D_t* new_faces, const size_t* mpi_interfaces_incoming, const int* mpi_interfaces_new_process_incoming, const size_t* mpi_interfaces_new_local_index_incoming, const size_t* mpi_interfaces_new_side_incoming_device) -> void;
