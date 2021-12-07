@@ -108,8 +108,10 @@ namespace SEM { namespace Device { namespace Meshes {
             constexpr static size_t mpi_adaptivity_split_n_transfers = 2;
             constexpr static size_t mpi_load_balancing_interfaces_offset = mpi_adaptivity_split_offset + mpi_adaptivity_split_n_transfers;
             constexpr static size_t mpi_load_balancing_interfaces_n_transfers = 3;
-            constexpr static size_t mpi_load_balancing_solution_offset = mpi_load_balancing_interfaces_offset + mpi_load_balancing_interfaces_n_transfers;
-            constexpr static size_t mpi_load_balancing_solution_n_transfers = 10;
+            constexpr static size_t mpi_load_balancing_n_neighbours_offset = mpi_load_balancing_interfaces_offset + mpi_load_balancing_interfaces_n_transfers;
+            constexpr static size_t mpi_load_balancing_n_neighbours_n_transfers = 1;
+            constexpr static size_t mpi_load_balancing_solution_offset = mpi_load_balancing_n_neighbours_offset + mpi_load_balancing_n_neighbours_n_transfers;
+            constexpr static size_t mpi_load_balancing_solution_n_transfers = 9;
             constexpr static size_t mpi_load_balancing_incoming_offset = mpi_load_balancing_solution_offset + mpi_load_balancing_solution_n_transfers;
             constexpr static size_t mpi_load_balancing_incoming_n_transfers = 1;
             constexpr static size_t mpi_load_balancing_origins_offset = mpi_load_balancing_incoming_offset + mpi_load_balancing_incoming_n_transfers;
