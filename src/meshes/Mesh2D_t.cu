@@ -3199,7 +3199,7 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
 
         // We create received boundary elements for mpi destinations, and boundary conditions
         device_vector<size_t> neighbours_element_indices(neighbours_arrays_recv.size(), stream_); // We can build this above I think, as a side effect of computing the numbers to add
-        device_vector<size_t> neighbours_element_side(neighbours_arrays_recv.size(), stream_); // We can build this above I think, as a side effect of computing the numbers to add
+        device_vector<size_t> neighbours_element_side(neighbours_side_arrays_recv.size(), stream_); // We can build this above I think, as a side effect of computing the numbers to add
         if (n_elements_recv_left[global_rank] + n_elements_recv_right[global_rank] > 0) {
             device_vector<size_t> neighbours_arrays_recv_device(neighbours_arrays_recv, stream_);
             device_vector<size_t> neighbours_side_arrays_recv_device(neighbours_side_arrays_recv, stream_);
@@ -7986,6 +7986,8 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
                         elements[neighbour_element_index].faces_[0][0] = face_index;
                     }
 
+                    printf("Received element %llu, index %llu creating face at %llu\n", i, element_index, face_index);
+
                     ++face_index;
                 }
                 else if (neighbour_element_index < n_elements_recv_left && neighbour_element_index < element_index) {
@@ -9456,7 +9458,7 @@ auto SEM::Device::Meshes::create_received_neighbours(
                             neighbour_given_indices[i] = new_element_index;
 
                             Element2D_t& element = elements[new_element_index];
-                            printf("Created neighbour mpi destination at %llu\n", new_element_index);
+                            printf("Neighbour %llu created neighbour mpi destination at %llu to proc %llu, local index %llu, side %llu\n", i, new_element_index, neighbour_proc, local_element_index, element_side_index);
                             element.clear_storage();
                             element.N_ = neighbour_N[i];
                             element.status_ = Hilbert::Status::A;
