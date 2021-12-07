@@ -2769,20 +2769,6 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
         device_vector<bool> boundary_elements_to_delete(elements_.size() - n_elements_, stream_);
         SEM::Device::Meshes::find_boundary_elements_to_delete<<<ghosts_numBlocks_, boundaries_blockSize_, 0, stream_>>>(elements_.size() - n_elements_, n_elements_, n_elements_send_left[global_rank], n_elements_send_right[global_rank], elements_.data(), faces_.data(), boundary_elements_to_delete.data(), faces_to_delete.data());
 
-        device_vector<size_t> device_boundary_elements_to_delete_refine_array(ghosts_numBlocks_, stream_);
-        SEM::Device::Meshes::reduce_bools<boundaries_blockSize_/2><<<ghosts_numBlocks_, boundaries_blockSize_/2, 0, stream_>>>(boundary_elements_to_delete.size(), boundary_elements_to_delete.data(), device_boundary_elements_to_delete_refine_array.data());
-        std::vector<size_t> host_boundary_elements_to_delete_refine_array(device_boundary_elements_to_delete_refine_array.size());
-        device_boundary_elements_to_delete_refine_array.copy_to(host_boundary_elements_to_delete_refine_array, stream_);
-
-        cudaStreamSynchronize(stream_); // So the transfer to host_boundary_elements_to_delete_refine_array is complete
-
-        size_t n_boundary_elements_to_delete = 0;
-        for (int i = 0; i < ghosts_numBlocks_; ++i) {
-            n_boundary_elements_to_delete += host_boundary_elements_to_delete_refine_array[i];
-            host_boundary_elements_to_delete_refine_array[i] = n_boundary_elements_to_delete - host_boundary_elements_to_delete_refine_array[i]; // Current block offset
-        }
-        device_boundary_elements_to_delete_refine_array.copy_from(host_boundary_elements_to_delete_refine_array, stream_);
-
         // Boundary elements to add for received elements
         const int neighbours_numBlocks = (neighbours_arrays_recv.size() + elements_blockSize_ - 1) / elements_blockSize_;
         device_vector<size_t> wall_boundaries_to_add_refine_array(neighbours_numBlocks, stream_);
@@ -2847,6 +2833,20 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
             neighbours_arrays_recv_device.clear(stream_);
             neighbours_side_arrays_recv_device.clear(stream_);
         }
+
+        device_vector<size_t> device_boundary_elements_to_delete_refine_array(ghosts_numBlocks_, stream_);
+        SEM::Device::Meshes::reduce_bools<boundaries_blockSize_/2><<<ghosts_numBlocks_, boundaries_blockSize_/2, 0, stream_>>>(boundary_elements_to_delete.size(), boundary_elements_to_delete.data(), device_boundary_elements_to_delete_refine_array.data());
+        std::vector<size_t> host_boundary_elements_to_delete_refine_array(device_boundary_elements_to_delete_refine_array.size());
+        device_boundary_elements_to_delete_refine_array.copy_to(host_boundary_elements_to_delete_refine_array, stream_);
+
+        cudaStreamSynchronize(stream_); // So the transfer to host_boundary_elements_to_delete_refine_array is complete
+
+        size_t n_boundary_elements_to_delete = 0;
+        for (int i = 0; i < ghosts_numBlocks_; ++i) {
+            n_boundary_elements_to_delete += host_boundary_elements_to_delete_refine_array[i];
+            host_boundary_elements_to_delete_refine_array[i] = n_boundary_elements_to_delete - host_boundary_elements_to_delete_refine_array[i]; // Current block offset
+        }
+        device_boundary_elements_to_delete_refine_array.copy_from(host_boundary_elements_to_delete_refine_array, stream_);
 
         // Boundary elements to add
         std::vector<size_t> elements_send_destinations_offset_left(n_elements_send_left[global_rank]);
@@ -2924,7 +2924,7 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
 
         const size_t n_boundary_elements_to_add = n_wall_boundaries_to_add + n_symmetry_boundaries_to_add + n_inflow_boundaries_to_add + n_outflow_boundaries_to_add + n_mpi_destinations_to_add;
 
-        device_vector<Element2D_t> new_elements(n_elements_new[global_rank] + elements_.size() - n_elements_ + n_boundary_elements_to_add - n_boundary_elements_to_delete, stream_); // What about boundary elements?
+        device_vector<Element2D_t> new_elements(n_elements_new[global_rank] + elements_.size() - n_elements_ + n_boundary_elements_to_add - n_boundary_elements_to_delete, stream_);
         
         // Now we move carried over elements
         const size_t n_elements_move = n_elements_ - n_elements_send_left[global_rank] - n_elements_send_right[global_rank];
@@ -8286,6 +8286,7 @@ auto SEM::Device::Meshes::move_elements(size_t n_elements_move, size_t n_element
 
         new_elements[destination_element_index].clear_storage();
         new_elements[destination_element_index] = std::move(elements[source_element_index]);
+        printf("Element %llu moved to %llu\n", source_element_index, destination_element_index);
 
         // We update indices
         for (size_t i = 0; i < new_elements[destination_element_index].faces_.size(); ++i) {
@@ -8903,6 +8904,7 @@ auto SEM::Device::Meshes::move_boundary_elements(size_t n_boundary_elements, siz
 
             new_elements[new_boundary_element_index].clear_storage();
             new_elements[new_boundary_element_index] = std::move(elements[i + n_domain_elements]);
+            printf("Boundary element %llu moved to %llu\n", i + n_domain_elements, new_boundary_element_index);
 
             // We check for bad faces and update their indices
             size_t n_good_faces = 0;
@@ -9089,6 +9091,7 @@ auto SEM::Device::Meshes::create_sent_mpi_boundaries_destinations(
                 const size_t new_element_index = new_elements_offset + new_element_offset;
                 Element2D_t& new_element = new_elements[new_element_index];
                 const size_t next_side_index = (j + 1 >= element.nodes_.size()) ? 0 : j + 1;
+                printf("Created sent element mpi destination element at %llu\n", new_element_index);
 
                 mpi_interfaces_destination[mpi_interfaces_destination_offset + new_element_offset] = new_element_index;
                 mpi_interfaces_destination_process[mpi_interfaces_destination_offset + new_element_offset] = destination_process[i];
@@ -9116,8 +9119,8 @@ auto SEM::Device::Meshes::create_sent_mpi_boundaries_destinations(
                         const int face_thread_id = face_index%faces_blockSize;
 
                         size_t new_face_index = face_index - faces_to_delete_block_offsets[face_block_id];
-                        for (size_t k = face_index - face_thread_id; k < face_index; ++k) {
-                            new_face_index -= faces_to_delete[k];
+                        for (size_t l = face_index - face_thread_id; l < face_index; ++l) {
+                            new_face_index -= faces_to_delete[l];
                         }
                         new_element.faces_[0][k] = new_face_index;
                     }
@@ -9158,6 +9161,7 @@ auto SEM::Device::Meshes::recv_mpi_boundaries_destinations_reuse_faces(size_t n_
     const int stride = blockDim.x * gridDim.x;
 
     for (size_t i = index; i < n_mpi_interfaces_incoming; i += stride) {
+        // CHECK this probably doesn't work
         // This means we just received the element
         if (mpi_interfaces_new_process_incoming[i] == rank && (mpi_interfaces_new_local_index_incoming[i] < n_elements_recv_left || mpi_interfaces_new_local_index_incoming[i] >= n_domain_elements - n_elements_recv_right)) {
             const size_t element_index = mpi_interfaces_incoming[i];
@@ -9244,6 +9248,7 @@ auto SEM::Device::Meshes::create_received_neighbours(
                     neighbour_given_sides[i] = 0;
 
                     Element2D_t& element = elements[new_element_index];
+                    printf("Created neighbour wall at %llu\n", new_element_index);
                     element.clear_storage();
                     element.N_ = neighbour_N[i];
                     element.status_ = Hilbert::Status::A;
@@ -9276,6 +9281,7 @@ auto SEM::Device::Meshes::create_received_neighbours(
                     neighbour_given_sides[i] = 0;
 
                     Element2D_t& element = elements[new_element_index];
+                    printf("Created neighbour symmetry at %llu\n", new_element_index);
                     element.clear_storage();
                     element.N_ = neighbour_N[i];
                     element.status_ = Hilbert::Status::A;
@@ -9308,6 +9314,7 @@ auto SEM::Device::Meshes::create_received_neighbours(
                     neighbour_given_sides[i] = 0;
 
                     Element2D_t& element = elements[new_element_index];
+                    printf("Created neighbour inflow at %llu\n", new_element_index);
                     element.clear_storage();
                     element.N_ = neighbour_N[i];
                     element.status_ = Hilbert::Status::A;
@@ -9340,6 +9347,7 @@ auto SEM::Device::Meshes::create_received_neighbours(
                     neighbour_given_sides[i] = 0;
 
                     Element2D_t& element = elements[new_element_index];
+                    printf("Created neighbour outflow at %llu\n", new_element_index);
                     element.clear_storage();
                     element.N_ = neighbour_N[i];
                     element.status_ = Hilbert::Status::A;
@@ -9445,6 +9453,7 @@ auto SEM::Device::Meshes::create_received_neighbours(
                             neighbour_given_indices[i] = new_element_index;
 
                             Element2D_t& element = elements[new_element_index];
+                            printf("Created neighbour mpi destination at %llu\n", new_element_index);
                             element.clear_storage();
                             element.N_ = neighbour_N[i];
                             element.status_ = Hilbert::Status::A;
