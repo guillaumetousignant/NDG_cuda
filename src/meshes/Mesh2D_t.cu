@@ -1148,7 +1148,7 @@ auto SEM::Device::Meshes::Mesh2D_t::print() const -> void {
     }
 
     std::cout <<  "MPI interfaces:" << std::endl;
-    for (size_t j = 0; j < mpi_interfaces_outgoing_size_.size(); ++j) {
+    for (size_t j = 0; j < mpi_interfaces_process_.size(); ++j) {
         std::cout << '\t' << "MPI interface to process " << mpi_interfaces_process_[j] << " of outgoing size " << mpi_interfaces_outgoing_size_[j] << ", incoming size " << mpi_interfaces_incoming_size_[j] << ", outgoing offset " << mpi_interfaces_outgoing_offset_[j] << " and incoming offset " << mpi_interfaces_incoming_offset_[j] << ":" << std::endl;
         std::cout << '\t' << '\t' << "Outgoing element and element side:" << std::endl;
         for (size_t i = 0; i < mpi_interfaces_outgoing_size_[j]; ++i) {
