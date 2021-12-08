@@ -8107,7 +8107,7 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
                         neighbours_neighbour_index += neighbour_side_n_neighbours;
                     }   
                 } 
-                else if (neighbour_element_index > n_domain_elements - n_elements_recv_right && neighbour_element_index < element_index) {
+                else if (neighbour_element_index >= n_domain_elements - n_elements_recv_right && neighbour_element_index < element_index) {
                     // They create
                     const size_t neighbour_recv_index = neighbour_element_index + n_elements_recv_right - n_domain_elements;
                     size_t neighbour_face_index = face_offset + face_offsets_right[neighbour_recv_index];
@@ -8146,7 +8146,8 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
                 }
                 else { // In domain, we reuse a face. The face will already have the correct info
                     for (size_t m = 0; m < neighbour_element.faces_[neighbour_side].size(); ++m) {
-                        const size_t neighbour_face_index = neighbour_element.faces_[neighbour_side][m];
+                        const size_t neighbour_face_index = neighbour_element.faces_[neighbour_side][m]; // CHECK should probably check for -1
+                        printf("Received element %llu, index %llu, side %llu, #%llu, neighbour is in domain at %llu, side %llu. Checking face #%llu, index %llu\n", i, element_index, j, k, neighbour_element_index, neighbour_side, m, neighbour_face_index);
                         const Face2D_t& face = faces[neighbour_face_index];
                         const size_t face_side_index = face.elements_[0] == neighbour_element_index;
                         if (face.elements_[face_side_index] == element_index && face.elements_side_[face_side_index] == j) {
