@@ -1490,10 +1490,12 @@ auto SEM::Device::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceF
             if (!mpi_interfaces_destination_.empty()) {
                 size_t interface_offset = 0;
                 for (size_t i = 0; i < mpi_interfaces_incoming_size_.size(); ++i) {
+                    size_t splitting_incoming_elements = 0;
                     for (size_t j = 0; j < mpi_interfaces_incoming_size_[i]; ++j) {
-                        mpi_interfaces_incoming_size_[i] += host_receiving_interfaces_refine_[mpi_interfaces_incoming_offset_[i] + j] && !host_receiving_interfaces_refine_without_splitting_[mpi_interfaces_incoming_offset_[i] + j];
+                        splitting_incoming_elements += host_receiving_interfaces_refine_[mpi_interfaces_incoming_offset_[i] + j] && !host_receiving_interfaces_refine_without_splitting_[mpi_interfaces_incoming_offset_[i] + j];
                     }
                     mpi_interfaces_incoming_offset_[i] = interface_offset;
+                    mpi_interfaces_incoming_size_[i] += splitting_incoming_elements;
                     interface_offset += mpi_interfaces_incoming_size_[i];
                 }
             }
