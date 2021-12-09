@@ -1110,7 +1110,10 @@ auto SEM::Host::Meshes::Mesh2D_t::write_complete_data(hostFloat time, const std:
 
     get_complete_solution(time, polynomial_nodes, interpolation_matrices, N, dp_dt, du_dt, dv_dt, p_error, u_error, v_error, p_sigma, u_sigma, v_sigma, refine, coarsen, split_level, p_analytical_error, u_analytical_error, v_analytical_error, status, rotation);
 
-    data_writer.write_complete_data(n_interpolation_points_, n_elements_, time, x_output_, y_output_, p_output_, u_output_, v_output_, N, dp_dt, du_dt, dv_dt, p_error, u_error, v_error, p_sigma, u_sigma, v_sigma, refine, coarsen, split_level, p_analytical_error, u_analytical_error, v_analytical_error, status, rotation);
+    int global_rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
+
+    data_writer.write_complete_data(n_interpolation_points_, n_elements_, time, global_rank, x_output_, y_output_, p_output_, u_output_, v_output_, N, dp_dt, du_dt, dv_dt, p_error, u_error, v_error, p_sigma, u_sigma, v_sigma, refine, coarsen, split_level, p_analytical_error, u_analytical_error, v_analytical_error, status, rotation);
 }
 
 auto SEM::Host::Meshes::Mesh2D_t::adapt(int N_max, const std::vector<std::vector<hostFloat>>& polynomial_nodes, const std::vector<std::vector<hostFloat>>& barycentric_weights) -> void {
