@@ -131,6 +131,7 @@ auto SEM::Helpers::DataWriter_t::write_data(size_t n_interpolation_points,
 auto SEM::Helpers::DataWriter_t::write_complete_data(size_t n_interpolation_points, 
                                                      size_t N_elements, 
                                                      deviceFloat time,
+                                                     int rank,
                                                      const std::vector<deviceFloat>& x, 
                                                      const std::vector<deviceFloat>& y, 
                                                      const std::vector<deviceFloat>& p, 
@@ -283,6 +284,22 @@ auto SEM::Helpers::DataWriter_t::write_complete_data(size_t n_interpolation_poin
     }
 
     grid->GetPointData()->AddArray(rotation_output);
+
+    // Add rank to each point
+    vtkNew<vtkIntArray> rank_output;
+    rank_output->SetNumberOfComponents(1);
+    rank_output->Allocate(N_elements * n_interpolation_points * n_interpolation_points);
+    rank_output->SetName("Rank");
+
+    for (size_t element_index = 0; element_index < N_elements; ++element_index) {
+        for (size_t i = 0; i < n_interpolation_points; ++i) {
+            for (size_t j = 0; j < n_interpolation_points; ++j) {
+                rank_output->InsertNextValue(rank);
+            }
+        }
+    }
+
+    grid->GetPointData()->AddArray(rank_output);
 
     // Add pressure derivative to each point
     vtkNew<vtkDoubleArray> pressure_derivative;
