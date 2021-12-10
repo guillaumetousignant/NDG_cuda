@@ -5468,7 +5468,7 @@ auto SEM::Device::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_n
 
             const std::array<Vec2<deviceFloat>, 4> element_nodes = {nodes[element.nodes_[0]], nodes[element.nodes_[1]], nodes[element.nodes_[2]], nodes[element.nodes_[3]]}; // CHECK this won't work with elements with more than 4 sides
 
-            // CHECK follow Hilbert curve
+            // We follow the Hilbert curve
             const std::array<size_t, 4> child_order = Hilbert::child_order(element.status_, element.rotation_);
             const std::array<Hilbert::Status, 4> child_statuses = Hilbert::child_statuses(element.status_, element.rotation_);
             const size_t new_face_index = n_faces + 4 * n_splitting_elements_before;
