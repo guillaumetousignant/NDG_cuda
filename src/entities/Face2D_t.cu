@@ -77,11 +77,8 @@ auto SEM::Device::Entities::Face2D_t::compute_geometry(const std::array<SEM::Dev
     tangent_ /= length_; // CHECK should be normalized or not?
     normal_ = SEM::Device::Entities::Vec2<deviceFloat>(tangent_.y(), -tangent_.x());     
 
-    const SEM::Device::Entities::Vec2<deviceFloat> center = (nodes[0] + nodes[1])/2;
-    const std::array<SEM::Device::Entities::Vec2<deviceFloat>, 2> deltas {center - elements_centres[0],
-                                                                          elements_centres[1] - center}; 
-    const SEM::Device::Entities::Vec2<deviceFloat> delta = (deltas[0].magnitudeSquared() >= deltas[1].magnitudeSquared()) ? deltas[0] : deltas[1]; // CHECK doesn't work with both ghost cells                                                                    
-    const deviceFloat sign = std::copysign(static_cast<deviceFloat>(1), normal_.dot(delta));
+    const SEM::Device::Entities::Vec2<deviceFloat> left_element_tangent = element_nodes[0][1] - element_nodes[0][0];
+    const deviceFloat sign = std::copysign(static_cast<deviceFloat>(1), tangent_.dot(left_element_tangent)); // CHECK doesn't work for zero-length edges, if it is an issue do the thing with centres
     normal_ *= sign;
     tangent_ *= sign;
 
