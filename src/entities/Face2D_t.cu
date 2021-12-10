@@ -78,7 +78,9 @@ auto SEM::Device::Entities::Face2D_t::compute_geometry(const std::array<SEM::Dev
     normal_ = SEM::Device::Entities::Vec2<deviceFloat>(tangent_.y(), -tangent_.x());     
 
     const SEM::Device::Entities::Vec2<deviceFloat> center = (nodes[0] + nodes[1])/2;
-    const SEM::Device::Entities::Vec2<deviceFloat> delta = center - elements_centres[0]; // CHECK doesn't work with ghost cells
+    const std::array<SEM::Device::Entities::Vec2<deviceFloat>, 2> deltas {center - elements_centres[0],
+                                                                          elements_centres[1] - center}; 
+    const SEM::Device::Entities::Vec2<deviceFloat> delta = (deltas[0].magnitudeSquared() >= deltas[1].magnitudeSquared()) ? deltas[0] : deltas[1]; // CHECK doesn't work with both ghost cells                                                                    
     const deviceFloat sign = std::copysign(static_cast<deviceFloat>(1), normal_.dot(delta));
     normal_ *= sign;
     tangent_ *= sign;
