@@ -2994,7 +2994,7 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
 
             const size_t new_elements_offset_left = n_elements_new[global_rank] + elements_.size() - n_elements_ - n_boundary_elements_to_delete;
             const size_t new_elements_offset_right = n_elements_new[global_rank] + elements_.size() - n_elements_ - n_boundary_elements_to_delete + n_mpi_destinations_to_add_send_left;
-            SEM::Device::Meshes::move_required_faces<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces_.size(), n_elements_, n_elements_new[global_rank], n_elements_send_left[global_rank], n_elements_send_right[global_rank], n_elements_recv_left[global_rank], new_elements_offset_left, new_elements_offset_right, faces_.data(), new_faces.data(), faces_to_delete.data(), device_faces_to_delete_refine_array.data(), boundary_elements_to_delete.data(), device_boundary_elements_to_delete_refine_array.data(), boundaries_blockSize_, elements_send_destinations_offset_left_device.data(), elements_send_destinations_offset_right_device.data(), elements_send_destinations_keep_left_device.data(), elements_send_destinations_keep_right_device.data());
+            SEM::Device::Meshes::move_required_faces<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces_.size(), n_elements_, n_elements_new[global_rank], n_elements_send_left[global_rank], n_elements_send_right[global_rank], n_elements_recv_left[global_rank], n_elements_recv_right[global_rank], new_elements_offset_left, new_elements_offset_right, mpi_interfaces_destination_.size(), global_rank, faces_.data(), new_faces.data(), faces_to_delete.data(), device_faces_to_delete_refine_array.data(), boundary_elements_to_delete.data(), device_boundary_elements_to_delete_refine_array.data(), boundaries_blockSize_, elements_send_destinations_offset_left_device.data(), elements_send_destinations_offset_right_device.data(), elements_send_destinations_keep_left_device.data(), elements_send_destinations_keep_right_device.data(), mpi_interfaces_destination_.data(), mpi_interfaces_new_process_incoming_device.data(), mpi_interfaces_new_local_index_incoming_device.data(), mpi_interfaces_new_side_incoming_device.data());
 
             new_new_faces.clear(stream_);
         }
@@ -3272,11 +3272,6 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
 
             destination_process_device.clear(stream_);
             destination_local_index_device.clear(stream_);
-        }
-
-        // We reuse the faces for mpi destinations for received elements
-        if (n_elements_recv_left[global_rank] + n_elements_recv_right[global_rank] > 0) {
-            SEM::Device::Meshes::recv_mpi_boundaries_destinations_reuse_faces<<<mpi_interfaces_incoming_numBlocks_, boundaries_blockSize_, 0, stream_>>>(mpi_interfaces_destination_.size(), n_elements_new[global_rank], n_elements_recv_left[global_rank], n_elements_recv_right[global_rank], global_rank, elements_.data(), new_faces.data(), mpi_interfaces_destination_.data(), mpi_interfaces_new_process_incoming_device.data(), mpi_interfaces_new_local_index_incoming_device.data(), mpi_interfaces_new_side_incoming_device.data());
         }
 
         // We create received boundary elements for mpi destinations, and boundary conditions
@@ -8804,8 +8799,11 @@ auto SEM::Device::Meshes::move_required_faces(
         size_t n_elements_send_left, 
         size_t n_elements_send_right, 
         size_t n_elements_recv_left, 
+        size_t n_elements_recv_right, 
         size_t new_elements_offset_left, 
         size_t new_elements_offset_right, 
+        size_t n_mpi_destinations,
+        int rank,
         Face2D_t* faces, 
         Face2D_t* new_faces, 
         const bool* faces_to_delete, 
@@ -8816,7 +8814,11 @@ auto SEM::Device::Meshes::move_required_faces(
         const size_t* elements_send_destinations_offset_left,
         const size_t* elements_send_destinations_offset_right,
         const int* elements_send_destinations_keep_left, 
-        const int* elements_send_destinations_keep_right) -> void {
+        const int* elements_send_destinations_keep_right,
+        const size_t* mpi_interfaces_destination,
+        const int* mpi_interfaces_new_process_incoming,
+        const size_t* mpi_interfaces_new_local_index_incoming, 
+        const size_t* mpi_interfaces_new_side_incoming) -> void {
     
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
@@ -8860,7 +8862,7 @@ auto SEM::Device::Meshes::move_required_faces(
             else if (element_index_L < n_domain_elements) {
                 new_faces[new_face_index].elements_[0] = new_faces[new_face_index].elements_[0] + n_elements_recv_left - n_elements_send_left;
             }
-            else {
+            else {  // NOOT NOOT
                 const size_t boundary_element_index = element_index_L - n_domain_elements;
                 if (!boundary_elements_to_delete[boundary_element_index]) { // Should always be the case
                     const int boundary_block_id = boundary_element_index/boundary_blockSize;
@@ -8872,6 +8874,23 @@ auto SEM::Device::Meshes::move_required_faces(
                     }
 
                     new_faces[new_face_index].elements_[0] = new_boundary_element_index;
+                }
+                else {
+                    bool found_mpi_destination = false;
+                    size_t mpi_destination_index = static_cast<size_t>(-1);
+                    for (size_t j = 0; j < n_mpi_destinations; ++j) {
+                        if (mpi_interfaces_destination[j] == element_index_L) {
+                            mpi_destination_index = j;
+                            found_mpi_destination = true;
+                            break;
+                        }
+                    }
+
+                    // CHECK why check for index? All elements should be received now if their new process is here
+                    if (found_mpi_destination && mpi_interfaces_new_process_incoming[mpi_destination_index] == rank && (mpi_interfaces_new_local_index_incoming[i] < n_elements_recv_left || mpi_interfaces_new_local_index_incoming[i] >= n_domain_elements - n_elements_recv_right)) {
+                        new_faces[new_face_index].elements_[0] = mpi_interfaces_new_local_index_incoming[mpi_destination_index];
+                        new_faces[new_face_index].elements_side_[0] = mpi_interfaces_new_side_incoming[mpi_destination_index];
+                    }
                 }
             }
 
@@ -8913,6 +8932,23 @@ auto SEM::Device::Meshes::move_required_faces(
                     }
 
                     new_faces[new_face_index].elements_[1] = new_boundary_element_index;
+                }
+                else {
+                    bool found_mpi_destination = false;
+                    size_t mpi_destination_index = static_cast<size_t>(-1);
+                    for (size_t j = 0; j < n_mpi_destinations; ++j) {
+                        if (mpi_interfaces_destination[j] == element_index_R) {
+                            mpi_destination_index = j;
+                            found_mpi_destination = true;
+                            break;
+                        }
+                    }
+
+                    // CHECK why check for index? All elements should be received now if their new process is here
+                    if (found_mpi_destination && mpi_interfaces_new_process_incoming[mpi_destination_index] == rank && (mpi_interfaces_new_local_index_incoming[i] < n_elements_recv_left || mpi_interfaces_new_local_index_incoming[i] >= n_domain_elements - n_elements_recv_right)) {
+                        new_faces[new_face_index].elements_[1] = mpi_interfaces_new_local_index_incoming[mpi_destination_index];
+                        new_faces[new_face_index].elements_side_[1] = mpi_interfaces_new_side_incoming[mpi_destination_index];
+                    }
                 }
             }
         }
@@ -9247,31 +9283,6 @@ auto SEM::Device::Meshes::create_sent_mpi_boundaries_destinations(
                 ++new_element_offset;
             }
         } 
-    }
-}
-
-__global__
-auto SEM::Device::Meshes::recv_mpi_boundaries_destinations_reuse_faces(size_t n_mpi_interfaces_incoming, size_t n_domain_elements, size_t n_elements_recv_left, size_t n_elements_recv_right, int rank, const Element2D_t* elements, Face2D_t* new_faces, const size_t* mpi_interfaces_incoming, const int* mpi_interfaces_new_process_incoming, const size_t* mpi_interfaces_new_local_index_incoming, const size_t* mpi_interfaces_new_side_incoming_device) -> void {
-    const int index = blockIdx.x * blockDim.x + threadIdx.x;
-    const int stride = blockDim.x * gridDim.x;
-
-    for (size_t i = index; i < n_mpi_interfaces_incoming; i += stride) {
-        // CHECK this probably doesn't work
-        // This means we just received the element
-        if (mpi_interfaces_new_process_incoming[i] == rank && (mpi_interfaces_new_local_index_incoming[i] < n_elements_recv_left || mpi_interfaces_new_local_index_incoming[i] >= n_domain_elements - n_elements_recv_right)) {
-            const size_t element_index = mpi_interfaces_incoming[i];
-            const Element2D_t& element = elements[element_index];
-
-            for (size_t j = 0; j < element.faces_[0].size(); ++j) {
-                const size_t face_index = element.faces_[0][j];
-                if (face_index != static_cast<size_t>(-1)) {
-                    Face2D_t& face = new_faces[face_index];
-                    const size_t side_index = face.elements_[1] == element_index && face.elements_side_[1] == 0 && face.nodes_[0] == element.nodes_[1] && face.nodes_[1] == element.nodes_[0];
-                    face.elements_[side_index] = mpi_interfaces_new_local_index_incoming[i];
-                    face.elements_side_[side_index] = mpi_interfaces_new_side_incoming_device[i];
-                }
-            }
-        }
     }
 }
 
