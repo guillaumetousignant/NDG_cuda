@@ -152,7 +152,9 @@ Section~\ref{section:spectral_element_method:implementation}.
 
 The adaptivity and load balancing algorithms showed in
 Chapters~\ref{chapter:adaptive_mesh_refinement} and~\ref{chapter:load_balancing} are not so easily
-parallelisable. 
+parallelisable. These algorithms are sequential in nature, with many operations needing the result
+of previous ones to complete. In order to parallelise them, a few support structures have to be
+added for the different processing threads to be able to compute the
 
 \section{Process Parallelism} \label{section:graphics_processing_units:process_parallelism}
 % GPU partitions
