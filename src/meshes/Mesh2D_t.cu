@@ -5949,6 +5949,8 @@ auto SEM::Device::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_s
                 }
             };
 
+            printf("Face %llu splitting to %llu, has L element %llu, new index %llu, refine %d, R element %llu, new index %llu, refine %d\n", face_index, new_face_index, element_L_index, element_L_new_index, element_L.would_h_refine(max_split_level), element_R_index, element_R_new_index, element_R.would_h_refine(max_split_level));
+
             if (element_L.would_h_refine(max_split_level)) {
                 const std::array<size_t, 4> child_order_L = Hilbert::child_order(element_L.status_, element_L.rotation_);
 
@@ -5973,10 +5975,11 @@ auto SEM::Device::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_s
                     && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
 
                     const size_t previous_side_index = (element_L_side_index > 0) ? element_L_side_index - 1 : element_L.nodes_.size() - 1;
+                    const Vec2<deviceFloat> previous_new_element_node = (element_nodes[0] + nodes[element_L.nodes_[previous_side_index]])/2;
                     
                     new_element_indices[0][0] += child_order_L[element_L_side_index];
-                    elements_centres[0][0] = (nodes[element_L.nodes_[element_L_side_index]] + element_L.center_ + (nodes[element_L.nodes_[element_L_side_index]] + nodes[element_L.nodes_[element_L_next_side_index]])/2 + (nodes[element_L.nodes_[element_L_side_index]] + nodes[element_L.nodes_[previous_side_index]])/2)/4;
-                    elements_nodes[0][0] = {nodes[element_L.nodes_[element_L_side_index]], (nodes[element_L.nodes_[element_L_side_index]] + nodes[element_L.nodes_[element_L_next_side_index]])/2};
+                    elements_centres[0][0] = (element_nodes[0] + element_L.center_ + new_element_node + previous_new_element_node)/4;
+                    elements_nodes[0][0] = {element_nodes[0], new_element_node};
                 }
                 // The second face is within the first element
                 if (D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
@@ -5985,10 +5988,11 @@ auto SEM::Device::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_s
                     && E_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
 
                     const size_t previous_side_index = (element_L_side_index > 0) ? element_L_side_index - 1 : element_L.nodes_.size() - 1;
-                    
+                    const Vec2<deviceFloat> previous_new_element_node = (element_nodes[0] + nodes[element_L.nodes_[previous_side_index]])/2;
+
                     new_element_indices[1][0] += child_order_L[element_L_side_index];
-                    elements_centres[1][0] = (nodes[element_L.nodes_[element_L_side_index]] + element_L.center_ + (nodes[element_L.nodes_[element_L_side_index]] + nodes[element_L.nodes_[element_L_next_side_index]])/2 + (nodes[element_L.nodes_[element_L_side_index]] + nodes[element_L.nodes_[previous_side_index]])/2)/4;
-                    elements_nodes[1][0] = {nodes[element_L.nodes_[element_L_side_index]], (nodes[element_L.nodes_[element_L_side_index]] + nodes[element_L.nodes_[element_L_next_side_index]])/2};
+                    elements_centres[1][0] = (element_nodes[0] + element_L.center_ + new_element_node + previous_new_element_node)/4;
+                    elements_nodes[1][0] = {element_nodes[0], new_element_node};
                 }
                 // The first face is within the second element
                 if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
@@ -5997,10 +6001,11 @@ auto SEM::Device::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_s
                     && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
 
                     const size_t opposite_side_index = (element_L_side_index + 2 < element_L.nodes_.size()) ? element_L_side_index + 2 : element_L_side_index + 2 - element_L.nodes_.size();
+                    const Vec2<deviceFloat> opposite_new_element_node = (element_nodes[1] + nodes[element_L.nodes_[opposite_side_index]])/2;
 
                     new_element_indices[0][0] += child_order_L[element_L_next_side_index];
-                    elements_centres[0][0] = (nodes[element_L.nodes_[element_L_next_side_index]] + element_L.center_ + (nodes[element_L.nodes_[element_L_side_index]] + nodes[element_L.nodes_[element_L_next_side_index]])/2 + (nodes[element_L.nodes_[element_L_next_side_index]] + nodes[element_L.nodes_[opposite_side_index]])/2)/4;
-                    elements_nodes[0][0] = {(nodes[element_L.nodes_[element_L_side_index]] + nodes[element_L.nodes_[element_L_next_side_index]])/2, nodes[element_L.nodes_[element_L_next_side_index]]};
+                    elements_centres[0][0] = (element_nodes[1] + element_L.center_ + new_element_node + opposite_new_element_node)/4;
+                    elements_nodes[0][0] = {new_element_node, element_nodes[1]};
                 }
                 // The second face is within the second element
                 if (D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
@@ -6009,10 +6014,11 @@ auto SEM::Device::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_s
                     && E_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
 
                     const size_t opposite_side_index = (element_L_side_index + 2 < element_L.nodes_.size()) ? element_L_side_index + 2 : element_L_side_index + 2 - element_L.nodes_.size();
+                    const Vec2<deviceFloat> opposite_new_element_node = (element_nodes[1] + nodes[element_L.nodes_[opposite_side_index]])/2;
 
                     new_element_indices[1][0] += child_order_L[element_L_next_side_index];
-                    elements_centres[1][0] = (nodes[element_L.nodes_[element_L_next_side_index]] + element_L.center_ + (nodes[element_L.nodes_[element_L_side_index]] + nodes[element_L.nodes_[element_L_next_side_index]])/2 + (nodes[element_L.nodes_[element_L_next_side_index]] + nodes[element_L.nodes_[opposite_side_index]])/2)/4;
-                    elements_nodes[1][0] = {(nodes[element_L.nodes_[element_L_side_index]] + nodes[element_L.nodes_[element_L_next_side_index]])/2, nodes[element_L.nodes_[element_L_next_side_index]]};
+                    elements_centres[1][0] = (element_nodes[1] + element_L.center_ + new_element_node + opposite_new_element_node)/4;
+                    elements_nodes[1][0] = {new_element_node, element_nodes[1]};
                 }
             }
             if (element_R.would_h_refine(max_split_level)) {
@@ -6039,10 +6045,11 @@ auto SEM::Device::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_s
                     && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
 
                     const size_t previous_side_index = (element_R_side_index > 0) ? element_R_side_index - 1 : element_R.nodes_.size() - 1;
+                    const Vec2<deviceFloat> previous_new_element_node = (element_nodes[0] + nodes[element_R.nodes_[previous_side_index]])/2;
                     
                     new_element_indices[0][1] += child_order_R[element_R_side_index];
-                    elements_centres[0][1] = (nodes[element_R.nodes_[element_R_side_index]] + element_R.center_ + (nodes[element_R.nodes_[element_R_side_index]] + nodes[element_R.nodes_[element_R_next_side_index]])/2 + (nodes[element_R.nodes_[element_R_side_index]] + nodes[element_R.nodes_[previous_side_index]])/2)/4;
-                    elements_nodes[0][1] = {nodes[element_R.nodes_[element_R_side_index]], (nodes[element_R.nodes_[element_R_side_index]] + nodes[element_R.nodes_[element_R_next_side_index]])/2};
+                    elements_centres[0][1] = (element_nodes[0] + element_R.center_ + new_element_node + previous_new_element_node)/4;
+                    elements_nodes[0][1] = {element_nodes[0], new_element_node};
                 }
                 // The second face is within the first element
                 if (D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
@@ -6051,10 +6058,11 @@ auto SEM::Device::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_s
                     && E_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
 
                     const size_t previous_side_index = (element_R_side_index > 0) ? element_R_side_index - 1 : element_R.nodes_.size() - 1;
+                    const Vec2<deviceFloat> previous_new_element_node = (element_nodes[0] + nodes[element_R.nodes_[previous_side_index]])/2;
                     
                     new_element_indices[1][1] += child_order_R[element_R_side_index];
-                    elements_centres[1][1] = (nodes[element_R.nodes_[element_R_side_index]] + element_R.center_ + (nodes[element_R.nodes_[element_R_side_index]] + nodes[element_R.nodes_[element_R_next_side_index]])/2 + (nodes[element_R.nodes_[element_R_side_index]] + nodes[element_R.nodes_[previous_side_index]])/2)/4;
-                    elements_nodes[1][1] = {nodes[element_R.nodes_[element_R_side_index]], (nodes[element_R.nodes_[element_R_side_index]] + nodes[element_R.nodes_[element_R_next_side_index]])/2};
+                    elements_centres[1][1] = (element_nodes[0] + element_R.center_ + new_element_node + previous_new_element_node)/4;
+                    elements_nodes[1][1] = {element_nodes[0], new_element_node};
                 }
                 // The first face is within the second element
                 if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
@@ -6063,10 +6071,11 @@ auto SEM::Device::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_s
                     && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
 
                     const size_t opposite_side_index = (element_R_side_index + 2 < element_R.nodes_.size()) ? element_R_side_index + 2 : element_R_side_index + 2 - element_R.nodes_.size();
+                    const Vec2<deviceFloat> opposite_new_element_node = (element_nodes[1] + nodes[element_R.nodes_[opposite_side_index]])/2;
 
                     new_element_indices[0][1] += child_order_R[element_R_next_side_index];
-                    elements_centres[0][1] = (nodes[element_R.nodes_[element_R_next_side_index]] + element_R.center_ + (nodes[element_R.nodes_[element_R_side_index]] + nodes[element_R.nodes_[element_R_next_side_index]])/2 + (nodes[element_R.nodes_[element_R_next_side_index]] + nodes[element_R.nodes_[opposite_side_index]])/2)/4;
-                    elements_nodes[0][1] = {(nodes[element_R.nodes_[element_R_side_index]] + nodes[element_R.nodes_[element_R_next_side_index]])/2, nodes[element_R.nodes_[element_R_next_side_index]]};
+                    elements_centres[0][1] = (element_nodes[1] + element_R.center_ + new_element_node + opposite_new_element_node)/4;
+                    elements_nodes[0][1] = {new_element_node, element_nodes[1]};
                 }
                 // The second face is within the second element
                 if (D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
@@ -6075,10 +6084,11 @@ auto SEM::Device::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_s
                     && E_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
 
                     const size_t opposite_side_index = (element_R_side_index + 2 < element_R.nodes_.size()) ? element_R_side_index + 2 : element_R_side_index + 2 - element_R.nodes_.size();
+                    const Vec2<deviceFloat> opposite_new_element_node = (element_nodes[1] + nodes[element_R.nodes_[opposite_side_index]])/2;
 
                     new_element_indices[1][1] += child_order_R[element_R_next_side_index];
-                    elements_centres[1][1] = (nodes[element_R.nodes_[element_R_next_side_index]] + element_R.center_ + (nodes[element_R.nodes_[element_R_side_index]] + nodes[element_R.nodes_[element_R_next_side_index]])/2 + (nodes[element_R.nodes_[element_R_next_side_index]] + nodes[element_R.nodes_[opposite_side_index]])/2)/4;
-                    elements_nodes[1][1] = {(nodes[element_R.nodes_[element_R_side_index]] + nodes[element_R.nodes_[element_R_next_side_index]])/2, nodes[element_R.nodes_[element_R_next_side_index]]};
+                    elements_centres[1][1] = (element_nodes[1] + element_R.center_ + new_element_node + opposite_new_element_node)/4;
+                    elements_nodes[1][1] = {new_element_node, element_nodes[1]};
                 }
             }
 
@@ -6103,6 +6113,8 @@ auto SEM::Device::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_s
                 face.resize_storage(face_N);
             }
 
+            printf("Face %llu not splitting, has L element %llu, new index %llu, refine %d, R element %llu, new index %llu, refine %d\n", face_index, element_L_index, element_L_new_index, element_L.would_h_refine(max_split_level), element_R_index, element_R_new_index, element_R.would_h_refine(max_split_level));
+
             std::array<size_t, 2> face_new_element_indices = {element_L_new_index, element_R_new_index};
             if (element_L.would_h_refine(max_split_level) || element_R.would_h_refine(max_split_level)) {
                 const size_t element_L_next_side_index = (element_L_side_index + 1 < element_L.nodes_.size()) ? element_L_side_index + 1 : 0;
@@ -6120,11 +6132,6 @@ auto SEM::Device::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_s
 
                     const std::array<Vec2<deviceFloat>, 2> element_nodes {nodes[element_L.nodes_[element_L_side_index]], nodes[element_L.nodes_[element_L_next_side_index]]};
                     const Vec2<deviceFloat> new_element_node = (element_nodes[0] + element_nodes[1])/2;
-                    Vec2<deviceFloat> element_centre {0};
-                    for (size_t element_side_index = 0; element_side_index < element_L.nodes_.size(); ++element_side_index) {
-                        element_centre += nodes[element_L.nodes_[element_side_index]];
-                    }
-                    element_centre /= element_L.nodes_.size();
 
                     const std::array<Vec2<deviceFloat>, 2> AB {new_element_node - element_nodes[0], element_nodes[1] - new_element_node};
                     const std::array<deviceFloat, 2> AB_dot_inv  {1/AB[0].dot(AB[0]), 1/AB[1].dot(AB[1])};
@@ -6145,7 +6152,8 @@ auto SEM::Device::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_s
                         element_geometry_nodes[0] = {element_nodes[0], new_element_node};
 
                         const size_t previous_side_index = (element_L_side_index > 0) ? element_L_side_index - 1 : element_L.nodes_.size() - 1;
-                        elements_centres[0] = (element_nodes[0] + new_element_node + element_centre + nodes[element_L.nodes_[previous_side_index]])/4; // CHECK only works on quadrilaterals
+                        const Vec2<deviceFloat> previous_new_element_node = (element_nodes[0] + nodes[element_L.nodes_[previous_side_index]])/2;
+                        elements_centres[0] = (element_nodes[0] + new_element_node + element_L.center_ + previous_new_element_node)/4; // CHECK only works on quadrilaterals
                     }
                     // The face is within the second element
                     if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
@@ -6157,7 +6165,8 @@ auto SEM::Device::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_s
                         element_geometry_nodes[0] = {new_element_node, element_nodes[1]};
 
                         const size_t opposite_side_index = (element_L_side_index + 2 < element_L.nodes_.size()) ? element_L_side_index + 2 : element_L_side_index + 2 - element_L.nodes_.size();
-                        elements_centres[0] = (new_element_node + element_nodes[1] + element_centre + nodes[element_R.nodes_[opposite_side_index]])/4; // CHECK only works on quadrilaterals
+                        const Vec2<deviceFloat> opposite_new_element_node = (element_nodes[1] + nodes[element_L.nodes_[opposite_side_index]])/2;
+                        elements_centres[0] = (new_element_node + element_nodes[1] + element_L.center_ + opposite_new_element_node)/4; // CHECK only works on quadrilaterals
                     }
 
                 }
@@ -6166,11 +6175,6 @@ auto SEM::Device::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_s
 
                     const std::array<Vec2<deviceFloat>, 2> element_nodes {nodes[element_R.nodes_[element_R_side_index]], nodes[element_R.nodes_[element_R_next_side_index]]};
                     const Vec2<deviceFloat> new_element_node = (element_nodes[0] + element_nodes[1])/2;
-                    Vec2<deviceFloat> element_centre {0};
-                    for (size_t element_side_index = 0; element_side_index < element_R.nodes_.size(); ++element_side_index) {
-                        element_centre += nodes[element_R.nodes_[element_side_index]];
-                    }
-                    element_centre /= element_R.nodes_.size();
 
                     const std::array<Vec2<deviceFloat>, 2> AB {new_element_node - element_nodes[0], element_nodes[1] - new_element_node};
                     const std::array<deviceFloat, 2> AB_dot_inv  {1/AB[0].dot(AB[0]), 1/AB[1].dot(AB[1])};
@@ -6191,7 +6195,8 @@ auto SEM::Device::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_s
                         element_geometry_nodes[1] = {element_nodes[0], new_element_node};
                         
                         const size_t previous_side_index = (element_R_side_index > 0) ? element_R_side_index - 1 : element_R.nodes_.size() - 1;
-                        elements_centres[1] = (element_nodes[0] + new_element_node + element_centre + nodes[element_R.nodes_[previous_side_index]])/4; // CHECK only works on quadrilaterals
+                        const Vec2<deviceFloat> previous_new_element_node = (element_nodes[0] + nodes[element_R.nodes_[previous_side_index]])/2;
+                        elements_centres[1] = (element_nodes[0] + new_element_node + element_R.center_ + previous_new_element_node)/4; // CHECK only works on quadrilaterals
                     }
                     // The face is within the second element
                     if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
@@ -6203,11 +6208,14 @@ auto SEM::Device::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_s
                         element_geometry_nodes[1] = {new_element_node, element_nodes[1]};
                         
                         const size_t opposite_side_index = (element_R_side_index + 2 < element_R.nodes_.size()) ? element_R_side_index + 2 : element_R_side_index + 2 - element_R.nodes_.size();
-                        elements_centres[1] = (new_element_node + element_nodes[1] + element_centre + nodes[element_R.nodes_[opposite_side_index]])/4; // CHECK only works on quadrilaterals
+                        const Vec2<deviceFloat> opposite_new_element_node = (element_nodes[1] + nodes[element_R.nodes_[opposite_side_index]])/2;
+                        elements_centres[1] = (new_element_node + element_nodes[1] + element_R.center_ + opposite_new_element_node)/4; // CHECK only works on quadrilaterals
                     }
                 }
 
                 face.compute_geometry(elements_centres, face_nodes, element_geometry_nodes);
+
+                printf("    Face %llu not splitting, geometry computed with centres [(%g, %g), (%g, %g)], face nodes [(%g, %g), (%g, %g)], elements nodes [(%g, %g), (%g, %g)], [(%g, %g), (%g, %g)]. Face now has normal (%g, %g), tangent (%g, %g)\n", face_index, elements_centres[0].x(), elements_centres[0].y(), elements_centres[1].x(), elements_centres[1].y(), face_nodes[0].x(), face_nodes[0].y(), face_nodes[1].x(), face_nodes[1].y(), element_geometry_nodes[0][0].x(), element_geometry_nodes[0][0].y(), element_geometry_nodes[0][1].x(), element_geometry_nodes[0][1].y(), element_geometry_nodes[1][0].x(), element_geometry_nodes[1][0].y(), element_geometry_nodes[1][1].x(), element_geometry_nodes[1][1].y(), face.normal_.x(), face.normal_.y(), face.tangent_.x(), face.tangent_.y());
             }
 
             face.elements_ = face_new_element_indices;
