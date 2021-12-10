@@ -3914,9 +3914,9 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
 
         mpi_interfaces_process_ = std::move(new_mpi_interfaces_process);
         mpi_interfaces_incoming_size_ = std::move(new_mpi_interfaces_incoming_size);
-        mpi_interfaces_incoming_offset_ = std::move(new_mpi_interfaces_incoming_offset); // CHECK how do we ensure the distant process has the same ordering?
+        mpi_interfaces_incoming_offset_ = std::move(new_mpi_interfaces_incoming_offset);
         mpi_interfaces_outgoing_size_ = std::move(new_mpi_interfaces_outgoing_size);
-        mpi_interfaces_outgoing_offset_ = std::move(new_mpi_interfaces_outgoing_offset); // CHECK how do we ensure the distant process has the same ordering?
+        mpi_interfaces_outgoing_offset_ = std::move(new_mpi_interfaces_outgoing_offset);
 
         new_mpi_interfaces_origin.clear(stream_);
         new_mpi_interfaces_origin_side.clear(stream_);
