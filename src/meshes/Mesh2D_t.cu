@@ -5944,8 +5944,6 @@ auto SEM::Device::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_s
                 }
             };
 
-            printf("Face %llu splitting to %llu, has L element %llu, new index %llu, refine %d, R element %llu, new index %llu, refine %d\n", face_index, new_face_index, element_L_index, element_L_new_index, element_L.would_h_refine(max_split_level), element_R_index, element_R_new_index, element_R.would_h_refine(max_split_level));
-
             if (element_L.would_h_refine(max_split_level)) {
                 const std::array<size_t, 4> child_order_L = Hilbert::child_order(element_L.status_, element_L.rotation_);
 
@@ -6108,8 +6106,6 @@ auto SEM::Device::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_s
                 face.resize_storage(face_N);
             }
 
-            printf("Face %llu not splitting, has L element %llu, new index %llu, refine %d, R element %llu, new index %llu, refine %d\n", face_index, element_L_index, element_L_new_index, element_L.would_h_refine(max_split_level), element_R_index, element_R_new_index, element_R.would_h_refine(max_split_level));
-
             std::array<size_t, 2> face_new_element_indices = {element_L_new_index, element_R_new_index};
             if (element_L.would_h_refine(max_split_level) || element_R.would_h_refine(max_split_level)) {
                 const size_t element_L_next_side_index = (element_L_side_index + 1 < element_L.nodes_.size()) ? element_L_side_index + 1 : 0;
@@ -6209,8 +6205,6 @@ auto SEM::Device::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_s
                 }
 
                 face.compute_geometry(elements_centres, face_nodes, element_geometry_nodes);
-
-                printf("    Face %llu not splitting, geometry computed with centres [(%g, %g), (%g, %g)], face nodes [(%g, %g), (%g, %g)], elements nodes [(%g, %g), (%g, %g)], [(%g, %g), (%g, %g)]. Face now has normal (%g, %g), tangent (%g, %g)\n", face_index, elements_centres[0].x(), elements_centres[0].y(), elements_centres[1].x(), elements_centres[1].y(), face_nodes[0].x(), face_nodes[0].y(), face_nodes[1].x(), face_nodes[1].y(), element_geometry_nodes[0][0].x(), element_geometry_nodes[0][0].y(), element_geometry_nodes[0][1].x(), element_geometry_nodes[0][1].y(), element_geometry_nodes[1][0].x(), element_geometry_nodes[1][0].y(), element_geometry_nodes[1][1].x(), element_geometry_nodes[1][1].y(), face.normal_.x(), face.normal_.y(), face.tangent_.x(), face.tangent_.y());
             }
 
             face.elements_ = face_new_element_indices;
