@@ -8780,7 +8780,7 @@ auto SEM::Device::Meshes::move_faces(size_t n_faces, size_t n_domain_elements, s
                 }
 
                 // CHECK why check for index? All elements should be received now if their new process is here
-                if (found_mpi_destination && mpi_interfaces_new_process_incoming[mpi_destination_index] == rank && (mpi_interfaces_new_local_index_incoming[i] < n_elements_recv_left || mpi_interfaces_new_local_index_incoming[i] >= n_domain_elements - n_elements_recv_right)) {
+                if (found_mpi_destination && mpi_interfaces_new_process_incoming[mpi_destination_index] == rank && (mpi_interfaces_new_local_index_incoming[mpi_destination_index] < n_elements_recv_left || mpi_interfaces_new_local_index_incoming[mpi_destination_index] >= n_domain_elements - n_elements_recv_right)) {
                     new_faces[i].elements_[0] = mpi_interfaces_new_local_index_incoming[mpi_destination_index];
                     new_faces[i].elements_side_[0] = mpi_interfaces_new_side_incoming[mpi_destination_index];
                 }
@@ -8816,7 +8816,7 @@ auto SEM::Device::Meshes::move_faces(size_t n_faces, size_t n_domain_elements, s
                 }
 
                 // CHECK why check for index? All elements should be received now if their new process is here
-                if (found_mpi_destination && mpi_interfaces_new_process_incoming[mpi_destination_index] == rank && (mpi_interfaces_new_local_index_incoming[i] < n_elements_recv_left || mpi_interfaces_new_local_index_incoming[i] >= n_domain_elements - n_elements_recv_right)) {
+                if (found_mpi_destination && mpi_interfaces_new_process_incoming[mpi_destination_index] == rank && (mpi_interfaces_new_local_index_incoming[mpi_destination_index] < n_elements_recv_left || mpi_interfaces_new_local_index_incoming[mpi_destination_index] >= n_domain_elements - n_elements_recv_right)) {
                     new_faces[i].elements_[1] = mpi_interfaces_new_local_index_incoming[mpi_destination_index];
                     new_faces[i].elements_side_[1] = mpi_interfaces_new_side_incoming[mpi_destination_index];
                 }
@@ -8921,7 +8921,7 @@ auto SEM::Device::Meshes::move_required_faces(
                     }
 
                     // CHECK why check for index? All elements should be received now if their new process is here
-                    if (found_mpi_destination && mpi_interfaces_new_process_incoming[mpi_destination_index] == rank && (mpi_interfaces_new_local_index_incoming[i] < n_elements_recv_left || mpi_interfaces_new_local_index_incoming[i] >= n_domain_elements - n_elements_recv_right)) {
+                    if (found_mpi_destination && mpi_interfaces_new_process_incoming[mpi_destination_index] == rank && (mpi_interfaces_new_local_index_incoming[mpi_destination_index] < n_elements_recv_left || mpi_interfaces_new_local_index_incoming[mpi_destination_index] >= n_domain_elements - n_elements_recv_right)) {
                         new_faces[new_face_index].elements_[0] = mpi_interfaces_new_local_index_incoming[mpi_destination_index];
                         new_faces[new_face_index].elements_side_[0] = mpi_interfaces_new_side_incoming[mpi_destination_index];
                     }
@@ -8979,7 +8979,7 @@ auto SEM::Device::Meshes::move_required_faces(
                     }
 
                     // CHECK why check for index? All elements should be received now if their new process is here
-                    if (found_mpi_destination && mpi_interfaces_new_process_incoming[mpi_destination_index] == rank && (mpi_interfaces_new_local_index_incoming[i] < n_elements_recv_left || mpi_interfaces_new_local_index_incoming[i] >= n_domain_elements - n_elements_recv_right)) {
+                    if (found_mpi_destination && mpi_interfaces_new_process_incoming[mpi_destination_index] == rank && (mpi_interfaces_new_local_index_incoming[mpi_destination_index] < n_elements_recv_left || mpi_interfaces_new_local_index_incoming[mpi_destination_index] >= n_domain_elements - n_elements_recv_right)) {
                         new_faces[new_face_index].elements_[1] = mpi_interfaces_new_local_index_incoming[mpi_destination_index];
                         new_faces[new_face_index].elements_side_[1] = mpi_interfaces_new_side_incoming[mpi_destination_index];
                     }
