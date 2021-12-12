@@ -2953,7 +2953,7 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
             for (size_t j = 0; j < 4; ++j) {
                 const size_t side_n_neighbours = n_neighbours_arrays_send_left[4 * i + j];
                 for (size_t k = 0; k < side_n_neighbours; ++k) {
-                    if (neighbours_proc_arrays_send_left[neighbour_index_send + k] == global_rank) {
+                    if (neighbours_proc_arrays_send_left[neighbour_index_send + k] == global_rank && neighbours_arrays_send_left[neighbour_index_send + k] >= n_elements_recv_left[global_rank] && neighbours_arrays_send_left[neighbour_index_send + k] < n_elements_new[global_rank] - n_elements_recv_right[global_rank]) {
                         ++n_mpi_destinations_to_add_send_left;
                         elements_send_destinations_keep_left[4 * i + j] = 1;
                         break;
@@ -2970,7 +2970,7 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
             for (size_t j = 0; j < 4; ++j) {
                 const size_t side_n_neighbours = n_neighbours_arrays_send_right[4 * i + j];
                 for (size_t k = 0; k < side_n_neighbours; ++k) {
-                    if (neighbours_proc_arrays_send_right[neighbour_index_send + k] == global_rank) {
+                    if (neighbours_proc_arrays_send_right[neighbour_index_send + k] == global_rank && neighbours_arrays_send_right[neighbour_index_send + k] >= n_elements_recv_left[global_rank] && neighbours_arrays_send_right[neighbour_index_send + k] < n_elements_new[global_rank] - n_elements_recv_right[global_rank]) {
                         ++n_mpi_destinations_to_add_send_right;
                         elements_send_destinations_keep_right[4 * i + j] = 1;
                         break;
@@ -9007,6 +9007,7 @@ auto SEM::Device::Meshes::find_boundary_elements_to_delete(size_t n_boundary_ele
                 }
             }
         }
+        printf("Boundary element %llu, index %llu has delete %i\n", i, element_index, boundary_elements_to_delete[i]);
     }
 }
 
@@ -9018,6 +9019,7 @@ auto SEM::Device::Meshes::find_mpi_interface_elements_to_delete(size_t n_mpi_int
     for (size_t i = index; i < n_mpi_interface_elements; i += stride) {
         if (mpi_interfaces_new_process_incoming[i] == rank) {
             boundary_elements_to_delete[mpi_interfaces_destination[i] - n_domain_elements] = true;
+            printf("MPI destination %llu, element %llu, will be deleted\n", i,  mpi_interfaces_destination[i]);
         }
     }
 }
@@ -9042,6 +9044,7 @@ auto SEM::Device::Meshes::find_mpi_interface_elements_to_keep(size_t n_mpi_desti
 
                 if (mpi_proc == neighbour_proc && mpi_index == neighbour_index && mpi_side == neighbour_side) {
                     boundary_elements_to_delete[mpi_interfaces_destination[i] - n_domain_elements] = false; 
+                    printf("MPI destination %llu, element %llu, will be kept\n", i,  mpi_interfaces_destination[i]);
                     break;
                 }
             }
