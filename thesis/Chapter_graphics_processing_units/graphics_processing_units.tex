@@ -196,12 +196,38 @@ multiple transfers on different levels and should be optimised as much as possib
 minimise the number of interfaces between the different mesh blocks is explained in
 Chapter~\ref{chapter:load_balancing}. 
 
+It is possible to split the mesh in more blocks than there are GPUs in a system. In this case, there
+will be one process per block, and some processes will share GPUs. The GPUs will be split into
+virtual partitions, using concurrent execution streams. These streams execute concurrently on a GPU,
+leveraging the fact that some operations can happen at the same time, up to one running kernel, one
+transfer from the CPU to the GPU, and one transfer from the GPU to the CPU. Additionally, the GPU
+can execute one kernel while another kernel is waiting for memory. These partitions do not increase
+performance, but are useful to test running more blocks than there are available GPUs, or running
+the program with a mesh that is split in more blocks than available GPUs without re-splitting it.
+
+A simple mesh generator program and a mesh partitioner are available as part of this work. The mesh
+generator can create square meshes of arbitrary resolution with different boundary conditions. The
+mesh partitioner can split arbitrary single block meshes to multi-block meshes.
+
 \section{Data structure} \label{section:graphics_processing_units:data_structure}
-% Mesh design, unstructured
-% Talk about dynamic memory
-% Talk about data structure? The fact we use unstructured meshes, are the worse case for GPU
-% Talk about how data is allocated
-% Race conditions, when information is exchanged (ex fluxes)
+
+The data structure used in this work has been designed to provide good performance on the GPU
+architecture, while keeping the ease of use and programming of CPU code. The mesh
+
+\subsection{Performance} \label{section:graphics_processing_units:data_structure:performance}
+% flat arrays
+% cuda allocations
+% data exchange (ex fluxes)
+
+In order to get good performance and 
+
+\subsection{Ease of use} \label{section:graphics_processing_units:data_structure:ease_of_use}
+% Unstructured meshes
+% cgns meshes
+
+\subsection{Ease of programming} \label{section:graphics_processing_units:data_structure:ease_of_programming}
+% object oriented
+% dynamic memory
 
 \section{Implementation} \label{section:graphics_processing_units:implementation}
 % Talk about reductions
