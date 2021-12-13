@@ -209,6 +209,14 @@ A simple mesh generator program and a mesh partitioner are available as part of 
 generator can create square meshes of arbitrary resolution with different boundary conditions. The
 mesh partitioner can split arbitrary single block meshes to multi-block meshes.
 
+These workers, each having a mesh block, do not necessarily need to run on GPUs. A CPU version of
+the program is provided to compare the efficiency of the program and to aid debugging. That version
+uses CPU workers doing the same computations. The program could even be modified to dispatch work to
+CPU and GPU workers to use the full computing power of a system. Some work would need to be done to
+ascertain the relative capacity of the different workers, as a GPU worker running on a complete GPU
+is much faster than a CPU worker running on a single CPU core. CPU workers could also use multiple
+threads, with an architecture similar to the GPU one.
+
 \section{Data structure} \label{section:graphics_processing_units:data_structure}
 
 The data structure used in this work has been designed to provide good performance on the GPU
@@ -216,19 +224,42 @@ architecture, while keeping the ease of use and programming of CPU code. The mes
 made up of elements, faces and nodes.
 
 \subsection{Performance} \label{section:graphics_processing_units:data_structure:performance}
-% flat arrays
-% cuda allocations
-% data exchange (ex fluxes)
 
-In order to get good performance and 
+In order to get good performance and fit naturally with the GPU architecture, the different object
+are stored as flat one-dimensional arrays on the GPU. The CUDA memory allocation functions are run
+on the CPU and return a continuous block of memory on the GPU, and the memory transfers between the
+CPU and GPU copy continuous blocks of memory. This matches well with having flat arrays of objects.
+Other data structures, like trees, would need multiple memory allocations from the CPU and a kernel
+to assemble them in some kind of structure. This would be manageable for a non-adaptive solver as it
+would be performed once, but with mesh refinement and load balancing the mesh changes constantly.
+With arrays, an array of the new size is allocated and the objects are moved to it. Thanks to the
+structure from
+Subsection~\ref{section:graphics_processing_units:data_structure:ease_of_programming}, the elements
+themselves have a known constant size regardless of polynomial order, and have the bulk of their
+size out of the element object, making them fast to move and making the element array smaller. The
+flat arrays also reduce indirection and structure the memory accesses. Threads from a kernel
+executing on elements directly access the element at their thread index in the element array.
+
+This simplifies greatly transfers between the CPU and GPU, and mesh reallocation when refining or
+load balancing. On the other hand, it carries less context on the relation between mesh blocks,
+complicating the element exchanges from Chapter~\ref{chapter:load_balancing}. It also means that
+elements and faces move around in the arrays as more are added, and their indices must be updated in
+other objects linking to them. 
+
+Some data needs to be transferred to the CPU during the computation, such as fluxes between mesh
+blocks in different processes, and data to be written to the output files. These transfers use
+arrays allocated on the CPU and GPU, and a kernel storing the data into the GPU array. The array can
+then be transferred to the CPU, and either written to disk or sent to another CPU and then its GPU.
 
 \subsection{Ease of use} \label{section:graphics_processing_units:data_structure:ease_of_use}
 % Unstructured meshes
 % cgns meshes
+% vtk output
 
 \subsection{Ease of programming} \label{section:graphics_processing_units:data_structure:ease_of_programming}
 % object oriented
 % dynamic memory
+% easy to move
 
 \section{Implementation} \label{section:graphics_processing_units:implementation}
 % Talk about reductions
