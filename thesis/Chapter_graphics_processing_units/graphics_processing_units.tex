@@ -263,9 +263,6 @@ arrays allocated on the CPU and GPU, and a kernel storing the data into the GPU 
 then be transferred to the CPU, and either written to disk or sent to another CPU and then its GPU.
 
 \subsection{Ease of use} \label{section:graphics_processing_units:data_structure:ease_of_use}
-% Unstructured meshes
-% cgns meshes
-% vtk output
 
 \begin{figure}[H]
 	\centering
@@ -286,9 +283,36 @@ meshes, elements are placed in a regular grid, and have an index describing thei
 this is the row and column of the element. The neighbours of an element are found by simply
 incrementing or decrementing the index.
 
+\begin{figure}[H]
+	\centering
+	\subfloat[Structured mesh]
+	{\includesvg[width=0.5\textwidth]{Chapter_graphics_processing_units/media/structured_memory} \label{fig:structured_memory}}
+	\hfill
+	\subfloat[Unstructured mesh]
+	{\includesvg[width=0.5\textwidth]{Chapter_graphics_processing_units/media/unstructured_memory} \label{fig:unstructured_memory}}
+	\caption{Memory accesses: (a) Structured (b) Unstructured}
+	\label{fig:mesh_memory}
+\end{figure}
+
 Here a concession has been made for flexibility, as structured meshes would be faster than
 unstructured meshes on a GPU. Threads on a GPU benefit from accessing memory in an ordered fashion.
-With a structured mesh, the neighbours of a 
+With a structured mesh, thread warps need only one memory access to obtain all their neighbours. The
+neighbours are packed in memory, and their index can be computed easily by incrementing the element
+indices. For unstructured meshes, neighbour indices have to be fetched from an area in memory, and
+the neighbours are not guaranteed to be contiguous in memory. This adds an indirection, and may need
+multiple memory accesses.
+
+Since unstructured meshes enable more complex meshes to be represented than strictly regular
+quadrilaterals, this tradeoff is accepted, and acts as a worst case scenario for the performance of
+GPUs.
+
+The program uses the CGNS mesh format. Both the provided mesh generator and mesh partitioner output
+the format, and the mesh partitioner and solver can read the format. The format is widely used,
+which should enable this program to read the many already available meshes using the format.
+
+The program outputs data using the VTK format. Once again, this is a widely used format, notably
+used by the \textit{ParaView} visualisation application. The results of the program should then be
+easy to manipulate and display.
 
 \subsection{Ease of programming} \label{section:graphics_processing_units:data_structure:ease_of_programming}
 % object oriented
