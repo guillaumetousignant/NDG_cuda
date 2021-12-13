@@ -77,7 +77,6 @@ possible. Programs running on GPUs must compensate by avoiding divergence as muc
 warps.
 
 \subsection{Programming model} \label{section:graphics_processing_units:architecture:programming_model}
-% Talk about saturation, SMs
 
 This work uses the CUDA programming model. It is a programming language, framework and runtime to
 enable programming on GPUs with an extension of the C++ language. Programs using the language
@@ -147,13 +146,15 @@ are possible to solve this issue. For example, Giuliani and Krivodonova~\cite{Gi
 edge colouring method where the same kernel is run multiple times on different edges in order to
 avoir writing to the elements at the same time. Our program parallelises this part of the
 computation on the faces connecting the elements instead, as described in
-Section~\ref{section:spectral_element_method:implementation}. 
+Section~\ref{section:spectral_element_method:implementation}. As long as there are enough elements
+in the mesh to saturate the cores of the GPU with work, this part of the program should e efficient
+to run on the GPU.
 
 The adaptivity and load balancing algorithms showed in
 Chapters~\ref{chapter:adaptive_mesh_refinement} and~\ref{chapter:load_balancing} are not so easily
 parallelisable. These algorithms are sequential in nature, with many operations needing the result
 of previous ones to complete. In order to parallelise them, a few support structures have to be
-added for the different processing threads to be able to find the data thay have been assigned, and 
+added for the different processing threads to be able to find the data they have been assigned, and 
 the different memory locations they are allowed to access. Another issue is that a kernel operating 
 on certain objects, elements for example, shouldn't modify other objects, such as faces. This is 
 done to avoid race conditions when multiple threads try to access the same memory location, faces in
@@ -166,6 +167,16 @@ avoiding race conditions. More information on how the algorithms are designed is
 Sections~\ref{section:spectral_element_method:implementation},
 \ref{section:adaptive_mesh_refinement:implementation} and 
 \ref{section:load_balancing:implementation}.
+
+The results of load balancing and mesh refinement are also not naturally suited for GPUs. These
+processors are more suited for static repetitive tasks. Elements splitting, changing their
+polynomial order and moving around will reduce the efficiency of the computations if care is not
+taken to tune the algorithms to this platform. Different polynomial orders elements in a thread warp
+will introduce branching, and the warp will take as much time to execute as the highest polynomial
+order elements. Elements moving around and splitting will put more pressure on the limited cache of
+GPUs, as threads will loop on different elements after refinement and load balancing. The interval
+between each refinement and load balancing will have to be tuned to trade off between having an
+optimal mesh and having a static mesh fore more iterations.
 
 \section{Process Parallelism} \label{section:graphics_processing_units:process_parallelism}
 % GPU partitions
