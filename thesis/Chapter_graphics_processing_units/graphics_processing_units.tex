@@ -315,9 +315,43 @@ used by the \textit{ParaView} visualisation application. The results of the prog
 easy to manipulate and display.
 
 \subsection{Ease of programming} \label{section:graphics_processing_units:data_structure:ease_of_programming}
-% object oriented
-% dynamic memory
-% easy to move
+
+The program is written partly using the Object-oriented paradigm, especially for the data structure
+part. Elements, faces and nodes are objects, each with multiple data members and methods. This
+groups many parameters together that would be separate arrays otherwise, making it easier to program
+and keep track of the different members of objects. This has the disadvantage of putting more
+pressure on the limited cache of GPUs, and potentially increase the number of memory accesses
+needed. This is the structure of arrays against array of structures debate. It increases cache
+pressure when a loop only accesses a subset of the data members of an object. For example, the
+solution update function only used the solution and derivative of an element. When threads loop over
+those elements, they have to load entire elements into cache. If the solution and derivative were
+stored into separate arrays, much more elements could fit in cache as only their solution and
+derivative would be fetched. This would also improve memory accesses, as warps of threads would need
+fewer memory accesses since the data is continuous.
+
+On the other hand, using objects simplifies many areas of the code. Elements can be sent and
+received from process to process as a whole, adding a data member doesn't necessitate modifying
+every part of the code that copies or creates elements. This is especially useful as it enables
+using constructors and destructors for objects.
+
+% Figure about dynamic memory
+
+Constructors and destructors are used here because the objects use dynamic memory for their solution
+data. As elements and faces can have a different polynomial order, they need to store more or less
+data depending on it. This makes it impossible to create an array of objects, unless all objects use
+the maximum size they can have, negating the memory advantage of lower-order elements. Instead, in
+this work objects use dynamic memory to hold their variable size arrays. They hold pointers to that
+memory, making the objects themselves fixed in size. This has the added benefit of making the
+objects smaller and easier to move around, as only the pointers and the geometry data have to be
+moved while the bigger solution data stays in dynamic memory. 
+
+Unlike the main arrays which are allocated from the CPU on the GPU using the CUDA runtime, GPU
+dynamic memory is allocated on the GPU itself. When the elements are created in a kernel, each
+thread will allocate memory in parallel in the object constructor. That memory will be deallocated
+when the element is deleted. Coupled with move semantics of modern C++, this allows the automatic
+management of that memory on the GPU, like we would use smart pointers or arrays in usual C++.
+Dynamic memory allocation on the GPU is a relatively new feature, which enables programming patterns
+closers to those used for CPU programming.
 
 \section{Implementation} \label{section:graphics_processing_units:implementation}
 % Talk about reductions
