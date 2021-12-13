@@ -622,7 +622,8 @@ def plot_mesh(mesh: Mesh,
     face_numbers: bool = True, 
     node_numbers: bool = True, 
     ghost_numbers: bool = True, 
-    boundary_numbers: bool = True):
+    boundary_numbers: bool = True,
+    show_title: bool = True):
     
     points_colour = np.array([197, 134, 192])/255
     elements_colour = np.array([37, 37, 37])/255
@@ -655,7 +656,8 @@ def plot_mesh(mesh: Mesh,
     ax.set_aspect(1)
     ax.set_xlabel("x")
     ax.set_ylabel("y")
-    ax.set_title("Mesh")
+    if show_title:
+        ax.set_title("Mesh")
 
     if show_ghosts:
         for i in range(mesh.elements.n, mesh.elements.n_total):
@@ -835,6 +837,7 @@ def main(argv: list[str]):
     parser.add_argument('--node-numbers', type=bool, default=True, action=argparse.BooleanOptionalAction, help='show/hide node numbers')
     parser.add_argument('--ghost-numbers', type=bool, default=True, action=argparse.BooleanOptionalAction, help='show/hide ghost numbers')
     parser.add_argument('--boundary-numbers', type=bool, default=True, action=argparse.BooleanOptionalAction, help='show/hide boundary numbers')
+    parser.add_argument('--title', type=bool, default=True, action=argparse.BooleanOptionalAction, help='show/hide title')
     args = parser.parse_args(argv)
 
     meshes = []
@@ -842,7 +845,7 @@ def main(argv: list[str]):
         meshes.append((read_file(mesh_file), mesh_file))
 
     for mesh, inputfile in meshes:
-        plot_mesh(mesh, inputfile, args.elements, args.faces, args.nodes, args.ghosts, args.element_numbers, args.face_numbers, args.node_numbers, args.ghost_numbers, args.boundary_numbers)
+        plot_mesh(mesh, inputfile, args.elements, args.faces, args.nodes, args.ghosts, args.element_numbers, args.face_numbers, args.node_numbers, args.ghost_numbers, args.boundary_numbers, args.title)
 
     plt.show()
 
