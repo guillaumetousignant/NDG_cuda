@@ -267,12 +267,28 @@ then be transferred to the CPU, and either written to disk or sent to another CP
 % cgns meshes
 % vtk output
 
-% Insert structured and unstructured meshes
+\begin{figure}[H]
+	\centering
+	\subfloat[Structured mesh]
+	{\includegraphics[width=0.45\textwidth]{Chapter_graphics_processing_units/media/structured_mesh} \label{fig:structured_mesh}}
+	\hfill
+	\subfloat[Unstructured mesh]
+	{\includegraphics[width=0.45\textwidth]{Chapter_graphics_processing_units/media/unstructured_mesh} \label{fig:unstructured_mesh}}
+	\caption{Types of meshes~\cite{Clucas1999}: (a) Structured (b) Unstructured}
+	\label{fig:mesh_types}
+\end{figure}
 
 In order to increase ease of use, the program is made to work with unstructured meshes. Unstructured
 meshes allow for increased flexibility when meshing, and an unstructured mesh solver can easily be
 made to also read structured meshes. In unstructured meshes, elements are not necessarily numbered
-in any order. Elements 
+in any order. Elements hold an explicit list of the indices of their neighbours. In structured
+meshes, elements are placed in a regular grid, and have an index describing their location. In 2D,
+this is the row and column of the element. The neighbours of an element are found by simply
+incrementing or decrementing the index.
+
+Here a concession has been made for flexibility, as structured meshes would be faster than
+unstructured meshes on a GPU. Threads on a GPU benefit from accessing memory in an ordered fashion.
+With a structured mesh, the neighbours of a 
 
 \subsection{Ease of programming} \label{section:graphics_processing_units:data_structure:ease_of_programming}
 % object oriented
