@@ -219,6 +219,17 @@ threads, with an architecture similar to the GPU one.
 
 \section{Data structure} \label{section:graphics_processing_units:data_structure}
 
+\begin{figure}[H]
+	\centering
+	\subfloat[First mesh block]
+	{\includesvg[width=0.45\textwidth]{Chapter_graphics_processing_units/media/mesh_0_after0_P2} \label{fig:mesh_left}}
+	\hfill
+	\subfloat[Second mesh block]
+	{\includesvg[width=0.45\textwidth]{Chapter_graphics_processing_units/media/mesh_1_after0_P2} \label{fig:mesh_right}}
+	\caption{Data structure: A mesh split into two blocks (a) First block (b) Second block}
+	\label{fig:mesh_structure}
+\end{figure}
+
 The data structure used in this work has been designed to provide good performance on the GPU
 architecture, while keeping the ease of use and programming of CPU code. The mesh is unstructured,
 made up of elements, faces and nodes.
@@ -255,6 +266,13 @@ then be transferred to the CPU, and either written to disk or sent to another CP
 % Unstructured meshes
 % cgns meshes
 % vtk output
+
+% Insert structured and unstructured meshes
+
+In order to increase ease of use, the program is made to work with unstructured meshes. Unstructured
+meshes allow for increased flexibility when meshing, and an unstructured mesh solver can easily be
+made to also read structured meshes. In unstructured meshes, elements are not necessarily numbered
+in any order. Elements 
 
 \subsection{Ease of programming} \label{section:graphics_processing_units:data_structure:ease_of_programming}
 % object oriented
