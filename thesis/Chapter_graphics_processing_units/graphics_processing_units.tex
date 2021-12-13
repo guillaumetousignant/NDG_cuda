@@ -78,7 +78,6 @@ warps.
 
 \subsection{Programming model} \label{section:graphics_processing_units:architecture:programming_model}
 % Talk about saturation, SMs
-% How it doesn't work well with adaptivity usually
 
 This work uses the CUDA programming model. It is a programming language, framework and runtime to
 enable programming on GPUs with an extension of the C++ language. Programs using the language
@@ -154,7 +153,19 @@ The adaptivity and load balancing algorithms showed in
 Chapters~\ref{chapter:adaptive_mesh_refinement} and~\ref{chapter:load_balancing} are not so easily
 parallelisable. These algorithms are sequential in nature, with many operations needing the result
 of previous ones to complete. In order to parallelise them, a few support structures have to be
-added for the different processing threads to be able to compute the
+added for the different processing threads to be able to find the data thay have been assigned, and 
+the different memory locations they are allowed to access. Another issue is that a kernel operating 
+on certain objects, elements for example, shouldn't modify other objects, such as faces. This is 
+done to avoid race conditions when multiple threads try to access the same memory location, faces in
+this example. The practical consequence of this is that objects moving to a new index in their 
+storage arrays cannot update their neighbour faces to point to their new index. Their neighbours 
+must therefore have the required information to compute where the element will move when the face 
+moves itself, and update the index itself. By designing the algorithms this way, a kernel running on 
+an object type will have each thread writing to only a single object corresponding to its index, 
+avoiding race conditions. More information on how the algorithms are designed is available in 
+Sections~\ref{section:spectral_element_method:implementation},
+\ref{section:adaptive_mesh_refinement:implementation} and 
+\ref{section:load_balancing:implementation}.
 
 \section{Process Parallelism} \label{section:graphics_processing_units:process_parallelism}
 % GPU partitions
