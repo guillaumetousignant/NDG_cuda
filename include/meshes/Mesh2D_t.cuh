@@ -328,10 +328,10 @@ namespace SEM { namespace Device { namespace Meshes {
     auto adjust_faces_neighbours(size_t n_faces, SEM::Device::Entities::Face2D_t* faces, const SEM::Device::Entities::Element2D_t* elements, const SEM::Device::Entities::Vec2<deviceFloat>* nodes, int max_split_level, int N_max, const size_t* elements_new_indices) -> void;
 
     __global__
-    auto move_boundaries(size_t n_boundaries, SEM::Device::Entities::Element2D_t* elements, SEM::Device::Entities::Element2D_t* new_elements, const size_t* boundaries, const SEM::Device::Entities::Face2D_t* faces, size_t* elements_new_indices) -> void;
+    auto move_boundaries(size_t n_boundaries, size_t offset, SEM::Device::Entities::Element2D_t* elements, SEM::Device::Entities::Element2D_t* new_elements, const size_t* boundaries, const SEM::Device::Entities::Face2D_t* faces, size_t* elements_new_indices) -> void;
 
     __global__
-    auto move_interfaces(size_t n_local_interfaces, SEM::Device::Entities::Element2D_t* elements, SEM::Device::Entities::Element2D_t* new_elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_destination, size_t* elements_new_indices) -> void;
+    auto move_interfaces(size_t n_local_interfaces, size_t offset, SEM::Device::Entities::Element2D_t* elements, SEM::Device::Entities::Element2D_t* new_elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_destination, size_t* elements_new_indices) -> void;
 
     __global__
     auto print_element_faces(size_t n_elements, const SEM::Device::Entities::Element2D_t* elements) -> void;
