@@ -696,7 +696,7 @@ auto SEM::Device::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) ->
         requests_ = std::vector<MPI_Request>(n_mpi_interfaces * 2 * mpi_boundaries_n_transfers);
         statuses_ = std::vector<MPI_Status>(requests_.size());
         requests_adaptivity_ = std::vector<MPI_Request>(n_mpi_interfaces * 2 * mpi_adaptivity_split_n_transfers);
-        statuses_adaptivity_ = std::vector<MPI_Status>(statuses_adaptivity_.size());
+        statuses_adaptivity_ = std::vector<MPI_Status>(requests_adaptivity_.size());
     }
 
     // Setting sizes
@@ -3564,7 +3564,7 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
         requests_ = std::vector<MPI_Request>(mpi_interfaces_process_.size() * 2 * mpi_boundaries_n_transfers);
         statuses_ = std::vector<MPI_Status>(requests_.size());
         requests_adaptivity_ = std::vector<MPI_Request>(mpi_interfaces_process_.size() * 2 * mpi_adaptivity_split_n_transfers);
-        statuses_adaptivity_ = std::vector<MPI_Status>(statuses_adaptivity_.size());
+        statuses_adaptivity_ = std::vector<MPI_Status>(requests_adaptivity_.size());
 
         // Updating quantities
         n_elements_ = n_elements_new[global_rank];
@@ -3921,7 +3921,7 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
         requests_ = std::vector<MPI_Request>(mpi_interfaces_process_.size() * 2 * mpi_boundaries_n_transfers);
         statuses_ = std::vector<MPI_Status>(requests_.size());
         requests_adaptivity_ = std::vector<MPI_Request>(mpi_interfaces_process_.size() * 2 * mpi_adaptivity_split_n_transfers);
-        statuses_adaptivity_ = std::vector<MPI_Status>(statuses_adaptivity_.size());
+        statuses_adaptivity_ = std::vector<MPI_Status>(requests_adaptivity_.size());
 
         new_mpi_interfaces_origin.clear(stream_);
         new_mpi_interfaces_origin_side.clear(stream_);
