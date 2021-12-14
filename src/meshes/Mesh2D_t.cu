@@ -693,10 +693,10 @@ auto SEM::Device::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) ->
         host_receiving_interfaces_refine_ = host_vector<bool>(mpi_interfaces_destination.size());
         host_receiving_interfaces_refine_without_splitting_ = host_vector<bool>(mpi_interfaces_destination.size());
 
-        requests_ = std::vector<MPI_Request>(n_mpi_interfaces * 6);
-        statuses_ = std::vector<MPI_Status>(n_mpi_interfaces * 6);
-        requests_adaptivity_ = std::vector<MPI_Request>(n_mpi_interfaces * 4);
-        statuses_adaptivity_ = std::vector<MPI_Status>(n_mpi_interfaces * 4);
+        requests_ = std::vector<MPI_Request>(n_mpi_interfaces * 2 * mpi_boundaries_n_transfers);
+        statuses_ = std::vector<MPI_Status>(requests_.size());
+        requests_adaptivity_ = std::vector<MPI_Request>(n_mpi_interfaces * 2 * mpi_adaptivity_split_n_transfers);
+        statuses_adaptivity_ = std::vector<MPI_Status>(statuses_adaptivity_.size());
     }
 
     // Setting sizes
