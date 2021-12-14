@@ -179,8 +179,6 @@ between each refinement and load balancing will have to be tuned to trade off be
 optimal mesh and having a static mesh fore more iterations.
 
 \section{Process Parallelism} \label{section:graphics_processing_units:process_parallelism}
-% GPU partitions
-% Say something about worker processes, to be general with cpu workers.
 
 When trying to solve very large problems, a single node with a single GPU will have insufficient
 processing power and memory to solve the problem in a reasonable time, or at all. To work with these
@@ -334,7 +332,12 @@ received from process to process as a whole, adding a data member doesn't necess
 every part of the code that copies or creates elements. This is especially useful as it enables
 using constructors and destructors for objects.
 
-% Figure about dynamic memory
+\begin{figure}[H]
+	\centering
+	\includesvg[width=0.6\textwidth]{Chapter_graphics_processing_units/media/moving_elements}
+	\caption{Moving elements: The data stored in dynamic memory does not need to be copied}
+	\label{fig:moving_elements}
+\end{figure}
 
 Constructors and destructors are used here because the objects use dynamic memory for their solution
 data. As elements and faces can have a different polynomial order, they need to store more or less
