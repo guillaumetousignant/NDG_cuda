@@ -1329,7 +1329,7 @@ auto SEM::Device::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceF
                 MPI_Irecv(host_receiving_interfaces_refine_.data() + mpi_interfaces_incoming_offset_[i], mpi_interfaces_incoming_size_[i], MPI_C_BOOL, mpi_interfaces_process_[i], mpi_adaptivity_split_offset * global_size * global_size + mpi_adaptivity_split_n_transfers * (global_size * mpi_interfaces_process_[i] + global_rank) + 1, MPI_COMM_WORLD, &requests_adaptivity_[mpi_adaptivity_split_n_transfers * i + 1]);
             }
 
-            MPI_Waitall(2 * mpi_interfaces_process_.size(), requests_adaptivity_.data(), statuses_adaptivity_.data());
+            MPI_Waitall(mpi_adaptivity_split_n_transfers * mpi_interfaces_process_.size(), requests_adaptivity_.data(), statuses_adaptivity_.data());
 
             device_receiving_interfaces_N_.copy_from(host_receiving_interfaces_N_, stream_);
             device_receiving_interfaces_refine_.copy_from(host_receiving_interfaces_refine_, stream_);
@@ -1352,7 +1352,7 @@ auto SEM::Device::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceF
             device_mpi_interfaces_incoming_refine_array_.copy_from(host_mpi_interfaces_incoming_refine_array_, stream_);
             device_mpi_interfaces_incoming_creating_nodes_refine_array_.copy_from(host_mpi_interfaces_incoming_creating_nodes_array_, stream_);
 
-            MPI_Waitall(2 * mpi_interfaces_process_.size(), requests_adaptivity_.data() + 2 * mpi_interfaces_process_.size(), statuses_adaptivity_.data() + 2 * mpi_interfaces_process_.size());
+            MPI_Waitall(mpi_adaptivity_split_n_transfers * mpi_interfaces_process_.size(), requests_adaptivity_.data() + mpi_adaptivity_split_n_transfers * mpi_interfaces_process_.size(), statuses_adaptivity_.data() + mpi_adaptivity_split_n_transfers * mpi_interfaces_process_.size());
         }
 
         if (n_splitting_mpi_interface_incoming_elements == 0) {
@@ -1585,7 +1585,7 @@ auto SEM::Device::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceF
             MPI_Irecv(host_receiving_interfaces_refine_.data() + mpi_interfaces_incoming_offset_[i], mpi_interfaces_incoming_size_[i], MPI_C_BOOL, mpi_interfaces_process_[i], mpi_adaptivity_split_offset * global_size * global_size + mpi_adaptivity_split_n_transfers * (global_size * mpi_interfaces_process_[i] + global_rank) + 1, MPI_COMM_WORLD, &requests_adaptivity_[mpi_adaptivity_split_n_transfers * i + 1]);
         }
 
-        MPI_Waitall(2 * mpi_interfaces_process_.size(), requests_adaptivity_.data(), statuses_adaptivity_.data());
+        MPI_Waitall(mpi_adaptivity_split_n_transfers * mpi_interfaces_process_.size(), requests_adaptivity_.data(), statuses_adaptivity_.data());
 
         device_receiving_interfaces_N_.copy_from(host_receiving_interfaces_N_, stream_);
         device_receiving_interfaces_refine_.copy_from(host_receiving_interfaces_refine_, stream_);
@@ -1617,7 +1617,7 @@ auto SEM::Device::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceF
         }
         device_mpi_interfaces_outgoing_refine_array_.copy_from(host_mpi_interfaces_outgoing_refine_array_, stream_);
 
-        MPI_Waitall(2 * mpi_interfaces_process_.size(), requests_adaptivity_.data() + 2 * mpi_interfaces_process_.size(), statuses_adaptivity_.data() + 2 * mpi_interfaces_process_.size());
+        MPI_Waitall(mpi_adaptivity_split_n_transfers * mpi_interfaces_process_.size(), requests_adaptivity_.data() + mpi_adaptivity_split_n_transfers * mpi_interfaces_process_.size(), statuses_adaptivity_.data() + mpi_adaptivity_split_n_transfers * mpi_interfaces_process_.size());
     }
 
     SEM::Device::Meshes::find_nodes<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, elements_.data(), faces_.data(), nodes_.data(), max_split_level_);
@@ -3561,6 +3561,11 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
         mpi_interfaces_incoming_offset_ = std::move(new_mpi_interfaces_incoming_offset);
         mpi_interfaces_process_ = std::move(new_mpi_interfaces_process);
 
+        requests_ = std::vector<MPI_Request>(mpi_interfaces_process_.size() * 2 * mpi_boundaries_n_transfers);
+        statuses_ = std::vector<MPI_Status>(requests_.size());
+        requests_adaptivity_ = std::vector<MPI_Request>(mpi_interfaces_process_.size() * 2 * mpi_adaptivity_split_n_transfers);
+        statuses_adaptivity_ = std::vector<MPI_Status>(statuses_adaptivity_.size());
+
         // Updating quantities
         n_elements_ = n_elements_new[global_rank];
 
@@ -3913,6 +3918,11 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
         mpi_interfaces_outgoing_size_ = std::move(new_mpi_interfaces_outgoing_size);
         mpi_interfaces_outgoing_offset_ = std::move(new_mpi_interfaces_outgoing_offset);
 
+        requests_ = std::vector<MPI_Request>(mpi_interfaces_process_.size() * 2 * mpi_boundaries_n_transfers);
+        statuses_ = std::vector<MPI_Status>(requests_.size());
+        requests_adaptivity_ = std::vector<MPI_Request>(mpi_interfaces_process_.size() * 2 * mpi_adaptivity_split_n_transfers);
+        statuses_adaptivity_ = std::vector<MPI_Status>(statuses_adaptivity_.size());
+
         new_mpi_interfaces_origin.clear(stream_);
         new_mpi_interfaces_origin_side.clear(stream_);
         new_device_mpi_interfaces_outgoing_refine_array.clear(stream_);
@@ -3975,7 +3985,7 @@ auto SEM::Device::Meshes::Mesh2D_t::boundary_conditions(deviceFloat t, const dev
             MPI_Irecv(host_receiving_interfaces_v_.data() + mpi_interfaces_incoming_offset_[i] * (maximum_N_ + 1), mpi_interfaces_incoming_size_[i] * (maximum_N_ + 1), float_data_type, mpi_interfaces_process_[i], mpi_boundaries_offset * global_size * global_size + mpi_boundaries_n_transfers * (global_size * mpi_interfaces_process_[i] + global_rank) + 2, MPI_COMM_WORLD, &requests_[mpi_boundaries_n_transfers * i + 2]);
         }
 
-        MPI_Waitall(3 * mpi_interfaces_process_.size(), requests_.data(), statuses_.data());
+        MPI_Waitall(mpi_boundaries_n_transfers * mpi_interfaces_process_.size(), requests_.data(), statuses_.data());
 
         device_receiving_interfaces_p_.copy_from(host_receiving_interfaces_p_, stream_);
         device_receiving_interfaces_u_.copy_from(host_receiving_interfaces_u_, stream_);
@@ -3983,7 +3993,7 @@ auto SEM::Device::Meshes::Mesh2D_t::boundary_conditions(deviceFloat t, const dev
 
         SEM::Device::Meshes::put_MPI_interfaces<<<mpi_interfaces_incoming_numBlocks_, boundaries_blockSize_, 0, stream_>>>(mpi_interfaces_destination_.size(), elements_.data(), mpi_interfaces_destination_.data(), maximum_N_, device_receiving_interfaces_p_.data(), device_receiving_interfaces_u_.data(), device_receiving_interfaces_v_.data());
 
-        MPI_Waitall(3 * mpi_interfaces_process_.size(), requests_.data() + 3 * mpi_interfaces_process_.size(), statuses_.data() + 3 * mpi_interfaces_process_.size());
+        MPI_Waitall(mpi_boundaries_n_transfers * mpi_interfaces_process_.size(), requests_.data() + mpi_boundaries_n_transfers * mpi_interfaces_process_.size(), statuses_.data() + mpi_boundaries_n_transfers * mpi_interfaces_process_.size());
     }
 }
 
