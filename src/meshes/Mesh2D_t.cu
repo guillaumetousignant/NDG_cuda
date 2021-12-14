@@ -1038,8 +1038,8 @@ auto SEM::Device::Meshes::Mesh2D_t::print() const -> void {
     std::cout << "N inflow boundaries: " << inflow_boundaries_.size() << std::endl;
     std::cout << "N outflow boundaries: " << outflow_boundaries_.size() << std::endl;
     std::cout << "N interfaces: " << interfaces_origin_.size() << std::endl;
-    std::cout << "N mpi incoming interfaces: " << mpi_interfaces_origin_.size() << std::endl;
-    std::cout << "N mpi outgoing interfaces: " << mpi_interfaces_destination_.size() << std::endl;
+    std::cout << "N mpi incoming interfaces: " << mpi_interfaces_destination_.size() << std::endl;
+    std::cout << "N mpi outgoing interfaces: " << mpi_interfaces_origin_.size() << std::endl;
     std::cout << "Initial N: " << initial_N_ << std::endl;
 
     std::cout << std::endl <<  "Connectivity" << std::endl;
@@ -9405,7 +9405,8 @@ auto SEM::Device::Meshes::create_received_neighbours(
                     element.status_ = Hilbert::Status::A;
                     element.rotation_ = 0;
                     element.nodes_ = {neighbour_node_indices[2 * i], neighbour_node_indices[2 * i + 1], neighbour_node_indices[2 * i + 1], neighbour_node_indices[2 * i]};
-                    element.split_level_ = 0; // CHECK should set other variables?
+                    element.split_level_ = 0; 
+                    element.additional_nodes_[0] = 0; // CHECK should set other variables?
 
                     element.allocate_boundary_storage();
 
@@ -9437,7 +9438,8 @@ auto SEM::Device::Meshes::create_received_neighbours(
                     element.status_ = Hilbert::Status::A;
                     element.rotation_ = 0;
                     element.nodes_ = {neighbour_node_indices[2 * i], neighbour_node_indices[2 * i + 1], neighbour_node_indices[2 * i + 1], neighbour_node_indices[2 * i]};
-                    element.split_level_ = 0; // CHECK should set other variables?
+                    element.split_level_ = 0; 
+                    element.additional_nodes_[0] = 0; // CHECK should set other variables?
 
                     element.allocate_boundary_storage();
 
@@ -9469,7 +9471,8 @@ auto SEM::Device::Meshes::create_received_neighbours(
                     element.status_ = Hilbert::Status::A;
                     element.rotation_ = 0;
                     element.nodes_ = {neighbour_node_indices[2 * i], neighbour_node_indices[2 * i + 1], neighbour_node_indices[2 * i + 1], neighbour_node_indices[2 * i]};
-                    element.split_level_ = 0; // CHECK should set other variables?
+                    element.split_level_ = 0; 
+                    element.additional_nodes_[0] = 0; // CHECK should set other variables?
 
                     element.allocate_boundary_storage();
 
@@ -9501,7 +9504,8 @@ auto SEM::Device::Meshes::create_received_neighbours(
                     element.status_ = Hilbert::Status::A;
                     element.rotation_ = 0;
                     element.nodes_ = {neighbour_node_indices[2 * i], neighbour_node_indices[2 * i + 1], neighbour_node_indices[2 * i + 1], neighbour_node_indices[2 * i]};
-                    element.split_level_ = 0; // CHECK should set other variables?
+                    element.split_level_ = 0; 
+                    element.additional_nodes_[0] = 0; // CHECK should set other variables?
 
                     element.allocate_boundary_storage();
 
@@ -9618,7 +9622,8 @@ auto SEM::Device::Meshes::create_received_neighbours(
                             element.status_ = Hilbert::Status::A;
                             element.rotation_ = 0;
                             element.nodes_ = {neighbour_node_indices[2 * i], neighbour_node_indices[2 * i + 1], neighbour_node_indices[2 * i + 1], neighbour_node_indices[2 * i]};
-                            element.split_level_ = 0; // CHECK should set other variables?
+                            element.split_level_ = 0; 
+                            element.additional_nodes_[0] = 0; // CHECK should set other variables?
 
                             element.allocate_boundary_storage();
                             element.faces_[0] = cuda_vector<size_t>();

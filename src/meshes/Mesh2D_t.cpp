@@ -933,8 +933,8 @@ auto SEM::Host::Meshes::Mesh2D_t::print() const -> void {
     std::cout << "N inflow boundaries: " << inflow_boundaries_.size() << std::endl;
     std::cout << "N outflow boundaries: " << outflow_boundaries_.size() << std::endl;
     std::cout << "N interfaces: " << interfaces_origin_.size() << std::endl;
-    std::cout << "N mpi incoming interfaces: " << mpi_interfaces_origin_.size() << std::endl;
-    std::cout << "N mpi outgoing interfaces: " << mpi_interfaces_destination_.size() << std::endl;
+    std::cout << "N mpi incoming interfaces: " << mpi_interfaces_destination_.size() << std::endl;
+    std::cout << "N mpi outgoing interfaces: " << mpi_interfaces_origin_.size() << std::endl;
     std::cout << "Initial N: " << initial_N_ << std::endl;
 
     std::cout << std::endl <<  "Connectivity" << std::endl;
