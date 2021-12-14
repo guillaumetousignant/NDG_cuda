@@ -7111,6 +7111,8 @@ auto SEM::Device::Meshes::split_mpi_incoming_interfaces(size_t n_MPI_interface_e
         elements_new_indices[destination_element_index] = new_element_index;
 
         if (elements_refining_without_splitting[i] && elements_splitting[i]) {
+            printf("Boundary element %llu, index %llu, splitting to %llu\n", i, destination_element_index, new_element_index);
+
             new_mpi_interfaces_destination[new_mpi_interface_index] = new_element_index;
 
             const Vec2<deviceFloat> new_node = (nodes[destination_element.nodes_[0]] + nodes[destination_element.nodes_[1]]) /2;
@@ -7279,6 +7281,8 @@ auto SEM::Device::Meshes::split_mpi_incoming_interfaces(size_t n_MPI_interface_e
             new_elements[new_element_index] = std::move(destination_element);
         }
         else if (elements_splitting[i]) {
+            printf("Boundary element %llu, index %llu, splitting to %llu and %llu\n", i, destination_element_index, new_element_index, new_element_index + 1);
+
             new_mpi_interfaces_destination[new_mpi_interface_index]     = new_element_index;
             new_mpi_interfaces_destination[new_mpi_interface_index + 1] = new_element_index + 1;
 
@@ -7625,6 +7629,7 @@ auto SEM::Device::Meshes::split_mpi_incoming_interfaces(size_t n_MPI_interface_e
             }
         }
         else {
+            printf("Boundary element %llu, index %llu, moving to %llu\n", i, destination_element_index, new_element_index);
             new_mpi_interfaces_destination[new_mpi_interface_index] = new_element_index;
 
             size_t side_n_splitting_faces = 0;
