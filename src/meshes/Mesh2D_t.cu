@@ -1754,7 +1754,7 @@ auto SEM::Device::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceF
         SEM::Device::Meshes::split_interfaces<<<interfaces_numBlocks_, boundaries_blockSize_, 0, stream_>>>(interfaces_origin_.size(), faces_.size(), nodes_.size(), n_splitting_elements, n_elements_ + 3 * n_splitting_elements + wall_boundaries_.size() + n_splitting_wall_boundaries + symmetry_boundaries_.size() + n_splitting_symmetry_boundaries + inflow_boundaries_.size() + n_splitting_inflow_boundaries + outflow_boundaries_.size() + n_splitting_outflow_boundaries, elements_.data(), new_elements.data(), interfaces_origin_.data(), interfaces_origin_side_.data(), interfaces_destination_.data(), new_interfaces_origin.data(), new_interfaces_origin_side.data(), new_interfaces_destination.data(), faces_.data(), new_nodes.data(), device_refine_array_.data(), device_faces_refine_array_.data(), device_interfaces_refine_array_.data(), max_split_level_, N_max, polynomial_nodes.data(), elements_blockSize_, faces_blockSize_, elements_new_indices.data());
     }
 
-    if (!mpi_interfaces_origin_.empty()) {       
+    if (!mpi_interfaces_process_.empty()) {       
         SEM::Device::Meshes::split_mpi_outgoing_interfaces<<<mpi_interfaces_outgoing_numBlocks_, boundaries_blockSize_, 0, stream_>>>(mpi_interfaces_origin_.size(), n_elements_, device_mpi_interfaces_process.size(), elements_.data(), faces_.data(), nodes_.data(), mpi_interfaces_origin_.data(), mpi_interfaces_origin_side_.data(), mpi_interfaces_destination_.data(), new_mpi_interfaces_origin.data(), new_mpi_interfaces_origin_side.data(), device_mpi_interfaces_process.data(), device_mpi_interfaces_outgoing_size.data(), device_mpi_interfaces_incoming_size.data(), device_mpi_interfaces_incoming_offset.data(), device_interfaces_refine_.data(), device_interfaces_refine_without_splitting_.data(), device_mpi_interfaces_outgoing_refine_array_.data(), max_split_level_, device_refine_array_.data(), elements_blockSize_);
         SEM::Device::Meshes::split_mpi_incoming_interfaces<<<mpi_interfaces_incoming_numBlocks_, boundaries_blockSize_, 0, stream_>>>(mpi_interfaces_destination_.size(), faces_.size(), nodes_.size(), n_splitting_elements, n_splitting_faces, n_elements_ + 3 * n_splitting_elements + wall_boundaries_.size() + n_splitting_wall_boundaries + symmetry_boundaries_.size() + n_splitting_symmetry_boundaries + inflow_boundaries_.size() + n_splitting_inflow_boundaries + outflow_boundaries_.size() + n_splitting_outflow_boundaries + interfaces_origin_.size() + n_splitting_interface_elements, elements_.data(), new_elements.data(), mpi_interfaces_destination_.data(), new_mpi_interfaces_destination.data(), faces_.data(), new_nodes.data(), device_faces_refine_array_.data(), device_mpi_interfaces_incoming_refine_array_.data(), polynomial_nodes.data(), faces_blockSize_, device_receiving_interfaces_N_.data(), device_receiving_interfaces_refine_.data(), device_receiving_interfaces_refine_without_splitting_.data(), device_receiving_interfaces_creating_node_.data(), device_mpi_interfaces_incoming_creating_nodes_refine_array_.data(), elements_new_indices.data());
     }
@@ -3064,6 +3064,11 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
                 device_wall_boundaries_to_delete_refine_array.clear(stream_);
                 new_new_wall_boundaries.clear(stream_);
             }
+            else if (n_wall_boundaries_to_add > 0) {
+                device_vector<size_t> new_new_wall_boundaries(n_wall_boundaries_to_add, stream_);
+                new_wall_boundaries = std::move(new_new_wall_boundaries);
+                new_new_wall_boundaries.clear(stream_);
+            }
 
             if (!symmetry_boundaries_.empty()) {
                 device_vector<bool> symmetry_boundaries_to_delete(symmetry_boundaries_.size(), stream_);
@@ -3089,6 +3094,11 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
 
                 symmetry_boundaries_to_delete.clear(stream_);
                 device_symmetry_boundaries_to_delete_refine_array.clear(stream_);
+                new_new_symmetry_boundaries.clear(stream_);
+            }
+            else if (n_symmetry_boundaries_to_add > 0) {
+                device_vector<size_t> new_new_symmetry_boundaries(n_symmetry_boundaries_to_add, stream_);
+                new_symmetry_boundaries = std::move(new_new_symmetry_boundaries);
                 new_new_symmetry_boundaries.clear(stream_);
             }
 
@@ -3118,6 +3128,11 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
                 device_inflow_boundaries_to_delete_refine_array.clear(stream_);
                 new_new_inflow_boundaries.clear(stream_);
             }
+            else if (n_inflow_boundaries_to_add > 0) {
+                device_vector<size_t> new_new_inflow_boundaries(n_inflow_boundaries_to_add, stream_);
+                new_inflow_boundaries = std::move(new_new_inflow_boundaries);
+                new_new_inflow_boundaries.clear(stream_);
+            }
 
             if (!outflow_boundaries_.empty()) {
                 device_vector<bool> outflow_boundaries_to_delete(outflow_boundaries_.size(), stream_);
@@ -3145,9 +3160,14 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
                 device_outflow_boundaries_to_delete_refine_array.clear(stream_);
                 new_new_outflow_boundaries.clear(stream_);
             }    
+            else if (n_outflow_boundaries_to_add > 0) {
+                device_vector<size_t> new_new_outflow_boundaries(n_outflow_boundaries_to_add, stream_);
+                new_outflow_boundaries = std::move(new_new_outflow_boundaries);
+                new_new_outflow_boundaries.clear(stream_);
+            }
         }
         else {
-            if (wall_boundaries_.size() + n_wall_boundaries_to_add > 0) {
+            if (!wall_boundaries_.empty()) {
                 device_vector<size_t> new_new_wall_boundaries(wall_boundaries_.size() + n_wall_boundaries_to_add, stream_);
                 new_wall_boundaries = std::move(new_new_wall_boundaries);
 
@@ -3155,8 +3175,13 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
 
                 new_new_wall_boundaries.clear(stream_);
             }
+            else if (n_wall_boundaries_to_add > 0) {
+                device_vector<size_t> new_new_wall_boundaries(n_wall_boundaries_to_add, stream_);
+                new_wall_boundaries = std::move(new_new_wall_boundaries);
+                new_new_wall_boundaries.clear(stream_);
+            }
 
-            if (symmetry_boundaries_.size() + n_symmetry_boundaries_to_add > 0) {
+            if (!symmetry_boundaries_.empty()) {
                 device_vector<size_t> new_new_symmetry_boundaries(symmetry_boundaries_.size() + n_symmetry_boundaries_to_add, stream_);
                 new_symmetry_boundaries = std::move(new_new_symmetry_boundaries);
 
@@ -3164,8 +3189,13 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
 
                 new_new_symmetry_boundaries.clear(stream_);
             }
+            else if (n_symmetry_boundaries_to_add > 0) {
+                device_vector<size_t> new_new_symmetry_boundaries(n_symmetry_boundaries_to_add, stream_);
+                new_symmetry_boundaries = std::move(new_new_symmetry_boundaries);
+                new_new_symmetry_boundaries.clear(stream_);
+            }
 
-            if (inflow_boundaries_.size() + n_inflow_boundaries_to_add > 0) {
+            if (!inflow_boundaries_.empty()) {
                 device_vector<size_t> new_new_inflow_boundaries(inflow_boundaries_.size() + n_inflow_boundaries_to_add, stream_);
                 new_inflow_boundaries = std::move(new_new_inflow_boundaries);
 
@@ -3173,13 +3203,23 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
 
                 new_new_inflow_boundaries.clear(stream_);
             }
+            else if (n_inflow_boundaries_to_add > 0) {
+                device_vector<size_t> new_new_inflow_boundaries(n_inflow_boundaries_to_add, stream_);
+                new_inflow_boundaries = std::move(new_new_inflow_boundaries);
+                new_new_inflow_boundaries.clear(stream_);
+            }
 
-            if (outflow_boundaries_.size() + n_outflow_boundaries_to_add > 0) {
+            if (!outflow_boundaries_.empty()) {
                 device_vector<size_t> new_new_outflow_boundaries(outflow_boundaries_.size() + n_outflow_boundaries_to_add, stream_);
                 new_outflow_boundaries = std::move(new_new_outflow_boundaries);
 
                 SEM::Device::Meshes::move_all_boundaries<<<outflow_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(outflow_boundaries_.size(), n_elements_, n_elements_new[global_rank], outflow_boundaries_.data(), new_outflow_boundaries.data(), boundary_elements_to_delete.data(), device_boundary_elements_to_delete_refine_array.data(), boundaries_blockSize_);
 
+                new_new_outflow_boundaries.clear(stream_);
+            }
+            else if (n_outflow_boundaries_to_add > 0) {
+                device_vector<size_t> new_new_outflow_boundaries(n_outflow_boundaries_to_add, stream_);
+                new_outflow_boundaries = std::move(new_new_outflow_boundaries);
                 new_new_outflow_boundaries.clear(stream_);
             }
         }
