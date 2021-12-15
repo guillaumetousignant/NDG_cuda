@@ -9097,9 +9097,9 @@ auto SEM::Device::Meshes::find_mpi_interface_elements_to_keep(size_t n_mpi_desti
             const size_t mpi_index = mpi_destination_local_indices[i];
             const size_t mpi_side = mpi_destination_sides[i];
             for (size_t j = 0; j < n_neighbours; ++j) {
-                const int neighbour_proc = neighbour_procs[i];
-                const size_t neighbour_index = neighbour_indices[i];
-                const size_t neighbour_side = neighbour_sides[i];
+                const int neighbour_proc = neighbour_procs[j];
+                const size_t neighbour_index = neighbour_indices[j];
+                const size_t neighbour_side = neighbour_sides[j];
 
                 if (mpi_proc == neighbour_proc && mpi_index == neighbour_index && mpi_side == neighbour_side) {
                     boundary_elements_to_delete[mpi_interfaces_destination[i] - n_domain_elements] = false; 
