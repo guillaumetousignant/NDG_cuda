@@ -369,6 +369,13 @@ to compute the minimum time step over the whole mesh at every time step. This op
 geometric and solution data from the elements to find each element's minimum time step. This data is
 only available on the GPU. 
 
+\begin{figure}[H]
+	\centering
+	\includesvg[width=0.45\textwidth]{Chapter_graphics_processing_units/media/reduction}
+	\caption{Reduction: A block of threads compute the minimum of data}
+	\label{fig:reduction}
+\end{figure}
+
 An implementation must saturate the GPU with work as much as possible, as blindly looping one thread
 over the whole mesh will only one of the approximately five thousand cores of the GPU, for one
 thousandth of the speed. 
