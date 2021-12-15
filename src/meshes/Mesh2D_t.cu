@@ -7669,7 +7669,6 @@ auto SEM::Device::Meshes::split_mpi_incoming_interfaces(size_t n_MPI_interface_e
             }
         }
         else {
-            printf("Boundary element %llu, index %llu, moving to %llu\n", i, destination_element_index, new_element_index);
             new_mpi_interfaces_destination[new_mpi_interface_index] = new_element_index;
 
             size_t side_n_splitting_faces = 0;
@@ -7914,7 +7913,7 @@ auto SEM::Device::Meshes::adjust_faces_neighbours(size_t n_faces, Face2D_t* face
 }
 
 __global__
-auto SEM::Device::Meshes::move_boundaries(size_t n_boundaries, size_t offset, Element2D_t* elements, Element2D_t* new_elements, const size_t* boundaries, const Face2D_t* faces, size_t* elements_new_indices) -> void {
+auto SEM::Device::Meshes::move_boundaries(size_t n_boundaries, size_t offset, Element2D_t* elements, Element2D_t* new_elements, size_t* boundaries, const Face2D_t* faces, size_t* elements_new_indices) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -7924,6 +7923,7 @@ auto SEM::Device::Meshes::move_boundaries(size_t n_boundaries, size_t offset, El
         const size_t new_element_index = offset + boundary_index;
         int N_element = destination_element.N_;
         elements_new_indices[boundary_element_index] = new_element_index;
+        boundaries[boundary_index] = new_element_index;
 
         printf("Moving boundary element %llu, index %llu, to %llu\n", boundary_index, boundary_element_index, new_element_index);
 
