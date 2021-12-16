@@ -46,11 +46,34 @@ locality. Elements that are close in curve space will also be close by in the sp
 computations. This limits the number of interfaces between processes.
 
 \section{Hilbert curve} \label{section:load_balancing:hilbert_curve}
-% How adaptivity uses state
+
+\begin{figure}[H]
+	\centering
+	\subfloat[First level]
+	{\includesvg[width=0.3\textwidth]{Chapter_load_balancing/media/hilbert_curve_K2} \label{fig:hilbert_k2}}
+	\hfill
+	\subfloat[Second level]
+	{\includesvg[width=0.3\textwidth]{Chapter_load_balancing/media/hilbert_curve_K4} \label{fig:hilbert_k4}}
+	\hfill
+	\subfloat[Third level]
+	{\includesvg[width=0.3\textwidth]{Chapter_load_balancing/media/hilbert_curve_K8} \label{fig:hilbert_k8}}
+	\caption{Hilbert curve: The first thee Hilbert curves. (a) 2x2 (b) 4x4 (c) 8x8}
+	\label{fig:hilbert_curves}
+\end{figure}
+
+\subsection{Generation} \label{section:load_balancing:hilbert_curve:generation}
 % Initial guess
+% Mesh generator
+% Iterative algorithm
+% Tables
+
+\subsection{Refinement} \label{section:load_balancing:hilbert_curve:refinement}
+% How adaptivity uses state
+
 
 \section{Reconstruction} \label{section:load_balancing:reconstruction}
-
+% Having no state
+% What is sent
 
 \section{Implementation} \label{section:load_balancing:implementation}
 \subsection{Element exchange} \label{section:load_balancing:implementation:element_exchange}

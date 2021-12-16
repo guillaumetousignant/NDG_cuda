@@ -623,17 +623,22 @@ def plot_mesh(mesh: Mesh,
     node_numbers: bool = True, 
     ghost_numbers: bool = True, 
     boundary_numbers: bool = True,
-    show_title: bool = True):
+    show_title: bool = True,
+    show_axis: bool = True,
+    show_legend: bool = True,
+    show_curve: bool = True):
     
     points_colour = np.array([197, 134, 192])/255
     elements_colour = np.array([37, 37, 37])/255
     faces_colour = np.array([86, 156, 214])/255
     ghosts_colour = np.array([244, 71, 71])/255
-    boundaries_colour = np.array([78,201,176])/255
+    boundaries_colour = np.array([78, 201, 176])/255
+    curve_colour = np.array([106, 153, 85])/255
     points_width = 12
     elements_width = 3
     faces_width = 1
     ghosts_width = 5
+    curve_width = 5
     points_size = 12
     points_shape = "."
     faces_offset = 0.2
@@ -654,8 +659,12 @@ def plot_mesh(mesh: Mesh,
     fig.canvas.manager.set_window_title(title)
     ax = fig.add_subplot(1, 1, 1)
     ax.set_aspect(1)
-    ax.set_xlabel("x")
-    ax.set_ylabel("y")
+    if show_axis:
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+    else: 
+        ax.axis('off')
+
     if show_title:
         ax.set_title("Mesh")
 
@@ -704,6 +713,14 @@ def plot_mesh(mesh: Mesh,
         if node_numbers:
             for i in range(mesh.nodes.n):
                 ax.text(mesh.nodes.x[i] + points_text_offset[0], mesh.nodes.y[i] + points_text_offset[1], f"{i}", fontfamily="Fira Code", fontsize=points_font_size, horizontalalignment="right", verticalalignment="top", color=points_colour)
+
+    if show_curve:
+        elements_center_x = np.zeros(mesh.elements.n)
+        elements_center_y = np.zeros(mesh.elements.n)
+        for i in range(mesh.elements.n):
+            elements_center_x[i] = (mesh.nodes.x[mesh.elements.nodes[4 * i]] + mesh.nodes.x[mesh.elements.nodes[4 * i + 1]] + mesh.nodes.x[mesh.elements.nodes[4 * i + 2]] + mesh.nodes.x[mesh.elements.nodes[4 * i + 3]])/4
+            elements_center_y[i] = (mesh.nodes.y[mesh.elements.nodes[4 * i]] + mesh.nodes.y[mesh.elements.nodes[4 * i + 1]] + mesh.nodes.y[mesh.elements.nodes[4 * i + 2]] + mesh.nodes.y[mesh.elements.nodes[4 * i + 3]])/4
+        ax.plot(elements_center_x, elements_center_y, color=curve_colour, linewidth=curve_width, label="Hilbert curve")
 
     if boundary_numbers and show_ghosts:
         for i in range(mesh.mpi_interfaces.n):
@@ -823,7 +840,8 @@ def plot_mesh(mesh: Mesh,
 
         ax.plot([], [], color=boundaries_colour, linestyle="None", linewidth=0, marker="$n$", markersize=boundaries_font_size, label="Boundary conditions")
 
-    ax.legend()
+    if show_legend:
+        ax.legend()
 
 def main(argv: list[str]):
     parser = argparse.ArgumentParser(description="Plots meshes with the data returned from the Mesh2D_t print() function.")
@@ -838,6 +856,9 @@ def main(argv: list[str]):
     parser.add_argument('--ghost-numbers', type=bool, default=True, action=argparse.BooleanOptionalAction, help='show/hide ghost numbers')
     parser.add_argument('--boundary-numbers', type=bool, default=True, action=argparse.BooleanOptionalAction, help='show/hide boundary numbers')
     parser.add_argument('--title', type=bool, default=True, action=argparse.BooleanOptionalAction, help='show/hide title')
+    parser.add_argument('--axis', type=bool, default=True, action=argparse.BooleanOptionalAction, help='show/hide axes')
+    parser.add_argument('--legend', type=bool, default=True, action=argparse.BooleanOptionalAction, help='show/hide legend')
+    parser.add_argument('--curve', type=bool, default=True, action=argparse.BooleanOptionalAction, help='show/hide Hilbert curve')
     args = parser.parse_args(argv)
 
     meshes = []
@@ -845,7 +866,7 @@ def main(argv: list[str]):
         meshes.append((read_file(mesh_file), mesh_file))
 
     for mesh, inputfile in meshes:
-        plot_mesh(mesh, inputfile, args.elements, args.faces, args.nodes, args.ghosts, args.element_numbers, args.face_numbers, args.node_numbers, args.ghost_numbers, args.boundary_numbers, args.title)
+        plot_mesh(mesh, inputfile, args.elements, args.faces, args.nodes, args.ghosts, args.element_numbers, args.face_numbers, args.node_numbers, args.ghost_numbers, args.boundary_numbers, args.title, args.axis, args.legend, args.curve)
 
     plt.show()
 
