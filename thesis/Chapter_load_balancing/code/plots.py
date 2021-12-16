@@ -52,7 +52,7 @@ for k in K:
         elements_center_x[i] = (x[elements[i][0]] + x[elements[i][1]] + x[elements[i][2]] + x[elements[i][3]])/4
         elements_center_y[i] = (y[elements[i][0]] + y[elements[i][1]] + y[elements[i][2]] + y[elements[i][3]])/4
 
-    fig = plt.figure(figsize=(8, 8))
+    fig = plt.figure(figsize=(4, 4))
     ax = fig.add_subplot(1, 1, 1)
     ax.set_xlim(-0.1, 1.1)
     ax.set_ylim(-0.1, 1.1)
