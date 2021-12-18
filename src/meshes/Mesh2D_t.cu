@@ -2705,7 +2705,6 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
             neighbours_index += n_neighbours_arrays_recv_left[4 * i] + n_neighbours_arrays_recv_left[4 * i + 1] + n_neighbours_arrays_recv_left[4 * i + 2] + n_neighbours_arrays_recv_left[4 * i + 3];
         }
 
-        neighbours_index = 0;
         for (size_t i = 0; i < n_elements_recv_right[global_rank]; ++i) {
             neighbour_offsets_right[i] = neighbours_index;
             neighbours_index += n_neighbours_arrays_recv_right[4 * i] + n_neighbours_arrays_recv_right[4 * i + 1] + n_neighbours_arrays_recv_right[4 * i + 2] + n_neighbours_arrays_recv_right[4 * i + 3];
@@ -8092,6 +8091,8 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
                 const size_t neighbour_side = neighbours_sides[neighbour_index];
                 const Element2D_t& neighbour_element = elements[neighbour_element_index];
 
+                printf("Received element %llu, index %llu, side %llu, #%llu is element %llu, side %llu\n", i, element_index, j, k, neighbour_element_index, neighbour_side);
+
                 if (neighbour_element_index >= n_domain_elements 
                         || (neighbour_element_index < n_elements_recv_left && neighbour_element_index >= element_index)
                         || (neighbour_element_index >= n_domain_elements - n_elements_recv_right && neighbour_element_index >= element_index)) { 
@@ -8129,6 +8130,8 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
                         elements[neighbour_element_index].faces_[0][0] = face_index;
                     }
 
+                    printf("    Received element %llu, index %llu, side %llu, #%llu is element %llu, side %llu. We create at index %llu\n", i, element_index, j, k, neighbour_element_index, neighbour_side, face_index);
+
                     ++face_index;
                 }
                 else if (neighbour_element_index < n_elements_recv_left && neighbour_element_index < element_index) {
@@ -8153,6 +8156,7 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
                                 if (neighbour_neighbour_element_index == element_index && neighbour_neighbour_side == j) {
                                     element.faces_[j][k] = neighbour_face_index;
                                     found_self = true;
+                                    printf("    Received element %llu, index %llu, side %llu, #%llu is element %llu, side %llu. Created by neighbour from left received elements at index %llu\n", i, element_index, j, k, neighbour_element_index, neighbour_side, neighbour_face_index);
                                     break;
                                 }
                                 ++neighbour_face_index;
@@ -8190,6 +8194,7 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
                                 if (neighbour_neighbour_element_index == element_index && neighbour_neighbour_side == j) {
                                     element.faces_[j][k] = neighbour_face_index;
                                     found_self = true;
+                                    printf("    Received element %llu, index %llu, side %llu, #%llu is element %llu, side %llu. Created by neighbour from right received elements at index %llu\n", i, element_index, j, k, neighbour_element_index, neighbour_side, neighbour_face_index);
                                     break;
                                 }
                                 ++neighbour_face_index;
@@ -8211,6 +8216,7 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
                         const size_t face_side_index = face.elements_[0] == neighbour_element_index;
                         if (face.elements_[face_side_index] == element_index && face.elements_side_[face_side_index] == j) {
                             element.faces_[j][k] = neighbour_face_index;
+                            printf("    Received element %llu, index %llu, side %llu, #%llu is element %llu, side %llu. Found in domain at index %llu\n", i, element_index, j, k, neighbour_element_index, neighbour_side, neighbour_face_index);
                             break;
                         }
                     }
