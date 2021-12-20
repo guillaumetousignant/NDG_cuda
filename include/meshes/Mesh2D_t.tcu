@@ -149,7 +149,6 @@ auto SEM::Device::Meshes::reduce_faces_refine_2D(size_t n_faces, int max_split_l
         if (elements[faces[i].elements_[0]].additional_nodes_[faces[i].elements_side_[0]] || elements[faces[i].elements_[1]].additional_nodes_[faces[i].elements_side_[1]]) {
             faces[i].refine_ = true;
             ++sdata[tid];
-            printf("Face %llu refining. Left element %llu, side %llu has additional_node %d. Right element %llu, side %llu has additional_node %d\n", i, faces[i].elements_[0], faces[i].elements_side_[0], elements[faces[i].elements_[0]].additional_nodes_[faces[i].elements_side_[0]], faces[i].elements_[1], faces[i].elements_side_[1], elements[faces[i].elements_[1]].additional_nodes_[faces[i].elements_side_[1]]);
         }
         else {
             faces[i].refine_ = false;
@@ -158,7 +157,6 @@ auto SEM::Device::Meshes::reduce_faces_refine_2D(size_t n_faces, int max_split_l
             if (elements[faces[i+blockSize].elements_[0]].additional_nodes_[faces[i+blockSize].elements_side_[0]] || elements[faces[i+blockSize].elements_[1]].additional_nodes_[faces[i+blockSize].elements_side_[1]]) {
                 faces[i+blockSize].refine_ = true;
                 ++sdata[tid];
-                printf("Face %llu refining. Left element %llu, side %llu has additional_node %d. Right element %llu, side %llu has additional_node %d\n", i+blockSize, faces[i+blockSize].elements_[0], faces[i+blockSize].elements_side_[0], elements[faces[i+blockSize].elements_[0]].additional_nodes_[faces[i+blockSize].elements_side_[0]], faces[i+blockSize].elements_[1], faces[i+blockSize].elements_side_[1], elements[faces[i+blockSize].elements_[1]].additional_nodes_[faces[i+blockSize].elements_side_[1]]);
             }
             else {
                 faces[i+blockSize].refine_ = false;

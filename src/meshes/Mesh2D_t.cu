@@ -7320,8 +7320,6 @@ auto SEM::Device::Meshes::split_mpi_incoming_interfaces(size_t n_MPI_interface_e
             new_elements[new_element_index] = std::move(destination_element);
         }
         else if (elements_splitting[i]) {
-            printf("Boundary element %llu, index %llu, splitting to %llu and %llu\n", i, destination_element_index, new_element_index, new_element_index + 1);
-
             new_mpi_interfaces_destination[new_mpi_interface_index]     = new_element_index;
             new_mpi_interfaces_destination[new_mpi_interface_index + 1] = new_element_index + 1;
 
@@ -7924,8 +7922,6 @@ auto SEM::Device::Meshes::move_boundaries(size_t n_boundaries, size_t offset, El
         elements_new_indices[boundary_element_index] = new_element_index;
         boundaries[boundary_index] = new_element_index;
 
-        printf("Moving boundary element %llu, index %llu, to %llu\n", boundary_index, boundary_element_index, new_element_index);
-
         for (size_t face_index = 0; face_index < destination_element.faces_[0].size(); ++face_index) {
             const Face2D_t& face = faces[destination_element.faces_[0][face_index]];
             const int element_index = face.elements_[0] == boundary_element_index;
@@ -8091,8 +8087,6 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
                 const size_t neighbour_side = neighbours_sides[neighbour_index];
                 const Element2D_t& neighbour_element = elements[neighbour_element_index];
 
-                printf("Received element %llu, index %llu, side %llu, #%llu is element %llu, side %llu\n", i, element_index, j, k, neighbour_element_index, neighbour_side);
-
                 if (neighbour_element_index >= n_domain_elements 
                         || (neighbour_element_index < n_elements_recv_left && neighbour_element_index >= element_index)
                         || (neighbour_element_index >= n_domain_elements - n_elements_recv_right && neighbour_element_index >= element_index)) { 
@@ -8130,8 +8124,6 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
                         elements[neighbour_element_index].faces_[0][0] = face_index;
                     }
 
-                    printf("    Received element %llu, index %llu, side %llu, #%llu is element %llu, side %llu. We create at index %llu\n", i, element_index, j, k, neighbour_element_index, neighbour_side, face_index);
-
                     ++face_index;
                 }
                 else if (neighbour_element_index < n_elements_recv_left && neighbour_element_index < element_index) {
@@ -8156,7 +8148,6 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
                                 if (neighbour_neighbour_element_index == element_index && neighbour_neighbour_side == j) {
                                     element.faces_[j][k] = neighbour_face_index;
                                     found_self = true;
-                                    printf("    Received element %llu, index %llu, side %llu, #%llu is element %llu, side %llu. Created by neighbour from left received elements at index %llu\n", i, element_index, j, k, neighbour_element_index, neighbour_side, neighbour_face_index);
                                     break;
                                 }
                                 ++neighbour_face_index;
@@ -8194,7 +8185,6 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
                                 if (neighbour_neighbour_element_index == element_index && neighbour_neighbour_side == j) {
                                     element.faces_[j][k] = neighbour_face_index;
                                     found_self = true;
-                                    printf("    Received element %llu, index %llu, side %llu, #%llu is element %llu, side %llu. Created by neighbour from right received elements at index %llu\n", i, element_index, j, k, neighbour_element_index, neighbour_side, neighbour_face_index);
                                     break;
                                 }
                                 ++neighbour_face_index;
@@ -8216,7 +8206,6 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
                         const size_t face_side_index = face.elements_[0] == neighbour_element_index;
                         if (face.elements_[face_side_index] == element_index && face.elements_side_[face_side_index] == j) {
                             element.faces_[j][k] = neighbour_face_index;
-                            printf("    Received element %llu, index %llu, side %llu, #%llu is element %llu, side %llu. Found in domain at index %llu\n", i, element_index, j, k, neighbour_element_index, neighbour_side, neighbour_face_index);
                             break;
                         }
                     }
@@ -9072,7 +9061,6 @@ auto SEM::Device::Meshes::find_boundary_elements_to_delete(size_t n_boundary_ele
                 }
             }
         }
-        printf("Boundary element %llu, index %llu has delete %i\n", i, element_index, boundary_elements_to_delete[i]);
     }
 }
 
@@ -9084,7 +9072,6 @@ auto SEM::Device::Meshes::find_mpi_interface_elements_to_delete(size_t n_mpi_int
     for (size_t i = index; i < n_mpi_interface_elements; i += stride) {
         if (mpi_interfaces_new_process_incoming[i] == rank) {
             boundary_elements_to_delete[mpi_interfaces_destination[i] - n_domain_elements] = true;
-            printf("MPI destination %llu, element %llu, will be deleted\n", i,  mpi_interfaces_destination[i]);
         }
     }
 }
@@ -9109,7 +9096,6 @@ auto SEM::Device::Meshes::find_mpi_interface_elements_to_keep(size_t n_mpi_desti
 
                 if (mpi_proc == neighbour_proc && mpi_index == neighbour_index && mpi_side == neighbour_side) {
                     boundary_elements_to_delete[mpi_interfaces_destination[i] - n_domain_elements] = false; 
-                    printf("MPI destination %llu, element %llu, will be kept\n", i,  mpi_interfaces_destination[i]);
                     break;
                 }
             }
