@@ -17,7 +17,7 @@ curve_width = 5
 points_size = 12
 points_shape = "."
 
-save_path = Path.cwd().parent / "media"
+save_path = Path(__file__).parent.parent / "media"
 save_path.mkdir(parents=True, exist_ok=True)
 
 # This is basically the mesh generator, without boundaries

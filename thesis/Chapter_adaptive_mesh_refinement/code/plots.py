@@ -16,7 +16,7 @@ faces_width = 4
 points_size = 12
 points_shape = "."
 
-save_path = Path.cwd().parent / "media"
+save_path = Path(__file__).parent.parent / "media"
 save_path.mkdir(parents=True, exist_ok=True)
 
 nodes_4 = sem.LegendreGaussNodesAndWeights(N[0])[0]
