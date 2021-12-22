@@ -1511,10 +1511,10 @@ auto SEM::Device::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceF
             device_vector<deviceFloat> new_device_receiving_interfaces_p(mpi_interfaces_destination_.size() * (maximum_N_ + 1), stream_);
             device_vector<deviceFloat> new_device_receiving_interfaces_u(mpi_interfaces_destination_.size() * (maximum_N_ + 1), stream_);
             device_vector<deviceFloat> new_device_receiving_interfaces_v(mpi_interfaces_destination_.size() * (maximum_N_ + 1), stream_);
-            device_vector<int> new_device_receiving_interfaces_N(mpi_interfaces_destination_.size() * (maximum_N_ + 1), stream_);
-            device_vector<bool> new_device_receiving_interfaces_refine(mpi_interfaces_destination_.size() * (maximum_N_ + 1), stream_);
-            device_vector<bool> new_device_receiving_interfaces_refine_without_splitting(mpi_interfaces_destination_.size() * (maximum_N_ + 1), stream_);
-            device_vector<bool> new_device_receiving_interfaces_creating_node(mpi_interfaces_destination_.size() * (maximum_N_ + 1), stream_);
+            device_vector<int> new_device_receiving_interfaces_N(mpi_interfaces_destination_.size(), stream_);
+            device_vector<bool> new_device_receiving_interfaces_refine(mpi_interfaces_destination_.size(), stream_);
+            device_vector<bool> new_device_receiving_interfaces_refine_without_splitting(mpi_interfaces_destination_.size(), stream_);
+            device_vector<bool> new_device_receiving_interfaces_creating_node(mpi_interfaces_destination_.size(), stream_);
             device_receiving_interfaces_p_ = std::move(new_device_receiving_interfaces_p);
             device_receiving_interfaces_u_ = std::move(new_device_receiving_interfaces_u);
             device_receiving_interfaces_v_ = std::move(new_device_receiving_interfaces_v);
@@ -2255,7 +2255,6 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
             SEM::Device::Meshes::get_neighbours<<<send_numBlocks, boundaries_blockSize_, 0, stream_>>>(
                 n_elements_send_left[global_rank], 
                 0, 
-                n_elements_new[global_rank], 
                 n_elements_per_proc[global_rank], 
                 wall_boundaries_.size(), 
                 symmetry_boundaries_.size(), 
@@ -2363,7 +2362,6 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
             SEM::Device::Meshes::get_neighbours<<<send_numBlocks, boundaries_blockSize_, 0, stream_>>>(
                 n_elements_send_right[global_rank], 
                 n_elements_per_proc[global_rank] - n_elements_send_right[global_rank], 
-                n_elements_new[global_rank], 
                 n_elements_per_proc[global_rank], 
                 wall_boundaries_.size(), 
                 symmetry_boundaries_.size(), 
@@ -8220,7 +8218,6 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
 __global__
 auto SEM::Device::Meshes::get_neighbours(size_t n_elements_send, 
                                  size_t start_index, 
-                                 size_t n_domain_elements, 
                                  size_t n_domain_elements_old,
                                  size_t n_wall_boundaries, 
                                  size_t n_symmetry_boundaries, 
@@ -8828,7 +8825,7 @@ auto SEM::Device::Meshes::move_faces(size_t n_faces, size_t n_domain_elements, s
                 }
 
                 // CHECK why check for index? All elements should be received now if their new process is here
-                if (found_mpi_destination && mpi_interfaces_new_process_incoming[mpi_destination_index] == rank && (mpi_interfaces_new_local_index_incoming[mpi_destination_index] < n_elements_recv_left || mpi_interfaces_new_local_index_incoming[mpi_destination_index] >= n_domain_elements - n_elements_recv_right)) {
+                if (found_mpi_destination && mpi_interfaces_new_process_incoming[mpi_destination_index] == rank && (mpi_interfaces_new_local_index_incoming[mpi_destination_index] < n_elements_recv_left || mpi_interfaces_new_local_index_incoming[mpi_destination_index] >= new_n_domain_elements - n_elements_recv_right)) {
                     new_faces[i].elements_[0] = mpi_interfaces_new_local_index_incoming[mpi_destination_index];
                     new_faces[i].elements_side_[0] = mpi_interfaces_new_side_incoming[mpi_destination_index];
                 }
@@ -8864,7 +8861,7 @@ auto SEM::Device::Meshes::move_faces(size_t n_faces, size_t n_domain_elements, s
                 }
 
                 // CHECK why check for index? All elements should be received now if their new process is here
-                if (found_mpi_destination && mpi_interfaces_new_process_incoming[mpi_destination_index] == rank && (mpi_interfaces_new_local_index_incoming[mpi_destination_index] < n_elements_recv_left || mpi_interfaces_new_local_index_incoming[mpi_destination_index] >= n_domain_elements - n_elements_recv_right)) {
+                if (found_mpi_destination && mpi_interfaces_new_process_incoming[mpi_destination_index] == rank && (mpi_interfaces_new_local_index_incoming[mpi_destination_index] < n_elements_recv_left || mpi_interfaces_new_local_index_incoming[mpi_destination_index] >= new_n_domain_elements - n_elements_recv_right)) {
                     new_faces[i].elements_[1] = mpi_interfaces_new_local_index_incoming[mpi_destination_index];
                     new_faces[i].elements_side_[1] = mpi_interfaces_new_side_incoming[mpi_destination_index];
                 }
@@ -8928,7 +8925,7 @@ auto SEM::Device::Meshes::move_required_faces(
                 const size_t new_element_index = new_elements_offset_left + elements_send_destinations_offset_left[sent_element_index] + n_kept_before;
                 new_faces[new_face_index].elements_[0] = new_element_index;
                 new_faces[new_face_index].elements_side_[0] = 0;
-
+                printf("Face %llu moving to %llu, left element was left sent, new index %llu\n", i, new_face_index, new_element_index);
             }
             else if (element_index_L < n_domain_elements && element_index_L >= n_domain_elements - n_elements_send_right) {
                 const size_t sent_element_index = element_index_L + n_elements_send_right - n_domain_elements;
@@ -8939,12 +8936,13 @@ auto SEM::Device::Meshes::move_required_faces(
                 const size_t new_element_index = new_elements_offset_right + elements_send_destinations_offset_right[sent_element_index] + n_kept_before;
                 new_faces[new_face_index].elements_[0] = new_element_index;
                 new_faces[new_face_index].elements_side_[0] = 0;
-
+                printf("Face %llu moving to %llu, left element was right sent, new index %llu\n", i, new_face_index, new_element_index);
             }
             else if (element_index_L < n_domain_elements) {
                 new_faces[new_face_index].elements_[0] = new_faces[new_face_index].elements_[0] + n_elements_recv_left - n_elements_send_left;
+                printf("Face %llu moving to %llu, left element is in domain, new index %llu\n", i, new_face_index, new_faces[new_face_index].elements_[0]);
             }
-            else {  // NOOT NOOT
+            else {
                 const size_t boundary_element_index = element_index_L - n_domain_elements;
                 if (!boundary_elements_to_delete[boundary_element_index]) { // Should always be the case
                     const int boundary_block_id = boundary_element_index/boundary_blockSize;
@@ -8956,6 +8954,7 @@ auto SEM::Device::Meshes::move_required_faces(
                     }
 
                     new_faces[new_face_index].elements_[0] = new_boundary_element_index;
+                    printf("Face %llu moving to %llu, left element is a ghost, moved to new index %llu\n", i, new_face_index, new_boundary_element_index);
                 }
                 else {
                     bool found_mpi_destination = false;
@@ -8968,8 +8967,10 @@ auto SEM::Device::Meshes::move_required_faces(
                         }
                     }
 
+                    printf("Face %llu moving to %llu, left element is a deleted ghost, has found %d, new process %d, new index %llu. Will update is %d\n", i, new_face_index, found_mpi_destination, mpi_interfaces_new_process_incoming[mpi_destination_index], mpi_interfaces_new_local_index_incoming[mpi_destination_index], found_mpi_destination && mpi_interfaces_new_process_incoming[mpi_destination_index] == rank && (mpi_interfaces_new_local_index_incoming[mpi_destination_index] < n_elements_recv_left || mpi_interfaces_new_local_index_incoming[mpi_destination_index] >= n_domain_elements - n_elements_recv_right));
+
                     // CHECK why check for index? All elements should be received now if their new process is here
-                    if (found_mpi_destination && mpi_interfaces_new_process_incoming[mpi_destination_index] == rank && (mpi_interfaces_new_local_index_incoming[mpi_destination_index] < n_elements_recv_left || mpi_interfaces_new_local_index_incoming[mpi_destination_index] >= n_domain_elements - n_elements_recv_right)) {
+                    if (found_mpi_destination && mpi_interfaces_new_process_incoming[mpi_destination_index] == rank && (mpi_interfaces_new_local_index_incoming[mpi_destination_index] < n_elements_recv_left || mpi_interfaces_new_local_index_incoming[mpi_destination_index] >= new_n_domain_elements - n_elements_recv_right)) {
                         new_faces[new_face_index].elements_[0] = mpi_interfaces_new_local_index_incoming[mpi_destination_index];
                         new_faces[new_face_index].elements_side_[0] = mpi_interfaces_new_side_incoming[mpi_destination_index];
                     }
@@ -8986,7 +8987,7 @@ auto SEM::Device::Meshes::move_required_faces(
                 const size_t new_element_index = new_elements_offset_left + elements_send_destinations_offset_left[sent_element_index] + n_kept_before;
                 new_faces[new_face_index].elements_[1] = new_element_index;
                 new_faces[new_face_index].elements_side_[1] = 0;
-
+                printf("Face %llu moving to %llu, right element was left sent, new index %llu\n", i, new_face_index, new_element_index);
             }
             else if (element_index_R < n_domain_elements && element_index_R >= n_domain_elements - n_elements_send_right) {
                 const size_t sent_element_index = element_index_R + n_elements_send_right - n_domain_elements;
@@ -8997,10 +8998,11 @@ auto SEM::Device::Meshes::move_required_faces(
                 const size_t new_element_index = new_elements_offset_right + elements_send_destinations_offset_right[sent_element_index] + n_kept_before;
                 new_faces[new_face_index].elements_[1] = new_element_index;
                 new_faces[new_face_index].elements_side_[1] = 0;
-
+                printf("Face %llu moving to %llu, right element was right sent, new index %llu\n", i, new_face_index, new_element_index);
             }
             else if (element_index_R < n_domain_elements) {
                 new_faces[new_face_index].elements_[1] = new_faces[new_face_index].elements_[1] + n_elements_recv_left - n_elements_send_left;
+                printf("Face %llu moving to %llu, right element is in domain, new index %llu\n", i, new_face_index, new_faces[new_face_index].elements_[1]);
             }
             else {
                 const size_t boundary_element_index = element_index_R - n_domain_elements;
@@ -9014,6 +9016,7 @@ auto SEM::Device::Meshes::move_required_faces(
                     }
 
                     new_faces[new_face_index].elements_[1] = new_boundary_element_index;
+                    printf("Face %llu moving to %llu, right element is a ghost, moved to new index %llu\n", i, new_face_index, new_boundary_element_index);
                 }
                 else {
                     bool found_mpi_destination = false;
@@ -9027,7 +9030,7 @@ auto SEM::Device::Meshes::move_required_faces(
                     }
 
                     // CHECK why check for index? All elements should be received now if their new process is here
-                    if (found_mpi_destination && mpi_interfaces_new_process_incoming[mpi_destination_index] == rank && (mpi_interfaces_new_local_index_incoming[mpi_destination_index] < n_elements_recv_left || mpi_interfaces_new_local_index_incoming[mpi_destination_index] >= n_domain_elements - n_elements_recv_right)) {
+                    if (found_mpi_destination && mpi_interfaces_new_process_incoming[mpi_destination_index] == rank && (mpi_interfaces_new_local_index_incoming[mpi_destination_index] < n_elements_recv_left || mpi_interfaces_new_local_index_incoming[mpi_destination_index] >= new_n_domain_elements - n_elements_recv_right)) {
                         new_faces[new_face_index].elements_[1] = mpi_interfaces_new_local_index_incoming[mpi_destination_index];
                         new_faces[new_face_index].elements_side_[1] = mpi_interfaces_new_side_incoming[mpi_destination_index];
                     }
@@ -9061,6 +9064,7 @@ auto SEM::Device::Meshes::find_boundary_elements_to_delete(size_t n_boundary_ele
                 }
             }
         }
+        printf("Boundary element %llu, index %llu, has delete %d\n", i, element_index, boundary_elements_to_delete[i]);
     }
 }
 
@@ -9072,6 +9076,7 @@ auto SEM::Device::Meshes::find_mpi_interface_elements_to_delete(size_t n_mpi_int
     for (size_t i = index; i < n_mpi_interface_elements; i += stride) {
         if (mpi_interfaces_new_process_incoming[i] == rank) {
             boundary_elements_to_delete[mpi_interfaces_destination[i] - n_domain_elements] = true;
+            printf("MPI destination %llu, index %llu, will be deleted\n", i, mpi_interfaces_destination[i]);
         }
     }
 }
@@ -9096,6 +9101,7 @@ auto SEM::Device::Meshes::find_mpi_interface_elements_to_keep(size_t n_mpi_desti
 
                 if (mpi_proc == neighbour_proc && mpi_index == neighbour_index && mpi_side == neighbour_side) {
                     boundary_elements_to_delete[mpi_interfaces_destination[i] - n_domain_elements] = false; 
+                    printf("MPI destination %llu, index %llu, will be kept\n", i, mpi_interfaces_destination[i]);
                     break;
                 }
             }
