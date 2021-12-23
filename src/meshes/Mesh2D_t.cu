@@ -9063,7 +9063,6 @@ auto SEM::Device::Meshes::find_mpi_interface_elements_to_delete(size_t n_mpi_int
     for (size_t i = index; i < n_mpi_interface_elements; i += stride) {
         if (mpi_interfaces_new_process_incoming[i] == rank) {
             boundary_elements_to_delete[mpi_interfaces_destination[i] - n_domain_elements] = true;
-            printf("MPI destination %llu, index %llu, will be deleted\n", i, mpi_interfaces_destination[i]);
         }
     }
 }
@@ -9088,7 +9087,6 @@ auto SEM::Device::Meshes::find_mpi_interface_elements_to_keep(size_t n_mpi_desti
 
                 if (mpi_proc == neighbour_proc && mpi_index == neighbour_index && mpi_side == neighbour_side) {
                     boundary_elements_to_delete[mpi_interfaces_destination[i] - n_domain_elements] = false; 
-                    printf("MPI destination %llu, index %llu, will be kept\n", i, mpi_interfaces_destination[i]);
                     break;
                 }
             }
