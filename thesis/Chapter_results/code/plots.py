@@ -41,11 +41,11 @@ N_weak = np.array([4])
 K_weak = np.array([64 * 64])
 W_weak = np.array([32])
 
-times_beluga_cpu_weak = np.array([[437.476, 248.753, 300.733, 373.963]])
+times_beluga_cpu_weak = np.array([[123.457, 248.753, 300.733, 373.963]])
 nodes_beluga_cpu_weak = np.array([[0.25, 1, 4, 16]])
 min_total_time_beluga_cpu_weak = np.amin(times_beluga_cpu_weak, 1)
 
-times_beluga_gpu_weak = np.array([[496.708, 130.662, 132.527, 129.103]])
+times_beluga_gpu_weak = np.array([[111.398, 130.662, 132.527, 129.103]])
 nodes_beluga_gpu_weak = np.array([[0.25, 1, 4, 16]])
 min_total_time_beluga_gpu_weak = np.amin(times_beluga_gpu_weak, 1)
 
