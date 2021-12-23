@@ -138,7 +138,7 @@ auto SEM::Device::Meshes::reduce_refine_2D(size_t n_elements, int max_split_leve
 // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
 template <unsigned int blockSize>
 __global__ 
-auto SEM::Device::Meshes::reduce_faces_refine_2D(size_t n_faces, int max_split_level, SEM::Device::Entities::Face2D_t* faces, const SEM::Device::Entities::Element2D_t* elements, size_t* g_odata) -> void {
+auto SEM::Device::Meshes::reduce_faces_refine_2D(size_t n_faces, int max_split_level, SEM::Device::Entities::Face2D_t* faces, const SEM::Device::Entities::Element2D_t* elements, const SEM::Device::Entities::Vec2<deviceFloat>* nodes, size_t* g_odata) -> void {
     __shared__ size_t sdata[(blockSize >= 64) ? blockSize : blockSize + blockSize/2]; // Because within a warp there is no branching and this is read up until blockSize + blockSize/2
     unsigned int tid = threadIdx.x;
     size_t i = blockIdx.x*(blockSize*2) + tid;
@@ -146,20 +146,257 @@ auto SEM::Device::Meshes::reduce_faces_refine_2D(size_t n_faces, int max_split_l
     sdata[tid] = 0;
 
     while (i < n_faces) { 
-        if (elements[faces[i].elements_[0]].additional_nodes_[faces[i].elements_side_[0]] || elements[faces[i].elements_[1]].additional_nodes_[faces[i].elements_side_[1]]) {
-            faces[i].refine_ = true;
-            ++sdata[tid];
-        }
-        else {
-            faces[i].refine_ = false;
-        }
-        if (i+blockSize < n_faces) {
-            if (elements[faces[i+blockSize].elements_[0]].additional_nodes_[faces[i+blockSize].elements_side_[0]] || elements[faces[i+blockSize].elements_[1]].additional_nodes_[faces[i+blockSize].elements_side_[1]]) {
-                faces[i+blockSize].refine_ = true;
+        faces[i].refine_ = false;
+        if (elements[faces[i].elements_[0]].additional_nodes_[faces[i].elements_side_[0]]) {
+            SEM::Device::Entities::Face2D_t& face = faces[i];
+            const SEM::Device::Entities::Element2D_t& element = elements[face.elements_[0]];
+            const size_t element_side = face.elements_side_[0];
+            const size_t element_next_side = (element_side + 1 < element.nodes_.size()) ? element_side + 1 : 0;
+            
+            const SEM::Device::Entities::Vec2<deviceFloat> new_node = (nodes[element.nodes_[element_side]] + nodes[element.nodes_[element_next_side]])/2;
+
+            std::array<bool, 2> side_face {false, false};
+            const std::array<SEM::Device::Entities::Vec2<deviceFloat>, 2> AB {
+                new_node - nodes[element.nodes_[element_side]],
+                nodes[element.nodes_[element_next_side]] - new_node
+            };
+
+            const std::array<deviceFloat, 2> AB_dot_inv {
+                1/AB[0].dot(AB[0]),
+                1/AB[1].dot(AB[1])
+            };
+            
+            const std::array<SEM::Device::Entities::Vec2<deviceFloat>, 2> AC {
+                nodes[face.nodes_[0]] - nodes[element.nodes_[element_side]],
+                nodes[face.nodes_[0]] - new_node
+            };
+            const std::array<SEM::Device::Entities::Vec2<deviceFloat>, 2> AD {
+                nodes[face.nodes_[1]] - nodes[element.nodes_[element_side]],
+                nodes[face.nodes_[1]] - new_node
+            };
+
+            const std::array<deviceFloat, 2> C_proj {
+                AC[0].dot(AB[0]) * AB_dot_inv[0],
+                AC[1].dot(AB[1]) * AB_dot_inv[1]
+            };
+            const std::array<deviceFloat, 2> D_proj {
+                AD[0].dot(AB[0]) * AB_dot_inv[0],
+                AD[1].dot(AB[1]) * AB_dot_inv[1]
+            };
+
+            // CHECK this projection is different than the one used for splitting, maybe wrong
+            // The face is within the first element
+            if ((C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1) 
+                && D_proj[0] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())
+                || (D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
+                && C_proj[0] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())) {
+
+                side_face[0] = true;
+            }
+            // The face is within the second element
+            if ((C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
+                && D_proj[1] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())
+                || (D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
+                && C_proj[1] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())) {
+
+                side_face[1] = true;
+            }
+
+            printf("Face %llu has left side additional_nodes, side_face [%d, %d]\n", i, side_face[0], side_face[1]);
+            
+            if (side_face[0] && side_face[1]) {
+                face.refine_ = true;
                 ++sdata[tid];
             }
-            else {
-                faces[i+blockSize].refine_ = false;
+        }
+        else if (elements[faces[i].elements_[1]].additional_nodes_[faces[i].elements_side_[1]] && !faces[i].refine_) {
+            SEM::Device::Entities::Face2D_t& face = faces[i];
+            const SEM::Device::Entities::Element2D_t& element = elements[face.elements_[1]];
+            const size_t element_side = face.elements_side_[1];
+            const size_t element_next_side = (element_side + 1 < element.nodes_.size()) ? element_side + 1 : 0;
+
+            const SEM::Device::Entities::Vec2<deviceFloat> new_node = (nodes[element.nodes_[element_side]] + nodes[element.nodes_[element_next_side]])/2;
+
+            std::array<bool, 2> side_face {false, false};
+            const std::array<SEM::Device::Entities::Vec2<deviceFloat>, 2> AB {
+                new_node - nodes[element.nodes_[element_side]],
+                nodes[element.nodes_[element_next_side]] - new_node
+            };
+
+            const std::array<deviceFloat, 2> AB_dot_inv {
+                1/AB[0].dot(AB[0]),
+                1/AB[1].dot(AB[1])
+            };
+
+            const std::array<SEM::Device::Entities::Vec2<deviceFloat>, 2> AC {
+                nodes[face.nodes_[0]] - nodes[element.nodes_[element_side]],
+                nodes[face.nodes_[0]] - new_node
+            };
+            const std::array<SEM::Device::Entities::Vec2<deviceFloat>, 2> AD {
+                nodes[face.nodes_[1]] - nodes[element.nodes_[element_side]],
+                nodes[face.nodes_[1]] - new_node
+            };
+
+            const std::array<deviceFloat, 2> C_proj {
+                AC[0].dot(AB[0]) * AB_dot_inv[0],
+                AC[1].dot(AB[1]) * AB_dot_inv[1]
+            };
+            const std::array<deviceFloat, 2> D_proj {
+                AD[0].dot(AB[0]) * AB_dot_inv[0],
+                AD[1].dot(AB[1]) * AB_dot_inv[1]
+            };
+
+            // CHECK this projection is different than the one used for splitting, maybe wrong
+            // The face is within the first element
+            if ((C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1) 
+                && D_proj[0] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())
+                || (D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
+                && C_proj[0] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())) {
+
+                side_face[0] = true;
+            }
+            // The face is within the second element
+            if ((C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
+                && D_proj[1] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())
+                || (D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
+                && C_proj[1] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())) {
+
+                side_face[1] = true;
+            }
+
+            printf("Face %llu has right side additional_nodes, side_face [%d, %d]\n", i, side_face[0], side_face[1]);
+
+            if (side_face[0] && side_face[1]) {
+                face.refine_ = true;
+                ++sdata[tid];
+            }
+        }
+
+        if (i+blockSize < n_faces) {
+            faces[i+blockSize].refine_ = false;
+            if (elements[faces[i+blockSize].elements_[0]].additional_nodes_[faces[i+blockSize].elements_side_[0]]) {
+                SEM::Device::Entities::Face2D_t& face = faces[i+blockSize];
+                const SEM::Device::Entities::Element2D_t& element = elements[face.elements_[0]];
+                const size_t element_side = face.elements_side_[0];
+                const size_t element_next_side = (element_side + 1 < element.nodes_.size()) ? element_side + 1 : 0;
+
+                const SEM::Device::Entities::Vec2<deviceFloat> new_node = (nodes[element.nodes_[element_side]] + nodes[element.nodes_[element_next_side]])/2;
+
+                std::array<bool, 2> side_face {false, false};
+                const std::array<SEM::Device::Entities::Vec2<deviceFloat>, 2> AB {
+                    new_node - nodes[element.nodes_[element_side]],
+                    nodes[element.nodes_[element_next_side]] - new_node
+                };
+
+                const std::array<deviceFloat, 2> AB_dot_inv {
+                    1/AB[0].dot(AB[0]),
+                    1/AB[1].dot(AB[1])
+                };
+
+                const std::array<SEM::Device::Entities::Vec2<deviceFloat>, 2> AC {
+                    nodes[face.nodes_[0]] - nodes[element.nodes_[element_side]],
+                    nodes[face.nodes_[0]] - new_node
+                };
+                const std::array<SEM::Device::Entities::Vec2<deviceFloat>, 2> AD {
+                    nodes[face.nodes_[1]] - nodes[element.nodes_[element_side]],
+                    nodes[face.nodes_[1]] - new_node
+                };
+
+                const std::array<deviceFloat, 2> C_proj {
+                    AC[0].dot(AB[0]) * AB_dot_inv[0],
+                    AC[1].dot(AB[1]) * AB_dot_inv[1]
+                };
+                const std::array<deviceFloat, 2> D_proj {
+                    AD[0].dot(AB[0]) * AB_dot_inv[0],
+                    AD[1].dot(AB[1]) * AB_dot_inv[1]
+                };
+
+                // CHECK this projection is different than the one used for splitting, maybe wrong
+                // The face is within the first element
+                if ((C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1) 
+                    && D_proj[0] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())
+                    || (D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
+                    && C_proj[0] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())) {
+
+                    side_face[0] = true;
+                }
+                // The face is within the second element
+                if ((C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
+                    && D_proj[1] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())
+                    || (D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
+                    && C_proj[1] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())) {
+
+                    side_face[1] = true;
+                }
+                                
+                printf("Face %llu has left side additional_nodes, side_face [%d, %d]\n", i+blockSize, side_face[0], side_face[1]);
+
+                if (side_face[0] && side_face[1]) {
+                    face.refine_ = true;
+                    ++sdata[tid];
+                }
+            }
+            else if (elements[faces[i+blockSize].elements_[1]].additional_nodes_[faces[i+blockSize].elements_side_[1]] && !faces[i+blockSize].refine_) {
+                SEM::Device::Entities::Face2D_t& face = faces[i+blockSize];
+                const SEM::Device::Entities::Element2D_t& element = elements[face.elements_[1]];
+                const size_t element_side = face.elements_side_[1];
+                const size_t element_next_side = (element_side + 1 < element.nodes_.size()) ? element_side + 1 : 0;
+
+                const SEM::Device::Entities::Vec2<deviceFloat> new_node = (nodes[element.nodes_[element_side]] + nodes[element.nodes_[element_next_side]])/2;
+
+                std::array<bool, 2> side_face {false, false};
+                const std::array<SEM::Device::Entities::Vec2<deviceFloat>, 2> AB {
+                    new_node - nodes[element.nodes_[element_side]],
+                    nodes[element.nodes_[element_next_side]] - new_node
+                };
+
+                const std::array<deviceFloat, 2> AB_dot_inv {
+                    1/AB[0].dot(AB[0]),
+                    1/AB[1].dot(AB[1])
+                };
+
+                const std::array<SEM::Device::Entities::Vec2<deviceFloat>, 2> AC {
+                    nodes[face.nodes_[0]] - nodes[element.nodes_[element_side]],
+                    nodes[face.nodes_[0]] - new_node
+                };
+                const std::array<SEM::Device::Entities::Vec2<deviceFloat>, 2> AD {
+                    nodes[face.nodes_[1]] - nodes[element.nodes_[element_side]],
+                    nodes[face.nodes_[1]] - new_node
+                };
+
+                const std::array<deviceFloat, 2> C_proj {
+                    AC[0].dot(AB[0]) * AB_dot_inv[0],
+                    AC[1].dot(AB[1]) * AB_dot_inv[1]
+                };
+                const std::array<deviceFloat, 2> D_proj {
+                    AD[0].dot(AB[0]) * AB_dot_inv[0],
+                    AD[1].dot(AB[1]) * AB_dot_inv[1]
+                };
+
+                // CHECK this projection is different than the one used for splitting, maybe wrong
+                // The face is within the first element
+                if ((C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1) 
+                    && D_proj[0] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())
+                    || (D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
+                    && C_proj[0] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())) {
+
+                    side_face[0] = true;
+                }
+                // The face is within the second element
+                if ((C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
+                    && D_proj[1] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())
+                    || (D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
+                    && C_proj[1] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())) {
+
+                    side_face[1] = true;
+                }
+
+                printf("Face %llu has right side additional_nodes, side_face [%d, %d]\n", i+blockSize, side_face[0], side_face[1]);
+
+                if (side_face[0] && side_face[1]) {
+                    face.refine_ = true;
+                    ++sdata[tid];
+                }
             }
         }
         i += gridSize; 

@@ -440,7 +440,7 @@ namespace SEM { namespace Device { namespace Meshes {
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>
     __global__ 
-    auto reduce_faces_refine_2D(size_t n_faces, int max_split_level, SEM::Device::Entities::Face2D_t* faces, const SEM::Device::Entities::Element2D_t* elements, size_t* g_odata) -> void;
+    auto reduce_faces_refine_2D(size_t n_faces, int max_split_level, SEM::Device::Entities::Face2D_t* faces, const SEM::Device::Entities::Element2D_t* elements, const SEM::Device::Entities::Vec2<deviceFloat>* nodes, size_t* g_odata) -> void;
 
     // From https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
     template <unsigned int blockSize>

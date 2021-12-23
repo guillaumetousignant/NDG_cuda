@@ -1392,7 +1392,7 @@ auto SEM::Device::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceF
 
             SEM::Device::Meshes::no_new_nodes<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, elements_.data());
     
-            SEM::Device::Meshes::reduce_faces_refine_2D<faces_blockSize_/2><<<faces_numBlocks_, faces_blockSize_/2, 0, stream_>>>(faces_.size(), max_split_level_, faces_.data(), elements_.data(), device_faces_refine_array_.data());
+            SEM::Device::Meshes::reduce_faces_refine_2D<faces_blockSize_/2><<<faces_numBlocks_, faces_blockSize_/2, 0, stream_>>>(faces_.size(), max_split_level_, faces_.data(), elements_.data(), nodes_.data(), device_faces_refine_array_.data());
             device_faces_refine_array_.copy_to(host_faces_refine_array_, stream_);
 
             cudaStreamSynchronize(stream_); // So the transfer to host_faces_refine_array_ is complete
@@ -1637,7 +1637,7 @@ auto SEM::Device::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceF
         SEM::Device::Meshes::copy_boundaries_error<<<outflow_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(outflow_boundaries_.size(), elements_.data(), outflow_boundaries_.data(), faces_.data());
     }
 
-    SEM::Device::Meshes::reduce_faces_refine_2D<faces_blockSize_/2><<<faces_numBlocks_, faces_blockSize_/2, 0, stream_>>>(faces_.size(), max_split_level_, faces_.data(), elements_.data(), device_faces_refine_array_.data());
+    SEM::Device::Meshes::reduce_faces_refine_2D<faces_blockSize_/2><<<faces_numBlocks_, faces_blockSize_/2, 0, stream_>>>(faces_.size(), max_split_level_, faces_.data(), elements_.data(), nodes_.data(), device_faces_refine_array_.data());
     device_faces_refine_array_.copy_to(host_faces_refine_array_, stream_);
     cudaStreamSynchronize(stream_);
 
