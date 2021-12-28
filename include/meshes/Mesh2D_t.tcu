@@ -201,8 +201,6 @@ auto SEM::Device::Meshes::reduce_faces_refine_2D(size_t n_faces, int max_split_l
 
                 side_face[1] = true;
             }
-
-            printf("Face %llu has left side additional_nodes, side_face [%d, %d]\n", i, side_face[0], side_face[1]);
             
             if (side_face[0] && side_face[1]) {
                 face.refine_ = true;
@@ -263,8 +261,6 @@ auto SEM::Device::Meshes::reduce_faces_refine_2D(size_t n_faces, int max_split_l
 
                 side_face[1] = true;
             }
-
-            printf("Face %llu has right side additional_nodes, side_face [%d, %d]\n", i, side_face[0], side_face[1]);
 
             if (side_face[0] && side_face[1]) {
                 face.refine_ = true;
@@ -329,8 +325,6 @@ auto SEM::Device::Meshes::reduce_faces_refine_2D(size_t n_faces, int max_split_l
                     side_face[1] = true;
                 }
                                 
-                printf("Face %llu has left side additional_nodes, side_face [%d, %d]\n", i+blockSize, side_face[0], side_face[1]);
-
                 if (side_face[0] && side_face[1]) {
                     face.refine_ = true;
                     ++sdata[tid];
@@ -390,8 +384,6 @@ auto SEM::Device::Meshes::reduce_faces_refine_2D(size_t n_faces, int max_split_l
 
                     side_face[1] = true;
                 }
-
-                printf("Face %llu has right side additional_nodes, side_face [%d, %d]\n", i+blockSize, side_face[0], side_face[1]);
 
                 if (side_face[0] && side_face[1]) {
                     face.refine_ = true;
