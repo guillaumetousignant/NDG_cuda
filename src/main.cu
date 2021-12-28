@@ -137,16 +137,6 @@ auto main(int argc, char* argv[]) -> int {
 
     MPI_Init(&argc, &argv);
 
-    cudaFree(nullptr); // This makes it debugable, if no cuda call happens before some set time, the memory sanitizer gives up
-    int global_dodo_rank = -1;
-    MPI_Comm_rank(MPI_COMM_WORLD, &global_dodo_rank);
-    if (global_dodo_rank <= 4) {
-        volatile bool dodo = true;
-        while (dodo) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        }
-    }
-
     // Argument parsing
     const fs::path mesh_file = get_input_file(input_parser);
     const fs::path output_file = get_output_file(input_parser);
