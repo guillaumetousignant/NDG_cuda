@@ -1979,8 +1979,6 @@ auto SEM::Device::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceF
 }
 
 auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat>& polynomial_nodes) -> void {
-    print();
-
     int global_rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
     int global_size;
@@ -3973,8 +3971,6 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
 
     n_elements_global_ = n_elements_global_new;
     global_element_offset_ = global_element_offset_new[global_rank];
-
-    print();
 }
 
 auto SEM::Device::Meshes::Mesh2D_t::boundary_conditions(deviceFloat t, const device_vector<deviceFloat>& polynomial_nodes, const device_vector<deviceFloat>& weights, const device_vector<deviceFloat>& barycentric_weights) -> void {
