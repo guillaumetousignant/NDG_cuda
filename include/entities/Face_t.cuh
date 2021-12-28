@@ -1,10 +1,10 @@
-#ifndef NDG_FACE_T_H
-#define NDG_FACE_T_H
+#ifndef NDG_ENTITIES_FACE_T_CUH
+#define NDG_ENTITIES_FACE_T_CUH
 
 #include "helpers/float_types.h"
 #include <array>
 
-namespace SEM { namespace Entities {
+namespace SEM { namespace Device { namespace Entities {
     class Face_t {
         public:
             __host__ __device__ 
@@ -21,6 +21,6 @@ namespace SEM { namespace Entities {
 
     __global__
     void build_faces(size_t N_faces, Face_t* faces);
-}}
+}}}
 
 #endif

@@ -1,0 +1,12 @@
+#include "helpers/constants.cuh"
+#include <cmath>
+
+template <class T>
+__host__ __device__
+auto SEM::Device::g(SEM::Device::Entities::Vec2<T> xy, T t) -> std::array<T, 3> {    
+    const T p = std::exp(-(SEM::Device::Constants::k.x() * (xy.x() - SEM::Device::Constants::xy0.x()) + SEM::Device::Constants::k.y() * (xy.y() - SEM::Device::Constants::xy0.y()) - SEM::Device::Constants::c * t) * (SEM::Device::Constants::k.x() * (xy.x() - SEM::Device::Constants::xy0.x()) + SEM::Device::Constants::k.y() * (xy.y() - SEM::Device::Constants::xy0.y()) - SEM::Device::Constants::c * t) / (SEM::Device::Constants::d * SEM::Device::Constants::d));
+
+    return {p,
+            p * SEM::Device::Constants::k.x() / SEM::Device::Constants::c,
+            p * SEM::Device::Constants::k.y() / SEM::Device::Constants::c};
+}

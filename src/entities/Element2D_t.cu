@@ -1,19 +1,17 @@
 #include "entities/Element2D_t.cuh"
-#include "polynomials/ChebyshevPolynomial_t.cuh"
-#include "polynomials/LegendrePolynomial_t.cuh"
 #include "functions/quad_map.cuh"
 #include "functions/inverse_quad_map.cuh"
 #include "functions/quad_metrics.cuh"
 #include "functions/analytical_solution.cuh"
-#include "helpers/constants.h"
 #include <cmath>
 #include <limits>
+#include <cstddef>
 
-using SEM::Entities::cuda_vector;
-using namespace SEM::Hilbert;
+using SEM::Device::Entities::cuda_vector;
+using namespace SEM::Device::Hilbert;
 
 __device__ 
-SEM::Entities::Element2D_t::Element2D_t(int N, int split_level, Hilbert::Status status, const std::array<cuda_vector<size_t>, 4>& faces, std::array<size_t, 4> nodes) : 
+SEM::Device::Entities::Element2D_t::Element2D_t(int N, int split_level, Hilbert::Status status, int rotation, const std::array<cuda_vector<size_t>, 4>& faces, std::array<size_t, 4> nodes) : 
         N_{N},
         faces_{faces},
         nodes_{nodes},
@@ -26,6 +24,7 @@ SEM::Entities::Element2D_t::Element2D_t(int N, int split_level, Hilbert::Status 
         deta_dy_{(N_ + 1) * (N_ + 1)},
         jacobian_{(N_ + 1) * (N_ + 1)},
         scaling_factor_{N_ + 1, N_ + 1, N_ + 1, N_ + 1},
+        rotation_{rotation},
         p_{(N_ + 1) * (N_ + 1)},
         u_{(N_ + 1) * (N_ + 1)},
         v_{(N_ + 1) * (N_ + 1)},
@@ -60,7 +59,7 @@ SEM::Entities::Element2D_t::Element2D_t(int N, int split_level, Hilbert::Status 
         additional_nodes_{false, false, false, false} {}
 
 __host__ __device__
-SEM::Entities::Element2D_t::Element2D_t() :
+SEM::Device::Entities::Element2D_t::Element2D_t() :
         N_{0},
         faces_{},
         nodes_{0, 0, 0, 0},
@@ -68,6 +67,7 @@ SEM::Entities::Element2D_t::Element2D_t() :
         delta_xy_min_{0.0},
         center_{0.0, 0.0},
         scaling_factor_{},
+        rotation_{0},
         p_extrapolated_{},
         u_extrapolated_{},
         v_extrapolated_{},
@@ -76,6 +76,9 @@ SEM::Entities::Element2D_t::Element2D_t() :
         v_flux_extrapolated_{},
         refine_{false},
         coarsen_{false},
+        p_error_{0.0},
+        u_error_{0.0},
+        v_error_{0.0},
         p_sigma_{0.0},
         u_sigma_{0.0},
         v_sigma_{0.0},
@@ -84,7 +87,7 @@ SEM::Entities::Element2D_t::Element2D_t() :
 
 // Algorithm 61
 __device__
-auto SEM::Entities::Element2D_t::interpolate_to_boundaries(const deviceFloat* lagrange_interpolant_minus, const deviceFloat* lagrange_interpolant_plus) -> void {
+auto SEM::Device::Entities::Element2D_t::interpolate_to_boundaries(const deviceFloat* lagrange_interpolant_minus, const deviceFloat* lagrange_interpolant_plus) -> void {
     const int offset_1D = N_ * (N_ + 1) /2;
 
     for (int i = 0; i <= N_; ++i) {
@@ -129,202 +132,12 @@ auto SEM::Entities::Element2D_t::interpolate_to_boundaries(const deviceFloat* la
 
 // Algorithm 61
 __device__
-auto SEM::Entities::Element2D_t::interpolate_q_to_boundaries(const deviceFloat* lagrange_interpolant_minus, const deviceFloat* lagrange_interpolant_plus) -> void {
-    printf("Warning, SEM::Entities::Element2D_t::interpolate_q_to_boundaries is not implemented.\n");
-}
-
-template __device__ auto SEM::Entities::Element2D_t::estimate_error<SEM::Polynomials::ChebyshevPolynomial_t>(deviceFloat tolerance_min, deviceFloat tolerance_max, const deviceFloat* polynomial_nodes, const deviceFloat* weights) -> void;
-template __device__ auto SEM::Entities::Element2D_t::estimate_error<SEM::Polynomials::LegendrePolynomial_t>(deviceFloat tolerance_min, deviceFloat tolerance_max, const deviceFloat* polynomial_nodes, const deviceFloat* weights) -> void;
-
-template<typename Polynomial>
-__device__
-auto SEM::Entities::Element2D_t::estimate_error<Polynomial>(deviceFloat tolerance_min, deviceFloat tolerance_max, const deviceFloat* polynomial_nodes, const deviceFloat* weights) -> void {
-    const int offset_1D = N_ * (N_ + 1) /2;
-    const int n_points_least_squares = min(N_ + 1, SEM::Constants::n_points_least_squares_max); // Number of points to use for thew least squares reduction, but don't go above N.
-
-    refine_ = false;
-    coarsen_ = true;
-
-    // Pressure
-    for (int node_index = 0; node_index < n_points_least_squares; ++node_index) {
-        spectrum_[node_index] = 0.0;
-        const deviceFloat p = N_ + node_index + 1 - n_points_least_squares;
-
-        // x direction
-        for (int i = 0; i <= p; ++i) {
-            deviceFloat local_spectrum = 0.0;
-
-            for (int k = 0; k <= N_; ++k) {
-                const deviceFloat L_N_x = Polynomial::polynomial(i, polynomial_nodes[offset_1D + k]);
-
-                for (int l = 0; l <= N_; ++l) {
-                    const deviceFloat L_N_y = Polynomial::polynomial(p, polynomial_nodes[offset_1D + l]);
-
-                    local_spectrum += (2 * i + 1) * (2 * p + 1) * static_cast<deviceFloat>(0.25) *
-                                      p_[k * (N_ + 1) + l] *
-                                      L_N_x * L_N_y * 
-                                      weights[offset_1D + k] * weights[offset_1D + l];
-                }
-
-            }
-            spectrum_[node_index] += std::abs(local_spectrum);
-        }
-
-        // y direction
-        for (int j = 0; j < p; ++j) { // No need to include the last point here
-            deviceFloat local_spectrum = 0.0;
-
-            for (int k = 0; k <= N_; ++k) {
-                const deviceFloat L_N_x = Polynomial::polynomial(p, polynomial_nodes[offset_1D + k]);
-
-                for (int l = 0; l <= N_; ++l) {
-                    const deviceFloat L_N_y = Polynomial::polynomial(j, polynomial_nodes[offset_1D + l]);
-
-                    local_spectrum += (2 * j + 1) * (2 * (double)p + 1.0) * static_cast<deviceFloat>(0.25) *
-                                      p_[k * (N_ + 1) + l] *
-                                      L_N_x * L_N_y * 
-                                      weights[offset_1D + k] * weights[offset_1D + l];
-                }
-            }
-            spectrum_[node_index] += std::abs(local_spectrum);
-        }
-    }
-
-    const auto [C_p, sigma_p] = exponential_decay(n_points_least_squares);
-    p_sigma_ = sigma_p;
-
-    // Sum of error
-    p_error_ = std::sqrt(spectrum_[n_points_least_squares - 1] * spectrum_[n_points_least_squares - 1] // Why this part?
-                         + C_p * C_p * 0.5 / sigma_p * std::exp(-2 * sigma_p * (N_ + 1)));
-
-    if(p_error_ > tolerance_min) {	// need refinement
-        refine_ = true;
-    }
-    if(p_error_ > tolerance_max) {	// need coarsening
-        coarsen_ = false;
-    }
-
-    // Velocity x
-    for (int node_index = 0; node_index < n_points_least_squares; ++node_index) {
-        spectrum_[node_index] = 0.0;
-        const deviceFloat p = N_ + node_index + 1 - n_points_least_squares;
-
-        // x direction
-        for (int i = 0; i <= p; ++i) {
-            deviceFloat local_spectrum = 0.0;
-
-            for (int k = 0; k <= N_; ++k) {
-                const deviceFloat L_N_x = Polynomial::polynomial(i, polynomial_nodes[offset_1D + k]);
-
-                for (int l = 0; l <= N_; ++l) {
-                    const deviceFloat L_N_y = Polynomial::polynomial(p, polynomial_nodes[offset_1D + l]);
-
-                    local_spectrum += (2 * i + 1) * (2 * p + 1) * static_cast<deviceFloat>(0.25) *
-                                      u_[k * (N_ + 1) + l] *
-                                      L_N_x * L_N_y * 
-                                      weights[offset_1D + k] * weights[offset_1D + l];
-                }
-
-            }
-            spectrum_[node_index] += std::abs(local_spectrum);
-        }
-
-        // y direction
-        for (int j = 0; j < p; ++j) { // No need to include the last point here
-            deviceFloat local_spectrum = 0.0;
-
-            for (int k = 0; k <= N_; ++k) {
-                const deviceFloat L_N_x = Polynomial::polynomial(p, polynomial_nodes[offset_1D + k]);
-
-                for (int l = 0; l <= N_; ++l) {
-                    const deviceFloat L_N_y = Polynomial::polynomial(j, polynomial_nodes[offset_1D + l]);
-
-                    local_spectrum += (2 * j + 1) * (2 * (double)p + 1.0) * static_cast<deviceFloat>(0.25) *
-                                      u_[k * (N_ + 1) + l] *
-                                      L_N_x * L_N_y * 
-                                      weights[offset_1D + k] * weights[offset_1D + l];
-                }
-            }
-            spectrum_[node_index] += std::abs(local_spectrum);
-        }
-    }
-
-    const auto [C_u, sigma_u] = exponential_decay(n_points_least_squares);
-    u_sigma_ = sigma_u;
-
-    // Sum of error
-    u_error_ = std::sqrt(spectrum_[n_points_least_squares - 1] * spectrum_[n_points_least_squares - 1] // Why this part?
-                         + C_u * C_u * 0.5 / sigma_u * std::exp(-2 * sigma_u * (N_ + 1)));
-
-    if(u_error_ > tolerance_min) {	// need refinement
-        refine_ = true;
-    }
-    if(u_error_ > tolerance_max) {	// need coarsening
-        coarsen_ = false;
-    }
-
-    // Velocity y
-    for (int node_index = 0; node_index < n_points_least_squares; ++node_index) {
-        spectrum_[node_index] = 0.0;
-        const deviceFloat p = N_ + node_index + 1 - n_points_least_squares;
-
-        // x direction
-        for (int i = 0; i <= p; ++i) {
-            deviceFloat local_spectrum = 0.0;
-
-            for (int k = 0; k <= N_; ++k) {
-                const deviceFloat L_N_x = Polynomial::polynomial(i, polynomial_nodes[offset_1D + k]);
-
-                for (int l = 0; l <= N_; ++l) {
-                    const deviceFloat L_N_y = Polynomial::polynomial(p, polynomial_nodes[offset_1D + l]);
-
-                    local_spectrum += (2 * i + 1) * (2 * p + 1) * static_cast<deviceFloat>(0.25) *
-                                      v_[k * (N_ + 1) + l] *
-                                      L_N_x * L_N_y * 
-                                      weights[offset_1D + k] * weights[offset_1D + l];
-                }
-
-            }
-            spectrum_[node_index] += std::abs(local_spectrum);
-        }
-
-        // y direction
-        for (int j = 0; j < p; ++j) { // No need to include the last point here
-            deviceFloat local_spectrum = 0.0;
-
-            for (int k = 0; k <= N_; ++k) {
-                const deviceFloat L_N_x = Polynomial::polynomial(p, polynomial_nodes[offset_1D + k]);
-
-                for (int l = 0; l <= N_; ++l) {
-                    const deviceFloat L_N_y = Polynomial::polynomial(j, polynomial_nodes[offset_1D + l]);
-
-                    local_spectrum += (2 * j + 1) * (2 * (double)p + 1.0) * static_cast<deviceFloat>(0.25) *
-                                      v_[k * (N_ + 1) + l] *
-                                      L_N_x * L_N_y * 
-                                      weights[offset_1D + k] * weights[offset_1D + l];
-                }
-            }
-            spectrum_[node_index] += std::abs(local_spectrum);
-        }
-    }
-
-    const auto [C_v, sigma_v] = exponential_decay(n_points_least_squares);
-    v_sigma_ = sigma_v;
-
-    // Sum of error
-    v_error_ = std::sqrt(spectrum_[n_points_least_squares - 1] * spectrum_[n_points_least_squares - 1] // Why this part?
-                         + C_v * C_v * 0.5 / sigma_v * std::exp(-2 * sigma_v * (N_ + 1)));
-
-    if(v_error_ > tolerance_min) {	// need refinement
-        refine_ = true;
-    }
-    if(v_error_ > tolerance_max) {	// need coarsening
-        coarsen_ = false;
-    }
+auto SEM::Device::Entities::Element2D_t::interpolate_q_to_boundaries(const deviceFloat* lagrange_interpolant_minus, const deviceFloat* lagrange_interpolant_plus) -> void {
+    printf("Warning, SEM::Device::Entities::Element2D_t::interpolate_q_to_boundaries is not implemented.\n");
 }
 
 __device__
-auto SEM::Entities::Element2D_t::exponential_decay(int n_points_least_squares) -> std::array<deviceFloat, 2> {
+auto SEM::Device::Entities::Element2D_t::exponential_decay(int n_points_least_squares) -> std::array<deviceFloat, 2> {
     deviceFloat x_avg = 0.0;
     deviceFloat y_avg = 0.0;
 
@@ -351,7 +164,7 @@ auto SEM::Entities::Element2D_t::exponential_decay(int n_points_least_squares) -
 }
 
 __device__
-auto SEM::Entities::Element2D_t::interpolate_from(const std::array<Vec2<deviceFloat>, 4>& points, const std::array<Vec2<deviceFloat>, 4>& points_other, const SEM::Entities::Element2D_t& other, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void {
+auto SEM::Device::Entities::Element2D_t::interpolate_from(const std::array<Vec2<deviceFloat>, 4>& points, const std::array<Vec2<deviceFloat>, 4>& points_other, const SEM::Device::Entities::Element2D_t& other, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void {
     const int offset_1D = N_ * (N_ + 1) /2;
     const int offset_1D_other = other.N_ * (other.N_ + 1) /2;
 
@@ -359,16 +172,16 @@ auto SEM::Entities::Element2D_t::interpolate_from(const std::array<Vec2<deviceFl
         for (int j = 0; j <= N_; ++j) {
             // x and y
             const Vec2<deviceFloat> local_coordinates {polynomial_nodes[offset_1D + i], polynomial_nodes[offset_1D + j]};
-            const Vec2<deviceFloat> global_coordinates = SEM::quad_map(local_coordinates, points);
-            const Vec2<deviceFloat> local_coordinates_in_other = SEM::inverse_quad_map(global_coordinates, points_other);
+            const Vec2<deviceFloat> global_coordinates = SEM::Device::quad_map(local_coordinates, points);
+            const Vec2<deviceFloat> local_coordinates_in_other = SEM::Device::inverse_quad_map(global_coordinates, points_other);
 
             int row_found = -1;
             int column_found = -1;
             for (int m = 0; m <= other.N_; ++m) {
-                if (SEM::Entities::Element2D_t::almost_equal(local_coordinates_in_other.x(), polynomial_nodes[offset_1D_other + m])) {
+                if (SEM::Device::Entities::Element2D_t::almost_equal(local_coordinates_in_other.x(), polynomial_nodes[offset_1D_other + m])) {
                     column_found = m;
                 }
-                if (SEM::Entities::Element2D_t::almost_equal(local_coordinates_in_other.y(), polynomial_nodes[offset_1D_other + m])) {
+                if (SEM::Device::Entities::Element2D_t::almost_equal(local_coordinates_in_other.y(), polynomial_nodes[offset_1D_other + m])) {
                     row_found = m;
                 }
             }
@@ -474,7 +287,7 @@ auto SEM::Entities::Element2D_t::interpolate_from(const std::array<Vec2<deviceFl
 }
 
 __device__
-auto SEM::Entities::Element2D_t::interpolate_from(const SEM::Entities::Element2D_t& other, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void {
+auto SEM::Device::Entities::Element2D_t::interpolate_from(const SEM::Device::Entities::Element2D_t& other, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void {
     const int offset_1D = N_ * (N_ + 1) /2;
     const int offset_1D_other = other.N_ * (other.N_ + 1) /2;
 
@@ -486,10 +299,10 @@ auto SEM::Entities::Element2D_t::interpolate_from(const SEM::Entities::Element2D
             int row_found = -1;
             int column_found = -1;
             for (int m = 0; m <= other.N_; ++m) {
-                if (SEM::Entities::Element2D_t::almost_equal(local_coordinates_in_other.x(), polynomial_nodes[offset_1D_other + m])) {
+                if (SEM::Device::Entities::Element2D_t::almost_equal(local_coordinates_in_other.x(), polynomial_nodes[offset_1D_other + m])) {
                     column_found = m;
                 }
-                if (SEM::Entities::Element2D_t::almost_equal(local_coordinates_in_other.y(), polynomial_nodes[offset_1D_other + m])) {
+                if (SEM::Device::Entities::Element2D_t::almost_equal(local_coordinates_in_other.y(), polynomial_nodes[offset_1D_other + m])) {
                     row_found = m;
                 }
             }
@@ -595,25 +408,25 @@ auto SEM::Entities::Element2D_t::interpolate_from(const SEM::Entities::Element2D
 }
 
 __device__
-auto SEM::Entities::Element2D_t::interpolate_solution(size_t N_interpolation_points, const std::array<Vec2<deviceFloat>, 4>& points, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v) const -> void {
-    for (size_t i = 0; i < N_interpolation_points; ++i) {
-        for (size_t j = 0; j < N_interpolation_points; ++j) {
+auto SEM::Device::Entities::Element2D_t::interpolate_solution(size_t n_interpolation_points, const std::array<Vec2<deviceFloat>, 4>& points, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v) const -> void {
+    for (size_t i = 0; i < n_interpolation_points; ++i) {
+        for (size_t j = 0; j < n_interpolation_points; ++j) {
             // x and y
-            const Vec2<deviceFloat> coordinates {static_cast<deviceFloat>(i)/static_cast<deviceFloat>(N_interpolation_points - 1) * 2 - 1, static_cast<deviceFloat>(j)/static_cast<deviceFloat>(N_interpolation_points - 1) * 2 - 1};
-            const Vec2<deviceFloat> global_coordinates = SEM::quad_map(coordinates, points);
+            const Vec2<deviceFloat> coordinates {static_cast<deviceFloat>(i)/static_cast<deviceFloat>(n_interpolation_points - 1) * 2 - 1, static_cast<deviceFloat>(j)/static_cast<deviceFloat>(n_interpolation_points - 1) * 2 - 1};
+            const Vec2<deviceFloat> global_coordinates = SEM::Device::quad_map(coordinates, points);
 
-            x[i * N_interpolation_points + j] = global_coordinates.x();
-            y[i * N_interpolation_points + j] = global_coordinates.y();
+            x[i * n_interpolation_points + j] = global_coordinates.x();
+            y[i * n_interpolation_points + j] = global_coordinates.y();
 
             // Pressure, u, and v
-            p[i * N_interpolation_points + j] = 0.0;
-            u[i * N_interpolation_points + j] = 0.0;
-            v[i * N_interpolation_points + j] = 0.0;
+            p[i * n_interpolation_points + j] = 0.0;
+            u[i * n_interpolation_points + j] = 0.0;
+            v[i * n_interpolation_points + j] = 0.0;
             for (int m = 0; m <= N_; ++m) {
                 for (int n = 0; n <= N_; ++n) {
-                    p[i * N_interpolation_points + j] += p_[m * (N_ + 1) + n] * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
-                    u[i * N_interpolation_points + j] += u_[m * (N_ + 1) + n] * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
-                    v[i * N_interpolation_points + j] += v_[m * (N_ + 1) + n] * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
+                    p[i * n_interpolation_points + j] += p_[m * (N_ + 1) + n] * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
+                    u[i * n_interpolation_points + j] += u_[m * (N_ + 1) + n] * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
+                    v[i * n_interpolation_points + j] += v_[m * (N_ + 1) + n] * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
                 }
             }
         }
@@ -621,44 +434,44 @@ auto SEM::Entities::Element2D_t::interpolate_solution(size_t N_interpolation_poi
 }
 
 __device__
-auto SEM::Entities::Element2D_t::interpolate_complete_solution(size_t N_interpolation_points, deviceFloat time, const std::array<Vec2<deviceFloat>, 4>& points, const deviceFloat* polynomial_nodes, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v, deviceFloat* dp_dt, deviceFloat* du_dt, deviceFloat* dv_dt, deviceFloat* p_analytical_error, deviceFloat* u_analytical_error, deviceFloat* v_analytical_error) const -> void {
+auto SEM::Device::Entities::Element2D_t::interpolate_complete_solution(size_t n_interpolation_points, deviceFloat time, const std::array<Vec2<deviceFloat>, 4>& points, const deviceFloat* polynomial_nodes, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v, deviceFloat* dp_dt, deviceFloat* du_dt, deviceFloat* dv_dt, deviceFloat* p_analytical_error, deviceFloat* u_analytical_error, deviceFloat* v_analytical_error) const -> void {
     const int offset_1D = N_ * (N_ + 1) /2;
 
-    for (size_t i = 0; i < N_interpolation_points; ++i) {
-        for (size_t j = 0; j < N_interpolation_points; ++j) {
+    for (size_t i = 0; i < n_interpolation_points; ++i) {
+        for (size_t j = 0; j < n_interpolation_points; ++j) {
             // x and y
-            const Vec2<deviceFloat> coordinates {static_cast<deviceFloat>(i)/static_cast<deviceFloat>(N_interpolation_points - 1) * 2 - 1, static_cast<deviceFloat>(j)/static_cast<deviceFloat>(N_interpolation_points - 1) * 2 - 1};
-            const Vec2<deviceFloat> global_coordinates = SEM::quad_map(coordinates, points);
+            const Vec2<deviceFloat> coordinates {static_cast<deviceFloat>(i)/static_cast<deviceFloat>(n_interpolation_points - 1) * 2 - 1, static_cast<deviceFloat>(j)/static_cast<deviceFloat>(n_interpolation_points - 1) * 2 - 1};
+            const Vec2<deviceFloat> global_coordinates = SEM::Device::quad_map(coordinates, points);
 
-            x[i * N_interpolation_points + j] = global_coordinates.x();
-            y[i * N_interpolation_points + j] = global_coordinates.y();
+            x[i * n_interpolation_points + j] = global_coordinates.x();
+            y[i * n_interpolation_points + j] = global_coordinates.y();
 
             // Pressure, u, and v
-            p[i * N_interpolation_points + j] = 0.0;
-            u[i * N_interpolation_points + j] = 0.0;
-            v[i * N_interpolation_points + j] = 0.0;
-            dp_dt[i * N_interpolation_points + j] = 0.0;
-            du_dt[i * N_interpolation_points + j] = 0.0;
-            dv_dt[i * N_interpolation_points + j] = 0.0;
-            p_analytical_error[i * N_interpolation_points + j] = 0.0;
-            u_analytical_error[i * N_interpolation_points + j] = 0.0;
-            v_analytical_error[i * N_interpolation_points + j] = 0.0;
+            p[i * n_interpolation_points + j] = 0.0;
+            u[i * n_interpolation_points + j] = 0.0;
+            v[i * n_interpolation_points + j] = 0.0;
+            dp_dt[i * n_interpolation_points + j] = 0.0;
+            du_dt[i * n_interpolation_points + j] = 0.0;
+            dv_dt[i * n_interpolation_points + j] = 0.0;
+            p_analytical_error[i * n_interpolation_points + j] = 0.0;
+            u_analytical_error[i * n_interpolation_points + j] = 0.0;
+            v_analytical_error[i * n_interpolation_points + j] = 0.0;
             for (int m = 0; m <= N_; ++m) {
                 for (int n = 0; n <= N_; ++n) {
-                    p[i * N_interpolation_points + j] += p_[m * (N_ + 1) + n] * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
-                    u[i * N_interpolation_points + j] += u_[m * (N_ + 1) + n] * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
-                    v[i * N_interpolation_points + j] += v_[m * (N_ + 1) + n] * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
-                    dp_dt[i * N_interpolation_points + j] += G_p_[m * (N_ + 1) + n] * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
-                    du_dt[i * N_interpolation_points + j] += G_u_[m * (N_ + 1) + n] * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
-                    dv_dt[i * N_interpolation_points + j] += G_v_[m * (N_ + 1) + n] * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
+                    p[i * n_interpolation_points + j] += p_[m * (N_ + 1) + n] * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
+                    u[i * n_interpolation_points + j] += u_[m * (N_ + 1) + n] * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
+                    v[i * n_interpolation_points + j] += v_[m * (N_ + 1) + n] * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
+                    dp_dt[i * n_interpolation_points + j] += G_p_[m * (N_ + 1) + n] * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
+                    du_dt[i * n_interpolation_points + j] += G_u_[m * (N_ + 1) + n] * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
+                    dv_dt[i * n_interpolation_points + j] += G_v_[m * (N_ + 1) + n] * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
                 
                     const Vec2<deviceFloat> other_coordinates {polynomial_nodes[offset_1D + m], polynomial_nodes[offset_1D + n]};
-                    const Vec2<deviceFloat> other_global_coordinates = SEM::quad_map(other_coordinates, points);
+                    const Vec2<deviceFloat> other_global_coordinates = SEM::Device::quad_map(other_coordinates, points);
 
-                    const std::array<deviceFloat, 3> state = SEM::g(other_global_coordinates, time);
-                    p_analytical_error[i * N_interpolation_points + j] += std::abs(state[0] - p_[m * (N_ + 1) + n]) * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
-                    u_analytical_error[i * N_interpolation_points + j] += std::abs(state[1] - u_[m * (N_ + 1) + n]) * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
-                    v_analytical_error[i * N_interpolation_points + j] += std::abs(state[2] - v_[m * (N_ + 1) + n]) * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
+                    const std::array<deviceFloat, 3> state = SEM::Device::g(other_global_coordinates, time);
+                    p_analytical_error[i * n_interpolation_points + j] += std::abs(state[0] - p_[m * (N_ + 1) + n]) * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
+                    u_analytical_error[i * n_interpolation_points + j] += std::abs(state[1] - u_[m * (N_ + 1) + n]) * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
+                    v_analytical_error[i * n_interpolation_points + j] += std::abs(state[2] - v_[m * (N_ + 1) + n]) * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
                 }
             }
         }
@@ -666,7 +479,7 @@ auto SEM::Entities::Element2D_t::interpolate_complete_solution(size_t N_interpol
 }
 
 __device__
-auto SEM::Entities::Element2D_t::allocate_storage() -> void {
+auto SEM::Device::Entities::Element2D_t::allocate_storage() -> void {
     faces_ = {cuda_vector<size_t>(1),
               cuda_vector<size_t>(1),
               cuda_vector<size_t>(1),
@@ -730,7 +543,7 @@ auto SEM::Entities::Element2D_t::allocate_storage() -> void {
 }
 
 __device__
-auto SEM::Entities::Element2D_t::allocate_boundary_storage() -> void {
+auto SEM::Device::Entities::Element2D_t::allocate_boundary_storage() -> void {
     faces_ = {cuda_vector<size_t>(1),
               cuda_vector<size_t>(),
               cuda_vector<size_t>(),
@@ -755,7 +568,7 @@ auto SEM::Entities::Element2D_t::allocate_boundary_storage() -> void {
 }
 
 __device__
-auto SEM::Entities::Element2D_t::resize_boundary_storage(int N) -> void {
+auto SEM::Device::Entities::Element2D_t::resize_boundary_storage(int N) -> void {
     N_ = N;
     p_extrapolated_[0] = cuda_vector<deviceFloat>(N_ + 1);
     u_extrapolated_[0] = cuda_vector<deviceFloat>(N_ + 1);
@@ -764,13 +577,13 @@ auto SEM::Entities::Element2D_t::resize_boundary_storage(int N) -> void {
 }
 
 __device__
-auto SEM::Entities::Element2D_t::compute_geometry(const std::array<Vec2<deviceFloat>, 4>& points, const deviceFloat* polynomial_nodes) -> void {
+auto SEM::Device::Entities::Element2D_t::compute_geometry(const std::array<Vec2<deviceFloat>, 4>& points, const deviceFloat* polynomial_nodes) -> void {
     const size_t offset_1D = N_ * (N_ + 1) /2;
 
     for (int i = 0; i <= N_; ++i) {
         for (int j = 0; j <= N_; ++j) {
             const Vec2<deviceFloat> coordinates {polynomial_nodes[offset_1D + i], polynomial_nodes[offset_1D + j]};
-            const std::array<Vec2<deviceFloat>, 2> metrics = SEM::quad_metrics(coordinates, points);
+            const std::array<Vec2<deviceFloat>, 2> metrics = SEM::Device::quad_metrics(coordinates, points);
 
             dxi_dx_[i * (N_ + 1) + j]  = metrics[0].x();
             deta_dx_[i * (N_ + 1) + j] = metrics[0].y();
@@ -784,10 +597,10 @@ auto SEM::Entities::Element2D_t::compute_geometry(const std::array<Vec2<deviceFl
         const Vec2<deviceFloat> coordinates_top    {polynomial_nodes[offset_1D + i], 1};
         const Vec2<deviceFloat> coordinates_left   {-1, polynomial_nodes[offset_1D + i]};
 
-        const std::array<Vec2<deviceFloat>, 2> metrics_bottom = SEM::quad_metrics(coordinates_bottom, points);
-        const std::array<Vec2<deviceFloat>, 2> metrics_right  = SEM::quad_metrics(coordinates_right, points);
-        const std::array<Vec2<deviceFloat>, 2> metrics_top    = SEM::quad_metrics(coordinates_top, points);
-        const std::array<Vec2<deviceFloat>, 2> metrics_left   = SEM::quad_metrics(coordinates_left, points);
+        const std::array<Vec2<deviceFloat>, 2> metrics_bottom = SEM::Device::quad_metrics(coordinates_bottom, points);
+        const std::array<Vec2<deviceFloat>, 2> metrics_right  = SEM::Device::quad_metrics(coordinates_right, points);
+        const std::array<Vec2<deviceFloat>, 2> metrics_top    = SEM::Device::quad_metrics(coordinates_top, points);
+        const std::array<Vec2<deviceFloat>, 2> metrics_left   = SEM::Device::quad_metrics(coordinates_left, points);
 
         scaling_factor_[0][i] = std::sqrt(metrics_bottom[0].x() * metrics_bottom[0].x() + metrics_bottom[1].x() * metrics_bottom[1].x());
         scaling_factor_[1][i] = std::sqrt(metrics_right[0].y() * metrics_right[0].y() + metrics_right[1].y() * metrics_right[1].y());
@@ -803,13 +616,13 @@ auto SEM::Entities::Element2D_t::compute_geometry(const std::array<Vec2<deviceFl
 }
 
 __device__
-auto SEM::Entities::Element2D_t::compute_boundary_geometry(const std::array<Vec2<deviceFloat>, 4>& points, const deviceFloat* polynomial_nodes) -> void {
+auto SEM::Device::Entities::Element2D_t::compute_boundary_geometry(const std::array<Vec2<deviceFloat>, 4>& points, const deviceFloat* polynomial_nodes) -> void {
     const size_t offset_1D = N_ * (N_ + 1) /2;
 
     for (int i = 0; i <= N_; ++i) {
         const Vec2<deviceFloat> coordinates_bottom {polynomial_nodes[offset_1D + i], -1};
 
-        const std::array<Vec2<deviceFloat>, 2> metrics_bottom = SEM::quad_metrics(coordinates_bottom, points);
+        const std::array<Vec2<deviceFloat>, 2> metrics_bottom = SEM::Device::quad_metrics(coordinates_bottom, points);
 
         scaling_factor_[0][i] = std::sqrt(metrics_bottom[0].x() * metrics_bottom[0].x() + metrics_bottom[1].x() * metrics_bottom[1].x());
     }
@@ -820,7 +633,7 @@ auto SEM::Entities::Element2D_t::compute_boundary_geometry(const std::array<Vec2
 
 // From cppreference.com
 __device__
-auto SEM::Entities::Element2D_t::almost_equal(deviceFloat x, deviceFloat y) -> bool {
+auto SEM::Device::Entities::Element2D_t::almost_equal(deviceFloat x, deviceFloat y) -> bool {
     constexpr int ulp = 2; // ULP
     // the machine epsilon has to be scaled to the magnitude of the values used
     // and multiplied by the desired precision in ULPs (units in the last place)
@@ -830,21 +643,21 @@ auto SEM::Entities::Element2D_t::almost_equal(deviceFloat x, deviceFloat y) -> b
 }
 
 __device__
-auto SEM::Entities::Element2D_t::would_p_refine(int max_N) const -> bool {
+auto SEM::Device::Entities::Element2D_t::would_p_refine(int max_N) const -> bool {
     return refine_ 
         && (p_sigma_ + u_sigma_ + v_sigma_)/3 >= static_cast<deviceFloat>(1) 
         && N_ + 2 <= max_N;
 }
 
 __device__
-auto SEM::Entities::Element2D_t::would_h_refine(int max_split_level) const -> bool {
+auto SEM::Device::Entities::Element2D_t::would_h_refine(int max_split_level) const -> bool {
     return refine_ 
         && (p_sigma_ + u_sigma_ + v_sigma_)/3 < static_cast<deviceFloat>(1) 
         && split_level_ < max_split_level;
 }
 
-__device__
-auto SEM::Entities::Element2D_t::clear_storage() -> void {
+__host__ __device__
+auto SEM::Device::Entities::Element2D_t::clear_storage() -> void {
     faces_[0].data_ = nullptr;
     faces_[1].data_ = nullptr;
     faces_[2].data_ = nullptr;
@@ -905,4 +718,34 @@ auto SEM::Entities::Element2D_t::clear_storage() -> void {
     u_intermediate_.data_ = nullptr;
     v_intermediate_.data_ = nullptr;
     spectrum_.data_ = nullptr;
+}
+
+__host__
+SEM::Device::Entities::Element2D_t::Datatype::Datatype() {
+    constexpr int n = 4;
+
+    constexpr std::array<int, n> lengths {1, 1, 1, 1};
+    constexpr std::array<MPI_Aint, n> displacements {offsetof(SEM::Device::Entities::Element2D_t, N_), offsetof(SEM::Device::Entities::Element2D_t, status_), offsetof(SEM::Device::Entities::Element2D_t, rotation_), offsetof(SEM::Device::Entities::Element2D_t, split_level_)};
+    const std::array<MPI_Datatype, n> types {MPI_INT, MPI_INT, MPI_INT, MPI_INT}; // Ok I could just send those as packed ints, but who knows if something will have to be added.
+    
+    MPI_Datatype tmp_type;
+
+    MPI_Type_create_struct(n, lengths.data(), displacements.data(), types.data(), &tmp_type);
+    MPI_Type_create_resized(tmp_type, 0, sizeof(SEM::Device::Entities::Element2D_t), &datatype_); // To be able to send arrays of elements
+    MPI_Type_commit(&datatype_);
+}
+
+__host__
+SEM::Device::Entities::Element2D_t::Datatype::~Datatype() {
+    MPI_Type_free(&datatype_);
+}
+
+__host__
+auto SEM::Device::Entities::Element2D_t::Datatype::data() const -> const MPI_Datatype& {
+    return datatype_;
+}
+
+__host__
+auto SEM::Device::Entities::Element2D_t::Datatype::data() -> MPI_Datatype& {
+    return datatype_;
 }

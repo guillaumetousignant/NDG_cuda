@@ -12,7 +12,7 @@ constexpr double pi = 3.14159265358979323846;
 TEST_CASE("ChebyshevPolynomials", "Checks the Chebyshev polynomials"){
     const int N_max = 16;
     const int N_test = 16;
-    const size_t N_interpolation_points = N_max * 8;
+    const size_t n_interpolation_points = N_max * 8;
     const size_t offset_1D = N_test * (N_test + 1) /2;
     const size_t offset_2D = N_test * (N_test + 1) * (2 * N_test + 1) /6;
     const double error = 1e-6;
@@ -22,7 +22,7 @@ TEST_CASE("ChebyshevPolynomials", "Checks the Chebyshev polynomials"){
     cudaStream_t stream;
     cudaStreamCreate(&stream); 
     
-    SEM::Entities::NDG_t<SEM::Polynomials::ChebyshevPolynomial_t> NDG(N_max, N_interpolation_points, stream);
+    SEM::Device::Entities::NDG_t<SEM::Device::Polynomials::ChebyshevPolynomial_t> NDG(N_max, n_interpolation_points, stream);
 
     std::vector<deviceFloat> host_nodes(NDG.vector_length_);
     std::vector<deviceFloat> host_weights(NDG.vector_length_);
@@ -147,7 +147,7 @@ TEST_CASE("ChebyshevPolynomials", "Checks the Chebyshev polynomials"){
 TEST_CASE("LegendrePolynomials", "Checks the Legendre polynomials"){
     const int N_max = 16;
     const int N_test = 16;
-    const size_t N_interpolation_points = N_max * 8;
+    const size_t n_interpolation_points = N_max * 8;
     const size_t offset_1D = N_test * (N_test + 1) /2;
     const size_t offset_2D = N_test * (N_test + 1) * (2 * N_test + 1) /6;
     const double error = 1e-6;
@@ -157,7 +157,7 @@ TEST_CASE("LegendrePolynomials", "Checks the Legendre polynomials"){
     cudaStream_t stream;
     cudaStreamCreate(&stream); 
     
-    SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> NDG(N_max, N_interpolation_points, stream);
+    SEM::Device::Entities::NDG_t<SEM::Device::Polynomials::LegendrePolynomial_t> NDG(N_max, n_interpolation_points, stream);
 
     std::vector<deviceFloat> host_nodes(NDG.vector_length_);
     std::vector<deviceFloat> host_weights(NDG.vector_length_);

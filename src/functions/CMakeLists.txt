@@ -1,10 +1,16 @@
-target_sources(SEM
-    PRIVATE
-        analytical_solution.cu
-        Hilbert.cpp
-        Hilbert_splitting.cu
-        quad_map.cu
-        inverse_quad_map.cu
-        quad_metrics.cu
-        Utilities.cpp
-)
+if (BUILD_CPU)
+    target_sources(SEM
+        PRIVATE
+            Hilbert.cpp
+            Hilbert_splitting.cpp
+            Utilities.cpp
+    )
+endif()
+if (BUILD_GPU)
+    target_sources(SEM-CUDA
+        PRIVATE
+            Hilbert.cpp
+            Hilbert_splitting.cu
+            Utilities.cpp
+    )
+endif()

@@ -6,20 +6,20 @@
 #include "entities/NDG_t.cuh"
 #include "polynomials/ChebyshevPolynomial_t.cuh"
 #include "polynomials/LegendrePolynomial_t.cuh"
-#include "entities/NDG_host_t.h"
-#include "polynomials/ChebyshevPolynomial_host_t.h"
-#include "polynomials/LegendrePolynomial_host_t.h"
+#include "entities/NDG_t.h"
+#include "polynomials/ChebyshevPolynomial_t.h"
+#include "polynomials/LegendrePolynomial_t.h"
 
 TEST_CASE("ChebyshevPolynomials_CPU_GPU", "Compares the Chebyshev polynomials between the CPU and GPU implementations."){
     const int N_max = 16;
-    const size_t N_interpolation_points = N_max * 8;
+    const size_t n_interpolation_points = N_max * 8;
     const double error = 1e-6;
 
     cudaStream_t stream;
     cudaStreamCreate(&stream); 
     
-    SEM::Entities::NDG_t<SEM::Polynomials::ChebyshevPolynomial_t> NDG(N_max, N_interpolation_points, stream);
-    SEM::Entities::NDG_host_t<SEM::Polynomials::ChebyshevPolynomial_host_t> NDG_host(N_max, N_interpolation_points);
+    SEM::Device::Entities::NDG_t<SEM::Device::Polynomials::ChebyshevPolynomial_t> NDG(N_max, n_interpolation_points, stream);
+    SEM::Host::Entities::NDG_t<SEM::Host::Polynomials::ChebyshevPolynomial_t> NDG_host(N_max, n_interpolation_points);
 
     std::vector<deviceFloat> host_nodes(NDG.vector_length_);
     std::vector<deviceFloat> host_weights(NDG.vector_length_);
@@ -49,7 +49,7 @@ TEST_CASE("ChebyshevPolynomials_CPU_GPU", "Compares the Chebyshev polynomials be
     for (int N_test = 0; N_test <= N_max; ++N_test) {
         const size_t offset_1D = N_test * (N_test + 1) /2;
         const size_t offset_2D = N_test * (N_test + 1) * (2 * N_test + 1) /6;
-        const size_t offset_interp = N_test * (N_test + 1) * N_interpolation_points/2;
+        const size_t offset_interp = N_test * (N_test + 1) * n_interpolation_points/2;
 
         for (int i = 0; i <= N_test; ++i) {
             REQUIRE(std::abs(host_nodes[offset_1D + i] - NDG_host.nodes_[N_test][i]) < error);
@@ -91,7 +91,7 @@ TEST_CASE("ChebyshevPolynomials_CPU_GPU", "Compares the Chebyshev polynomials be
             REQUIRE(std::abs(host_derivative_matrices_hat[offset_2D + i] - NDG_host.derivative_matrices_hat_[N_test][i]) < error);
         }
         
-        for (int i = 0; i < (N_test + 1) * N_interpolation_points; ++i) {
+        for (int i = 0; i < (N_test + 1) * n_interpolation_points; ++i) {
             REQUIRE(std::abs(host_interpolation_matrices[offset_interp + i] - NDG_host.interpolation_matrices_[N_test][i]) < error);
         }
     }
@@ -101,14 +101,14 @@ TEST_CASE("ChebyshevPolynomials_CPU_GPU", "Compares the Chebyshev polynomials be
 
 TEST_CASE("LegendrePolynomials_CPU_GPU", "Compares the Legendre polynomials between the CPU and GPU implementations."){
     const int N_max = 16;
-    const size_t N_interpolation_points = N_max * 8;
+    const size_t n_interpolation_points = N_max * 8;
     const double error = 1e-6;
 
     cudaStream_t stream;
     cudaStreamCreate(&stream); 
     
-    SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> NDG(N_max, N_interpolation_points, stream);
-    SEM::Entities::NDG_host_t<SEM::Polynomials::LegendrePolynomial_host_t> NDG_host(N_max, N_interpolation_points);
+    SEM::Device::Entities::NDG_t<SEM::Device::Polynomials::LegendrePolynomial_t> NDG(N_max, n_interpolation_points, stream);
+    SEM::Host::Entities::NDG_t<SEM::Host::Polynomials::LegendrePolynomial_t> NDG_host(N_max, n_interpolation_points);
 
     std::vector<deviceFloat> host_nodes(NDG.vector_length_);
     std::vector<deviceFloat> host_weights(NDG.vector_length_);
@@ -138,7 +138,7 @@ TEST_CASE("LegendrePolynomials_CPU_GPU", "Compares the Legendre polynomials betw
     for (int N_test = 0; N_test <= N_max; ++N_test) {
         const size_t offset_1D = N_test * (N_test + 1) /2;
         const size_t offset_2D = N_test * (N_test + 1) * (2 * N_test + 1) /6;
-        const size_t offset_interp = N_test * (N_test + 1) * N_interpolation_points/2;
+        const size_t offset_interp = N_test * (N_test + 1) * n_interpolation_points/2;
         
         for (int i = 0; i <= N_test; ++i) {
             REQUIRE(std::abs(host_nodes[offset_1D + i] - NDG_host.nodes_[N_test][i]) < error);
@@ -180,7 +180,7 @@ TEST_CASE("LegendrePolynomials_CPU_GPU", "Compares the Legendre polynomials betw
             REQUIRE(std::abs(host_derivative_matrices_hat[offset_2D + i] - NDG_host.derivative_matrices_hat_[N_test][i]) < error);
         }
         
-        for (int i = 0; i < (N_test + 1) * N_interpolation_points; ++i) {
+        for (int i = 0; i < (N_test + 1) * n_interpolation_points; ++i) {
             REQUIRE(std::abs(host_interpolation_matrices[offset_interp + i] - NDG_host.interpolation_matrices_[N_test][i]) < error);
         }
     }

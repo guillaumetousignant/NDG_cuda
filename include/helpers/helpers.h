@@ -1,14 +1,14 @@
-#ifndef SEM_HELPERS_H
-#define SEM_HELPERS_H
+#ifndef SEM_HELPERS_HELPERS_H
+#define SEM_HELPERS_HELPERS_H
 
-namespace SEM { 
+namespace SEM { namespace Host {
     /**
      * @brief Contains helper functions and types used through the library.
      * 
      * Helpers are not directly used to compute solutions, but make some aspects of the program easier.
      */
     namespace Helpers {}
-}
+}}
 
 #include "constants.h"
 #include "DataWriter_t.h"

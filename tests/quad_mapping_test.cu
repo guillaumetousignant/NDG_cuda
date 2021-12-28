@@ -4,7 +4,7 @@
 #include "meshes/Mesh2D_t.cuh"
 #include "functions/quad_map.cuh"
 
-using SEM::Entities::Vec2;
+using SEM::Device::Entities::Vec2;
 
 TEST_CASE("Quad mapping", "Checks the quad mapping returns the right result.") {
     const double error = 1e-6;
@@ -69,7 +69,7 @@ TEST_CASE("Quad mapping", "Checks the quad mapping returns the right result.") {
     std::array<Vec2<deviceFloat>, 25> global_coordinates_computed;
 
     for (int i = 0; i < global_coordinates_computed.size(); ++i) {
-        global_coordinates_computed[i] = SEM::quad_map(local_coordinates[i], points);
+        global_coordinates_computed[i] = SEM::Device::quad_map(local_coordinates[i], points);
     }
 
     for (int i = 0; i < global_coordinates_computed.size(); ++i) {

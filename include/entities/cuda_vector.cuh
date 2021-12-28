@@ -1,7 +1,7 @@
-#ifndef NDG_CUDA_VECTOR_H
-#define NDG_CUDA_VECTOR_H
+#ifndef NDG_ENTITIES_CUDA_VECTOR_CUH
+#define NDG_ENTITIES_CUDA_VECTOR_CUH
 
-namespace SEM { namespace Entities {
+namespace SEM { namespace Device { namespace Entities {
     template<typename T>
     class cuda_vector { 
         public: 
@@ -53,7 +53,7 @@ namespace SEM { namespace Entities {
             __device__
             auto empty() const -> bool;
     };
-}}
+}}}
 
 #include "entities/cuda_vector.tcu"
 

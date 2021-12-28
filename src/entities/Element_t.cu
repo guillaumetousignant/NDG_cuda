@@ -1,14 +1,15 @@
 #include "entities/Element_t.cuh"
-#include "polynomials/ChebyshevPolynomial_t.cuh"
-#include "polynomials/LegendrePolynomial_t.cuh"
 #include <cmath>
 #include <thrust/swap.h>
 #include <limits>
 
 constexpr deviceFloat pi = 3.14159265358979323846;
 
+using SEM::Device::Entities::Element_t;
+using SEM::Device::Entities::Face_t;
+
 __device__ 
-SEM::Entities::Element_t::Element_t(int N, size_t face_L, size_t face_R, deviceFloat x_L, deviceFloat x_R) : 
+SEM::Device::Entities::Element_t::Element_t(int N, size_t face_L, size_t face_R, deviceFloat x_L, deviceFloat x_R) : 
         N_(N),
         faces_{face_L, face_R},
         x_{x_L, x_R},
@@ -24,7 +25,7 @@ SEM::Entities::Element_t::Element_t(int N, size_t face_L, size_t face_R, deviceF
         error_(0.0) {}
 
 __device__
-SEM::Entities::Element_t::Element_t(const SEM::Entities::Element_t& other) :
+SEM::Device::Entities::Element_t::Element_t(const Element_t& other) :
         N_(other.N_),
         faces_{other.faces_[0], other.faces_[1]},
         x_{other.x_[0], other.x_[1]},
@@ -49,7 +50,7 @@ SEM::Entities::Element_t::Element_t(const SEM::Entities::Element_t& other) :
 }
 
 __device__
-SEM::Entities::Element_t::Element_t(SEM::Entities::Element_t&& other) :
+SEM::Device::Entities::Element_t::Element_t(Element_t&& other) :
         N_(other.N_),
         faces_{other.faces_[0], other.faces_[1]},
         x_{other.x_[0], other.x_[1]},
@@ -72,7 +73,7 @@ SEM::Entities::Element_t::Element_t(SEM::Entities::Element_t&& other) :
 }
 
 __device__
-SEM::Entities::Element_t& SEM::Entities::Element_t::operator=(const SEM::Entities::Element_t& other) {
+SEM::Device::Entities::Element_t& SEM::Device::Entities::Element_t::operator=(const Element_t& other) {
     if (N_ != other.N_) {
         delete[] phi_;
         delete[] q_;
@@ -110,7 +111,7 @@ SEM::Entities::Element_t& SEM::Entities::Element_t::operator=(const SEM::Entitie
 }
 
 __device__
-SEM::Entities::Element_t& SEM::Entities::Element_t::operator=(SEM::Entities::Element_t&& other) {
+SEM::Device::Entities::Element_t& SEM::Device::Entities::Element_t::operator=(Element_t&& other) {
     N_ = other.N_;
     faces_[0] = other.faces_[0];
     faces_[1] = other.faces_[1];
@@ -132,7 +133,7 @@ SEM::Entities::Element_t& SEM::Entities::Element_t::operator=(SEM::Entities::Ele
 }
 
 __host__ __device__
-SEM::Entities::Element_t::Element_t() :
+SEM::Device::Entities::Element_t::Element_t() :
         N_(0),
         faces_{0, 0},
         x_{0.0, 0.0},
@@ -148,7 +149,7 @@ SEM::Entities::Element_t::Element_t() :
         error_(0.0) {};
 
 __host__ __device__
-SEM::Entities::Element_t::~Element_t() {
+SEM::Device::Entities::Element_t::~Element_t() {
     delete [] phi_;
     delete [] q_;
     delete [] ux_;
@@ -158,7 +159,7 @@ SEM::Entities::Element_t::~Element_t() {
 
 // Algorithm 61
 __device__
-void SEM::Entities::Element_t::interpolate_to_boundaries(const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right) {
+void SEM::Device::Entities::Element_t::interpolate_to_boundaries(const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right) {
     const int offset_1D = N_ * (N_ + 1) /2;
     phi_L_ = 0.0;
     phi_R_ = 0.0;
@@ -171,7 +172,7 @@ void SEM::Entities::Element_t::interpolate_to_boundaries(const deviceFloat* lagr
 
 // Algorithm 61
 __device__
-void SEM::Entities::Element_t::interpolate_q_to_boundaries(const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right) {
+void SEM::Device::Entities::Element_t::interpolate_q_to_boundaries(const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right) {
     const int offset_1D = N_ * (N_ + 1) /2;
     phi_prime_L_ = 0.0;
     phi_prime_R_ = 0.0;
@@ -182,49 +183,9 @@ void SEM::Entities::Element_t::interpolate_q_to_boundaries(const deviceFloat* la
     }
 }
 
-template __device__ void SEM::Entities::Element_t::estimate_error<SEM::Polynomials::ChebyshevPolynomial_t>(const deviceFloat* nodes, const deviceFloat* weights);
-template __device__ void SEM::Entities::Element_t::estimate_error<SEM::Polynomials::LegendrePolynomial_t>(const deviceFloat* nodes, const deviceFloat* weights);
-
-template<typename Polynomial>
 __device__
-void SEM::Entities::Element_t::estimate_error<Polynomial>(const deviceFloat* nodes, const deviceFloat* weights) {
-    const int offset_1D = N_ * (N_ + 1) /2;
-
-    for (int k = 0; k <= N_; ++k) {
-        intermediate_[k] = 0.0;
-        for (int i = 0; i <= N_; ++i) {
-            const deviceFloat L_N = Polynomial::polynomial(k, nodes[offset_1D + i]);
-
-            intermediate_[k] += (2 * k + 1) * 0.5 * phi_[i] * L_N * weights[offset_1D + i];
-        }
-        intermediate_[k] = std::abs(intermediate_[k]);
-    }
-
-    constexpr deviceFloat tolerance_min = 1e-6;     // Refine above this
-    constexpr deviceFloat tolerance_max = 1e-14;    // Coarsen below this
-
-    const deviceFloat C = exponential_decay();
-
-    // sum of error
-    error_ = std::sqrt(C * C * 0.5/sigma_) * std::exp(-sigma_ * (N_ + 1));
-
-    if(error_ > tolerance_min) {	// need refine
-        refine_ = true;
-        coarsen_ = false;
-    }
-    else if(error_ <= tolerance_max ) {	// need coarsen
-        refine_ = false;
-        coarsen_ = true;
-    }
-    else {	// if error in between then do nothing
-        refine_ = false;
-        coarsen_ = false;
-    }
-}
-
-__device__
-deviceFloat SEM::Entities::Element_t::exponential_decay() {
-    const int n_points_least_squares = min(N_, 4); // Number of points to use for thew least squares reduction, but don't go above N.
+deviceFloat SEM::Device::Entities::Element_t::exponential_decay() {
+    const int n_points_least_squares = std::min(N_, 4); // Number of points to use for thew least squares reduction, but don't go above N.
 
     deviceFloat x_avg = 0.0;
     deviceFloat y_avg = 0.0;
@@ -253,7 +214,7 @@ deviceFloat SEM::Entities::Element_t::exponential_decay() {
 }
 
 __device__
-void SEM::Entities::Element_t::interpolate_from(const SEM::Entities::Element_t& other, const deviceFloat* nodes, const deviceFloat* barycentric_weights) {
+void SEM::Device::Entities::Element_t::interpolate_from(const Element_t& other, const deviceFloat* nodes, const deviceFloat* barycentric_weights) {
     const int offset = N_ * (N_ + 1) /2;
     const int offset_other = other.N_ * (other.N_ + 1) /2;
 
@@ -263,7 +224,7 @@ void SEM::Entities::Element_t::interpolate_from(const SEM::Entities::Element_t& 
         deviceFloat numerator = 0.0;
         deviceFloat denominator = 0.0;
         for (int j = 0; j <= other.N_; ++j) {
-            if (SEM::Entities::almost_equal2(node, nodes[offset_other + j])) {
+            if (SEM::Device::Entities::almost_equal2(node, nodes[offset_other + j])) {
                 numerator = other.phi_[j];
                 denominator = 1.0;
                 break;
@@ -277,7 +238,7 @@ void SEM::Entities::Element_t::interpolate_from(const SEM::Entities::Element_t& 
 }
 
 __global__
-void SEM::Entities::build_elements(size_t N_elements, int N, SEM::Entities::Element_t* elements, deviceFloat x_min, deviceFloat x_max) {
+void SEM::Device::Entities::build_elements(size_t N_elements, int N, Element_t* elements, deviceFloat x_min, deviceFloat x_max) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -295,12 +256,12 @@ void SEM::Entities::build_elements(size_t N_elements, int N, SEM::Entities::Elem
         elements[i].phi_prime_ = nullptr;
         elements[i].intermediate_ = nullptr;
 
-        elements[i] = SEM::Entities::Element_t(N, face_L, face_R, element_x_min, element_x_max);
+        elements[i] = Element_t(N, face_L, face_R, element_x_min, element_x_max);
     }
 }
 
 __global__
-void SEM::Entities::build_boundaries(size_t N_elements, size_t N_elements_global, size_t N_local_boundaries, size_t N_MPI_boundaries, Element_t* elements, size_t global_element_offset, size_t* local_boundary_to_element, size_t* MPI_boundary_to_element, size_t* MPI_boundary_from_element) {
+void SEM::Device::Entities::build_boundaries(size_t N_elements, size_t N_elements_global, size_t N_local_boundaries, size_t N_MPI_boundaries, Element_t* elements, size_t global_element_offset, size_t* local_boundary_to_element, size_t* MPI_boundary_to_element, size_t* MPI_boundary_from_element) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -332,7 +293,7 @@ void SEM::Entities::build_boundaries(size_t N_elements, size_t N_elements_global
         elements[N_elements + i].phi_prime_ = nullptr;
         elements[N_elements + i].intermediate_ = nullptr;
 
-        elements[N_elements + i] = SEM::Entities::Element_t(0, face_L, face_R, element_x_min, element_x_max);
+        elements[N_elements + i] = Element_t(0, face_L, face_R, element_x_min, element_x_max);
     }
 
     for (int i = index; i < N_MPI_boundaries; i += stride) {
@@ -365,12 +326,12 @@ void SEM::Entities::build_boundaries(size_t N_elements, size_t N_elements_global
         elements[N_elements + N_local_boundaries + i].phi_prime_ = nullptr;
         elements[N_elements + N_local_boundaries + i].intermediate_ = nullptr;
 
-        elements[N_elements + N_local_boundaries + i] = SEM::Entities::Element_t(0, face_L, face_R, element_x_min, element_x_max);
+        elements[N_elements + N_local_boundaries + i] = Element_t(0, face_L, face_R, element_x_min, element_x_max);
     }
 }
 
 __global__
-void SEM::Entities::adjust_boundaries(size_t N_elements, size_t N_elements_global, size_t N_MPI_boundaries, size_t global_element_offset, size_t* MPI_boundary_to_element, size_t* MPI_boundary_from_element) {
+void SEM::Device::Entities::adjust_boundaries(size_t N_elements, size_t N_elements_global, size_t N_MPI_boundaries, size_t global_element_offset, size_t* MPI_boundary_to_element, size_t* MPI_boundary_from_element) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -387,7 +348,7 @@ void SEM::Entities::adjust_boundaries(size_t N_elements, size_t N_elements_globa
 }
 
 __global__
-void SEM::Entities::free_elements(size_t N_elements, SEM::Entities::Element_t* elements) {
+void SEM::Device::Entities::free_elements(size_t N_elements, Element_t* elements) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -405,34 +366,20 @@ void SEM::Entities::free_elements(size_t N_elements, SEM::Entities::Element_t* e
     }
 }
 
-template __global__ void SEM::Entities::estimate_error<SEM::Polynomials::ChebyshevPolynomial_t>(size_t N_elements, SEM::Entities::Element_t* elements, const deviceFloat* nodes, const deviceFloat* weights);
-template __global__ void SEM::Entities::estimate_error<SEM::Polynomials::LegendrePolynomial_t>(size_t N_elements, SEM::Entities::Element_t* elements, const deviceFloat* nodes, const deviceFloat* weights);
-
-template<typename Polynomial>
-__global__
-void SEM::Entities::estimate_error<Polynomial>(size_t N_elements, SEM::Entities::Element_t* elements, const deviceFloat* nodes, const deviceFloat* weights) {
-    const int index = blockIdx.x * blockDim.x + threadIdx.x;
-    const int stride = blockDim.x * gridDim.x;
-
-    for (size_t i = index; i < N_elements; i += stride) {
-        elements[i].estimate_error<Polynomial>(nodes, weights);
-    }
-}
-
 __host__ __device__
-deviceFloat SEM::Entities::g(deviceFloat x) {
+deviceFloat SEM::Device::Entities::g(deviceFloat x) {
     //return (x < -0.2f || x > 0.2f) ? 0.2f : 0.8f;
     return -std::sin(pi * x);
 }
 
 __host__ __device__
-deviceFloat SEM::Entities::g_prime(deviceFloat x) {
+deviceFloat SEM::Device::Entities::g_prime(deviceFloat x) {
     //return (x < -0.2f || x > 0.2f) ? 0.2f : 0.8f;
     return -pi * std::cos(pi * x);
 }
 
 __global__
-void SEM::Entities::initial_conditions(size_t N_elements, SEM::Entities::Element_t* elements, const deviceFloat* nodes) {
+void SEM::Device::Entities::initial_conditions(size_t N_elements, Element_t* elements, const deviceFloat* nodes) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -440,14 +387,14 @@ void SEM::Entities::initial_conditions(size_t N_elements, SEM::Entities::Element
         const size_t offset = elements[i].N_ * (elements[i].N_ + 1) /2;
         for (int j = 0; j <= elements[i].N_; ++j) {
             const deviceFloat x = (0.5 + nodes[offset + j]/2.0f) * (elements[i].x_[1] - elements[i].x_[0]) + elements[i].x_[0];
-            elements[i].phi_[j] = SEM::Entities::g(x);
+            elements[i].phi_[j] = SEM::Device::Entities::g(x);
         }
     }
 }
 
 // Basically useless, find better solution when multiple elements.
 __global__
-void SEM::Entities::get_elements_data(size_t N_elements, const SEM::Entities::Element_t* elements, deviceFloat* phi, deviceFloat* phi_prime) {
+void SEM::Device::Entities::get_elements_data(size_t N_elements, const Element_t* elements, deviceFloat* phi, deviceFloat* phi_prime) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -461,7 +408,7 @@ void SEM::Entities::get_elements_data(size_t N_elements, const SEM::Entities::El
 }
 
 __global__
-void SEM::Entities::get_phi(size_t N_elements, const SEM::Entities::Element_t* elements, deviceFloat** phi) {
+void SEM::Device::Entities::get_phi(size_t N_elements, const Element_t* elements, deviceFloat** phi) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -473,7 +420,7 @@ void SEM::Entities::get_phi(size_t N_elements, const SEM::Entities::Element_t* e
 }
 
 __global__
-void SEM::Entities::put_phi(size_t N_elements, SEM::Entities::Element_t* elements, deviceFloat** phi) {
+void SEM::Device::Entities::put_phi(size_t N_elements, Element_t* elements, deviceFloat** phi) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -491,7 +438,7 @@ void SEM::Entities::put_phi(size_t N_elements, SEM::Entities::Element_t* element
 }
 
 __global__
-void SEM::Entities::move_elements(size_t N_elements, Element_t* elements, Element_t* new_elements, size_t source_start_index, size_t destination_start_index) {
+void SEM::Device::Entities::move_elements(size_t N_elements, Element_t* elements, Element_t* new_elements, size_t source_start_index, size_t destination_start_index) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -510,24 +457,24 @@ void SEM::Entities::move_elements(size_t N_elements, Element_t* elements, Elemen
 }
 
 __global__
-void SEM::Entities::get_solution(size_t N_elements, size_t N_interpolation_points, const SEM::Entities::Element_t* elements, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* phi, deviceFloat* phi_prime, deviceFloat* intermediate, deviceFloat* x_L, deviceFloat* x_R, int* N, deviceFloat* sigma, bool* refine, bool* coarsen, deviceFloat* error, deviceFloat* delta_x) {
+void SEM::Device::Entities::get_solution(size_t N_elements, size_t n_interpolation_points, const Element_t* elements, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* phi, deviceFloat* phi_prime, deviceFloat* intermediate, deviceFloat* x_L, deviceFloat* x_R, int* N, deviceFloat* sigma, bool* refine, bool* coarsen, deviceFloat* error, deviceFloat* delta_x) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
     for (size_t i = index; i < N_elements; i += stride) {
-        const size_t offset_interp_1D = i * N_interpolation_points;
-        const size_t offset_interp = elements[i].N_ * (elements[i].N_ + 1) * N_interpolation_points/2;
-        const size_t step = N_interpolation_points/(elements[i].N_ + 1);
+        const size_t offset_interp_1D = i * n_interpolation_points;
+        const size_t offset_interp = elements[i].N_ * (elements[i].N_ + 1) * n_interpolation_points/2;
+        const size_t step = n_interpolation_points/(elements[i].N_ + 1);
 
-        for (size_t j = 0; j < N_interpolation_points; ++j) {
+        for (size_t j = 0; j < n_interpolation_points; ++j) {
             phi[offset_interp_1D + j] = 0.0f;
             phi_prime[offset_interp_1D + j] = 0.0f;
             for (int k = 0; k <= elements[i].N_; ++k) {
                 phi[offset_interp_1D + j] += interpolation_matrices[offset_interp + j * (elements[i].N_ + 1) + k] * elements[i].phi_[k];
                 phi_prime[offset_interp_1D + j] += interpolation_matrices[offset_interp + j * (elements[i].N_ + 1) + k] * elements[i].phi_prime_[k]; 
             }
-            intermediate[offset_interp_1D + j] = elements[i].intermediate_[min(static_cast<int>(j/step), elements[i].N_)];
-            x[offset_interp_1D + j] = j * (elements[i].x_[1] - elements[i].x_[0]) / (N_interpolation_points - 1) + elements[i].x_[0];
+            intermediate[offset_interp_1D + j] = elements[i].intermediate_[std::min(static_cast<int>(j/step), elements[i].N_)];
+            x[offset_interp_1D + j] = j * (elements[i].x_[1] - elements[i].x_[0]) / (n_interpolation_points - 1) + elements[i].x_[0];
         }
 
         x_L[i] = elements[i].x_[0];
@@ -542,7 +489,7 @@ void SEM::Entities::get_solution(size_t N_elements, size_t N_interpolation_point
 }
 
 __global__
-void SEM::Entities::interpolate_to_boundaries(size_t N_elements, SEM::Entities::Element_t* elements, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right) {
+void SEM::Device::Entities::interpolate_to_boundaries(size_t N_elements, Element_t* elements, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -552,7 +499,7 @@ void SEM::Entities::interpolate_to_boundaries(size_t N_elements, SEM::Entities::
 }
 
 __global__
-void SEM::Entities::interpolate_q_to_boundaries(size_t N_elements, SEM::Entities::Element_t* elements, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right) {
+void SEM::Device::Entities::interpolate_q_to_boundaries(size_t N_elements, Element_t* elements, const deviceFloat* lagrange_interpolant_left, const deviceFloat* lagrange_interpolant_right) {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -562,7 +509,7 @@ void SEM::Entities::interpolate_q_to_boundaries(size_t N_elements, SEM::Entities
 }
 
 __global__
-void SEM::Entities::hp_adapt(unsigned long N_elements, SEM::Entities::Element_t* elements, SEM::Entities::Element_t* new_elements, const unsigned long* block_offsets, deviceFloat delta_x_min, int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights) {
+void SEM::Device::Entities::hp_adapt(unsigned long N_elements, Element_t* elements, Element_t* new_elements, const unsigned long* block_offsets, deviceFloat delta_x_min, int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights) {
     const unsigned long index = blockIdx.x * blockDim.x + threadIdx.x;
     const unsigned long stride = blockDim.x * gridDim.x;
     const int thread_id = threadIdx.x;
@@ -587,8 +534,8 @@ void SEM::Entities::hp_adapt(unsigned long N_elements, SEM::Entities::Element_t*
             new_elements[element_index + 1].phi_prime_ = nullptr;
             new_elements[element_index + 1].intermediate_ = nullptr;
 
-            new_elements[element_index] = SEM::Entities::Element_t(elements[i].N_, element_index, element_index + 1, elements[i].x_[0], (elements[i].x_[0] + elements[i].x_[1]) * 0.5);
-            new_elements[element_index + 1] = SEM::Entities::Element_t(elements[i].N_, element_index + 1,  element_index + 2, (elements[i].x_[0] + elements[i].x_[1]) * 0.5, elements[i].x_[1]);
+            new_elements[element_index] = Element_t(elements[i].N_, element_index, element_index + 1, elements[i].x_[0], (elements[i].x_[0] + elements[i].x_[1]) * 0.5);
+            new_elements[element_index + 1] = Element_t(elements[i].N_, element_index + 1,  element_index + 2, (elements[i].x_[0] + elements[i].x_[1]) * 0.5, elements[i].x_[1]);
             new_elements[element_index].interpolate_from(elements[i], nodes, barycentric_weights);
             new_elements[element_index + 1].interpolate_from(elements[i], nodes, barycentric_weights);
         }
@@ -599,7 +546,7 @@ void SEM::Entities::hp_adapt(unsigned long N_elements, SEM::Entities::Element_t*
             new_elements[element_index].phi_prime_ = nullptr;
             new_elements[element_index].intermediate_ = nullptr;
 
-            new_elements[element_index] = SEM::Entities::Element_t(min(elements[i].N_ + 2, N_max), element_index, element_index + 1, elements[i].x_[0], elements[i].x_[1]);
+            new_elements[element_index] = Element_t(std::min(elements[i].N_ + 2, N_max), element_index, element_index + 1, elements[i].x_[0], elements[i].x_[1]);
             new_elements[element_index].interpolate_from(elements[i], nodes, barycentric_weights);
         }
         else {
@@ -617,13 +564,13 @@ void SEM::Entities::hp_adapt(unsigned long N_elements, SEM::Entities::Element_t*
 }
 
 __global__
-void SEM::Entities::p_adapt(unsigned long N_elements, SEM::Entities::Element_t* elements, int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights) {
+void SEM::Device::Entities::p_adapt(unsigned long N_elements, Element_t* elements, int N_max, const deviceFloat* nodes, const deviceFloat* barycentric_weights) {
     const unsigned long index = blockIdx.x * blockDim.x + threadIdx.x;
     const unsigned long stride = blockDim.x * gridDim.x;
     
     for (unsigned long i = index; i < N_elements; i += stride) {
         if (elements[i].refine_ && elements[i].sigma_ >= 1.0 && elements[i].N_ < N_max) {
-            SEM::Entities::Element_t new_element(min(elements[i].N_ + 2, N_max), elements[i].faces_[0], elements[i].faces_[1], elements[i].x_[0], elements[i].x_[1]);
+            Element_t new_element(std::min(elements[i].N_ + 2, N_max), elements[i].faces_[0], elements[i].faces_[1], elements[i].x_[0], elements[i].x_[1]);
             new_element.interpolate_from(elements[i], nodes, barycentric_weights);
             elements[i] = std::move(new_element);
         }
@@ -632,7 +579,7 @@ void SEM::Entities::p_adapt(unsigned long N_elements, SEM::Entities::Element_t* 
 
 // From cppreference.com
 __device__
-bool SEM::Entities::almost_equal2(deviceFloat x, deviceFloat y) {
+bool SEM::Device::Entities::almost_equal2(deviceFloat x, deviceFloat y) {
     constexpr int ulp = 2; // ULP
     // the machine epsilon has to be scaled to the magnitude of the values used
     // and multiplied by the desired precision in ULPs (units in the last place)
@@ -642,7 +589,7 @@ bool SEM::Entities::almost_equal2(deviceFloat x, deviceFloat y) {
 }
 
 __global__
-void SEM::Entities::local_boundaries(size_t N_elements, size_t N_local_boundaries, Element_t* elements, const size_t* local_boundary_to_element) {
+void SEM::Device::Entities::local_boundaries(size_t N_elements, size_t N_local_boundaries, Element_t* elements, const size_t* local_boundary_to_element) {
     const unsigned long index = blockIdx.x * blockDim.x + threadIdx.x;
     const unsigned long stride = blockDim.x * gridDim.x;
     
@@ -655,7 +602,7 @@ void SEM::Entities::local_boundaries(size_t N_elements, size_t N_local_boundarie
 }
 
 __global__
-void SEM::Entities::get_MPI_boundaries(size_t N_elements, size_t N_local_boundaries, size_t N_MPI_boundaries, const Element_t* elements, const Face_t* faces, deviceFloat* phi_L, deviceFloat* phi_R, deviceFloat* phi_prime_L, deviceFloat* phi_prime_R) {
+void SEM::Device::Entities::get_MPI_boundaries(size_t N_elements, size_t N_local_boundaries, size_t N_MPI_boundaries, const Element_t* elements, const Face_t* faces, deviceFloat* phi_L, deviceFloat* phi_R, deviceFloat* phi_prime_L, deviceFloat* phi_prime_R) {
     const unsigned long index = blockIdx.x * blockDim.x + threadIdx.x;
     const unsigned long stride = blockDim.x * gridDim.x;
     
@@ -671,7 +618,7 @@ void SEM::Entities::get_MPI_boundaries(size_t N_elements, size_t N_local_boundar
 }
 
 __global__
-void SEM::Entities::put_MPI_boundaries(size_t N_elements, size_t N_local_boundaries, size_t N_MPI_boundaries, Element_t* elements, const deviceFloat* phi_L, const deviceFloat* phi_R, const deviceFloat* phi_prime_L, const deviceFloat* phi_prime_R) {
+void SEM::Device::Entities::put_MPI_boundaries(size_t N_elements, size_t N_local_boundaries, size_t N_MPI_boundaries, Element_t* elements, const deviceFloat* phi_L, const deviceFloat* phi_R, const deviceFloat* phi_prime_L, const deviceFloat* phi_prime_R) {
     const unsigned long index = blockIdx.x * blockDim.x + threadIdx.x;
     const unsigned long stride = blockDim.x * gridDim.x;
     

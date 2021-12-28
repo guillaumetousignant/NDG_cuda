@@ -11,33 +11,33 @@
 #include "entities/device_vector.cuh"
 #include "functions/Hilbert_splitting.cuh"
 
-using SEM::Entities::Vec2;
+using SEM::Device::Entities::Vec2;
 
 __global__
-auto face_to_element_projection_init(int N_test_elements, int N_test_faces, size_t n_faces, SEM::Entities::Element2D_t* elements, SEM::Entities::Face2D_t* faces, const Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes) -> void {
+auto face_to_element_projection_init(int N_test_elements, int N_test_faces, size_t n_faces, SEM::Device::Entities::Element2D_t* elements, SEM::Device::Entities::Face2D_t* faces, const Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
     for (size_t i = index; i < n_faces; i += stride) {
-        std::array<SEM::Entities::cuda_vector<size_t>, 4> element_faces {SEM::Entities::cuda_vector<size_t>(1),
-                                                                         SEM::Entities::cuda_vector<size_t>(1),
-                                                                         SEM::Entities::cuda_vector<size_t>(1),
-                                                                         SEM::Entities::cuda_vector<size_t>(1)};
+        std::array<SEM::Device::Entities::cuda_vector<size_t>, 4> element_faces {SEM::Device::Entities::cuda_vector<size_t>(1),
+                                                                         SEM::Device::Entities::cuda_vector<size_t>(1),
+                                                                         SEM::Device::Entities::cuda_vector<size_t>(1),
+                                                                         SEM::Device::Entities::cuda_vector<size_t>(1)};
 
         element_faces[0][0] = i;
         element_faces[1][0] = i;
         element_faces[2][0] = i;
         element_faces[3][0] = i;
 
-        elements[2 * i]     = SEM::Entities::Element2D_t(N_test_elements, 0, SEM::Hilbert::Status::H, element_faces, std::array<size_t, 4>{6 * i, 6 * i + 1, 6 * i + 2, 6 * i + 3});
-        elements[2 * i + 1] = SEM::Entities::Element2D_t(N_test_elements, 0, SEM::Hilbert::Status::R, element_faces, std::array<size_t, 4>{6 * i + 4, 6 * i + 5, 6 * i + 1, 6 * i});
+        elements[2 * i]     = SEM::Device::Entities::Element2D_t(N_test_elements, 0, SEM::Device::Hilbert::Status::H, 0, element_faces, std::array<size_t, 4>{6 * i, 6 * i + 1, 6 * i + 2, 6 * i + 3});
+        elements[2 * i + 1] = SEM::Device::Entities::Element2D_t(N_test_elements, 0, SEM::Device::Hilbert::Status::R, 0, element_faces, std::array<size_t, 4>{6 * i + 4, 6 * i + 5, 6 * i + 1, 6 * i});
 
-        faces[i] = SEM::Entities::Face2D_t(N_test_faces, std::array<size_t, 2>{6 * i, 6 * i + 1}, std::array<size_t, 2>{2 * i, 2 * i + 1}, std::array<size_t, 2>{0, 2});
+        faces[i] = SEM::Device::Entities::Face2D_t(N_test_faces, std::array<size_t, 2>{6 * i, 6 * i + 1}, std::array<size_t, 2>{2 * i, 2 * i + 1}, std::array<size_t, 2>{0, 2});
 
         faces[i].offset_     = {0.0, 0.0};
         faces[i].scale_      = {1.0, 1.0};
 
-        SEM::Entities::Face2D_t& face = faces[i];
+        SEM::Device::Entities::Face2D_t& face = faces[i];
         const size_t offset_1D = face.N_ * (face.N_ + 1) /2;
 
         for (int i = 0; i <= face.N_; ++i) {
@@ -52,15 +52,15 @@ auto face_to_element_projection_init(int N_test_elements, int N_test_faces, size
 }
 
 __global__
-auto faces_to_element_projection_init(int N, size_t n_faces, SEM::Entities::Element2D_t* elements, SEM::Entities::Face2D_t* faces, const Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes) -> void {
+auto faces_to_element_projection_init(int N, size_t n_faces, SEM::Device::Entities::Element2D_t* elements, SEM::Device::Entities::Face2D_t* faces, const Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
     for (size_t i = index; i < n_faces/2; i += stride) {
-        std::array<SEM::Entities::cuda_vector<size_t>, 4> element_faces {SEM::Entities::cuda_vector<size_t>(2),
-                                                                         SEM::Entities::cuda_vector<size_t>(2),
-                                                                         SEM::Entities::cuda_vector<size_t>(2),
-                                                                         SEM::Entities::cuda_vector<size_t>(2)};
+        std::array<SEM::Device::Entities::cuda_vector<size_t>, 4> element_faces {SEM::Device::Entities::cuda_vector<size_t>(2),
+                                                                         SEM::Device::Entities::cuda_vector<size_t>(2),
+                                                                         SEM::Device::Entities::cuda_vector<size_t>(2),
+                                                                         SEM::Device::Entities::cuda_vector<size_t>(2)};
 
         element_faces[0][0] = 2 * i;
         element_faces[0][1] = 2 * i + 1;
@@ -71,19 +71,19 @@ auto faces_to_element_projection_init(int N, size_t n_faces, SEM::Entities::Elem
         element_faces[3][0] = 2 * i;
         element_faces[3][1] = 2 * i + 1;
 
-        elements[2 * i]     = SEM::Entities::Element2D_t(N, 0, SEM::Hilbert::Status::H, element_faces, std::array<size_t, 4>{6 * i, 6 * i + 1, 6 * i + 2, 6 * i + 3});
-        elements[2 * i + 1] = SEM::Entities::Element2D_t(N, 0, SEM::Hilbert::Status::B, element_faces, std::array<size_t, 4>{6 * i + 4, 6 * i + 5, 6 * i + 1, 6 * i});
+        elements[2 * i]     = SEM::Device::Entities::Element2D_t(N, 0, SEM::Device::Hilbert::Status::H, 0, element_faces, std::array<size_t, 4>{6 * i, 6 * i + 1, 6 * i + 2, 6 * i + 3});
+        elements[2 * i + 1] = SEM::Device::Entities::Element2D_t(N, 0, SEM::Device::Hilbert::Status::B, 0, element_faces, std::array<size_t, 4>{6 * i + 4, 6 * i + 5, 6 * i + 1, 6 * i});
 
-        faces[2 * i]     = SEM::Entities::Face2D_t(N, std::array<size_t, 2>{8 * i, 8 * i + 1},     std::array<size_t, 2>{2 * i, 2 * i + 1}, std::array<size_t, 2>{0, 2});
-        faces[2 * i + 1] = SEM::Entities::Face2D_t(N, std::array<size_t, 2>{8 * i + 1, 8 * i + 2}, std::array<size_t, 2>{2 * i, 2 * i + 1}, std::array<size_t, 2>{0, 2});
+        faces[2 * i]     = SEM::Device::Entities::Face2D_t(N, std::array<size_t, 2>{8 * i, 8 * i + 1},     std::array<size_t, 2>{2 * i, 2 * i + 1}, std::array<size_t, 2>{0, 2});
+        faces[2 * i + 1] = SEM::Device::Entities::Face2D_t(N, std::array<size_t, 2>{8 * i + 1, 8 * i + 2}, std::array<size_t, 2>{2 * i, 2 * i + 1}, std::array<size_t, 2>{0, 2});
 
         faces[2 * i].offset_     = {0.0, 0.5};
         faces[2 * i].scale_      = {0.5, 0.5};
         faces[2 * i + 1].offset_ = {0.5, 0.0};
         faces[2 * i + 1].scale_  = {0.5, 0.5};
 
-        SEM::Entities::Face2D_t& face_0 = faces[2 * i];
-        SEM::Entities::Face2D_t& face_1 = faces[2 * i + 1];
+        SEM::Device::Entities::Face2D_t& face_0 = faces[2 * i];
+        SEM::Device::Entities::Face2D_t& face_1 = faces[2 * i + 1];
         const size_t offset_1D_0 = face_0.N_ * (face_0.N_ + 1) /2;
         const size_t offset_1D_1 = face_1.N_ * (face_1.N_ + 1) /2;
 
@@ -107,15 +107,15 @@ auto faces_to_element_projection_init(int N, size_t n_faces, SEM::Entities::Elem
 }
 
 __global__
-auto retrieve_element_projected_solution(int N, size_t n_faces, const SEM::Entities::Element2D_t* elements, const SEM::Entities::Face2D_t* faces, deviceFloat* p, deviceFloat* u, deviceFloat* v) -> void {
+auto retrieve_element_projected_solution(int N, size_t n_faces, const SEM::Device::Entities::Element2D_t* elements, const SEM::Device::Entities::Face2D_t* faces, deviceFloat* p, deviceFloat* u, deviceFloat* v) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
     for (size_t i = index; i < n_faces; i += stride) {
         const size_t offset_results = 2 * i * (N + 1);
-        const SEM::Entities::Face2D_t& face = faces[i];
-        const SEM::Entities::Element2D_t& element_left = elements[face.elements_[0]];
-        const SEM::Entities::Element2D_t& element_right = elements[face.elements_[1]];
+        const SEM::Device::Entities::Face2D_t& face = faces[i];
+        const SEM::Device::Entities::Element2D_t& element_left = elements[face.elements_[0]];
+        const SEM::Device::Entities::Element2D_t& element_right = elements[face.elements_[1]];
         const size_t element_side_left = face.elements_side_[0];
         const size_t element_side_right = face.elements_side_[1];
         
@@ -133,15 +133,15 @@ auto retrieve_element_projected_solution(int N, size_t n_faces, const SEM::Entit
 }
 
 __global__
-auto retrieve_element_projected_solution_2(int N, size_t n_faces, const SEM::Entities::Element2D_t* elements, const SEM::Entities::Face2D_t* faces, deviceFloat* p, deviceFloat* u, deviceFloat* v) -> void {
+auto retrieve_element_projected_solution_2(int N, size_t n_faces, const SEM::Device::Entities::Element2D_t* elements, const SEM::Device::Entities::Face2D_t* faces, deviceFloat* p, deviceFloat* u, deviceFloat* v) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
     for (size_t i = index; i < n_faces/2; i += stride) {
         const size_t offset_results = 2 * i * (N + 1);
-        const SEM::Entities::Face2D_t& face = faces[2 * i];
-        const SEM::Entities::Element2D_t& element_left = elements[face.elements_[0]];
-        const SEM::Entities::Element2D_t& element_right = elements[face.elements_[1]];
+        const SEM::Device::Entities::Face2D_t& face = faces[2 * i];
+        const SEM::Device::Entities::Element2D_t& element_left = elements[face.elements_[0]];
+        const SEM::Device::Entities::Element2D_t& element_right = elements[face.elements_[1]];
         const size_t element_side_left = face.elements_side_[0];
         const size_t element_side_right = face.elements_side_[1];
         
@@ -162,7 +162,7 @@ TEST_CASE("Face to element projection test", "Projects the face flux solution of
     const int N_max = 16;
     const int N_test_faces = 16;
     const int N_test_elements = N_test_faces;
-    const size_t N_interpolation_points = N_max;
+    const size_t n_interpolation_points = N_max;
     constexpr size_t n_faces = 1;
     constexpr size_t n_elements = 2 * n_faces;
     const double max_error = 1e-9;
@@ -180,10 +180,10 @@ TEST_CASE("Face to element projection test", "Projects the face flux solution of
                                                      Vec2<deviceFloat>{1, -1},
                                                      Vec2<deviceFloat>{1, 1}};
 
-    SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> NDG(N_max, N_interpolation_points, stream);
-    SEM::Entities::device_vector<SEM::Entities::Element2D_t> elements(n_elements, stream);
-    SEM::Entities::device_vector<SEM::Entities::Face2D_t> faces(n_faces, stream);
-    SEM::Entities::device_vector<Vec2<deviceFloat>> nodes(host_nodes, stream);
+    SEM::Device::Entities::NDG_t<SEM::Device::Polynomials::LegendrePolynomial_t> NDG(N_max, n_interpolation_points, stream);
+    SEM::Device::Entities::device_vector<SEM::Device::Entities::Element2D_t> elements(n_elements, stream);
+    SEM::Device::Entities::device_vector<SEM::Device::Entities::Face2D_t> faces(n_faces, stream);
+    SEM::Device::Entities::device_vector<Vec2<deviceFloat>> nodes(host_nodes, stream);
 
     constexpr int faces_blockSize = 32;
     constexpr int faces_numBlocks = (n_faces + faces_blockSize - 1) / faces_blockSize;
@@ -192,9 +192,9 @@ TEST_CASE("Face to element projection test", "Projects the face flux solution of
 
     face_to_element_projection_init<<<faces_blockSize, faces_numBlocks, 0, stream>>>(N_test_elements, N_test_faces, n_faces, elements.data(), faces.data(), nodes.data(), NDG.nodes_.data());
 
-    SEM::Meshes::compute_element_geometry<<<elements_blockSize, elements_numBlocks, 0, stream>>>(n_elements, elements.data(), nodes.data(), NDG.nodes_.data());
+    SEM::Device::Meshes::compute_element_geometry<<<elements_blockSize, elements_numBlocks, 0, stream>>>(n_elements, elements.data(), nodes.data(), NDG.nodes_.data());
 
-    SEM::Meshes::project_to_elements<<<elements_blockSize, elements_numBlocks, 0, stream>>>(n_elements, faces.data(), elements.data(), NDG.nodes_.data(), NDG.weights_.data(), NDG.barycentric_weights_.data());
+    SEM::Device::Meshes::project_to_elements<<<elements_blockSize, elements_numBlocks, 0, stream>>>(n_elements, faces.data(), elements.data(), NDG.nodes_.data(), NDG.weights_.data(), NDG.barycentric_weights_.data());
     
     std::vector<deviceFloat> polynomial_nodes_host(NDG.nodes_.size());
 
@@ -225,9 +225,9 @@ TEST_CASE("Face to element projection test", "Projects the face flux solution of
         }
     }
 
-    SEM::Entities::device_vector<deviceFloat> p(n_elements * (N_test_elements + 1), stream);
-    SEM::Entities::device_vector<deviceFloat> u(n_elements * (N_test_elements + 1), stream);
-    SEM::Entities::device_vector<deviceFloat> v(n_elements * (N_test_elements + 1), stream);
+    SEM::Device::Entities::device_vector<deviceFloat> p(n_elements * (N_test_elements + 1), stream);
+    SEM::Device::Entities::device_vector<deviceFloat> u(n_elements * (N_test_elements + 1), stream);
+    SEM::Device::Entities::device_vector<deviceFloat> v(n_elements * (N_test_elements + 1), stream);
 
     retrieve_element_projected_solution<<<elements_numBlocks, elements_blockSize, 0, stream>>>(N_test_elements, n_faces, elements.data(), faces.data(), p.data(), u.data(), v.data());
 
@@ -268,7 +268,7 @@ TEST_CASE("Face to lower order element projection test", "Projects the face flux
     const int N_max = 16;
     const int N_test_faces = 16;
     const int N_test_elements = N_test_faces - 2;
-    const size_t N_interpolation_points = N_max;
+    const size_t n_interpolation_points = N_max;
     constexpr size_t n_faces = 1;
     constexpr size_t n_elements = 2 * n_faces;
     const double max_error = 1e-9;
@@ -286,10 +286,10 @@ TEST_CASE("Face to lower order element projection test", "Projects the face flux
                                                      Vec2<deviceFloat>{1, -1},
                                                      Vec2<deviceFloat>{1, 1}};
 
-    SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> NDG(N_max, N_interpolation_points, stream);
-    SEM::Entities::device_vector<SEM::Entities::Element2D_t> elements(n_elements, stream);
-    SEM::Entities::device_vector<SEM::Entities::Face2D_t> faces(n_faces, stream);
-    SEM::Entities::device_vector<Vec2<deviceFloat>> nodes(host_nodes, stream);
+    SEM::Device::Entities::NDG_t<SEM::Device::Polynomials::LegendrePolynomial_t> NDG(N_max, n_interpolation_points, stream);
+    SEM::Device::Entities::device_vector<SEM::Device::Entities::Element2D_t> elements(n_elements, stream);
+    SEM::Device::Entities::device_vector<SEM::Device::Entities::Face2D_t> faces(n_faces, stream);
+    SEM::Device::Entities::device_vector<Vec2<deviceFloat>> nodes(host_nodes, stream);
 
     constexpr int faces_blockSize = 32;
     constexpr int faces_numBlocks = (n_faces + faces_blockSize - 1) / faces_blockSize;
@@ -298,9 +298,9 @@ TEST_CASE("Face to lower order element projection test", "Projects the face flux
 
     face_to_element_projection_init<<<faces_blockSize, faces_numBlocks, 0, stream>>>(N_test_elements, N_test_faces, n_faces, elements.data(), faces.data(), nodes.data(), NDG.nodes_.data());
 
-    SEM::Meshes::compute_element_geometry<<<elements_blockSize, elements_numBlocks, 0, stream>>>(n_elements, elements.data(), nodes.data(), NDG.nodes_.data());
+    SEM::Device::Meshes::compute_element_geometry<<<elements_blockSize, elements_numBlocks, 0, stream>>>(n_elements, elements.data(), nodes.data(), NDG.nodes_.data());
 
-    SEM::Meshes::project_to_elements<<<elements_blockSize, elements_numBlocks, 0, stream>>>(n_elements, faces.data(), elements.data(), NDG.nodes_.data(), NDG.weights_.data(), NDG.barycentric_weights_.data());
+    SEM::Device::Meshes::project_to_elements<<<elements_blockSize, elements_numBlocks, 0, stream>>>(n_elements, faces.data(), elements.data(), NDG.nodes_.data(), NDG.weights_.data(), NDG.barycentric_weights_.data());
     
     std::vector<deviceFloat> polynomial_nodes_host(NDG.nodes_.size());
 
@@ -331,9 +331,9 @@ TEST_CASE("Face to lower order element projection test", "Projects the face flux
         }
     }
 
-    SEM::Entities::device_vector<deviceFloat> p(n_elements * (N_test_elements + 1), stream);
-    SEM::Entities::device_vector<deviceFloat> u(n_elements * (N_test_elements + 1), stream);
-    SEM::Entities::device_vector<deviceFloat> v(n_elements * (N_test_elements + 1), stream);
+    SEM::Device::Entities::device_vector<deviceFloat> p(n_elements * (N_test_elements + 1), stream);
+    SEM::Device::Entities::device_vector<deviceFloat> u(n_elements * (N_test_elements + 1), stream);
+    SEM::Device::Entities::device_vector<deviceFloat> v(n_elements * (N_test_elements + 1), stream);
 
     retrieve_element_projected_solution<<<elements_numBlocks, elements_blockSize, 0, stream>>>(N_test_elements, n_faces, elements.data(), faces.data(), p.data(), u.data(), v.data());
 
@@ -373,7 +373,7 @@ TEST_CASE("Face to lower order element projection test", "Projects the face flux
 TEST_CASE("Faces to element projection test", "Projects the face flux solution of two faces to their elements and checks the values match.") {   
     const int N_max = 16;
     const int N_test = 16;
-    const size_t N_interpolation_points = N_max;
+    const size_t n_interpolation_points = N_max;
     constexpr size_t n_faces = 2;
     constexpr size_t n_elements = n_faces;
     const double max_error = 1e-9;
@@ -391,10 +391,10 @@ TEST_CASE("Faces to element projection test", "Projects the face flux solution o
                                                      Vec2<deviceFloat>{1, -1},
                                                      Vec2<deviceFloat>{1, 1}};
 
-    SEM::Entities::NDG_t<SEM::Polynomials::LegendrePolynomial_t> NDG(N_max, N_interpolation_points, stream);
-    SEM::Entities::device_vector<SEM::Entities::Element2D_t> elements(n_elements, stream);
-    SEM::Entities::device_vector<SEM::Entities::Face2D_t> faces(n_faces, stream);
-    SEM::Entities::device_vector<Vec2<deviceFloat>> nodes(host_nodes, stream);
+    SEM::Device::Entities::NDG_t<SEM::Device::Polynomials::LegendrePolynomial_t> NDG(N_max, n_interpolation_points, stream);
+    SEM::Device::Entities::device_vector<SEM::Device::Entities::Element2D_t> elements(n_elements, stream);
+    SEM::Device::Entities::device_vector<SEM::Device::Entities::Face2D_t> faces(n_faces, stream);
+    SEM::Device::Entities::device_vector<Vec2<deviceFloat>> nodes(host_nodes, stream);
 
     constexpr int faces_blockSize = 32;
     constexpr int faces_numBlocks = (n_faces + faces_blockSize - 1) / faces_blockSize;
@@ -403,9 +403,9 @@ TEST_CASE("Faces to element projection test", "Projects the face flux solution o
 
     faces_to_element_projection_init<<<faces_blockSize, (faces_numBlocks + 1)/2, 0, stream>>>(N_test, n_faces, elements.data(), faces.data(), nodes.data(), NDG.nodes_.data());
 
-    SEM::Meshes::compute_element_geometry<<<elements_blockSize, elements_numBlocks, 0, stream>>>(n_elements, elements.data(), nodes.data(), NDG.nodes_.data());
+    SEM::Device::Meshes::compute_element_geometry<<<elements_blockSize, elements_numBlocks, 0, stream>>>(n_elements, elements.data(), nodes.data(), NDG.nodes_.data());
 
-    SEM::Meshes::project_to_elements<<<elements_blockSize, elements_numBlocks, 0, stream>>>(n_elements, faces.data(), elements.data(), NDG.nodes_.data(), NDG.weights_.data(), NDG.barycentric_weights_.data());
+    SEM::Device::Meshes::project_to_elements<<<elements_blockSize, elements_numBlocks, 0, stream>>>(n_elements, faces.data(), elements.data(), NDG.nodes_.data(), NDG.weights_.data(), NDG.barycentric_weights_.data());
     
     std::vector<deviceFloat> polynomial_nodes_host(NDG.nodes_.size());
 
@@ -436,9 +436,9 @@ TEST_CASE("Faces to element projection test", "Projects the face flux solution o
         }
     }
 
-    SEM::Entities::device_vector<deviceFloat> p(n_faces * (N_test + 1), stream);
-    SEM::Entities::device_vector<deviceFloat> u(n_faces * (N_test + 1), stream);
-    SEM::Entities::device_vector<deviceFloat> v(n_faces * (N_test + 1), stream);
+    SEM::Device::Entities::device_vector<deviceFloat> p(n_faces * (N_test + 1), stream);
+    SEM::Device::Entities::device_vector<deviceFloat> u(n_faces * (N_test + 1), stream);
+    SEM::Device::Entities::device_vector<deviceFloat> v(n_faces * (N_test + 1), stream);
 
     retrieve_element_projected_solution_2<<<faces_numBlocks, (faces_blockSize + 1)/2, 0, stream>>>(N_test, n_faces, elements.data(), faces.data(), p.data(), u.data(), v.data());
 

@@ -12,9 +12,9 @@
 #include "meshes/Mesh2D_t.cuh"
 #include "polynomials/ChebyshevPolynomial_t.cuh"
 
-using SEM::Entities::Vec2;
-using SEM::Entities::device_vector;
-using SEM::Entities::cuda_vector;
+using SEM::Device::Entities::Vec2;
+using SEM::Device::Entities::device_vector;
+using SEM::Device::Entities::cuda_vector;
 
 __device__ const std::array<Vec2<deviceFloat>, 4> points {Vec2<deviceFloat>{1, -1},
                                                               Vec2<deviceFloat>{1, 1},
@@ -22,12 +22,12 @@ __device__ const std::array<Vec2<deviceFloat>, 4> points {Vec2<deviceFloat>{1, -
                                                               Vec2<deviceFloat>{-1, -1}};
 
 __global__
-auto elements_init(size_t n_elements, SEM::Entities::Element2D_t* elements, const deviceFloat* polynomial_nodes) -> void {
+auto elements_init(size_t n_elements, SEM::Device::Entities::Element2D_t* elements, const deviceFloat* polynomial_nodes) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
     for (size_t i = index; i < n_elements; i += stride) {
-        SEM::Entities::Element2D_t& element = elements[i];
+        SEM::Device::Entities::Element2D_t& element = elements[i];
         const size_t offset_1D = element.N_ * (element.N_ + 1) /2;
 
         const int N = element.N_;
@@ -41,7 +41,7 @@ auto elements_init(size_t n_elements, SEM::Entities::Element2D_t* elements, cons
         for (int i = 0; i <= element.N_; ++i) {
             for (int j = 0; j <= element.N_; ++j) {
                 const Vec2<deviceFloat> coordinates {polynomial_nodes[offset_1D + i], polynomial_nodes[offset_1D + j]};
-                const Vec2<deviceFloat> global_coordinates = SEM::quad_map(coordinates, points);
+                const Vec2<deviceFloat> global_coordinates = SEM::Device::quad_map(coordinates, points);
 
                 element.p_[i * (element.N_ + 1) + j] = std::sin(global_coordinates[0]) * std::cos(global_coordinates[1]);
                 element.u_[i * (element.N_ + 1) + j] = global_coordinates[0];
@@ -52,7 +52,7 @@ auto elements_init(size_t n_elements, SEM::Entities::Element2D_t* elements, cons
 }
 
 __global__
-auto get_boundary_solution(size_t n_elements, const SEM::Entities::Element2D_t* elements, std::array<deviceFloat*, 4> p, std::array<deviceFloat*, 4> u, std::array<deviceFloat*, 4> v) -> void {
+auto get_boundary_solution(size_t n_elements, const SEM::Device::Entities::Element2D_t* elements, std::array<deviceFloat*, 4> p, std::array<deviceFloat*, 4> u, std::array<deviceFloat*, 4> v) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -70,7 +70,7 @@ auto get_boundary_solution(size_t n_elements, const SEM::Entities::Element2D_t* 
 TEST_CASE("2D boundary interpolation test", "Checks the interpolated value of the solution at the element's edges.") {   
     const int N_max = 16;
     const int N_test = 16;
-    const size_t N_interpolation_points = std::pow(N_max, 2);
+    const size_t n_interpolation_points = std::pow(N_max, 2);
     const double max_error = 1e-6;
 
     REQUIRE(N_test <= N_max);
@@ -78,16 +78,16 @@ TEST_CASE("2D boundary interpolation test", "Checks the interpolated value of th
     cudaStream_t stream;
     cudaStreamCreate(&stream); 
     
-    SEM::Entities::NDG_t<SEM::Polynomials::ChebyshevPolynomial_t> NDG(N_max, N_interpolation_points, stream);
+    SEM::Device::Entities::NDG_t<SEM::Device::Polynomials::ChebyshevPolynomial_t> NDG(N_max, n_interpolation_points, stream);
 
-    std::vector<SEM::Entities::Element2D_t> host_elements(1);
+    std::vector<SEM::Device::Entities::Element2D_t> host_elements(1);
     host_elements[0].N_ = N_test;
 
-    device_vector<SEM::Entities::Element2D_t> device_elements(host_elements, stream);
+    device_vector<SEM::Device::Entities::Element2D_t> device_elements(host_elements, stream);
 
     elements_init<<<1, 1, 0, stream>>>(1, device_elements.data(), NDG.nodes_.data());
 
-    SEM::Meshes::interpolate_to_boundaries<<<1, 1, 0, stream>>>(1, device_elements.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
+    SEM::Device::Meshes::interpolate_to_boundaries<<<1, 1, 0, stream>>>(1, device_elements.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
 
     std::array<device_vector<deviceFloat>, 4> p {device_vector<deviceFloat>(N_test + 1, stream), 
                                                  device_vector<deviceFloat>(N_test + 1, stream), 
@@ -130,10 +130,10 @@ TEST_CASE("2D boundary interpolation test", "Checks the interpolated value of th
                                                             Vec2<deviceFloat>{1, polynomial_nodes_host[offset_1D + i]},
                                                             Vec2<deviceFloat>{polynomial_nodes_host[offset_1D + i], 1},
                                                             Vec2<deviceFloat>{-1, polynomial_nodes_host[offset_1D + i]}};
-        const std::array<Vec2<deviceFloat>, 4> global_coordinates {SEM::quad_map(coordinates[0], points),
-                                                                   SEM::quad_map(coordinates[1], points),
-                                                                   SEM::quad_map(coordinates[2], points),
-                                                                   SEM::quad_map(coordinates[3], points)};
+        const std::array<Vec2<deviceFloat>, 4> global_coordinates {SEM::Device::quad_map(coordinates[0], points),
+                                                                   SEM::Device::quad_map(coordinates[1], points),
+                                                                   SEM::Device::quad_map(coordinates[2], points),
+                                                                   SEM::Device::quad_map(coordinates[3], points)};
                                                                 
         p_target[0][i] = std::sin(global_coordinates[0][0]) * std::cos(global_coordinates[0][1]);
         u_target[0][i] = global_coordinates[0][0];

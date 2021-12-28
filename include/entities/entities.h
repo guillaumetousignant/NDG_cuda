@@ -1,7 +1,7 @@
-#ifndef SEM_ENTITIES_H
-#define SEM_ENTITIES_H
+#ifndef SEM_ENTITIES_ENTITIES_H
+#define SEM_ENTITIES_ENTITIES_H
 
-namespace SEM { 
+namespace SEM { namespace Host {
     /**
      * @brief Contains the basic entities used through the library.
      * 
@@ -9,18 +9,13 @@ namespace SEM {
      * Some entities, such as Vec2, represent basic types used throughout the program.
      */
     namespace Entities {}
-}
+}}
 
-#include "Element_t.cuh"
-#include "Element2D_t.cuh"
-#include "Element_host_t.h"
-#include "Face_t.cuh"
-#include "Face2D_t.cuh"
-#include "Face_host_t.h"
-#include "NDG_t.cuh"
-#include "NDG_host_t.h"
-#include "Vec2.cuh"
-#include "device_vector.cuh"
-#include "host_vector.cuh"
+#include "Element_t.h"
+#include "Element2D_t.h"
+#include "Face_t.h"
+#include "Face2D_t.h"
+#include "NDG_t.h"
+#include "Vec2.h"
 
 #endif

@@ -182,7 +182,7 @@ auto main(int argc, char* argv[]) -> int {
         exit(22);
     }
     const cgsize_t n_nodes = isize[0];
-    const cgsize_t n_elements = isize[1];
+    const cgsize_t n_elements_tot = isize[1];
 
     // Getting nodes
     int n_coords = 0;
@@ -361,28 +361,19 @@ auto main(int argc, char* argv[]) -> int {
         }
     }
 
-    if (n_elements_domain + n_elements_ghost != n_elements) {
-        std::cerr << "Error: CGNS mesh, base " << index_in_base << ", zone " << index_in_zone << " has " << n_elements << " elements but the sum of its sections is " << n_elements_domain + n_elements_ghost << " elements. Exiting." << std::endl;
+    if (n_elements_domain + n_elements_ghost != n_elements_tot) {
+        std::cerr << "Error: CGNS mesh, base " << index_in_base << ", zone " << index_in_zone << " has " << n_elements_tot << " elements but the sum of its sections is " << n_elements_domain + n_elements_ghost << " elements. Exiting." << std::endl;
         exit(34);  
     }
 
     // Splitting elements
-    const cgsize_t N_elements_per_process = (n_elements_domain + n_proc - 1)/n_proc;
-    std::vector<cgsize_t> N_elements(n_proc);
+    const auto [n_elements_div, n_elements_mod] = std::div(n_elements_domain, n_proc);
+    std::vector<cgsize_t> n_elements(n_proc);
     std::vector<cgsize_t> starting_elements(n_proc);
-    cgsize_t starting_element = 0;
     for (cgsize_t i = 0; i < n_proc; ++i) {
-        if (N_elements_per_process * i >= n_elements_domain) {
-            N_elements[i] = 0;
-        }
-        else if (N_elements_per_process * (i + 1) > n_elements_domain) {
-            N_elements[i] = N_elements_per_process + n_elements_domain - (i + 1) * N_elements_per_process;
-        }
-        else {
-            N_elements[i] = N_elements_per_process;
-        }
-        starting_elements[i] = starting_element;
-        starting_element += N_elements[i];
+        starting_elements[i] = i * n_elements_div + std::min(i, n_elements_mod);
+        const cgsize_t ending_element = (i + 1) * n_elements_div + std::min(i + 1, n_elements_mod);
+        n_elements[i] = ending_element - starting_elements[i];
     }
 
     // Putting connectivity data together
@@ -434,11 +425,11 @@ auto main(int argc, char* argv[]) -> int {
     std::vector<std::vector<std::vector<std::array<cgsize_t, 2>>>> origin_and_destination_ghosts(n_proc); // [origin; destination]
 
     for (cgsize_t i = 0; i < n_proc; ++i) {
-        cgsize_t n_elements_in_proc = N_elements[i];
+        cgsize_t n_elements_in_proc = n_elements[i];
 
         // Getting section elements
-        std::vector<cgsize_t> elements_in_proc(4 * N_elements[i]);
-        for (cgsize_t element_index = 0; element_index < N_elements[i]; ++element_index) {
+        std::vector<cgsize_t> elements_in_proc(4 * n_elements[i]);
+        for (cgsize_t element_index = 0; element_index < n_elements[i]; ++element_index) {
             for (cgsize_t side_index = 0; side_index < 4; ++side_index) {
                 elements_in_proc[4 * element_index + side_index] = elements[4 * (element_index + starting_elements[i]) + side_index];
             }
@@ -458,7 +449,7 @@ auto main(int argc, char* argv[]) -> int {
                     }
 
                     const cgsize_t domain_element_index = element_to_element[4 * n_elements_domain + ghost_index];
-                    if (domain_element_index >= starting_elements[i] && domain_element_index < starting_elements[i] + N_elements[i]) {
+                    if (domain_element_index >= starting_elements[i] && domain_element_index < starting_elements[i] + n_elements[i]) {
                         new_boundary_indices[k][j] = 1;
                     }
                 }
@@ -469,10 +460,10 @@ auto main(int argc, char* argv[]) -> int {
         cgsize_t n_total_boundaries_in_proc = 0;
         for (int k = 0; k < n_sections; ++k) {
             if (!section_is_domain[k]) {
-                boundaries_start_index[k] = N_elements[i] + n_total_boundaries_in_proc;
+                boundaries_start_index[k] = n_elements[i] + n_total_boundaries_in_proc;
                 for (cgsize_t j = 0; j < section_ranges[k][1] - section_ranges[k][0] + 1; ++j) {
                     if (new_boundary_indices[k][j]) {
-                        new_boundary_indices[k][j] = N_elements[i] + n_total_boundaries_in_proc;
+                        new_boundary_indices[k][j] = n_elements[i] + n_total_boundaries_in_proc;
                         ++n_boundaries_in_proc[k];
                         ++n_total_boundaries_in_proc;
                     }
@@ -502,13 +493,25 @@ auto main(int argc, char* argv[]) -> int {
         origin_and_destination_ghosts[i] = std::vector<std::vector<std::array<cgsize_t, 2>>>(n_proc); // [origin; destination]
         std::vector<cgsize_t> connectivity_elements;
         cgsize_t n_connectivity_elements = 0;
-        for (cgsize_t j = 0; j < N_elements[i]; ++j) {
+        for (cgsize_t j = 0; j < n_elements[i]; ++j) {
             const cgsize_t element_index = j + starting_elements[i];
             for (cgsize_t side_index = 0; side_index < 4; ++side_index) {
                 const cgsize_t neighbour_element_index = element_to_element[4 * element_index + side_index];
-                if (neighbour_element_index < n_elements_domain && !(neighbour_element_index >= starting_elements[i] && neighbour_element_index < starting_elements[i] + N_elements[i])) {
-                    const cgsize_t destination_proc = neighbour_element_index/N_elements_per_process;
-                    const cgsize_t element_index_in_destination = neighbour_element_index - destination_proc * N_elements_per_process;
+                if (neighbour_element_index < n_elements_domain && !(neighbour_element_index >= starting_elements[i] && neighbour_element_index < starting_elements[i] + n_elements[i])) {
+                    cgsize_t destination_proc = static_cast<cgsize_t>(-1);
+                    cgsize_t element_index_in_destination = static_cast<cgsize_t>(-1);
+                    for (cgsize_t process_index = 0; process_index < n_proc; ++process_index) {
+                        if (neighbour_element_index >= starting_elements[process_index] && neighbour_element_index < starting_elements[process_index] + n_elements[process_index]) {
+                            destination_proc = process_index;
+                            element_index_in_destination = neighbour_element_index - starting_elements[process_index];
+                            break;
+                        }
+                    }
+
+                    if (destination_proc == static_cast<cgsize_t>(-1) ) {
+                        std::cerr << "Error: CGNS mesh, base " << index_in_base << ", zone " << index_in_zone << " contains neighbour element " << neighbour_element_index << " but it is not found in any process. Exiting." << std::endl;
+                        exit(60);
+                    }
 
                     cotton_eyed_joe[i][destination_proc].push_back({j, element_index_in_destination});
                     origin_and_destination_ghosts[i][destination_proc].push_back({n_elements_in_proc + n_connectivity_elements, static_cast<cgsize_t>(-1)});
@@ -523,7 +526,7 @@ auto main(int argc, char* argv[]) -> int {
 
         // Getting relevant points
         std::vector<bool> is_point_needed(n_nodes);
-        for (cgsize_t element_index = 0; element_index < N_elements[i]; ++element_index) {
+        for (cgsize_t element_index = 0; element_index < n_elements[i]; ++element_index) {
             for (cgsize_t side_index = 0; side_index < 4; ++side_index) {
                 is_point_needed[elements_in_proc[4 * element_index + side_index] - 1] = true;
             }
@@ -556,7 +559,7 @@ auto main(int argc, char* argv[]) -> int {
                 // Replacing point indices CHECK do with node_to_elem
                 for (auto element_index : node_to_element[node_index]) {
                     if (element_index < n_elements_domain ) {
-                        if (element_index >= starting_elements[i] && element_index < starting_elements[i] + N_elements[i]) {
+                        if (element_index >= starting_elements[i] && element_index < starting_elements[i] + n_elements[i]) {
                             for (cgsize_t side_index = 0; side_index < 4; ++side_index) {
                                 if (elements_in_proc[4 * (element_index - starting_elements[i]) + side_index] == node_index + 1) {
                                     elements_in_proc[4 * (element_index - starting_elements[i]) + side_index] = xy_in_proc[0].size();
@@ -620,7 +623,7 @@ auto main(int argc, char* argv[]) -> int {
         cgsize_t section_start = 0;
         cgsize_t section_end = 0;
         cgsize_t element_index = starting_elements[i];
-        cgsize_t remaining_elements = N_elements[i];
+        cgsize_t remaining_elements = n_elements[i];
         cgsize_t domain_index_start = 0;
         cgsize_t domain_index_end = 0;
         for (int k = 0; k < n_sections; ++k) {
@@ -651,8 +654,8 @@ auto main(int argc, char* argv[]) -> int {
         }
 
         // Writing ghost sections to file
-        cgsize_t boundary_index_start = N_elements[i];
-        cgsize_t boundary_index_end = N_elements[i];
+        cgsize_t boundary_index_start = n_elements[i];
+        cgsize_t boundary_index_end = n_elements[i];
         for (int k = 0; k < n_sections; ++k) {
             if (!section_is_domain[k]) {
                 if (n_boundaries_in_proc[k] > 0) {
@@ -768,9 +771,23 @@ auto main(int argc, char* argv[]) -> int {
                     else {
                         const cgsize_t domain_element = element_to_element[4 * n_elements_domain + element_index - n_elements_domain - 1];
                         const cgsize_t donor_domain_element = element_to_element[4 * n_elements_domain + element_donor_index - n_elements_domain - 1];
-                        const cgsize_t destination_proc = donor_domain_element/N_elements_per_process;
-                        const cgsize_t element_index_in_proc = domain_element - i * N_elements_per_process;
-                        const cgsize_t element_index_in_destination = donor_domain_element - destination_proc * N_elements_per_process;
+
+                        cgsize_t destination_proc = static_cast<cgsize_t>(-1);
+                        cgsize_t element_index_in_destination = static_cast<cgsize_t>(-1);
+                        for (cgsize_t process_index = 0; process_index < n_proc; ++process_index) {
+                            if (donor_domain_element >= starting_elements[process_index] && donor_domain_element < starting_elements[process_index] + n_elements[process_index]) {
+                                destination_proc = process_index;
+                                element_index_in_destination = donor_domain_element - starting_elements[process_index];
+                                break;
+                            }
+                        }
+
+                        if (destination_proc == static_cast<cgsize_t>(-1)) {
+                            std::cerr << "Error: CGNS mesh, base " << index_in_base << ", zone " << index_in_zone << " contains neighbour element " << donor_domain_element << " but it is not found in any process. Exiting." << std::endl;
+                            exit(61);
+                        }
+
+                        const cgsize_t element_index_in_proc = domain_element - starting_elements[i];
 
                         cotton_eyed_joe[i][destination_proc].push_back({element_index_in_proc, element_index_in_destination});
                         origin_and_destination_ghosts[i][destination_proc].push_back({new_element_index, static_cast<cgsize_t>(-1)});

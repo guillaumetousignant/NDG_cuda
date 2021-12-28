@@ -1,10 +1,10 @@
-#ifndef SEM_VEC2_H
-#define SEM_VEC2_H
+#ifndef SEM_ENTITIES_VEC2_CUH
+#define SEM_ENTITIES_VEC2_CUH
 
 #include <iostream>
 #include <array>
 
-namespace SEM { namespace Entities {
+namespace SEM { namespace Device{ namespace Entities {
 
     /**
      * @brief The Vec2 class represents a 2-element vector.
@@ -37,8 +37,8 @@ namespace SEM { namespace Entities {
              * 
              * @param x Value given to the two components of the vector.
              */
-             __host__ __device__
-             constexpr explicit Vec2(T x); 
+            __host__ __device__
+            constexpr explicit Vec2(T x); 
 
             /**
              * @brief Accesses the selected component of the vector, returning a reference.
@@ -432,9 +432,9 @@ namespace SEM { namespace Entities {
              * @param other Vector to cross with this one.
              * @return T Cross product of the two vectors.
              */
-             template <class T2>
-             __host__ __device__
-             constexpr auto cross(const Vec2<T2> &other) const -> T;
+            template <class T2>
+            __host__ __device__
+            constexpr auto cross(const Vec2<T2> &other) const -> T;
 
             /**
              * @brief Changes the vector in-place to polar coordinates.
@@ -621,11 +621,11 @@ namespace SEM { namespace Entities {
             __host__ __device__
             constexpr auto x() const -> const T&;
              
-             /**
-              * @brief Returns a const reference to the y component of the vector
-              * 
-              * @return T& Const reference to the y component of the vector.
-              */
+            /**
+             * @brief Returns a const reference to the y component of the vector
+             * 
+             * @return T& Const reference to the y component of the vector.
+             */
             __host__ __device__
             constexpr auto y() const -> const T&;
 
@@ -641,7 +641,7 @@ namespace SEM { namespace Entities {
             __host__ __device__
             constexpr auto almost_equal(const Vec2<T> &other) const -> bool;
     };
-}}
+}}}
 
 /**
  * @brief Formats a vector to be displayed.
@@ -652,7 +652,7 @@ namespace SEM { namespace Entities {
  */
 template <class T>
 __host__
-auto operator<<(std::ostream &output, const SEM::Entities::Vec2<T> &v) -> std::ostream&;
+auto operator<<(std::ostream &output, const SEM::Device::Entities::Vec2<T> &v) -> std::ostream&;
 
 /**
  * @brief Multiplies a factor with a vector.
@@ -661,11 +661,11 @@ auto operator<<(std::ostream &output, const SEM::Entities::Vec2<T> &v) -> std::o
  * 
  * @param factor Factor multiplying the vector.
  * @param v Vector to be multiplied.
- * @return SEM::Entities::Vec2 Resulting Vector, (a*x, a*y).
+ * @return SEM::Device::Entities::Vec2 Resulting Vector, (a*x, a*y).
  */
 template <class T, class T2>
 __host__ __device__
-constexpr auto operator*(const T2 factor, const SEM::Entities::Vec2<T> &v) -> SEM::Entities::Vec2<T>;
+constexpr auto operator*(const T2 factor, const SEM::Device::Entities::Vec2<T> &v) -> SEM::Device::Entities::Vec2<T>;
 
 #include "entities/Vec2.tcu"
 
