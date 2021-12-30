@@ -7,8 +7,8 @@ add_executable(mesh_partitioner main.cpp)
 
 target_link_libraries(mesh_partitioner PRIVATE 
                         SEM
-                        hdf5::hdf5-static
-                        CGNS::CGNS)
+                        CGNS::CGNS
+                        hdf5::hdf5-static)
                         
 target_compile_features(mesh_partitioner PRIVATE cxx_std_17)
 if(NOT ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug"))

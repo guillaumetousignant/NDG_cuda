@@ -44,8 +44,8 @@ if (BUILD_CPU)
 
     target_link_libraries(SEM PUBLIC 
                             MPI::MPI_CXX
-                            hdf5::hdf5-static
                             CGNS::CGNS
+							hdf5::hdf5-static
                             ${VTK_LIBRARIES})
 
     vtk_module_autoinit(TARGETS SEM
@@ -95,8 +95,8 @@ if (BUILD_GPU)
 
     target_link_libraries(SEM-CUDA PUBLIC 
                             MPI::MPI_CXX
-                            hdf5::hdf5-static
                             CGNS::CGNS
+                            hdf5::hdf5-static
                             ${VTK_LIBRARIES})
                             
     vtk_module_autoinit(TARGETS SEM-CUDA
