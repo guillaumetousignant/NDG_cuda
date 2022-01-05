@@ -25,11 +25,16 @@ find_package(VTK COMPONENTS
                     ParallelMPI)
 
 # CGNS stuff
-set(HDF5_USE_STATIC_LIBRARIES TRUE)
-set(HDF5_PREFER_PARALLEL TRUE)
+if (USE_CGNS)
+    set(HDF5_USE_STATIC_LIBRARIES TRUE)
+    set(HDF5_PREFER_PARALLEL TRUE)
 
-find_package(HDF5 COMPONENTS C)
-find_package(CGNS REQUIRED)
+    find_package(HDF5 REQUIRED COMPONENTS C)
+    find_package(CGNS REQUIRED)
+
+    set(HDF5_DEPENDENCY "find_dependency(HDF5 REQUIRED COMPONENTS C)")
+    set(CGNS_DEPENDENCY "find_dependency(CGNS REQUIRED)")
+endif()
 
 # Targets
 if (BUILD_CPU)
@@ -44,26 +49,59 @@ if (BUILD_CPU)
 
     target_link_libraries(SEM PUBLIC 
                             MPI::MPI_CXX
-                            CGNS::CGNS
-							hdf5::hdf5-static
                             ${VTK_LIBRARIES})
+    
+    if (USE_CGNS)
+        target_link_libraries(SEM PUBLIC 
+                                CGNS::CGNS
+                                hdf5::hdf5-static)
+        target_compile_definitions(SEM PUBLIC NDG_USE_CGNS)
+    endif()
 
     vtk_module_autoinit(TARGETS SEM
                             MODULES ${VTK_LIBRARIES})
 
     # Installation stuff
     install(TARGETS SEM 
-        EXPORT SEM-export
+        EXPORT SEM-targets
         DESTINATION lib)
 
-    install(EXPORT SEM-export
+    install(EXPORT SEM-targets
         FILE
-            NDGConfig.cmake
+            SEMTargets.cmake
         NAMESPACE
-        SEM::
+            SEM::
         DESTINATION
             lib/cmake/SEM
     )
+
+    #Create a ConfigVersion.cmake file
+    include(CMakePackageConfigHelpers)
+    write_basic_package_version_file(
+        ${CMAKE_CURRENT_BINARY_DIR}/SEMConfigVersion.cmake
+        VERSION ${PROJECT_VERSION}
+        COMPATIBILITY AnyNewerVersion
+    )
+
+    configure_package_config_file(${PROJECT_SOURCE_DIR}/cmake/SEMConfig.cmake.in
+        ${CMAKE_CURRENT_BINARY_DIR}/SEMConfig.cmake
+        INSTALL_DESTINATION lib/cmake/SEM
+    )
+
+    #Install the config, configversion and custom find modules
+    install(FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/SEMConfig.cmake
+        ${CMAKE_CURRENT_BINARY_DIR}/SEMConfigVersion.cmake
+        DESTINATION lib/cmake/SEM
+    )
+
+    export(EXPORT SEM-targets
+        FILE ${CMAKE_CURRENT_BINARY_DIR}/SEMTargets.cmake
+        NAMESPACE SEM::
+    )
+
+    #Register package in user's package registry
+    export(PACKAGE SEM)
 
     add_executable(NDG_host 
         main.cpp)
@@ -95,26 +133,59 @@ if (BUILD_GPU)
 
     target_link_libraries(SEM-CUDA PUBLIC 
                             MPI::MPI_CXX
-                            CGNS::CGNS
-                            hdf5::hdf5-static
                             ${VTK_LIBRARIES})
+
+    if (USE_CGNS)
+        target_link_libraries(SEM-CUDA PUBLIC 
+                                CGNS::CGNS
+                                hdf5::hdf5-static)
+        target_compile_definitions(SEM-CUDA PUBLIC NDG_USE_CGNS)
+    endif()
                             
     vtk_module_autoinit(TARGETS SEM-CUDA
                             MODULES ${VTK_LIBRARIES})
 
     # Installation stuff
     install(TARGETS SEM-CUDA 
-        EXPORT SEM-CUDA-export
+        EXPORT SEM-CUDA-targets
         DESTINATION lib)
 
-    install(EXPORT SEM-CUDA-export
+    install(EXPORT SEM-CUDA-targets
         FILE
-            NDG_cudaConfig.cmake
+            SEM-CUDATargets.cmake
         NAMESPACE
-        SEM-CUDA::
+            SEM-CUDA::
         DESTINATION
             lib/cmake/SEM
     )
+
+    #Create a ConfigVersion.cmake file
+    include(CMakePackageConfigHelpers)
+    write_basic_package_version_file(
+        ${CMAKE_CURRENT_BINARY_DIR}/SEM-CUDAConfigVersion.cmake
+        VERSION ${PROJECT_VERSION}
+        COMPATIBILITY AnyNewerVersion
+    )
+
+    configure_package_config_file(${PROJECT_SOURCE_DIR}/cmake/SEM-CUDAConfig.cmake.in
+        ${CMAKE_CURRENT_BINARY_DIR}/SEM-CUDAConfig.cmake
+        INSTALL_DESTINATION lib/cmake/SEM
+    )
+
+    #Install the config, configversion and custom find modules
+    install(FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/SEM-CUDAConfig.cmake
+        ${CMAKE_CURRENT_BINARY_DIR}/SEM-CUDAConfigVersion.cmake
+        DESTINATION lib/cmake/SEM
+    )
+
+    export(EXPORT SEM-CUDA-targets
+        FILE ${CMAKE_CURRENT_BINARY_DIR}/SEM-CUDATargets.cmake
+        NAMESPACE SEM-CUDA::
+    )
+
+    #Register package in user's package registry
+    export(PACKAGE SEM-CUDA)
 
     add_executable(NDG 
         main.cu)
@@ -145,4 +216,10 @@ if(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_INSTALL_PREFIX)
     install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ 
         DESTINATION include/SEM
         FILES_MATCHING PATTERN "*.tpp")
+endif()
+
+if(WIN32)
+    install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/
+        DESTINATION bin
+        FILES_MATCHING PATTERN "*.dll")
 endif()

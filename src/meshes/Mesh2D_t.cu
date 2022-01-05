@@ -4,7 +4,9 @@
 #include "functions/Hilbert_splitting.cuh"
 #include "functions/quad_map.cuh"
 #include "functions/analytical_solution.cuh"
-#include "cgnslib.h"
+#ifdef NDG_USE_CGNS
+    #include "cgnslib.h"
+#endif
 #include <iostream>
 #include <fstream>
 #include <sstream> 
@@ -466,6 +468,7 @@ auto SEM::Device::Meshes::Mesh2D_t::read_su2(std::filesystem::path filename) -> 
 }
 
 auto SEM::Device::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
+    #ifdef NDG_USE_CGNS
     int index_file = 0;
     const int open_error = cg_open(filename.string().c_str(), CG_MODE_READ, &index_file);
     if (open_error != CG_OK) {
@@ -1173,6 +1176,10 @@ auto SEM::Device::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) ->
     p_output_device_ = device_vector<deviceFloat>(n_elements_ * std::pow(n_interpolation_points_, 2), stream_);
     u_output_device_ = device_vector<deviceFloat>(n_elements_ * std::pow(n_interpolation_points_, 2), stream_);
     v_output_device_ = device_vector<deviceFloat>(n_elements_ * std::pow(n_interpolation_points_, 2), stream_);
+    #else
+    std::cerr << "Error: Program was launched with a cgns mesh, but it was compiled without cgns support. Exiting." << std::endl;
+    exit(76);
+    #endif
 }
 
 auto SEM::Device::Meshes::Mesh2D_t::build_node_to_element(size_t n_nodes, const std::vector<Element2D_t>& elements) -> std::vector<std::vector<size_t>> {

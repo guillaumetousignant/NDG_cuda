@@ -13,3 +13,33 @@ cmake --install .
 ```
 
 sm_61 is GTX 10X0, sm_60 is Tesla P100, sm_70 is Tesla V100
+
+Dependencies:
+
+- HDF5
+- CGNS
+- VTK
+
+To build without cgns, add `-DUSE_CGNS=OFF` to cmake call.  
+
+To build tests, add `-DBUILD_TESTING=ON` to cmake call. Then:
+
+```bash
+make unit_tests
+ctest
+```
+
+To generate documentation, add `-DBUILD_DOC=ON` to cmake call. Additional dependencies:
+
+- Doxygen
+- dot (graphviz)
+- Sphinx
+- Breathe (pip: breathe)
+- Read the Docs Sphinx Theme (pip: sphinx_rtd_theme)
+
+To include in a CMake project:
+
+```bash
+find_package(SEM-CUDA 1.0.0 REQUIRED)
+target_link_libraries(example SEM-CUDA::SEM-CUDA)
+```

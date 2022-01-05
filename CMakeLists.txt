@@ -8,6 +8,8 @@ endif()
 option(BUILD_GPU "Build GPU version of the targets." ON)
 option(BUILD_CPU "Build CPU version of the targets." ON)
 
+option(USE_CGNS "Use the cgns library to be able to read cgns meshes." ON)
+
 if (BUILD_GPU)
     project(NDG_cuda VERSION 1.0.0 LANGUAGES CUDA CXX C)
 else ()

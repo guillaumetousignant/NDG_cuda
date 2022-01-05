@@ -1,0 +1,13 @@
+@PACKAGE_INIT@
+
+get_filename_component(SEM_CUDA_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+include(CMakeFindDependencyMacro)
+
+@HDF5_DEPENDENCY@
+@CGNS_DEPENDENCY@
+
+if(NOT TARGET SEM-CUDA::SEM-CUDA)
+    include("${SEM_CUDA_CMAKE_DIR}/SEM-CUDATargets.cmake")
+endif()
+
+set(SEM-CUDA_LIBRARIES SEM-CUDA::SEM-CUDA)

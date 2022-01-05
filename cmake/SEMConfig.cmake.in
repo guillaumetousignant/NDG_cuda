@@ -1,0 +1,13 @@
+@PACKAGE_INIT@
+
+get_filename_component(SEM_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+include(CMakeFindDependencyMacro)
+
+@HDF5_DEPENDENCY@
+@CGNS_DEPENDENCY@
+
+if(NOT TARGET SEM::SEM)
+    include("${SEM_CMAKE_DIR}/SEMTargets.cmake")
+endif()
+
+set(SEM_LIBRARIES SEM::SEM)
