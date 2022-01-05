@@ -117,10 +117,7 @@ auto SEM::Device::Meshes::Mesh2D_t::read_su2(std::filesystem::path filename) -> 
         }
         else if (token == "NELEM=") {
             liness >> value;
-            elements = std::vector<std::array<size_t, 2>>(value);
-            n_elements_ = value;
-            n_elements_global_ = value;
-            global_element_offset_ = 0;
+            elements = std::vector<std::array<size_t, 4>>(value);
 
             for (size_t i = 0; i < elements.size(); ++i) {
                 std::getline(meshfile, line);
@@ -297,6 +294,175 @@ auto SEM::Device::Meshes::Mesh2D_t::read_su2(std::filesystem::path filename) -> 
 
     // Transferring to the GPU
     nodes_ = device_vector<Vec2<deviceFloat>>(host_nodes, stream_);
+
+    // Building elements
+    const size_t n_elements_domain = elements.size();
+    const size_t n_elements_ghost = wall.size() + symmetry.size() + inflow.size() + outflow.size();
+    const size_t n_elements = n_elements_domain + n_elements_ghost;
+
+    std::vector<Element2D_t> host_elements(n_elements);
+    for (size_t i = 0; i < elements.size(); ++i) {
+        Element2D_t& element = host_elements[i];
+        element.N_ = initial_N_;
+        element.nodes_ = elements[i];       
+    }
+
+    for (size_t i = 0; i < wall.size(); ++i) {
+        Element2D_t& element = host_elements[n_elements_domain + i];
+        element.N_ = initial_N_;
+        element.nodes_ = {wall[i][0],
+                          wall[i][1],
+                          wall[i][1],
+                          wall[i][0]};
+        element.status_ = Hilbert::Status::A; // This is not a random status, when splitting the first two elements are 0 and 1, which is needed for boundaries
+        element.rotation_ = 0;
+    }
+
+    for (size_t i = 0; i < symmetry.size(); ++i) {
+        Element2D_t& element = host_elements[n_elements_domain + wall.size() + i];
+        element.N_ = initial_N_;
+        element.nodes_ = {symmetry[i][0],
+                          symmetry[i][1],
+                          symmetry[i][1],
+                          symmetry[i][0]};
+        element.status_ = Hilbert::Status::A; // This is not a random status, when splitting the first two elements are 0 and 1, which is needed for boundaries
+        element.rotation_ = 0;
+    }
+
+    for (size_t i = 0; i < inflow.size(); ++i) {
+        Element2D_t& element = host_elements[n_elements_domain + wall.size() + symmetry.size() + i];
+        element.N_ = initial_N_;
+        element.nodes_ = {inflow[i][0],
+                          inflow[i][1],
+                          inflow[i][1],
+                          inflow[i][0]};
+        element.status_ = Hilbert::Status::A; // This is not a random status, when splitting the first two elements are 0 and 1, which is needed for boundaries
+        element.rotation_ = 0;
+    }
+
+    for (size_t i = 0; i < outflow.size(); ++i) {
+        Element2D_t& element = host_elements[n_elements_domain + wall.size() + symmetry.size() + inflow.size() + i];
+        element.N_ = initial_N_;
+        element.nodes_ = {outflow[i][0],
+                          outflow[i][1],
+                          outflow[i][1],
+                          outflow[i][0]};
+        element.status_ = Hilbert::Status::A; // This is not a random status, when splitting the first two elements are 0 and 1, which is needed for boundaries
+        element.rotation_ = 0;
+    }
+
+    // Computing nodes to elements
+    const std::vector<std::vector<size_t>> node_to_element = build_node_to_element(host_nodes.size(), host_elements);
+
+    // Computing element to elements
+    const std::vector<std::vector<size_t>> element_to_element = build_element_to_element(host_elements, node_to_element);
+
+    // Computing faces and filling element faces
+    auto [host_faces, node_to_face, element_to_face] = build_faces(n_elements_domain, host_nodes.size(), initial_N_, host_elements);
+
+    // Transferring onto the GPU
+    elements_ = device_vector<Element2D_t>(host_elements, stream_);
+    faces_ = device_vector<Face2D_t>(host_faces, stream_);
+
+    // Building boundaries
+    std::vector<size_t> wall_boundaries(wall.size());
+    std::vector<size_t> symmetry_boundaries(symmetry.size());
+    std::vector<size_t> inflow_boundaries(inflow.size());
+    std::vector<size_t> outflow_boundaries(outflow.size());
+
+    for (size_t i = 0; i < wall_boundaries.size(); ++i) {
+        wall_boundaries[i] = n_elements_domain + i;
+    }
+
+    for (size_t i = 0; i < symmetry_boundaries.size(); ++i) {
+        symmetry_boundaries[i] = n_elements_domain + wall_boundaries.size() + i;
+    }
+
+    for (size_t i = 0; i < inflow_boundaries.size(); ++i) {
+        inflow_boundaries[i] = n_elements_domain + wall_boundaries.size() + symmetry_boundaries.size() + i;
+    }
+
+    for (size_t i = 0; i < outflow_boundaries.size(); ++i) {
+        outflow_boundaries[i] = n_elements_domain + wall_boundaries.size() + symmetry_boundaries.size() + inflow_boundaries.size() + i;
+    }
+
+    // Transferring onto the GPU
+    if (!wall_boundaries.empty()) {
+        wall_boundaries_ = device_vector<size_t>(wall_boundaries, stream_);
+    }
+    if (!symmetry_boundaries.empty()) {
+        symmetry_boundaries_ = device_vector<size_t>(symmetry_boundaries, stream_);
+    }
+    if (!inflow_boundaries.empty()) {
+        inflow_boundaries_ = device_vector<size_t>(inflow_boundaries, stream_);
+    }
+    if (!outflow_boundaries.empty()) {
+        outflow_boundaries_ = device_vector<size_t>(outflow_boundaries, stream_);
+    }
+
+    // No self-interfaces
+    
+    // No mpi interfaces
+
+    // Setting sizes
+    n_elements_ = n_elements_domain;
+    global_element_offset_ = 0;
+    n_elements_global_ = n_elements_;
+    elements_numBlocks_ = (n_elements_ + elements_blockSize_ - 1) / elements_blockSize_;
+    faces_numBlocks_ = (faces_.size() + faces_blockSize_ - 1) / faces_blockSize_;
+    wall_boundaries_numBlocks_ = (wall_boundaries_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+    symmetry_boundaries_numBlocks_ = (symmetry_boundaries_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+    inflow_boundaries_numBlocks_ = (inflow_boundaries_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+    outflow_boundaries_numBlocks_ = (outflow_boundaries_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+    ghosts_numBlocks_ = (n_elements_ghost + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+    interfaces_numBlocks_ = (interfaces_origin_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+    mpi_interfaces_outgoing_numBlocks_ = (mpi_interfaces_origin_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+    mpi_interfaces_incoming_numBlocks_ = (mpi_interfaces_destination_.size() + boundaries_blockSize_ - 1) / boundaries_blockSize_;
+
+    // Transfer arrays
+    host_delta_t_array_ = host_vector<deviceFloat>(elements_numBlocks_);
+    device_delta_t_array_ = device_vector<deviceFloat>(elements_numBlocks_, stream_);
+    host_refine_array_ = std::vector<size_t>(elements_numBlocks_);
+    device_refine_array_ = device_vector<size_t>(elements_numBlocks_, stream_);
+    host_faces_refine_array_ = std::vector<size_t>(faces_numBlocks_);
+    device_faces_refine_array_ = device_vector<size_t>(faces_numBlocks_, stream_);
+    host_wall_boundaries_refine_array_ = std::vector<size_t>(wall_boundaries_numBlocks_);
+    device_wall_boundaries_refine_array_ = device_vector<size_t>(wall_boundaries_numBlocks_, stream_);
+    host_symmetry_boundaries_refine_array_ = std::vector<size_t>(symmetry_boundaries_numBlocks_);
+    device_symmetry_boundaries_refine_array_ = device_vector<size_t>(symmetry_boundaries_numBlocks_, stream_);
+    host_inflow_boundaries_refine_array_ = std::vector<size_t>(inflow_boundaries_numBlocks_);
+    device_inflow_boundaries_refine_array_ = device_vector<size_t>(inflow_boundaries_numBlocks_, stream_);
+    host_outflow_boundaries_refine_array_ = std::vector<size_t>(outflow_boundaries_numBlocks_);
+    device_outflow_boundaries_refine_array_ = device_vector<size_t>(outflow_boundaries_numBlocks_, stream_);
+    host_interfaces_refine_array_ = std::vector<size_t>(interfaces_numBlocks_);
+    device_interfaces_refine_array_ = device_vector<size_t>(interfaces_numBlocks_, stream_);
+    host_mpi_interfaces_outgoing_refine_array_ = std::vector<size_t>(mpi_interfaces_outgoing_numBlocks_);
+    device_mpi_interfaces_outgoing_refine_array_ = device_vector<size_t>(mpi_interfaces_outgoing_numBlocks_, stream_);
+    host_mpi_interfaces_incoming_refine_array_ = std::vector<size_t>(mpi_interfaces_incoming_numBlocks_);
+    device_mpi_interfaces_incoming_refine_array_ = device_vector<size_t>(mpi_interfaces_incoming_numBlocks_, stream_);
+    host_mpi_interfaces_incoming_creating_nodes_array_ = std::vector<size_t>(mpi_interfaces_incoming_numBlocks_);
+    device_mpi_interfaces_incoming_creating_nodes_refine_array_ = device_vector<size_t>(mpi_interfaces_incoming_numBlocks_, stream_);
+
+    allocate_element_storage<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, elements_.data());
+    allocate_boundary_storage<<<ghosts_numBlocks_, boundaries_blockSize_, 0, stream_>>>(n_elements_, elements_.size(), elements_.data());
+    allocate_face_storage<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces_.size(), faces_.data());
+
+    device_vector<std::array<size_t, 4>> device_element_to_face(element_to_face, stream_);
+    fill_element_faces<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, elements_.data(), device_element_to_face.data());
+    fill_boundary_element_faces<<<ghosts_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, elements_.size(), elements_.data(), device_element_to_face.data());
+    device_element_to_face.clear(stream_);
+
+    // Allocating output arrays
+    x_output_host_ = std::vector<deviceFloat>(n_elements_ * std::pow(n_interpolation_points_, 2));
+    y_output_host_ = std::vector<deviceFloat>(n_elements_ * std::pow(n_interpolation_points_, 2));
+    p_output_host_ = std::vector<deviceFloat>(n_elements_ * std::pow(n_interpolation_points_, 2));
+    u_output_host_ = std::vector<deviceFloat>(n_elements_ * std::pow(n_interpolation_points_, 2));
+    v_output_host_ = std::vector<deviceFloat>(n_elements_ * std::pow(n_interpolation_points_, 2));
+    x_output_device_ = device_vector<deviceFloat>(n_elements_ * std::pow(n_interpolation_points_, 2), stream_);
+    y_output_device_ = device_vector<deviceFloat>(n_elements_ * std::pow(n_interpolation_points_, 2), stream_);
+    p_output_device_ = device_vector<deviceFloat>(n_elements_ * std::pow(n_interpolation_points_, 2), stream_);
+    u_output_device_ = device_vector<deviceFloat>(n_elements_ * std::pow(n_interpolation_points_, 2), stream_);
+    v_output_device_ = device_vector<deviceFloat>(n_elements_ * std::pow(n_interpolation_points_, 2), stream_);
 }
 
 auto SEM::Device::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
@@ -1014,7 +1180,7 @@ auto SEM::Device::Meshes::Mesh2D_t::build_node_to_element(size_t n_nodes, const 
 
     for (size_t j = 0; j < elements.size(); ++j) {
         for (auto node_index: elements[j].nodes_) {
-            if (std::find(node_to_element[node_index].begin(), node_to_element[node_index].end(), j) == node_to_element[node_index].end()) { // This will be slower, but is needed because boundaries have 4 sides and not 2. Remove when variable geometry elements are added.
+            if (std::find(node_to_element[node_index].begin(), node_to_element[node_index].end(), j) == node_to_element[node_index].end()) { // CHECK This will be slower, but is needed because boundaries have 4 sides and not 2. Remove when variable geometry elements are added.
                 node_to_element[node_index].push_back(j);
             }
         }
