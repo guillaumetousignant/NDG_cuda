@@ -1284,7 +1284,7 @@ auto SEM::Device::Meshes::Mesh2D_t::build_faces(size_t n_elements_domain, size_t
         const std::array<size_t, 2> nodes{elements[i].nodes_[0], elements[i].nodes_[1]};
 
         for (auto face_index: node_to_face[nodes[0]]) {
-            if ((faces[face_index].nodes_[0] == nodes[1]) && (faces[face_index].nodes_[1] == nodes[0])) {
+            if (((faces[face_index].nodes_[0] == nodes[1]) && (faces[face_index].nodes_[1] == nodes[0])) || ((faces[face_index].nodes_[0] == nodes[0]) && (faces[face_index].nodes_[1] == nodes[1]))) {
                 faces[face_index].elements_[1] = i;
                 faces[face_index].elements_side_[1] = 0;
                 element_to_face[i][0] = face_index;
