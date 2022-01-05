@@ -293,7 +293,7 @@ auto SEM::Helpers::DataWriter_t::write_complete_data(size_t n_interpolation_poin
         rotation_output->InsertNextValue(rotation[element_index]);
     }
 
-    grid_elements->GetPointData()->AddArray(rotation_output);
+    grid_elements->GetCellData()->AddArray(rotation_output);
 
     // Add rank to each point
     vtkNew<vtkIntArray> rank_output;
@@ -305,7 +305,7 @@ auto SEM::Helpers::DataWriter_t::write_complete_data(size_t n_interpolation_poin
         rank_output->InsertNextValue(rank);
     }
 
-    grid_elements->GetPointData()->AddArray(rank_output);
+    grid_elements->GetCellData()->AddArray(rank_output);
 
     // Add pressure derivative to each point
     vtkNew<vtkDoubleArray> pressure_derivative;
