@@ -59,8 +59,244 @@ SEM::Device::Meshes::Mesh2D_t::Mesh2D_t(std::filesystem::path filename, int init
 }
 
 auto SEM::Device::Meshes::Mesh2D_t::read_su2(std::filesystem::path filename) -> void {
-    std::cerr << "Error: SU2 meshes not implemented yet. Exiting." << std::endl;
-    exit(15);
+    std::string line;
+    std::string token;
+    size_t value;
+
+    std::ifstream meshfile(filename);
+    if (!meshfile.is_open()) {
+        std::cerr << "Error: file '" << filename << "' could not be opened. Exiting." << std::endl;
+        exit(69);
+    }
+
+    do {
+        std::getline(meshfile, line);  
+    }
+    while (line.empty());
+
+    std::istringstream liness(line);
+    liness >> token;
+    liness >> value;
+    if (token != "NDIME=") {
+        std::cerr << "Error: first token should be 'NDIME=', found '" << token << "'. Exiting." << std::endl;
+        exit(70);
+    }
+
+    if (value != 2) {
+        std::cerr << "Error: program only works for 2 dimensions, found '" << value << "'. Exiting." << std::endl;
+        exit(71);
+    }
+
+    std::vector<Vec2<deviceFloat>> host_nodes;
+    std::vector<std::array<size_t, 4>> elements;
+    std::vector<std::array<size_t, 2>> wall;
+    std::vector<std::array<size_t, 2>> symmetry;
+    std::vector<std::array<size_t, 2>> inflow;
+    std::vector<std::array<size_t, 2>> outflow;
+
+    while (!meshfile.eof()) {
+        do {
+            std::getline(meshfile, line);  
+        }
+        while (line.empty() && !meshfile.eof());
+
+        std::istringstream liness(line);
+        liness >> token;
+        std::transform(token.begin(), token.end(), token.begin(),
+            [](unsigned char c){ return std::toupper(c); });
+
+        if (token == "NPOIN=") {
+            liness >> value;
+            host_nodes = std::vector<Vec2<deviceFloat>>(value);
+
+            for (size_t i = 0; i < host_nodes.size(); ++i) {
+                std::getline(meshfile, line);
+                std::istringstream liness2(line);
+                liness2 >> host_nodes[i].x() >> host_nodes[i].y();
+            }
+        }
+        else if (token == "NELEM=") {
+            liness >> value;
+            elements = std::vector<std::array<size_t, 2>>(value);
+            n_elements_ = value;
+            n_elements_global_ = value;
+            global_element_offset_ = 0;
+
+            for (size_t i = 0; i < elements.size(); ++i) {
+                std::getline(meshfile, line);
+                std::istringstream liness2(line);
+                liness2 >> token;
+                if (token == "9") {
+                    liness2 >> elements[i][0] >> elements[i][1] >> elements[i][2] >> elements[i][3];
+                }
+                else {
+                    std::cerr << "Error: expected token '9', found '" << token << "'. Exiting." << std::endl;
+                    exit(73);
+                }
+            }
+
+        }
+        else if (token == "NMARK=") {
+            size_t n_markers;
+            liness >> n_markers;
+
+            size_t n_wall = 0;
+            size_t n_symmetry = 0;
+            size_t n_inflow = 0;
+            size_t n_outflow = 0;
+
+            for (size_t i = 0; i < n_markers; ++i) {
+                std::string type;
+                do {
+                    std::getline(meshfile, line);
+                    if (!line.empty()) {
+                        std::istringstream liness(line);
+                        liness >> token;
+                        liness >> type;
+                    }   
+                }
+                while (token != "MARKER_TAG=");
+                std::transform(type.begin(), type.end(), type.begin(),
+                    [](unsigned char c){ return std::tolower(c); });
+
+                if (type == "farfield") {
+                    do {
+                        std::getline(meshfile, line);
+                        if (!line.empty()) {
+                            std::istringstream liness(line);
+                            liness >> token;
+                            liness >> value;
+                        }   
+                    }
+                    while (token != "MARKER_ELEMS=");
+
+                    n_outflow += value;
+                    outflow.reserve(n_outflow);
+
+                    for (size_t j = 0; j < value; ++j) {
+
+                        std::getline(meshfile, line);
+                        std::istringstream liness6(line);
+
+                        liness6 >> token;
+                        if (token != "3") {
+                            std::cerr << "Error: expected token '3', found '" << token << "'. Exiting." << std::endl;
+                            exit(75);
+                        }
+
+                        size_t val0, val1;
+                        liness6 >> val0 >> val1;
+                        outflow.push_back({val0, val1});
+                    }
+                }
+                else if (type == "wall") {
+                    do {
+                        std::getline(meshfile, line);
+                        if (!line.empty()) {
+                            std::istringstream liness(line);
+                            liness >> token;
+                            liness >> value;
+                        }   
+                    }
+                    while (token != "MARKER_ELEMS=");
+
+                    n_wall += value;
+                    wall.reserve(n_wall);
+
+                    for (size_t j = 0; j < value; ++j) {
+
+                        std::getline(meshfile, line);
+                        std::istringstream liness6(line);
+
+                        liness6 >> token;
+                        if (token != "3") {
+                            std::cerr << "Error: expected token '3', found '" << token << "'. Exiting." << std::endl;
+                            exit(75);
+                        }
+
+                        size_t val0, val1;
+                        liness6 >> val0 >> val1;
+                        wall.push_back({val0, val1});
+                    }
+                }
+                else if (type == "inlet") {
+                    do {
+                        std::getline(meshfile, line);
+                        if (!line.empty()) {
+                            std::istringstream liness(line);
+                            liness >> token;
+                            liness >> value;
+                        }   
+                    }
+                    while (token != "MARKER_ELEMS=");
+
+                    n_inflow += value;
+                    inflow.reserve(n_inflow);
+
+                    for (size_t j = 0; j < value; ++j) {
+
+                        std::getline(meshfile, line);
+                        std::istringstream liness6(line);
+
+                        liness6 >> token;
+                        if (token != "3") {
+                            std::cerr << "Error: expected token '3', found '" << token << "'. Exiting." << std::endl;
+                            exit(75);
+                        }
+
+                        size_t val0, val1;
+                        liness6 >> val0 >> val1;
+                        inflow.push_back({val0, val1});
+                    }
+                }
+                else if (type == "symmetry") {
+                    do {
+                        std::getline(meshfile, line);
+                        if (!line.empty()) {
+                            std::istringstream liness(line);
+                            liness >> token;
+                            liness >> value;
+                        }   
+                    }
+                    while (token != "MARKER_ELEMS=");
+
+                    n_symmetry += value;
+                    symmetry.reserve(n_symmetry);
+
+                    for (size_t j = 0; j < value; ++j) {
+
+                        std::getline(meshfile, line);
+                        std::istringstream liness6(line);
+
+                        liness6 >> token;
+                        if (token != "3") {
+                            std::cerr << "Error: expected token '3', found '" << token << "'. Exiting." << std::endl;
+                            exit(75);
+                        }
+
+                        size_t val0, val1;
+                        liness6 >> val0 >> val1;
+                        symmetry.push_back({val0, val1});
+                    }
+                }
+                else {
+                    std::cerr << "Error: expected marker tag 'farfield', 'wall', 'symmetry' or 'inlet', found '" << type << "'. Exiting." << std::endl;
+                    exit(74);
+                }
+            }
+        }
+        else {
+            if (!meshfile.eof()) {
+                std::cerr << "Error: expected marker 'NPOIN=', 'NELEM=' or 'NMARK=', found '" << token << "'. Exiting." << std::endl;
+                exit(72);
+            }
+        }
+    }
+
+    meshfile.close();
+
+    // Transferring to the GPU
+    nodes_ = device_vector<Vec2<deviceFloat>>(host_nodes, stream_);
 }
 
 auto SEM::Device::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
