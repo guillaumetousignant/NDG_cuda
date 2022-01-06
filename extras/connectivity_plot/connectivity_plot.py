@@ -859,6 +859,7 @@ def main(argv: list[str]):
     parser.add_argument('--axis', type=bool, default=True, action=argparse.BooleanOptionalAction, help='show/hide axes')
     parser.add_argument('--legend', type=bool, default=True, action=argparse.BooleanOptionalAction, help='show/hide legend')
     parser.add_argument('--curve', type=bool, default=True, action=argparse.BooleanOptionalAction, help='show/hide Hilbert curve')
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.0')
     args = parser.parse_args(argv)
 
     meshes = []
