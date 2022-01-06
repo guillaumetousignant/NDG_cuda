@@ -1238,7 +1238,7 @@ auto SEM::Device::Meshes::Mesh2D_t::build_element_to_element(const std::vector<E
     return element_to_element;
 }
 
-auto SEM::Device::Meshes::Mesh2D_t::build_faces(size_t n_elements_domain, size_t n_nodes, int initial_N, const std::vector<Element2D_t>& elements) -> std::tuple<std::vector<Face2D_t>, std::vector<std::vector<size_t>>, std::vector<std::array<size_t, 4>>> {
+auto SEM::Device::Meshes::Mesh2D_t::build_faces(size_t n_elements_domain, size_t n_nodes, int initial_N, std::vector<Element2D_t>& elements) -> std::tuple<std::vector<Face2D_t>, std::vector<std::vector<size_t>>, std::vector<std::array<size_t, 4>>> {
     size_t total_edges = 0;
     for (const auto& element: elements) {
         total_edges += element.nodes_.size();
@@ -1284,13 +1284,23 @@ auto SEM::Device::Meshes::Mesh2D_t::build_faces(size_t n_elements_domain, size_t
         const std::array<size_t, 2> nodes{elements[i].nodes_[0], elements[i].nodes_[1]};
 
         for (auto face_index: node_to_face[nodes[0]]) {
-            if (((faces[face_index].nodes_[0] == nodes[1]) && (faces[face_index].nodes_[1] == nodes[0])) || ((faces[face_index].nodes_[0] == nodes[0]) && (faces[face_index].nodes_[1] == nodes[1]))) {
+            if ((faces[face_index].nodes_[0] == nodes[1]) && (faces[face_index].nodes_[1] == nodes[0])) {
                 faces[face_index].elements_[1] = i;
                 faces[face_index].elements_side_[1] = 0;
                 element_to_face[i][0] = face_index;
                 for (size_t j = 1; j < element_to_face[i].size(); ++j) {
                     element_to_face[i][j] = static_cast<size_t>(-1);
                 }
+                break;
+            }
+            if ((faces[face_index].nodes_[0] == nodes[0]) && (faces[face_index].nodes_[1] == nodes[1])) {
+                faces[face_index].elements_[1] = i;
+                faces[face_index].elements_side_[1] = 0;
+                element_to_face[i][0] = face_index;
+                for (size_t j = 1; j < element_to_face[i].size(); ++j) {
+                    element_to_face[i][j] = static_cast<size_t>(-1);
+                }
+                std::swap(elements[i].nodes_[0], elements[i].nodes_[1]); // This is needed for "inside out" boundary elements, sometimes present in su2 meshes. The element array is not const anymore
                 break;
             }
         }
