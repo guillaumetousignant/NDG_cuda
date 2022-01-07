@@ -147,8 +147,8 @@ auto main(int argc, char* argv[]) -> int {
     const int N_initial = input_parser.getCmdOptionOr("--n", 8);
     const int max_splits = input_parser.getCmdOptionOr("--max_splits", 3);
     const size_t n_interpolation_points = input_parser.getCmdOptionOr("--n_points", static_cast<size_t>(std::pow(N_max, 2)));
-    const int adaptivity_interval = input_parser.getCmdOptionOr("--adaptivity_interval", 100);
-    const int load_balancing_interval = input_parser.getCmdOptionOr("--load_balancing_interval", 100);
+    const int adaptivity_interval = input_parser.getCmdOptionOr("--adaptivity_interval", std::size_t{100});
+    const int load_balancing_interval = input_parser.getCmdOptionOr("--load_balancing_interval", std::size_t{100});
     const hostFloat CFL = input_parser.getCmdOptionOr("--cfl", static_cast<hostFloat>(0.5));
     const hostFloat viscosity = input_parser.getCmdOptionOr("--viscosity", static_cast<hostFloat>(0.1/pi));
     const std::vector<hostFloat> output_times = get_output_times(input_parser);

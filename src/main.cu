@@ -120,8 +120,8 @@ auto main(int argc, char* argv[]) -> int {
         std::cout << '\t' <<  "--n_max"                   <<  '\t' <<  "Maximum polynomial order in elements. Defaults to [16]" << std::endl;
         std::cout << '\t' <<  "--max_splits"              <<  '\t' <<  "Maximum number of times an elements can split. Defaults to [3]" << std::endl;
         std::cout << '\t' <<  "--n_points"                <<  '\t' <<  "Number of interpolation points in elements. Defaults to [n_max²]. Minimum 2." << std::endl;
-        std::cout << '\t' <<  "--adaptivity_interval"     <<  '\t' <<  "Number of iterations between adapting the mesh. Defaults to [100]" << std::endl;
-        std::cout << '\t' <<  "--load_balancing_interval" <<  '\t' <<  "Number of iterations between load balancing the mesh. Defaults to [100]" << std::endl;
+        std::cout << '\t' <<  "--adaptivity_interval"     <<  '\t' <<  "Number of iterations between adapting the mesh, 0 to disable. Defaults to [100]" << std::endl;
+        std::cout << '\t' <<  "--load_balancing_interval" <<  '\t' <<  "Number of iterations between load balancing the mesh, 0 to disable. Defaults to [100]" << std::endl;
         std::cout << '\t' <<  "--cfl"                     <<  '\t' <<  "CFL used for the simulation. Defaults to [0.5]" << std::endl;
         std::cout << '\t' <<  "--viscosity"               <<  '\t' <<  "Viscosity used for the simulation. Defaults to [0.1/π]" << std::endl;
         std::cout << '\t' <<  "--times"                   <<  '\t' <<  "Comma separated list of times to output at. The last time determines the simulation length. Overrides t, n_t, and t_interval." << std::endl;
@@ -144,8 +144,8 @@ auto main(int argc, char* argv[]) -> int {
     const int N_initial = input_parser.getCmdOptionOr("--n", 8);
     const int max_splits = input_parser.getCmdOptionOr("--max_splits", 3);
     const size_t n_interpolation_points = input_parser.getCmdOptionOr("--n_points", static_cast<size_t>(std::pow(N_max, 2)));
-    const int adaptivity_interval = input_parser.getCmdOptionOr("--adaptivity_interval", 100);
-    const int load_balancing_interval = input_parser.getCmdOptionOr("--load_balancing_interval", 100);
+    const size_t adaptivity_interval = input_parser.getCmdOptionOr("--adaptivity_interval", std::size_t{100});
+    const size_t load_balancing_interval = input_parser.getCmdOptionOr("--load_balancing_interval", std::size_t{100});
     const deviceFloat CFL = input_parser.getCmdOptionOr("--cfl", static_cast<deviceFloat>(0.5));
     const deviceFloat viscosity = input_parser.getCmdOptionOr("--viscosity", static_cast<deviceFloat>(0.1/pi));
     const std::vector<deviceFloat> output_times = get_output_times(input_parser);

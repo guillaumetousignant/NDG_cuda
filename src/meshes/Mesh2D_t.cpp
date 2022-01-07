@@ -26,7 +26,7 @@ using namespace SEM::Host::Hilbert;
 constexpr int CGIO_MAX_NAME_LENGTH = 33; // Includes the null terminator
 constexpr hostFloat pi = 3.14159265358979323846;
 
-SEM::Host::Meshes::Mesh2D_t::Mesh2D_t(std::filesystem::path filename, int initial_N, int maximum_N, size_t n_interpolation_points, int max_split_level, int adaptivity_interval, int load_balancing_interval, hostFloat tolerance_min, hostFloat tolerance_max, const std::vector<std::vector<hostFloat>>& polynomial_nodes) :       
+SEM::Host::Meshes::Mesh2D_t::Mesh2D_t(std::filesystem::path filename, int initial_N, int maximum_N, size_t n_interpolation_points, int max_split_level, size_t adaptivity_interval, size_t load_balancing_interval, hostFloat tolerance_min, hostFloat tolerance_max, const std::vector<std::vector<hostFloat>>& polynomial_nodes) :       
         initial_N_{initial_N},  
         maximum_N_{maximum_N},
         n_interpolation_points_{n_interpolation_points},

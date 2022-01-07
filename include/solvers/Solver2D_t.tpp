@@ -79,7 +79,7 @@ auto SEM::Host::Solvers::Solver2D_t::solve(const SEM::Host::Entities::NDG_t<Poly
             }
         }
 
-        if (timestep % mesh.adaptivity_interval_ == 0) {
+        if (mesh.adaptivity_interval_ > 0 && timestep % mesh.adaptivity_interval_ == 0) {
             if (global_rank == 0) {
                 bar.set_status_text("Adapting");
                 bar.update(time/t_end);
@@ -89,7 +89,7 @@ auto SEM::Host::Solvers::Solver2D_t::solve(const SEM::Host::Entities::NDG_t<Poly
             mesh.adapt(NDG.N_max_, NDG.nodes_, NDG.barycentric_weights_);
         }
 
-        if (global_size > 1 && timestep % mesh.load_balancing_interval_ == 0) {
+        if (mesh.load_balancing_interval_ > 0 && global_size > 1 && timestep % mesh.load_balancing_interval_ == 0) {
             if (global_rank == 0) {
                 bar.set_status_text("Load Balancing");
                 bar.update(time/t_end);

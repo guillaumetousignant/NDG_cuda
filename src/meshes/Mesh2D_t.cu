@@ -29,7 +29,7 @@ using namespace SEM::Device::Hilbert;
 constexpr int CGIO_MAX_NAME_LENGTH = 33; // Includes the null terminator
 constexpr deviceFloat pi = 3.14159265358979323846;
 
-SEM::Device::Meshes::Mesh2D_t::Mesh2D_t(std::filesystem::path filename, int initial_N, int maximum_N, size_t n_interpolation_points, int max_split_level, int adaptivity_interval, int load_balancing_interval, deviceFloat tolerance_min, deviceFloat tolerance_max, const device_vector<deviceFloat>& polynomial_nodes, const cudaStream_t &stream) :       
+SEM::Device::Meshes::Mesh2D_t::Mesh2D_t(std::filesystem::path filename, int initial_N, int maximum_N, size_t n_interpolation_points, int max_split_level, size_t adaptivity_interval, size_t load_balancing_interval, deviceFloat tolerance_min, deviceFloat tolerance_max, const device_vector<deviceFloat>& polynomial_nodes, const cudaStream_t &stream) :       
         initial_N_{initial_N},  
         maximum_N_{maximum_N},
         n_interpolation_points_{n_interpolation_points},
