@@ -76,12 +76,6 @@ Iteration is one of the possible ways to generate this curve. It will be used to
 initial meshes used by the program, as well as to re-number elements when the mesh refines.
 
 \subsection{Generation} \label{section:load_balancing:hilbert_curve:generation}
-% Initial guess
-% Mesh generator
-% Iterative algorithm
-% Tables
-% Something about ghost elements state
-
 We choose a table-driven algorithm to generate meshes. Each element has one of four possible states
 $s$: $s \in {H, A, R, B}$. This state determines the state and ordering of the four children
 elements obtained when increasing the level of the curve. The four states and their resulting
@@ -128,3 +122,4 @@ CGNS mesh into a multi-block mesh, which can then be run using the main program 
 \section{Implementation} \label{section:load_balancing:implementation}
 \subsection{Element exchange} \label{section:load_balancing:implementation:element_exchange}
 % and MPI datatype
+% ghost elements numbering
