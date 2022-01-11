@@ -81,7 +81,22 @@ $s$: $s \in \left \{H, A, R, B \right \}$. This state determines the state and o
 elements obtained when increasing the level of the curve. The four states and their resulting
 children are shown in the following figure.
 
-% Insert figure with the four states and their results.
+\begin{figure}[H]
+	\centering
+	\subfloat[H splitting: \newline $A, H, H, B$]
+	{\includesvg[width=0.23\textwidth]{Chapter_load_balancing/media/hilbert_split_H} \label{fig:hilbert_split_H}}
+	\hfill
+	\subfloat[A splitting: \newline $H, A, A, R$]
+	{\includesvg[width=0.23\textwidth]{Chapter_load_balancing/media/hilbert_split_A} \label{fig:hilbert_split_A}}
+	\hfill
+	\subfloat[R splitting: \newline $B, R, R, A$]
+	{\includesvg[width=0.23\textwidth]{Chapter_load_balancing/media/hilbert_split_R} \label{fig:hilbert_split_R}}
+	\hfill
+	\subfloat[B splitting: \newline $R, B, R, H$]
+	{\includesvg[width=0.23\textwidth]{Chapter_load_balancing/media/hilbert_split_B} \label{fig:hilbert_split_B}}
+	\caption{The four states splitting, with their children's state and ordering.}
+	\label{fig:hilbert_splits}
+\end{figure}
 
 When put together, and assigning $H$ as the first state of the mesh, the mesh can be iteratively
 constructed to the required level.
@@ -89,13 +104,13 @@ constructed to the required level.
 \begin{figure}[H]
 	\centering
 	\subfloat[Level 0]
-	{\includesvg[width=0.25\textwidth]{Chapter_load_balancing/media/hilbert_level_0} \label{fig:hilbert_l0}}
+	{\includesvg[width=0.3\textwidth]{Chapter_load_balancing/media/hilbert_level_0} \label{fig:hilbert_l0}}
 	\hfill
 	\subfloat[Level 1]
-	{\includesvg[width=0.25\textwidth]{Chapter_load_balancing/media/hilbert_level_1} \label{fig:hilbert_l1}}
+	{\includesvg[width=0.3\textwidth]{Chapter_load_balancing/media/hilbert_level_1} \label{fig:hilbert_l1}}
 	\hfill
 	\subfloat[Level 2]
-	{\includesvg[width=0.25\textwidth]{Chapter_load_balancing/media/hilbert_level_2} \label{fig:hilbert_l2}}
+	{\includesvg[width=0.3\textwidth]{Chapter_load_balancing/media/hilbert_level_2} \label{fig:hilbert_l2}}
 	\caption{First levels of the Hilbert curve with statuses $s$ ($s \in \left \{ H, A , B , R \right \}$).}
 	\label{fig:hilbert_levels}
 \end{figure}

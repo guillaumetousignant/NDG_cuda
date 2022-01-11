@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="288pt" height="720pt" viewBox="0 0 288 720" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2022-01-11T14:45:21.397663</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.5.0, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 720 
+L 288 720 
+L 288 0 
+L 0 0 
+L 0 720 
+z
+" style="fill: none"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 144 395.294118 
+L 133.411765 381.176471 
+L 140.470588 381.176471 
+L 140.470588 324.705882 
+L 147.529412 324.705882 
+L 147.529412 381.176471 
+L 154.588235 381.176471 
+z
+" clip-path="url(#paf55617915)" style="fill: #252525; stroke: #252525; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 179.294118 642.352941 
+L 165.176471 652.941176 
+L 165.176471 645.882353 
+L 108.705882 645.882353 
+L 108.705882 638.823529 
+L 165.176471 638.823529 
+L 165.176471 631.764706 
+z
+" clip-path="url(#paf55617915)" style="fill: #6a9955; stroke: #6a9955; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 214.588235 536.470588 
+L 225.176471 550.588235 
+L 218.117647 550.588235 
+L 218.117647 607.058824 
+L 211.058824 607.058824 
+L 211.058824 550.588235 
+L 204 550.588235 
+z
+" clip-path="url(#paf55617915)" style="fill: #6a9955; stroke: #6a9955; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 108.705882 501.176471 
+L 122.823529 490.588235 
+L 122.823529 497.647059 
+L 179.294118 497.647059 
+L 179.294118 504.705882 
+L 122.823529 504.705882 
+L 122.823529 511.764706 
+z
+" clip-path="url(#paf55617915)" style="fill: #6a9955; stroke: #6a9955; stroke-linejoin: miter"/>
+   </g>
+   <g id="line2d_1">
+    <path d="M 2.823529 289.411765 
+L 285.176471 289.411765 
+L 285.176471 7.058824 
+L 2.823529 7.058824 
+L 2.823529 289.411765 
+" clip-path="url(#paf55617915)" style="fill: none; stroke: #252525; stroke-width: 3; stroke-linecap: square"/>
+   </g>
+   <g id="line2d_2">
+    <path d="M 2.823529 712.941176 
+L 144 712.941176 
+L 144 571.764706 
+L 2.823529 571.764706 
+L 2.823529 712.941176 
+" clip-path="url(#paf55617915)" style="fill: none; stroke: #252525; stroke-width: 3; stroke-linecap: square"/>
+   </g>
+   <g id="line2d_3">
+    <path d="M 144 712.941176 
+L 285.176471 712.941176 
+L 285.176471 571.764706 
+L 144 571.764706 
+L 144 712.941176 
+" clip-path="url(#paf55617915)" style="fill: none; stroke: #252525; stroke-width: 3; stroke-linecap: square"/>
+   </g>
+   <g id="line2d_4">
+    <path d="M 144 571.764706 
+L 285.176471 571.764706 
+L 285.176471 430.588235 
+L 144 430.588235 
+L 144 571.764706 
+" clip-path="url(#paf55617915)" style="fill: none; stroke: #252525; stroke-width: 3; stroke-linecap: square"/>
+   </g>
+   <g id="line2d_5">
+    <path d="M 2.823529 571.764706 
+L 144 571.764706 
+L 144 430.588235 
+L 2.823529 430.588235 
+L 2.823529 571.764706 
+" clip-path="url(#paf55617915)" style="fill: none; stroke: #252525; stroke-width: 3; stroke-linecap: square"/>
+   </g>
+   <g id="text_1">
+    <!-- A -->
+    <g style="fill: #4fc1ff" transform="translate(133.2 157.710607)scale(0.36 -0.36)">
+     <defs>
+      <path id="FiraCode-Regular-41" d="M 2774 1123 
+L 1030 1123 
+L 678 0 
+L 131 0 
+L 1565 4406 
+L 2275 4406 
+L 3709 0 
+L 3126 0 
+L 2774 1123 
+z
+M 1174 1584 
+L 2630 1584 
+L 1907 3939 
+L 1174 1584 
+z
+" transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#FiraCode-Regular-41"/>
+    </g>
+   </g>
+   <g id="text_2">
+    <!-- H -->
+    <g style="fill: #4fc1ff" transform="translate(62.611765 651.828254)scale(0.36 -0.36)">
+     <defs>
+      <path id="FiraCode-Regular-48" d="M 2752 0 
+L 2752 2090 
+L 1088 2090 
+L 1088 0 
+L 534 0 
+L 534 4406 
+L 1088 4406 
+L 1088 2544 
+L 2752 2544 
+L 2752 4406 
+L 3306 4406 
+L 3306 0 
+L 2752 0 
+z
+" transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#FiraCode-Regular-48"/>
+    </g>
+   </g>
+   <g id="text_3">
+    <!-- A -->
+    <g style="fill: #4fc1ff" transform="translate(203.788235 651.828254)scale(0.36 -0.36)">
+     <use xlink:href="#FiraCode-Regular-41"/>
+    </g>
+   </g>
+   <g id="text_4">
+    <!-- A -->
+    <g style="fill: #4fc1ff" transform="translate(203.788235 510.651783)scale(0.36 -0.36)">
+     <use xlink:href="#FiraCode-Regular-41"/>
+    </g>
+   </g>
+   <g id="text_5">
+    <!-- R -->
+    <g style="fill: #4fc1ff" transform="translate(62.611765 510.651783)scale(0.36 -0.36)">
+     <defs>
+      <path id="FiraCode-Regular-52" d="M 3440 3171 
+Q 3440 2675 3129 2369 
+Q 2819 2064 2365 1955 
+L 3670 0 
+L 3005 0 
+L 1802 1891 
+L 1206 1891 
+L 1206 0 
+L 650 0 
+L 650 4406 
+L 1782 4406 
+Q 2598 4406 3019 4094 
+Q 3440 3782 3440 3171 
+z
+M 2845 3171 
+Q 2845 3594 2600 3779 
+Q 2355 3965 1846 3965 
+L 1206 3965 
+L 1206 2326 
+L 1846 2326 
+Q 2320 2326 2582 2520 
+Q 2845 2714 2845 3171 
+z
+" transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#FiraCode-Regular-52"/>
+    </g>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="paf55617915">
+   <rect x="0" y="4.235294" width="288" height="711.529412"/>
+  </clipPath>
+ </defs>
+</svg>
