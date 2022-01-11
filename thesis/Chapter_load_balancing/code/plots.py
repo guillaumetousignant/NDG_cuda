@@ -89,7 +89,7 @@ H_fig.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=1.0)
 
 H_ax.plot([0, 1, 1, 0, 0], [1.5, 1.5, 2.5, 2.5, 1.5], color=elements_colour, linewidth=elements_width, label="Elements")
 
-H_ax.text(0.5, 2, "H", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=H_colour)
+H_ax.text(0.5, 2, "H", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=elements_colour)
 
 H_ax.plot([0, 0.5, 0.5, 0, 0], [0, 0, 0.5, 0.5, 0], color=elements_colour, linewidth=elements_width)
 H_ax.plot([0.5, 1, 1, 0.5, 0.5], [0, 0, 0.5, 0.5, 0], color=elements_colour, linewidth=elements_width)
@@ -118,7 +118,7 @@ A_fig.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=1.0)
 
 A_ax.plot([0, 1, 1, 0, 0], [1.5, 1.5, 2.5, 2.5, 1.5], color=elements_colour, linewidth=elements_width, label="Elements")
 
-A_ax.text(0.5, 2, "A", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=A_colour)
+A_ax.text(0.5, 2, "A", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=elements_colour)
 
 A_ax.plot([0, 0.5, 0.5, 0, 0], [0, 0, 0.5, 0.5, 0], color=elements_colour, linewidth=elements_width)
 A_ax.plot([0.5, 1, 1, 0.5, 0.5], [0, 0, 0.5, 0.5, 0], color=elements_colour, linewidth=elements_width)
@@ -147,7 +147,7 @@ R_fig.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=1.0)
 
 R_ax.plot([0, 1, 1, 0, 0], [1.5, 1.5, 2.5, 2.5, 1.5], color=elements_colour, linewidth=elements_width, label="Elements")
 
-R_ax.text(0.5, 2, "R", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=R_colour)
+R_ax.text(0.5, 2, "R", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=elements_colour)
 
 R_ax.plot([0, 0.5, 0.5, 0, 0], [0, 0, 0.5, 0.5, 0], color=elements_colour, linewidth=elements_width)
 R_ax.plot([0.5, 1, 1, 0.5, 0.5], [0, 0, 0.5, 0.5, 0], color=elements_colour, linewidth=elements_width)
@@ -176,7 +176,7 @@ B_fig.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=1.0)
 
 B_ax.plot([0, 1, 1, 0, 0], [1.5, 1.5, 2.5, 2.5, 1.5], color=elements_colour, linewidth=elements_width, label="Elements")
 
-B_ax.text(0.5, 2, "B", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=B_colour)
+B_ax.text(0.5, 2, "B", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=elements_colour)
 
 B_ax.plot([0, 0.5, 0.5, 0, 0], [0, 0, 0.5, 0.5, 0], color=elements_colour, linewidth=elements_width)
 B_ax.plot([0.5, 1, 1, 0.5, 0.5], [0, 0, 0.5, 0.5, 0], color=elements_colour, linewidth=elements_width)

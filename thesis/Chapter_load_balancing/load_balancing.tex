@@ -122,7 +122,41 @@ indexes into the array to get the resulting ordering and states. This gives the 
 cell's j\textsuperscript{th} child in function of the cell's state $s$. The same goes for the
 ordering $p$ of the children, $P(s, j)$.
 
-% Insert tables
+\begin{table}[H]
+	\begin{center}
+		\begin{tabular}{ c | c c c c} 
+			\hline
+			$S\left ( s, j \right )$ & $j = 0$ & $j = 1$ & $j = 2$ & $j = 3$  \\
+			\hline
+			$s = H$ & \textcolor{vs_red}{$A$} & \textcolor{vs_red}{$B$} & \textcolor{vs_red}{$H$} & \textcolor{vs_red}{$H$} \\ 
+			$s = A$ & \textcolor{vs_blue}{$H$} & \textcolor{vs_blue}{$A$} & \textcolor{vs_blue}{$A$} & \textcolor{vs_blue}{$R$} \\
+			$s = R$ & \textcolor{vs_teal}{$R$} & \textcolor{vs_teal}{$R$} & \textcolor{vs_teal}{$B$} & \textcolor{vs_teal}{$A$} \\
+			$s = B$ & \textcolor{vs_plum}{$B$} & \textcolor{vs_plum}{$H$} & \textcolor{vs_plum}{$R$} & \textcolor{vs_plum}{$B$} \\
+			\hline
+		\end{tabular}
+	
+		\caption{Children element state table: children state, with $s$ being the state of the parent element, $j$ being the j\textsuperscript{th} child.}
+		\label{table:children_state}
+	\end{center}
+\end{table}
+
+\begin{table}[H]
+	\begin{center}
+		\begin{tabular}{ c | c c c c} 
+			\hline
+			$P\left ( s, j \right )$ & $j = 0$ & $j = 1$ & $j = 2$ & $j = 3$  \\
+			\hline
+			$s = H$ & \textcolor{vs_red}{$0$} & \textcolor{vs_red}{$3$} & \textcolor{vs_red}{$2$} & \textcolor{vs_red}{$1$} \\ 
+			$s = A$ & \textcolor{vs_blue}{$0$} & \textcolor{vs_blue}{$1$} & \textcolor{vs_blue}{$2$} & \textcolor{vs_blue}{$3$} \\
+			$s = R$ & \textcolor{vs_teal}{$2$} & \textcolor{vs_teal}{$1$} & \textcolor{vs_teal}{$0$} & \textcolor{vs_teal}{$3$} \\
+			$s = B$ & \textcolor{vs_plum}{$2$} & \textcolor{vs_plum}{$3$} & \textcolor{vs_plum}{$0$} & \textcolor{vs_plum}{$1$} \\
+			\hline
+		\end{tabular}
+		
+		\caption{Children element order table: children order, with $s$ being the state of the parent element, $j$ being the j\textsuperscript{th} child.}
+		\label{table:children_ordering}
+	\end{center}
+\end{table}
 
 This has the added benefit of working seamlessly in parallel, as each element can generate its
 children using nothing more than its own order.
