@@ -65,6 +65,16 @@ expanded to three dimensions, and arbitrary domains.
 	\label{fig:hilbert_curves}
 \end{figure}
 
+Figure~\ref{fig:hilbert_curves} shows the first three levels of the Hilbert curve. The curve
+successfully maps our 2D domain to a 1D one along the curve. That 1D domain can then be partitioned
+between the different worker GPUs. It can be seen that the elements have good locality and no jumps. 
+Wherever the curve is cut, elements on the resulting segments are close together. This is the first 
+desirable propriety of the curve for this program, as we aim to reduce the contact area between 
+the mesh blocks dispatched to each GPU. The recursive nature of those curves is also apparent when
+put side by side. Each increasing level of the curve follows the general path of the previous curve.
+Recursion is one of the possible ways to generate this curve. It will be used to generate the
+initial meshes used by the program, as well as to re-number elements when the mesh refines.
+
 \subsection{Generation} \label{section:load_balancing:hilbert_curve:generation}
 % Initial guess
 % Mesh generator
