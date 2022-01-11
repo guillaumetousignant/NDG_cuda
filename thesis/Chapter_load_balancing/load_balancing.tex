@@ -77,7 +77,7 @@ initial meshes used by the program, as well as to re-number elements when the me
 
 \subsection{Generation} \label{section:load_balancing:hilbert_curve:generation}
 We choose a table-driven algorithm to generate meshes. Each element has one of four possible states
-$s$: $s \in {H, A, R, B}$. This state determines the state and ordering of the four children
+$s$: $s \in \left \{H, A, R, B \right \}$. This state determines the state and ordering of the four children
 elements obtained when increasing the level of the curve. The four states and their resulting
 children are shown in the following figure.
 
@@ -86,7 +86,19 @@ children are shown in the following figure.
 When put together, and assigning $H$ as the first state of the mesh, the mesh can be iteratively
 constructed to the required level.
 
-% Insert figure with the mesh from level 0 to 2
+\begin{figure}[H]
+	\centering
+	\subfloat[Level 0]
+	{\includesvg[width=0.25\textwidth]{Chapter_load_balancing/media/hilbert_level_0} \label{fig:hilbert_l0}}
+	\hfill
+	\subfloat[Level 1]
+	{\includesvg[width=0.25\textwidth]{Chapter_load_balancing/media/hilbert_level_1} \label{fig:hilbert_l1}}
+	\hfill
+	\subfloat[Level 2]
+	{\includesvg[width=0.25\textwidth]{Chapter_load_balancing/media/hilbert_level_2} \label{fig:hilbert_l2}}
+	\caption{First levels of the Hilbert curve with statuses $s$ ($s \in \left \{ H, A , B , R \right \}$).}
+	\label{fig:hilbert_levels}
+\end{figure}
 
 This behaviour can be summarised in the following tables. The ordering of the children elements is
 from the bottom left element, in counter-clockwise order. These are implemented directly in the
