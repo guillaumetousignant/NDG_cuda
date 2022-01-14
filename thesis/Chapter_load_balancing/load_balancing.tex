@@ -170,11 +170,135 @@ multiple blocks using the provided mesh partitioner. The mesh partitioner can sp
 CGNS mesh into a multi-block mesh, which can then be run using the main program on multiple GPUs.
 
 \subsection{Refinement} \label{section:load_balancing:hilbert_curve:refinement}
-% Initial guess
-% Need initial guess because meshes don't store state, can be generated however
-% How adaptivity uses state
 % How it works well in parallel, prefix sum etc
 
+The same iterative process is used to refine elements. The parent state dictates the state and
+ordering of its children. Correct ordering is critical to maintaining good locality between elements
+as the mesh refines and non-conforming interfaces are created.
+
+\begin{figure}[H]
+	\centering
+	\subfloat[Before refining]
+	{\includesvg[width=0.45\textwidth]{Chapter_load_balancing/media/mesh_1_before_adaptivity0} \label{fig:hilbert_before}}
+	\hfill
+	\subfloat[After refining]
+	{\includesvg[width=0.45\textwidth]{Chapter_load_balancing/media/mesh_1_after_adaptivity0} \label{fig:hilbert_after}}
+	\caption{Mesh refinement: One element refining. (a) Before splitting (b) After splitting}
+	\label{fig:hilbert_refining}
+\end{figure}
+
+This process assumes knowledge of each element's status. However, this software is made to accept
+standard CGNS meshes as an input. This format does not provide this information. Furthermore, this
+program can accept any 2D unstructured mesh using the format, which may not be numbered according to
+a Hilbert curve. 
+
+It is therefore necessary to deduct the status of elements when reading a mesh file.
+Figure~\ref{fig:hilbert_l2} gives a hint on a possible way to do this. Following the curve, each
+combination of entrance side and exit side corresponds to a single state. For example, the curve
+entering from the left of the element and exiting through the top always has the state $A$. This is
+confirmed by examining other levels of the Hilbert curve. The same can be deduced for the first and
+last elements, using only the exiting and entering side, respectively. Using this information, we
+can create a 2D matrix of state in function of entering and exiting side for elements, and 1D
+matrices for the first and last elements.
+
+\begin{table}[H]
+	\begin{center}
+		\begin{tabular}{ c | c c c c} 
+			& \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_0} \end{tabular} & \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_1} \end{tabular} & \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_2} \end{tabular} & \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_3} \end{tabular} \\
+			\hline
+			\begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_0} \end{tabular} & \begin{tabular}{c}     \end{tabular} & \begin{tabular}{c} $H$ \end{tabular} & \begin{tabular}{c} $A$ \end{tabular} & \begin{tabular}{c} $A$ \end{tabular} \\ 
+			\begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_1} \end{tabular} & \begin{tabular}{c} $B$ \end{tabular} & \begin{tabular}{c}     \end{tabular} & \begin{tabular}{c} $R$ \end{tabular} & \begin{tabular}{c} $R$ \end{tabular} \\
+			\begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_2} \end{tabular} & \begin{tabular}{c} $B$ \end{tabular} & \begin{tabular}{c} $B$ \end{tabular} & \begin{tabular}{c}     \end{tabular} & \begin{tabular}{c} $R$ \end{tabular} \\
+			\begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_3} \end{tabular} & \begin{tabular}{c} $H$ \end{tabular} & \begin{tabular}{c} $H$ \end{tabular} & \begin{tabular}{c} $A$ \end{tabular} & \begin{tabular}{c}     \end{tabular} \\
+		\end{tabular}
+	
+		\caption{Element state deduction table: element state in function of curve entrance and exit side.}
+		\label{table:guess_table_incomplete}
+	\end{center}
+\end{table}
+
+\begin{table}[H]
+	\begin{center}
+		\begin{tabular}{ c c c c} 
+			\begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_0} \end{tabular} & \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_1} \end{tabular} & \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_2} \end{tabular} & \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_3} \end{tabular} \\
+			\hline
+			\begin{tabular}{c} $B$ \end{tabular} & \begin{tabular}{c} $H$ \end{tabular} & \begin{tabular}{c} $A$ \end{tabular} & \begin{tabular}{c} $R$ \end{tabular} \\ 
+		\end{tabular}
+	
+		\caption{First element state deduction table: element state in function of curve exit side.}
+		\label{table:guess_table_first}
+	\end{center}
+\end{table}
+
+\begin{table}[H]
+	\begin{center}
+		\begin{tabular}{ c | c} 
+			\begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_0} \end{tabular} & \begin{tabular}{c} $A$ \end{tabular} \\ 
+			\begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_1} \end{tabular} & \begin{tabular}{c} $R$ \end{tabular} \\
+			\begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_2} \end{tabular} & \begin{tabular}{c} $B$ \end{tabular} \\
+			\begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_3} \end{tabular} & \begin{tabular}{c} $H$ \end{tabular} \\
+		\end{tabular}
+	
+		\caption{Last element state deduction table: element state in function of curve entrance side.}
+		\label{table:guess_table_last}
+	\end{center}
+\end{table}
+
+A few combinations are still undefined in the matrix. They represent the cases where the curve
+enters and leaves through the same side of the element. These cases should not happen with correct
+Hilbert curves. However, nonconforming geometries created while refining, or meshes created without
+using a Hilbert curve may generate those geometries. Examining Figure~\ref{fig:hilbert_splits}, we
+observe that for each status the first and last child element occupy the same side. We match that
+side with the incoming and exiting side of the undefined cases.
+
+% Insert figure with the weird cases and the splits
+
+We can then obtain the full matrix.
+
+% This is madness. The easiest to vertically and horizontally center that doesn't use many packages
+% or paragraphs of syntax is to enclose each cell in a tabular block. Then people wonder why I don't
+% like Latex.
+\begin{table}[H]
+	\begin{center}
+		\begin{tabular}{ c | c c c c} 
+			& \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_0} \end{tabular} & \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_1} \end{tabular} & \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_2} \end{tabular} & \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_3} \end{tabular} \\
+			\hline
+			\begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_0} \end{tabular} & \begin{tabular}{c} $H$ \end{tabular} & \begin{tabular}{c} $H$ \end{tabular} & \begin{tabular}{c} $A$ \end{tabular} & \begin{tabular}{c} $A$ \end{tabular} \\ 
+			\begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_1} \end{tabular} & \begin{tabular}{c} $B$ \end{tabular} & \begin{tabular}{c} $B$ \end{tabular} & \begin{tabular}{c} $R$ \end{tabular} & \begin{tabular}{c} $R$ \end{tabular} \\
+			\begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_2} \end{tabular} & \begin{tabular}{c} $B$ \end{tabular} & \begin{tabular}{c} $B$ \end{tabular} & \begin{tabular}{c} $R$ \end{tabular} & \begin{tabular}{c} $R$ \end{tabular} \\
+			\begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_3} \end{tabular} & \begin{tabular}{c} $H$ \end{tabular} & \begin{tabular}{c} $H$ \end{tabular} & \begin{tabular}{c} $A$ \end{tabular} & \begin{tabular}{c} $A$ \end{tabular} \\
+		\end{tabular}
+	
+		\caption{Element state deduction table: element state in function of curve entrance and exit side.}
+		\label{table:guess_table}
+	\end{center}
+\end{table}
+
+Until now, we assumed the elements where axis-aligned, and numbered such that their first edge is at
+the bottom. This is important, as the elements number their children from their bottom left,
+counter-clockwise. If an element's first edge is not at the bottom, the wrong numbering will be
+given to refining elements. Since elements can be oriented in any direction in meshes, this
+situation is expected to happen.
+
+% Insert figure with rotated elements
+
+One might be tempted to deduct the element status in the local element referential instead. The
+incoming and outgoing side will be the number of the edges the curve go through. 
+
+% Insert figure with local referential numbering
+
+Both methods give wrong results when the elements are rotated compared to the first edge at the
+bottom case. The solution is to compute the entering and exiting side in global coordinates,
+depending on the direction the curve goes in x and y. When splitting, the elements use their
+rotation as an offset when numbering their children elements. The rotation of the elements is
+defined as the number of quarter turns the element is rotated compared to the normal case, with the
+first edge at the bottom.
+
+% Insert correct figure
+
+With this out of the way, it is possible to store the element once when the mesh is read, store it
+as a member of the element class, and use it whenever the element splits to get the correct
+ordering. 
 
 \section{Reconstruction} \label{section:load_balancing:reconstruction}
 % Having no state

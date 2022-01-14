@@ -286,4 +286,109 @@ l2_ax.text(0.125, 0.875, "H", fontfamily="Fira Code", fontsize=hilbert_font_size
 
 l2_fig.savefig(save_path / f"hilbert_level_2.svg", format='svg', transparent=True)
 
+# Deduction figures
+in0_fig = plt.figure(figsize=(1, 1))
+in0_ax = in0_fig.add_subplot(1, 1, 1)
+in0_ax.set_xlim(-0.35, 1.35)
+in0_ax.set_ylim(-0.35, 1.35)
+in0_ax.set_aspect(1)
+in0_ax.axis('off')
+in0_fig.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=1.0)
+
+in0_ax.plot([0, 1, 1, 0, 0], [0, 0, 1, 1, 0], color=elements_colour, linewidth=elements_width, label="Element")
+in0_ax.arrow(0.5, -0.25, 0, 0.5, length_includes_head=True, width=2*arrow_width, head_length=2*arrow_head_length, color=curve_colour, label="Hilbert curve")
+
+in0_fig.savefig(save_path / f"in_0.svg", format='svg', transparent=True)
+
+in1_fig = plt.figure(figsize=(1, 1))
+in1_ax = in1_fig.add_subplot(1, 1, 1)
+in1_ax.set_xlim(-0.35, 1.35)
+in1_ax.set_ylim(-0.35, 1.35)
+in1_ax.set_aspect(1)
+in1_ax.axis('off')
+in1_fig.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=1.0)
+
+in1_ax.plot([0, 1, 1, 0, 0], [0, 0, 1, 1, 0], color=elements_colour, linewidth=elements_width, label="Element")
+in1_ax.arrow(1.25, 0.5, -0.5, 0, length_includes_head=True, width=2*arrow_width, head_length=2*arrow_head_length, color=curve_colour, label="Hilbert curve")
+
+in1_fig.savefig(save_path / f"in_1.svg", format='svg', transparent=True)
+
+in2_fig = plt.figure(figsize=(1, 1))
+in2_ax = in2_fig.add_subplot(1, 1, 1)
+in2_ax.set_xlim(-0.35, 1.35)
+in2_ax.set_ylim(-0.35, 1.35)
+in2_ax.set_aspect(1)
+in2_ax.axis('off')
+in2_fig.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=1.0)
+
+in2_ax.plot([0, 1, 1, 0, 0], [0, 0, 1, 1, 0], color=elements_colour, linewidth=elements_width, label="Element")
+in2_ax.arrow(0.5, 1.25, 0, -0.5, length_includes_head=True, width=2*arrow_width, head_length=2*arrow_head_length, color=curve_colour, label="Hilbert curve")
+
+in2_fig.savefig(save_path / f"in_2.svg", format='svg', transparent=True)
+
+in3_fig = plt.figure(figsize=(1, 1))
+in3_ax = in3_fig.add_subplot(1, 1, 1)
+in3_ax.set_xlim(-0.35, 1.35)
+in3_ax.set_ylim(-0.35, 1.35)
+in3_ax.set_aspect(1)
+in3_ax.axis('off')
+in3_fig.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=1.0)
+
+in3_ax.plot([0, 1, 1, 0, 0], [0, 0, 1, 1, 0], color=elements_colour, linewidth=elements_width, label="Element")
+in3_ax.arrow(-0.25, 0.5, 0.5, 0, length_includes_head=True, width=2*arrow_width, head_length=2*arrow_head_length, color=curve_colour, label="Hilbert curve")
+
+in3_fig.savefig(save_path / f"in_3.svg", format='svg', transparent=True)
+
+out0_fig = plt.figure(figsize=(1, 1))
+out0_ax = out0_fig.add_subplot(1, 1, 1)
+out0_ax.set_xlim(-0.35, 1.35)
+out0_ax.set_ylim(-0.35, 1.35)
+out0_ax.set_aspect(1)
+out0_ax.axis('off')
+out0_fig.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=1.0)
+
+out0_ax.plot([0, 1, 1, 0, 0], [0, 0, 1, 1, 0], color=elements_colour, linewidth=elements_width, label="Element")
+out0_ax.arrow(0.5, 0.25, 0, -0.5, length_includes_head=True, width=2*arrow_width, head_length=2*arrow_head_length, color=curve_colour, label="Hilbert curve")
+
+out0_fig.savefig(save_path / f"out_0.svg", format='svg', transparent=True)
+
+out1_fig = plt.figure(figsize=(1, 1))
+out1_ax = out1_fig.add_subplot(1, 1, 1)
+out1_ax.set_xlim(-0.35, 1.35)
+out1_ax.set_ylim(-0.35, 1.35)
+out1_ax.set_aspect(1)
+out1_ax.axis('off')
+out1_fig.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=1.0)
+
+out1_ax.plot([0, 1, 1, 0, 0], [0, 0, 1, 1, 0], color=elements_colour, linewidth=elements_width, label="Element")
+out1_ax.arrow(0.75, 0.5, 0.5, 0, length_includes_head=True, width=2*arrow_width, head_length=2*arrow_head_length, color=curve_colour, label="Hilbert curve")
+
+out1_fig.savefig(save_path / f"out_1.svg", format='svg', transparent=True)
+
+out2_fig = plt.figure(figsize=(1, 1))
+out2_ax = out2_fig.add_subplot(1, 1, 1)
+out2_ax.set_xlim(-0.35, 1.35)
+out2_ax.set_ylim(-0.35, 1.35)
+out2_ax.set_aspect(1)
+out2_ax.axis('off')
+out2_fig.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=1.0)
+
+out2_ax.plot([0, 1, 1, 0, 0], [0, 0, 1, 1, 0], color=elements_colour, linewidth=elements_width, label="Element")
+out2_ax.arrow(0.5, 0.75, 0, 0.5, length_includes_head=True, width=2*arrow_width, head_length=2*arrow_head_length, color=curve_colour, label="Hilbert curve")
+
+out2_fig.savefig(save_path / f"out_2.svg", format='svg', transparent=True)
+
+out3_fig = plt.figure(figsize=(1, 1))
+out3_ax = out3_fig.add_subplot(1, 1, 1)
+out3_ax.set_xlim(-0.35, 1.35)
+out3_ax.set_ylim(-0.35, 1.35)
+out3_ax.set_aspect(1)
+out3_ax.axis('off')
+out3_fig.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=1.0)
+
+out3_ax.plot([0, 1, 1, 0, 0], [0, 0, 1, 1, 0], color=elements_colour, linewidth=elements_width, label="Element")
+out3_ax.arrow(0.25, 0.5, -0.5, 0, length_includes_head=True, width=2*arrow_width, head_length=2*arrow_head_length, color=curve_colour, label="Hilbert curve")
+
+out3_fig.savefig(save_path / f"out_3.svg", format='svg', transparent=True)
+
 plt.show()
