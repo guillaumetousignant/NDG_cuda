@@ -179,10 +179,10 @@ as the mesh refines and non-conforming interfaces are created.
 \begin{figure}[H]
 	\centering
 	\subfloat[Before refining]
-	{\includesvg[width=0.45\textwidth]{Chapter_load_balancing/media/mesh_1_before_adaptivity0} \label{fig:hilbert_before}}
+	{\includesvg[width=0.4\textwidth]{Chapter_load_balancing/media/mesh_1_before_adaptivity0} \label{fig:hilbert_before}}
 	\hfill
 	\subfloat[After refining]
-	{\includesvg[width=0.45\textwidth]{Chapter_load_balancing/media/mesh_1_after_adaptivity0} \label{fig:hilbert_after}}
+	{\includesvg[width=0.4\textwidth]{Chapter_load_balancing/media/mesh_1_after_adaptivity0} \label{fig:hilbert_after}}
 	\caption{Mesh refinement: One element refining. (a) Before splitting (b) After splitting}
 	\label{fig:hilbert_refining}
 \end{figure}
@@ -212,7 +212,7 @@ matrices for the first and last elements.
 			\begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_3} \end{tabular} & \begin{tabular}{c} $H$ \end{tabular} & \begin{tabular}{c} $H$ \end{tabular} & \begin{tabular}{c} $A$ \end{tabular} & \begin{tabular}{c}     \end{tabular} \\
 		\end{tabular}
 	
-		\caption{Element state deduction table: element state in function of curve entrance and exit side.}
+		\caption{Element state deduction table: Element state in function of curve entrance and exit side.}
 		\label{table:guess_table_incomplete}
 	\end{center}
 \end{table}
@@ -225,7 +225,7 @@ matrices for the first and last elements.
 			\begin{tabular}{c} $B$ \end{tabular} & \begin{tabular}{c} $H$ \end{tabular} & \begin{tabular}{c} $A$ \end{tabular} & \begin{tabular}{c} $R$ \end{tabular} \\ 
 		\end{tabular}
 	
-		\caption{First element state deduction table: element state in function of curve exit side.}
+		\caption{First element state deduction table: Element state in function of curve exit side.}
 		\label{table:guess_table_first}
 	\end{center}
 \end{table}
@@ -239,7 +239,7 @@ matrices for the first and last elements.
 			\begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_3} \end{tabular} & \begin{tabular}{c} $H$ \end{tabular} \\
 		\end{tabular}
 	
-		\caption{Last element state deduction table: element state in function of curve entrance side.}
+		\caption{Last element state deduction table: Element state in function of curve entrance side.}
 		\label{table:guess_table_last}
 	\end{center}
 \end{table}
@@ -251,7 +251,22 @@ using a Hilbert curve may generate those geometries. Examining Figure~\ref{fig:h
 observe that for each status the first and last child element occupy the same side. We match that
 side with the incoming and exiting side of the undefined cases.
 
-% Insert figure with the weird cases and the splits
+\begin{figure}[H]
+	\centering
+	\subfloat[Bottom: $H$]
+	{\includesvg[width=0.23\textwidth]{Chapter_load_balancing/media/inout_0} \label{fig:hilbert_missing_0}}
+	\hfill
+	\subfloat[Right: $B$]
+	{\includesvg[width=0.23\textwidth]{Chapter_load_balancing/media/inout_1} \label{fig:hilbert_missing_1}}
+	\hfill
+	\subfloat[Top: $R$]
+	{\includesvg[width=0.23\textwidth]{Chapter_load_balancing/media/inout_2} \label{fig:hilbert_missing_2}}
+	\hfill
+	\subfloat[Left: $A$]
+	{\includesvg[width=0.23\textwidth]{Chapter_load_balancing/media/inout_3} \label{fig:hilbert_missing_3}}
+	\caption{The four missing combinations: Each corresponds to a single state.}
+	\label{fig:hilbert_missing_splits}
+\end{figure}
 
 We can then obtain the full matrix.
 
@@ -269,23 +284,41 @@ We can then obtain the full matrix.
 			\begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_3} \end{tabular} & \begin{tabular}{c} $H$ \end{tabular} & \begin{tabular}{c} $H$ \end{tabular} & \begin{tabular}{c} $A$ \end{tabular} & \begin{tabular}{c} $A$ \end{tabular} \\
 		\end{tabular}
 	
-		\caption{Element state deduction table: element state in function of curve entrance and exit side.}
+		\caption{Element state deduction table: Element state in function of curve entrance and exit side.}
 		\label{table:guess_table}
 	\end{center}
 \end{table}
 
-Until now, we assumed the elements where axis-aligned, and numbered such that their first edge is at
+Until now, we assumed the elements were axis-aligned, and numbered such that their first edge is at
 the bottom. This is important, as the elements number their children from their bottom left,
 counter-clockwise. If an element's first edge is not at the bottom, the wrong numbering will be
 given to refining elements. Since elements can be oriented in any direction in meshes, this
 situation is expected to happen.
 
-% Insert figure with rotated elements
+\begin{figure}[H]
+	\centering
+	\subfloat[Before refining]
+	{\includesvg[width=0.4\textwidth]{Chapter_load_balancing/media/hilbert_level_1_r} \label{fig:hilbert_l1_r}}
+	\hfill
+	\subfloat[After refining]
+	{\includesvg[width=0.4\textwidth]{Chapter_load_balancing/media/hilbert_level_2_r} \label{fig:hilbert_l2_r}}
+	\caption{Refinement with rotated element: The numbering is wrong. (a) Initial mesh (b) Refined mesh}
+	\label{fig:hilbert_rotated}
+\end{figure}
 
 One might be tempted to deduct the element status in the local element referential instead. The
 incoming and outgoing side will be the number of the edges the curve go through. 
 
-% Insert figure with local referential numbering
+\begin{figure}[H]
+	\centering
+	\subfloat[Before refining]
+	{\includesvg[width=0.4\textwidth]{Chapter_load_balancing/media/hilbert_level_1_l} \label{fig:hilbert_l1_l}}
+	\hfill
+	\subfloat[After refining]
+	{\includesvg[width=0.4\textwidth]{Chapter_load_balancing/media/hilbert_level_2_l} \label{fig:hilbert_l2_l}}
+	\caption{Refinement with rotated element using local referential: This is not the next level curve. (a) Initial mesh (b) Refined mesh}
+	\label{fig:hilbert_local}
+\end{figure}
 
 Both methods give wrong results when the elements are rotated compared to the first edge at the
 bottom case. The solution is to compute the entering and exiting side in global coordinates,
@@ -294,9 +327,18 @@ rotation as an offset when numbering their children elements. The rotation of th
 defined as the number of quarter turns the element is rotated compared to the normal case, with the
 first edge at the bottom.
 
-% Insert correct figure
+\begin{figure}[H]
+	\centering
+	\subfloat[Before refining]
+	{\includesvg[width=0.4\textwidth]{Chapter_load_balancing/media/hilbert_level_1} \label{fig:hilbert_l1_c}}
+	\hfill
+	\subfloat[After refining]
+	{\includesvg[width=0.4\textwidth]{Chapter_load_balancing/media/hilbert_level_2} \label{fig:hilbert_l2_c}}
+	\caption{Refinement with rotation offset: The next level curve is correct. (a) Initial mesh (b) Refined mesh}
+	\label{fig:hilbert_correct}
+\end{figure}
 
-With this out of the way, it is possible to store the element once when the mesh is read, store it
+With this out of the way, it is possible to store the rotation once when the mesh is read, store it
 as a member of the element class, and use it whenever the element splits to get the correct
 ordering. 
 

@@ -391,4 +391,279 @@ out3_ax.arrow(0.25, 0.5, -0.5, 0, length_includes_head=True, width=2*arrow_width
 
 out3_fig.savefig(save_path / f"out_3.svg", format='svg', transparent=True)
 
+# Deduction edge cases
+inout0_fig = plt.figure(figsize=(4, 10))
+inout0_ax = inout0_fig.add_subplot(1, 1, 1)
+inout0_ax.set_xlim(-0.11, 1.11)
+inout0_ax.set_ylim(-0.01, 2.61)
+inout0_ax.set_aspect(1)
+inout0_ax.axis('off')
+inout0_fig.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=1.0)
+
+inout0_ax.plot([0, 1, 1, 0, 0], [1.5, 1.5, 2.5, 2.5, 1.5], color=elements_colour, linewidth=elements_width, label="Elements")
+
+inout0_ax.arrow(0.4, 1.4, 0, 0.6, length_includes_head=True, width=arrow_width, head_length=arrow_head_length, color=curve_colour, label="Hilbert curve")
+inout0_ax.arrow(0.6, 2, 0, -0.6, length_includes_head=True, width=arrow_width, head_length=arrow_head_length, color=curve_colour, label="Hilbert curve")
+
+inout0_ax.plot([0, 0.5, 0.5, 0, 0], [0, 0, 0.5, 0.5, 0], color=elements_colour, linewidth=elements_width)
+inout0_ax.plot([0.5, 1, 1, 0.5, 0.5], [0, 0, 0.5, 0.5, 0], color=elements_colour, linewidth=elements_width)
+inout0_ax.plot([0.5, 1, 1, 0.5, 0.5], [0.5, 0.5, 1, 1, 0.5], color=elements_colour, linewidth=elements_width)
+inout0_ax.plot([0, 0.5, 0.5, 0, 0], [0.5, 0.5, 1, 1, 0.5], color=elements_colour, linewidth=elements_width)
+
+inout0_ax.arrow(0.5, 1.375, 0, -0.25, length_includes_head=True, width=arrow_width, head_length=arrow_head_length, color=elements_colour)
+inout0_ax.arrow(0.25, 0.375, 0, 0.25, length_includes_head=True, width=arrow_width, head_length=arrow_head_length, color=curve_colour)
+inout0_ax.arrow(0.375, 0.75, 0.25, 0, length_includes_head=True, width=arrow_width, head_length=arrow_head_length, color=curve_colour)
+inout0_ax.arrow(0.75, 0.625, 0, -0.25, length_includes_head=True, width=arrow_width, head_length=arrow_head_length, color=curve_colour)
+
+inout0_ax.text(0.25, 0.25, "A", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=H_colour)
+inout0_ax.text(0.75, 0.25, "B", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=H_colour)
+inout0_ax.text(0.75, 0.75, "H", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=H_colour)
+inout0_ax.text(0.25, 0.75, "H", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=H_colour)
+
+inout0_fig.savefig(save_path / f"inout_0.svg", format='svg', transparent=True)
+
+inout3_fig = plt.figure(figsize=(4, 10))
+inout3_ax = inout3_fig.add_subplot(1, 1, 1)
+inout3_ax.set_xlim(-0.11, 1.11)
+inout3_ax.set_ylim(-0.01, 2.61)
+inout3_ax.set_aspect(1)
+inout3_ax.axis('off')
+inout3_fig.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=1.0)
+
+inout3_ax.plot([0, 1, 1, 0, 0], [1.5, 1.5, 2.5, 2.5, 1.5], color=elements_colour, linewidth=elements_width, label="Elements")
+
+inout3_ax.arrow(-0.1, 1.9, 0.6, 0, length_includes_head=True, width=arrow_width, head_length=arrow_head_length, color=curve_colour, label="Hilbert curve")
+inout3_ax.arrow(0.5, 2.1, -0.6, 0, length_includes_head=True, width=arrow_width, head_length=arrow_head_length, color=curve_colour, label="Hilbert curve")
+
+inout3_ax.plot([0, 0.5, 0.5, 0, 0], [0, 0, 0.5, 0.5, 0], color=elements_colour, linewidth=elements_width)
+inout3_ax.plot([0.5, 1, 1, 0.5, 0.5], [0, 0, 0.5, 0.5, 0], color=elements_colour, linewidth=elements_width)
+inout3_ax.plot([0.5, 1, 1, 0.5, 0.5], [0.5, 0.5, 1, 1, 0.5], color=elements_colour, linewidth=elements_width)
+inout3_ax.plot([0, 0.5, 0.5, 0, 0], [0.5, 0.5, 1, 1, 0.5], color=elements_colour, linewidth=elements_width)
+
+inout3_ax.arrow(0.5, 1.375, 0, -0.25, length_includes_head=True, width=arrow_width, head_length=arrow_head_length, color=elements_colour)
+inout3_ax.arrow(0.375, 0.25, 0.25, 0, length_includes_head=True, width=arrow_width, head_length=arrow_head_length, color=curve_colour)
+inout3_ax.arrow(0.75, 0.375, 0, 0.25, length_includes_head=True, width=arrow_width, head_length=arrow_head_length, color=curve_colour)
+inout3_ax.arrow(0.625, 0.75, -0.25, 0, length_includes_head=True, width=arrow_width, head_length=arrow_head_length, color=curve_colour)
+
+inout3_ax.text(0.25, 0.25, "H", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=A_colour)
+inout3_ax.text(0.75, 0.25, "A", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=A_colour)
+inout3_ax.text(0.75, 0.75, "A", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=A_colour)
+inout3_ax.text(0.25, 0.75, "R", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=A_colour)
+
+inout3_fig.savefig(save_path / f"inout_3.svg", format='svg', transparent=True)
+
+inout2_fig = plt.figure(figsize=(4, 10))
+inout2_ax = inout2_fig.add_subplot(1, 1, 1)
+inout2_ax.set_xlim(-0.11, 1.11)
+inout2_ax.set_ylim(-0.01, 2.61)
+inout2_ax.set_aspect(1)
+inout2_ax.axis('off')
+inout2_fig.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=1.0)
+
+inout2_ax.plot([0, 1, 1, 0, 0], [1.5, 1.5, 2.5, 2.5, 1.5], color=elements_colour, linewidth=elements_width, label="Elements")
+
+inout2_ax.arrow(0.4, 2.6, 0, -0.6, length_includes_head=True, width=arrow_width, head_length=arrow_head_length, color=curve_colour, label="Hilbert curve")
+inout2_ax.arrow(0.6, 2.0, 0, 0.6, length_includes_head=True, width=arrow_width, head_length=arrow_head_length, color=curve_colour, label="Hilbert curve")
+
+inout2_ax.plot([0, 0.5, 0.5, 0, 0], [0, 0, 0.5, 0.5, 0], color=elements_colour, linewidth=elements_width)
+inout2_ax.plot([0.5, 1, 1, 0.5, 0.5], [0, 0, 0.5, 0.5, 0], color=elements_colour, linewidth=elements_width)
+inout2_ax.plot([0.5, 1, 1, 0.5, 0.5], [0.5, 0.5, 1, 1, 0.5], color=elements_colour, linewidth=elements_width)
+inout2_ax.plot([0, 0.5, 0.5, 0, 0], [0.5, 0.5, 1, 1, 0.5], color=elements_colour, linewidth=elements_width)
+
+inout2_ax.arrow(0.5, 1.375, 0, -0.25, length_includes_head=True, width=arrow_width, head_length=arrow_head_length, color=elements_colour)
+inout2_ax.arrow(0.75, 0.625, 0, -0.25, length_includes_head=True, width=arrow_width, head_length=arrow_head_length, color=curve_colour)
+inout2_ax.arrow(0.625, 0.25, -0.25, 0, length_includes_head=True, width=arrow_width, head_length=arrow_head_length, color=curve_colour)
+inout2_ax.arrow(0.25, 0.375, 0, 0.25, length_includes_head=True, width=arrow_width, head_length=arrow_head_length, color=curve_colour)
+
+inout2_ax.text(0.25, 0.25, "R", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=R_colour)
+inout2_ax.text(0.75, 0.25, "R", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=R_colour)
+inout2_ax.text(0.75, 0.75, "B", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=R_colour)
+inout2_ax.text(0.25, 0.75, "A", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=R_colour)
+
+inout2_fig.savefig(save_path / f"inout_2.svg", format='svg', transparent=True)
+
+inout1_fig = plt.figure(figsize=(4, 10))
+inout1_ax = inout1_fig.add_subplot(1, 1, 1)
+inout1_ax.set_xlim(-0.11, 1.11)
+inout1_ax.set_ylim(-0.01, 2.61)
+inout1_ax.set_aspect(1)
+inout1_ax.axis('off')
+inout1_fig.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=1.0)
+
+inout1_ax.plot([0, 1, 1, 0, 0], [1.5, 1.5, 2.5, 2.5, 1.5], color=elements_colour, linewidth=elements_width, label="Elements")
+
+inout1_ax.arrow(1.1, 1.9, -0.6, 0, length_includes_head=True, width=arrow_width, head_length=arrow_head_length, color=curve_colour, label="Hilbert curve")
+inout1_ax.arrow(0.5, 2.1, 0.6, 0, length_includes_head=True, width=arrow_width, head_length=arrow_head_length, color=curve_colour, label="Hilbert curve")
+
+inout1_ax.plot([0, 0.5, 0.5, 0, 0], [0, 0, 0.5, 0.5, 0], color=elements_colour, linewidth=elements_width)
+inout1_ax.plot([0.5, 1, 1, 0.5, 0.5], [0, 0, 0.5, 0.5, 0], color=elements_colour, linewidth=elements_width)
+inout1_ax.plot([0.5, 1, 1, 0.5, 0.5], [0.5, 0.5, 1, 1, 0.5], color=elements_colour, linewidth=elements_width)
+inout1_ax.plot([0, 0.5, 0.5, 0, 0], [0.5, 0.5, 1, 1, 0.5], color=elements_colour, linewidth=elements_width)
+
+inout1_ax.arrow(0.5, 1.375, 0, -0.25, length_includes_head=True, width=arrow_width, head_length=arrow_head_length, color=elements_colour)
+inout1_ax.arrow(0.625, 0.75, -0.25, 0, length_includes_head=True, width=arrow_width, head_length=arrow_head_length, color=curve_colour)
+inout1_ax.arrow(0.25, 0.625, 0, -0.25, length_includes_head=True, width=arrow_width, head_length=arrow_head_length, color=curve_colour)
+inout1_ax.arrow(0.375, 0.25, 0.25, 0, length_includes_head=True, width=arrow_width, head_length=arrow_head_length, color=curve_colour)
+
+inout1_ax.text(0.25, 0.25, "B", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=B_colour)
+inout1_ax.text(0.75, 0.25, "H", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=B_colour)
+inout1_ax.text(0.75, 0.75, "R", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=B_colour)
+inout1_ax.text(0.25, 0.75, "B", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=B_colour)
+
+inout1_fig.savefig(save_path / f"inout_1.svg", format='svg', transparent=True)
+
+# No rotation refining
+l1_r_fig = plt.figure(figsize=(4, 4))
+l1_r_ax = l1_r_fig.add_subplot(1, 1, 1)
+l1_r_ax.set_xlim(-0.1, 1.1)
+l1_r_ax.set_ylim(-0.1, 1.1)
+l1_r_ax.set_aspect(1)
+l1_r_ax.axis('off')
+l1_r_fig.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=1.0)
+
+l1_r_ax.plot([0, 0.5, 0.5, 0, 0], [0, 0, 0.5, 0.5, 0], color=elements_colour, linewidth=elements_width, label="Elements")
+l1_r_ax.plot([0.5, 1, 1, 0.5, 0.5], [0, 0, 0.5, 0.5, 0], color=elements_colour, linewidth=elements_width)
+l1_r_ax.plot([0.5, 1, 1, 0.5, 0.5], [0.5, 0.5, 1, 1, 0.5], color=elements_colour, linewidth=elements_width)
+l1_r_ax.plot([0, 0.5, 0.5, 0, 0], [0.5, 0.5, 1, 1, 0.5], color=elements_colour, linewidth=elements_width)
+
+l1_r_ax.plot([0.25, 0.25, 0.75, 0.75], [0.25, 0.75, 0.75, 0.25], color=background_curve_colour, linewidth=background_curve_width, label="Hilbert curve")
+
+l1_r_ax.text(0.25, 0.25, "A", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=elements_colour)
+l1_r_ax.text(0.75, 0.25, "B", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=elements_colour)
+l1_r_ax.text(0.75, 0.75, "H", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=elements_colour)
+l1_r_ax.text(0.25, 0.75, "H", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=elements_colour)
+
+l1_r_fig.savefig(save_path / f"hilbert_level_1_r.svg", format='svg', transparent=True)
+
+l2_r_fig = plt.figure(figsize=(4, 4))
+l2_r_ax = l2_r_fig.add_subplot(1, 1, 1)
+l2_r_ax.set_xlim(-0.1, 1.1)
+l2_r_ax.set_ylim(-0.1, 1.1)
+l2_r_ax.set_aspect(1)
+l2_r_ax.axis('off')
+l2_r_fig.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=1.0)
+
+l2_r_ax.plot([0, 0.25, 0.25, 0, 0], [0, 0, 0.25, 0.25, 0], color=elements_colour, linewidth=elements_width, label="Elements")
+l2_r_ax.plot([0.25, 0.5, 0.5, 0.25, 0.25], [0, 0, 0.25, 0.25, 0], color=elements_colour, linewidth=elements_width)
+l2_r_ax.plot([0.25, 0.5, 0.5, 0.25, 0.25], [0.25, 0.25, 0.5, 0.5, 0.25], color=elements_colour, linewidth=elements_width)
+l2_r_ax.plot([0, 0.25, 0.25, 0, 0], [0.25, 0.25, 0.5, 0.5, 0.25], color=elements_colour, linewidth=elements_width)
+
+l2_r_ax.plot([0.5, 0.75, 0.75, 0.5, 0.5], [0, 0, 0.25, 0.25, 0], color=elements_colour, linewidth=elements_width)
+l2_r_ax.plot([0.75, 1, 1, 0.75, 0.75], [0, 0, 0.25, 0.25, 0], color=elements_colour, linewidth=elements_width)
+l2_r_ax.plot([0.75, 1, 1, 0.75, 0.75], [0.25, 0.25, 0.5, 0.5, 0.25], color=elements_colour, linewidth=elements_width)
+l2_r_ax.plot([0.5, 0.75, 0.75, 0.5, 0.5], [0.25, 0.25, 0.5, 0.5, 0.25], color=elements_colour, linewidth=elements_width)
+
+l2_r_ax.plot([0.5, 0.75, 0.75, 0.5, 0.5], [0.5, 0.5, 0.75, 0.75, 0.5], color=elements_colour, linewidth=elements_width)
+l2_r_ax.plot([0.75, 1, 1, 0.75, 0.75], [0.5, 0.5, 0.75, 0.75, 0.5], color=elements_colour, linewidth=elements_width)
+l2_r_ax.plot([0.75, 1, 1, 0.75, 0.75], [0.75, 0.75, 1, 1, 0.75], color=elements_colour, linewidth=elements_width)
+l2_r_ax.plot([0.5, 0.75, 0.75, 0.5, 0.5], [0.75, 0.75, 1, 1, 0.75], color=elements_colour, linewidth=elements_width)
+
+l2_r_ax.plot([0, 0.25, 0.25, 0, 0], [0.5, 0.5, 0.75, 0.75, 0.5], color=elements_colour, linewidth=elements_width)
+l2_r_ax.plot([0.25, 0.5, 0.5, 0.25, 0.25], [0.5, 0.5, 0.75, 0.75, 0.5], color=elements_colour, linewidth=elements_width)
+l2_r_ax.plot([0.25, 0.5, 0.5, 0.25, 0.25], [0.75, 0.75, 1, 1, 0.75], color=elements_colour, linewidth=elements_width)
+l2_r_ax.plot([0, 0.25, 0.25, 0, 0], [0.75, 0.75, 1, 1, 0.75], color=elements_colour, linewidth=elements_width)
+
+l2_r_ax.plot([0.375, 0.375, 0.125, 0.125,     0.375, 0.125, 0.125, 0.375,     0.875, 0.625, 0.625, 0.875,     0.625, 0.625, 0.875, 0.875], 
+             [0.125, 0.375, 0.375, 0.125,     0.625, 0.625, 0.875, 0.875,     0.625, 0.625, 0.875, 0.875,     0.375, 0.125, 0.125, 0.375], 
+           color=background_curve_colour, linewidth=background_curve_width, label="Hilbert curve")
+
+l2_r_ax.text(0.125, 0.125, "R", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=A_colour)
+l2_r_ax.text(0.375, 0.125, "H", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=A_colour)
+l2_r_ax.text(0.375, 0.375, "A", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=A_colour)
+l2_r_ax.text(0.125, 0.375, "A", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=A_colour)
+
+l2_r_ax.text(0.625, 0.125, "B", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=B_colour)
+l2_r_ax.text(0.875, 0.125, "B", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=B_colour)
+l2_r_ax.text(0.875, 0.375, "H", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=B_colour)
+l2_r_ax.text(0.625, 0.375, "R", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=B_colour)
+
+l2_r_ax.text(0.625, 0.625, "H", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=H_colour)
+l2_r_ax.text(0.875, 0.625, "A", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=H_colour)
+l2_r_ax.text(0.875, 0.875, "B", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=H_colour)
+l2_r_ax.text(0.625, 0.875, "H", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=H_colour)
+
+l2_r_ax.text(0.125, 0.625, "H", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=H_colour)
+l2_r_ax.text(0.375, 0.625, "A", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=H_colour)
+l2_r_ax.text(0.375, 0.875, "B", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=H_colour)
+l2_r_ax.text(0.125, 0.875, "H", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=H_colour)
+
+l2_r_fig.savefig(save_path / f"hilbert_level_2_r.svg", format='svg', transparent=True)
+
+# Local coordinates refining
+l1_l_fig = plt.figure(figsize=(4, 4))
+l1_l_ax = l1_l_fig.add_subplot(1, 1, 1)
+l1_l_ax.set_xlim(-0.1, 1.1)
+l1_l_ax.set_ylim(-0.1, 1.1)
+l1_l_ax.set_aspect(1)
+l1_l_ax.axis('off')
+l1_l_fig.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=1.0)
+
+l1_l_ax.plot([0, 0.5, 0.5, 0, 0], [0, 0, 0.5, 0.5, 0], color=elements_colour, linewidth=elements_width, label="Elements")
+l1_l_ax.plot([0.5, 1, 1, 0.5, 0.5], [0, 0, 0.5, 0.5, 0], color=elements_colour, linewidth=elements_width)
+l1_l_ax.plot([0.5, 1, 1, 0.5, 0.5], [0.5, 0.5, 1, 1, 0.5], color=elements_colour, linewidth=elements_width)
+l1_l_ax.plot([0, 0.5, 0.5, 0, 0], [0.5, 0.5, 1, 1, 0.5], color=elements_colour, linewidth=elements_width)
+
+l1_l_ax.plot([0.25, 0.25, 0.75, 0.75], [0.25, 0.75, 0.75, 0.25], color=background_curve_colour, linewidth=background_curve_width, label="Hilbert curve")
+
+l1_l_ax.text(0.25, 0.25, "H", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=elements_colour)
+l1_l_ax.text(0.75, 0.25, "R", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=elements_colour)
+l1_l_ax.text(0.75, 0.75, "R", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=elements_colour)
+l1_l_ax.text(0.25, 0.75, "H", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=elements_colour)
+
+l1_l_fig.savefig(save_path / f"hilbert_level_1_l.svg", format='svg', transparent=True)
+
+l2_l_fig = plt.figure(figsize=(4, 4))
+l2_l_ax = l2_l_fig.add_subplot(1, 1, 1)
+l2_l_ax.set_xlim(-0.1, 1.1)
+l2_l_ax.set_ylim(-0.1, 1.1)
+l2_l_ax.set_aspect(1)
+l2_l_ax.axis('off')
+l2_l_fig.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=1.0)
+
+l2_l_ax.plot([0, 0.25, 0.25, 0, 0], [0, 0, 0.25, 0.25, 0], color=elements_colour, linewidth=elements_width, label="Elements")
+l2_l_ax.plot([0.25, 0.5, 0.5, 0.25, 0.25], [0, 0, 0.25, 0.25, 0], color=elements_colour, linewidth=elements_width)
+l2_l_ax.plot([0.25, 0.5, 0.5, 0.25, 0.25], [0.25, 0.25, 0.5, 0.5, 0.25], color=elements_colour, linewidth=elements_width)
+l2_l_ax.plot([0, 0.25, 0.25, 0, 0], [0.25, 0.25, 0.5, 0.5, 0.25], color=elements_colour, linewidth=elements_width)
+
+l2_l_ax.plot([0.5, 0.75, 0.75, 0.5, 0.5], [0, 0, 0.25, 0.25, 0], color=elements_colour, linewidth=elements_width)
+l2_l_ax.plot([0.75, 1, 1, 0.75, 0.75], [0, 0, 0.25, 0.25, 0], color=elements_colour, linewidth=elements_width)
+l2_l_ax.plot([0.75, 1, 1, 0.75, 0.75], [0.25, 0.25, 0.5, 0.5, 0.25], color=elements_colour, linewidth=elements_width)
+l2_l_ax.plot([0.5, 0.75, 0.75, 0.5, 0.5], [0.25, 0.25, 0.5, 0.5, 0.25], color=elements_colour, linewidth=elements_width)
+
+l2_l_ax.plot([0.5, 0.75, 0.75, 0.5, 0.5], [0.5, 0.5, 0.75, 0.75, 0.5], color=elements_colour, linewidth=elements_width)
+l2_l_ax.plot([0.75, 1, 1, 0.75, 0.75], [0.5, 0.5, 0.75, 0.75, 0.5], color=elements_colour, linewidth=elements_width)
+l2_l_ax.plot([0.75, 1, 1, 0.75, 0.75], [0.75, 0.75, 1, 1, 0.75], color=elements_colour, linewidth=elements_width)
+l2_l_ax.plot([0.5, 0.75, 0.75, 0.5, 0.5], [0.75, 0.75, 1, 1, 0.75], color=elements_colour, linewidth=elements_width)
+
+l2_l_ax.plot([0, 0.25, 0.25, 0, 0], [0.5, 0.5, 0.75, 0.75, 0.5], color=elements_colour, linewidth=elements_width)
+l2_l_ax.plot([0.25, 0.5, 0.5, 0.25, 0.25], [0.5, 0.5, 0.75, 0.75, 0.5], color=elements_colour, linewidth=elements_width)
+l2_l_ax.plot([0.25, 0.5, 0.5, 0.25, 0.25], [0.75, 0.75, 1, 1, 0.75], color=elements_colour, linewidth=elements_width)
+l2_l_ax.plot([0, 0.25, 0.25, 0, 0], [0.75, 0.75, 1, 1, 0.75], color=elements_colour, linewidth=elements_width)
+
+l2_l_ax.plot([0.375, 0.125, 0.125, 0.375,     0.375, 0.125, 0.125, 0.375,     0.625, 0.875, 0.875, 0.625,     0.625, 0.875, 0.875, 0.625], 
+             [0.125, 0.125, 0.375, 0.375,     0.625, 0.625, 0.875, 0.875,     0.875, 0.875, 0.625, 0.625,     0.375, 0.375, 0.125, 0.125], 
+           color=background_curve_colour, linewidth=background_curve_width, label="Hilbert curve")
+
+l2_l_ax.text(0.125, 0.125, "H", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=H_colour)
+l2_l_ax.text(0.375, 0.125, "A", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=H_colour)
+l2_l_ax.text(0.375, 0.375, "B", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=H_colour)
+l2_l_ax.text(0.125, 0.375, "H", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=H_colour)
+
+l2_l_ax.text(0.625, 0.125, "A", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=R_colour)
+l2_l_ax.text(0.875, 0.125, "R", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=R_colour)
+l2_l_ax.text(0.875, 0.375, "R", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=R_colour)
+l2_l_ax.text(0.625, 0.375, "B", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=R_colour)
+
+l2_l_ax.text(0.625, 0.625, "A", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=R_colour)
+l2_l_ax.text(0.875, 0.625, "R", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=R_colour)
+l2_l_ax.text(0.875, 0.875, "R", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=R_colour)
+l2_l_ax.text(0.625, 0.875, "B", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=R_colour)
+
+l2_l_ax.text(0.125, 0.625, "H", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=H_colour)
+l2_l_ax.text(0.375, 0.625, "A", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=H_colour)
+l2_l_ax.text(0.375, 0.875, "B", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=H_colour)
+l2_l_ax.text(0.125, 0.875, "H", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=H_colour)
+
+l2_l_fig.savefig(save_path / f"hilbert_level_2_l.svg", format='svg', transparent=True)
+
 plt.show()
