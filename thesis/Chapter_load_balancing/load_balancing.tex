@@ -293,7 +293,8 @@ Until now, we assumed the elements were axis-aligned, and numbered such that the
 the bottom. This is important, as the elements number their children from their bottom left,
 counter-clockwise. If an element's first edge is not at the bottom, the wrong numbering will be
 given to refining elements. Since elements can be oriented in any direction in meshes, this
-situation is expected to happen.
+situation is expected to happen. The following examples use elements numbered such that their first
+side is not at the bottom, but at the right.
 
 \begin{figure}[H]
 	\centering
@@ -302,7 +303,7 @@ situation is expected to happen.
 	\hfill
 	\subfloat[After refining]
 	{\includesvg[width=0.4\textwidth]{Chapter_load_balancing/media/hilbert_level_2_r} \label{fig:hilbert_l2_r}}
-	\caption{Refinement with rotated element: The numbering is wrong. (a) Initial mesh (b) Refined mesh}
+	\caption{Refinement with rotated elements: The numbering is wrong. (a) Initial mesh (b) Refined mesh}
 	\label{fig:hilbert_rotated}
 \end{figure}
 
@@ -316,7 +317,7 @@ incoming and outgoing side will be the number of the edges the curve go through.
 	\hfill
 	\subfloat[After refining]
 	{\includesvg[width=0.4\textwidth]{Chapter_load_balancing/media/hilbert_level_2_l} \label{fig:hilbert_l2_l}}
-	\caption{Refinement with rotated element using local referential: This is not the next level curve. (a) Initial mesh (b) Refined mesh}
+	\caption{Refinement with rotated elements using local referential: This is not the next level curve. (a) Initial mesh (b) Refined mesh}
 	\label{fig:hilbert_local}
 \end{figure}
 
