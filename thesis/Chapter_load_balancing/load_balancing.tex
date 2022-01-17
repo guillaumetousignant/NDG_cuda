@@ -511,6 +511,26 @@ number of elements. This is so elements can easily compute where to copy their d
 conditions. This needs more memory that if the solution was packed, but it would be harder for
 elements to find their data on the receiving end, and to find where to write it on the sending end. 
 
+This kernel allows us to fetch other data that is not readily available on the CPU. Processes only
+store the mesh block they are assigned, with no information on elements, nodes, faces or boundaries
+from other processes. Elements store the indices of their nodes, whereas the nodes themselves are
+stored in an array of their own. These indices are meaningless to the receiving process, as it has
+no idea what nodes those indices correspond to. The kernel fetching the solution data from the GPU
+also copies the nodes values to an array, so that the four coordinates of the corners of each
+element can be sent.
+
+This is all the data that is needed to send the elements themselves from one GPU to the other. Once
+it is received, it is stored using the inverse process. The nodes are checked for equality to use
+the index of existing nodes in the received elements, otherwise new nodes are appended to the node
+array. Then, elements need to be linked to their neighbours. 
+
+The nodes themselves are not enough to derive the connectivity of an element. The number of faces on
+a side of an element has no upper bound, so the data will need to be packed and offsets computed. A
+first kernel retrieves the number of faces, therefore neighbours, on each side of elements to be
+sent. This information is used on both the sending and receiving side to allocate arrays that can
+fit the total number of neighbours, as wall as compute offsets to where each element has its
+neighbours in these arrays. 
+
 \section{Implementation} \label{section:load_balancing:implementation}
 \subsection{Element exchange} \label{section:load_balancing:implementation:element_exchange}
 % and MPI datatype
