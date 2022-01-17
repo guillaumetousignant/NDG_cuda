@@ -338,7 +338,7 @@ first edge at the bottom.
 \begin{figure}[H]
 	\centering
 	\subfloat[Before refining]
-	{\includesvg[width=0.4\textwidth]{Chapter_load_balancing/media/hilbert_level_1} \label{fig:hilbert_l1_c}}
+	{\includesvg[width=0.4\textwidth]{Chapter_load_balancing/media/hilbert_level_1_r} \label{fig:hilbert_l1_c}}
 	\hfill
 	\subfloat[After refining]
 	{\includesvg[width=0.4\textwidth]{Chapter_load_balancing/media/hilbert_level_2} \label{fig:hilbert_l2_c}}
@@ -360,12 +360,15 @@ children.
 	\label{fig:mesh_1_after2}
 \end{figure}
 
+\section{Workload leveling} \label{section:load_balancing:workload_leveling}
+Now that the problem can be partitioned in one dimension, we can begin redistributing elements to
+level out the workload between the different worker GPUs. We use \textit{chains-on-chains
+partitioning} (CCP), where a linear list of $N$ tasks have associated weights $w$. This list of
+tasks is then split $P$ parts, equal to the number of workers. 
+
 \section{Reconstruction} \label{section:load_balancing:reconstruction}
 % Having no state
 % What is sent
-
-Now that the problem can be partitioned in one dimension, we can begin redistributing elements to
-level out the workload between the different worker GPUs.
 
 \section{Implementation} \label{section:load_balancing:implementation}
 \subsection{Element exchange} \label{section:load_balancing:implementation:element_exchange}
