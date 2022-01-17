@@ -22,6 +22,7 @@ curve_width = 5
 background_curve_width = 5
 points_size = 12
 points_shape = "."
+elements_font_size = 36
 hilbert_font_size = 36
 arrow_width = 0.025
 arrow_head_length = 0.05
@@ -665,5 +666,27 @@ l2_l_ax.text(0.375, 0.875, "B", fontfamily="Fira Code", fontsize=hilbert_font_si
 l2_l_ax.text(0.125, 0.875, "H", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=H_colour)
 
 l2_l_fig.savefig(save_path / f"hilbert_level_2_l.svg", format='svg', transparent=True)
+
+# Child ordering
+o_fig = plt.figure(figsize=(4, 4))
+o_ax = o_fig.add_subplot(1, 1, 1)
+o_ax.set_xlim(-0.1, 1.1)
+o_ax.set_ylim(-0.1, 1.1)
+o_ax.set_aspect(1)
+o_ax.axis('off')
+o_fig.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=1.0)
+
+o_ax.plot([0, 0.5, 0.5, 0, 0], [0, 0, 0.5, 0.5, 0], color=elements_colour, linewidth=elements_width, label="Elements")
+o_ax.plot([0.5, 1, 1, 0.5, 0.5], [0, 0, 0.5, 0.5, 0], color=elements_colour, linewidth=elements_width)
+o_ax.plot([0.5, 1, 1, 0.5, 0.5], [0.5, 0.5, 1, 1, 0.5], color=elements_colour, linewidth=elements_width)
+o_ax.plot([0, 0.5, 0.5, 0, 0], [0.5, 0.5, 1, 1, 0.5], color=elements_colour, linewidth=elements_width)
+
+o_ax.text(0.25, 0.25, "0", fontfamily="Fira Code", fontsize=elements_font_size, horizontalalignment="center", verticalalignment="center", color=elements_colour)
+o_ax.text(0.75, 0.25, "1", fontfamily="Fira Code", fontsize=elements_font_size, horizontalalignment="center", verticalalignment="center", color=elements_colour)
+o_ax.text(0.75, 0.75, "2", fontfamily="Fira Code", fontsize=elements_font_size, horizontalalignment="center", verticalalignment="center", color=elements_colour)
+o_ax.text(0.25, 0.75, "3", fontfamily="Fira Code", fontsize=elements_font_size, horizontalalignment="center", verticalalignment="center", color=elements_colour)
+
+
+o_fig.savefig(save_path / f"child_order.svg", format='svg', transparent=True)
 
 plt.show()

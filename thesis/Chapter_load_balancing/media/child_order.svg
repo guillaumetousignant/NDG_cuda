@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="288pt" height="288pt" viewBox="0 0 288 288" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2022-01-17T10:59:03.829964</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.5.0, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 288 
+L 288 288 
+L 288 0 
+L 0 0 
+L 0 288 
+z
+" style="fill: none"/>
+  </g>
+  <g id="axes_1">
+   <g id="line2d_1">
+    <path d="M 24 264 
+L 144 264 
+L 144 144 
+L 24 144 
+L 24 264 
+" clip-path="url(#p21b066c35f)" style="fill: none; stroke: #252525; stroke-width: 3; stroke-linecap: square"/>
+   </g>
+   <g id="line2d_2">
+    <path d="M 144 264 
+L 264 264 
+L 264 144 
+L 144 144 
+L 144 264 
+" clip-path="url(#p21b066c35f)" style="fill: none; stroke: #252525; stroke-width: 3; stroke-linecap: square"/>
+   </g>
+   <g id="line2d_3">
+    <path d="M 144 144 
+L 264 144 
+L 264 24 
+L 144 24 
+L 144 144 
+" clip-path="url(#p21b066c35f)" style="fill: none; stroke: #252525; stroke-width: 3; stroke-linecap: square"/>
+   </g>
+   <g id="line2d_4">
+    <path d="M 24 144 
+L 144 144 
+L 144 24 
+L 24 24 
+L 24 144 
+" clip-path="url(#p21b066c35f)" style="fill: none; stroke: #252525; stroke-width: 3; stroke-linecap: square"/>
+   </g>
+   <g id="text_1">
+    <!-- 0 -->
+    <g style="fill: #252525" transform="translate(73.2 213.475313)scale(0.36 -0.36)">
+     <defs>
+      <path id="FiraCode-Regular-30" d="M 1920 4477 
+Q 2630 4477 2996 3888 
+Q 3363 3299 3363 2205 
+Q 3363 1107 2996 516 
+Q 2630 -74 1920 -74 
+Q 1210 -74 843 516 
+Q 477 1107 477 2205 
+Q 477 3299 843 3888 
+Q 1210 4477 1920 4477 
+z
+M 1920 4045 
+Q 1514 4045 1280 3614 
+Q 1046 3184 1046 2205 
+Q 1046 1472 1158 1053 
+L 2506 3760 
+Q 2304 4045 1920 4045 
+z
+M 2797 2205 
+Q 2797 2944 2682 3360 
+L 1341 643 
+Q 1542 362 1920 362 
+Q 2330 362 2563 794 
+Q 2797 1226 2797 2205 
+z
+" transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#FiraCode-Regular-30"/>
+    </g>
+   </g>
+   <g id="text_2">
+    <!-- 1 -->
+    <g style="fill: #252525" transform="translate(193.2 213.475313)scale(0.36 -0.36)">
+     <defs>
+      <path id="FiraCode-Regular-31" d="M 3312 438 
+L 3312 0 
+L 768 0 
+L 768 438 
+L 1853 438 
+L 1853 3824 
+L 842 3210 
+L 608 3594 
+L 1920 4406 
+L 2390 4406 
+L 2390 438 
+L 3312 438 
+z
+" transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#FiraCode-Regular-31"/>
+    </g>
+   </g>
+   <g id="text_3">
+    <!-- 2 -->
+    <g style="fill: #252525" transform="translate(193.2 93.475313)scale(0.36 -0.36)">
+     <defs>
+      <path id="FiraCode-Regular-32" d="M 1725 4477 
+Q 2141 4477 2438 4315 
+Q 2736 4154 2894 3875 
+Q 3053 3597 3053 3248 
+Q 3053 2944 2947 2654 
+Q 2842 2365 2610 2046 
+Q 2378 1728 2000 1341 
+Q 1622 954 1078 458 
+L 3155 458 
+L 3088 0 
+L 467 0 
+L 467 438 
+Q 1091 1037 1486 1449 
+Q 1882 1862 2099 2161 
+Q 2317 2461 2401 2710 
+Q 2486 2960 2486 3229 
+Q 2486 3600 2278 3814 
+Q 2070 4029 1699 4029 
+Q 1373 4029 1165 3917 
+Q 957 3805 749 3558 
+L 378 3846 
+Q 640 4166 958 4321 
+Q 1277 4477 1725 4477 
+z
+" transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#FiraCode-Regular-32"/>
+    </g>
+   </g>
+   <g id="text_4">
+    <!-- 3 -->
+    <g style="fill: #252525" transform="translate(73.2 93.475313)scale(0.36 -0.36)">
+     <defs>
+      <path id="FiraCode-Regular-33" d="M 1718 4477 
+Q 2134 4477 2438 4326 
+Q 2742 4176 2907 3926 
+Q 3072 3677 3072 3376 
+Q 3072 3107 2953 2891 
+Q 2835 2675 2640 2534 
+Q 2445 2394 2211 2349 
+Q 2470 2330 2699 2203 
+Q 2928 2077 3070 1843 
+Q 3213 1610 3213 1270 
+Q 3213 890 3021 584 
+Q 2829 278 2485 102 
+Q 2141 -74 1683 -74 
+Q 1312 -74 947 67 
+Q 582 208 330 515 
+L 691 810 
+Q 880 589 1141 480 
+Q 1402 371 1670 371 
+Q 2131 371 2390 612 
+Q 2650 854 2650 1270 
+Q 2650 1741 2389 1923 
+Q 2128 2106 1738 2106 
+L 1366 2106 
+L 1434 2531 
+L 1693 2531 
+Q 1907 2531 2097 2614 
+Q 2288 2698 2409 2867 
+Q 2531 3037 2531 3299 
+Q 2531 3664 2288 3856 
+Q 2045 4048 1699 4048 
+Q 1411 4048 1196 3947 
+Q 982 3846 765 3642 
+L 467 3971 
+Q 749 4237 1065 4357 
+Q 1382 4477 1718 4477 
+z
+" transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#FiraCode-Regular-33"/>
+    </g>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="p21b066c35f">
+   <rect x="0" y="0" width="288" height="288"/>
+  </clipPath>
+ </defs>
+</svg>

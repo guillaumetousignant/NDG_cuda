@@ -116,23 +116,29 @@ constructed to the required level.
 \end{figure}
 
 This behaviour can be summarised in the following tables. The ordering of the children elements is
-from the bottom left element, in counter-clockwise order. These are implemented directly in the
-code, with the state defined as an enumeration from 0 to 3 and the tables as arrays. The state
-indexes into the array to get the resulting ordering and states. This gives the state $S(s, j)$ of a
-cell's j\textsuperscript{th} child in function of the cell's state $s$. The same goes for the
-ordering $p$ of the children, $P(s, j)$.
+from the bottom left element, in counter-clockwise order. 
+
+\begin{figure}[H]
+	\centering
+	\includesvg[width=0.3\textwidth]{Chapter_load_balancing/media/child_order}
+	\caption{Children numbering: The $j$ children of an element, used to assign states and ordering.}
+	\label{fig:child_order}
+\end{figure}
+
+These are implemented directly in the code, with the state defined as an enumeration from 0 to 3 and
+the tables as arrays. The state indexes into the array to get the resulting ordering and states.
+This gives the state $S(s, j)$ of a cell's j\textsuperscript{th} child in function of the cell's
+state $s$. The same goes for the ordering $p$ of the children, $P(s, j)$.
 
 \begin{table}[H]
 	\begin{center}
 		\begin{tabular}{ c | c c c c} 
-			\hline
 			$S\left ( s, j \right )$ & $j = 0$ & $j = 1$ & $j = 2$ & $j = 3$  \\
 			\hline
 			$s = H$ & \textcolor{vs_red}{$A$} & \textcolor{vs_red}{$B$} & \textcolor{vs_red}{$H$} & \textcolor{vs_red}{$H$} \\ 
 			$s = A$ & \textcolor{vs_blue}{$H$} & \textcolor{vs_blue}{$A$} & \textcolor{vs_blue}{$A$} & \textcolor{vs_blue}{$R$} \\
 			$s = R$ & \textcolor{vs_teal}{$R$} & \textcolor{vs_teal}{$R$} & \textcolor{vs_teal}{$B$} & \textcolor{vs_teal}{$A$} \\
 			$s = B$ & \textcolor{vs_plum}{$B$} & \textcolor{vs_plum}{$H$} & \textcolor{vs_plum}{$R$} & \textcolor{vs_plum}{$B$} \\
-			\hline
 		\end{tabular}
 	
 		\caption{Children element state table: children state, with $s$ being the state of the parent element and $j$ being the j\textsuperscript{th} child.}
@@ -143,14 +149,12 @@ ordering $p$ of the children, $P(s, j)$.
 \begin{table}[H]
 	\begin{center}
 		\begin{tabular}{ c | c c c c} 
-			\hline
 			$P\left ( s, j \right )$ & $j = 0$ & $j = 1$ & $j = 2$ & $j = 3$  \\
 			\hline
 			$s = H$ & \textcolor{vs_red}{$0$} & \textcolor{vs_red}{$3$} & \textcolor{vs_red}{$2$} & \textcolor{vs_red}{$1$} \\ 
 			$s = A$ & \textcolor{vs_blue}{$0$} & \textcolor{vs_blue}{$1$} & \textcolor{vs_blue}{$2$} & \textcolor{vs_blue}{$3$} \\
 			$s = R$ & \textcolor{vs_teal}{$2$} & \textcolor{vs_teal}{$1$} & \textcolor{vs_teal}{$0$} & \textcolor{vs_teal}{$3$} \\
 			$s = B$ & \textcolor{vs_plum}{$2$} & \textcolor{vs_plum}{$3$} & \textcolor{vs_plum}{$0$} & \textcolor{vs_plum}{$1$} \\
-			\hline
 		\end{tabular}
 		
 		\caption{Children element order table: children order, with $s$ being the state of the parent element and $j$ being the j\textsuperscript{th} child.}
