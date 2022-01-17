@@ -363,8 +363,34 @@ children.
 \section{Workload leveling} \label{section:load_balancing:workload_leveling}
 Now that the problem can be partitioned in one dimension, we can begin redistributing elements to
 level out the workload between the different worker GPUs. We use \textit{chains-on-chains
-partitioning} (CCP), where a linear list of $N$ tasks have associated weights $w$. This list of
-tasks is then split $P$ parts, equal to the number of workers. 
+partitioning} (CCP), where a linear list of $N$ tasks $i$ have associated weights $w_i$. This list
+of tasks is then split $K$ parts, equal to the number of workers $k$. Each worker has a capacity
+$c_k$, indicating the relative workload it can execute.
+
+To repartition, each worker sums the total weight of the $I_k$ tasks it contains, $w_k$.
+
+\begin{equation}
+	w_k = \sum_{i = 0}^{I}w_i
+\end{equation}
+
+The total amount of work in the problem $W$ is obtained by adding up the total weights of each
+worker.
+
+\begin{equation}
+	W = \sum_{k = 0}^{K}w_k
+\end{equation}
+
+The same goes for the total capacity of the system.
+
+\begin{equation}
+	C = \sum_{k = 0}^{K}c_k
+\end{equation}
+
+The ideal workload $w_{k,ideal}$ of a worker is given below:
+
+\begin{equation}
+	w_{k,ideal} = W * c_k / C
+\end{equation}
 
 \section{Reconstruction} \label{section:load_balancing:reconstruction}
 % Having no state
