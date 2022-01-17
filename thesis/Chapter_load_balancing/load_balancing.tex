@@ -471,6 +471,21 @@ are sent or received.
 % Having no state
 % What is sent
 
+Now that we have a way to repartition work, the reconstruction of the mesh can begin. Each GPU
+worker shares its number of elements with $MPI\_Allgather$, so that every worker knows how many
+elements each worker currently has. They can then calculate the global id of their first and last
+element. Using the total number of elements in the mesh divided by the number of workers, they can
+compute their new number of elements, and their new first and last global element id. Any element
+they have that are out of this new range, they send. Knowing the new number of elements per process,
+it is easy to compute to which process the elements need to be sent based on their global element
+id. Any elements missing from their new range, they need to receive. Again, using the previous
+number of elements per process, it is easy to compute from which process these elements should come
+from. 
+
+The knowledge of which elements to receive and send with which process is used to setup MPI
+transfers. All the data is sent and received in a non-blocking way with $MPI\_Isend$ and
+$MPI\_Irecv$, and once it is awaited the mesh can be reconstructed in each process. 
+
 \section{Implementation} \label{section:load_balancing:implementation}
 \subsection{Element exchange} \label{section:load_balancing:implementation:element_exchange}
 % and MPI datatype
