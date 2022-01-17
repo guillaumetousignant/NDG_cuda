@@ -453,7 +453,19 @@ We repartition the problem, so that the workers have a weight closer to their id
 	\end{center}
 \end{table}
 
+This is the more general approach to repartitioning. Knowing our problem, we can simplify in two
+ways. Tasks are elements, and workers are GPUs. Firstly, since we don't work in mixed systems, all
+workers have equal capacity. In typical HPC systems, nodes have multiples of the same model of GPU.
+Since the program only executes on GPUs, all the workers will therefore be the same. See
+Section~\ref{section:conclusion:future_work} for proposals of a solver that has both GPU and CPU
+workers in order to fully utilise supercomputer nodes. Such a system would necessitate the use of
+different capacities, since these node have many more CPU cores than GPUs, while each GPUs is much
+faster. 
 
+Secondly, each element will be given equal weight. This simplifies greatly the computing of total
+weight within a GPU, since it becomes the number of elements. It also simplifies transfers between
+processes, as now only the number of elements in each process is needed to compute which elements
+are sent or received.
 
 \section{Reconstruction} \label{section:load_balancing:reconstruction}
 % Having no state
