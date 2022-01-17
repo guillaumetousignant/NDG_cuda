@@ -465,7 +465,14 @@ faster.
 Secondly, each element will be given equal weight. This simplifies greatly the computing of total
 weight within a GPU, since it becomes the number of elements. It also simplifies transfers between
 processes, as now only the number of elements in each process is needed to compute which elements
-are sent or received.
+are sent or received. This assumes that each element has the same computation complexity regardless
+of any factor, like its polynomial order. Of course, this is not true. It has been observed that in
+this program, with relatively low polynomial orders, the computational cost of elements is close.
+When the polynomial order is very different between elements, the increased number of collocation
+points to compute and the increased memory needed to store the solution start increasing the
+computation time for those elements. If this proves to be a significant problem,
+Section~\ref{section:conclusion:future_work} discusses using weights for elements, and a way to find
+out how the polynomial order should affect that weight.
 
 \section{Reconstruction} \label{section:load_balancing:reconstruction}
 % Having no state
@@ -485,6 +492,24 @@ from.
 The knowledge of which elements to receive and send with which process is used to setup MPI
 transfers. All the data is sent and received in a non-blocking way with $MPI\_Isend$ and
 $MPI\_Irecv$, and once it is awaited the mesh can be reconstructed in each process. 
+
+\subsection{Data transfer} \label{section:load_balancing:Reconstruction:data_transfer}
+Elements are allocated from the CPU, therefore can be copied from the GPU to the CPU directly. The
+relevant members are the polynomial order of the elements, their Hilbert curve statue, their
+rotation and their split level. All other members are either not stored directly in the element
+structure and therefore cannot be copied directly, or can be computed again when received.
+An MPI datatype is created to be able to send and receive arrays of elements directly without
+copying that data into separate arrays.
+Subsection~\ref{section:load_balancing:implementation:element_exchange} details this process.
+
+Element solution is not so easy to send between processes. It is stored in GPU dynamic memory, the
+elements only hold a pointer to it. It cannot be transferred to the CPU directly. It also has a
+different size depending on the element's polynomial order. To solve this, a buffer is allocated
+from the CPU on the GPU, and a kernel is launched to copy each element's solution into this buffer
+on the GPU. To do this in parallel, the buffer has the maximum size of the solution, times the
+number of elements. This is so elements can easily compute where to copy their data without race
+conditions. This needs more memory that if the solution was packed, but it would be harder for
+elements to find their data on the receiving end, and to find where to write it on the sending end. 
 
 \section{Implementation} \label{section:load_balancing:implementation}
 \subsection{Element exchange} \label{section:load_balancing:implementation:element_exchange}
