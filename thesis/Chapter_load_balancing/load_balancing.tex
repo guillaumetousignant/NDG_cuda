@@ -345,7 +345,15 @@ first edge at the bottom.
 
 With this out of the way, it is possible to store the rotation once when the mesh is read, store it
 as a member of the element class, and use it whenever the element splits to get the correct
-ordering. 
+ordering. The different elements split independently in parallel, and the Hilbert curve keeps the
+ordering coherent.
+
+\begin{figure}[H]
+	\centering
+	\includesvg[width=0.95\textwidth]{Chapter_load_balancing/media/mesh_1_after2}
+	\caption{Mesh refining: The elements follow mixed levels of the Hilbert curve, without jumps or discontinuities.}
+	\label{fig:mesh_1_after2}
+\end{figure}
 
 \section{Reconstruction} \label{section:load_balancing:reconstruction}
 % Having no state
