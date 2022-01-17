@@ -8,43 +8,43 @@
 \usepackage[utf8]{inputenc}
 \usepackage[english]{babel}
 
-% page setting ------------------------------------------------------
+% page setting ----------------------------------------------------------
 \usepackage{geometry}
 \geometry{
-	letterpaper,					% 8.5in * 11 in
+	letterpaper,						% 8.5in * 11 in
 	left=1.5in,
 	top=1in,
 }
-\linespread{1.3} 					% set the line spacing to be 1.3
-\setlength{\parindent}{2em} 		% indentation 2
-\setlength{\parskip}{0.5em} 		% paragraph spacing
-% --------------------------------------------------------------------
+\linespread{1.3} 						% set the line spacing to be 1.3
+\setlength{\parindent}{2em} 			% indentation 2
+\setlength{\parskip}{0.5em} 			% paragraph spacing
+% ------------------------------------------------------------------------
 
-\usepackage{float}  				% for figure "H"
-\usepackage{amsmath}    			% math
-\usepackage[hidelinks]{hyperref}	% hyperlinks
-\usepackage[dvipsnames]{xcolor}		% color 
-\usepackage{graphicx}				% figures
-\usepackage{svg}					% svg figures
-\usepackage{subfig}					% sub figures
-\usepackage[nottoc]{tocbibind}		% put bib in the table of content 
-\usepackage{amsfonts} 				% for math equations
-\usepackage{array} 					% table
+\usepackage{float}  					% for figure "H"
+\usepackage{amsmath}    				% math
+\usepackage[hidelinks]{hyperref}		% hyperlinks
+\usepackage[dvipsnames, table]{xcolor}	% color 
+\usepackage{graphicx}					% figures
+\usepackage{svg}						% svg figures
+\usepackage{subfig}						% sub figures
+\usepackage[nottoc]{tocbibind}			% put bib in the table of content 
+\usepackage{amsfonts} 					% for math equations
+\usepackage{array} 						% table
 \newcolumntype{M}[1]{>{\centering\arraybackslash}m{#1}}
-\usepackage{listings}				% code
-\usepackage{adjustbox} 				% adjust table width
+\usepackage{listings}					% code
+\usepackage{adjustbox} 					% adjust table width
 
-\usepackage[chapter]{algorithm}		% algorithm numbered by chapter
-\usepackage{algorithmicx}			% algorithm
-\usepackage{algpseudocode}			% pseudocode
-\usepackage{varwidth}				% code indentation
-\usepackage{amssymb}				% slanted symbols
-\usepackage{mathtools}				% better matrices
+\usepackage[chapter]{algorithm}			% algorithm numbered by chapter
+\usepackage{algorithmicx}				% algorithm
+\usepackage{algpseudocode}				% pseudocode
+\usepackage{varwidth}					% code indentation
+\usepackage{amssymb}					% slanted symbols
+\usepackage{mathtools}					% better matrices
 
 % nonumberlist: no page number in glossary
 \usepackage[toc, nopostdot, nonumberlist, nogroupskip, acronym, order=letter]{glossaries} % [toc] put glossaries in content
 
-% add list of Greek symbols--------------------------------
+% add list of Greek symbols----------------------------------------------
 % [glg]{domain_name}{gls}{glo}{title_name}
 \newglossary*{greekstyle}{List of Greek Symbols}
 
@@ -53,11 +53,11 @@
 
 \newglossary*{othersymbol}{Other Symbols}
 \newglossary*{othernotation}{Other Notations}
-%-----------------------------------------------------------
+%------------------------------------------------------------------------
 
 \setglossarystyle{long} % left align
 \renewcommand{\glsnamefont}[1]{\textbf{#1}} % acronyms will be in bold style. 
-%------------------------------------------------------------
+%------------------------------------------------------------------------
 
 \makenoidxglossaries
 
@@ -70,36 +70,36 @@
 \begin{document}
 	\pagenumbering{roman}
 
-    % title page-------------------------------------------
+    % title page-------------------------------------------------------
 	\addcontentsline{toc}{chapter}{Title Page}
 	\input{./Chapter_title/title_page.tex}
-	% ----------------------------------------------------
+	% -----------------------------------------------------------------
 
     \newpage
 	\setcounter{page}{2}
-	% abstract -------------------------------------------
+	% abstract --------------------------------------------------------
 	\input{./Chapter_abstract/abstract.tex}
-	% ----------------------------------------------------
+	% -----------------------------------------------------------------
 
-	% acknowledgement ----------------------------------------
+	% acknowledgement -------------------------------------------------
 	\input{./Chapter_acknowledgements/acknowledgements.tex}
 	\addcontentsline{toc}{chapter}{Acknowledgements}
-	% ----------------------------------------------------
+	% -----------------------------------------------------------------
 
-	% generate table of contents ============================
+	% generate table of contents ======================================
 	\setcounter{tocdepth}{5}	% set the depth of table of contents
 	\tableofcontents
 	\addcontentsline{toc}{chapter}{Contents} % put toc to the toc
-	% ======================================================
+	% =================================================================
 	
-	% ======================================================
+	% =================================================================
 	\listoffigures	% list of figures
 	
 	\listoftables	% list of tables
 	
 	\listofalgorithms % list of algorithms
 	\addcontentsline{toc}{chapter}{List of Algorithms} 
-	% ======================================================
+	% =================================================================
 	
 	% print all the symbols without referencing them
 	\glsaddall
@@ -116,11 +116,11 @@
 	\printnoidxglossary[type=othernotation]
 	\printnoidxglossary[title=List of Acronyms, type=\acronymtype]
 	
-	% start arabic page numbering here-------------------
+	% start arabic page numbering here--------------------------------
  	\newpage
  	\setcounter{page}{1}
 	\pagenumbering{arabic}
-	%-----------------------------------------------------
+	%-----------------------------------------------------------------
 	
 	% input takes all the contents in the specified file
 	% intro
@@ -150,6 +150,6 @@
 	% put bibliography in the table of contents
 	\bibliographystyle{abbrv}	% set the bib style
 	\bibliography{./reference/reference.bib}
-	%=======================================================
+	%================================================================
 
 \end{document}

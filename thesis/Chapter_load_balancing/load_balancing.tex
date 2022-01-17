@@ -386,11 +386,74 @@ The same goes for the total capacity of the system.
 	C = \sum_{k = 0}^{K}c_k
 \end{equation}
 
-The ideal workload $w_{k,ideal}$ of a worker is given below:
+The ideal workload $w_{ideal,k}$ of a worker is given below:
 
 \begin{equation}
-	w_{k,ideal} = W * c_k / C
+	w_{ideal,k} = W \frac{c_k}{C}
 \end{equation}
+
+The new starting task $i_{0, k}$ of the worker is given by the new total weight of the previous
+workers.
+
+\begin{equation}
+	i_{0, k} = \sum_{j = 0}^{k - 1}w_{ideal,j}
+\end{equation}
+
+Following is an example of repartitioning between four workers using this method.
+
+\begin{table}[H]
+	\begin{center}
+		\begin{tabular}{ | c | c | c | c | c | c | c | c | c | c | c | c | c | c | c | c | c | } 
+			\hline
+			worker $k$ & \multicolumn{4}{c|}{\cellcolor{vs_lightgreen}0} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}1} & \multicolumn{4}{c|}{\cellcolor{vs_lightred}2} & \multicolumn{4}{c|}{\cellcolor{vs_lightplum}3}  \\
+			\hline
+			capacity $c_k$ & \multicolumn{4}{c|}{\cellcolor{vs_lightgreen}2} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}2} & \multicolumn{4}{c|}{\cellcolor{vs_lightred}1} & \multicolumn{4}{c|}{\cellcolor{vs_lightplum}1}  \\
+			\hline
+			global id & \cellcolor{vs_lightgreen}0 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}2 & \cellcolor{vs_lightgreen}3 & \cellcolor{vs_lightblue}4 & \cellcolor{vs_lightblue}5 & \cellcolor{vs_lightblue}6 & \cellcolor{vs_lightblue}7 & \cellcolor{vs_lightred}8 & \cellcolor{vs_lightred}9 & \cellcolor{vs_lightred}10 & \cellcolor{vs_lightred}11 & \cellcolor{vs_lightplum}12 & \cellcolor{vs_lightplum}13 & \cellcolor{vs_lightplum}14 & \cellcolor{vs_lightplum}15 \\ 
+			\hline
+			local id i & \cellcolor{vs_lightgreen}0 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}2 & \cellcolor{vs_lightgreen}3 & \cellcolor{vs_lightblue}0 & \cellcolor{vs_lightblue}1 & \cellcolor{vs_lightblue}2 & \cellcolor{vs_lightblue}3 & \cellcolor{vs_lightred}0 & \cellcolor{vs_lightred}1 & \cellcolor{vs_lightred}2 & \cellcolor{vs_lightred}3 & \cellcolor{vs_lightplum}0 & \cellcolor{vs_lightplum}1 & \cellcolor{vs_lightplum}2 & \cellcolor{vs_lightplum}3 \\ 
+			\hline
+			weight $w_i$ & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightblue}2 & \cellcolor{vs_lightblue}2 & \cellcolor{vs_lightblue}3 & \cellcolor{vs_lightblue}2 & \cellcolor{vs_lightred}2 & \cellcolor{vs_lightred}1 & \cellcolor{vs_lightred}2 & \cellcolor{vs_lightred}1 & \cellcolor{vs_lightplum}1 & \cellcolor{vs_lightplum}1 & \cellcolor{vs_lightplum}2 & \cellcolor{vs_lightplum}1 \\ 
+			\hline
+			total weight $w_k$ & \multicolumn{4}{c|}{\cellcolor{vs_lightgreen}4} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}9} & \multicolumn{4}{c|}{\cellcolor{vs_lightred}6} & \multicolumn{4}{c|}{\cellcolor{vs_lightplum}5} \\ 
+			\hline
+			ideal weight $w_{ideal,k}$ & \multicolumn{4}{c|}{\cellcolor{vs_lightgreen}8} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}8} & \multicolumn{4}{c|}{\cellcolor{vs_lightred}4} & \multicolumn{4}{c|}{\cellcolor{vs_lightplum}4} \\ 
+			\hline
+		\end{tabular}
+	
+		\caption{Problem before repartition: The workers have uneven weight.}
+		\label{table:before_repartition}
+	\end{center}
+\end{table}
+
+We repartition the problem, so that the workers have a weight closer to their ideal weight.
+
+\begin{table}[H]
+	\begin{center}
+		\begin{tabular}{ | c | c | c | c | c | c | c | c | c | c | c | c | c | c | c | c | c | } 
+			\hline
+			worker $k$ & \multicolumn{6}{c|}{\cellcolor{vs_lightgreen}0} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}1} & \multicolumn{3}{c|}{\cellcolor{vs_lightred}2} & \multicolumn{3}{c|}{\cellcolor{vs_lightplum}3}  \\
+			\hline
+			capacity $c_k$ & \multicolumn{6}{c|}{\cellcolor{vs_lightgreen}2} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}2} & \multicolumn{3}{c|}{\cellcolor{vs_lightred}1} & \multicolumn{3}{c|}{\cellcolor{vs_lightplum}1}  \\
+			\hline
+			global id & \cellcolor{vs_lightgreen}0 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}2 & \cellcolor{vs_lightgreen}3 & \cellcolor{vs_lightgreen}4 & \cellcolor{vs_lightgreen}5 & \cellcolor{vs_lightblue}6 & \cellcolor{vs_lightblue}7 & \cellcolor{vs_lightblue}8 & \cellcolor{vs_lightblue}9 & \cellcolor{vs_lightred}10 & \cellcolor{vs_lightred}11 & \cellcolor{vs_lightred}12 & \cellcolor{vs_lightplum}13 & \cellcolor{vs_lightplum}14 & \cellcolor{vs_lightplum}15 \\ 
+			\hline
+			local id i & \cellcolor{vs_lightgreen}0 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}2 & \cellcolor{vs_lightgreen}3 & \cellcolor{vs_lightgreen}0 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightblue}2 & \cellcolor{vs_lightblue}3 & \cellcolor{vs_lightblue}0 & \cellcolor{vs_lightblue}1 & \cellcolor{vs_lightred}2 & \cellcolor{vs_lightred}3 & \cellcolor{vs_lightred}0 & \cellcolor{vs_lightplum}1 & \cellcolor{vs_lightplum}2 & \cellcolor{vs_lightplum}3 \\ 
+			\hline
+			weight $w_i$ & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}2 & \cellcolor{vs_lightgreen}2 & \cellcolor{vs_lightblue}3 & \cellcolor{vs_lightblue}2 & \cellcolor{vs_lightblue}2 & \cellcolor{vs_lightblue}1 & \cellcolor{vs_lightred}2 & \cellcolor{vs_lightred}1 & \cellcolor{vs_lightred}1 & \cellcolor{vs_lightplum}1 & \cellcolor{vs_lightplum}2 & \cellcolor{vs_lightplum}1 \\ 
+			\hline
+			total weight $w_k$ & \multicolumn{6}{c|}{\cellcolor{vs_lightgreen}8} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}8} & \multicolumn{3}{c|}{\cellcolor{vs_lightred}4} & \multicolumn{3}{c|}{\cellcolor{vs_lightplum}4} \\ 
+			\hline
+			ideal weight $w_{ideal,k}$ & \multicolumn{6}{c|}{\cellcolor{vs_lightgreen}8} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}8} & \multicolumn{3}{c|}{\cellcolor{vs_lightred}4} & \multicolumn{3}{c|}{\cellcolor{vs_lightplum}4} \\ 
+			\hline
+		\end{tabular}
+	
+		\caption{Problem after repartition: The workers have a better workload distribution.}
+		\label{table:after_repartition}
+	\end{center}
+\end{table}
+
+
 
 \section{Reconstruction} \label{section:load_balancing:reconstruction}
 % Having no state
