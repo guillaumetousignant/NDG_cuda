@@ -542,6 +542,38 @@ are adjacent to an MPI boundary, as these elements will have neighbours in anoth
 local indices need to be updated.
 
 \subsection{Connectivity} \label{section:load_balancing:reconstruction:connectivity}
+Once all the data has been received, the mesh needs to be reassembled. Faces and boundary elements
+that link to elements that have been sent are removed. Faces around received elements are created,
+or reused if the element happens to have been the destination of an MPI interface. New boundaries
+are created around received elements, and in the place of sent elements. Elements and faces that are
+kept are moved to new indices, using a similar prefix sum to the one used in
+Subsection~\ref{section:adaptive_mesh_refinement:implementation:moving_elements}. All references to
+these faces and elements are updated.
+
+Following is an example of the whole load balancing process, where two process initially have an
+unbalanced number of elements.
+
+\begin{figure}[H]
+	\centering
+	\subfloat[Process 0]
+	{\includesvg[width=0.3\textwidth]{Chapter_load_balancing/media/mesh_0_before0_lb} \label{fig:lb_before_0}}
+	\hfill
+	\subfloat[Process 1]
+	{\includesvg[width=0.3\textwidth]{Chapter_load_balancing/media/mesh_1_before0_lb_legend} \label{fig:lb_before_1}}
+	\caption{Mesh before load balancing: The two blocks have different numbers of elements. (a) First process (b) Second process}
+	\label{fig:lb_before}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\subfloat[Process 0]
+	{\includesvg[width=0.3\textwidth]{Chapter_load_balancing/media/mesh_0_after0_lb} \label{fig:lb_after_0}}
+	\hfill
+	\subfloat[Process 1]
+	{\includesvg[width=0.6\textwidth]{Chapter_load_balancing/media/mesh_1_after0_lb_legend} \label{fig:lb_after_1}}
+	\caption{Mesh after load balancing: The two blocks have an equal numbers of elements. (a) First process (b) Second process}
+	\label{fig:lb_after}
+\end{figure}
 
 \section{Implementation} \label{section:load_balancing:implementation}
 \subsection{Element exchange} \label{section:load_balancing:implementation:element_exchange}
