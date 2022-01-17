@@ -493,7 +493,7 @@ The knowledge of which elements to receive and send with which process is used t
 transfers. All the data is sent and received in a non-blocking way with $MPI\_Isend$ and
 $MPI\_Irecv$, and once it is awaited the mesh can be reconstructed in each process. 
 
-\subsection{Data transfer} \label{section:load_balancing:Reconstruction:data_transfer}
+\subsection{Data transfer} \label{section:load_balancing:reconstruction:data_transfer}
 Elements are allocated from the CPU, therefore can be copied from the GPU to the CPU directly. The
 relevant members are the polynomial order of the elements, their Hilbert curve statue, their
 rotation and their split level. All other members are either not stored directly in the element
@@ -529,7 +529,19 @@ a side of an element has no upper bound, so the data will need to be packed and 
 first kernel retrieves the number of faces, therefore neighbours, on each side of elements to be
 sent. This information is used on both the sending and receiving side to allocate arrays that can
 fit the total number of neighbours, as wall as compute offsets to where each element has its
-neighbours in these arrays. 
+neighbours in these arrays. The information to send about neighbours is: their local index, their
+process, their side, their polynomial order, and the two nodes on their connecting side. This
+information is used both to find the relevant neighbour if it is also in the receiving process, and
+to create MPI boundaries if the neighbour is in another process.
+
+On the subject of MPI boundaries, another data exchange must take place during load balancing. Every
+process that has an MPI boundary with another process must send the new local index and new process
+of each element making up that boundary. This is so the other process knows to receive from another
+process if the element has been sent to a new process. This is also necessary to send elements that
+are adjacent to an MPI boundary, as these elements will have neighbours in another process whose
+local indices need to be updated.
+
+\subsection{Connectivity} \label{section:load_balancing:reconstruction:connectivity}
 
 \section{Implementation} \label{section:load_balancing:implementation}
 \subsection{Element exchange} \label{section:load_balancing:implementation:element_exchange}
