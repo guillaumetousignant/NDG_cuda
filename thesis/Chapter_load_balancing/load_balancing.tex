@@ -38,12 +38,17 @@ as mny parts as possible running on the GPU, in parallel. Finally, the algorithm
 little additional GPU memory as possible, as these processors have limited memory, especially
 compared to CPUs.
 
-The algorithm needs to select which elements to send from one GPU to another. Here, the
-repartitioning scheme uses Space-Filling Curves (SFC), more specifically the Hilbert Curve. SFCs map
-multi-dimensional space to one-dimensional space. Elements can then be sent or received from the
-ends of this space. In addition, these curves are fast to generate, use low memory, and maximise
-locality. Elements that are close in curve space will also be close by in the space used for
-computations. This limits the number of interfaces between processes.
+The algorithm needs to select which elements to send from one GPU to another. Many such algorithms
+exist, notably graph-based algorithms~\cite{Karypis1998} and one-dimensional
+algorithms~\cite{Pınar2004}, often called chains-on-chains partitioning. Chains-on-chains
+partitioning will be used here for its relative speed. This will require a scheme to transform our
+domain from two-dimensional space to one-dimensional space, as required by the algorithm.
+
+Here, the repartitioning scheme uses Space-Filling Curves (SFC), more specifically the Hilbert
+Curve. SFCs map multi-dimensional space to one-dimensional space. Elements can then be sent or
+received from the ends of this space. In addition, these curves are fast to generate, use low
+memory, and maximise locality. Elements that are close in curve space will also be close by in the
+space used for computations. This limits the number of interfaces between processes.
 
 \section{Hilbert curve} \label{section:load_balancing:hilbert_curve}
 The Hilbert curve, by D. Hilbert~\cite{Hilbert1891}, is a specific kind of space-filling curve as
@@ -174,8 +179,6 @@ multiple blocks using the provided mesh partitioner. The mesh partitioner can sp
 CGNS mesh into a multi-block mesh, which can then be run using the main program on multiple GPUs.
 
 \subsection{Refinement} \label{section:load_balancing:hilbert_curve:refinement}
-% How it works well in parallel, prefix sum etc
-
 The same iterative process is used to refine elements. The parent state dictates the state and
 ordering of its children. Correct ordering is critical to maintaining good locality between elements
 as the mesh refines and non-conforming interfaces are created.
@@ -346,7 +349,9 @@ first edge at the bottom.
 With this out of the way, it is possible to store the rotation once when the mesh is read, store it
 as a member of the element class, and use it whenever the element splits to get the correct
 ordering. The different elements split independently in parallel, and the Hilbert curve keeps the
-ordering coherent.
+ordering coherent. An element gets the new indices of its children by knowing how many elements
+split before it on the curve to give a starting indice, then using the table to order the individual
+children.
 
 \begin{figure}[H]
 	\centering
@@ -358,6 +363,9 @@ ordering coherent.
 \section{Reconstruction} \label{section:load_balancing:reconstruction}
 % Having no state
 % What is sent
+
+Now that the problem can be partitioned in one dimension, we can begin redistributing elements to
+level out the workload between the different worker GPUs.
 
 \section{Implementation} \label{section:load_balancing:implementation}
 \subsection{Element exchange} \label{section:load_balancing:implementation:element_exchange}
