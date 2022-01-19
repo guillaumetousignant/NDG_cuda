@@ -10,11 +10,39 @@ showcased through this work depicts a wave moving diagonally through a square do
 % Legendre polynomials, both forms
 % Polynomial interpolation
 
-~\cite{Patera1984}
+Spectral methods, as described by Gotlieb and Orszag~\cite{Gottlieb1977}, model functions as sums of
+weighed polynomials. $\phi_n(x)$ is the polynomial of degree $n$, and $a_n$ is the weight of said
+polynomial. The weights make up the spectrum of the solution.
+
+\begin{equation} \label{equ:infinite_sum}
+    \begin{split}
+        f(x) & = \sum_{n = 0}^{\infty }a_n \phi_n(x)
+    \end{split}
+\end{equation}
+
+Since it is impractical to sum an infinite number of polynomials on a computer, the sum is truncated
+to a polynomial order $N$. This becomes the polynomial order of the approximation. The truncated
+part becomes $\tau$, the truncation error.
+
+\begin{equation} \label{equ:2.1}
+    \begin{split}
+        f(x) & = \sum_{n = 0}^{\infty }a_n \phi_n(x) \\
+        & = \sum_{n = 0}^{N}a_n \phi_n(x) + \sum_{n = N + 1}^{\infty }a_n \phi_n(x) \\
+        & = \sum_{n = 0}^{N}a_n \phi_n(x) + \tau \\
+        & \approx \sum_{n = 0}^{N}a_n \phi_n(x)
+    \end{split}
+\end{equation}
+
+Since we discard part of the spectrum is discarded, it is important that the most important part of
+the spectrum is in the lower order polynomials. We want the weights to decay as fast as possible.
+This will be a characteristic of the polynomials we choose.
+
+\subsection{Basis functions} \label{section:spectral_element_method:spectral_approximation:basis_functions}
+
 
 \section{DG-SEM} \label{section:spectral_element_method:dg_sem}
 
-~\cite{Gottlieb1977}
+~\cite{Patera1984}
 
 \section{Equation} \label{section:spectral_element_method:equation}
 
