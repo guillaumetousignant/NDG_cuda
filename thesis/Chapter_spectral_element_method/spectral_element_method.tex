@@ -11,8 +11,8 @@ showcased through this work depicts a wave moving diagonally through a square do
 % Polynomial interpolation
 
 Spectral methods, as described by Gotlieb and Orszag~\cite{Gottlieb1977}, model functions as sums of
-weighed polynomials. $\phi_n(x)$ is the polynomial of degree $n$, and $a_n$ is the weight of said
-polynomial. The weights make up the spectrum of the solution.
+weighed orthogonal polynomials. $\phi_n(x)$ is the polynomial of degree $n$, and $a_n$ is the weight
+of said polynomial. The weights make up the spectrum of the solution.
 
 \begin{equation} \label{equ:infinite_sum}
     \begin{split}
@@ -35,10 +35,42 @@ part becomes $\tau$, the truncation error.
 
 Since we discard part of the spectrum is discarded, it is important that the most important part of
 the spectrum is in the lower order polynomials. We want the weights to decay as fast as possible.
-This will be a characteristic of the polynomials we choose.
+This will be a characteristic of the polynomials we choose. For example, Fourier series, Legendre
+polynomials and Chebyshev polynomials have been proved~\cite{Kopriva2009} to have exponentially
+decaying coefficient, giving them spectral accuracy.
 
 \subsection{Basis functions} \label{section:spectral_element_method:spectral_approximation:basis_functions}
+Polynomials used in spectral methods need to be orthogonal in the studied domain. For orthogonal
+functions in the domain $[a, b]$, we have:
 
+\begin{equation} \label{equ:orthogonality}
+	\int_{a}^{b}\phi_i(x) \phi_j(x)dx = C_i \delta_{ij}
+\end{equation}
+
+With $C_i$ being a constant, and $\delta_{ij}$ being the Kronecker delta, defined as such:
+
+\begin{equation} \label{equ:kronecker}
+	\delta _{ij} = \left\{ \begin{matrix}
+                    1, & if \:\: i = j,\\ 
+                    0, & if \:\: i \neq j.
+                    \end{matrix} \right.
+\end{equation}
+
+The inner product $V = L^2 \left( a, b \right)$, with $V$ being a vector space over $\mathbb{R}$ and
+$f \left( x \right)$ and $g \left( x \right)$ being two continuous function in $\left[ a, b
+\right]$, is:
+
+\begin{equation}
+    \left( f, g \right) = \int_{a}^{b}f(x)g(x)dx. 
+\end{equation}
+
+We can therefore rewrite Equation~\ref{equ:orthogonality} in inner product form:
+
+\begin{equation}
+	\left( \phi_i, \phi_j \right) = \int_{a}^{b}\phi_i(x) \phi_j(x)dx = C_i \delta_{ij}.
+\end{equation}
+
+In spectral approximations, we add weights $w$
 
 \section{DG-SEM} \label{section:spectral_element_method:dg_sem}
 

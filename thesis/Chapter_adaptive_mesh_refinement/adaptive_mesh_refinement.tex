@@ -179,7 +179,7 @@ orthogonal, therefore the following relation gives the inner product of two of t
 
 \begin{equation} \label{equ:polynomial_orthogonality}
 	\begin{aligned}
-		\left ( L_n, L_m \right ) &= \int_{-1}^{1}L_n(r)L_m(r)dr \\
+		\left( L_n, L_m \right) &= \int_{-1}^{1}L_n(r)L_m(r)dr \\
 		&= \frac{2}{2n + 1}\delta _{nm}
 	\end{aligned}
 \end{equation}
@@ -190,7 +190,7 @@ $L_n(x)$.
 
 \begin{equation} \label{equ:modes_inner_product}
 	\begin{aligned}
-		\left ( u_h, L_n \right ) &= \int_{-1}^{1} u_h(x(r)) L_n(r) dr \\
+		\left( u_h, L_n \right) &= \int_{-1}^{1} u_h(x(r)) L_n(r) dr \\
 		&= \sum_{k = 0}^{N} a_k \int_{-1}^{1} L_k(r) L_n(r)dr \\
 		&= \frac{2}{2n + 1} a_n
 	\end{aligned}
@@ -207,7 +207,7 @@ the truncation error can then be approximated.
 
 \begin{equation} \label{equ:error_norm}
 	\begin{aligned}
-		\left \| \tau \right \| &= \sqrt{\int_{-1}^{1} \sum_{n = N + 1}^{\infty }\left ( \widetilde{a}_n L_n(r) \right )^2 dr} \\
+		\left\| \tau \right\| &= \sqrt{\int_{-1}^{1} \sum_{n = N + 1}^{\infty } \left( \widetilde{a}_n L_n(r) \right)^2 dr} \\
 		&= \sqrt{\sum_{n = N + 1}^{\infty }\widetilde{a}_n^2 \int_{-1}^{1} L_n(r) L_n(r) dr}
 	\end{aligned}
 \end{equation}
@@ -222,7 +222,7 @@ Equation~\ref{equ:polynomial_orthogonality} to obtain a simpler form of the trun
 In 2D, the solution is a tensor product of polynomials, the truncation error changes accordingly. 
 
 \begin{equation} \label{equ:error_norm_2D}
-	\left \| \tau \right \| = \sqrt{\sum_{n = N + 1}^{\infty } \sum_{m = M + 1}^{\infty}\frac{\widetilde{a}_{nm}^2}{\frac{(2n + 1)(2m + 1)}{2^2}}}
+	\left\| \tau \right\| = \sqrt{\sum_{n = N + 1}^{\infty } \sum_{m = M + 1}^{\infty}\frac{\widetilde{a}_{nm}^2}{\frac{(2n + 1)(2m + 1)}{2^2}}}
 \end{equation}
 
 As per~\cite{Mavriplis1990}, we examine the decay rate of the modes as a way to estimate the local
@@ -281,7 +281,7 @@ evaluated directly.
 \begin{equation}
 	\begin{aligned}
 		\tau_{est} &= \sqrt{\int_{N + 1}^{\infty } a_n^2 dn} \\
-		&= \sqrt{\int_{N + 1}^{\infty } \left ( Ce^{-\sigma n} \right )^2 dn} \\
+		&= \sqrt{\int_{N + 1}^{\infty } \left( Ce^{-\sigma n} \right)^2 dn} \\
 		&= \sqrt{\frac{C^2}{2\sigma }}e^{-\sigma (N + 1)}. 
 	\end{aligned}
 \end{equation}
@@ -433,7 +433,7 @@ face polynomial order. We then require that the integral of the error between th
 projection multiplied by the Lagrange polynomials be zero. 
 
 \begin{equation} \label{equ:zero_error}
-	\int_{-1}^{1} \left ( \Psi (z) - U(a + bz) \right ) l_j^\Xi dz = 0, \quad j = 0, ...,J
+	\int_{-1}^{1} \left( \Psi (z) - U(a + bz) \right) l_j^\Xi dz = 0, \quad j = 0, ...,J
 \end{equation}
 
 Incorporating Equation (\ref{equ:element_boundary_solution}) and (\ref{equ:face_projected_solution}),
@@ -462,7 +462,7 @@ will be used to simplify the matrices.
 
 \begin{equation} \label{equ:orthogonality_M}
 	l_m (z_k) l_j (z_k) = \\
-	\delta _{mk} \delta _{j k} = \left\{\begin{matrix*}[l]
+	\delta _{mk} \delta _{j k} = \left\{ \begin{matrix*}[l]
 	& 1, & if & m = k = j \\ 
 	& 0, & if & m \neq k \; or \; j \neq k
 	\end{matrix*}\right.
@@ -481,7 +481,7 @@ Chapter~\ref{chapter:spectral_element_method}. We use Equation~(\ref{equ:orthogo
 the matrix $M$ to a diagonal matrix.
 
 \begin{equation}
-	M_{jm} = \left\{\begin{matrix}
+	M_{jm} = \left\{ \begin{matrix}
 	w_j^{\Xi }, &  m = j \\ 
 	0, & m \neq  j
 	\end{matrix}\right.
@@ -490,7 +490,7 @@ the matrix $M$ to a diagonal matrix.
 The same can be done for $S$, with the following orthogonality relation:
 
 \begin{equation} \label{equ:orthogonality_S}
-	l_j ^ \Xi (z_m) = \delta_{jm} = \left\{\begin{matrix*}[l]
+	l_j ^ \Xi (z_m) = \delta_{jm} = \left\{ \begin{matrix*}[l]
 	& 1, & if & m = j\\ 
 	& 0, & if & m \neq j
 	\end{matrix*}\right.
@@ -507,7 +507,7 @@ The same can be done for $S$, with the following orthogonality relation:
 We use Equation~(\ref{equ:orthogonality_S}) to simplify the matrix $S$.
 
 \begin{equation}
-	S_{jk} = l_k^{\Omega }\left ( a + bz_j \right )w_j^{\Xi}, \quad j = 0, ..., J, \: k = 0, ..., N.
+	S_{jk} = l_k^{\Omega } \left( a + bz_j \right)w_j^{\Xi}, \quad j = 0, ..., J, \: k = 0, ..., N.
 \end{equation}
 
 With $M$ and $S$, we can define a projection matrix from element boundary space to face space.
@@ -550,8 +550,8 @@ we require that the integral of the error between the flux solution and its proj
 the test function, the Lagrange polynomials here, be zero.
 
 \begin{equation} \label{equ:zero_error_to_element}
-	\int_{-1}^{o'}\left ( F(s) - \Phi (\frac{s - a}{b}) \right ) l_j^\Omega(s)ds + \\
-	\int_{o'}^{1} \left ( F(s) - \Phi (\frac{s - a}{b}) \right )l_j^\Omega (s)ds = 0, \\
+	\int_{-1}^{o'} \left( F(s) - \Phi (\frac{s - a}{b}) \right) l_j^\Omega(s)ds + \\
+	\int_{o'}^{1} \left( F(s) - \Phi (\frac{s - a}{b}) \right) l_j^\Omega (s)ds = 0, \\
 	\quad j = 0...N,
 \end{equation}
 
@@ -600,7 +600,7 @@ The $M$ matrix is the same as for the element to face projection.
 	\begin{aligned}
 		M_{jm} &= \int_{-1}^{1}l_m^{\Omega}(s)l_j^{\Omega}(s)ds \\
 		&= \sum_{k = 0}^{N} w_k ^{\Omega} \delta_{mk}\delta_{jk}, & j, m = 0, ..., J \\
-		&= \left\{\begin{matrix}
+		&= \left\{ \begin{matrix}
 			w_j^{\Omega }, & j = m \\ 
 			0 & j \neq m.
 			\end{matrix}\right.
