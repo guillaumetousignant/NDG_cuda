@@ -332,7 +332,21 @@ We put Equation~\ref{equ:test_lagrange} in~\ref{equ:2d_wave_weak}.
 	\sum_{i = 0}^{N}\sum_{j = 0}^{N} \left[ \int_{\Omega }\overrightarrow{q_t} l_i(x) l_j(y) dx dy + \int_{\Omega } \left( \bigtriangledown \cdot \mathfrak{F} \right) l_i(x) l_j(y) dx dy \right] \widetilde{v}_{i, j} = 0,
 \end{equation}
 
-Where $\Omega$ is the whole domain.
+Where $\Omega$ is the whole domain. Since $\widetilde{v}_{i, j}$ are arbitrary, the relation must be
+true for all $i,j$ independently. We get:
+
+\begin{gather}
+    \int_{\Omega} \overrightarrow{q_t} l_i(x) l_j(y) dx dy + \int_{\Omega } \left( \bigtriangledown \cdot \mathfrak{F} \right) l_i(x) l_j(y) dx dy = 0, \quad i,j = 0, ..., N \\
+    \int_{\Omega} \frac{d\mathbf{Q}}{dt} \phi_{i, j} dx dy
+    + \int _{\Omega} \bigtriangledown \cdot \mathbf{F} \phi_{i, j} dx dy = 0, \quad i,j = 0, ..., N \label{equ:2d_wave_test}
+\end{gather}
+
+With $\phi_{i, j} = l_i(x)l_j(y)$. We can then rewrite Equation~\ref{equ:2d_wave_test} in inner
+product form: 
+
+\begin{equation} \label{equ:2d_wave_inner_product}
+	\left( \mathbf{Q}_t, \phi_{i, j} \right) + \left( \bigtriangledown \cdot \mathbf{F}, \phi_{i, j} \right) = 0
+\end{equation}
 
 \section{Implementation} \label{section:spectral_element_method:implementation}
 % Talk about the flux computation, possible race conditions
