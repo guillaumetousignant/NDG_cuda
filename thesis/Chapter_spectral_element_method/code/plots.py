@@ -10,27 +10,31 @@ polynomial_width = 2
 nodes_width = 2
 nodes_linestyle = "--"
 nodes_colour = np.array([244, 71, 61])/255
+polynomial_color_map = plt.get_cmap("viridis")
+interpolant_color_map = plt.get_cmap("rainbow")
 
 save_path = Path(__file__).parent.parent / "media"
 save_path.mkdir(parents=True, exist_ok=True)
 
 # Polynomials
-polynomials_fig = plt.figure(figsize=(7, 7))
+polynomials_fig = plt.figure(figsize=(10.5, 7))
 polynomials_ax = polynomials_fig.add_subplot(1, 1, 1)
 polynomials_ax.set_xlim(-1.1, 1.1)
 polynomials_ax.set_ylim(-1.1, 1.1)
-polynomials_ax.set_aspect(1)
+polynomials_ax.set_aspect(0.667)
 polynomials_ax.axis('on')
 polynomials_ax.set_xlabel("x")
 polynomials_ax.set_ylabel("$L_n(x)$")
 polynomials_ax.grid()
 
 for n in N:
+    normalised_N = (n - N[0])/(N[-1] - N[0])
+
     y = np.zeros(x.shape)
     for i in range(n_points):
         y[i] = sem.LegendrePolynomialAndDerivative(n, x[i])[0]
 
-    polynomials_ax.plot(x, y, linewidth=polynomial_width, label=f"$L_{n}(x)$")
+    polynomials_ax.plot(x, y, linewidth=polynomial_width, label=f"$L_{n}(x)$", color=polynomial_color_map(normalised_N))
 
 polynomials_ax.legend()
 
@@ -41,11 +45,11 @@ polynomials_fig.savefig(save_path / f"polynomials.svg", format='svg', transparen
 barycentric_weights = sem.BarycentricWeights(nodes)
 interpolants = np.zeros((N[-1] + 1, n_points))
 
-interpolants_fig = plt.figure(figsize=(7, 7))
+interpolants_fig = plt.figure(figsize=(10.5, 7))
 interpolants_ax = interpolants_fig.add_subplot(1, 1, 1)
 interpolants_ax.set_xlim(-1.1, 1.1)
 interpolants_ax.set_ylim(-1.1, 1.1)
-interpolants_ax.set_aspect(1)
+interpolants_ax.set_aspect(0.667)
 interpolants_ax.axis('on')
 interpolants_ax.set_xlabel("x")
 interpolants_ax.set_ylabel("$l_n(x)$")
@@ -55,7 +59,8 @@ for i in range(n_points):
     interpolants[:, i] = sem.LagrangeInterpolatingPolynomials(x[i], nodes, barycentric_weights)
 
 for n in N:
-    interpolants_ax.plot(x, interpolants[n, :], linewidth=polynomial_width, label=f"$l_{n}(x)$")
+    normalised_N = (n - N[0])/(N[-1] - N[0])
+    interpolants_ax.plot(x, interpolants[n, :], linewidth=polynomial_width, label=f"$l_{n}(x)$", color=interpolant_color_map(normalised_N))
 
 interpolants_ax.vlines(nodes, -1, 1, linewidth=nodes_width, linestyle=nodes_linestyle, color=nodes_colour, label="collocation points")
 

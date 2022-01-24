@@ -24,7 +24,7 @@ Since it is impractical to sum an infinite number of polynomials on a computer, 
 to a polynomial order $N$. This becomes the polynomial order of the approximation. The truncated
 part becomes $\tau$, the truncation error.
 
-\begin{equation} \label{equ:2.1}
+\begin{equation} \label{equ:truncated_sum}
     \begin{split}
         f(x) & = \sum_{n = 0}^{\infty }a_n \phi_n(x) \\
         & = \sum_{n = 0}^{N}a_n \phi_n(x) + \sum_{n = N + 1}^{\infty }a_n \phi_n(x) \\
@@ -82,6 +82,49 @@ constant.
 Fourier series can be used for periodic problems. As for non-periodic problems, Legendre polynomials
 and Chebyshev polynomials fit these criteria. Legendre polynomial have a a weight function of $w(x)
 = 1$, which simplifies computations. We will therefore use the Legendre polynomials.
+
+\begin{figure}[H]
+	\centering
+	\includesvg[width=0.8\textwidth]{Chapter_spectral_element_method/media/polynomials}
+	\caption{Legendre polynomials: The first 6 Legendre polynomials.}
+	\label{fig:polynomials}
+\end{figure}
+
+The Legendre polynomials were discovered by Adrien-Marie Legendre in 1782. With their associated
+weights $w(x) = 1$ and in the interval $\left[ -1, 1 \right]$, the polynomials are orthogonal. The
+Legendre polynomials $L_k \left( x \right)$ of degree $k$ therefore have the property:
+
+\begin{equation}
+	\int_{-1}^{1}L_{k_1}(x) L_{k_2}(x) dx = 0, \quad if \:\: k_1 \neq k_2. 
+\end{equation}
+
+The Legendre polynomials can be generated using a three-term recursive formula. Knowing that the
+first two polynomials are $L_0 \left( x \right) = 1$ and $L_1 \left( x \right) = x$, all subsequent
+polynomials can be generated.
+
+\begin{equation} \label{equ:three_terms}
+	L_{k + 1}(x) = \frac{2k + 1}{k + 1}xL_k(x) - \frac{k}{k + 1}L_{k - 1}(x).
+\end{equation}
+
+These polynomials will help us solve integrals using Gauss quadrature. For an interval $\left[ -1, 1
+\right]$, the Gauss quadrature is:
+
+\begin{equation}
+	\int_{-1}^{1}f(x)dx \approx \sum_{i = 0}^{N}w_i f(x_i). 
+\end{equation}
+
+The points $x_i$ used for the quadrature are the Gauss quadrature points, or collocation points.
+Using the roots of the (N + 1)\textsuperscript{th} Legendre polynomial, the quadrature is exact for
+polynomials of degree $\leq 2 N + 1$. This is the \textit{Gauss-Legendre quadrature rule}. We use
+the roots of the (N + 1)\textsuperscript{th} Legendre polynomial to get the positions $x_i$ and
+weights $w_i$.
+
+\begin{gather}
+	x_i = roots \:\: of \:\: L_{N + 1}(x), \quad i = 0, ..., N, \\
+	w_i = \frac{2}{(1-x_i^2)\left [ L'_{N + 1}(x_i) \right ]^2}.
+\end{gather}
+
+\subsection{Polynomial interpolation} \label{section:spectral_element_method:spectral_approximation:polynomial_interpolation}
 
 \section{DG-SEM} \label{section:spectral_element_method:dg_sem}
 
