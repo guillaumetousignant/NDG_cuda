@@ -125,6 +125,40 @@ weights $w_i$.
 \end{gather}
 
 \subsection{Polynomial interpolation} \label{section:spectral_element_method:spectral_approximation:polynomial_interpolation}
+Polynomial interpolation interpolates data along a polynomial passing through known points. The
+polynomial has an order equal to the number of points. In this work we use Lagrange integrating
+polynomials $l_j$ of degree N.
+
+\begin{equation}
+	l_j(x) = \prod_{\substack{i = 0 \\ i \neq j}}^{N}\frac{x- x_i}{x_j - x_i},
+\end{equation}
+
+At each collocation point $x_i$ only one of the integrating polynomials has the value 1, the others
+having a value of 0. This mimics the Kronecker delta $\delta_{ij}$.
+
+\begin{equation}
+	l_j(x_i) = \delta_{ij} = \left\{\begin{matrix}
+	1, \quad i = j\\ 
+	0, \quad i \neq j,
+	\end{matrix}\right.
+\end{equation}
+
+The following figure displays the interpolating polynomials of degree 6:
+
+\begin{figure}[H]
+	\centering
+	\includesvg[width=0.8\textwidth]{Chapter_spectral_element_method/media/interpolants}
+	\caption{Polynomial interpolation: The Lagrange integrating polynomials of degree 6.}
+	\label{fig:interpolants}
+\end{figure}
+
+
+With this, we can interpolate a function $p_N \left( x \right)$ of degree N:
+
+\begin{equation}
+	p_N(x) = \sum_{j = 0}^{N}p(x_j)l_j(x).
+\end{equation}
+
 
 \section{DG-SEM} \label{section:spectral_element_method:dg_sem}
 
