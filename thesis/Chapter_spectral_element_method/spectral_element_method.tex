@@ -61,19 +61,19 @@ $f \left( x \right)$ and $g \left( x \right)$ being two continuous function in $
 \right]$, is:
 
 \begin{equation}
-    \left( f, g \right) = \int_{a}^{b}f(x)g(x)dx. 
+    \left( f, g \right) = \int_{a}^{b}f(x)g(x)dx
 \end{equation}
 
 We can therefore rewrite Equation~\ref{equ:orthogonality} in inner product form:
 
 \begin{equation}
-	\left( \phi_i, \phi_j \right) = \int_{a}^{b}\phi_i(x) \phi_j(x)dx = C_i \delta_{ij}.
+	\left( \phi_i, \phi_j \right) = \int_{a}^{b}\phi_i(x) \phi_j(x)dx = C_i \delta_{ij}
 \end{equation}
 
 The high-order orthogonal polynomials we use have associated weights $w$:
 
 \begin{equation}
-	\left ( \phi_i, \phi_j \right ) = \int_a^b \phi_i(x)\phi_j(x)w(x)dx = D_{ij}\delta_{ij},
+	\left ( \phi_i, \phi_j \right ) = \int_a^b \phi_i(x)\phi_j(x)w(x)dx = D_{ij}\delta_{ij}
 \end{equation}
 
 We added $w(x)$, the weight function ensuring the orthogonality of the polynomials. $D_{ij}$ is a
@@ -95,7 +95,7 @@ weights $w(x) = 1$ and in the interval $\left[ -1, 1 \right]$, the polynomials a
 Legendre polynomials $L_k \left( x \right)$ of degree $k$ therefore have the property:
 
 \begin{equation}
-	\int_{-1}^{1}L_{k_1}(x) L_{k_2}(x) dx = 0, \quad if \:\: k_1 \neq k_2. 
+	\int_{-1}^{1}L_{k_1}(x) L_{k_2}(x) dx = 0, \quad if \:\: k_1 \neq k_2
 \end{equation}
 
 The Legendre polynomials can be generated using a three-term recursive formula. Knowing that the
@@ -103,14 +103,14 @@ first two polynomials are $L_0 \left( x \right) = 1$ and $L_1 \left( x \right) =
 polynomials can be generated.
 
 \begin{equation} \label{equ:three_terms}
-	L_{k + 1}(x) = \frac{2k + 1}{k + 1}xL_k(x) - \frac{k}{k + 1}L_{k - 1}(x).
+	L_{k + 1}(x) = \frac{2k + 1}{k + 1}xL_k(x) - \frac{k}{k + 1}L_{k - 1}(x)
 \end{equation}
 
 These polynomials will help us solve integrals using Gauss quadrature. For an interval $\left[ -1, 1
 \right]$, the Gauss quadrature is:
 
 \begin{equation}
-	\int_{-1}^{1}f(x)dx \approx \sum_{i = 0}^{N}w_i f(x_i). 
+	\int_{-1}^{1}f(x)dx \approx \sum_{i = 0}^{N}w_i f(x_i)
 \end{equation}
 
 The points $x_i$ used for the quadrature are the Gauss quadrature points, or collocation points.
@@ -120,8 +120,8 @@ the roots of the (N + 1)\textsuperscript{th} Legendre polynomial to get the posi
 weights $w_i$.
 
 \begin{gather}
-	x_i = roots \:\: of \:\: L_{N + 1}(x), \quad i = 0, ..., N, \\
-	w_i = \frac{2}{(1-x_i^2)\left [ L'_{N + 1}(x_i) \right ]^2}.
+	x_i = roots \:\: of \:\: L_{N + 1}(x), \quad i = 0, ..., N \\
+	w_i = \frac{2}{(1-x_i^2)\left [ L'_{N + 1}(x_i) \right ]^2}
 \end{gather}
 
 \subsection{Polynomial interpolation} \label{section:spectral_element_method:spectral_approximation:polynomial_interpolation}
@@ -130,7 +130,7 @@ polynomial has an order equal to the number of points. In this work we use Lagra
 polynomials $l_j$ of degree N.
 
 \begin{equation}
-	l_j(x) = \prod_{\substack{i = 0 \\ i \neq j}}^{N}\frac{x- x_i}{x_j - x_i},
+	l_j(x) = \prod_{\substack{i = 0 \\ i \neq j}}^{N}\frac{x- x_i}{x_j - x_i}
 \end{equation}
 
 At each collocation point $x_i$ only one of the integrating polynomials has the value 1, the others
@@ -152,17 +152,57 @@ The following figure displays the interpolating polynomials of degree 6:
 	\label{fig:interpolants}
 \end{figure}
 
-
 With this, we can interpolate a function $p_N \left( x \right)$ of degree N:
 
 \begin{equation}
-	p_N(x) = \sum_{j = 0}^{N}p(x_j)l_j(x).
+	p_N(x) = \sum_{j = 0}^{N}p(x_j)l_j(x)
 \end{equation}
 
+We can also modify the Lagrange interpolation to the barycentric form.
+
+\begin{gather}
+	p_N(x) = \psi(x)\sum_{j = 0}^{N}p(x_j)\frac{w_j}{x - x_j} \\
+	\psi(x) = \prod_{i = 0}^{N}\left ( x - x_i \right ) \\
+	w_j = \frac{1}{\prod_{\genfrac{}{}{0pt}{2}{i = 0}{i \neq j}}^{N}(x_j - x_i)}
+\end{gather}
+
+We retain the same property as the initial form:
+
+\begin{equation}
+	\psi(x)\sum_{j = 0}^{N}\frac{w_j}{x - x_j} = 1.
+\end{equation}
+
+We can then rewrite the complete Lagrange interpolation in barycentric form. By pre-computing the
+barycentric weights $w_j$, we can compute the interpolated value at any point $x$ using only the
+known values at the collocation points, without computing the interpolating polynomials. 
+
+\begin{equation}
+	p_N(x) = \frac{\sum_{j = 0}^{N} p(x_j)\frac{w_j}{x - x_j}}{\sum_{j = 0}^{N}\frac{w_j}{x - x_j}}
+\end{equation}
 
 \section{DG-SEM} \label{section:spectral_element_method:dg_sem}
+Section~\ref{section:spectral_element_method:spectral_approximation} shows how to approximate
+functions with polynomials, and how to compute integrals on them. We must then apply those equations
+to a domain. Pure spectral approximations apply the polynomials to the whole domain. This can be
+problematic when discontinuities or very steep solutions are present, as the finite order
+polynomials cannot match the solution, and begin to oscillate. Also, these methods only work for
+simple domain shapes, such as quadrilaterals, triangles and circles in 2D. To accommodate more
+complex domains, such as channels and airfoils, the method must be modified.
 
-~\cite{Patera1984}
+A. Patera proposed using spectral element methods~\cite{Patera1984} to combine the accuracy of
+spectral methods and the generality of finite element methods. Finite element methods can model
+complex geometries by splitting the domain into multiple elements, with the equations being solved
+on the elements. We use the discontinuous Galerkin spectral element method. The DG-SEM uses the 
+Gauss quadrature points described in
+Subsection~\ref{section:spectral_element_method:spectral_approximation:basis_functions}. The absence
+of quadrature points at the edges of the domain lets the different elements be discontinuous at
+their boundaries. These discontinuities are then counterbalanced by fluxes between elements. This in
+contrast to the continuous Galerkin spectral element method, where the solution is made continuous 
+at element boundaries by using the Gauss-Lobatto quadrature points. These quadrature points include
+points at $-1$ and $1$. The tradeoff is reduced accuracy.
+
+We want to solve the 2D wave equation:
+
 
 \section{Equation} \label{section:spectral_element_method:equation}
 
