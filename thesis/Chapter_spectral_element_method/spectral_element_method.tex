@@ -329,7 +329,7 @@ The test functions themselves can also be rearranged in Lagrange form:
 We put Equation~\ref{equ:test_lagrange} in~\ref{equ:2d_wave_weak}.
 
 \begin{equation}
-	\sum_{i = 0}^{N}\sum_{j = 0}^{N} \left[ \int_{\Omega }\overrightarrow{q_t} l_i(x) l_j(y) dx dy + \int_{\Omega } \left( \bigtriangledown \cdot \mathfrak{F} \right) l_i(x) l_j(y) dx dy \right] \widetilde{v}_{i, j} = 0,
+	\sum_{i = 0}^{N}\sum_{j = 0}^{N} \left[ \int_{\Omega }\overrightarrow{q_t} l_i(x) l_j(y) dx dy + \int_{\Omega } \left( \bigtriangledown \cdot \mathfrak{F} \right) l_i(x) l_j(y) dx dy \right] \widetilde{v}_{i, j} = 0
 \end{equation}
 
 Where $\Omega$ is the whole domain. Since $\widetilde{v}_{i, j}$ are arbitrary, the relation must be
@@ -347,6 +347,38 @@ product form:
 \begin{equation} \label{equ:2d_wave_inner_product}
 	\left( \mathbf{Q}_t, \phi_{i, j} \right) + \left( \bigtriangledown \cdot \mathbf{F}, \phi_{i, j} \right) = 0
 \end{equation}
+
+We then use Green's first identity to extract the boundary contribution from
+Equation~\ref{equ:2d_wave_inner_product}'s second term. Green's first identity goes as follows.
+
+\begin{equation}
+    \int_{\Omega} \bigtriangledown \cdot \left( \phi \mathbf{X} \right) d\Omega  = 
+    \int_{\Omega} \bigtriangledown \phi \cdot \mathbf{X} + \phi \bigtriangledown \cdot \mathbf{X} d\Omega = \oint _{S} \phi \mathbf{X} \cdot \widehat{n} dS
+\end{equation}
+
+Where $\Omega$ is the domain, and $S$ is that domain's boundary. $\phi$ is a scalar function, and
+$\mathbf{X}$ is a vector field. $\widehat{n}$ is the boundary's normal vector, pointing outwards.
+Applied to Equation~\ref{equ:2d_wave_inner_product}'s second term, we get:
+
+\begin{equation} \label{equ:flux_green}
+    \left( \bigtriangledown \cdot \mathbf{F}, \phi_{i, j} \right) = \int_{-1}^{1}\int_{-1}^{1}\phi_{i, j} \bigtriangledown \cdot \mathbf{F} dx dy = \oint_{S}\phi_{i, j} \mathbf{F} \cdot \widehat{n}dS - \int_{-1}^{1}\int_{-1}^{1} \mathbf{F} \cdot \bigtriangledown \phi_{i, j} dx dy
+\end{equation}
+
+The complete equation becomes:
+
+\begin{equation} \label{equ:integral_equ}
+    \left( \mathbf{Q}_t, \phi_{i, j} \right) + \oint_{S}\phi_{i, j} \mathbf{F}^* \cdot \widehat{n}dS - \int_{-1}^{1}\int_{-1}^{1} \mathbf{F} \cdot \bigtriangledown \phi_{i, j} dx dy = 0.
+\end{equation}
+
+The boundary conditions are weakly enforced using fluxes $\mathbf{F}^*$, explained in
+Subsection~\ref{section:spectral_element_method:spectral_approximation:dg_sem:fluxes}. 
+
+We then need to evaluate those integrals. A distinction is made between the boundary terms, that are
+evaluated using the collocation points within an element, and the boundary term, which uses
+collocation points on the element boundaries.
+
+\subsection{Fluxes} \label{section:spectral_element_method:spectral_approximation:dg_sem:fluxes}
+
 
 \section{Implementation} \label{section:spectral_element_method:implementation}
 % Talk about the flux computation, possible race conditions
