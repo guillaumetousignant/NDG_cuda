@@ -8,10 +8,19 @@ n_points = 1000
 x = np.linspace(-1, 1, n_points)
 polynomial_width = 2
 nodes_width = 2
+elements_width = 3
 nodes_linestyle = "--"
 nodes_colour = np.array([244, 71, 61])/255
+elements_colour = np.array([37, 37, 37])/255
+arrow_colour = np.array([200, 200, 200])/255
+normals_colour = np.array([78, 201, 176])/255
 polynomial_color_map = plt.get_cmap("viridis")
 interpolant_color_map = plt.get_cmap("rainbow")
+arrow_width = 0.025
+arrow_head_length = 0.05
+axes_font_size = 24
+graduations_font_size = 16
+normals_font_size = 16
 
 save_path = Path(__file__).parent.parent / "media"
 save_path.mkdir(parents=True, exist_ok=True)
@@ -67,5 +76,38 @@ interpolants_ax.vlines(nodes, -1, 1, linewidth=nodes_width, linestyle=nodes_line
 interpolants_ax.legend()
 
 interpolants_fig.savefig(save_path / f"interpolants.svg", format='svg', transparent=True)
+
+# Simple domain
+domain_fig = plt.figure(figsize=(4, 4))
+domain_ax = domain_fig.add_subplot(1, 1, 1)
+domain_ax.set_xlim(-1.5, 1.5)
+domain_ax.set_ylim(-1.5, 1.5)
+domain_ax.set_aspect(1)
+domain_ax.axis('off')
+
+domain_ax.arrow(-1.5, 0, 3, 0, length_includes_head=True, width=arrow_width, head_length=arrow_head_length, color=arrow_colour)
+domain_ax.arrow(0, -1.5, 0, 3, length_includes_head=True, width=arrow_width, head_length=arrow_head_length, color=arrow_colour)
+
+domain_ax.plot([-1, 1, 1, -1, -1], [-1, -1, 1, 1, -1], color=elements_colour, linewidth=elements_width, label="Domain")
+
+domain_ax.text(1.4, -0.2, "x", fontfamily="Fira Code", fontsize=axes_font_size, horizontalalignment="center", verticalalignment="center", color=elements_colour)
+domain_ax.text(-0.2, 1.4, "y", fontfamily="Fira Code", fontsize=axes_font_size, horizontalalignment="center", verticalalignment="center", color=elements_colour)
+
+domain_ax.text(-1, -1.1, "-1", fontfamily="Fira Code", fontsize=graduations_font_size, horizontalalignment="center", verticalalignment="top", color=elements_colour)
+domain_ax.text(1, -1.1, "1", fontfamily="Fira Code", fontsize=graduations_font_size, horizontalalignment="center", verticalalignment="top", color=elements_colour)
+domain_ax.text(-1.1, -1, "-1", fontfamily="Fira Code", fontsize=graduations_font_size, horizontalalignment="right", verticalalignment="center", color=elements_colour)
+domain_ax.text(-1.1, 1, "1", fontfamily="Fira Code", fontsize=graduations_font_size, horizontalalignment="right", verticalalignment="center", color=elements_colour)
+
+domain_ax.arrow(1, 0, 0.4, 0, length_includes_head=True, width=arrow_width, head_length=arrow_head_length, color=normals_colour)
+domain_ax.arrow(-1, 0, -0.4, 0, length_includes_head=True, width=arrow_width, head_length=arrow_head_length, color=normals_colour)
+domain_ax.arrow(0, -1, 0, -0.4, length_includes_head=True, width=arrow_width, head_length=arrow_head_length, color=normals_colour)
+domain_ax.arrow(0, 1, 0, 0.4, length_includes_head=True, width=arrow_width, head_length=arrow_head_length, color=normals_colour)
+
+domain_ax.text(0.1, -1.2, "$n_0$", fontfamily="Fira Code", fontsize=normals_font_size, horizontalalignment="left", verticalalignment="center", color=normals_colour)
+domain_ax.text(1.2, 0.1, "$n_1$", fontfamily="Fira Code", fontsize=normals_font_size, horizontalalignment="center", verticalalignment="bottom", color=normals_colour)
+domain_ax.text(0.1, 1.2, "$n_2$", fontfamily="Fira Code", fontsize=normals_font_size, horizontalalignment="left", verticalalignment="center", color=normals_colour)
+domain_ax.text(-1.2, 0.1, "$n_3$", fontfamily="Fira Code", fontsize=normals_font_size, horizontalalignment="center", verticalalignment="bottom", color=normals_colour)
+
+domain_fig.savefig(save_path / f"domain.svg", format='svg', transparent=True)
 
 plt.show()

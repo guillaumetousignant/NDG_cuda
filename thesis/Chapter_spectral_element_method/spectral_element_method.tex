@@ -293,7 +293,15 @@ contrast to the continuous Galerkin spectral element method, where the solution 
 at element boundaries by using the Gauss-Lobatto quadrature points. These quadrature points include
 points at $-1$ and $1$. The tradeoff is reduced accuracy.
 
+We start by deriving the discontinuous Galerkin approximation for a simple 2D domain spanning
+$\left[ -1, 1 \right] x \left[ -1, 1 \right]$.
 
+\begin{figure}[H]
+	\centering
+	\includesvg[width=0.8\textwidth]{Chapter_spectral_element_method/media/domain}
+	\caption{2D simple domain: \left[ -1, 1 \right] x \left[ -1, 1 \right], with the four normals $n_i$.}
+	\label{fig:simple_domain}
+\end{figure}
 
 \section{Implementation} \label{section:spectral_element_method:implementation}
 % Talk about the flux computation, possible race conditions
