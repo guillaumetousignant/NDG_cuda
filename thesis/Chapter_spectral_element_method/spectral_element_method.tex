@@ -180,6 +180,98 @@ known values at the collocation points, without computing the interpolating poly
 	p_N(x) = \frac{\sum_{j = 0}^{N} p(x_j)\frac{w_j}{x - x_j}}{\sum_{j = 0}^{N}\frac{w_j}{x - x_j}}
 \end{equation}
 
+\section{Equation} \label{section:spectral_element_method:equation}
+We want to solve the 2D wave equation:
+
+\begin{gather}
+	\frac{\partial^2p}{\partial t^2} - c^2(p_{xx} + p_{yy}) = 0 \\
+	u_t = - p_x \\
+	v_t = -p_y
+\end{gather}
+
+With $p$ being the pressure, $u$ and $v$ being the two components of the velocity, and $c$ being the
+sound speed. The three equations can be combined into one.
+
+\begin{equation} \label{equ:2d_wave}
+	\frac{\partial^2p}{\partial t^2} + c^2\left ( (u_x)_t + (v_y)_t \right ) = 0
+\end{equation}
+
+We then integrate once with regards to time, to get:
+
+\begin{equation} \label{equ:2d_wave_integrated}
+	p_t + c^2\left ( u_x + v_y \right ) = 0
+\end{equation}
+
+We can also write Equation~\ref{equ:2d_wave_integrated} in matrix form,
+
+\begin{equation} \label{equ:2d_wave_matrix}
+	\begin{bmatrix}
+        p \\ 
+        u \\ 
+        v
+	\end{bmatrix}_t +
+	\begin{bmatrix}
+        0 & c^2 & 0 \\ 
+        1 & 0 & 0 \\ 
+        0 & 0 & 0
+	\end{bmatrix}
+	\begin{bmatrix}
+        p\\ 
+        u\\ 
+        v
+	\end{bmatrix}_x + 
+	\begin{bmatrix}
+        0 & 0 & c^2 \\ 
+        0 & 0 & 0 \\ 
+        1 & 0 & 0
+	\end{bmatrix}
+	\begin{bmatrix}
+        p\\ 
+        u\\ 
+        v
+	\end{bmatrix}_y = 0
+\end{equation}
+
+or in vector form.
+
+\begin{equation} \label{equ:2d_wave_vector}
+	\overrightarrow{q_t} + B \overrightarrow{q_x} + C \overrightarrow{q_y} = 0
+\end{equation}
+
+$B$ and $C$ are constant matrices, and as such can be combined with the derivatives.
+
+\begin{gather}
+	\overrightarrow{f} = B \overrightarrow{q} \\
+	\overrightarrow{g} = C \overrightarrow{q}
+\end{gather}
+
+\begin{equation}
+	\overrightarrow{q_t} + \overrightarrow{f_x} + \overrightarrow{g_y} = 0
+\end{equation}
+
+By combining $\overrightarrow{f}$ and $\overrightarrow{g}$ into a flux vector $\mathbf{F}$, we get 
+the conservative form of the wave equation.
+
+\begin{equation}
+	\mathbf{F} = \overrightarrow{f}\widehat{x} + \overrightarrow{g}\widehat{y}
+\end{equation}
+
+Where $\widehat{x}$ and $\widehat{y}$ are the unit vectors in the $x$ and $y$ directions,
+respectively. 
+
+\begin{equation} \label{equ:2d_wave_conservation}
+	\overrightarrow{q_t} + \bigtriangledown \cdot \mathbf{F} = 0
+\end{equation}
+
+We use the divergence theorem to Equation~\ref{equ:2d_wave_conservation} to obtain two integrals,
+one on the control volume $V$ and one on the surface $S$ of said volume.
+
+\begin{equation} \label{equ:2d_wave_integral}
+	\frac{d}{dt}\int_{V}\overrightarrow{q}dV = -\int_{S}\mathbf{F}\cdot \widehat{n}dS. 
+\end{equation}
+
+Where $\widehat{n}$ is the surface normal vector, pointing outwards.
+
 \section{DG-SEM} \label{section:spectral_element_method:dg_sem}
 Section~\ref{section:spectral_element_method:spectral_approximation} shows how to approximate
 functions with polynomials, and how to compute integrals on them. We must then apply those equations
@@ -201,10 +293,7 @@ contrast to the continuous Galerkin spectral element method, where the solution 
 at element boundaries by using the Gauss-Lobatto quadrature points. These quadrature points include
 points at $-1$ and $1$. The tradeoff is reduced accuracy.
 
-We want to solve the 2D wave equation:
 
-
-\section{Equation} \label{section:spectral_element_method:equation}
 
 \section{Implementation} \label{section:spectral_element_method:implementation}
 % Talk about the flux computation, possible race conditions
