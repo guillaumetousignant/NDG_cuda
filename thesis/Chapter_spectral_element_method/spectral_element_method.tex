@@ -249,25 +249,25 @@ $B$ and $C$ are constant matrices, and as such can be combined with the derivati
 	\overrightarrow{q_t} + \overrightarrow{f_x} + \overrightarrow{g_y} = 0
 \end{equation}
 
-By combining $\overrightarrow{f}$ and $\overrightarrow{g}$ into a flux vector $\mathbf{F}$, we get 
+By combining $\overrightarrow{f}$ and $\overrightarrow{g}$ into a flux vector $\mathfrak{F}$, we get 
 the conservative form of the wave equation.
 
 \begin{equation}
-	\mathbf{F} = \overrightarrow{f}\widehat{x} + \overrightarrow{g}\widehat{y}
+	\mathfrak{F} = \overrightarrow{f}\widehat{x} + \overrightarrow{g}\widehat{y}
 \end{equation}
 
 Where $\widehat{x}$ and $\widehat{y}$ are the unit vectors in the $x$ and $y$ directions,
 respectively. 
 
 \begin{equation} \label{equ:2d_wave_conservation}
-	\overrightarrow{q_t} + \bigtriangledown \cdot \mathbf{F} = 0
+	\overrightarrow{q_t} + \bigtriangledown \cdot \mathfrak{F} = 0
 \end{equation}
 
 We use the divergence theorem to Equation~\ref{equ:2d_wave_conservation} to obtain two integrals,
 one on the control volume $V$ and one on the surface $S$ of said volume.
 
 \begin{equation} \label{equ:2d_wave_integral}
-	\frac{d}{dt}\int_{V}\overrightarrow{q}dV = -\int_{S}\mathbf{F}\cdot \widehat{n}dS. 
+	\frac{d}{dt}\int_{V}\overrightarrow{q}dV = -\int_{S}\mathfrak{F}\cdot \widehat{n}dS. 
 \end{equation}
 
 Where $\widehat{n}$ is the surface normal vector, pointing outwards.
@@ -298,10 +298,41 @@ $\left[ -1, 1 \right] x \left[ -1, 1 \right]$.
 
 \begin{figure}[H]
 	\centering
-	\includesvg[width=0.8\textwidth]{Chapter_spectral_element_method/media/domain}
+	\includesvg[width=0.6\textwidth]{Chapter_spectral_element_method/media/domain}
 	\caption{2D simple domain: $\left[ -1, 1 \right] x \left[ -1, 1 \right]$, with the four normals $n_i$.}
 	\label{fig:simple_domain}
 \end{figure}
+
+We can now approximate our solutions by polynomials of degree $N$ in both directions, in Lagrange
+form. 
+
+\begin{gather}
+	\overrightarrow{q} \approx \mathbf{Q} = \sum_{i = 0}^{N}\sum_{j = 0}^{M}\mathbf{Q}_{i,j}l_i(x)l_j(y) \\
+	\mathfrak{F} \approx \mathbf{F} = \sum_{i = 0}^{N} \sum_{j = 0}^{N} \left ( \mathbf{F}_{i, j} \widehat{x} + \mathbf{G}_{i, j}\widehat{y}\right ) l_i(x) l_j(y)
+\end{gather}
+
+Where $\mathbf{F}_{i, j} \widehat{x} + \mathbf{G}_{i, j}\widehat{y} = B \mathbf{Q}_{i, j}\widehat{x}
++ C \mathbf{Q}_{i, j}\widehat{y}$. 
+
+We rearrange Equation~\ref{equ:2d_wave_conservation} in weak form, using the test functions $v$.
+
+\begin{equation} \label{equ:2d_wave_weak}
+	\left( \overrightarrow{q_t}, v \right) + \left( \bigtriangledown \cdot \mathfrak{F}, v \right) = 0
+\end{equation}
+
+The test functions themselves can also be rearranged in Lagrange form:
+
+\begin{equation} \label{equ:test_lagrange}
+	v = \sum^{N}_{i = 0}\sum_{j = 0}^{N}\widetilde{v}_{i, j}l_i(x)l_j(y)
+\end{equation}
+
+We put Equation~\ref{equ:test_lagrange} in~\ref{equ:2d_wave_weak}.
+
+\begin{equation}
+	\sum_{i = 0}^{N}\sum_{j = 0}^{N} \left[ \int_{\Omega }\overrightarrow{q_t} l_i(x) l_j(y) dx dy + \int_{\Omega } \left( \bigtriangledown \cdot \mathfrak{F} \right) l_i(x) l_j(y) dx dy \right] \widetilde{v}_{i, j} = 0,
+\end{equation}
+
+Where $\Omega$ is the whole domain.
 
 \section{Implementation} \label{section:spectral_element_method:implementation}
 % Talk about the flux computation, possible race conditions
