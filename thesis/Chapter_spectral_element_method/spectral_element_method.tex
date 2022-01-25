@@ -307,7 +307,7 @@ We can now approximate our solutions by polynomials of degree $N$ in both direct
 form. 
 
 \begin{gather}
-	\overrightarrow{q} \approx \mathbf{Q} = \sum_{i = 0}^{N}\sum_{j = 0}^{M}\mathbf{Q}_{i,j}l_i(x)l_j(y) \\
+	\overrightarrow{q} \approx \mathbf{Q} = \sum_{i = 0}^{N}\sum_{j = 0}^{N}\mathbf{Q}_{i,j}l_i(x)l_j(y) \\
 	\mathfrak{F} \approx \mathbf{F} = \sum_{i = 0}^{N} \sum_{j = 0}^{N} \left ( \mathbf{F}_{i, j} \widehat{x} + \mathbf{G}_{i, j}\widehat{y}\right ) l_i(x) l_j(y)
 \end{gather}
 
@@ -384,8 +384,105 @@ collocation points on the element boundaries.
 	\label{fig:domain_nodes}
 \end{figure}
 
+We start by applying the Gauss quadrature to the first term of Equation~\ref{equ:integral_equ}.
+
+\begin{equation}
+	\begin{split}
+        \int_{-1}^{1}\int_{-1}^{1} \mathbf{Q}_t \phi_{i, j} dx dy 
+        &= \int_{-1}^{1}\int_{-1}^{1}\mathbf{Q}_t l_i(x) l_j(y) dx dy \\
+        &= \sum_{k = 0}^{N} \sum_{l = 0}^{N}\frac{d\mathbf{Q} \left( x_k, y_l \right)}{dt} l_i(x_k) l_j(y_l) w_k^{(x)} w_l^{(y)}
+	\end{split}
+\end{equation}
+
+Since the integrand is a polynomial of degree $2 N$, and the Gauss quadrature is exact up to $2 N +
+1$, the integral is exact. We use the fact that only one integrating polynomial $l_i$ is equal to 1
+and not 0 on each collocation point $x_k$ to get:
+
+\begin{equation} \label{equ:integral_1}
+    \int_{-1}^{1}\int_{-1}^{1} \mathbf{Q}_t \phi_{i, j} dx dy 
+    = \frac{d\mathbf{Q} \left( x_i, y_j \right)}{dt} w_i^{(x)} w_j^{(y)}.
+\end{equation}
+
+We do the same fon the third term of Equation~\ref{equ:integral_equ}.
+
+\begin{equation} \label{equ:integral_3}
+	\begin{split}
+		\int_{-1}^{1}\int_{-1}^{1}\mathbf{F} \cdot \bigtriangledown \phi_{i, j} dx dy 
+		&= \int_{-1}^{1}\int_{-1}^{1}\mathbf{F}(x, y) l'_i(x)l_j(y) + \mathbf{G}(x, y) l_i(x) l'_j(y) \:\: dx dy \\ 
+		&= \sum_{k = 0}^{N} \sum_{l = 0}^{N}\left [ \mathbf{F}(x_k, y_l)l'_i(x_k)l_j(y_l) + \mathbf{G}(x_k, y_l) l_i(x_k)l'_j(y_l) \right ]w_k^{(x)} w_l^{(y)} \\
+		&= \sum_{k = 0}^{N} \mathbf{F}(x_k, y_j)l'_i(x_k)w_k^{(x)} w_j^{(y)} + \sum_{l = 0}^{N}\mathbf{G}(x_i, y_l) l'_j(y_l) w_i^{(x)} w_l^{(y)}.
+	\end{split}
+\end{equation}
+
+Now only the second term is left, the integral over the boundary. We start by applying the Gauss
+quadrature to the developed integral.
+
+\begin{equation} \label{equ:integral_2}
+	\begin{split}
+        \oint_{S} \phi_{i, j}\mathbf{F}^* \cdot \widehat{n}dS = & 
+        \int_{-1}^{1}l_i(x) l_j(-1)\mathbf{F}^*(x, -1) \cdot (-\widehat{y}) \: dx \\
+        & + \int_{-1}^{1}l_i(x) l_j(1)\mathbf{F}^*(x, 1) \cdot (\widehat{y}) \: dx \\
+        & + \int_{-1}^{1}l_i(-1) l_j(y)\mathbf{F}^*(-1, y) \cdot (-\widehat{x}) \: dy \\
+        & + \int_{-1}^{1}l_i(1) l_j(y)\mathbf{F}^*(1, y) \cdot (\widehat{x}) \: dy \\
+        = & \sum_{k = 0}^{N}l_i(x_k)l_j(-1)\mathbf{F}^*(x_k, -1)\cdot (-\widehat{y}) \: w_k^{(x)} \\
+        & + \sum_{k = 0}^{N}l_i(x_k)l_j(1)\mathbf{F}^*(x_k, 1)\cdot (\widehat{y}) \: w_k^{(x)} \\
+        & + \sum_{l = 0}^{N}l_i(-1)l_j(y_l)\mathbf{F}^*(-1, y_l)\cdot (-\widehat{x}) \: w_l^{(y)} \\
+        & + \sum_{l = 0}^{N}l_i(1)l_j(y_l)\mathbf{F}^*(1, y_l)\cdot (\widehat{x}) \: w_l^{(y)} \\
+        = & l_j(-1)\mathbf{F}^*(x_i, -1)\cdot (-\widehat{y}) \: w_i^{(x)} \\
+        & + l_j(1)\mathbf{F}^*(x_i, 1)\cdot (\widehat{y}) \: w_i^{(x)} \\
+        & + l_i(-1)\mathbf{F}^*(-1, y_j)\cdot (-\widehat{x}) \: w_j^{(y)} \\
+        & + l_i(1)\mathbf{F}^*(1, y_j)\cdot (\widehat{x}) \: w_j^{(y)}
+	\end{split}
+\end{equation}
+
+Note that the integrands are also of order $2 N$, and are computed exactly. We put
+Equations~\ref{equ:integral_1}, ~\ref{equ:integral_2} and ~\ref{equ:integral_3} in
+Equation~\ref{equ:integral_equ} and divide by the weights $w_i^{ \left( x \right) } w_j^{ \left( y \right) }$.
+
+\begin{equation} \label{equ:2d_wave_full}
+	\begin{split}
+        & \frac{d\mathbf{Q}(x_i, y_j)}{dt} \\
+        & + \left\{ \left[ l_i \left( -1 \right) \mathbf{F}^* \left( -1, y_j \right) \cdot \left( -\widehat{x} \right) \frac{1}{w_i^{ \left( x \right) }} + l_i \left( 1 \right) \mathbf{F}^* \left( 1, y_j \right) \cdot
+        \left( \widehat{x} \right) \frac{1}{w_i^{ \left( x \right) }} \right] - \sum_{k = 0}^{N} \mathbf{F} \left(x_k, y_j \right) \frac{l'_i \left( x_k \right) w_k^{ \left( x \right) }}{w_i^{ \left( x \right) }} \right\} \\
+        & + \left\{ \left[ l_j \left( -1 \right) \mathbf{F}^* (x_i, -1) \cdot \left( -\widehat{y} \right) \frac{1}{w_j^{ \left( y \right) }} + l_j \left( 1 \right) \mathbf{F}^*(x_i, 1) \cdot
+        \left( \widehat{y} \right) \frac{1}{w_j^{ \left( y \right) }} \right] - \sum_{l = 0}^{N} \mathbf{G} \left(x_i, y_l \right) \frac{l'_j \left( y_l \right) w_l^{ \left( y \right) }}{w_j^{ \left( y \right) }} \right\} \\
+        & = 0, \quad i,j = 0, ..., N
+	\end{split} 
+\end{equation}
+
+We define $l'_i(x_k)$ as the derivative matrix $D_{k, i}$. Since they are constant, we also
+incorporate the weights $w_i$ and $w_k$.
+
+\begin{equation} \label{equ:d_hat}
+	\begin{split}
+        \widehat{D}_{i,k} = & -\frac{D_{k, i} w_k}{w_i} \\
+        = & -\frac{l'_i(x_k) w_k}{w_i}
+	\end{split} 
+\end{equation}
+
+This simplifies Equation~\ref{equ:2d_wave_full} to:
+
+\begin{equation} \label{equ:2d_wave_d}
+	\begin{split}
+        & \frac{d\mathbf{Q}(x_i, y_j)}{dt} \\
+        & + \left\{ \left[ l_i \left( -1 \right) \mathbf{F}^* \left( -1, y_j \right) \cdot \left( -\widehat{x} \right) \frac{1}{w_i^{ \left( x \right) }} + l_i \left( 1 \right) \mathbf{F}^* \left( 1, y_j \right) \cdot
+        \left( \widehat{x} \right) \frac{1}{w_i^{ \left( x \right) }} + \sum_{k = 0}^{N} \mathbf{F} \left( x_k, y_j \right) \widehat{D}_{i, k}^{ \left( x \right) } \right] \right\} \\
+        & + \left \{ \left [ l_j \left( -1 \right) \mathbf{F}^* \left( x_i, -1 \right) \cdot \left( -\widehat{y} \right) \frac{1}{w_j^{ \left( y \right) }} + l_j \left( 1 \right) \mathbf{F}^* \left(x_i, 1 \right) \cdot
+        \left( \widehat{y} \right) \frac{1}{w_j^{ \left( y \right) }} + \sum_{l = 0}^{N} \mathbf{G} \left( x_i, y_l \right) \widehat{D}_{j, l}^{ \left( y \right) } \right] \right\} \\
+        & = 0, \quad i, j = 0, ..., N
+	\end{split}
+\end{equation}
+
+The collocation points, weights and derivative matrices from Equation~\ref{equ:2d_wave_d} can be
+computed directly and stored for the whole computation. Algorithms for those are discussed in
+Section~\ref{section:spectral_element_method:implementation}. The next section discusses the
+computation of the fluxes $\mathbf{F}^*$.
+
 \subsection{Fluxes} \label{section:spectral_element_method:spectral_approximation:dg_sem:fluxes}
 
+
+
+\subsection{Time integration} \label{section:spectral_element_method:spectral_approximation:dg_sem:time}
 
 \section{Implementation} \label{section:spectral_element_method:implementation}
 % Talk about the flux computation, possible race conditions
