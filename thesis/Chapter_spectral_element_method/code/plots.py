@@ -25,7 +25,7 @@ axes_font_size = 24
 graduations_font_size = 16
 normals_font_size = 16
 nodes_size = 12
-boundary_size = 12
+boundary_size = 8
 nodes_shape = "."
 boundary_shape = "X"
 
@@ -118,7 +118,7 @@ domain_ax.text(-1.2, 0.1, "$n_3$", fontfamily="Fira Code", fontsize=normals_font
 domain_fig.savefig(save_path / f"domain.svg", format='svg', transparent=True)
 
 # Nodes
-nodes_fig = plt.figure(figsize=(6, 6))
+nodes_fig = plt.figure(figsize=(4, 4))
 nodes_ax = nodes_fig.add_subplot(1, 1, 1)
 nodes_ax.set_xlim(-1.1, 1.1)
 nodes_ax.set_ylim(-1.1, 1.1)
