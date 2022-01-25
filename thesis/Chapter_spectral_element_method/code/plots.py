@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 from pathlib import Path
 import numpy as np
+import numpy.matlib
 import sem
 
 N = range(6)
@@ -8,12 +9,14 @@ n_points = 1000
 x = np.linspace(-1, 1, n_points)
 polynomial_width = 2
 nodes_width = 2
+boundary_width = 2
 elements_width = 3
 nodes_linestyle = "--"
-nodes_colour = np.array([244, 71, 61])/255
 elements_colour = np.array([37, 37, 37])/255
 arrow_colour = np.array([200, 200, 200])/255
 normals_colour = np.array([78, 201, 176])/255
+nodes_colour = np.array([197, 134, 192])/255
+boundary_colour = np.array([79, 193, 255])/255
 polynomial_color_map = plt.get_cmap("viridis")
 interpolant_color_map = plt.get_cmap("rainbow")
 arrow_width = 0.025
@@ -21,6 +24,10 @@ arrow_head_length = 0.05
 axes_font_size = 24
 graduations_font_size = 16
 normals_font_size = 16
+nodes_size = 12
+boundary_size = 12
+nodes_shape = "."
+boundary_shape = "X"
 
 save_path = Path(__file__).parent.parent / "media"
 save_path.mkdir(parents=True, exist_ok=True)
@@ -109,5 +116,20 @@ domain_ax.text(0.1, 1.2, "$n_2$", fontfamily="Fira Code", fontsize=normals_font_
 domain_ax.text(-1.2, 0.1, "$n_3$", fontfamily="Fira Code", fontsize=normals_font_size, horizontalalignment="center", verticalalignment="bottom", color=normals_colour)
 
 domain_fig.savefig(save_path / f"domain.svg", format='svg', transparent=True)
+
+# Nodes
+nodes_fig = plt.figure(figsize=(6, 6))
+nodes_ax = nodes_fig.add_subplot(1, 1, 1)
+nodes_ax.set_xlim(-1.1, 1.1)
+nodes_ax.set_ylim(-1.1, 1.1)
+nodes_ax.set_aspect(1)
+nodes_ax.axis('off')
+
+nodes_ax.plot([-1, 1, 1, -1, -1], [-1, -1, 1, 1, -1], color=elements_colour, linewidth=elements_width, label="Element")
+
+nodes_ax.plot(np.matlib.repmat(nodes, nodes.shape[0], 1), np.matlib.repmat(np.swapaxes([nodes],0,1), 1, nodes.shape[0]), color=nodes_colour, linestyle="None", linewidth=nodes_width, marker=nodes_shape, markersize=nodes_size, label="Nodes")
+nodes_ax.plot(np.concatenate((nodes, np.ones(nodes.shape), nodes, np.full(nodes.shape, -1))), np.concatenate((np.full(nodes.shape, -1), nodes, np.ones(nodes.shape), nodes)), color=boundary_colour, linestyle="None", linewidth=boundary_width, marker=boundary_shape, markersize=boundary_size, label="Boundary nodes")
+
+nodes_fig.savefig(save_path / f"nodes.svg", format='svg', transparent=True)
 
 plt.show()
