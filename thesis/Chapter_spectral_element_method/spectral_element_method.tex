@@ -788,7 +788,7 @@ solution at the next timestep as:
 \begin{equation} \label{equ:runge_kutta}
 	\begin{split}
 		& U \leftarrow U^n \\
-		& G \leftarrow F(U, t_n) \\
+		& G \leftarrow F \left( U, t_n \right) \\
 		& U \leftarrow U + \frac{1}{3} \Delta t G \\
 		& G = -\frac{5}{9} G + F \left( U, t_n + \frac{1}{3} \Delta t \right) \\
 		& U \leftarrow U + \frac{15}{16} \Delta t G \\
@@ -830,14 +830,14 @@ This method is a explicit time stepping method, therefore we have to fulfill the
 Friedrichs Lewy (CFL)} condition to be ensure stability. The CFL condition goes as follows:
 
 \begin{equation}
-	\left| \frac{c \Delta t}{\Delta x} \right| \leq CFL
+	\left| \frac{c \Delta t}{\Delta x} \right| \leq \CFL
 \end{equation}
 
-Where the $CFL$ number is usually 1. As we have a higher-order time integration scheme, the CFL can
-be increased above this number~\cite{Gottlieb2001}.
+Where the $\CFL$ number is usually 1. As we have a higher-order time integration scheme, the $\CFL$
+number can be increased above this number~\cite{Gottlieb2001}.
 
 \begin{equation}
-        0 \leq CFL \leq 1.73 
+        0 \leq \CFL \leq 1.73 
 \end{equation}
 
 To account for the uneven spacing between the collocation points inside an element, we will use the
@@ -852,7 +852,7 @@ element. The global timestep of the solution will be chosen as the minimum times
 elements $k$. 
 
 \begin{equation}
-    \Delta t_k \leq CFL c \frac{\Delta x_{k}}{N^2}
+    \Delta t_k \leq \CFL \cdot c \frac{\Delta x_{k}}{N^2}
 \end{equation}
 
 \section{Implementation} \label{section:spectral_element_method:implementation}
