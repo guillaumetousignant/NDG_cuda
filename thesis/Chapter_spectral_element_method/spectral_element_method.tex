@@ -252,7 +252,7 @@ $B$ and $C$ are constant matrices, and as such can be combined with the derivati
 By combining $\overrightarrow{f}$ and $\overrightarrow{g}$ into a flux vector $\mathfrak{F}$, we get 
 the conservative form of the wave equation.
 
-\begin{equation}
+\begin{equation} \label{equ:2d_wave_fluxes}
 	\mathfrak{F} = \overrightarrow{f}\widehat{x} + \overrightarrow{g}\widehat{y}
 \end{equation}
 
@@ -480,7 +480,89 @@ computation of the fluxes $\mathbf{F}^*$.
 
 \subsection{Fluxes} \label{section:spectral_element_method:spectral_approximation:dg_sem:fluxes}
 
+We now need to compute the numerical fluxes $\mathbf{F}^*$ as a way to approximate the physical
+fluxes $\mathfrak{F}$. We recall the formulation for the fluxes from
+Equation~\ref{equ:2d_wave_fluxes}. 
 
+\begin{equation} \label{equ:physical_fluxes}
+	\mathfrak{F} = \overrightarrow{f_x} + \overrightarrow{g_y} = B \overrightarrow{q_x} + C \overrightarrow{q_y}
+\end{equation}
+
+With matrices $B$ and $C$ taken from Equation~\ref{equ:2d_wave_matrix}.
+
+\begin{equation}
+	B = \begin{bmatrix}
+        0 & c^2 & 0 \\ 
+        1 & 0 & 0 \\ 
+        0 & 0 & 0 
+	\end{bmatrix}
+	C = \begin{bmatrix}
+        0 & 0 & c^2\\ 
+        0 & 0 & 0 \\ 
+        1 & 0 & 0
+	\end{bmatrix}
+\end{equation}
+
+We will use an upwind scheme~\cite{Toro2009} to impose the boundary conditions. On an interface
+between two elements, the left and right elements in that coordinate system, the state at the
+interface is the left state if the wave goes from left to right, or the right state if the wave goes
+from right to left. This is the upwind state of the boundary.
+
+Since it is not evident what the upwind state of the system described in
+Equation~\ref{equ:physical_fluxes}, we will decouple the wave components. We start with the $x$
+direction, decomposing $B$ to a diagonal matrix $\Lambda_B$, its right eigenvectors $K_B$, and their
+inverse $K_B^{-1}$.
+
+\begin{equation}
+    \Lambda_B = 
+    \begin{bmatrix}
+        c & 0 & 0 \\ 
+        0 & -c & 0 \\ 
+        0 & 0 & 0
+    \end{bmatrix}
+    K_B = 
+    \begin{bmatrix}
+        c & -c & 0 \\ 
+        1 & 1 & 0 \\ 
+        0 & 0 & 1 
+    \end{bmatrix}
+    K_B^{-1} = 
+    \begin{bmatrix}
+        \frac{1}{2c} & \frac{1}{2} & 0 \\ 
+        -\frac{1}{2c} & \frac{1}{2} & 0 \\ 
+        0 & 0 & 1
+    \end{bmatrix}
+\end{equation}
+
+The diagonal matrix can be further decomposed into three wave directions: left-to-right,
+right-to-left, and stationary.
+
+\begin{equation}
+	\begin{split}
+		\Lambda_B & = 
+        \begin{bmatrix}
+            c & 0 & 0 \\ 
+            0 & -c & 0 \\ 
+            0 & 0 & 0
+		\end{bmatrix} = 
+		\begin{bmatrix}
+            c & 0 & 0 \\ 
+            0 & 0 & 0 \\ 
+            0 & 0 & 0
+		\end{bmatrix} +
+		\begin{bmatrix}
+            0 & 0 & 0 \\ 
+            0 & -c & 0 \\ 
+            0 & 0 & 0
+		\end{bmatrix} +
+		\begin{bmatrix}
+            0 & 0 & 0 \\ 
+            0 & 0 & 0 \\ 
+            0 & 0 & 0
+		\end{bmatrix} \\
+		&= \Lambda_B^+ + \Lambda_B^- + \Lambda_B^0
+	\end{split}
+\end{equation}
 
 \subsection{Time integration} \label{section:spectral_element_method:spectral_approximation:dg_sem:time}
 
