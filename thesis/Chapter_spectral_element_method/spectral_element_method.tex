@@ -774,9 +774,90 @@ derivatives in temporary arrays, which will then be added to the real time deriv
 truncation error of that method is comparable to the usual Runge-Kutta
 methods~\cite{Williamson1980}.
 
+The method works as such. For a differential equation like the following:
 
+\begin{equation}
+	u_t = F(u, t)
+\end{equation}
+
+We will use $\Delta t$ to represent the time step, $n$ to represent the number of time steps thus
+far, and $t_n = n \Delta t$ as the current time. $u$ is the solution vector with $N$ variables, and
+$U^n$ is the approximation of the solution at $t_n$. The method gives the approximation of the
+solution at the next timestep as:
+
+\begin{equation} \label{equ:runge_kutta}
+	\begin{split}
+		& U \leftarrow U^n \\
+		& G \leftarrow F(U, t_n) \\
+		& U \leftarrow U + \frac{1}{3} \Delta t G \\
+		& G = -\frac{5}{9} G + F \left( U, t_n + \frac{1}{3} \Delta t \right) \\
+		& U \leftarrow U + \frac{15}{16} \Delta t G \\
+		& G \leftarrow -\frac{153}{128} G + F \left( U, t_n + \frac{3}{4} \Delta t \right) \\
+		& U^{n + 1} \leftarrow U + \frac{8}{15} \Delta t G
+	\end{split}
+\end{equation}
+
+$G$ is introduced as a temporary variable to store the time derivative after partial time steps. As
+U and G are overwritten at each of the three stages, only $2 N$ amount of storage is used, where $N$
+is the number of variables making up $U$. The algorithm can be summarised as the following stage run
+three times, where $m$ is the stage number.
+
+\begin{equation} \label{equ:runge_kutta_stage}
+	\begin{split}
+		& G \leftarrow a_m G + F \left( U, t_n + b_m \Delta t \right) \\
+		& U \leftarrow U + g_m \Delta t G
+	\end{split}
+\end{equation}
+
+The following table lists the coefficients $a_m$, $b_m$ and $g_m$. The algorithm used by the program
+to advance the simulation in time is described in
+Subsection~\ref{section:spectral_element_method:implementation:time}. 
+
+\begin{table}[H]
+	\centering
+	\begin{tabular}{c c c c}
+		$m$ & $a_m$ & $b_m$ & $g_m$ \\
+		\hline
+		0 & 0 & 0 & $\frac{1}{3}$ \\
+		1 & $-\frac{5}{9}$ & $\frac{1}{3}$ & $\frac{15}{16}$ \\
+		2 & $-\frac{153}{128}$ & $\frac{3}{4}$ & $\frac{8}{15}$ \\
+	\end{tabular}
+	\caption{Coefficients of the third-order low storage Runge-Kutta method.}
+	\label{table:runge_kutta_coefficient}
+\end{table}
+
+This method is a explicit time stepping method, therefore we have to fulfill the \textit{Courant
+Friedrichs Lewy (CFL)} condition to be ensure stability. The CFL condition goes as follows:
+
+\begin{equation}
+	\left| \frac{c \Delta t}{\Delta x} \right| \leq CFL
+\end{equation}
+
+Where the $CFL$ number is usually 1. As we have a higher-order time integration scheme, the CFL can
+be increased above this number~\cite{Gottlieb2001}.
+
+\begin{equation}
+        0 \leq CFL \leq 1.73 
+\end{equation}
+
+To account for the uneven spacing between the collocation points inside an element, we will use the
+following relation for $\Delta x$: 
+
+\begin{equation}
+    \Delta x = \frac{\Delta x_{k}}{N^2}
+\end{equation}
+
+Where $\Delta x_{k}$ is the minimum length of element $k$, and $N$ is the polynomial order of that
+element. The global timestep of the solution will be chosen as the minimum timestep of all the
+elements $k$. 
+
+\begin{equation}
+    \Delta t_k \leq CFL c \frac{\Delta x_{k}}{N^2}
+\end{equation}
 
 \section{Implementation} \label{section:spectral_element_method:implementation}
 % Talk about the flux computation, possible race conditions
 
 \subsection{Fluxes} \label{section:spectral_element_method:implementation:fluxes}
+
+\subsection{Time integration} \label{section:spectral_element_method:implementation:time}
