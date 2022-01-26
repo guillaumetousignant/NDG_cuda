@@ -479,7 +479,6 @@ Section~\ref{section:spectral_element_method:implementation}. The next section d
 computation of the fluxes $\mathbf{F}^*$.
 
 \subsection{Fluxes} \label{section:spectral_element_method:spectral_approximation:dg_sem:fluxes}
-
 We now need to compute the numerical fluxes $\mathbf{F}^*$ as a way to approximate the physical
 fluxes $\mathfrak{F}$. We recall the formulation for the fluxes from
 Equation~\ref{equ:2d_wave_fluxes}. 
@@ -578,7 +577,7 @@ We can evaluate the flux with:
 
 \begin{figure}[H]
 	\centering
-	\includesvg[width=0.4\textwidth]{Chapter_spectral_element_method/media/waves}
+	\includesvg[width=0.25\textwidth]{Chapter_spectral_element_method/media/waves}
 	\caption{States on both sides of an interface: The normal $\widehat{n}$ of the interface
 	    determines the left and right side. $\mathbf{Q}^L$ and $\mathbf{Q}^R$ are the states on the
 	    left and right of the interface. $w^+$ and $w^-$ indicate the left-to-right and
@@ -764,6 +763,18 @@ to compute these fluxes is presented in
 Subsection~\ref{section:spectral_element_method:implementation:fluxes}.
 
 \subsection{Time integration} \label{section:spectral_element_method:spectral_approximation:dg_sem:time}
+Now that we know hot to compute the interior terms and the numerical fluxes of
+Equation~\ref{equ:2d_wave_d}, we can compute the time derivative $\mathbf{Q}_t$. We then need to
+integrate that equation in time. We will used a third-order low-storage Runge-Kutta method, as
+described by Williamson~\cite{Williamson1980}. As the name suggests, this method uses low memory to
+attain high temporal accuracy. This is especially useful in the context of GPU computation, as GPUs
+tend to have less available memory than usual HPC CPU platforms. This method requires $2 N$ the
+storage, where $N$ is the number of variables. Concretely, we will need to store the computed time
+derivatives in temporary arrays, which will then be added to the real time derivative arrays. The
+truncation error of that method is comparable to the usual Runge-Kutta
+methods~\cite{Williamson1980}.
+
+
 
 \section{Implementation} \label{section:spectral_element_method:implementation}
 % Talk about the flux computation, possible race conditions
