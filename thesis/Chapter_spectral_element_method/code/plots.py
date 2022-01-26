@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 from pathlib import Path
 import numpy as np
-import numpy.matlib
+from numpy import matlib
 import sem
 
 N = range(6)
@@ -17,6 +17,8 @@ arrow_colour = np.array([200, 200, 200])/255
 normals_colour = np.array([78, 201, 176])/255
 nodes_colour = np.array([197, 134, 192])/255
 boundary_colour = np.array([79, 193, 255])/255
+left_colour = np.array([86, 156, 214])/255
+right_colour = np.array([244, 71, 71])/255
 polynomial_color_map = plt.get_cmap("viridis")
 interpolant_color_map = plt.get_cmap("rainbow")
 arrow_width = 0.025
@@ -24,6 +26,8 @@ arrow_head_length = 0.05
 axes_font_size = 24
 graduations_font_size = 16
 normals_font_size = 16
+normal_font_size = 24
+sides_font_size = 36
 nodes_size = 12
 boundary_size = 8
 nodes_shape = "."
@@ -131,5 +135,28 @@ nodes_ax.plot(np.matlib.repmat(nodes, nodes.shape[0], 1), np.matlib.repmat(np.sw
 nodes_ax.plot(np.concatenate((nodes, np.ones(nodes.shape), nodes, np.full(nodes.shape, -1))), np.concatenate((np.full(nodes.shape, -1), nodes, np.ones(nodes.shape), nodes)), color=boundary_colour, linestyle="None", linewidth=boundary_width, marker=boundary_shape, markersize=boundary_size, label="Boundary nodes")
 
 nodes_fig.savefig(save_path / f"nodes.svg", format='svg', transparent=True)
+
+# Waves
+waves_fig = plt.figure(figsize=(2.2, 4))
+waves_ax = waves_fig.add_subplot(1, 1, 1)
+waves_ax.set_xlim(-0.6, 0.6)
+waves_ax.set_ylim(-1.1, 1.1)
+waves_ax.set_aspect(1)
+waves_ax.axis('off')
+
+waves_ax.plot([0, 0], [-1, 1], color=elements_colour, linewidth=elements_width, label="Element boundary")
+
+waves_ax.text(-0.1, 0, "$\mathbf{Q}^L$", fontfamily="Fira Code", fontsize=sides_font_size, horizontalalignment="right", verticalalignment="center", color=left_colour)
+waves_ax.text(0.1, 0, "$\mathbf{Q}^R$", fontfamily="Fira Code", fontsize=sides_font_size, horizontalalignment="left", verticalalignment="center", color=right_colour)
+
+waves_ax.arrow(0.1, -0.75, 0.4, 0, length_includes_head=True, width=arrow_width, head_length=arrow_head_length, color=normals_colour)
+waves_ax.text(0.3, -0.7, "$\widehat{n}$", fontfamily="Fira Code", fontsize=normal_font_size, horizontalalignment="center", verticalalignment="bottom", color=normals_colour)
+
+waves_ax.arrow(-0.5, 0.65, 0.4, 0, length_includes_head=True, width=arrow_width, head_length=arrow_head_length, color=elements_colour)
+waves_ax.text(-0.3, 0.7, "$w^+$", fontfamily="Fira Code", fontsize=normal_font_size, horizontalalignment="center", verticalalignment="bottom", color=elements_colour)
+waves_ax.arrow(0.5, 0.65, -0.4, 0, length_includes_head=True, width=arrow_width, head_length=arrow_head_length, color=elements_colour)
+waves_ax.text(0.3, 0.7, "$w^-$", fontfamily="Fira Code", fontsize=normal_font_size, horizontalalignment="center", verticalalignment="bottom", color=elements_colour)
+
+waves_fig.savefig(save_path / f"waves.svg", format='svg', transparent=True)
 
 plt.show()

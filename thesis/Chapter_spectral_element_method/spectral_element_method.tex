@@ -564,6 +564,38 @@ right-to-left, and stationary.
 	\end{split}
 \end{equation}
 
+We can then split the wave into three components, each containing only one direction.
+
+\begin{equation}
+	B = K_B \Lambda_B^+ K_B^{-1} + K_B \Lambda_B^- K_B^{-1} + K_B \Lambda_B^0 K_B^{-1} = B^+ + B^- + B^0
+\end{equation}
+
+We can evaluate the flux with:
+
+\begin{equation} \label{equ:flux_x}
+	\mathbf{F} \cdot \widehat{n} = B^+\overrightarrow{q} + B^-\overrightarrow{q} + B^0 \overrightarrow{q}.
+\end{equation}
+
+\begin{figure}[H]
+	\centering
+	\includesvg[width=0.4\textwidth]{Chapter_spectral_element_method/media/waves}
+	\caption{States on both sides of an interface: The normal $\widehat{n}$ of the interface
+	    determines the left and right side. $\mathbf{Q}^L$ and $\mathbf{Q}^R$ are the states on the
+	    left and right of the interface. $w^+$ and $w^-$ indicate the left-to-right and
+	    right-to-left waves.}
+	\label{fig:waves}
+\end{figure}
+
+Figure~\ref{fig:waves} shows a boundary, with the associated states and waves. This guides us in
+choosing the states $\mathbf{q}$ in Equation~\ref{equ:flux_x}. The upwind state for the
+left-to-right wave is $\mathbf{Q}^L$, and the upwind state for the right-to-left wave is
+$\mathbf{Q}^R$. The stationary wave ony has zeros in its matrix, and can be removed. This gives us
+the formulation for the numerical fluxes.
+
+\begin{equation}
+	\mathbf{F}^* \cdot \widehat{n} = B^+\mathbf{Q}^L + B^-\mathbf{Q}^R
+\end{equation}
+
 \subsection{Time integration} \label{section:spectral_element_method:spectral_approximation:dg_sem:time}
 
 \section{Implementation} \label{section:spectral_element_method:implementation}
