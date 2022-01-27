@@ -22,6 +22,8 @@ namespace SEM { namespace Helpers {
 
             auto set_status_text(const std::string& status) -> void;
 
+            auto set_colour(std::function<std::ostream&(std::ostream&)> colour) -> void;
+
             auto update(hostFloat value, std::ostream &os = std::cout) -> void;
 
             auto write_progress(std::ostream &os = std::cout) -> void;
