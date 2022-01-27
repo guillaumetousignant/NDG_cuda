@@ -17,19 +17,68 @@
 
 \subsection{Strong scaling} \label{section:results:scaling_tests:strong}
 
+\begin{figure}[H]
+	\centering
+	\includesvg[width=0.6\textwidth]{Chapter_results/media/strong_scaling_N4_K65536_W32}
+	\caption{Weak scaling: The problem size increases with the number of workers. N = 4, K = 65536, W = 32}
+	\label{fig:strong_scaling_N4_W32}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\includesvg[width=0.6\textwidth]{Chapter_results/media/strong_scaling_N6_K65536_W32}
+	\caption{Weak scaling: The problem size increases with the number of workers. N = 6, K = 65536, W = 32}
+	\label{fig:strong_scaling_N6_W32}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\includesvg[width=0.6\textwidth]{Chapter_results/media/strong_scaling_N6_K65536_W64}
+	\caption{Weak scaling: The problem size increases with the number of workers. N = 6, K = 65536, W = 64}
+	\label{fig:strong_scaling_N6_W64}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\includesvg[width=0.6\textwidth]{Chapter_results/media/strong_scaling_N6_K65536_W128}
+	\caption{Weak scaling: The problem size increases with the number of workers. N = 6, K = 65536, W = 128}
+	\label{fig:strong_scaling_N6_W128}
+\end{figure}
+
 \subsection{Weak scaling} \label{section:results:scaling_tests:weak}
 
 
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_results/media/weak_scaling_N4_K4096_W32}
-	\caption{Weak scaling: The problem size increases with the number of workers. N = 4, K = 64x64, W = 32}
+	\caption{Weak scaling: The problem size increases with the number of workers. N = 4, K = 4096/worker, W = 32}
 	\label{fig:weak_scaling}
 \end{figure}
 
 \section{Adaptivity performance} \label{section:results:adaptivity_performance}
 % Error adaptive vs non-adaptive, time to run
 % Error at same runtime
+
+\begin{figure}[H]
+	\centering
+	\includesvg[width=0.6\textwidth]{Chapter_results/media/adaptivity_N4_K4_C5}
+	\caption{Adaptivity efficiency: Simulation time and analytical error with adaptivity and increasing pre-processing steps. N = 4, K = 16, adaptivity interval = 5}
+	\label{fig:adaptivity_efficiency_C5}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\includesvg[width=0.6\textwidth]{Chapter_results/media/adaptivity_N4_K4_C20}
+	\caption{Adaptivity efficiency: Simulation time and analytical error with adaptivity and increasing pre-processing steps. N = 4, K = 16, adaptivity interval = 20}
+	\label{fig:adaptivity_efficiency_C20}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\includesvg[width=0.6\textwidth]{Chapter_results/media/adaptivity_N4_K4_C100}
+	\caption{Adaptivity efficiency: Simulation time and analytical error with adaptivity and increasing pre-processing steps. N = 4, K = 16, adaptivity interval = 100}
+	\label{fig:adaptivity_efficiency_C100}
+\end{figure}
 
 \section{Load balancing performance} \label{section:results:load_balancing_performance}
 % Runtime adaptive with and without load balancing
