@@ -16,6 +16,5 @@ namespace SEM { namespace Device {
 #include "InputParser_t.h"
 #include "json.hpp"
 #include "ProgressBar_t.h"
-#include "termcolor.hpp"
 
 #endif
