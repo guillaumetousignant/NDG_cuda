@@ -107,31 +107,36 @@ auto get_output_times(const SEM::Helpers::InputParser_t& input_parser) -> std::v
 auto main(int argc, char* argv[]) -> int {
     const SEM::Helpers::InputParser_t input_parser(argc, argv);
     if (input_parser.cmdOptionExists("--help") || input_parser.cmdOptionExists("-h")) {
-        std::cout << "Spectral element method 2D unstructured solver" << std::endl;
-        std::cout << '\t' <<  "Solves the 2D wave equation on 2D unstructured meshes. The meshes use the CGNS HDF5 format, and output uses the VTK format." << std::endl << std::endl;
-        std::cout << "Available options:" << std::endl;
-        std::cout << '\t' <<  "--mesh"                    <<  '\t' <<  "Full path of the input mesh file. Overrides mesh_filename and mesh_directory if set." << std::endl;
-        std::cout << '\t' <<  "--mesh_filename"           <<  '\t' <<  "File name of the input mesh file. Defaults to [mesh.cgns]" << std::endl;
-        std::cout << '\t' <<  "--mesh_directory"          <<  '\t' <<  "Directory of the input mesh file. Defaults to [./meshes/]" << std::endl;
-        std::cout << '\t' <<  "--output"                  <<  '\t' <<  "Full path of the output data file. Overrides output_filename and output_directory if set." << std::endl;
-        std::cout << '\t' <<  "--output_filename"         <<  '\t' <<  "File name of the output data file. Defaults to [output.pvtu]" << std::endl;
-        std::cout << '\t' <<  "--output_directory"        <<  '\t' <<  "Directory of the output data file. Defaults to [./data/]" << std::endl;
-        std::cout << '\t' <<  "--n"                       <<  '\t' <<  "Initial polynomial order in elements. Defaults to [8]" << std::endl;
-        std::cout << '\t' <<  "--n_max"                   <<  '\t' <<  "Maximum polynomial order in elements. Defaults to [16]" << std::endl;
-        std::cout << '\t' <<  "--max_splits"              <<  '\t' <<  "Maximum number of times an elements can split. Defaults to [3]" << std::endl;
-        std::cout << '\t' <<  "--n_points"                <<  '\t' <<  "Number of interpolation points in elements. Defaults to [n_max²]. Minimum 2." << std::endl;
-        std::cout << '\t' <<  "--adaptivity_interval"     <<  '\t' <<  "Number of iterations between adapting the mesh, 0 to disable. Defaults to [100]" << std::endl;
-        std::cout << '\t' <<  "--load_balancing_interval" <<  '\t' <<  "Number of iterations between load balancing the mesh, 0 to disable. Defaults to [100]" << std::endl;
-        std::cout << '\t' <<  "--cfl"                     <<  '\t' <<  "CFL used for the simulation. Defaults to [0.5]" << std::endl;
-        std::cout << '\t' <<  "--viscosity"               <<  '\t' <<  "Viscosity used for the simulation. Defaults to [0.1/π]" << std::endl;
-        std::cout << '\t' <<  "--times"                   <<  '\t' <<  "Comma separated list of times to output at. The last time determines the simulation length. Overrides t, n_t, and t_interval." << std::endl;
-        std::cout << '\t' <<  "--t"                       <<  '\t' <<  "End time of the simulation. Defaults to [1]" << std::endl;
-        std::cout << '\t' <<  "--n_t"                     <<  '\t' <<  "Number of times to output. Defaults to [11]" << std::endl;
-        std::cout << '\t' <<  "--t_interval"              <<  '\t' <<  "Time interval between output. Overrides n_t if set." << std::endl;
-        std::cout << '\t' <<  "--memory"                  <<  '\t' <<  "Fraction of the GPu memory requested, from 0 to 1. Defaults to [0.5]" << std::endl;
-        std::cout << '\t' <<  "--tolerance_min"           <<  '\t' <<  "Estimated error above which elements will refine. Defaults to [1e-6]" << std::endl;
-        std::cout << '\t' <<  "--tolerance_max"           <<  '\t' <<  "Estimated error below which elements will coarsen. Defaults to [1e-14]" << std::endl;
-        std::cout << '\t' <<  "--help"                    <<  '\t' <<  "Show this help message." << std::endl;
+        std::cout << "usage: NDG.exe [-h] [--mesh MESH] [--mesh_filename MESH_FILENAME] [--mesh_directory MESH_DIRECTORY] [--output OUTPUT] [--output_filename OUTPUT_FILENAME] [--output_directory OUTPUT_DIRECTORY] [--n N] [--n_max N_MAX] [--max_splits MAX_SPLITS] [--n_points N_POINTS] [--adaptivity_interval ADAPTIVITY_INTERVAL] [--load_balancing_interval LOAD_BALANCING_INTERVAL] [--cfl CFL] [--viscosity VISCOSITY] [--times T1,T2,T3,T4...] [--t T] [--n_t N_T] [--t_interval T_INTERVAL] [--memory MEMORY] [--tolerance_min TOLERANCE_MIN] [--tolerance_max TOLERANCE_MAX] [-v]" << std::endl;
+        std::cout << "Discontinuous Galerkin spectral element method solver for the 2D wave equation on 2D unstructured meshes. The meshes use the CGNS HDF5 format, and output uses the VTK format." << std::endl << std::endl;
+        std::cout << "options:" << std::endl;
+        std::cout << '\t' <<  "-h, --help"                <<  '\t' <<  "show this help message and exit" << std::endl;
+        std::cout << '\t' <<  "--mesh"                    <<  '\t' <<  "full path of the input mesh file, overrides mesh_filename and mesh_directory if set" << std::endl;
+        std::cout << '\t' <<  "--mesh_filename"           <<  '\t' <<  "file name of the input mesh file (default: mesh.cgns)" << std::endl;
+        std::cout << '\t' <<  "--mesh_directory"          <<  '\t' <<  "directory of the input mesh file (default: ./meshes/)" << std::endl;
+        std::cout << '\t' <<  "--output"                  <<  '\t' <<  "full path of the output data file, overrides output_filename and output_directory if set" << std::endl;
+        std::cout << '\t' <<  "--output_filename"         <<  '\t' <<  "file name of the output data file (default: output.pvtu)" << std::endl;
+        std::cout << '\t' <<  "--output_directory"        <<  '\t' <<  "directory of the output data file (default: ./data/)" << std::endl;
+        std::cout << '\t' <<  "--n"                       <<  '\t' <<  "initial polynomial order in elements (default: 8)" << std::endl;
+        std::cout << '\t' <<  "--n_max"                   <<  '\t' <<  "maximum polynomial order in elements (default: 16)" << std::endl;
+        std::cout << '\t' <<  "--max_splits"              <<  '\t' <<  "maximum number of times an elements can split (default: 3)" << std::endl;
+        std::cout << '\t' <<  "--n_points"                <<  '\t' <<  "number of interpolation points in elements, minimum 2 (default: n_max²)" << std::endl;
+        std::cout << '\t' <<  "--adaptivity_interval"     <<  '\t' <<  "number of iterations between adapting the mesh, 0 to disable (default: 100)" << std::endl;
+        std::cout << '\t' <<  "--load_balancing_interval" <<  '\t' <<  "number of iterations between load balancing the mesh, 0 to disable (default: 100)" << std::endl;
+        std::cout << '\t' <<  "--cfl"                     <<  '\t' <<  "CFL used for the simulation (default: 0.5)" << std::endl;
+        std::cout << '\t' <<  "--viscosity"               <<  '\t' <<  "viscosity used for the simulation (default: 0.1/π)" << std::endl;
+        std::cout << '\t' <<  "--times"                   <<  '\t' <<  "comma separated list of times to output at, simulating up to the last one, and overrides t, n_t, and t_interval" << std::endl;
+        std::cout << '\t' <<  "--t"                       <<  '\t' <<  "end time of the simulation (default: 1)" << std::endl;
+        std::cout << '\t' <<  "--n_t"                     <<  '\t' <<  "number of times to output (default: 11)" << std::endl;
+        std::cout << '\t' <<  "--t_interval"              <<  '\t' <<  "time interval between output, overrides n_t if set" << std::endl;
+        std::cout << '\t' <<  "--memory"                  <<  '\t' <<  "fraction of the GPU memory requested, from 0 to 1 (default: 0.5)" << std::endl;
+        std::cout << '\t' <<  "--tolerance_min"           <<  '\t' <<  "estimated error above which elements will refine (default: 1e-6)" << std::endl;
+        std::cout << '\t' <<  "--tolerance_max"           <<  '\t' <<  "estimated error below which elements will coarsen (default: 1e-14)" << std::endl;
+        std::cout << '\t' <<  "-v, --version"             <<  '\t' <<  "show program's version number and exit" << std::endl;
+        exit(0);
+    }
+    else if (input_parser.cmdOptionExists("--version") || input_parser.cmdOptionExists("-v")) {
+        std::cout << "NDG.exe 1.0.0" << std::endl;
         exit(0);
     }
 
