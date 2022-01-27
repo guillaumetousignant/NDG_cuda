@@ -76,6 +76,9 @@ data_width = 3
 ideal_width = 3
 cpu_colour = np.array([244, 71, 71])/255
 gpu_colour = np.array([79, 193, 255])/255
+gpu_colour_dark = np.array([3, 125, 190])/255
+error_colour = np.array([197, 134, 192])/255
+error_colour_dark = np.array([168, 80, 161])/255
 data_size = 12
 data_shape = "o"
 ideal_style = "--"
@@ -124,36 +127,34 @@ for i in range(N_weak.shape[0]):
 
 # Adaptivity efficiency
 for i in range(adaptivity_interval.shape[0]):
-    fig = plt.figure(figsize=(5, 4.5))
+    fig = plt.figure(figsize=(5.5, 4.5))
     ax = fig.add_subplot(1, 1, 1)
     ax.set_xlabel("Number of pre-condition adaptivity steps [-]")
-    ax.set_ylabel("Time [s]")
+    ax.set_ylabel("Time [s]", color=gpu_colour_dark)
+    ax.tick_params(axis='y', labelcolor=gpu_colour_dark)
     title = f"Adaptivity performance, N = {adaptivity_N[i]} K = {adaptivity_K[i]} A = {adaptivity_interval[i]}"
     fig.canvas.manager.set_window_title(title)
-    ax.grid()
+    ax.grid(axis='x')
 
     ax.plot(adaptivity_C[i, :], adaptivity_t[i, :], color=gpu_colour, linewidth=data_width, marker=data_shape, markersize=data_size, label="GPU time")
     ax.plot(adaptivity_baseline_C[i, :], [adaptivity_baseline_t[i], adaptivity_baseline_t[i]], color=gpu_colour, linewidth=data_width, linestyle=ideal_style, label="GPU non adaptive time")
 
     ax.set_ylim([0, 1.2 * max(max(adaptivity_t[i, :]), adaptivity_baseline_t[i])])
 
-    ax.legend()
+    error_ax = ax.twinx()
+    error_ax.set_ylabel("Analytical solution error [-]", color=error_colour_dark)
+    error_ax.tick_params(axis='y', labelcolor=error_colour_dark)
 
-    fig.savefig(save_path / f"adaptivity_N{adaptivity_N[i]}_K{adaptivity_K[i]}_C{adaptivity_interval[i]}.svg", format='svg', transparent=True)
-    
-    error_fig = plt.figure(figsize=(5, 4.5))
-    error_ax = error_fig.add_subplot(1, 1, 1)
-    error_ax.set_xlabel("Number of pre-condition adaptivity steps [-]")
-    error_ax.set_ylabel("Analytical solution error [-]")
-    title = f"Adaptivity error, N = {adaptivity_N[i]} K = {adaptivity_K[i]} A = {adaptivity_interval[i]}"
-    error_fig.canvas.manager.set_window_title(title)
-    error_ax.grid()
+    # For the legend entries from the other axes
+    error_ax.plot([], [], color=gpu_colour, linewidth=data_width, marker=data_shape, markersize=data_size, label="GPU time")
+    error_ax.plot([], [], color=gpu_colour, linewidth=data_width, linestyle=ideal_style, label="GPU non adaptive time")
 
-    error_ax.semilogy(adaptivity_C[i, :], adaptivity_max_error[i, :], color=gpu_colour, linewidth=data_width, marker=data_shape, markersize=data_size, label="GPU max error")
-    error_ax.semilogy(adaptivity_baseline_C[i, :], [adaptivity_baseline_max_error[i], adaptivity_baseline_max_error[i]], color=gpu_colour, linewidth=data_width, linestyle=ideal_style, label="GPU non adaptive max error")
+    error_ax.semilogy(adaptivity_C[i, :], adaptivity_max_error[i, :], color=error_colour, linewidth=data_width, marker=data_shape, markersize=data_size, label="GPU max error")
+    error_ax.semilogy(adaptivity_baseline_C[i, :], [adaptivity_baseline_max_error[i], adaptivity_baseline_max_error[i]], color=error_colour, linewidth=data_width, linestyle=ideal_style, label="GPU non adaptive max error")
 
     error_ax.legend()
+    fig.tight_layout()
 
-    error_fig.savefig(save_path / f"adaptivity_error_N{adaptivity_N[i]}_K{adaptivity_K[i]}_C{adaptivity_interval[i]}.svg", format='svg', transparent=True)
+    fig.savefig(save_path / f"adaptivity_N{adaptivity_N[i]}_K{adaptivity_K[i]}_C{adaptivity_interval[i]}.svg", format='svg', transparent=True)
 
 plt.show()
