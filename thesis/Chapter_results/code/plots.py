@@ -143,7 +143,7 @@ for i in range(adaptivity_interval.shape[0]):
     
     error_fig = plt.figure(figsize=(5, 4.5))
     error_ax = error_fig.add_subplot(1, 1, 1)
-    ax.set_xlabel("Number of pre-condition adaptivity steps [-]")
+    error_ax.set_xlabel("Number of pre-condition adaptivity steps [-]")
     error_ax.set_ylabel("Analytical solution error [-]")
     title = f"Adaptivity error, N = {adaptivity_N[i]} K = {adaptivity_K[i]} A = {adaptivity_interval[i]}"
     error_fig.canvas.manager.set_window_title(title)
