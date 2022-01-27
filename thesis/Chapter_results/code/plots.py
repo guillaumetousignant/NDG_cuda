@@ -52,6 +52,22 @@ min_total_time_beluga_gpu_weak = np.amin(times_beluga_gpu_weak, 1)
 nodes_beluga_cpu_ideal_weak = nodes_beluga_cpu_weak[:, [0,-1]]
 nodes_beluga_gpu_ideal_weak = nodes_beluga_gpu_weak[:, [0,-1]]
 
+# Adaptivity efficiency
+# Those were run on my computer, may need to be run again on Narval
+adaptivity_interval = np.array([20, 100])
+adaptivity_N = np.array([4, 4])
+adaptivity_K = np.array([4, 4])
+adaptivity_C = np.array([[0, 1, 2, 3],
+                         [0, 1, 2, 3]])
+adaptivity_t = np.array([[350.965 + 0, 189.985 + 0.13161, 264.603 + 0.439747, 500.48 + 0.822952],
+                         [133.571 + 0, 334.156 + 0.393835, 86.4947 + 0.977535, 130.43 + 2.66017]])
+adaptivity_max_error = np.array([[6.2e-6, 5.7e-8, 1.3e-8, 8.2e-9],
+                                 [2.3e-4, 2.2e-6, 3.6e-8, 2.6e-8]])
+
+adaptivity_baseline_C = adaptivity_C[:, [0,-1]]
+adaptivity_baseline_t = np.array([293.175, 292.261])
+adaptivity_baseline_max_error = np.array([1.2e-9, 1.2e-9])
+
 # Plots
 # Strong scaling
 save_path = Path(__file__).parent.parent / "media"
@@ -66,12 +82,11 @@ data_shape = "o"
 ideal_style = "--"
 
 for i in range(N.shape[0]):
-    fig = plt.figure(figsize=(4, 4))
+    fig = plt.figure(figsize=(5, 4.5))
     ax = fig.add_subplot(1, 1, 1)
     ax.set_xlabel("Number of nodes [-]")
     ax.set_ylabel("Time [s]")
     title = f"Strong scaling, N = {N[i]} K = {K[i]} W = {W[i]}"
-    ax.set_title(title)
     fig.canvas.manager.set_window_title(title)
     ax.grid()
 
@@ -87,12 +102,11 @@ for i in range(N.shape[0]):
 
 # Weak scaling
 for i in range(N_weak.shape[0]):
-    fig = plt.figure(figsize=(4, 4))
+    fig = plt.figure(figsize=(5, 4.5))
     ax = fig.add_subplot(1, 1, 1)
     ax.set_xlabel("Number of nodes [-]")
     ax.set_ylabel("Time [s]")
     title = f"Weak scaling, N = {N_weak[i]} K = {K_weak[i]}/proc W = {W_weak[i]}"
-    ax.set_title(title)
     fig.canvas.manager.set_window_title(title)
     ax.grid()
 
@@ -108,5 +122,38 @@ for i in range(N_weak.shape[0]):
 
     fig.savefig(save_path / f"weak_scaling_N{N_weak[i]}_K{K_weak[i]}_W{W_weak[i]}.svg", format='svg', transparent=True)
 
+# Adaptivity efficiency
+for i in range(adaptivity_interval.shape[0]):
+    fig = plt.figure(figsize=(5, 4.5))
+    ax = fig.add_subplot(1, 1, 1)
+    ax.set_xlabel("Number of pre-condition adaptivity steps [-]")
+    ax.set_ylabel("Time [s]")
+    title = f"Adaptivity performance, N = {adaptivity_N[i]} K = {adaptivity_K[i]} A = {adaptivity_interval[i]}"
+    fig.canvas.manager.set_window_title(title)
+    ax.grid()
+
+    ax.plot(adaptivity_C[i, :], adaptivity_t[i, :], color=gpu_colour, linewidth=data_width, marker=data_shape, markersize=data_size, label="GPU time")
+    ax.plot(adaptivity_baseline_C[i, :], [adaptivity_baseline_t[i], adaptivity_baseline_t[i]], color=gpu_colour, linewidth=data_width, linestyle=ideal_style, label="GPU non adaptive time")
+
+    ax.set_ylim([0, 1.2 * max(max(adaptivity_t[i, :]), adaptivity_baseline_t[i])])
+
+    ax.legend()
+
+    fig.savefig(save_path / f"adaptivity_N{adaptivity_N[i]}_K{adaptivity_K[i]}_C{adaptivity_interval[i]}.svg", format='svg', transparent=True)
+    
+    error_fig = plt.figure(figsize=(5, 4.5))
+    error_ax = error_fig.add_subplot(1, 1, 1)
+    ax.set_xlabel("Number of pre-condition adaptivity steps [-]")
+    error_ax.set_ylabel("Analytical solution error [-]")
+    title = f"Adaptivity error, N = {adaptivity_N[i]} K = {adaptivity_K[i]} A = {adaptivity_interval[i]}"
+    error_fig.canvas.manager.set_window_title(title)
+    error_ax.grid()
+
+    error_ax.semilogy(adaptivity_C[i, :], adaptivity_max_error[i, :], color=gpu_colour, linewidth=data_width, marker=data_shape, markersize=data_size, label="GPU max error")
+    error_ax.semilogy(adaptivity_baseline_C[i, :], [adaptivity_baseline_max_error[i], adaptivity_baseline_max_error[i]], color=gpu_colour, linewidth=data_width, linestyle=ideal_style, label="GPU non adaptive max error")
+
+    error_ax.legend()
+
+    error_fig.savefig(save_path / f"adaptivity_error_N{adaptivity_N[i]}_K{adaptivity_K[i]}_C{adaptivity_interval[i]}.svg", format='svg', transparent=True)
 
 plt.show()
