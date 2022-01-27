@@ -37,11 +37,6 @@ auto SEM::Helpers::ProgressBar_t::set_status_text(const std::string& status) -> 
     status_text_ = status;    
 }
 
-auto SEM::Helpers::ProgressBar_t::set_colour(std::function<std::ostream&(std::ostream&)> colour) -> void {
-    std::unique_lock lock{mutex_};
-    colour_ = colour;    
-}
-
 auto SEM::Helpers::ProgressBar_t::update(hostFloat value, std::ostream &os /* = std::cout */) -> void {
     set_progress(value);
     write_progress(os);

@@ -2,6 +2,7 @@
 #define NDG_HELPERS_PROGRESSBAR_T_H
 
 #include "helpers/float_types.h"
+#include "entities/Vec2.h"
 #include <atomic>
 #include <mutex>
 #include <iostream>
@@ -22,7 +23,8 @@ namespace SEM { namespace Helpers {
 
             auto set_status_text(const std::string& status) -> void;
 
-            auto set_colour(std::function<std::ostream&(std::ostream&)> colour) -> void;
+            template<unsigned int r, unsigned int g, unsigned int b>
+            auto set_colour<r, g, b>() -> void;
 
             auto update(hostFloat value, std::ostream &os = std::cout) -> void;
 
@@ -39,5 +41,7 @@ namespace SEM { namespace Helpers {
             std::function<std::ostream&(std::ostream&)> colour_;
     };
 }}
+
+#include "helpers/ProgressBar_t.tpp"
 
 #endif
