@@ -1,6 +1,4 @@
 #include "helpers/ProgressBar_t.h"
-#define NOMINMAX
-#include "helpers/termcolor.hpp"
 #include <algorithm>
 
 SEM::Helpers::ProgressBar_t::ProgressBar_t() : 
