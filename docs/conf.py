@@ -18,7 +18,7 @@ import subprocess, os
 # -- Project information -----------------------------------------------------
 
 project = 'NDG_cuda'
-copyright = '2021, Guillaume Tousignant'
+copyright = '2022, Guillaume Tousignant'
 author = 'Guillaume Tousignant'
 
 # The full version, including alpha/beta/rc tags
