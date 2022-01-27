@@ -66,3 +66,7 @@
 /thesis/svg-inkscape/*
 *.dvi
 *.synctex-*.gz
+*.vtu
+*.pvtu
+*.nsys-rep
+*.pvtu.series
