@@ -132,7 +132,7 @@ auto main(int argc, char* argv[]) -> int {
         std::cout << '\t' <<  "--memory"                    <<  '\t' <<  "fraction of the GPU memory requested, from 0 to 1 (default: 0.5)" << std::endl;
         std::cout << '\t' <<  "--tolerance_min"             <<  '\t' <<  "estimated error above which elements will refine (default: 1e-6)" << std::endl;
         std::cout << '\t' <<  "--tolerance_max"             <<  '\t' <<  "estimated error below which elements will coarsen (default: 1e-14)" << std::endl;
-        std::cout << '\t' <<  "--load_balancing_threshold"  <<  '\t' <<  "load imbalance ratio below which no load balancing occurs (default: 0.01)" << std::endl;
+        std::cout << '\t' <<  "--load_balancing_threshold"  <<  '\t' <<  "load imbalance ratio, n_elements_max/n_elements_min below which no load balancing occurs (default: 1.01)" << std::endl;
         std::cout << '\t' <<  "-v, --version"               <<  '\t' <<  "show program's version number and exit" << std::endl;
         exit(0);
     }
@@ -158,7 +158,7 @@ auto main(int argc, char* argv[]) -> int {
     const deviceFloat memory_fraction = input_parser.getCmdOptionOr("--memory", deviceFloat{0.5});
     const deviceFloat tolerance_min = input_parser.getCmdOptionOr("--tolerance_min", deviceFloat{1e-6});
     const deviceFloat tolerance_max = input_parser.getCmdOptionOr("--tolerance_max", deviceFloat{1e-14});
-    const deviceFloat load_balancing_threshold = input_parser.getCmdOptionOr("--load_balancing_threshold", deviceFloat{0.01});
+    const deviceFloat load_balancing_threshold = input_parser.getCmdOptionOr("--load_balancing_threshold", deviceFloat{1.01});
 
     // Error checking
     if (N_initial > N_max) {
@@ -248,7 +248,7 @@ auto main(int argc, char* argv[]) -> int {
     auto t_start_init = std::chrono::high_resolution_clock::now();
 
     SEM::Device::Entities::NDG_t<SEM::Device::Polynomials::LegendrePolynomial_t> NDG(N_max, n_interpolation_points, stream);
-    SEM::Device::Meshes::Mesh2D_t mesh(mesh_file, N_initial, N_max, n_interpolation_points, max_splits, adaptivity_interval, load_balancing_interval, tolerance_min, tolerance_max, NDG.nodes_, stream);
+    SEM::Device::Meshes::Mesh2D_t mesh(mesh_file, N_initial, N_max, n_interpolation_points, max_splits, adaptivity_interval, load_balancing_interval, tolerance_min, tolerance_max, load_balancing_threshold, NDG.nodes_, stream);
     SEM::Device::Solvers::Solver2D_t solver(CFL, output_times, viscosity);
     SEM::Helpers::DataWriter_t data_writer(output_file);
     mesh.initial_conditions(NDG.nodes_);

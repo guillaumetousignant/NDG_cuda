@@ -19,7 +19,7 @@
 namespace SEM { namespace Device { namespace Meshes {
     class Mesh2D_t {
         public:
-            Mesh2D_t(std::filesystem::path filename, int initial_N, int maximum_N, size_t n_interpolation_points, int max_split_level, size_t adaptivity_interval, size_t load_balancing_interval, deviceFloat tolerance_min, deviceFloat tolerance_max, const SEM::Device::Entities::device_vector<deviceFloat>& polynomial_nodes, const cudaStream_t &stream);
+            Mesh2D_t(std::filesystem::path filename, int initial_N, int maximum_N, size_t n_interpolation_points, int max_split_level, size_t adaptivity_interval, size_t load_balancing_interval, deviceFloat tolerance_min, deviceFloat tolerance_max, deviceFloat load_balancing_threshold, const SEM::Device::Entities::device_vector<deviceFloat>& polynomial_nodes, const cudaStream_t &stream);
 
             // Geometry
             SEM::Device::Entities::device_vector<SEM::Device::Entities::Vec2<deviceFloat>> nodes_;
@@ -132,6 +132,7 @@ namespace SEM { namespace Device { namespace Meshes {
             size_t load_balancing_interval_;
             deviceFloat tolerance_min_;
             deviceFloat tolerance_max_;
+            deviceFloat load_balancing_threshold_;
 
             // GPU transfer arrays
             SEM::Device::Entities::device_vector<deviceFloat> device_delta_t_array_;

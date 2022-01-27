@@ -29,7 +29,7 @@ using namespace SEM::Device::Hilbert;
 constexpr int CGIO_MAX_NAME_LENGTH = 33; // Includes the null terminator
 constexpr deviceFloat pi = 3.14159265358979323846;
 
-SEM::Device::Meshes::Mesh2D_t::Mesh2D_t(std::filesystem::path filename, int initial_N, int maximum_N, size_t n_interpolation_points, int max_split_level, size_t adaptivity_interval, size_t load_balancing_interval, deviceFloat tolerance_min, deviceFloat tolerance_max, const device_vector<deviceFloat>& polynomial_nodes, const cudaStream_t &stream) :       
+SEM::Device::Meshes::Mesh2D_t::Mesh2D_t(std::filesystem::path filename, int initial_N, int maximum_N, size_t n_interpolation_points, int max_split_level, size_t adaptivity_interval, size_t load_balancing_interval, deviceFloat tolerance_min, deviceFloat tolerance_max, deviceFloat load_balancing_threshold, const device_vector<deviceFloat>& polynomial_nodes, const cudaStream_t &stream) :       
         initial_N_{initial_N},  
         maximum_N_{maximum_N},
         n_interpolation_points_{n_interpolation_points},
@@ -38,6 +38,7 @@ SEM::Device::Meshes::Mesh2D_t::Mesh2D_t(std::filesystem::path filename, int init
         load_balancing_interval_{load_balancing_interval},
         tolerance_min_{tolerance_min},
         tolerance_max_{tolerance_max},
+        load_balancing_threshold_{load_balancing_threshold},
         stream_{stream} {
 
     std::string extension = filename.extension().string();
@@ -2413,10 +2414,20 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
     global_element_offset_end_current[0] = n_elements_per_proc[0];
 
     size_t n_elements_global_new = n_elements_per_proc[0];
+    size_t n_elements_min = n_elements_per_proc[0];
+    size_t n_elements_max = n_elements_per_proc[0];
     for (int i = 1; i < global_size; ++i) {
         global_element_offset_current[i] = global_element_offset_current[i - 1] + n_elements_per_proc[i - 1];
         global_element_offset_end_current[i] = global_element_offset_current[i] + n_elements_per_proc[i];
         n_elements_global_new += n_elements_per_proc[i];
+        n_elements_min = std::min(n_elements_min, n_elements_per_proc[i]);
+        n_elements_max = std::max(n_elements_max, n_elements_per_proc[i]);
+    }
+
+    // If there is little imbalance, do nothing.
+    const deviceFloat load_imbalance = static_cast<deviceFloat>(n_elements_max)/static_cast<deviceFloat>(n_elements_min);
+    if (load_imbalance < load_balancing_threshold_) {
+        return;
     }
 
     std::vector<size_t> global_element_offset_new(global_size); // This is the first element that is owned by the proc
