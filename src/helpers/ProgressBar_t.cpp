@@ -8,7 +8,8 @@ SEM::Helpers::ProgressBar_t::ProgressBar_t() :
         fill_{"#"},
         remainder_{" "},
         status_text_{""},
-        status_width_{0} {}
+        status_width_{0},
+        colour_{termcolor::yellow} {}
 
 auto SEM::Helpers::ProgressBar_t::set_progress(hostFloat value) -> void {
     std::unique_lock lock{mutex_};
@@ -47,7 +48,7 @@ auto SEM::Helpers::ProgressBar_t::write_progress(std::ostream &os /* = std::cout
     if (progress_ > 1.0) progress_ = 1.0;
 
     // Print in bold yellow
-    os << termcolor::bold << termcolor::yellow;
+    colour_(os << termcolor::bold);
 
     // Move cursor to the first position on the same line and flush 
     os << "\r" << std::flush;

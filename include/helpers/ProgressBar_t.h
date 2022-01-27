@@ -5,6 +5,7 @@
 #include <atomic>
 #include <mutex>
 #include <iostream>
+#include <functional>
 
 namespace SEM { namespace Helpers {
     class ProgressBar_t {
@@ -33,6 +34,7 @@ namespace SEM { namespace Helpers {
             std::string remainder_;
             std::string status_text_;
             size_t status_width_;
+            std::function<std::ostream&(std::ostream&)> colour_;
     };
 }}
 

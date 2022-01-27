@@ -107,33 +107,34 @@ auto get_output_times(const SEM::Helpers::InputParser_t& input_parser) -> std::v
 auto main(int argc, char* argv[]) -> int {
     const SEM::Helpers::InputParser_t input_parser(argc, argv);
     if (input_parser.cmdOptionExists("--help") || input_parser.cmdOptionExists("-h")) {
-        std::cout << "usage: NDG.exe [-h] [--mesh MESH] [--mesh_filename MESH_FILENAME] [--mesh_directory MESH_DIRECTORY] [--output OUTPUT] [--output_filename OUTPUT_FILENAME] [--output_directory OUTPUT_DIRECTORY] [--n N] [--n_max N_MAX] [--max_splits MAX_SPLITS] [--n_points N_POINTS] [--adaptivity_interval ADAPTIVITY_INTERVAL] [--load_balancing_interval LOAD_BALANCING_INTERVAL] [--cfl CFL] [--viscosity VISCOSITY] [--times T1,T2,T3,T4...] [--t T] [--n_t N_T] [--t_interval T_INTERVAL] [--memory MEMORY] [--tolerance_min TOLERANCE_MIN] [--tolerance_max TOLERANCE_MAX] [-v]" << std::endl << std::endl;
+        std::cout << "usage: NDG.exe [-h] [--mesh MESH] [--mesh_filename MESH_FILENAME] [--mesh_directory MESH_DIRECTORY] [--output OUTPUT] [--output_filename OUTPUT_FILENAME] [--output_directory OUTPUT_DIRECTORY] [--n N] [--n_max N_MAX] [--max_splits MAX_SPLITS] [--n_points N_POINTS] [--adaptivity_interval ADAPTIVITY_INTERVAL] [--load_balancing_interval LOAD_BALANCING_INTERVAL] [--cfl CFL] [--viscosity VISCOSITY] [--times T1,T2,T3,T4...] [--t T] [--n_t N_T] [--t_interval T_INTERVAL] [--memory MEMORY] [--tolerance_min TOLERANCE_MIN] [--tolerance_max TOLERANCE_MAX] [--load_balancing_threshold LOAD_BALANCING_THRESHOLD] [--pre_condition PRE_CONDITION] [-v]" << std::endl << std::endl;
         std::cout << "Discontinuous Galerkin spectral element method solver for the 2D wave equation on 2D unstructured meshes. The meshes use the CGNS HDF5 format, and output uses the VTK format." << std::endl << std::endl;
         std::cout << "options:" << std::endl;
-        std::cout << '\t' <<  "-h, --help"                  <<  '\t' <<  "show this help message and exit" << std::endl;
-        std::cout << '\t' <<  "--mesh"                      <<  '\t' <<  "full path of the input mesh file, overrides mesh_filename and mesh_directory if set" << std::endl;
-        std::cout << '\t' <<  "--mesh_filename"             <<  '\t' <<  "file name of the input mesh file (default: mesh.cgns)" << std::endl;
-        std::cout << '\t' <<  "--mesh_directory"            <<  '\t' <<  "directory of the input mesh file (default: ./meshes/)" << std::endl;
-        std::cout << '\t' <<  "--output"                    <<  '\t' <<  "full path of the output data file, overrides output_filename and output_directory if set" << std::endl;
-        std::cout << '\t' <<  "--output_filename"           <<  '\t' <<  "file name of the output data file (default: output.pvtu)" << std::endl;
-        std::cout << '\t' <<  "--output_directory"          <<  '\t' <<  "directory of the output data file (default: ./data/)" << std::endl;
-        std::cout << '\t' <<  "--n"                         <<  '\t' <<  "initial polynomial order in elements (default: 8)" << std::endl;
-        std::cout << '\t' <<  "--n_max"                     <<  '\t' <<  "maximum polynomial order in elements (default: 16)" << std::endl;
-        std::cout << '\t' <<  "--max_splits"                <<  '\t' <<  "maximum number of times an elements can split (default: 3)" << std::endl;
-        std::cout << '\t' <<  "--n_points"                  <<  '\t' <<  "number of interpolation points in elements, minimum 2 (default: n_max²)" << std::endl;
-        std::cout << '\t' <<  "--adaptivity_interval"       <<  '\t' <<  "number of iterations between adapting the mesh, 0 to disable (default: 100)" << std::endl;
-        std::cout << '\t' <<  "--load_balancing_interval"   <<  '\t' <<  "number of iterations between load balancing the mesh, 0 to disable (default: 100)" << std::endl;
-        std::cout << '\t' <<  "--cfl"                       <<  '\t' <<  "CFL used for the simulation (default: 0.5)" << std::endl;
-        std::cout << '\t' <<  "--viscosity"                 <<  '\t' <<  "viscosity used for the simulation (default: 0.1/π)" << std::endl;
-        std::cout << '\t' <<  "--times"                     <<  '\t' <<  "comma separated list of times to output at, simulating up to the last one, and overrides t, n_t, and t_interval" << std::endl;
-        std::cout << '\t' <<  "--t"                         <<  '\t' <<  "end time of the simulation (default: 1)" << std::endl;
-        std::cout << '\t' <<  "--n_t"                       <<  '\t' <<  "number of times to output (default: 11)" << std::endl;
-        std::cout << '\t' <<  "--t_interval"                <<  '\t' <<  "time interval between output, overrides n_t if set" << std::endl;
-        std::cout << '\t' <<  "--memory"                    <<  '\t' <<  "fraction of the GPU memory requested, from 0 to 1 (default: 0.5)" << std::endl;
-        std::cout << '\t' <<  "--tolerance_min"             <<  '\t' <<  "estimated error above which elements will refine (default: 1e-6)" << std::endl;
-        std::cout << '\t' <<  "--tolerance_max"             <<  '\t' <<  "estimated error below which elements will coarsen (default: 1e-14)" << std::endl;
-        std::cout << '\t' <<  "--load_balancing_threshold"  <<  '\t' <<  "load imbalance ratio, n_elements_max/n_elements_min below which no load balancing occurs (default: 1.01)" << std::endl;
-        std::cout << '\t' <<  "-v, --version"               <<  '\t' <<  "show program's version number and exit" << std::endl;
+        std::cout << '\t' <<  "-h, --help"                          <<  '\t' <<  "show this help message and exit" << std::endl;
+        std::cout << '\t' <<  "--mesh"                              <<  '\t' <<  "full path of the input mesh file, overrides mesh_filename and mesh_directory if set" << std::endl;
+        std::cout << '\t' <<  "--mesh_filename"                     <<  '\t' <<  "file name of the input mesh file (default: mesh.cgns)" << std::endl;
+        std::cout << '\t' <<  "--mesh_directory"                    <<  '\t' <<  "directory of the input mesh file (default: ./meshes/)" << std::endl;
+        std::cout << '\t' <<  "--output"                            <<  '\t' <<  "full path of the output data file, overrides output_filename and output_directory if set" << std::endl;
+        std::cout << '\t' <<  "--output_filename"                   <<  '\t' <<  "file name of the output data file (default: output.pvtu)" << std::endl;
+        std::cout << '\t' <<  "--output_directory"                  <<  '\t' <<  "directory of the output data file (default: ./data/)" << std::endl;
+        std::cout << '\t' <<  "--n"                                 <<  '\t' <<  "initial polynomial order in elements (default: 8)" << std::endl;
+        std::cout << '\t' <<  "--n_max"                             <<  '\t' <<  "maximum polynomial order in elements (default: 16)" << std::endl;
+        std::cout << '\t' <<  "--max_splits"                        <<  '\t' <<  "maximum number of times an elements can split (default: 3)" << std::endl;
+        std::cout << '\t' <<  "--n_points"                          <<  '\t' <<  "number of interpolation points in elements, minimum 2 (default: n_max²)" << std::endl;
+        std::cout << '\t' <<  "--adaptivity_interval"               <<  '\t' <<  "number of iterations between adapting the mesh, 0 to disable (default: 100)" << std::endl;
+        std::cout << '\t' <<  "--load_balancing_interval"           <<  '\t' <<  "number of iterations between load balancing the mesh, 0 to disable (default: 100)" << std::endl;
+        std::cout << '\t' <<  "--cfl"                               <<  '\t' <<  "CFL used for the simulation (default: 0.5)" << std::endl;
+        std::cout << '\t' <<  "--viscosity"                         <<  '\t' <<  "viscosity used for the simulation (default: 0.1/π)" << std::endl;
+        std::cout << '\t' <<  "--times"                             <<  '\t' <<  "comma separated list of times to output at, simulating up to the last one, and overrides t, n_t, and t_interval" << std::endl;
+        std::cout << '\t' <<  "--t"                                 <<  '\t' <<  "end time of the simulation (default: 1)" << std::endl;
+        std::cout << '\t' <<  "--n_t"                               <<  '\t' <<  "number of times to output (default: 11)" << std::endl;
+        std::cout << '\t' <<  "--t_interval"                        <<  '\t' <<  "time interval between output, overrides n_t if set" << std::endl;
+        std::cout << '\t' <<  "--memory"                            <<  '\t' <<  "fraction of the GPU memory requested, from 0 to 1 (default: 0.5)" << std::endl;
+        std::cout << '\t' <<  "--tolerance_min"                     <<  '\t' <<  "estimated error above which elements will refine (default: 1e-6)" << std::endl;
+        std::cout << '\t' <<  "--tolerance_max"                     <<  '\t' <<  "estimated error below which elements will coarsen (default: 1e-14)" << std::endl;
+        std::cout << '\t' <<  "--load_balancing_threshold"          <<  '\t' <<  "load imbalance ratio, n_elements_max/n_elements_min below which no load balancing occurs (default: 1.01)" << std::endl;
+        std::cout << '\t' <<  "--pre_condition, --no_pre_condition" <<  '\t' <<  "number of adaptivity steps to run before restarting the computation, 0 to disable (default: 0)" << std::endl;
+        std::cout << '\t' <<  "-v, --version"                       <<  '\t' <<  "show program's version number and exit" << std::endl;
         exit(0);
     }
     else if (input_parser.cmdOptionExists("--version") || input_parser.cmdOptionExists("-v")) {
@@ -159,6 +160,7 @@ auto main(int argc, char* argv[]) -> int {
     const deviceFloat tolerance_min = input_parser.getCmdOptionOr("--tolerance_min", deviceFloat{1e-6});
     const deviceFloat tolerance_max = input_parser.getCmdOptionOr("--tolerance_max", deviceFloat{1e-14});
     const deviceFloat load_balancing_threshold = input_parser.getCmdOptionOr("--load_balancing_threshold", deviceFloat{1.01});
+    const size_t pre_condition = input_parser.getCmdOptionOr("--pre_condition", std::size_t{0});
 
     // Error checking
     if (N_initial > N_max) {
@@ -245,6 +247,7 @@ auto main(int argc, char* argv[]) -> int {
     }
 
     // Initialisation
+    std::cout << "Initialising" << std::endl;
     auto t_start_init = std::chrono::high_resolution_clock::now();
 
     SEM::Device::Entities::NDG_t<SEM::Device::Polynomials::LegendrePolynomial_t> NDG(N_max, n_interpolation_points, stream);
@@ -256,10 +259,26 @@ auto main(int argc, char* argv[]) -> int {
 
     auto t_end_init = std::chrono::high_resolution_clock::now();
     std::cout << "Process " << global_rank << " GPU initialisation time: " 
-            << std::chrono::duration<double, std::milli>(t_end_init - t_start_init).count()/1000.0 
-            << "s." << std::endl;
+              << std::chrono::duration<double, std::milli>(t_end_init - t_start_init).count()/1000.0 
+              << "s." << std::endl;
+
+    // Pre-condition
+    if (pre_condition > 0) {
+        std::cout << "Pre-conditioning" << std::endl;
+        auto t_start_pre = std::chrono::high_resolution_clock::now();
+
+        solver.pre_condition(NDG, mesh, pre_condition);
+        mesh.initial_conditions(NDG.nodes_);
+        cudaStreamSynchronize(stream);
+
+        auto t_end_pre = std::chrono::high_resolution_clock::now();
+        std::cout << "Process " << global_rank << " GPU pre-condition time: " 
+                  << std::chrono::duration<double, std::milli>(t_end_pre - t_start_pre).count()/1000.0 
+                  << "s." << std::endl;
+    }
 
     // Computation
+    std::cout << "Solving" << std::endl;
     auto t_start = std::chrono::high_resolution_clock::now();
 
     solver.solve(NDG, mesh, data_writer);
@@ -269,8 +288,8 @@ auto main(int argc, char* argv[]) -> int {
 
     auto t_end = std::chrono::high_resolution_clock::now();
     std::cout << "Process " << global_rank << " GPU computation time: " 
-            << std::chrono::duration<double, std::milli>(t_end - t_start).count()/1000.0 
-            << "s." << std::endl;
+              << std::chrono::duration<double, std::milli>(t_end - t_start).count()/1000.0 
+              << "s." << std::endl;
 
     cudaStreamDestroy(stream);
     MPI_Finalize();

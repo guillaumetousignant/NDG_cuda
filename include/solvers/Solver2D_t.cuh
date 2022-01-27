@@ -21,6 +21,9 @@ namespace SEM { namespace Device { namespace Solvers {
 
             template<typename Polynomial>
             auto solve(const SEM::Device::Entities::NDG_t<Polynomial> &NDG, SEM::Device::Meshes::Mesh2D_t& mesh, const SEM::Helpers::DataWriter_t& data_writer) const -> void;
+            
+            template<typename Polynomial>
+            auto pre_condition(const SEM::Device::Entities::NDG_t<Polynomial> &NDG, SEM::Device::Meshes::Mesh2D_t& mesh, size_t n_adaptivity_steps) const -> void;
 
             auto get_delta_t(SEM::Device::Meshes::Mesh2D_t& mesh) const -> deviceFloat;
 
