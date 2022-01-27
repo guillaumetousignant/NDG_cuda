@@ -54,22 +54,25 @@ nodes_beluga_gpu_ideal_weak = nodes_beluga_gpu_weak[:, [0,-1]]
 
 # Adaptivity efficiency
 # Those were run on my computer, may need to be run again on Narval
-adaptivity_interval = np.array([5, 20, 100])
-adaptivity_N = np.array([4, 4, 4])
-adaptivity_K = np.array([4, 4, 4])
+adaptivity_interval = np.array([5, 20, 100, 500])
+adaptivity_N = np.array([4, 4, 4, 4])
+adaptivity_K = np.array([4, 4, 4, 4])
 adaptivity_C = np.array([[0, 1, 2, 3],
+                         [0, 1, 2, 3],
                          [0, 1, 2, 3],
                          [0, 1, 2, 3]])
 adaptivity_t = np.array([[428.886 + 0, 252.003 + 0.103265, 365.731 + 0.25112, 308.074 + 0.628907],
                          [350.965 + 0, 189.985 + 0.13161, 264.603 + 0.439747, 500.48 + 0.822952],
-                         [133.571 + 0, 334.156 + 0.393835, 86.4947 + 0.977535, 130.43 + 2.66017]])
+                         [133.571 + 0, 334.156 + 0.393835, 86.4947 + 0.977535, 130.43 + 2.66017],
+                         [0.692123 + 0, 2.07892 + 1.53437, 114.021 + 2.82137, 192.083 + 10.0328]])
 adaptivity_max_error = np.array([[7.9e-7, 4.3e-8, 7.3e-9, 2.0e-8],
                                  [6.2e-6, 5.7e-8, 1.3e-8, 8.2e-9],
-                                 [2.3e-4, 2.2e-6, 3.6e-8, 2.6e-8]])
+                                 [2.3e-4, 2.2e-6, 3.6e-8, 2.6e-8],
+                                 [1.1e-3, 2.2e-5, 1.3e-6, 1.6e-6]])
 
 adaptivity_baseline_C = adaptivity_C[:, [0,-1]]
-adaptivity_baseline_t = np.array([293.175, 292.261, 289.285])
-adaptivity_baseline_max_error = np.array([1.2e-9, 1.2e-9, 1.2e-9])
+adaptivity_baseline_t = np.array([293.175, 292.261, 289.285, 295.575])
+adaptivity_baseline_max_error = np.array([1.2e-9, 1.2e-9, 1.2e-9, 1.2e-9])
 
 # Plots
 save_path = Path(__file__).parent.parent / "media"
