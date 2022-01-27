@@ -371,7 +371,7 @@ The complete equation becomes:
 \end{equation}
 
 The boundary conditions are weakly enforced using fluxes $\mathbf{F}^*$, explained in
-Subsection~\ref{section:spectral_element_method:spectral_approximation:dg_sem:fluxes}. 
+Subsection~\ref{section:spectral_element_method:dg_sem:fluxes}. 
 
 We then need to evaluate those integrals. A distinction is made between the boundary terms, that are
 evaluated using the collocation points within an element, and the boundary term, which uses
@@ -478,7 +478,7 @@ computed directly and stored for the whole computation. Algorithms for those are
 Section~\ref{section:spectral_element_method:implementation}. The next section discusses the
 computation of the fluxes $\mathbf{F}^*$.
 
-\subsection{Fluxes} \label{section:spectral_element_method:spectral_approximation:dg_sem:fluxes}
+\subsection{Fluxes} \label{section:spectral_element_method:dg_sem:fluxes}
 We now need to compute the numerical fluxes $\mathbf{F}^*$ as a way to approximate the physical
 fluxes $\mathfrak{F}$. We recall the formulation for the fluxes from
 Equation~\ref{equ:2d_wave_fluxes}. 
@@ -762,7 +762,7 @@ With these two relations, we can compute the fluxes in the $x$ and $y$ direction
 to compute these fluxes is presented in
 Subsection~\ref{section:spectral_element_method:implementation:fluxes}.
 
-\subsection{Time integration} \label{section:spectral_element_method:spectral_approximation:dg_sem:time}
+\subsection{Time integration} \label{section:spectral_element_method:dg_sem:time}
 Now that we know hot to compute the interior terms and the numerical fluxes of
 Equation~\ref{equ:2d_wave_d}, we can compute the time derivative $\mathbf{Q}_t$. We then need to
 integrate that equation in time. We will used a third-order low-storage Runge-Kutta method, as
