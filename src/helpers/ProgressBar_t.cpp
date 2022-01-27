@@ -48,7 +48,7 @@ auto SEM::Helpers::ProgressBar_t::write_progress(std::ostream &os /* = std::cout
     // Cap progress to 100%
     if (progress_ > 1.0) progress_ = 1.0;
 
-    // Print in bold yellow
+    // Print in bold colour
     colour_(os << termcolor::bold);
 
     // Move cursor to the first position on the same line and flush 
