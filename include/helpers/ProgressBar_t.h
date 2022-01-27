@@ -24,7 +24,7 @@ namespace SEM { namespace Helpers {
             auto set_status_text(const std::string& status) -> void;
 
             template<unsigned int r, unsigned int g, unsigned int b>
-            auto set_colour<r, g, b>() -> void;
+            auto set_colour() -> void;
 
             auto update(hostFloat value, std::ostream &os = std::cout) -> void;
 
