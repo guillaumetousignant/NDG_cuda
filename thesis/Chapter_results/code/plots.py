@@ -69,7 +69,6 @@ adaptivity_baseline_t = np.array([293.175, 292.261])
 adaptivity_baseline_max_error = np.array([1.2e-9, 1.2e-9])
 
 # Plots
-# Strong scaling
 save_path = Path(__file__).parent.parent / "media"
 save_path.mkdir(parents=True, exist_ok=True)
 
@@ -81,6 +80,7 @@ data_size = 12
 data_shape = "o"
 ideal_style = "--"
 
+# Strong scaling
 for i in range(N.shape[0]):
     fig = plt.figure(figsize=(5, 4.5))
     ax = fig.add_subplot(1, 1, 1)
