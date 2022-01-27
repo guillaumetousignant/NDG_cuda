@@ -1,4 +1,6 @@
 #include "helpers/ProgressBar_t.h"
+#define NOMINMAX
+#include "helpers/termcolor.hpp"
 #include <algorithm>
 
 SEM::Helpers::ProgressBar_t::ProgressBar_t() : 
@@ -35,6 +37,11 @@ auto SEM::Helpers::ProgressBar_t::set_status_text(const std::string& status) -> 
     status_text_ = status;    
 }
 
+auto SEM::Helpers::ProgressBar_t::set_colour(std::function<std::ostream&(std::ostream&)> colour) -> void {
+    std::unique_lock lock{mutex_};
+    colour_ = colour;
+}
+
 auto SEM::Helpers::ProgressBar_t::update(hostFloat value, std::ostream &os /* = std::cout */) -> void {
     set_progress(value);
     write_progress(os);
@@ -47,7 +54,7 @@ auto SEM::Helpers::ProgressBar_t::write_progress(std::ostream &os /* = std::cout
     if (progress_ > 1.0) progress_ = 1.0;
 
     // Print in bold colour
-    colour_(os << termcolor::bold); // << colour_;
+    colour_(os << termcolor::bold);
 
     // Move cursor to the first position on the same line and flush 
     os << "\r" << std::flush;

@@ -23,8 +23,7 @@ namespace SEM { namespace Helpers {
 
             auto set_status_text(const std::string& status) -> void;
 
-            template<unsigned int r, unsigned int g, unsigned int b>
-            auto set_colour() -> void;
+            auto set_colour(std::function<std::ostream&(std::ostream&)> colour) -> void;
 
             auto update(hostFloat value, std::ostream &os = std::cout) -> void;
 
@@ -41,7 +40,5 @@ namespace SEM { namespace Helpers {
             std::function<std::ostream&(std::ostream&)> colour_;
     };
 }}
-
-#include "helpers/ProgressBar_t.tpp"
 
 #endif

@@ -1,4 +1,6 @@
 #include "helpers/ProgressBar_t.h"
+#define NOMINMAX
+#include "helpers/termcolor.hpp"
 
 template<typename Polynomial>
 auto SEM::Device::Solvers::Solver2D_t::solve(const SEM::Device::Entities::NDG_t<Polynomial> &NDG, SEM::Device::Meshes::Mesh2D_t& mesh, const SEM::Helpers::DataWriter_t& data_writer) const -> void {
@@ -154,7 +156,7 @@ auto SEM::Device::Solvers::Solver2D_t::pre_condition(const SEM::Device::Entities
     deviceFloat delta_t = get_delta_t(mesh);
     
     if (global_rank == 0) {
-        bar.set_colour<78, 201, 176>();
+        bar.set_colour(termcolor::green);
         bar.set_status_text("Iteration 0");
         bar.update(0.0);
     }
