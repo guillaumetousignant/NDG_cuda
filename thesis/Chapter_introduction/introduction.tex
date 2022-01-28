@@ -14,3 +14,19 @@ why, when experimental results are so costly to obtain, and a theoretical approa
 apply to complex cases. Nonetheless, CFD is not meant to replace those methods, but to be combined
 with them. Reducing the need to perform experiments, while comparing results with the experiments
 that do happen to verify and validate them~\cite{Stern2001}.
+
+Even with increasing computing power, some problems are difficult to solve with CFD. Problems of
+high-dimensionality and complex flows still cannot be solved economically. NASA's CFD Vision 2030
+study~\cite{Slotnick2014} states that turbulent flow separation is one area that still cannot be
+predicted accurately. In order to simulate these problems, we will need increased processing power,
+more efficient use of that power, and higher resolution numerical methods.
+
+Spectral methods are an answer to that need of more accurate numerical methods. Unlike traditional
+methods like finite differences methods, finite element methods and finite volume methods, spectral
+methods are high-order methods and converge exponentially fast. Instead of modelling the solution as
+single points, or a single to double order function within a space subdivision, spectral methods
+represent a function as a truncated series:
+
+\begin{equation}
+	u(x) \approx u_N(x) = \sum_{n = 0}^{N}\widehat{u}_n\phi _n(x)
+\end{equation}
