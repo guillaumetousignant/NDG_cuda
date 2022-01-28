@@ -61,33 +61,53 @@
 
 \begin{figure}[H]
 	\centering
-	\includesvg[width=0.6\textwidth]{Chapter_results/media/adaptivity_N4_K4_C5}
+	\includesvg[width=0.6\textwidth]{Chapter_results/media/adaptivity_N4_K16_C5}
 	\caption{Adaptivity efficiency: Simulation time and analytical error with adaptivity and increasing pre-processing steps. N = 4, K = 16, adaptivity interval = 5}
 	\label{fig:adaptivity_efficiency_C5}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
-	\includesvg[width=0.6\textwidth]{Chapter_results/media/adaptivity_N4_K4_C20}
+	\includesvg[width=0.6\textwidth]{Chapter_results/media/adaptivity_N4_K16_C20}
 	\caption{Adaptivity efficiency: Simulation time and analytical error with adaptivity and increasing pre-processing steps. N = 4, K = 16, adaptivity interval = 20}
 	\label{fig:adaptivity_efficiency_C20}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
-	\includesvg[width=0.6\textwidth]{Chapter_results/media/adaptivity_N4_K4_C100}
+	\includesvg[width=0.6\textwidth]{Chapter_results/media/adaptivity_N4_K16_C100}
 	\caption{Adaptivity efficiency: Simulation time and analytical error with adaptivity and increasing pre-processing steps. N = 4, K = 16, adaptivity interval = 100}
 	\label{fig:adaptivity_efficiency_C100}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
-	\includesvg[width=0.6\textwidth]{Chapter_results/media/adaptivity_N4_K4_C500}
+	\includesvg[width=0.6\textwidth]{Chapter_results/media/adaptivity_N4_K16_C500}
 	\caption{Adaptivity efficiency: Simulation time and analytical error with adaptivity and increasing pre-processing steps. N = 4, K = 16, adaptivity interval = 500}
 	\label{fig:adaptivity_efficiency_C500}
 \end{figure}
 
 \section{Load balancing performance} \label{section:results:load_balancing_performance}
 % Runtime adaptive with and without load balancing
+
+% Show the problem
+
+\subsection{Load balancing interval} \label{section:results:load_balancing_performance:interval}
+
+\begin{figure}[H]
+	\centering
+	\includesvg[width=0.6\textwidth]{Chapter_results/media/load_balancing_interval_N4_K16384_A20_P16_S3}
+	\caption{Load balancing efficiency interval test: Simulation time with adaptivity, load balancing and increasing load balancing interval. N = 4, K = 16384, adaptivity interval = 20, P = 16, max split level = 3}
+	\label{fig:load_balancing_efficiency_interval}
+\end{figure}
+
+\subsection{Load balancing threshold} \label{section:results:load_balancing_performance:threshold}
+
+\begin{figure}[H]
+	\centering
+	\includesvg[width=0.6\textwidth]{Chapter_results/media/load_balancing_threshold_N4_K16384_A20_L20_P16_S3}
+	\caption{Load balancing efficiency threshold test: Simulation time with adaptivity, load balancing and increasing load balancing threshold. N = 4, K = 16384, adaptivity interval = 20, load balancing interval = 20, P = 16, max split level = 3}
+	\label{fig:load_balancing_efficiency_threshold}
+\end{figure}
 
 \section{Complex meshes} \label{section:results:complex_meshes}

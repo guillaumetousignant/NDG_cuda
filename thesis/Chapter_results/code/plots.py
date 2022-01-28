@@ -56,7 +56,7 @@ nodes_beluga_gpu_ideal_weak = nodes_beluga_gpu_weak[:, [0,-1]]
 # Those were run on my computer, may need to be run again on Narval
 adaptivity_interval = np.array([5, 20, 100, 500])
 adaptivity_N = np.array([4, 4, 4, 4])
-adaptivity_K = np.array([4, 4, 4, 4])
+adaptivity_K = np.array([4 * 4, 4 * 4, 4 * 4, 4 * 4])
 adaptivity_C = np.array([[0, 1, 2, 3],
                          [0, 1, 2, 3],
                          [0, 1, 2, 3],
@@ -73,6 +73,35 @@ adaptivity_max_error = np.array([[7.9e-7, 4.3e-8, 7.3e-9, 2.0e-8],
 adaptivity_baseline_C = adaptivity_C[:, [0,-1]]
 adaptivity_baseline_t = np.array([293.175, 292.261, 289.285, 295.575])
 adaptivity_baseline_max_error = np.array([1.2e-9, 1.2e-9, 1.2e-9, 1.2e-9])
+
+# Load balancing efficiency interval
+load_balancing_interval_A = np.array([20])          # Adaptivity interval
+load_balancing_interval_N = np.array([4])           # Initial N
+load_balancing_interval_K = np.array([128 * 128])   # Initial number of elements
+load_balancing_interval_P = np.array([16])          # Number of processes
+load_balancing_interval_S = np.array([3])           # Max split level
+load_balancing_interval_max_N = np.array([12])      # Max split level
+
+load_balancing_interval_L = np.array([[20, 100, 200, 500, 1000]]) # Load balancing interval
+load_balancing_interval_t = np.array([[346.838, 284.198, 266.794, 248.574, 254.721]]) # Simulation time
+
+load_balancing_interval_baseline_L = load_balancing_interval_L[:, [0,-1]]
+load_balancing_interval_baseline_t = np.array([274.415])
+
+# Load balancing efficiency threshold
+load_balancing_threshold_A = np.array([20])         # Adaptivity interval
+load_balancing_threshold_L = np.array([20])         # Load balancing interval
+load_balancing_threshold_N = np.array([4])          # Initial N
+load_balancing_threshold_K = np.array([128 * 128])  # Initial number of elements
+load_balancing_threshold_P = np.array([16])         # Number of processes
+load_balancing_threshold_S = np.array([3])          # Max split level
+load_balancing_threshold_max_N = np.array([12])     # Max split level
+
+load_balancing_threshold_T = np.array([[1, 1.01, 1.1, 1.5, 2]]) # Load balancing threshold
+load_balancing_threshold_t = np.array([[344.277, 295.591, 243.566, 241.076, 252.407]]) # Simulation time
+
+load_balancing_threshold_baseline_T = load_balancing_threshold_T[:, [0,-1]]
+load_balancing_threshold_baseline_t = np.array([274.359])
 
 # Plots
 save_path = Path(__file__).parent.parent / "media"
@@ -162,5 +191,43 @@ for i in range(adaptivity_interval.shape[0]):
     fig.tight_layout()
 
     fig.savefig(save_path / f"adaptivity_N{adaptivity_N[i]}_K{adaptivity_K[i]}_C{adaptivity_interval[i]}.svg", format='svg', transparent=True)
+
+# Load balancing efficiency interval
+for i in range(load_balancing_interval_N.shape[0]):
+    fig = plt.figure(figsize=(5, 4.5))
+    ax = fig.add_subplot(1, 1, 1)
+    ax.set_xlabel("Load balancing interval [-]")
+    ax.set_ylabel("Time [s]")
+    title = f"Load balancing performance, interval test, N = {load_balancing_interval_N[i]} K = {load_balancing_interval_K[i]} A = {load_balancing_interval_A[i]} P = {load_balancing_interval_P[i]} S = {load_balancing_interval_S[i]} N_max = {load_balancing_interval_max_N[i]}"
+    fig.canvas.manager.set_window_title(title)
+    ax.grid()
+
+    ax.plot(load_balancing_interval_L[i, :], load_balancing_interval_t[i, :], color=gpu_colour, linewidth=data_width, marker=data_shape, markersize=data_size, label="Narval GPU time")
+    ax.plot(load_balancing_interval_baseline_L[i, :], [load_balancing_interval_baseline_t[i], load_balancing_interval_baseline_t[i]], color=gpu_colour, linewidth=data_width, linestyle=ideal_style, label="Narval non load balancing time")
+
+    ax.set_ylim([0, 1.2 * max(max(load_balancing_interval_t[i, :]), load_balancing_interval_baseline_t)])
+
+    ax.legend()
+
+    fig.savefig(save_path / f"load_balancing_interval_N{load_balancing_interval_N[i]}_K{load_balancing_interval_K[i]}_A{load_balancing_interval_A[i]}_P{load_balancing_interval_P[i]}_S{load_balancing_interval_S[i]}.svg", format='svg', transparent=True)
+
+# Load balancing efficiency threshold
+for i in range(load_balancing_threshold_N.shape[0]):
+    fig = plt.figure(figsize=(5, 4.5))
+    ax = fig.add_subplot(1, 1, 1)
+    ax.set_xlabel("Load balancing threshold [-]")
+    ax.set_ylabel("Time [s]")
+    title = f"Load balancing performance, threshold test, N = {load_balancing_threshold_N[i]} K = {load_balancing_threshold_K[i]} A = {load_balancing_threshold_A[i]} L = {load_balancing_threshold_L[i]} P = {load_balancing_threshold_P[i]} S = {load_balancing_threshold_S[i]} N_max = {load_balancing_threshold_max_N[i]}"
+    fig.canvas.manager.set_window_title(title)
+    ax.grid()
+
+    ax.plot(load_balancing_threshold_T[i, :], load_balancing_threshold_t[i, :], color=gpu_colour, linewidth=data_width, marker=data_shape, markersize=data_size, label="Narval GPU time")
+    ax.plot(load_balancing_threshold_baseline_T[i, :], [load_balancing_threshold_baseline_t[i], load_balancing_threshold_baseline_t[i]], color=gpu_colour, linewidth=data_width, linestyle=ideal_style, label="Narval non load balancing time")
+
+    ax.set_ylim([0, 1.2 * max(max(load_balancing_threshold_t[i, :]), load_balancing_threshold_baseline_t)])
+
+    ax.legend()
+
+    fig.savefig(save_path / f"load_balancing_threshold_N{load_balancing_threshold_N[i]}_K{load_balancing_threshold_K[i]}_A{load_balancing_threshold_A[i]}_L{load_balancing_threshold_L[i]}_P{load_balancing_threshold_P[i]}_S{load_balancing_threshold_S[i]}.svg", format='svg', transparent=True)
 
 plt.show()
