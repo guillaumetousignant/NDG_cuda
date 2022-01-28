@@ -7,6 +7,42 @@
 % Hybrid solver?
 % Different block sizes!!
 
+Following are results studying the effectiveness of the program. Three main components are studied.
+First, the performance of the core spectral element method code on GPUs, with a comparison with the
+same code running on CPUs is presented in Section~\ref{section:results:scaling_tests}. Then, the
+performance of the adaptive mesh refinement is studied in
+Section~\ref{section:results:adaptivity_performance}. Finally, dynamic load balancing is studied in
+Section~\ref{section:results:load_balancing_performance}.
+
+\section{Platforms} \label{section:results:platforms}
+This program aims to perform large scale computations, and as such targets HPC platforms. The
+program has been designed to scale to multiple parallel level, the highest being splitting the
+workload between several HPC nodes, each having multiple CPUs and GPUs. To test this use case,
+most of the following tests were run on clusters graciously offered by Compute
+Canada\footnote{https://www.computecanada.ca/}. Two such clusters were used for our experiments,
+Béluga and Narval.
+
+\subsection{Béluga} \label{section:results:platforms:beluga}
+Béluga is a heterogeneous cluster suitable for a variety of purposes, from traditional CPU computing
+to massively parallel GPU computing. It is located at the École de technologie supérieure in
+Montréal. Beluga is made up of 977 compute nodes of different types, totaling 39,120 CPU cores and
+696 GPUs. For our testing, we use Béluga's GPU nodes. Each one of the 172 GPU nodes contains 40 CPU
+cores and 186 GB of memory across two Intel Gold 6148 CPUs, and four NVidia V100 SXM2 GPUs with 16
+GB of memory each. One such node totals about 2 TFlops of CPU computing power, and 13 TFlops of GPU
+computing power. The nodes are connected by Infiniband HDR (100 Gb/s) interconnections.
+
+\subsection{Narval} \label{section:results:platforms:narval}
+Narval is a heterogeneous cluster suitable for a variety of purposes, from traditional CPU computing
+to massively parallel GPU computing and artificial intelligence workloads. It is located at the
+École de technologie supérieure in Montréal. Beluga is made up of 1301 compute nodes of different
+types, totaling 80,720 CPU cores and 636 GPUs. For our testing, we use Narval's GPU nodes. Each one
+of the 159 GPU nodes contains 48 CPU cores and 498 GB of memory across two AMD Milan 7413 CPUs, and
+four NVidia A100 GPUs with 40 GB of memory each. One such node totals about 2.2 TFlops of CPU
+computing power, and 38.8 TFlops of GPU computing power. The nodes are connected by Infiniband EDR
+(100 Gb/s) interconnections.
+
+\subsection{Consumer hardware} \label{section:results:platforms:consumer}
+
 \section{Test case} \label{section:results:test_case}
 % new case
 
@@ -55,7 +91,7 @@
 	\label{fig:weak_scaling}
 \end{figure}
 
-\section{Adaptivity performance} \label{section:results:adaptivity_performance}
+\section{Adaptive mesh refinement performance} \label{section:results:adaptivity_performance}
 % Error adaptive vs non-adaptive, time to run
 % Error at same runtime
 
@@ -87,7 +123,7 @@
 	\label{fig:adaptivity_efficiency_C500}
 \end{figure}
 
-\section{Load balancing performance} \label{section:results:load_balancing_performance}
+\section{Dynamic load balancing performance} \label{section:results:load_balancing_performance}
 % Runtime adaptive with and without load balancing
 
 % Show the problem
