@@ -423,6 +423,7 @@ auto main(int argc, char* argv[]) -> int {
     std::vector<int> index_out_zone(n_proc);
     std::vector<std::vector<std::vector<std::array<cgsize_t, 2>>>> cotton_eyed_joe(n_proc); // [Where did he come from; where did he go]
     std::vector<std::vector<std::vector<std::array<cgsize_t, 2>>>> origin_and_destination_ghosts(n_proc); // [origin; destination]
+    const size_t n_digits = std::to_string(n_proc).length();
 
     for (cgsize_t i = 0; i < n_proc; ++i) {
         cgsize_t n_elements_in_proc = n_elements[i];
@@ -611,7 +612,7 @@ auto main(int argc, char* argv[]) -> int {
                                        0};
 
         std::stringstream ss;
-        ss << "Zone " << i + 1;
+        ss << "Zone " << std::setfill('0') << std::setw(n_digits) << i + 1;
         cg_zone_write(index_out_file, index_out_base, ss.str().c_str(), isize.data(), zone_type, &index_out_zone[i]);
 
         /* write grid coordinates (user must use SIDS-standard names here) */
