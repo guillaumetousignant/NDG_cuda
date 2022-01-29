@@ -877,9 +877,9 @@ auto main(int argc, char* argv[]) -> int {
 
                 int index_out_connectivity = 0;
                 std::stringstream ss2;
-                ss2 << "Connectivity" << i + 1 << "to" << j + 1;
+                ss2 << "Connectivity" << std::setfill('0') << std::setw(n_digits) << i + 1 << "to" << std::setfill('0') << std::setw(n_digits) << j + 1;
                 std::stringstream ss3;
-                ss3 << "Zone " << j + 1;
+                ss3 << "Zone " << std::setfill('0') << std::setw(n_digits) << j + 1;
                 cg_conn_write(index_out_file, index_out_base, index_out_zone[i], ss2.str().c_str(), GridLocation_t::FaceCenter, GridConnectivityType_t::Abutting1to1, PointSetType_t::PointList, connectivity_elements.size(), connectivity_elements.data(), ss3.str().c_str(), ZoneType_t::Unstructured, PointSetType_t::PointListDonor, DataType_t::Integer, connectivity_donor_elements.size(), connectivity_donor_elements.data(), &index_out_connectivity);
             }
         }
