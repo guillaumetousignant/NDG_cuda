@@ -30,7 +30,9 @@ auto get_output_file(const SEM::Helpers::InputParser_t& input_parser) -> fs::pat
     const std::string output_save_path = input_parser.getCmdOption("--out_path");
     if (!output_save_path.empty()) {
         const fs::path out_file = output_save_path;
-        fs::create_directory(out_file.parent_path());
+        if (out_file.has_parent_path()) {
+            fs::create_directory(out_file.parent_path());
+        }
         return out_file;
     }
     else {
