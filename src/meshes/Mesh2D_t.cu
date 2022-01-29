@@ -5045,9 +5045,9 @@ auto SEM::Device::Meshes::compute_wall_boundaries(size_t n_wall_boundaries, Elem
             if (element.N_ == neighbour.N_) { // Conforming
                 for (int k = 0; k <= element.N_; ++k) {
                     const Vec2<deviceFloat> neighbour_velocity {neighbour.u_extrapolated_[neighbour_side][neighbour.N_ - k], neighbour.v_extrapolated_[neighbour_side][neighbour.N_ - k]};
-                    Vec2<deviceFloat> local_velocity {neighbour_velocity.dot(face.normal_), neighbour_velocity.dot(face.tangent_)};
-                    local_velocity.x() = (2 * neighbour.p_extrapolated_[neighbour_side][neighbour.N_ - k] + SEM::Device::Constants::c * local_velocity.x()) / SEM::Device::Constants::c;
-                
+                    const Vec2<deviceFloat> local_velocity {-neighbour_velocity.dot(face.normal_), neighbour_velocity.dot(face.tangent_)};
+                    //local_velocity.x() = (2 * neighbour.p_extrapolated_[neighbour_side][neighbour.N_ - k] + SEM::Device::Constants::c * local_velocity.x()) / SEM::Device::Constants::c;
+
                     element.p_extrapolated_[0][k] = neighbour.p_extrapolated_[neighbour_side][neighbour.N_ - k];
                     element.u_extrapolated_[0][k] = normal_inv.dot(local_velocity);
                     element.v_extrapolated_[0][k] = tangent_inv.dot(local_velocity);
@@ -5094,8 +5094,8 @@ auto SEM::Device::Meshes::compute_wall_boundaries(size_t n_wall_boundaries, Elem
 
                 for (int k = 0; k <= element.N_; ++k) {
                     const Vec2<deviceFloat> neighbour_velocity {element.u_extrapolated_[0][k], element.v_extrapolated_[0][k]};
-                    Vec2<deviceFloat> local_velocity {neighbour_velocity.dot(face.normal_), neighbour_velocity.dot(face.tangent_)};
-                    local_velocity.x() = (2 * element.p_extrapolated_[0][k] + SEM::Device::Constants::c * local_velocity.x()) / SEM::Device::Constants::c;
+                    const Vec2<deviceFloat> local_velocity {-neighbour_velocity.dot(face.normal_), neighbour_velocity.dot(face.tangent_)};
+                    //local_velocity.x() = (2 * element.p_extrapolated_[0][k] + SEM::Device::Constants::c * local_velocity.x()) / SEM::Device::Constants::c;
                 
                     //element.p_extrapolated_[0][k] = element.p_extrapolated_[0][k]; // Does nothing
                     element.u_extrapolated_[0][k] = normal_inv.dot(local_velocity);
@@ -5156,9 +5156,9 @@ auto SEM::Device::Meshes::compute_wall_boundaries(size_t n_wall_boundaries, Elem
             const Vec2<deviceFloat> tangent_inv {face.normal_.y(), face.tangent_.y()};
             for (int k = 0; k <= element.N_; ++k) {
                 const Vec2<deviceFloat> neighbour_velocity {element.u_extrapolated_[0][k], element.v_extrapolated_[0][k]};
-                Vec2<deviceFloat> local_velocity {neighbour_velocity.dot(face.normal_), neighbour_velocity.dot(face.tangent_)};
-                local_velocity.x() = (2 * element.p_extrapolated_[0][k] + SEM::Device::Constants::c * local_velocity.x()) / SEM::Device::Constants::c;
-            
+                const Vec2<deviceFloat> local_velocity {-neighbour_velocity.dot(face.normal_), neighbour_velocity.dot(face.tangent_)};
+                //local_velocity.x() = (2 * element.p_extrapolated_[0][k] + SEM::Device::Constants::c * local_velocity.x()) / SEM::Device::Constants::c;
+
                 //element.p_extrapolated_[0][k] = element.p_extrapolated_[0][k]; // Does nothing
                 element.u_extrapolated_[0][k] = normal_inv.dot(local_velocity);
                 element.v_extrapolated_[0][k] = tangent_inv.dot(local_velocity);
