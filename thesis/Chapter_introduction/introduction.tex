@@ -21,6 +21,7 @@ study~\cite{Slotnick2014} states that turbulent flow separation is one area that
 predicted accurately. In order to simulate these problems, we will need increased processing power,
 more efficient use of that power, and higher resolution numerical methods.
 
+% DG-SEM
 Spectral methods are an answer to that need of more accurate numerical methods. Unlike traditional
 methods like finite differences methods, finite element methods and finite volume methods, spectral
 methods are high-order methods and converge exponentially fast. Instead of modelling the solution as
@@ -42,8 +43,28 @@ between elements to stabilise the scheme. This method combines the accuracy and 
 convergence of spectral methods with the geometric flexibility of finite element methods. 
 
 % GPUs
+With the stagnation of traditional computer \textit{central processing units (CPU)} operating
+frequencies over the last years~\cite{Parkhurst2006}, computer systems have evolved to use more
+parallel architectures. CPUs are now composed of several computing cores~\cite{Nayfeh1997} executing
+tasks together or in parallel, and contemporary \textit{high performance computing (HPC)} platforms
+consist of several whole computers networked together executing tasks in parallel. Amidst those
+changes, an inherently parallel architecture has started to be used in scientific computing.
+\textit{Graphics processing units (GPU)} are computer chips that were initially used in computer
+graphics, a massively parallel workload. GPUs can now be programmed similarly to traditional
+CPUs~\cite{Owens2008}, offering their thousands of simpler cores to many kids of computation. This
+architecture is optimised for maximal bandwidth, to process great amounts of data as fast as
+possible. Recently, these processors have been incorporated into HPC platforms~\cite{Fan2004},
+enabling massively parallel workloads with theoretical processing power much greater than using
+traditional CPUs.
+
+We will use GPUs for our computations in hope to increase the available processing power to solve
+complex problems. This will not come free, as GPU architectures are more optimised for static
+workloads executing the exact same code on all GPU cores. We use the CUDA parallel computing
+platform~\cite{Garland2008}, which enables programming GPUs using the C++ language with some
+extensions, much like CPU programming.
 
 % Adaptivity
+Even with highly accurate methods and the processing power of GPU-enables HPC platforms, 
 
 % Load balancing
 
