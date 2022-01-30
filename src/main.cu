@@ -247,7 +247,9 @@ auto main(int argc, char* argv[]) -> int {
     }
 
     // Initialisation
-    std::cout << "Initialising" << std::endl;
+    if (global_rank == 0) {
+        std::cout << "Initialising" << std::endl;
+    }
     auto t_start_init = std::chrono::high_resolution_clock::now();
 
     SEM::Device::Entities::NDG_t<SEM::Device::Polynomials::LegendrePolynomial_t> NDG(N_max, n_interpolation_points, stream);
@@ -264,7 +266,9 @@ auto main(int argc, char* argv[]) -> int {
 
     // Pre-condition
     if (pre_condition > 0) {
-        std::cout << "Pre-conditioning" << std::endl;
+        if (global_rank == 0) {
+            std::cout << "Pre-conditioning" << std::endl;
+        }
         auto t_start_pre = std::chrono::high_resolution_clock::now();
 
         solver.pre_condition(NDG, mesh, pre_condition);
@@ -278,7 +282,9 @@ auto main(int argc, char* argv[]) -> int {
     }
 
     // Computation
-    std::cout << "Solving" << std::endl;
+    if (global_rank == 0) {
+        std::cout << "Solving" << std::endl;
+    }
     auto t_start = std::chrono::high_resolution_clock::now();
 
     solver.solve(NDG, mesh, data_writer);
