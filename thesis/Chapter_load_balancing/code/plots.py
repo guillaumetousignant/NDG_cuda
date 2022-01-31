@@ -22,6 +22,7 @@ curve_width = 5
 background_curve_width = 5
 points_size = 12
 points_shape = "."
+points_font_size = 24
 elements_font_size = 36
 hilbert_font_size = 36
 arrow_width = 0.025
@@ -686,7 +687,90 @@ o_ax.text(0.75, 0.25, "1", fontfamily="Fira Code", fontsize=elements_font_size, 
 o_ax.text(0.75, 0.75, "2", fontfamily="Fira Code", fontsize=elements_font_size, horizontalalignment="center", verticalalignment="center", color=elements_colour)
 o_ax.text(0.25, 0.75, "3", fontfamily="Fira Code", fontsize=elements_font_size, horizontalalignment="center", verticalalignment="center", color=elements_colour)
 
-
 o_fig.savefig(save_path / f"child_order.svg", format='svg', transparent=True)
+
+# Node numbering
+node_fig = plt.figure(figsize=(2.8, 2.8))
+node_ax = node_fig.add_subplot(1, 1, 1)
+node_ax.set_xlim(-0.35, 1.35)
+node_ax.set_ylim(-0.35, 1.35)
+node_ax.set_aspect(1)
+node_ax.axis('off')
+node_fig.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=1.0)
+
+node_ax.plot([0, 1, 1, 0, 0], [0, 0, 1, 1, 0], color=elements_colour, linewidth=elements_width, label="Element")
+node_ax.plot([0, 1, 1, 0], [0, 0, 1, 1], color=points_colour, linestyle="None", linewidth=points_width, marker=points_shape, markersize=points_size, label="Nodes")
+
+node_ax.text(0.1, 0.1, "0", fontfamily="Fira Code", fontsize=points_font_size, horizontalalignment="left", verticalalignment="bottom", color=points_colour)
+node_ax.text(0.9, 0.1, "1", fontfamily="Fira Code", fontsize=points_font_size, horizontalalignment="right", verticalalignment="bottom", color=points_colour)
+node_ax.text(0.9, 0.9, "2", fontfamily="Fira Code", fontsize=points_font_size, horizontalalignment="right", verticalalignment="top", color=points_colour)
+node_ax.text(0.1, 0.9, "3", fontfamily="Fira Code", fontsize=points_font_size, horizontalalignment="left", verticalalignment="top", color=points_colour)
+
+node_fig.savefig(save_path / f"node_order.svg", format='svg', transparent=True)
+
+node_r_fig = plt.figure(figsize=(2.8, 2.8))
+node_r_ax = node_r_fig.add_subplot(1, 1, 1)
+node_r_ax.set_xlim(-0.35, 1.35)
+node_r_ax.set_ylim(-0.35, 1.35)
+node_r_ax.set_aspect(1)
+node_r_ax.axis('off')
+node_r_fig.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=1.0)
+
+node_r_ax.plot([0, 1, 1, 0, 0], [0, 0, 1, 1, 0], color=elements_colour, linewidth=elements_width, label="Element")
+node_r_ax.plot([0, 1, 1, 0], [0, 0, 1, 1], color=points_colour, linestyle="None", linewidth=points_width, marker=points_shape, markersize=points_size, label="Nodes")
+
+node_r_ax.text(0.1, 0.1, "3", fontfamily="Fira Code", fontsize=points_font_size, horizontalalignment="left", verticalalignment="bottom", color=points_colour)
+node_r_ax.text(0.9, 0.1, "0", fontfamily="Fira Code", fontsize=points_font_size, horizontalalignment="right", verticalalignment="bottom", color=points_colour)
+node_r_ax.text(0.9, 0.9, "1", fontfamily="Fira Code", fontsize=points_font_size, horizontalalignment="right", verticalalignment="top", color=points_colour)
+node_r_ax.text(0.1, 0.9, "2", fontfamily="Fira Code", fontsize=points_font_size, horizontalalignment="left", verticalalignment="top", color=points_colour)
+
+node_r_fig.savefig(save_path / f"node_order_r.svg", format='svg', transparent=True)
+
+# Local referential
+ref_fig = plt.figure(figsize=(2.8, 2.8))
+ref_ax = ref_fig.add_subplot(1, 1, 1)
+ref_ax.set_xlim(-0.35, 1.35)
+ref_ax.set_ylim(-0.35, 1.35)
+ref_ax.set_aspect(1)
+ref_ax.axis('off')
+ref_fig.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=1.0)
+
+ref_ax.plot([0, 1, 1, 0, 0], [0, 0, 1, 1, 0], color=elements_colour, linewidth=elements_width, label="Element")
+ref_ax.plot([0, 1, 1, 0], [0, 0, 1, 1], color=points_colour, linestyle="None", linewidth=points_width, marker=points_shape, markersize=points_size, label="Nodes")
+
+ref_ax.text(0.1, 0.1, "3", fontfamily="Fira Code", fontsize=points_font_size, horizontalalignment="left", verticalalignment="bottom", color=points_colour)
+ref_ax.text(0.9, 0.1, "0", fontfamily="Fira Code", fontsize=points_font_size, horizontalalignment="right", verticalalignment="bottom", color=points_colour)
+ref_ax.text(0.9, 0.9, "1", fontfamily="Fira Code", fontsize=points_font_size, horizontalalignment="right", verticalalignment="top", color=points_colour)
+ref_ax.text(0.1, 0.9, "2", fontfamily="Fira Code", fontsize=points_font_size, horizontalalignment="left", verticalalignment="top", color=points_colour)
+
+ref_ax.text(0.5, 0.5, "H", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=elements_colour)
+
+ref_ax.arrow(-0.25, 0.5, 0.5, 0, length_includes_head=True, width=arrow_width, head_length=arrow_head_length, color=curve_colour)
+ref_ax.arrow(0.5, 0.25, 0, -0.5, length_includes_head=True, width=arrow_width, head_length=arrow_head_length, color=curve_colour)
+
+ref_fig.savefig(save_path / f"global_referential.svg", format='svg', transparent=True)
+
+ref_local_fig = plt.figure(figsize=(2.8, 2.8))
+ref_local_ax = ref_local_fig.add_subplot(1, 1, 1)
+ref_local_ax.set_xlim(-0.35, 1.35)
+ref_local_ax.set_ylim(-0.35, 1.35)
+ref_local_ax.set_aspect(1)
+ref_local_ax.axis('off')
+ref_local_fig.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=1.0)
+
+ref_local_ax.plot([0, 1, 1, 0, 0], [0, 0, 1, 1, 0], color=elements_colour, linewidth=elements_width, label="Element")
+ref_local_ax.plot([0, 1, 1, 0], [0, 0, 1, 1], color=points_colour, linestyle="None", linewidth=points_width, marker=points_shape, markersize=points_size, label="Nodes")
+
+ref_local_ax.text(0.1, 0.1, "0", fontfamily="Fira Code", fontsize=points_font_size, horizontalalignment="left", verticalalignment="bottom", color=points_colour)
+ref_local_ax.text(0.9, 0.1, "1", fontfamily="Fira Code", fontsize=points_font_size, horizontalalignment="right", verticalalignment="bottom", color=points_colour)
+ref_local_ax.text(0.9, 0.9, "2", fontfamily="Fira Code", fontsize=points_font_size, horizontalalignment="right", verticalalignment="top", color=points_colour)
+ref_local_ax.text(0.1, 0.9, "3", fontfamily="Fira Code", fontsize=points_font_size, horizontalalignment="left", verticalalignment="top", color=points_colour)
+
+ref_local_ax.text(0.5, 0.5, "R", fontfamily="Fira Code", fontsize=hilbert_font_size, horizontalalignment="center", verticalalignment="center", color=elements_colour)
+
+ref_local_ax.arrow(0.5, 1.25, 0, -0.5, length_includes_head=True, width=arrow_width, head_length=arrow_head_length, color=curve_colour)
+ref_local_ax.arrow(0.25, 0.5, -0.5, 0, length_includes_head=True, width=arrow_width, head_length=arrow_head_length, color=curve_colour)
+
+ref_local_fig.savefig(save_path / f"local_referential.svg", format='svg', transparent=True)
 
 plt.show()
