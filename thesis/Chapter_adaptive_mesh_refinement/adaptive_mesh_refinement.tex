@@ -5,8 +5,8 @@
 % Mortar here
 
 Computers constantly increase in power, thanks to incremental progress made on known processes and
-new architectures such as that described in Chapter~\ref{chapter:graphics_processing_units}.
-However, processing power and memory is still limited and the size of problems studied has
+new architectures such as those described in Chapter~\ref{chapter:graphics_processing_units}.
+However, processing power and memory are still limited and the size of problems studied has
 increased in step with the available resources. It is still necessary to carefully manage those
 limited resources in order to maximise the efficiency of simulations. Some flow regions may be more
 interesting or harder to compute, benefiting from an increase in resolution. On the other hand, some
@@ -29,16 +29,17 @@ before solving the problem. This increases resolution in important areas of the 
 increases resolution everywhere else in the domain, where the increased computation cost provides no
 benefit. It is sometimes possible to predict where to refine before solving the problem, such as
 around static shock waves in predictable locations. In these cases, the mesh can be refined in those
-areas before computation has started. However, it is not always possible to know these areas
+areas before the computation has started. However, it is not always possible to know these areas
 beforehand, or these areas may move as time advances if the problem is transient. The error may also
-be higher in unforeseen areas that are not apparent.
+be higher in unforeseen areas.
 
-Adaptive mesh refinement is the process of mesh resolution as the computation goes, where the effect
-of that increase in resolution is most needed. To find out where to refine, the solution error must
-be estimated, and a refinement method must be chosen. The error can be estimated by extrapolating
-the value of the next mode, and the slope of the last few modes can guide the choice of the
-refinement method. The two refinement methods studied here are h-refinement and p-refinement,
-increasing the number of elements and the polynomial order, respectively. 
+Adaptive mesh refinement is the process of altering the mesh as the computation goes, where the
+effect of that increase in resolution is most needed. To find out where to refine, the solution
+error must be estimated, and a refinement method must be chosen. The error can be estimated by
+extrapolating the value of the next mode in the spectral approximation, and the slope of the last
+few modes can guide the choice of the refinement method. The two refinement methods studied here are
+h-refinement and p-refinement, increasing the number of elements and the polynomial order,
+respectively.
 
 This whole process must be executed in parallel and with as much as the work as possible executed on
 the GPU. GPUs are more efficient at working with fixed workloads where all threads of a block
@@ -50,9 +51,10 @@ perfectly coordinated, they could do these operations on the same destination me
 creating race conditions.
 
 Once the mesh has been refined, the element boundaries can become geometrically or functionally
-non-conforming. To compute fluxes between the elements, we use the mortar element method. Mortar, in
-the form of faces, is added between the elements, and the boundary solution is projected from the
-elements to the face's own collocation points. 
+non-conforming. To compute fluxes between the elements, we use the mortar element
+method~\cite{Maday1989}. Mortar, in the form of faces, is added between the elements, and the
+boundary solution is projected from the elements to the face's own collocation points. After the
+fluxes are computed on the faces, they are projected back from the faces to the elements. 
 
 When solving problems in parallel, the mesh will be split into blocks, each assigned to a process
 and its GPU. As the mesh is refined, it is possible that the blocks are refined unequally. This can
@@ -66,31 +68,31 @@ load balancing algorithm will be implemented in Chapter~\ref{chapter:load_balanc
 
 \subsection{p-adaptivity} \label{section:adaptive_mesh_refinement:adaptivity_strategies:p-adaptivity}
 
-\begin{figure}[H]
-	\centering
-	\includesvg[width=0.6\textwidth]{Chapter_adaptive_mesh_refinement/media/p-adaptivity_N4_N6}
-	\caption{2D p-adaptivity: The element's polynomial order is increased from 4 to 6, with 5 to 7 collocation points}
-	\label{fig:p-adaptivity}
-\end{figure}
-
 The first refinement strategy is p-adaptivity. When refining this way, elements increase their
 polynomial order to increase their resolution. The lower-order solution is projected to the
 higher-order collocation points. In this work, the polynomial order in increased in steps of 2, and
 is required to be identical in the x and y directions. 
 
+\begin{figure}[H]
+	\centering
+	\includesvg[width=0.6\textwidth]{Chapter_adaptive_mesh_refinement/media/p-adaptivity_N4_N6}
+	\caption{2D p-adaptivity: The element's polynomial order is increased from 4 to 6, with 5 to 7 collocation points respectively.}
+	\label{fig:p-adaptivity}
+\end{figure}
+
 \subsection{h-adaptivity} \label{section:adaptive_mesh_refinement:adaptivity_strategies:h-adaptivity}
+
+The second refinement strategy is h-adaptivity. h-adaptivity splits single elements into several
+elements occupying the same space. In this work we exclusively deal with quadrilaterals, and these
+elements split into four smaller elements when h-refining. The solution is projected from the
+initial big element to each of the four offspring elements.
 
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_adaptive_mesh_refinement/media/h-adaptivity_N4}
-	\caption{2D h-adaptivity: The element splits into 4 elements}
+	\caption{2D h-adaptivity: The element splits into 4 elements.}
 	\label{fig:h-adaptivity}
 \end{figure}
-
-The second refinement strategy is h-adaptivity. h-adaptivity splits single elements into several
-elements occupying the same space. In this work we exclusively deal with quadrilaterals, and these
-elements split in 4 smaller elements when h-refining. The solution is projected from the initial big
-element to each of the 4 offspring elements.
 
 \subsection{hp-adaptivity} \label{section:adaptive_mesh_refinement:adaptivity_strategies:hp-adaptivity}
 
@@ -102,24 +104,24 @@ detailed in Section~\ref{section:adaptive_mesh_refinement:refinement_criteria}.
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_adaptive_mesh_refinement/media/hp-adaptivity_N4_N6}
-	\caption{2D hp-adaptivity: Elements refining create non-conforming interfaces}
+	\caption{2D hp-adaptivity: Refinement of elements create non-conforming interfaces.}
 	\label{fig:hp-adaptivity}
 \end{figure}
 
 Once the mesh has been refined, it is possible that the interfaces between elements become
-non-conforming. Each interface is made up of two element edges, in bold black, and a face, in blue.
-Recall from Chapter~\ref{chapter:spectral_element_method} that fluxes are computed between the
-elements from the extrapolated values of the solution on collocation points corresponding to the
-polynomial order of the elements. These would be sitting on the bold black lines in the figure
-above. This works directly if two neighbouring elements have the same polynomial order and they
-completely share an edge. However, after p-adaptivity, interfaces can become functionally
-non-conforming, as seen with the horizontal blue line in the figure above. The nodes won't match
-anymore since one element has more points than the other. After h-adapting, interfaces can become
-geometrically non-conforming, as seen with the topmost blue line in the figure above. The nodes do
-not match because one element edge is shorter than the other. Finally, interfaces can be both
-geometrically and functionally non-conforming, as seen with the bottom blue line in the figure
-above. We will have to find a way to connect those elements in a way that retains the spectral
-convergence of the method. Such a method is described in
+non-conforming. Each interface is made up of two element edges on either side of the interface,
+shown in bold black on Figure~\ref{fig:hp-adaptivity}, and a face, in blue. Recall from
+Chapter~\ref{chapter:spectral_element_method} that fluxes are computed between the elements from the
+extrapolated values of the solution on collocation points corresponding to the polynomial order of
+the elements. These sit on the bold black lines in the figure above. This works directly if two
+neighbouring elements have the same polynomial order and they completely share an edge. However,
+after p-adaptivity, interfaces can become functionally non-conforming, as seen with the horizontal
+interface in the figure above. The nodes do not match anymore since one element has more points than
+the other. After h-adapting, interfaces can become geometrically non-conforming, as seen with the
+topmost blue line in the figure above. The nodes do not match because one element edge is shorter
+than the other. Finally, interfaces can be both geometrically and functionally non-conforming, as
+seen with the bottom blue line in the figure above. We will have to find a way to connect those
+elements in a way that retains the spectral convergence of the method. Such a method is described in
 Section~\ref{section:adaptive_mesh_refinement:mortar_element_method}.
 
 \begin{figure}[H]
@@ -129,28 +131,29 @@ Section~\ref{section:adaptive_mesh_refinement:mortar_element_method}.
 	\hfill
 	\subfloat[Mesh after refining]
 	{\includegraphics[width=0.45\textwidth]{Chapter_adaptive_mesh_refinement/media/load_imbalance} \label{fig:mesh_imbalance_after_refinement}}
-	\caption{Load imbalance: The elements have split unequally in the two worker GPUs, one having a higher computational load. (a) Before refining (b) After refining}
+	\caption{Load imbalance: The elements have split unequally in the two worker GPUs, denoted in purple and blue, one having a higher computational load. (a) Before refining (b) After refining}
 	\label{fig:load_imbalance}
 \end{figure}
 
-One last potential issue with AMR is the appearing of load imbalance. For example, the mesh from
-Figure~\ref{fig:mesh_refinement} is split in two blocks for two GPUs to work in parallel, as shown
-on Figure~\ref{fig:load_imbalance}. Initially, both the left and right GPUs have the same number of
-elements in their domain. After refining, the left GPU has more elements as the wave is in its
-domain and more elements have split there. Elements will have to be sent from the left GPU to the
-right GPU in order to even out the computational load, while ensuring that there are as few
+One last potential issue with AMR is the appearance of load imbalance. For example, the mesh from
+Figure~\ref{fig:mesh_refinement} is split into two blocks for two GPUs to work in parallel, as shown
+on Figure~\ref{fig:load_imbalance}. Initially, both the left (purple) and right (blue) GPUs have the
+same number of elements in their domain. After refining, the left GPU has more elements as the wave
+is in its domain and more elements have split there. Elements will have to be sent from the left GPU
+to the right GPU in order to even out the computational load, while ensuring that there are as few
 interfaces as possible between the GPUs. Interfaces need to be minimised because the GPUs need to
-communicate every timestep when computing fluxes on these interfaces. This involves transfers from
-from the GPUs to their CPU, between CPUs, and finally back from the CPUs to their GPU for both
-directions. This is an expensive process, and improving locality of the elements will help reduce
-the runtime of that part of the computation. This is dynamic load balancing, and
-Chapter~\ref{chapter:load_balancing} is dedicated to solving this problem.
+communicate at every timestep when computing fluxes on these interfaces. This involves transfers
+from the GPUs to their CPU, between CPUs, and finally back from the CPUs to their GPU. This happens
+twice, once for each side of the interface. This is an expensive process, and improving locality of
+the elements will help reduce the runtime of that part of the computation. This is known as dynamic
+load balancing, and Chapter~\ref{chapter:load_balancing} is dedicated to solving this problem.
 
 \section{Error Estimation} \label{section:adaptive_mesh_refinement:error_estimation}
 
-We can't simply refine everywhere in the domain at every occasion, else this is no better than
+We cannot simply refine everywhere in the domain at every occasion, since this is no better than
 having a finer mesh to start with. The mesh must only be refined where the expected error is higher.
-We must estimate the error of each element of the mesh, then refine those elements.
+We must estimate the error of each element of the mesh, then refine only those elements which
+require better resolution.
 
 As seen in Chapter~\ref{chapter:spectral_element_method}, we represent the solution as an infinite
 series of polynomials. In this case we use the Legendre polynomials $L_n(x)$ of degree $n$, with the
@@ -175,7 +178,8 @@ truncation error of the solution.
 
 We want the norm of that error to estimate the quality of the solution. To find it, we will need
 the modes $a_n$ beyond $N$. We will extrapolate the known modes $a_n$. The polynomials we use are
-orthogonal, therefore the following relation gives the inner product of two of the polynomials.
+orthogonal, therefore the following simple relation holds for the inner product of two of the
+polynomials.
 
 \begin{equation} \label{equ:polynomial_orthogonality}
 	\begin{aligned}
@@ -196,14 +200,16 @@ $L_n(x)$.
 	\end{aligned}
 \end{equation}
 
-Rearranging, we get the modes $a_N$.
+\noindent
+Rearranging, we get the modes $a_n$.
 
 \begin{equation} \label{equ:modes}
 	a_n = \frac{2n + 1}{2}\int_{-1}^{1}u_h(x(r))L_n(r)dr
 \end{equation}
 
-We now get predicted modes $\widetilde{a}_n$ from extrapolating our known nodes. The $L2$ norm of
-the truncation error can then be approximated.
+\noindent
+We now get predicted modes $\widetilde{a}_n$ by extrapolating our known nodes. The $L_2$ norm of the
+truncation error can then be approximated.
 
 \begin{equation} \label{equ:error_norm}
 	\begin{aligned}
@@ -212,6 +218,7 @@ the truncation error can then be approximated.
 	\end{aligned}
 \end{equation}
 
+\noindent
 We use the orthogonality of the Legendre polynomials shown in
 Equation~\ref{equ:polynomial_orthogonality} to obtain a simpler form of the truncation error norm.
 
@@ -219,7 +226,7 @@ Equation~\ref{equ:polynomial_orthogonality} to obtain a simpler form of the trun
 	\left \| \tau \right \| = \sqrt{\sum_{n = N + 1}^{\infty } \frac{\widetilde{a}_{n}^2}{\frac{(2n + 1)}{2}}}
 \end{equation}
 
-In 2D, the solution is a tensor product of polynomials, the truncation error changes accordingly. 
+In 2D, the solution is a tensor product of polynomials, so the truncation error changes accordingly. 
 
 \begin{equation} \label{equ:error_norm_2D}
 	\left\| \tau \right\| = \sqrt{\sum_{n = N + 1}^{\infty } \sum_{m = M + 1}^{\infty}\frac{\widetilde{a}_{nm}^2}{\frac{(2n + 1)(2m + 1)}{2^2}}}
@@ -227,31 +234,32 @@ In 2D, the solution is a tensor product of polynomials, the truncation error cha
 
 As per~\cite{Mavriplis1990}, we examine the decay rate of the modes as a way to estimate the local
 error. This method indicates that for a sufficiently high polynomial order, $p \geq 5$, the modes
-$\widetilde{a}_n$ can have an exponential decay. We obtain these modes by extrapolating the known
-modes. 
+$\widetilde{a}_n$ can have an exponential decay. We model the exponential decay as follows.
 
 \begin{equation} \label{equ:exponential_decay}
 	\widetilde{a}_n = Ce^{-\sigma n}
 \end{equation}
 
-In order to fit a straight line to the data by linear least-squares, we want a linear relation
-between the decay rate $\sigma$ and the modes. We take the logarithm of both sides and get our
-linear relation.
+We obtain these modes by extrapolating the known modes. In order to fit a straight line to the data
+by linear least-squares, we want a linear relation between the decay rate $\sigma$ and the modes. We
+take the logarithm of both sides of Equation~\ref{equ:exponential_decay} and get our linear
+relation.
 
 \begin{equation} \label{equ:exponential_decay_linear}
 	ln(\widetilde{a}_n) = ln(C) - \sigma n
 \end{equation}
 
 We apply a linear least-squares fit to the last points of the known modes $a_n$. The slope of the
-line, $\sigma$, is the error indicator. It will help choose a refinement strategy in
-Section~\ref{section:adaptive_mesh_refinement:refinement_criteria}. The linear least-squares finds a
-straight line by minimising the square of the distance between the fitted points and the line. The
-resulting line is given by:
+line, $\sigma$, is the error refinement criterion. It will help choose a refinement strategy in
+Section~\ref{section:adaptive_mesh_refinement:refinement_criteria}. The linear least-squares fit
+finds a straight line by minimising the sum of the squares of the distances between the fitted
+points and the line. The resulting line is given by:
 
 \begin{equation}
 	y = \alpha + \beta x,
 \end{equation}
 
+\noindent
 and its coefficients are computed by:
 
 \begin{align}
@@ -259,23 +267,24 @@ and its coefficients are computed by:
 	& \alpha = \overline{y} - \beta \overline{x},
 \end{align}
 
+\noindent
 with $\overline{x}$ and $\overline{y}$ being the $x$ and $y$ averages of the data. The error
-indicator becomes $\sigma = - \beta$, and the constant becomes $C = e^\alpha$.
+decay slope becomes $\sigma = - \beta$, and the constant becomes $C = e^\alpha$.
 
 Back to the error estimation, we can replace the sums of \ref{equ:error_norm_1D} and
-\ref{equ:error_norm_2D} by integrals and omit the denominators to provide an upper bound.
+\ref{equ:error_norm_2D} by integrals since the behaviour of the modes is known as an analytic
+function of $n$.
 
 \begin{align}
-	&1D: \quad \tau = \sqrt{\sum_{n = N + 1}^{\infty } \frac{\widetilde{a}_n^2}{\frac{2n + 1}{2}}}, \label{equ:error_1D_sums}
+	&1D: \quad \tau = \sqrt{\sum_{n = N + 1}^{\infty } \frac{\widetilde{a}_n^2}{\frac{2n + 1}{2}}} 
+			   \Rightarrow \sqrt{\int_{N + 1}^{\infty } a_n^2 dn}, \label{equ:error_1D}
 	\\
-	&2D: \quad \tau = \sqrt{\sum_{n = N + 1}^{\infty }\sum_{m = M + 1}^{\infty}\frac{\widetilde{a}^2_{nm}}{\frac{(2n + 1)(2m + 1)}{2^2}}} \label{equ:error_2D_sums}
-	\\
-	&1D: \quad \tau = \sqrt{\int_{N + 1}^{\infty } a_n^2 dn}, \label{equ:error_1D_integrals}
-	\\
-	&2D: \quad \tau = \sqrt{\int_{M+1}^{\infty }\int_{N + 1 }^{\infty}(a_{nm})^2 dn dm} \label{equ:error_2D_integrals}
+	&2D: \quad \tau = \sqrt{\sum_{n = N + 1}^{\infty }\sum_{m = M + 1}^{\infty}\frac{\widetilde{a}^2_{nm}}{\frac{(2n + 1)(2m + 1)}{2^2}}}
+			   \Rightarrow \sqrt{\int_{M+1}^{\infty }\int_{N + 1 }^{\infty}(a_{nm})^2 dn dm} \label{equ:error_2D}
 \end{align}
 
-By adding the extrapolated modes from Equation~\ref{equ:exponential_decay}, the 1D case can be
+\noindent
+By using the exponential decay model of Equation~\ref{equ:exponential_decay}, the 1D case can be
 evaluated directly.
 
 \begin{equation}
@@ -286,16 +295,17 @@ evaluated directly.
 	\end{aligned}
 \end{equation}
 
-The same method cannot be applied to the 2D case, as the modes in Equation
-~\ref{equ:error_2D_integrals} are defined in two dimensions. We will need to shape these modes in 1D
-to find the error estimate as in the 1D case. We use the same polynomial order in both $x$ and $y$
-directions, and create a 1D equivalent modes $\overline{a}_n$.
+The same method cannot be applied to the 2D case, as the modes in Equation~\ref{equ:error_2D} are
+defined in two dimensions. We will need to fit these modes in 1D to find the error estimate as in
+the 1D case. We use the same polynomial order in both $x$ and $y$ directions, and create 1D
+equivalent modes $\overline{a}_n$. 
 
 \begin{equation}
 	\overline{a}_n = \left| a_{n,n} \right| + \sum_{i = 0}^{n-1} \left( \left| a_{i, n} \right| + \left| a_{n, i} \right| \right)
 \end{equation}
 
-We use that equivalent modes to estimate the error.
+\noindent
+We use the equivalent modes to estimate the error.
 
 \begin{equation}
 	\begin{aligned}
@@ -307,31 +317,35 @@ We use that equivalent modes to estimate the error.
 	\end{aligned}
 \end{equation}
 
-The error indicator $\sigma$ and $C$ are computed from the 1D equivalent modes $\overline{a}_n$.
+\noindent
+The error estimator constants $\sigma$ and $C$ are computed from the 1D equivalent modes
+$\overline{a}_n$.
 
 It is now possible to refine when the estimated error is past a certain threshold. We still need to
 choose one of the refinement strategies from
 Section~\ref{section:adaptive_mesh_refinement:adaptivity_strategies}.
 Section~\ref{section:adaptive_mesh_refinement:refinement_criteria} describes a method to choose the
-most appropriate strategy using the error indicator $\sigma$ we computed previously.
+most appropriate strategy using the error decay rate $\sigma$ computed previously.
 
 \section{Refinement Criteria} \label{section:adaptive_mesh_refinement:refinement_criteria}
 
-Once we computed the error approximation on every element and know which elements we want to refine,
-we must choose in what way to refine them. Recall from
+Once we compute the error approximation on every element and know which elements we want to refine,
+we must choose how to refine them. Recall from
 Section~\ref{section:adaptive_mesh_refinement:adaptivity_strategies} that we can choose
 p-refinement, increasing the polynomial order $N$ of an element, or h-refinement, splitting the
 element in smaller elements to increase the total number of elements $K$.
 
 The method~\cite{Mavriplis1990} used here is to look at the decay rate of the modes $a_n$ of the
-solution. The error indicator $\sigma$ we computed in
-Section~\ref{section:adaptive_mesh_refinement:error_estimation} is the slope of the last few modes
-of the solution. A well-resolved solution should have a fast decay of the modes, with $\sigma > 1$.
-On the other hand, $\sigma \leqslant 1$ implies the solution is not well resolved as is.
+solution. The error decay rate $\sigma$ computed in
+Section~\ref{section:adaptive_mesh_refinement:error_estimation} is the negative slope of the last
+few modes of the solution. A well-resolved solution should have a fast decay of the modes, with
+$\sigma > 1$. On the other hand, $\sigma \leqslant 1$ implies the solution is not well resolved as
+is. Figure~\ref{fig:decaying_modes} compares a poorly resolved solution whose modes do not decay
+fast to a well resolved solution whose modes decay fast.
 
 \begin{figure}[H]
 	\centering
-	\subfloat[Badly resolved solution]
+	\subfloat[Poorly resolved solution]
 	{\includegraphics[width=0.4\textwidth]{Chapter_adaptive_mesh_refinement/media/decaying_modes_slow} \label{fig:decaying_modes_slow}}
 	\hfill
 	\subfloat[Well resolved solution]
@@ -340,57 +354,50 @@ On the other hand, $\sigma \leqslant 1$ implies the solution is not well resolve
 	\label{fig:decaying_modes}
 \end{figure}
 
-The truncation error is related to the value of the extrapolated nodes. If the slope of the modes is
-steep, each added mode is expected to reduce the error a lot. This is because the truncated modes
+The truncation error is related to the value of the extrapolated modes. If the slope of the modes is
+steep, each added mode is expected to reduce the error significantly. This is because the truncated modes
 have a smaller value, therefore the truncated part of the solution is also small. On the other hand,
-a flat slope indicates that the value of the modes does not decay fats, and adding additional modes
+a flat slope indicates that the value of the modes does not decay fast, and adding additional modes
 is not expected to reduce the truncation error much. This is often the case in non-smooth parts of
 the solution.
 
-We choose the slope of the modes, $\sigma$, as our error indicator. If $\sigma > 1$, adding
-polynomial modes is expected to reduce the error a lot, so we use p-adaptivity and increase the
-polynomial order $N$ of the element. If $\sigma \leqslant 1$, adding more modes is not predicted to
-reduce the error by much, therefore we use h-adaptivity and split the element into smaller elements,
-increasing $K$.
+We choose the slope of the modes, $\sigma$, as our error refinement criterion. If $\sigma > 1$,
+adding polynomial modes is expected to reduce the error significantly, so we use p-adaptivity and
+increase the polynomial order $N$ of the element. If $\sigma \leqslant 1$, adding more modes is not
+predicted to reduce the error by much, therefore we use h-adaptivity and split the element into
+smaller elements, increasing $K$.
 
-\section{Mortar Element Method} \label{section:adaptive_mesh_refinement:mortar_element_method}
-
-\begin{figure}[H]
-	\centering
-	\includesvg[width=0.6\textwidth]{Chapter_adaptive_mesh_refinement/media/conforming_interface_N4}
-	\caption{Conforming interface: The extrapolated solution lines up between elements}
-	\label{fig:conforming_interfaces}
-\end{figure}
+\section{The Mortar Element Method} \label{section:adaptive_mesh_refinement:mortar_element_method}
 
 One issue that can arise from AMR is the presence of non-conforming interfaces. The flux
 calculations from Chapter~\ref{chapter:spectral_element_method} involve taking the extrapolated
-values of the solution of two elements at their interface, and computing the flux at that point from
-these two values. The elements can then use these fluxes to compute their derivative for that row or
+values of the solution of two elements at their interface, and computing the flux at points along
+the interface from the two adjacent elements. The elements can then use these fluxes to compute their derivative for that row or
 column. This works well when the interfaces are conforming, because the extrapolated solution
 values, at the intersection of the thin and bold black lines on
 Figure~\ref{fig:conforming_interfaces}, line up between elements.
 
 \begin{figure}[H]
 	\centering
-	\includesvg[width=0.6\textwidth]{Chapter_adaptive_mesh_refinement/media/non_conforming_interfaces_N4_N6}
-	\caption{Non-conforming interfaces: The extrapolated solution does not line up between elements}
-	\label{fig:non_conforming_interfaces}
+	\includesvg[width=0.6\textwidth]{Chapter_adaptive_mesh_refinement/media/conforming_interface_N4}
+	\caption{Conforming elemental interface: The extrapolated solution lines up between elements.}
+	\label{fig:conforming_interfaces}
 \end{figure}
 
-Once the mesh has refined, the extrapolated values may not line up anymore, as seen on
+Once the mesh has been refined, the extrapolated values may not line up anymore, as seen in
 Figure~\ref{fig:non_conforming_interfaces}. This makes it impossible to compute fluxes directly, as
 the flux computations need a left and right value at every point. These are non-conforming
 interfaces. There are three types of non-conforming interfaces. Geometrically non-conforming
 interfaces appear when two elements of the same polynomial order do not line up, either because they
 are not the same size of because they are offset. Functionally non-conforming interfaces appear when
-two elements line up but have a different polynomial order. Finally, an interface can be both
+two elements line up but have a different polynomial orders. Finally, an interface can be both
 geometrically and functionally non-conforming.
 
 \begin{figure}[H]
 	\centering
-	\includesvg[width=0.8\textwidth]{Chapter_adaptive_mesh_refinement/media/mortar_element_method_N4_N6}
-	\caption{Mortar element method: Mortar is added between the elements}
-	\label{fig:mortar_element_method}
+	\includesvg[width=0.6\textwidth]{Chapter_adaptive_mesh_refinement/media/non_conforming_interfaces_N4_N6}
+	\caption{Non-conforming elemental interfaces: The extrapolated solution does not line up between elements.}
+	\label{fig:non_conforming_interfaces}
 \end{figure}
 
 We could simply interpolate values on the points that do not line up, but we want to conserve the
@@ -399,6 +406,13 @@ from~\cite{Maday1989}. This method adds mortar, or faces, between the elements. 
 their own collocation points, unto which the extrapolated solution from the elements is projected.
 The flux computations can then be performed on the face's collocation points and be projected back
 to the elements afterwards.
+
+\begin{figure}[H]
+	\centering
+	\includesvg[width=0.8\textwidth]{Chapter_adaptive_mesh_refinement/media/mortar_element_method_N4_N6}
+	\caption{The mortar element method: Mortar is added between the elements, shown in blue.}
+	\label{fig:mortar_element_method}
+\end{figure}
 
 We define the faces as the smallest of the element side it connects to. This ensures each face only
 has one element on either side, their \textit{left} and \textit{right} elements. Elements can
@@ -412,7 +426,7 @@ Section~\ref{chapter:spectral_element_method}.
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_adaptive_mesh_refinement/media/element_to_mortar_N4_N6}
-	\caption{Element to mortar projection: The elements' boundary values are projected to the face}
+	\caption{Element to mortar projection: The elements' boundary values are projected to the face.}
 	\label{fig:element_to_mortar}
 \end{figure}
 
@@ -532,7 +546,7 @@ The projection operation from element to faces is therefore:
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_adaptive_mesh_refinement/media/mortar_to_element_N4_N6}
-	\caption{Mortar to Element projection: The faces' values are projected to the elements}
+	\caption{Mortar to Element projection: The faces' values are projected to the elements.}
 	\label{fig:mortar_to_element}
 \end{figure}
 
@@ -658,7 +672,7 @@ change the polynomial order of elements, replace elements that have split, creat
 change the polynomial order of faces, and keep the element and face references coherent. The whole
 adaptivity process happens in parallel on each GPU, each on its mesh block. The adaptivity process
 starts by calculating the error in parallel on each element on the GPU. The elements store their
-estimated error $\tau$ and their error indicator $\sigma$.
+estimated error $\tau$ and their error refinement criterion $\sigma$.
 
 \subsection{Counting refining elements} \label{section:adaptive_mesh_refinement:implementation:counting_refining_elements}
 
@@ -667,10 +681,10 @@ estimated error $\tau$ and their error indicator $\sigma$.
 We start by finding out the total number of h-adapting elements. A reduction~\cite{Harris2007} is
 computed on the GPU on a per-block basis. In this reduction each thread examines the estimated error
 $\tau$ of an element against a set threshold and marks it as adapting or not. If adapting, the error
-indicator $\sigma$ is read to mark it as h or p adapting. If h-adapting, the thread sets to 1 the
-value of an intermediate array at the thread's index within the bock. Then, through a sequence of
-synchronisations and additions, the threads add up those values until the block total is known. The
-block total is then written to an output vector at the block's index within the mesh.
+refinement criterion $\sigma$ is read to mark it as h or p adapting. If h-adapting, the thread sets
+to 1 the value of an intermediate array at the thread's index within the bock. Then, through a
+sequence of synchronisations and additions, the threads add up those values until the block total is
+known. The block total is then written to an output vector at the block's index within the mesh.
 
 Once this is done, the array with each block's total number of h-adapting elements is copied to the
 CPU and the total number of splitting elements is computed by adding all the values. It would be
