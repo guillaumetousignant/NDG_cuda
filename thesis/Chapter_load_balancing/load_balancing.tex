@@ -393,7 +393,7 @@ individual children.
 
 The mesh can be refined multiple times that way and the locality of the Hilbert curve. Even
 non-confirming interfaces do not create any jumps in the curve. Figure~\ref{fig:mesh_1_after2} shows
-a mesh of initially $K = 4x4$ elements refined and load balanced three times. The Hilbert curve is
+a mesh of initially $K = 4 \times 4$ elements refined and load balanced three times. The Hilbert curve is
 shown in Green to access the quality of the ordering.
 
 \begin{figure}[H]
@@ -603,7 +603,7 @@ Subsection~\ref{section:adaptive_mesh_refinement:implementation:moving_elements}
 these faces and elements are updated.
 
 Figures~\ref{fig:lb_before} and~\ref{fig:lb_after} illustrate an example of the whole load balancing
-process, where two processes initially have an unbalanced number of elements. The domain spans $x,y
+process, where two processes initially have an unbalanced number of elements. The domain spans $x, y
 \in [0, 1]$ and the elements making up that domain are split between two processes, running on two
 GPUs. Earlier mesh refinement has occurred, creating a load imbalance between the two processes.
 
