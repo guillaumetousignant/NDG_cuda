@@ -843,6 +843,8 @@ def plot_mesh(mesh: Mesh,
     if show_legend:
         ax.legend()
 
+    fig.tight_layout()
+
 def main(argv: list[str]):
     parser = argparse.ArgumentParser(description="Plots meshes with the data returned from the Mesh2D_t print() function.")
     parser.add_argument('meshes', metavar='mesh', type=Path, nargs='+', help='path to a mesh to display')
