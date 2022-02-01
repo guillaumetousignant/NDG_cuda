@@ -127,8 +127,11 @@ estimated error and load imbalance high enough to trigger the whole subroutine.
 \subsection{Strong scaling} \label{section:results:scaling_tests:strong}
 
 The test case for this section is described in Section~\ref{section:results:test_case}. It is
-divided into 256 elements in the $x$ and $y$ direction, for a total of $K = 65536$. The first test
-has a polynomial order $N$ of six for all elements, and a block size $B$ of 32. 
+divided into 256 elements in the $x$ and $y$ direction, for a total of $K = 65536$. The problem is
+then solved in parallel from one quarter node to eight nodes. One quarter node contains 1 GPU and 10
+CPU cores, while eight nodes contain 16 GPUs and 160 CPU cores. The mesh is split into blocks
+accordingly, one block per GPU or one block per CPU core. The first test has a polynomial order $N$
+of six for all elements, and a block size $B$ of 32. 
 
 The block size, as explained in
 Subsection~\ref{section:graphics_processing_units:architecture:programming_model}, is the number of
@@ -139,8 +142,9 @@ block size can actually lower performance. A single thread diverging will have a
 its block waiting until it is finished, therefore a higher block size will have more threads stalled
 when divergence occurs.
 
-% ideal line
-
+All tests have an "ideal" line both for the GPU and CPU calculations. This line represents the
+optimal split for that case, with the number of nodes with the best scaling, extrapolated linearly
+to the other splits.
 
 \begin{figure}[H]
 	\centering
@@ -148,6 +152,9 @@ when divergence occurs.
 	\caption{Weak scaling: The problem size increases with the number of workers. N = 4, K = 65536, B = 32}
 	\label{fig:strong_scaling_N4_W32}
 \end{figure}
+
+Figure~\ref{fig:strong_scaling_N4_W32} shows that the GPU implementation, initially slower than the
+CPU implementation, overtakes it when one full node is used.
 
 % N increase
 
