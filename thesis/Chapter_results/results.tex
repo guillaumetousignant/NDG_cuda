@@ -42,6 +42,16 @@ computing power, and 38.8 TFlops of GPU computing power. The nodes are connected
 (100 Gb/s) interconnections.
 
 \subsection{Consumer hardware} \label{section:results:platforms:consumer}
+Some smaller scale tests or tests that didn't involve performance were run on consumer hardware.
+This is important, as it may not always be possible to access HPC systems when flow simulations have
+to be performed. The program should also have reasonable performance on regular systems. The system
+used in these cases is a single computer containing 16 CPU cores and 128 GB of memory across two
+Intel E5-2650 V2 CPUs, and one NVidia GTX 1070 GPU with 8 GB of memory. This is an interesting
+comparison, as consumer GPUs are not geared towards high precision compute loads. GPUs found in HPC
+systems typically have a 1:2 ratio between their double precision and single precision performance,
+whereas consumer GPUs usually have 1:32 ratio. This means that computations using double precision
+floating point numbers will execute at one sixteenth of the speed of compute-oriented GPUS, all
+other factors being equal.
 
 \section{Test case} \label{section:results:test_case}
 % new case
