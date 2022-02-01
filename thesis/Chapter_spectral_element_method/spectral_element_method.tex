@@ -48,11 +48,11 @@ Spectral methods exploit the orthogonality property of sets of functions. For or
 functions in the domain $[a, b]$, we have:
 
 \begin{equation} \label{equ:orthogonality}
-	\int_{a}^{b}\phi_i(x) \phi_j(x)dx = C_i \delta_{ij}
+	\int_{a}^{b}\phi_i(x) \phi_j(x)dx = C_i \delta_{i j}
 \end{equation}
 
 \noindent
-with $C_i$ being a constant, and $\delta_{ij}$ being the Kronecker delta, defined as such:
+with $C_i$ being a constant, and $\delta_{i j}$ being the Kronecker delta, defined as such:
 
 \begin{equation} \label{equ:kronecker}
 	\delta _{ij} = \left\{ \begin{matrix}
@@ -72,14 +72,14 @@ $\left[ a, b \right]$, is:
 We can therefore rewrite Equation~\ref{equ:orthogonality} in inner product form:
 
 \begin{equation}
-	\left( \phi_i, \phi_j \right) = \int_{a}^{b}\phi_i(x) \phi_j(x)dx = C_i \delta_{ij}
+	\left( \phi_i, \phi_j \right) = \int_{a}^{b}\phi_i(x) \phi_j(x)dx = C_i \delta_{i j}
 \end{equation}
 
 The high-order orthogonal polynomials we use have associated weights $w$ that ensures orthogonality
 of the polynomials. $D_{ij}$ is a constant.
 
 \begin{equation}
-	\left ( \phi_i, \phi_j \right ) = \int_a^b \phi_i(x)\phi_j(x)w(x)dx = D_{ij}\delta_{ij}
+	\left ( \phi_i, \phi_j \right ) = \int_a^b \phi_i(x)\phi_j(x)w(x)dx = D_{ij}\delta_{i j}
 \end{equation}
 
 Fourier series can be used for periodic problems. As for non-periodic problems, Legendre polynomials
@@ -138,10 +138,10 @@ of degree N.
 \end{equation}
 
 At each collocation point $x_i$ only one of the integrating polynomials has the value 1, the others
-having a value of 0. This mimics the Kronecker delta $\delta_{ij}$.
+having a value of 0. This mimics the Kronecker delta $\delta_{i j}$.
 
 \begin{equation}
-	l_j(x_i) = \delta_{ij} = \left\{\begin{matrix}
+	l_j(x_i) = \delta_{i j} = \left\{\begin{matrix}
 	1, \quad i = j\\ 
 	0, \quad i \neq j,
 	\end{matrix}\right.
@@ -837,10 +837,10 @@ To account for the uneven spacing between the collocation points inside an eleme
 the smallest spacing in an element as: 
 
 \begin{equation}
-    \Delta x = \frac{\Delta x_{k}}{N^2}
+    \Delta x = \frac{\Delta x_k}{N^2}
 \end{equation}
 
-Where $\Delta x_{k}$ is the length of element $k$, and $N$ is the polynomial order of that element.
+Where $\Delta x_k$ is the length of element $k$, and $N$ is the polynomial order of that element.
 The global timestep will be chosen as the minimum timestep of all elemental timesteps. 
 
 \begin{equation}
@@ -848,7 +848,7 @@ The global timestep will be chosen as the minimum timestep of all elemental time
 \end{equation}
 
 \begin{equation}
-    \Delta t_k \leq \CFL \frac{c \Delta x_{k}}{N^2}
+    \Delta t_k \leq \CFL \frac{c \Delta x_k}{N^2}
 \end{equation}
 
 \section{Implementation} \label{section:spectral_element_method:implementation}

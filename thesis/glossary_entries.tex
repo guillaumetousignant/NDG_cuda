@@ -27,11 +27,7 @@
 
 \newglossaryentry{gls:N}{name={$N$},description={function coefficient, Legendre approximation coefficient}}
 
-\newglossaryentry{gls:tau}{name={$\tau$},description={function coefficient, Legendre approximation coefficient}}
-
 \newglossaryentry{gls:C_i}{name={$C_i$},description={function coefficient, Legendre approximation coefficient}}
-
-\newglossaryentry{gls:delta_ij}{name={$\delta_{ij}$},description={function coefficient, Legendre approximation coefficient}}
 
 \newglossaryentry{gls:f}{name={$f$},description={function coefficient, Legendre approximation coefficient}}
 
@@ -87,8 +83,6 @@
 
 \newglossaryentry{gls:n_i}{name={$n_i$},description={function coefficient, Legendre approximation coefficient}}
 
-\newglossaryentry{gls:Omega}{name={$\Omega$},description={function coefficient, Legendre approximation coefficient}}
-
 \newglossaryentry{gls:v_tilde}{name={$\widetilde{v}_{i, j}$},description={function coefficient, Legendre approximation coefficient}}
 
 \newglossaryentry{gls:X_bold}{name={$\mathbf{X}$},description={function coefficient, Legendre approximation coefficient}}
@@ -105,7 +99,7 @@
 
 \newglossaryentry{gls:Q_bold_t}{name={$\mathbf{Q}_t$},description={function coefficient, Legendre approximation coefficient}}
 
-\newglossaryentry{gls:Delta_t}{name={$\Delta t$},description={function coefficient, Legendre approximation coefficient}}
+\newglossaryentry{gls:Delta_t}{name = {$\Delta t$}, description = {time step size}}
 
 \newglossaryentry{gls:t_n}{name={$t_n$},description={function coefficient, Legendre approximation coefficient}}
 
@@ -123,29 +117,21 @@
 
 \newglossaryentry{gls:g_m}{name={$g_m$},description={function coefficient, Legendre approximation coefficient}}
 
-\newglossaryentry{gls:Delta_x}{name={$\Delta x_{k}$},description={function coefficient, Legendre approximation coefficient}}
+\newglossaryentry{gls:Delta_x}{name = {$\Delta x_k, \Delta y_k$}, description = {size of element $k$ in the $x$ and $y$ directions respectively}}
 
 \newglossaryentry{gls:L_n}{name={$L_n(x)$},description={function coefficient, Legendre approximation coefficient}}
-
-\newglossaryentry{gls:delta_nm}{name={$\delta_{nm}$},description={function coefficient, Legendre approximation coefficient}}
 
 \newglossaryentry{gls:u_h}{name={$u_h(x)$},description={function coefficient, Legendre approximation coefficient}}
 
 \newglossaryentry{gls:a_tilde_n}{name={$\widetilde{a}_n$},description={function coefficient, Legendre approximation coefficient}}
 
-\newglossaryentry{gls:sigma}{name={$\sigma$},description={function coefficient, Legendre approximation coefficient}}
-
 \newglossaryentry{gls:x_line}{name={$\overline{x}$},description={function coefficient, Legendre approximation coefficient}}
 
 \newglossaryentry{gls:y_line}{name={$\overline{y}$},description={function coefficient, Legendre approximation coefficient}}
 
-\newglossaryentry{gls:beta}{name={$\beta$},description={function coefficient, Legendre approximation coefficient}}
-
 \newglossaryentry{gls:a_line}{name={$\overline{a}_n$},description={function coefficient, Legendre approximation coefficient}}
 
 \newglossaryentry{gls:K}{name={$K$},description={function coefficient, Legendre approximation coefficient}}
-
-\newglossaryentry{gls:Xi}{name={$\Xi$},description={function coefficient, Legendre approximation coefficient}}
 
 \newglossaryentry{gls:s}{name={$s$},description={function coefficient, Legendre approximation coefficient}}
 
@@ -155,15 +141,11 @@
 
 \newglossaryentry{gls:b}{name={$b$},description={function coefficient, Legendre approximation coefficient}}
 
-\newglossaryentry{gls:Psi}{name={$\Psi$},description={function coefficient, Legendre approximation coefficient}}
-
 \newglossaryentry{gls:l}{name={$l$},description={function coefficient, Legendre approximation coefficient}}
 
 \newglossaryentry{gls:J}{name={$J$},description={function coefficient, Legendre approximation coefficient}}
 
 \newglossaryentry{gls:M}{name={$M$},description={function coefficient, Legendre approximation coefficient}}
-
-\newglossaryentry{gls:Phi}{name={$\Phi$},description={function coefficient, Legendre approximation coefficient}}
 
 \newglossaryentry{gls:F}{name={$F$},description={function coefficient, Legendre approximation coefficient}}
 
@@ -184,7 +166,23 @@
 \newglossaryentry{gls:W}{name={$W$},description={function coefficient, Legendre approximation coefficient}}
 
 % greek -------------------------------------------------------
-\newglossaryentry{gls:phi}{name={$\phi_i, \phi_n$},description={basis function, orthogonal basis functions}, sort = {b21}, type=greekstyle}
+\newglossaryentry{gls:phi}{name = {$\phi_i, \phi_n$}, description = {basis function, orthogonal basis functions}, sort = {b21}, type = greekstyle}
+
+\newglossaryentry{gls:delta_ij}{name = {$\delta_{i j}, \delta_{n m}$}, description = {Kronecker delta}, sort = {b04}, type = greekstyle}
+
+\newglossaryentry{gls:tau}{name = {$\tau$}, description = {truncation error}, sort = {b19}, type = greekstyle}
+
+\newglossaryentry{gls:sigma}{name = {$\sigma$}, description = {modes decay rate}, sort = {b18}, type = greekstyle}
+
+\newglossaryentry{gls:beta}{name = {$\beta$}, description = {slope of linear least squares best fit, normal vector y component}, sort = {b02}, type = greekstyle}
+
+\newglossaryentry{gls:Omega}{name = { $\Omega$}, description = {element, domain}, sort = {a23}, type = greekstyle}
+
+\newglossaryentry{gls:Xi}{name = {$\Xi$}, description = {face, mortar}, sort = {a14}, type = greekstyle}
+
+\newglossaryentry{gls:Phi}{name = {$\Phi$}, description = {computed flux on face}, sort = {a21}, type = greekstyle}
+
+\newglossaryentry{gls:Psi}{name = {$\Psi$}, description = {element boundary solution projected on a face}, sort = {a22}, type = greekstyle}
 
 % superscript ------------------------------------------------
 \newglossaryentry{gls:der}{name={$'$},description={function first derivative}, type=superscript}

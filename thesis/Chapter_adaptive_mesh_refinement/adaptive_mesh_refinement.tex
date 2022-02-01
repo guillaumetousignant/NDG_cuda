@@ -512,25 +512,25 @@ The same can be done for $S$, with the following orthogonality relation:
 
 \begin{equation} \label{equ:matrix_S}
 	\begin{aligned}
-		S_{jk} &= \int_{-1}^{1} l_k ^ \Omega (a + b z) l_j ^ \Xi (z)dz \\
-		&= \sum_{m = 0}^{J} l_k ^ \Omega (a + b z_m) l_j ^ \Xi (z_m) w_m ^ \Xi \\
-		&= \sum_{m = 0}^{J} l_k ^ \Omega (a + b z_m) w_m ^{\Xi} \delta_{jm}, \quad j = 0, ..., J, \: k = 0, ..., N.
+		S_{jk} &= \int_{-1}^{1} l_k ^ \Omega \left( a + b z \right) l_j ^ \Xi \left( z \right) dz \\
+		&= \sum_{m = 0}^{J} l_k ^ \Omega \left( a + b z_m \right) l_j ^ \Xi \left( z_m \right) w_m ^ \Xi \\
+		&= \sum_{m = 0}^{J} l_k ^ \Omega \left( a + b z_m \right) w_m ^{\Xi} \delta_{jm}, \quad j = 0, ..., J, \: k = 0, ..., N.
 	\end{aligned}
 \end{equation}
 
 We use Equation~(\ref{equ:orthogonality_S}) to simplify the matrix $S$.
 
 \begin{equation}
-	S_{jk} = l_k^{\Omega } \left( a + bz_j \right)w_j^{\Xi}, \quad j = 0, ..., J, \: k = 0, ..., N.
+	S_{jk} = l_k^{\Omega } \left( a + bz_j \right) w_j^{\Xi}, \quad j = 0, ..., J, \: k = 0, ..., N.
 \end{equation}
 
 With $M$ and $S$, we can define a projection matrix from element boundary space to face space.
 
 \begin{equation}
 	\begin{aligned}
-		P_{jk} ^ {\Omega  \rightarrow \Xi} &= M^{-1}S \\
-		&= (w_j ^{-1})^{\Xi }  l_k ^ \Omega (a + b z_j)(w_j)^{\Xi} \\
-		&= l_k ^ \Omega (a + b z_j), \quad j = 0, ..., J, \: k = 0, ..., N.
+		P_{jk} ^ {\Omega \rightarrow \Xi} &= M^{-1}S \\
+		&= \left( w_j ^{-1} \right)^{\Xi }  l_k ^ \Omega \left( a + b z_j \right) \left( w_j \right)^{\Xi} \\
+		&= l_k ^ \Omega \left(a + b z_j \right), \quad j = 0, ..., J, \: k = 0, ..., N.
 	\end{aligned}
 \end{equation}
 
