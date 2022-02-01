@@ -169,7 +169,7 @@ truncation error of the solution.
 
 \begin{equation} \label{equ:solution_approximation}
 	\begin{aligned}
-		u(x) &= \sum_{n = 0}^{\infty }a_n L_n(x) \\
+		u(x) &= \sum_{n = 0}^{\infty } a_n L_n(x) \\
 		&= \sum_{n = 0}^{N}a_n L_n(x) + \sum_{n = N + 1}^{\infty }a_n L_n(x) \\ 
 		&= \sum_{n = 0}^{N}a_n L_n(x) + \tau \\
 		&\approx \sum_{n = 0}^{N}a_n L_n(x)
@@ -184,11 +184,11 @@ polynomials.
 \begin{equation} \label{equ:polynomial_orthogonality}
 	\begin{aligned}
 		\left( L_n, L_m \right) &= \int_{-1}^{1}L_n(r)L_m(r)dr \\
-		&= \frac{2}{2n + 1}\delta _{nm}
+		&= \frac{2}{2n + 1}\delta _{n m}
 	\end{aligned}
 \end{equation}
 
-with $\delta_{nm}$ being the Kronecker delta. We start by computing the known modes by taking the
+with $\delta_{n m}$ being the Kronecker delta. We start by computing the known modes by taking the
 inner product of the approximate solution $u_h(x)$ and  the corresponding Legendre polynomial
 $L_n(x)$.
 
