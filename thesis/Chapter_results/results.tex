@@ -131,7 +131,7 @@ divided into 256 elements in the $x$ and $y$ direction, for a total of $K = 6553
 then solved in parallel from one quarter node to eight nodes. One quarter node contains 1 GPU and 10
 CPU cores, while eight nodes contain 16 GPUs and 160 CPU cores. The mesh is split into blocks
 accordingly, one block per GPU or one block per CPU core. The first test has a polynomial order $N$
-of six for all elements, and a block size $B$ of 32. 
+of four for all elements, and a block size $B$ of 32. 
 
 The block size, as explained in
 Subsection~\ref{subsection:graphics_processing_units:architecture:programming_model}, is the number
@@ -154,11 +154,23 @@ to the other splits.
 \end{figure}
 
 Figure~\ref{fig:strong_scaling_N4_W32} shows that the GPU implementation, initially slower than the
-CPU implementation, overtakes it when one full node is used.
+CPU implementation, overtakes it when one full node or more is used. The higher number of nodes show
+the GPU implementation to be $2.9 \times$ faster that the CPU implementation.
 
-% N increase
+At low numbers of GPUs working on the same problem, the GPUs are more heavily loaded. It is possible
+that the higher memory usage, or the increased cache eviction rate lowers the performance of GPUs in
+that regime. With a lower number of elements being worked on by a GPU, cache has to be emptied less
+often to make room for more elements to use for computations.
 
-% SIMT width
+At the end of the curve, we see that the scaling lowers slightly. This could be a hint that the GPUs
+are then not loaded enough. These GPUs have many CUDA cores, 5120 each in the case of Béluga. If the
+workload does not saturate the GPU, some of those cores will be idle, leading to worse performance.
+The optimal number of elements per GPU seems to be around 4096.
+
+The next test, shown on Figure~\ref{fig:strong_scaling_N6_W32}, shows the same test case but with an
+increased polynomial order of $N = 6$ for all elements. The rationale is that the GPU should spend
+more time on the computations, since the computations will be heavier, while spending the same time
+on the overhead of kernel calls and other housekeeping.
 
 \begin{figure}[H]
 	\centering
@@ -166,6 +178,16 @@ CPU implementation, overtakes it when one full node is used.
 	\caption{Weak scaling: The problem size increases with the number of workers. N = 6, K = 65536, B = 32}
 	\label{fig:strong_scaling_N6_W32}
 \end{figure}
+
+Figure~\ref{fig:strong_scaling_N6_W32} shows that the increased polynomial order has not increased
+the performance of the GPU implementation compared to the CPU implementation, rather shifting to the
+right the crossover point where the GPU implementation is faster. It is possible that the reduced
+relative performance is linked to the increased memory used by the solution, as the needed storage
+is relative to $2 N + 1$, where $N$ is the polynomial order of elements.
+
+Next, this last case is computer again with increased block size $B$, first 64 on
+Figure~\ref{fig:strong_scaling_N6_W64}, then 128 on Figure~\ref{fig:strong_scaling_N6_W128}. The CPU
+implementation is not modified. This should assess the incidence of block size on the solution time.
 
 \begin{figure}[H]
 	\centering
@@ -181,7 +203,18 @@ CPU implementation, overtakes it when one full node is used.
 	\label{fig:strong_scaling_N6_W128}
 \end{figure}
 
-% GPU loading
+A the last two figures suggest, increasing the block size $B$ does incur a performance penalty. This
+is possible caused by a high amount of thread divergence within blocks. This is consistent with how
+the program is written, for example Section~\ref{section:adaptive_mesh_refinement:implementation}
+shows how the projection back and forth between the elements and faces have a low of branching code
+paths. A lot of changes in the architecture of the program would have to be made to reduce this
+branching, and switch to a more data-driven approach.
+
+One thing to note is that the curve of the CPU implementation on
+Figures~\ref{fig:strong_scaling_N4_W32} and~\ref{fig:strong_scaling_N6_W32} is similar, whereas the
+GPU curves from all the figures differ significantly. This is a recurring theme of all the tests in
+this chapter, code running on GPUs seems to be harder to optimise and some factors have unexpected
+influences on the performance.
 
 \subsection{Weak scaling} \label{subsection:results:scaling_tests:weak}
 
