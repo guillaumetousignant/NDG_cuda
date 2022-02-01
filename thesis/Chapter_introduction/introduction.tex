@@ -35,12 +35,13 @@ represent a function as a truncated series:
 Where $\phi _n(x)$ are basis functions. We use this representation into the governing equations to
 compute the unknowns $\widehat{u}_n$. Spectral methods are usually divided in two
 categories~\cite{Karniadakis2005}: collocation methods and Galerkin methods. Galerkin methods solve
-governing equations in integral form over the domain, which is broken up into elements. This method,
-in combination with the spectral approximation, will be used in this work. It is called the
-\textit{discontinuous Galerkin spectral element method (DG-SEM)}. The method is discontinuous
-because it allows the solution to be discontinuous at element boundaries, instead using fluxes
-between elements to stabilise the scheme. This method combines the accuracy and exponential
-convergence of spectral methods with the geometric flexibility of finite element methods. 
+governing equations in integral form over the domain~\cite{Reed1973}, which is broken up into
+elements. This method, in combination with the spectral approximation, will be used in this work. It
+is called the \textit{discontinuous Galerkin spectral element method (DG-SEM)}. The method is
+discontinuous because it allows the solution to be discontinuous at element boundaries, instead
+using fluxes between elements to stabilise the scheme. This method combines the accuracy and
+exponential convergence of spectral methods with the geometric flexibility of finite element
+methods. 
 
 % GPUs
 With the stagnation of traditional computer \textit{central processing units (CPU)} operating
