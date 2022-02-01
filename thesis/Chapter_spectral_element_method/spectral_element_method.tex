@@ -276,7 +276,7 @@ We apply the divergence theorem to Equation~\ref{equ:2d_wave_conservation} to ob
 one on the control volume $V$ and one on the surface $S$ of said volume.
 
 \begin{equation} \label{equ:2d_wave_integral}
-	\frac{d}{dt}\int_{V}\mathbf{q}dV = -\int_{S}\mathfrak{F}\cdot \widehat{n}dS
+	\frac{d}{dt}\int_{V}\mathbf{q}dV = -\int_{S} \mathfrak{F} \cdot \widehat{n}dS
 \end{equation}
 
 \noindent
@@ -512,12 +512,13 @@ computation of the fluxes $\mathbf{F}^*$.
 
 We now need to compute the numerical fluxes $\mathbf{F}^*$ as a way to approximate the physical
 fluxes $\mathfrak{F}$. We recall the formulation for the fluxes from
-Equation~\ref{equ:2d_wave_fluxes}. 
+Equation~\ref{equ:2d_wave_integral}. 
 
 \begin{equation} \label{equ:physical_fluxes}
-	\mathfrak{F} = \mathbf{f_x} + \mathbf{g_y} = B \mathbf{q_x} + C \mathbf{q_y}
+	\mathfrak{F} \cdot \widehat{n} = \mathbf{f} n_x + \mathbf{g} n_y = (B n_x + C n_y) \mathbf{q} = A \mathbf{q}
 \end{equation}
 
+\noindent
 With matrices $B$ and $C$ taken from Equation~\ref{equ:2d_wave_matrix}.
 
 \begin{equation}
@@ -533,34 +534,44 @@ With matrices $B$ and $C$ taken from Equation~\ref{equ:2d_wave_matrix}.
 	\end{bmatrix}
 \end{equation}
 
+We also define the normal vector $\mathbf{n} = \alpha \widehat{x} + \beta \widehat{y} = n_x
+\widehat{x} + n_y \widehat{y}$. We can then write the $A$ matrix:
+
+\begin{equation}
+    A = \begin{bmatrix}
+        0 & \alpha c^2 & \beta c^2 \\ 
+        \alpha & 0 & 0 \\ 
+        \beta & 0 & 0 
+	\end{bmatrix}.
+\end{equation}
+
 We will use an upwind scheme~\cite{Toro2009} to impose the boundary conditions. On an interface
 between two elements, the left and right elements in that coordinate system, the state at the
 interface is the left state if the wave goes from left to right, or the right state if the wave goes
 from right to left. This is the upwind state of the boundary.
 
 Since it is not evident what the upwind state of the system as is described in
-Equation~\ref{equ:physical_fluxes}, we will decouple the wave components. We start with the $x$
-direction, decomposing $B$ to a diagonal matrix $\Lambda_B$, its right eigenvectors $K_B$, and their
-inverse $K_B^{-1}$.
+Equation~\ref{equ:physical_fluxes}, we will decouple the wave components. We decompose $A$ to a
+diagonal matrix $\Lambda$, its right eigenvectors $A$, and their inverse $A^{-1}$.
 
 \begin{equation}
-    \Lambda_B = 
+    \Lambda = 
     \begin{bmatrix}
         c & 0 & 0 \\ 
         0 & -c & 0 \\ 
         0 & 0 & 0
     \end{bmatrix}
-    K_B = 
+    S = 
     \begin{bmatrix}
-        c & -c & 0 \\ 
-        1 & 1 & 0 \\ 
-        0 & 0 & 1 
+        \frac{1}{2} & \frac{1}{2} & 0 \\ 
+        \frac{\alpha}{2 c} & -\frac{\alpha}{2 c} & \beta \\ 
+        \frac{\beta}{2 c} & -\frac{\beta}{2 c} & -\alpha 
     \end{bmatrix}
-    K_B^{-1} = 
+    S^{-1} = 
     \begin{bmatrix}
-        \frac{1}{2c} & \frac{1}{2} & 0 \\ 
-        -\frac{1}{2c} & \frac{1}{2} & 0 \\ 
-        0 & 0 & 1
+        1 & \alpha c & \beta c \\ 
+        1 & -\alpha c & -\beta c \\ 
+        0 & \beta & -\alpha
     \end{bmatrix}
 \end{equation}
 
@@ -569,7 +580,7 @@ right-to-left, and stationary.
 
 \begin{equation}
 	\begin{split}
-		\Lambda_B & = 
+		\Lambda & = 
         \begin{bmatrix}
             c & 0 & 0 \\ 
             0 & -c & 0 \\ 
@@ -590,20 +601,20 @@ right-to-left, and stationary.
             0 & 0 & 0 \\ 
             0 & 0 & 0
 		\end{bmatrix} \\
-		&= \Lambda_B^+ + \Lambda_B^- + \Lambda_B^0
+		&= \Lambda^+ + \Lambda^- + \Lambda^0
 	\end{split}
 \end{equation}
 
 We can then split the wave into three components, each containing only one direction.
 
 \begin{equation}
-	B = K_B \Lambda_B^+ K_B^{-1} + K_B \Lambda_B^- K_B^{-1} + K_B \Lambda_B^0 K_B^{-1} = B^+ + B^- + B^0
+	A = S \Lambda^+ S^{-1} + S \Lambda^- S^{-1} + S \Lambda^0 S^{-1} = A^+ + A^- + A^0
 \end{equation}
 
 We can evaluate the flux with:
 
-\begin{equation} \label{equ:flux_x}
-	\mathbf{F} \cdot \widehat{x} = B^+\mathbf{q} + B^-\mathbf{q} + B^0 \mathbf{q}.
+\begin{equation} \label{equ:flux}
+	\mathbf{F} \cdot \widehat{n} = A^+\mathbf{q} + A^-\mathbf{q} + A^0 \mathbf{q}.
 \end{equation}
 
 \begin{figure}[H]
@@ -617,24 +628,23 @@ We can evaluate the flux with:
 \end{figure}
 
 Figure~\ref{fig:waves} shows a boundary, with the associated states and waves. This guides us in
-choosing the states $\mathbf{q}$ in Equation~\ref{equ:flux_x}. The upwind state for the
+choosing the states $\mathbf{q}$ in Equation~\ref{equ:flux}. The upwind state for the
 left-to-right wave is $\mathbf{Q}^L$, and the upwind state for the right-to-left wave is
 $\mathbf{Q}^R$. The stationary wave only has zeros in its matrix, and can be removed. This gives us
-the formulation for the numerical fluxes.
+the formulation for the numerical fluxes. This is what is called the Riemann problem.
 
-\begin{equation} \label{equ:flux_x_states}
-	\mathbf{F}^* \cdot \widehat{x} = B^+ \mathbf{Q}^L + B^- \mathbf{Q}^R
+\begin{equation} \label{equ:flux_states}
+	\mathbf{F}^* \cdot \widehat{n} = A^+ \mathbf{Q}^L + A^- \mathbf{Q}^R
 \end{equation}
 
-We can now compute the numerical fluxes. We define the characteristic variable $\mathbf{W}_B$ for
-the $x$ direction.
+We can now compute the numerical fluxes. We define the characteristic variable $\mathbf{W}$.
 
 \begin{equation}
-	\mathbf{W}_B = K_B^{-1} \mathbf{q} = 
+	\mathbf{W} = S^{-1} \mathbf{q} = 
     \begin{bmatrix}
-        \frac{1}{2 c} & \frac{1}{2} & 0 \\ 
-        -\frac{1}{2 c} & \frac{1}{2} & 0 \\ 
-        0 & 0 & 1
+        1 & \alpha c & \beta c \\ 
+        1 & -\alpha c & -\beta c \\ 
+        0 & \beta & -\alpha
 	\end{bmatrix}
 	\begin{bmatrix}
         p \\ 
@@ -642,173 +652,104 @@ the $x$ direction.
         v
 	\end{bmatrix} = 
 	\begin{bmatrix}
-        \frac{p + c u}{2 c} \\ 
-        \frac{-p + c u}{2 c} \\ 
-        v
-	\end{bmatrix}
+        p + c \left( \alpha u + \beta v \right) \\ 
+        p - c \left( \alpha u + \beta v \right) \\ 
+        \beta u - \alpha v
+	\end{bmatrix} \equiv
+    \begin{bmatrix}
+        w^+ \\
+        w^- \\
+        w^0
+    \end{bmatrix}   
 \end{equation}
 
-Next we multiply with $\Lambda_B$:
-
-\begin{equation}
-	\Lambda_B \mathbf{W}_B =
-	\begin{bmatrix}
-        c & 0 & 0 \\ 
-        0 & -c & 0 \\ 
-        0 & 0 & 0
-	\end{bmatrix}
-	\begin{bmatrix}
-        \frac{p + c u}{2 c} \\ 
-        \frac{-p + c u}{2 c} \\ 
-        v
-	\end{bmatrix} = 
-	\begin{bmatrix}
-        c \cdot \frac{p^L + c u^L}{2 c} \\ 
-        -c \cdot \frac{-p^R + c u^R}{2 c} \\ 
-        0
-	\end{bmatrix} = 
-	\begin{bmatrix}
-        c \cdot w_B^+ \\ 
-        -c \cdot w_B^- \\ 
-        0
-	\end{bmatrix}
-\end{equation}
-
-The superscripts $L$ and $R$ indicate which state is used, according to
-Equation~\ref{equ:flux_x_states}. We define $w_B^+$ and $w_B^-$ as the left-to-right and
-right-to-left waves for the $x$ direction. Finally, multiplying by $K_B$, we get the full numerical
-flux for the $x$ direction:
+We define $w^+$, $w^-$ and $w^0$ as the left-to-right, right-to-left and stationary waves,
+respectively:
 
 \begin{equation} \label{equ:waves_x}
 	\begin{split}
-        w_B^+ & \equiv \frac{p^L + c u^L}{2 c} \\
-        w_B^- & \equiv \frac{-p^R + c u^R}{2 c},
+        w_B^+ & \equiv p + c \left( \alpha u + \beta v \right) \\
+        w_B^- & \equiv p - c \left( \alpha u + \beta v \right) \\
+        w_B^0 & \equiv \beta u - \alpha v.
 	\end{split} 
 \end{equation}
 
-\begin{equation} \label{equ:numerical_flux_x}
+Next, we multiply with the diagonal matrices $\Lambda$, which contain the direction of the waves:
+
+\begin{equation}
 	\begin{split}
-        \mathbf{F}^* \cdot \widehat{x} = B \mathbf{q} = K_B \left( \Lambda_B K_B^{-1} \mathbf{q} \right) & = 
+        \Lambda^+ \mathbf{W} & = 
         \begin{bmatrix}
-            c & -c & 0 \\ 
-            1 & 1 & 0 \\ 
-            0 & 0  & 1
+            c & 0 & 0 \\ 
+            0 & 0 & 0 \\ 
+            0 & 0 & 0
         \end{bmatrix}
         \begin{bmatrix}
-            c \cdot w_B^+ \\ 
-            -c \cdot w_B^- \\ 
+            w^+ \\
+            w^- \\
+            w^0
+        \end{bmatrix} 
+        = c
+        \begin{bmatrix}
+            w^+ \\
+            0 \\
             0
-        \end{bmatrix} \\ 
-        & = \begin{bmatrix}
-            c^2 \left( w_B^+ + w_B^- \right) \\ 
-            c \left( w_B^+ - w_B^- \right) \\ 
+        \end{bmatrix}, \\
+        \Lambda^- \mathbf{W} & = 
+        \begin{bmatrix}
+            0 & 0 & 0 \\ 
+            0 & -c & 0 \\ 
+            0 & 0 & 0
+        \end{bmatrix}
+        \begin{bmatrix}
+            w^+ \\
+            w^- \\
+            w^0
+        \end{bmatrix} 
+        = -c
+        \begin{bmatrix}
+            0 \\
+            w^- \\
             0
-        \end{bmatrix} \\
-        & = \begin{bmatrix}
-            c \left( \frac{p^L - p^R}{2} + c \frac{u^L + u^R}{2} \right) \\ 
-            \frac{p^L + p^R}{2} + c \frac{u^L - u^R}{2} \\ 
+        \end{bmatrix}, \\
+        \Lambda^0 \mathbf{W} & = 
+        \begin{bmatrix}
+            0 & 0 & 0 \\ 
+            0 & 0 & 0 \\ 
+            0 & 0 & 0
+        \end{bmatrix}
+        \begin{bmatrix}
+            w^+ \\
+            w^- \\
+            w^0
+        \end{bmatrix} 
+        = 
+        \begin{bmatrix}
+            0 \\
+            0 \\
             0
         \end{bmatrix}.
-	\end{split}
-\end{equation}
-
-The numerical fluxes in the $y$ direction are computed similarly. The matrix $C$ decomposes to:
-
-\begin{equation}
-	\Lambda_C = \begin{bmatrix}
-        c & 0 & 0 \\ 
-        0 & -c & 0 \\ 
-        0 & 0 & 0
-	\end{bmatrix}
-	K_C = \begin{bmatrix}
-        c & -c & 0 \\ 
-        0 & 0 & 1 \\ 
-        1 & 1 & 0 
-	\end{bmatrix}
-	K_C^{-1} = \begin{bmatrix}
-        \frac{1}{2 c} & 0 & \frac{1}{2} \\ 
-        -\frac{1}{2 c} & 0 & \frac{1}{2} \\ 
-        0 & 1 & 0
-	\end{bmatrix}
-\end{equation}
-
-The characteristic variables in the $y$ direction, $\mathbf{W}_C$, are:
-
-\begin{equation}
-	\mathbf{W}_C = K_C^{-1} \mathbf{q} = 
-	\begin{bmatrix}
-        \frac{p + c u}{2 c} \\ 
-        \frac{-p + c u}{2 c} \\ 
-        u
-	\end{bmatrix}
-\end{equation}
-
-\noindent
-with $\Lambda_C$:
-
-\begin{equation}
-    \Lambda_C \mathbf{W}_C =  
-    \begin{bmatrix}
-        c & 0 & 0 \\ 
-        0 & -c & 0 \\ 
-        0 & 0 & 0
-    \end{bmatrix}
-    \begin{bmatrix}
-        \frac{p + c v}{2 c} \\ 
-        \frac{-p + c v}{2 c} \\ 
-        u
-    \end{bmatrix} = 
-    \begin{bmatrix}
-        c \cdot \frac{p^L + c v^L}{2 c} \\ 
-        -c \cdot \frac{-p^R + c v^R}{2 c} \\ 
-        0
-    \end{bmatrix} = 
-    \begin{bmatrix}
-        c \cdot w_C^+ \\ 
-        -c \cdot w_C^- \\ 
-        0
-    \end{bmatrix},
-\end{equation}
-
-and the waves for the $y$ direction:
-
-\begin{equation} \label{equ:waves_y}
-	\begin{split}
-        w_C^+ & \equiv \frac{p^L + c v^L}{2 c} \\
-        w_C^- & \equiv \frac{-p^R + c v^R}{2 c}.
-	\end{split} 
-\end{equation}
-
-The full numerical flux in the $y$ direction is:
-
-\begin{equation} \label{equ:numerical_flux_y}
-    \begin{split}
-        \mathbf{F}^* \cdot \widehat{y} = C \mathbf{q} = K_C \left( \Lambda_C K_C^{-1} \mathbf{q} \right) & = 
-        \begin{bmatrix}
-            c & -c & 0 \\ 
-            0 & 0 & 1 \\ 
-            1 & 1  & 0
-        \end{bmatrix}
-        \begin{bmatrix}
-            c \cdot w_C^+ \\ 
-            -c \cdot w_C^- \\ 
-            0
-        \end{bmatrix} \\ 
-        & = \begin{bmatrix}
-            c^2 \left( w_C^+ + w_C^- \right) \\ 
-            0 \\ 
-            c \left( w_C^+ - w_C^- \right)
-        \end{bmatrix} \\
-        & = \begin{bmatrix}
-            c \left( \frac{p^L - p^R}{2} + c \frac{v^L + v^R}{2} \right) \\ 
-            0 \\ 
-            \frac{p^L + p^R}{2} + c \frac{v^L - v^R}{2}
-        \end{bmatrix}
     \end{split}
 \end{equation}
 
-With the two relations~\ref{equ:numerical_flux_x} and~\ref{equ:numerical_flux_y}, we can compute the
-fluxes in the $x$ and $y$ directions respectively. The algorithm used to compute these fluxes is presented in
+\noindent
+Finally, multiplying by $S$, we get the full numerical flux:
+
+\begin{equation} \label{equ:numerical_flux}
+    \mathbf{F}^* \cdot \widehat{n} = 
+    S \Lambda^+ S^{-1} \mathbf{\mathbf{Q}^L} + S \Lambda^- S^{-1} \mathbf{\mathbf{Q}^R} =
+    \begin{bmatrix}
+        \frac{c}{2} \left( w^{+, L} - w^{-, R} \right) \\
+        \frac{n_x}{2} \left( w^{+, L} + w^{-, R} \right) \\
+        \frac{n_y}{2} \left( w^{+, L} + w^{-, R} \right)
+    \end{bmatrix}.
+\end{equation}
+
+The superscripts $L$ and $R$ indicate which state is used, according to
+Equation~\ref{equ:flux_states}. 
+
+With the relation~\ref{equ:numerical_flux}, we can compute the numerical fluxes. The algorithm used
+to compute these fluxes is presented in
 Subsection~\ref{section:spectral_element_method:implementation:fluxes}. It is commonly known as the
 Riemann solver.
 
