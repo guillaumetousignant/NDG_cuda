@@ -105,6 +105,10 @@ load_balancing_threshold_t = np.array([[344.277, 295.591, 243.566, 241.076, 252.
 load_balancing_threshold_baseline_T = load_balancing_threshold_T[:, [0,-1]]
 load_balancing_threshold_baseline_t = np.array([274.359, 4962.06])
 
+# N scaling
+N_scaling_N = np.array([6, 8, 10, 12])
+N_scaling_t = np.array([0.0346, 0.0594, 0.0856, 0.1196])
+
 # Plots
 save_path = Path(__file__).parent.parent / "media"
 save_path.mkdir(parents=True, exist_ok=True)
@@ -116,6 +120,7 @@ gpu_colour = np.array([79, 193, 255])/255
 gpu_colour_dark = np.array([3, 125, 190])/255
 error_colour = np.array([197, 134, 192])/255
 error_colour_dark = np.array([168, 80, 161])/255
+N_colour = np.array([78, 201, 176])/255
 data_size = 12
 data_shape = "o"
 ideal_style = "--"
@@ -235,5 +240,23 @@ for i in range(load_balancing_threshold_N.shape[0]):
     fig.tight_layout()
 
     fig.savefig(save_path / f"load_balancing_threshold_N{load_balancing_threshold_N[i]}_K{load_balancing_threshold_K[i]}_A{load_balancing_threshold_A[i]}_L{load_balancing_threshold_L[i]}_P{load_balancing_threshold_P[i]}_S{load_balancing_threshold_S[i]}.svg", format='svg', transparent=True)
+
+# N scaling
+N_fig = plt.figure(figsize=(5, 4.5))
+N_ax = N_fig.add_subplot(1, 1, 1)
+N_ax.set_xlabel("N [-]")
+N_ax.set_ylabel("Iteration time [s]")
+N_title = "N iteration time"
+N_fig.canvas.manager.set_window_title(N_title)
+N_ax.grid()
+
+N_ax.plot(N_scaling_N, N_scaling_t, color=N_colour, linewidth=data_width, marker=data_shape, markersize=data_size, label="Iteration time")
+
+N_ax.set_ylim([0, 1.2 * max(N_scaling_t)])
+
+#N_ax.legend()
+N_fig.tight_layout()
+
+N_fig.savefig(save_path / f"N_iteration_time.svg", format='svg', transparent=True)
 
 plt.show()

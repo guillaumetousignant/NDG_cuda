@@ -56,6 +56,13 @@ other factors being equal.
 \section{Test case} \label{section:results:test_case}
 % new case
 
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.6\textwidth]{Chapter_results/media/problem_1}
+	\caption{Test case: A wave travels through a square domain at a 45° angle.}
+	\label{fig:problem}
+\end{figure}
+
 \section{Scaling tests} \label{section:results:scaling_tests}
 % Scaling tests (strong and weak), N tests
 % CPU vs GPU
@@ -92,7 +99,6 @@ other factors being equal.
 \end{figure}
 
 \subsection{Weak scaling} \label{section:results:scaling_tests:weak}
-
 
 \begin{figure}[H]
 	\centering
@@ -136,7 +142,18 @@ other factors being equal.
 \section{Dynamic load balancing performance} \label{section:results:load_balancing_performance}
 % Runtime adaptive with and without load balancing
 
-% Show the problem
+\begin{figure}[H]
+	\centering
+	\subfloat[Pressure]
+	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/problem_big} \label{fig:load_imbalance_case_p}}
+	\hfill
+	\subfloat[Split level]
+	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/split_level_big} \label{fig:load_imbalance_case_s}}
+	\caption{Load imbalance test case: A wave passes through a very big domain, only the bottom right refines. (a) Pressure (b) Split level, indicating how many times the elements have split}
+	\label{fig:load_imbalance_case}
+\end{figure}
+
+% Table of imbalance
 
 \subsection{Load balancing interval} \label{section:results:load_balancing_performance:interval}
 
@@ -163,6 +180,36 @@ other factors being equal.
 	\label{fig:load_balancing_efficiency_threshold_s5}
 \end{figure}
 
-\subsection{Polynomial order influence} \label{section:results:load_balancing_performance:polynomial_order}
+\subsection{Polynomial order influence}
+\label{section:results:load_balancing_performance:polynomial_order}
+
+\begin{figure}[H]
+	\centering
+	\includesvg[width=0.6\textwidth]{Chapter_results/media/N_iteration_time}
+	\caption{Polynomial order influence: Iteration time with increasing polynomial order.}
+	\label{fig:N_influence}
+\end{figure}
 
 \section{Complex meshes} \label{section:results:complex_meshes}
+
+\begin{figure}[H]
+	\centering
+	\subfloat[Circular domain]
+	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/airfoil_mesh} \label{fig:complex_mesh_close}}
+	\hfill
+	\subfloat[Airfoil]
+	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/airfoil_mesh_close} \label{fig:complex_mesh_far}}
+	\caption{Complex mesh: An airfoil in an unstructured circular domain. (a) Complete domain (b) Up close}
+	\label{fig:complex_mesh}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\subfloat[Pressure]
+	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/airfoil_pressure_close_t1_6} \label{fig:complex_mesh_solution_close}}
+	\hfill
+	\subfloat[Pressure $\sigma$]
+	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/Airfoil 4} \label{fig:complex_mesh_solution_far}}
+	\caption{Complex mesh: A wave going over an airfoil. (a) Pressure (b) Pressure $\sigma$, denoting if h-refinement or p-refinement would be chosen}
+	\label{fig:complex_mesh_solution}
+\end{figure}
