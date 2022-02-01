@@ -15,6 +15,7 @@ Section~\ref{section:results:adaptivity_performance}. Finally, dynamic load bala
 Section~\ref{section:results:load_balancing_performance}.
 
 \section{Platforms} \label{section:results:platforms}
+
 This program aims to perform large scale computations, and as such targets HPC platforms. The
 program has been designed to scale to multiple parallel level, the highest being splitting the
 workload between several HPC nodes, each having multiple CPUs and GPUs. To test this use case,
@@ -23,35 +24,40 @@ Canada\footnote{https://www.computecanada.ca/}. Two such clusters were used for 
 Béluga and Narval.
 
 \subsection{Béluga} \label{section:results:platforms:beluga}
+
 Béluga is a heterogeneous cluster suitable for a variety of purposes, from traditional CPU computing
 to massively parallel GPU computing. It is located at the École de technologie supérieure in
-Montréal. Beluga is made up of 977 compute nodes of different types, totaling 39,120 CPU cores and
+Montréal. Béluga is made up of 977 compute nodes of different types, totaling 39,120 CPU cores and
 696 GPUs. For our testing, we use Béluga's GPU nodes. Each one of the 172 GPU nodes contains 40 CPU
 cores and 186 GB of memory across two Intel Gold 6148 CPUs, and four NVidia V100 SXM2 GPUs with 16
-GB of memory each. One such node totals about 2 TFlops of CPU computing power, and 13 TFlops of GPU
-computing power. The nodes are connected by Infiniband HDR (100 Gb/s) interconnections.
+GB of memory each. One such node totals about 2 TFlops of double precision CPU computing power, and
+13 TFlops of double precision GPU computing power. The nodes are connected by Infiniband HDR (100
+Gb/s) interconnections.
 
 \subsection{Narval} \label{section:results:platforms:narval}
+
 Narval is a heterogeneous cluster suitable for a variety of purposes, from traditional CPU computing
 to massively parallel GPU computing and artificial intelligence workloads. It is located at the
-École de technologie supérieure in Montréal. Beluga is made up of 1301 compute nodes of different
+École de technologie supérieure in Montréal. Narval is made up of 1301 compute nodes of different
 types, totaling 80,720 CPU cores and 636 GPUs. For our testing, we use Narval's GPU nodes. Each one
 of the 159 GPU nodes contains 48 CPU cores and 498 GB of memory across two AMD Milan 7413 CPUs, and
-four NVidia A100 GPUs with 40 GB of memory each. One such node totals about 2.2 TFlops of CPU
-computing power, and 38.8 TFlops of GPU computing power. The nodes are connected by Infiniband EDR
-(100 Gb/s) interconnections.
+four NVidia A100 GPUs with 40 GB of memory each. One such node totals about 2.2 TFlops of double
+precision CPU computing power, and 38.8 TFlops of double precision GPU computing power. The nodes
+are connected by Infiniband EDR (100 Gb/s) interconnections.
 
 \subsection{Consumer hardware} \label{section:results:platforms:consumer}
+
 Some smaller scale tests or tests that didn't involve performance were run on consumer hardware.
 This is important, as it may not always be possible to access HPC systems when flow simulations have
 to be performed. The program should also have reasonable performance on regular systems. The system
 used in these cases is a single computer containing 16 CPU cores and 128 GB of memory across two
-Intel E5-2650 V2 CPUs, and one NVidia GTX 1070 GPU with 8 GB of memory. This is an interesting
-comparison, as consumer GPUs are not geared towards high precision compute loads. GPUs found in HPC
-systems typically have a 1:2 ratio between their double precision and single precision performance,
-whereas consumer GPUs usually have 1:32 ratio. This means that computations using double precision
-floating point numbers will execute at one sixteenth of the speed of compute-oriented GPUS, all
-other factors being equal.
+Intel E5-2650 V2 CPUs, and one NVidia GTX 1070 GPU with 8 GB of memory. This totals about 0.5 TFlops
+of double precision CPU computing power, and 0.25 TFlops of double precision GPU computing power.
+This is an interesting comparison, as consumer GPUs are not geared towards high precision compute
+loads. GPUs found in HPC systems typically have a 1:2 ratio between their double precision and
+single precision performance, whereas consumer GPUs usually have 1:32 ratio. This means that
+computations using double precision floating point numbers will execute at one sixteenth of the
+speed of compute-oriented GPUS, all other factors being equal.
 
 \section{Test case} \label{section:results:test_case}
 % new case
@@ -68,42 +74,116 @@ other factors being equal.
 % CPU vs GPU
 % GPU loading
 
+Parallel scaling is an important aspect of the performance of a program. It describes how the
+execution time varies when more resources are assigned to the problem. This is an optimisation
+problem, as each problem will have an optimal amount of resources dedicated to it. 
+
+A completely parallelisable program, often called embarrassingly parallel, should scale linearly
+with the amount of resources. The speedup $S$ of a workload split between $W$ workers should be
+equal to the number of workers in Equation~\ref{equ:scaling}. In this work, workers are a single GPU
+or a single CPU core for comparative tests.
+
+\begin{equation} \label{equ:scaling}
+	S = \frac{t_1}{t_W}
+\end{equation}
+
+Unfortunately, it is often not possible to make a program entirely parallel. In such cases, dividing
+a problem into more and more smaller tasks obeys the well-known Amdahl's law~\cite{Amdahl1967}, as
+seen in Equation~\ref{equ:strong_scaling}. It splits the program into a sequential part $s$ and a parallel
+part $p$, with only the parallel part scaling with the number of workers.
+
+\begin{equation} \label{equ:strong_scaling}
+	S = \frac{1}{s + \frac{p}{W}}
+\end{equation}
+
+This is called \textit{strong scaling}, where a fixed problem is solved using varying amount of
+resources. This is discussed in Subsection~\ref{section:results:scaling_tests:strong}.
+
+On the other hand, increased available resources can enable working on bigger problems. Gustafson
+argues that modern highly parallel computers will be used to solve more complex problems instead of
+solving smaller problems faster. Such a scaling is described with Equation~\ref{equ:weak_scaling}.
+
+\begin{equation} \label{equ:weak_scaling}
+	S = s + p \times W
+\end{equation}
+
+This is called \textit{weak scaling}. It describes solving a problem whose size increases with the
+amount of resources, with the task size per worker stays constant. Weak scaling is tested in
+Subsection~\ref{section:results:scaling_tests:weak}.
+
+This section will also serve as a general comparison between CPUs and GPUs. All scaling tests have
+been performed on the Béluga supercomputer. Scaling is evaluated by varying the number of
+\textit{nodes}, where a node in this context is a single computer from Béluga, sporting 40 CPU cores
+and 4 GPUs, as stated in Subsection~\ref{section:results:platforms:beluga}. The four-node execution
+time of those tests therefore represents the program running on 16 GPUs or 160 CPU cores, for the
+GPU and CPU computations respectively.
+
+Both scaling tests evaluate the core solver part of the program, as the meshes start with enough
+elements to have a well resolved solution all along the simulation. The adaptive mesh refinement and
+dynamic load balancing subroutines are still enabled. The subroutines still run their evaluation
+phases, the error estimation and load imbalance computation respectively, but do not deem the
+estimated error and load imbalance high enough to trigger the whole subroutine. 
+
 \subsection{Strong scaling} \label{section:results:scaling_tests:strong}
+
+The test case for this section is described in Section~\ref{section:results:test_case}. It is
+divided into 256 elements in the $x$ and $y$ direction, for a total of $K = 65536$. The first test
+has a polynomial order $N$ of six for all elements, and a block size $B$ of 32. 
+
+The block size, as explained in
+Subsection~\ref{section:graphics_processing_units:architecture:programming_model}, is the number of
+threads in a block of threads. Having a higher block size can speed up execution by reducing the
+number of instructions to dispatch by the control flow unit of the GPU, because the instructions are
+dispatched by block of threads. However, if the threads within a block diverge, having a higher
+block size can actually lower performance. A single thread diverging will have all the threads in
+its block waiting until it is finished, therefore a higher block size will have more threads stalled
+when divergence occurs.
+
+% ideal line
+
 
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_results/media/strong_scaling_N4_K65536_W32}
-	\caption{Weak scaling: The problem size increases with the number of workers. N = 4, K = 65536, W = 32}
+	\caption{Weak scaling: The problem size increases with the number of workers. N = 4, K = 65536, B = 32}
 	\label{fig:strong_scaling_N4_W32}
 \end{figure}
+
+% N increase
+
+% SIMT width
 
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_results/media/strong_scaling_N6_K65536_W32}
-	\caption{Weak scaling: The problem size increases with the number of workers. N = 6, K = 65536, W = 32}
+	\caption{Weak scaling: The problem size increases with the number of workers. N = 6, K = 65536, B = 32}
 	\label{fig:strong_scaling_N6_W32}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_results/media/strong_scaling_N6_K65536_W64}
-	\caption{Weak scaling: The problem size increases with the number of workers. N = 6, K = 65536, W = 64}
+	\caption{Weak scaling: The problem size increases with the number of workers. N = 6, K = 65536, B = 64}
 	\label{fig:strong_scaling_N6_W64}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_results/media/strong_scaling_N6_K65536_W128}
-	\caption{Weak scaling: The problem size increases with the number of workers. N = 6, K = 65536, W = 128}
+	\caption{Weak scaling: The problem size increases with the number of workers. N = 6, K = 65536, B = 128}
 	\label{fig:strong_scaling_N6_W128}
 \end{figure}
 
+% GPU loading
+
 \subsection{Weak scaling} \label{section:results:scaling_tests:weak}
+
+% problem
 
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_results/media/weak_scaling_N4_K4096_W32}
-	\caption{Weak scaling: The problem size increases with the number of workers. N = 4, K = 4096/worker, W = 32}
+	\caption{Weak scaling: The problem size increases with the number of workers. N = 4, K = 4096/worker}
 	\label{fig:weak_scaling}
 \end{figure}
 
@@ -160,7 +240,7 @@ other factors being equal.
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_results/media/load_balancing_interval_N4_K16384_A20_P16_S3}
-	\caption{Load balancing efficiency interval test: Simulation time with adaptivity, load balancing and increasing load balancing interval. N = 4, K = 16384, adaptivity interval = 20, P = 16, max split level = 3}
+	\caption{Load balancing efficiency interval test: Simulation time with adaptivity, load balancing and increasing load balancing interval. N = 4, K = 16384, adaptivity interval = 20, W = 16, max split level = 3}
 	\label{fig:load_balancing_efficiency_interval}
 \end{figure}
 
@@ -169,14 +249,14 @@ other factors being equal.
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_results/media/load_balancing_threshold_N4_K16384_A20_L20_P16_S3}
-	\caption{Load balancing efficiency threshold test: Simulation time with adaptivity, load balancing and increasing load balancing threshold. N = 4, K = 16384, adaptivity interval = 20, load balancing interval = 20, P = 16, max split level = 3}
+	\caption{Load balancing efficiency threshold test: Simulation time with adaptivity, load balancing and increasing load balancing threshold. N = 4, K = 16384, adaptivity interval = 20, load balancing interval = 20, W = 16, max split level = 3}
 	\label{fig:load_balancing_efficiency_threshold_s3}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_results/media/load_balancing_threshold_N4_K16384_A20_L20_P16_S5}
-	\caption{Load balancing efficiency threshold test: Simulation time with adaptivity, load balancing and increasing load balancing threshold. N = 4, K = 16384, adaptivity interval = 20, load balancing interval = 20, P = 16, max split level = 3}
+	\caption{Load balancing efficiency threshold test: Simulation time with adaptivity, load balancing and increasing load balancing threshold. N = 4, K = 16384, adaptivity interval = 20, load balancing interval = 20, W = 16, max split level = 3}
 	\label{fig:load_balancing_efficiency_threshold_s5}
 \end{figure}
 
