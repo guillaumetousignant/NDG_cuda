@@ -246,6 +246,32 @@ needed. The slope of the CPU curve is about $0.2$ with regards to the number of 
 % Error adaptive vs non-adaptive, time to run
 % Error at same runtime
 
+This section establishes the performance of the adaptive mesh refinement. The problem from
+Section~\ref{section:results:test_case} is used, initially split into four elements in the $x$ and
+$y$ direction, for $K = 16$. The initial polynomial order $N$ of four. The system is allowed to
+refine up to a split level of three, meaning a cell can split three times and become one eighth the
+size of the original cell, and up to a polynomial order $N$ of 12.
+
+Adaptive mesh refinement is a costly process, as the CPU must reallocate arrays on the GPU for the
+different objects making up the mesh, and then schedule kernels to move objects to the new arrays.
+We test here two strategies to reduce the performance overhead of adaptive mesh refinement, while
+reducing error. 
+
+First, adaptive mesh refinement will be performed at an interval.
+Figures~\ref{fig:adaptivity_efficiency_C5}, \ref{fig:adaptivity_efficiency_C20},
+\ref{fig:adaptivity_efficiency_C100} and~\ref{fig:adaptivity_efficiency_C500} show the results of
+refining the mesh every 5, 20, 100 and 500 timesteps, respectively.
+
+Secondly, the simulations are performed with an increasing number of refinement pre-conditioning
+steps as described in Section~\ref{section:adaptive_mesh_refinement:pre_conditioning}. The analysis
+ranges from no pre-conditioning step to three steps.
+
+We compare those simulation to a non-adaptive case, where the initial mesh is refined uniformly to
+the maximum level attained by the adaptive case. The mesh is split into 32 elements in the $x$ and
+$y$ dimensions, for $K = 1024$, with a polynomial order $N$ of 10. Both the simulation time and the
+error against the analytical solution are compared. The non-adaptive case is shown as a dotted line
+on the figures.
+
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_results/media/adaptivity_N4_K16_C5}
@@ -274,8 +300,17 @@ needed. The slope of the CPU curve is about $0.2$ with regards to the number of 
 	\label{fig:adaptivity_efficiency_C500}
 \end{figure}
 
+From Figures~\ref{fig:adaptivity_efficiency_C5}, \ref{fig:adaptivity_efficiency_C20},
+\ref{fig:adaptivity_efficiency_C100} and~\ref{fig:adaptivity_efficiency_C500}, we can that this is
+an optimisation problem, with tradeoffs between the simulation time and the error generated.
+
+In all cases, without pre-conditioning, increasing the adaptivity interval reduces the simulation
+time, but increases error. Even with 
+
 \section{Dynamic load balancing performance} \label{section:results:load_balancing_performance}
 % Runtime adaptive with and without load balancing
+
+Max split level $S$. Where $K_p$ is the number of elements in process $p$.
 
 \begin{figure}[H]
 	\centering
@@ -288,7 +323,17 @@ needed. The slope of the CPU curve is about $0.2$ with regards to the number of 
 	\label{fig:load_imbalance_case}
 \end{figure}
 
-% Table of imbalance
+\begin{table}[H]
+	\centering
+	\begin{tabular}{ c c c c c c c }
+		Case & S & K & Max $K_p$ & Min $K_p$ & Load imbalance & Imbalance ratio \\
+		\hline
+		Low & $3$ & $17752$ & $2392$ & $1024$ & $2.34$ & $2.16$ \\
+		High & $5$ & $26734$ & $11374$ & $1024$ & $11.1$ & $6.81$ \\
+	\end{tabular}
+	\caption{Load imbalance cases.}
+	\label{table:load_imbalance}
+\end{table}
 
 \subsection{Load balancing interval} \label{subsection:results:load_balancing_performance:interval}
 
