@@ -219,14 +219,28 @@ influences on the performance.
 
 \subsection{Weak scaling} \label{subsection:results:scaling_tests:weak}
 
-% problem
+The weak scaling test uses the text case from Section~\ref{section:results:test_case}. The domain is
+split up into elements such that each node contains 16384 elements. This amounts to 4096 elements
+per GPU, or 410 elements per CPU core. The simulation is first computed with the highest number of
+nodes, therefore the smallest elements and time step size. The CFL number is adjusted for all other
+simulations to get the same time step size, therefore the same total number of iterations. An ideal
+result is a flat curve, indicating that by increasing the problem size and resources by the same
+amount, the simulation time stays the same. The problem is studied from ¼ node to 16 nodes.
 
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_results/media/weak_scaling_N4_K4096_W32}
-	\caption{Weak scaling: The problem size increases with the number of workers. N = 4, K = 4096/worker}
+	\caption{Weak scaling: The problem size increases with the number of workers. N = 4, K = 16384/node}
 	\label{fig:weak_scaling}
 \end{figure}
+
+Figure~\ref{fig:weak_scaling} shows good weak scaling from the GPU implementation. Keeping in mind
+that the quarter node and single node cases have a reduced workload by not having to do any MPI
+communication over the network, and the quarter node GPU case has no MPI communication to do at all,
+the GPU curve is reasonably flat. The CPU curve is not as good, indicating that there may be a
+bottleneck in the communication part of the program. The CPU implementation has a much higher number
+of workers than the GPU one, 40 per node instead of four, increasing the inter-process communication
+needed. The slope of the CPU curve is about $0.2$ with regards to the number of CPU cores. 
 
 \section{Adaptive mesh refinement performance} \label{section:results:adaptivity_performance}
 % Error adaptive vs non-adaptive, time to run
