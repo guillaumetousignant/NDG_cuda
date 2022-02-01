@@ -109,7 +109,8 @@ solving smaller problems faster. Such a scaling is described with Equation~\ref{
 
 This is called \textit{weak scaling}. It describes solving a problem whose size increases with the
 amount of resources, with the task size per worker stays constant. Weak scaling is tested in
-Subsection~\ref{subsection:results:scaling_tests:weak}.
+Subsection~\ref{subsection:results:scaling_tests:weak}. With weak scaling a program will scale
+indefinitely, with the slope of the scaling being influenced by the parallel proportion of the task.
 
 This section will also serve as a general comparison between CPUs and GPUs. All scaling tests have
 been performed on the Béluga supercomputer. Scaling is evaluated by varying the number of
