@@ -42,7 +42,7 @@ This will be a characteristic of the polynomials we choose. For example, Fourier
 polynomials and Chebyshev polynomials have been proved~\cite{Kopriva2009} to have exponentially
 decaying coefficients, giving them spectral accuracy.
 
-\subsection{Basis functions} \label{section:spectral_element_method:spectral_approximation:basis_functions}
+\subsection{Basis functions} \label{subsection:spectral_element_method:spectral_approximation:basis_functions}
 
 Spectral methods exploit the orthogonality property of sets of functions. For orthogonal
 functions in the domain $[a, b]$, we have:
@@ -127,7 +127,7 @@ $w_i$.
 	w_i = \frac{2}{(1-x_i^2)\left [ L'_{N + 1}(x_i) \right ]^2}
 \end{gather}
 
-\subsection{Polynomial interpolation} \label{section:spectral_element_method:spectral_approximation:polynomial_interpolation}
+\subsection{Polynomial interpolation} \label{subsection:spectral_element_method:spectral_approximation:polynomial_interpolation}
 
 Polynomial interpolation fits data to a polynomial passing through known points. The polynomial has
 an order equal to the number of points. In this work we use Lagrange integrating polynomials $l_j$
@@ -303,16 +303,15 @@ boundaries. These quadrature points include points at $-1$ and $1$.
 
 In this work, we use the discontinuous Galerkin spectral element method. The DG-SEM uses the Gauss
 quadrature points described in
-Subsection~\ref{section:spectral_element_method:spectral_approximation:basis_functions}. The
+Subsection~\ref{subsection:spectral_element_method:spectral_approximation:basis_functions}. The
 discontinuous Galerkin method, first proposed by Reed and Hill in 1973~\cite{Reed1973}, permits the
 absence of quadrature points at the edges of the domain lets the different elements be discontinuous
 at their boundaries. These discontinuities are then counterbalanced by fluxes between elements.
 Hesthaven and Warburton~\cite{Hesthaven2007} showed a comprehensive reference on the discontinuous
 Galerkin methods. This work follows the derivations from Kopriva~\cite{Kopriva2009} for the DG-SEM.
 This method is especially well suited for this program. It is accurate and geometrically flexible.
-It is also easy to parallelise, as the discontinuities between elements make them independent.
-Each element can be computed independently in parallel, then the fluxes are also computed in
-parallel.
+It is also easy to parallelise, as the discontinuities between elements make them independent. Each
+element can be computed independently in parallel, then the fluxes are also computed in parallel.
 
 We start by deriving the discontinuous Galerkin approximation for a simple 2D domain spanning
 $\left[ -1, 1 \right] \times \left[ -1, 1 \right]$ shown in Figure~\ref{fig:simple_domain}.
@@ -401,7 +400,7 @@ The complete equation becomes:
 \end{equation}
 
 The boundary conditions are weakly enforced using fluxes $\mathbf{F}^*$, as explained in
-Subsection~\ref{section:spectral_element_method:dg_sem:fluxes}. 
+Subsection~\ref{subsection:spectral_element_method:dg_sem:fluxes}. 
 
 We then need to evaluate the integrals. A distinction is made between the boundary terms, that are
 evaluated using the collocation points within an element, and the boundary term, which uses
@@ -508,7 +507,7 @@ computed directly and stored for the whole computation. Algorithms for those are
 Section~\ref{section:spectral_element_method:implementation}. The next section discusses the
 computation of the fluxes $\mathbf{F}^*$.
 
-\subsection{Fluxes} \label{section:spectral_element_method:dg_sem:fluxes}
+\subsection{Fluxes} \label{subsection:spectral_element_method:dg_sem:fluxes}
 
 We now need to compute the numerical fluxes $\mathbf{F}^*$ as a way to approximate the physical
 fluxes $\mathfrak{F}$. We recall the formulation for the fluxes from
@@ -751,10 +750,10 @@ Equation~\ref{equ:flux_states}.
 
 With the relation~\ref{equ:numerical_flux}, we can compute the numerical fluxes. The algorithm used
 to compute these fluxes is presented in
-Subsection~\ref{section:spectral_element_method:implementation:fluxes}. It is commonly known as the
-Riemann solver.
+Subsection~\ref{subsection:spectral_element_method:implementation:fluxes}. It is commonly known as
+the Riemann solver.
 
-\subsection{Time integration} \label{section:spectral_element_method:dg_sem:time}
+\subsection{Time integration} \label{subsection:spectral_element_method:dg_sem:time}
 
 Now that we know how to compute the interior terms and the numerical fluxes of
 Equation~\ref{equ:2d_wave_d}, we can compute the time derivative $\mathbf{Q}_t$. We then need to
@@ -804,7 +803,7 @@ run three times, where $m$ is the stage number.
 
 The following table lists the coefficients $a_m$, $b_m$ and $g_m$. The algorithm used by the program
 to advance the simulation in time is described in
-Subsection~\ref{section:spectral_element_method:implementation:time}. 
+Subsection~\ref{subsection:spectral_element_method:implementation:time}. 
 
 \begin{table}[H]
 	\centering
@@ -855,6 +854,6 @@ The global timestep will be chosen as the minimum timestep of all elemental time
 \section{Implementation} \label{section:spectral_element_method:implementation}
 % Talk about the flux computation, possible race conditions
 
-\subsection{Fluxes} \label{section:spectral_element_method:implementation:fluxes}
+\subsection{Fluxes} \label{subsection:spectral_element_method:implementation:fluxes}
 
-\subsection{Time integration} \label{section:spectral_element_method:implementation:time}
+\subsection{Time integration} \label{subsection:spectral_element_method:implementation:time}

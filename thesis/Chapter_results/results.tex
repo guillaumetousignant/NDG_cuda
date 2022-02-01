@@ -23,7 +23,7 @@ most of the following tests were run on clusters graciously offered by Compute
 Canada\footnote{https://www.computecanada.ca/}. Two such clusters were used for our experiments,
 Béluga and Narval.
 
-\subsection{Béluga} \label{section:results:platforms:beluga}
+\subsection{Béluga} \label{subsection:results:platforms:beluga}
 
 Béluga is a heterogeneous cluster suitable for a variety of purposes, from traditional CPU computing
 to massively parallel GPU computing. It is located at the École de technologie supérieure in
@@ -34,7 +34,7 @@ GB of memory each. One such node totals about 2 TFlops of double precision CPU c
 13 TFlops of double precision GPU computing power. The nodes are connected by Infiniband HDR (100
 Gb/s) interconnections.
 
-\subsection{Narval} \label{section:results:platforms:narval}
+\subsection{Narval} \label{subsection:results:platforms:narval}
 
 Narval is a heterogeneous cluster suitable for a variety of purposes, from traditional CPU computing
 to massively parallel GPU computing and artificial intelligence workloads. It is located at the
@@ -45,7 +45,7 @@ four NVidia A100 GPUs with 40 GB of memory each. One such node totals about 2.2 
 precision CPU computing power, and 38.8 TFlops of double precision GPU computing power. The nodes
 are connected by Infiniband EDR (100 Gb/s) interconnections.
 
-\subsection{Consumer hardware} \label{section:results:platforms:consumer}
+\subsection{Consumer hardware} \label{subsection:results:platforms:consumer}
 
 Some smaller scale tests or tests that didn't involve performance were run on consumer hardware.
 This is important, as it may not always be possible to access HPC systems when flow simulations have
@@ -97,7 +97,7 @@ part $p$, with only the parallel part scaling with the number of workers.
 \end{equation}
 
 This is called \textit{strong scaling}, where a fixed problem is solved using varying amount of
-resources. This is discussed in Subsection~\ref{section:results:scaling_tests:strong}.
+resources. This is discussed in Subsection~\ref{subsection:results:scaling_tests:strong}.
 
 On the other hand, increased available resources can enable working on bigger problems. Gustafson
 argues that modern highly parallel computers will be used to solve more complex problems instead of
@@ -109,14 +109,14 @@ solving smaller problems faster. Such a scaling is described with Equation~\ref{
 
 This is called \textit{weak scaling}. It describes solving a problem whose size increases with the
 amount of resources, with the task size per worker stays constant. Weak scaling is tested in
-Subsection~\ref{section:results:scaling_tests:weak}.
+Subsection~\ref{subsection:results:scaling_tests:weak}.
 
 This section will also serve as a general comparison between CPUs and GPUs. All scaling tests have
 been performed on the Béluga supercomputer. Scaling is evaluated by varying the number of
 \textit{nodes}, where a node in this context is a single computer from Béluga, sporting 40 CPU cores
-and 4 GPUs, as stated in Subsection~\ref{section:results:platforms:beluga}. The four-node execution
-time of those tests therefore represents the program running on 16 GPUs or 160 CPU cores, for the
-GPU and CPU computations respectively.
+and 4 GPUs, as stated in Subsection~\ref{subsection:results:platforms:beluga}. The four-node
+execution time of those tests therefore represents the program running on 16 GPUs or 160 CPU cores,
+for the GPU and CPU computations respectively.
 
 Both scaling tests evaluate the core solver part of the program, as the meshes start with enough
 elements to have a well resolved solution all along the simulation. The adaptive mesh refinement and
@@ -124,7 +124,7 @@ dynamic load balancing subroutines are still enabled. The subroutines still run 
 phases, the error estimation and load imbalance computation respectively, but do not deem the
 estimated error and load imbalance high enough to trigger the whole subroutine. 
 
-\subsection{Strong scaling} \label{section:results:scaling_tests:strong}
+\subsection{Strong scaling} \label{subsection:results:scaling_tests:strong}
 
 The test case for this section is described in Section~\ref{section:results:test_case}. It is
 divided into 256 elements in the $x$ and $y$ direction, for a total of $K = 65536$. The problem is
@@ -134,8 +134,8 @@ accordingly, one block per GPU or one block per CPU core. The first test has a p
 of six for all elements, and a block size $B$ of 32. 
 
 The block size, as explained in
-Subsection~\ref{section:graphics_processing_units:architecture:programming_model}, is the number of
-threads in a block of threads. Having a higher block size can speed up execution by reducing the
+Subsection~\ref{subsection:graphics_processing_units:architecture:programming_model}, is the number
+of threads in a block of threads. Having a higher block size can speed up execution by reducing the
 number of instructions to dispatch by the control flow unit of the GPU, because the instructions are
 dispatched by block of threads. However, if the threads within a block diverge, having a higher
 block size can actually lower performance. A single thread diverging will have all the threads in
@@ -183,7 +183,7 @@ CPU implementation, overtakes it when one full node is used.
 
 % GPU loading
 
-\subsection{Weak scaling} \label{section:results:scaling_tests:weak}
+\subsection{Weak scaling} \label{subsection:results:scaling_tests:weak}
 
 % problem
 
@@ -242,7 +242,7 @@ CPU implementation, overtakes it when one full node is used.
 
 % Table of imbalance
 
-\subsection{Load balancing interval} \label{section:results:load_balancing_performance:interval}
+\subsection{Load balancing interval} \label{subsection:results:load_balancing_performance:interval}
 
 \begin{figure}[H]
 	\centering
@@ -251,7 +251,7 @@ CPU implementation, overtakes it when one full node is used.
 	\label{fig:load_balancing_efficiency_interval}
 \end{figure}
 
-\subsection{Load balancing threshold} \label{section:results:load_balancing_performance:threshold}
+\subsection{Load balancing threshold} \label{subsection:results:load_balancing_performance:threshold}
 
 \begin{figure}[H]
 	\centering
@@ -267,8 +267,7 @@ CPU implementation, overtakes it when one full node is used.
 	\label{fig:load_balancing_efficiency_threshold_s5}
 \end{figure}
 
-\subsection{Polynomial order influence}
-\label{section:results:load_balancing_performance:polynomial_order}
+\subsection{Polynomial order influence} \label{subsection:results:load_balancing_performance:polynomial_order}
 
 \begin{figure}[H]
 	\centering

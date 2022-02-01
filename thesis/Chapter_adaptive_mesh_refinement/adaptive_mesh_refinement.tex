@@ -66,7 +66,7 @@ load balancing algorithm will be implemented in Chapter~\ref{chapter:load_balanc
 
 \section{Strategies} \label{section:adaptive_mesh_refinement:adaptivity_strategies}
 
-\subsection{p-adaptivity} \label{section:adaptive_mesh_refinement:adaptivity_strategies:p-adaptivity}
+\subsection{p-adaptivity} \label{subsection:adaptive_mesh_refinement:adaptivity_strategies:p-adaptivity}
 
 The first refinement strategy is p-adaptivity. When refining this way, elements increase their
 polynomial order to increase their resolution. The lower-order solution is projected to the
@@ -80,7 +80,7 @@ is required to be identical in the x and y directions.
 	\label{fig:p-adaptivity}
 \end{figure}
 
-\subsection{h-adaptivity} \label{section:adaptive_mesh_refinement:adaptivity_strategies:h-adaptivity}
+\subsection{h-adaptivity} \label{subsection:adaptive_mesh_refinement:adaptivity_strategies:h-adaptivity}
 
 The second refinement strategy is h-adaptivity. h-adaptivity splits single elements into several
 elements occupying the same space. In this work we exclusively deal with quadrilaterals, and these
@@ -94,7 +94,7 @@ initial big element to each of the four offspring elements.
 	\label{fig:h-adaptivity}
 \end{figure}
 
-\subsection{hp-adaptivity} \label{section:adaptive_mesh_refinement:adaptivity_strategies:hp-adaptivity}
+\subsection{hp-adaptivity} \label{subsection:adaptive_mesh_refinement:adaptivity_strategies:hp-adaptivity}
 
 In order to maximise computation efficiency, both p-adaptivity and h-adaptivity are used together.
 An hp-adaptive program uses either p-adaptivity or h-adaptivity on an element-by-element basis,
@@ -421,7 +421,7 @@ order of the highest-order of its neighbours. The next sections describe how to 
 these new faces. The flux calculations are performed on the faces as described in
 Section~\ref{chapter:spectral_element_method}. 
 
-\subsection{Projection from Element to Mortar} \label{section:adaptive_mesh_refinement:mortar_element_method:element_to_mortar}
+\subsection{Projection from Element to Mortar} \label{subsection:adaptive_mesh_refinement:mortar_element_method:element_to_mortar}
 
 \begin{figure}[H]
 	\centering
@@ -541,7 +541,7 @@ The projection operation from element to faces is therefore:
 	&= \sum_{k = 0}^{N}l_k ^ \Omega(a+ b z_j) U(a + b z_k), \quad j = 0, ..., J.
 \end{align}
 
-\subsection{Projection from Mortar to Element} \label{section:adaptive_mesh_refinement:mortar_element_method:mortar_to_element}
+\subsection{Projection from Mortar to Element} \label{subsection:adaptive_mesh_refinement:mortar_element_method:mortar_to_element}
 
 \begin{figure}[H]
 	\centering
@@ -674,7 +674,7 @@ adaptivity process happens in parallel on each GPU, each on its mesh block. The 
 starts by calculating the error in parallel on each element on the GPU. The elements store their
 estimated error $\tau$ and their error refinement criterion $\sigma$.
 
-\subsection{Counting refining elements} \label{section:adaptive_mesh_refinement:implementation:counting_refining_elements}
+\subsection{Counting refining elements} \label{subsection:adaptive_mesh_refinement:implementation:counting_refining_elements}
 
 % Add reduction figure here
 
@@ -698,7 +698,7 @@ solution arrays and project their solution unto the new array. The faces can the
 polynomial order if either of their neighbour elements has increased their polynomial order beyond
 that of the face. 
 
-\subsection{Moving elements} \label{section:adaptive_mesh_refinement:implementation:moving_elements}
+\subsection{Moving elements} \label{subsection:adaptive_mesh_refinement:implementation:moving_elements}
 
 % Add splitting elements index figure here
 
@@ -735,7 +735,7 @@ elements splitting before it within its block, which is accessible in block-shar
 ensures no threads read or write the same memory location, and can all move their elements directly
 to the correct location concurrently.
 
-\subsection{Moving faces} \label{section:adaptive_mesh_refinement:implementation:moving_faces}
+\subsection{Moving faces} \label{subsection:adaptive_mesh_refinement:implementation:moving_faces}
 
 
-\subsection{Moving boundaries} \label{section:adaptive_mesh_refinement:implementation:moving_boundaries}
+\subsection{Moving boundaries} \label{subsection:adaptive_mesh_refinement:implementation:moving_boundaries}

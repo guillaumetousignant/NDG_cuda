@@ -25,7 +25,7 @@ program.
 
 \section{Architecture} \label{section:graphics_processing_units:architecture}
 
-\subsection{Hardware model} \label{section:graphics_processing_units:architecture:hardware_model}
+\subsection{Hardware model} \label{subsection:graphics_processing_units:architecture:hardware_model}
 
 \begin{figure}[H]
 	\centering
@@ -79,7 +79,7 @@ waiting for the conditional. All this is performed as an effort to reduce latenc
 possible. Programs running on GPUs must compensate by avoiding divergence as much as possible within
 warps.
 
-\subsection{Programming model} \label{section:graphics_processing_units:architecture:programming_model}
+\subsection{Programming model} \label{subsection:graphics_processing_units:architecture:programming_model}
 
 This work uses the CUDA programming model. It is a programming language, framework and runtime
 developed to enable programming on GPUs with an extension of the C++ language. Programs using the
@@ -105,7 +105,7 @@ be skipped. This is not the case for this work.
 \end{figure}
 
 The programing model ties in with the hardware model from
-Subsection~\ref{section:graphics_processing_units:architecture:hardware_model} by decomposing the
+Subsection~\ref{subsection:graphics_processing_units:architecture:hardware_model} by decomposing the
 execution of kernels to multiple parallel levels. A kernel will be executed in parallel, with each
 core executing the same function. Figure~\ref{fig:gpu_programming_model} shows how programming model
 decomposes a problem. The whole problem to be solved is represented as a multidimensional grid of
@@ -241,7 +241,7 @@ components of a two block mesh.
 	\label{fig:mesh_structure}
 \end{figure}
 
-\subsection{Performance} \label{section:graphics_processing_units:data_structure:performance}
+\subsection{Performance} \label{subsection:graphics_processing_units:data_structure:performance}
 
 In order to get good performance and fit naturally with the GPU architecture, the different objects
 are stored as flat one-dimensional arrays on the GPU. The CUDA memory allocation functions are run
@@ -252,10 +252,10 @@ to assemble them in some kind of structure. This would be manageable for a non-a
 would be performed once, but with mesh refinement and load balancing the mesh changes constantly.
 With arrays, an array of the new size is allocated and the objects are moved to it. Thanks to the
 structure from
-Subsection~\ref{section:graphics_processing_units:data_structure:ease_of_programming}, the elements
-themselves have a known constant size regardless of polynomial order, and have the bulk of their
-size out of the element object, making them fast to move and making the element array smaller. The
-flat arrays also reduce indirection and structure the memory accesses. Threads from a kernel
+Subsection~\ref{subsection:graphics_processing_units:data_structure:ease_of_programming}, the
+elements themselves have a known constant size regardless of polynomial order, and have the bulk of
+their size out of the element object, making them fast to move and making the element array smaller.
+The flat arrays also reduce indirection and structure the memory accesses. Threads from a kernel
 executing on elements directly access the element at their thread index in the element array.
 
 This simplifies greatly transfers between the CPU and GPU, and mesh reallocation when refining or
@@ -269,7 +269,7 @@ blocks in different processes, and data to be written to the output files. These
 arrays allocated on the CPU and GPU, and a kernel storing the data into the GPU array. The array can
 then be transferred to the CPU, and either written to disk or sent to another CPU and then its GPU.
 
-\subsection{Ease of use} \label{section:graphics_processing_units:data_structure:ease_of_use}
+\subsection{Ease of use} \label{subsection:graphics_processing_units:data_structure:ease_of_use}
 
 \begin{figure}[H]
 	\centering
@@ -321,7 +321,7 @@ The program outputs data using the VTK format. Once again, this is a widely used
 used by the \textit{ParaView} visualisation application. The results of the program should then be
 easy to manipulate and display.
 
-\subsection{Ease of programming} \label{section:graphics_processing_units:data_structure:ease_of_programming}
+\subsection{Ease of programming} \label{subsection:graphics_processing_units:data_structure:ease_of_programming}
 
 The program is written partly using the Object-oriented paradigm, especially for the data structure
 part. Elements, faces and nodes are objects, each with multiple data members and methods. This
@@ -368,9 +368,9 @@ patterns closer to those used for CPU programming.
 \section{Implementation} \label{section:graphics_processing_units:implementation}
 % Talk about reduce operations, data transfers for boundaries
 
-\subsection{Kernels} \label{section:graphics_processing_units:implementation:kernels}
+\subsection{Kernels} \label{subsection:graphics_processing_units:implementation:kernels}
 
-\subsection{Reductions} \label{section:graphics_processing_units:implementation:reductions}
+\subsection{Reductions} \label{subsection:graphics_processing_units:implementation:reductions}
 
 Reductions are operations that are difficult to make efficient and parallel on GPUs. Harris et
 al.~\cite{Harris2007} show a few different ways to optimise these operations. In this work, we need
@@ -389,4 +389,4 @@ An implementation must saturate the GPU with work as much as possible: blindly l
 over the whole mesh will only use one of the approximately five thousand cores of the GPU, for one
 thousandth of the speed. 
 
-\subsection{MPI transfers} \label{section:graphics_processing_units:implementation:mpi_transfers}
+\subsection{MPI transfers} \label{subsection:graphics_processing_units:implementation:mpi_transfers}

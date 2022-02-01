@@ -82,7 +82,7 @@ previous curve. Iteration is one of the possible ways to generate this curve. It
 generate the initial meshes used by the program, as well as to re-number elements when the mesh
 refines.
 
-\subsection{Generation} \label{section:load_balancing:hilbert_curve:generation}
+\subsection{Generation} \label{subsection:load_balancing:hilbert_curve:generation}
 
 We choose a table-driven algorithm to generate meshes. Each element has one of four possible states
 $s$: $s \in \left \{H, A, R, B \right \}$. This state determines the state and ordering of the four children
@@ -542,15 +542,15 @@ transfers. All the data is sent and received in a non-blocking way with $MPI\_Is
 $MPI\_Irecv$, and once these transactions are completed the mesh can be reconstructed in each
 process.
 
-\subsection{Data transfer} \label{section:load_balancing:reconstruction:data_transfer}
+\subsection{Data transfer} \label{subsection:load_balancing:reconstruction:data_transfer}
 
-Elements are allocated from the CPU, therefore they can be copied from the GPU to the CPU directly. The
-relevant members are the polynomial order of the elements, their Hilbert curve status, their
+Elements are allocated from the CPU, therefore they can be copied from the GPU to the CPU directly.
+The relevant members are the polynomial order of the elements, their Hilbert curve status, their
 rotation and their split level. All other members are either not stored directly in the element
-structure and therefore cannot be copied directly, or can be computed again when received.
-An MPI datatype is created to be able to send and receive arrays of elements directly without
-copying that data into separate arrays.
-Subsection~\ref{section:load_balancing:implementation:element_exchange} details this process.
+structure and therefore cannot be copied directly, or can be computed again when received. An MPI
+datatype is created to be able to send and receive arrays of elements directly without copying that
+data into separate arrays.
+Subsection~\ref{subsection:load_balancing:implementation:element_exchange} details this process.
 
 The solution of all elements to send is not so easy to transfer between processes. It is stored in
 GPU dynamic memory and the elements only hold a pointer to it. It cannot be transferred to the CPU
@@ -592,15 +592,15 @@ process if the element has been sent to a new process. This is also necessary to
 are adjacent to an MPI boundary, as these elements will have neighbours in another process whose
 local indices need to be updated.
 
-\subsection{Connectivity} \label{section:load_balancing:reconstruction:connectivity}
+\subsection{Connectivity} \label{subsection:load_balancing:reconstruction:connectivity}
 
 Once all the data has been received, the mesh needs to be reassembled. Faces and boundary elements
 that link to elements that have been sent are removed. Faces around received elements are created,
-or reused if the element happens to have been the destination of an MPI interface. New boundary elements
-are created around received elements, and as a replacement for sent elements. Elements and faces that are
-kept are moved to new indices, using a similar prefix sum to the one used in
-Subsection~\ref{section:adaptive_mesh_refinement:implementation:moving_elements}. All references to
-these faces and elements are updated.
+or reused if the element happens to have been the destination of an MPI interface. New boundary
+elements are created around received elements, and as a replacement for sent elements. Elements and
+faces that are kept are moved to new indices, using a similar prefix sum to the one used in
+Subsection~\ref{subsection:adaptive_mesh_refinement:implementation:moving_elements}. All references
+to these faces and elements are updated.
 
 Figures~\ref{fig:lb_before} and~\ref{fig:lb_after} illustrate an example of the whole load balancing
 process, where two processes initially have an unbalanced number of elements. The domain spans $x, y
@@ -631,6 +631,6 @@ GPUs. Earlier mesh refinement has occurred, creating a load imbalance between th
 
 \section{Implementation} \label{section:load_balancing:implementation}
 
-\subsection{Element exchange} \label{section:load_balancing:implementation:element_exchange}
+\subsection{Element exchange} \label{subsection:load_balancing:implementation:element_exchange}
 % and MPI datatype
 % ghost elements numbering
