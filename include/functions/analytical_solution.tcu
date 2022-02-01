@@ -1,12 +1,21 @@
 #include "helpers/constants.cuh"
 #include <cmath>
 
+using SEM::Device::Constants::k;
+using SEM::Device::Constants::xy0;
+using SEM::Device::Constants::c;
+using SEM::Device::Constants::d;
+
 template <class T>
 __host__ __device__
 auto SEM::Device::g(SEM::Device::Entities::Vec2<T> xy, T t) -> std::array<T, 3> {    
-    const T p = std::exp(-(SEM::Device::Constants::k.x() * (xy.x() - SEM::Device::Constants::xy0.x()) + SEM::Device::Constants::k.y() * (xy.y() - SEM::Device::Constants::xy0.y()) - SEM::Device::Constants::c * t) * (SEM::Device::Constants::k.x() * (xy.x() - SEM::Device::Constants::xy0.x()) + SEM::Device::Constants::k.y() * (xy.y() - SEM::Device::Constants::xy0.y()) - SEM::Device::Constants::c * t) / (SEM::Device::Constants::d * SEM::Device::Constants::d));
+    const T p = std::exp(-std::pow((k.x() * (xy.x() - xy0.x()) + k.y() * (xy.y() - xy0.y()) - c * t), 2) / std::pow(d, 2));
 
-    return {p,
-            p * SEM::Device::Constants::k.x() / SEM::Device::Constants::c,
-            p * SEM::Device::Constants::k.y() / SEM::Device::Constants::c};
+    SEM::Device::Entities::Vec2<T> xy1 {0.25, 0.5};
+    const deviceFloat radius = 100;
+    const deviceFloat magnitude {0.75};
+    const deviceFloat cloud = magnitude * std::exp(-radius * std::pow(xy.x() - xy1.x(), 2) - radius * std::pow(xy.y() - xy1.y(), 2));
+    return {p + cloud,
+            p * k.x() / c,
+            p * k.y() / c};
 }
