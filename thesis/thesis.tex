@@ -42,6 +42,7 @@
 \usepackage{mathtools}                  % better matrices
 \usepackage{indentfirst}                % indent the first paragraph too
 \usepackage{minted}                     % code syntax highlighting
+\usepackage[T1]{fontenc}
 \usepackage{FiraMono}                   % nice monospaced font
 
 % nonumberlist: no page number in glossary
@@ -66,8 +67,8 @@
 
 \glsdisablehyper    % disable hyper of the symbol in text
 
-\include{glossary_entries.tex}  % define all your symbols in a separated file. 
-\include{colours.tex}           % define all your colours in a separated file.
+\include{glossary_entries.tex}  % define all symbols in a separated file.
+\include{colours.tex}           % define all colours in a separated file
 
 % Operator definitions 
 \DeclareMathOperator{\CFL}{CFL}
