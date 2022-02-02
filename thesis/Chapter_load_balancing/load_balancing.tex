@@ -178,11 +178,11 @@ can generate its children using nothing more than its own order.
 Without adaptive mesh refinement, no more work is needed. The elements wouldn't even need to store
 their state, as the compact numbering of the elements is the result of the Hilbert curve. The mesh
 generator included with the program works this way, creating a uniform power of two sized 2D mesh
-numbered according to the Hilbert curve. The mesh generator uses the standard CGNS format. The
-meshes generated in this way can be used directly by the program on a single GPU, or split into
-multiple blocks using the provided mesh partitioner. The mesh partitioner can split any single-block
-CGNS mesh into a multi-block mesh, which can then be used by the main program running on multiple
-GPUs.
+numbered according to the Hilbert curve. The mesh generator uses the standard \acrshort{acr:CGNS}
+format. The meshes generated in this way can be used directly by the program on a single GPU, or
+split into multiple blocks using the provided mesh partitioner. The mesh partitioner can split any
+single-block \acrshort{acr:CGNS} mesh into a multi-block mesh, which can then be used by the main
+program running on multiple GPUs.
 
 \subsection{Refinement} \label{section:load_balancing:hilbert_curve:refinement}
 
@@ -202,9 +202,9 @@ as the mesh refines and non-conforming interfaces are created.
 \end{figure}
 
 This process assumes knowledge of each element's status. However, the main solver program is made to
-accept standard CGNS meshes as an input. The CGNS format format does not provide status information.
-Furthermore, the program can accept any 2D unstructured mesh using the format, which may not be
-numbered according to a Hilbert curve. 
+accept standard \acrshort{acr:CGNS} meshes as an input. The \acrshort{acr:CGNS} format format does
+not provide status information. Furthermore, the program can accept any 2D unstructured mesh using
+the format, which may not be numbered according to a Hilbert curve. 
 
 It is therefore necessary to deduct the status of elements when reading a mesh file.
 Figure~\ref{fig:hilbert_l2} gives a hint of a possible way to do this. For an element $k$, the
