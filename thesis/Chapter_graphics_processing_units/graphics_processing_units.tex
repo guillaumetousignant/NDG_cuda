@@ -136,13 +136,13 @@ to the GPU when calling the kernel. The CPU then must wait until the computation
 synchronisation with the \acrshort{acr:CUDA} runtime, transfer the data from the GPU C array to the
 CPU C array, and display the results. 
 
-This model fits well with many \acrshort{acr:CFD} methods, including the DG-SEM used in this work.
-We work on a mesh made up of elements and faces connecting them. Elements are independent during
-most of the computation and their computations can be executed in parallel. The only step from the
-main solver loop needing extra care is the computation of the fluxes between the elements. The flux
-computation uses the data from the elements on either side of a face, computes a flux and stores
-that flux back in both elements so they can compute their derivative. Since there can be multiple
-faces on each side of an element as detailed in
+This model fits well with many \acrshort{acr:CFD} methods, including the \acrshort{acr:DG-SEM} used
+in this work. We work on a mesh made up of elements and faces connecting them. Elements are
+independent during most of the computation and their computations can be executed in parallel. The
+only step from the main solver loop needing extra care is the computation of the fluxes between the
+elements. The flux computation uses the data from the elements on either side of a face, computes a
+flux and stores that flux back in both elements so they can compute their derivative. Since there
+can be multiple faces on each side of an element as detailed in
 Section~\ref{section:adaptive_mesh_refinement:mortar_element_method}, and each element has multiple
 sides, multiple threads will attempt to read and write to the same locations at the same time. This
 is a race condition, where the result of the computation will be dependent on the order in which the
@@ -195,8 +195,8 @@ larger problems, the work needs to be split at another level than GPU parallelis
 The program can use multi-block meshes, with each block being worked on by one process and one GPU.
 If there are fewer GPUs available on a system than there are processes, some processes will share a
 single GPU by using asynchronous execution streams. The different processes communicate together
-using \textit{Message Passing Interface (MPI)} at their boundaries. Since the solution data resides
-on the GPU, it must first be copied to the main CPU memory before it is sent through the MPI
+using \textit{\acrfull{acr:MPI}} at their boundaries. Since the solution data resides on the GPU, it
+must first be copied to the main CPU memory before it is sent through the \acrshort{acr:MPI}
 runtime. It then needs to be copied to the receiving process' GPU. This exchange necessitates
 multiple transfers on different levels and should be optimised as much as possible. An approach to
 minimise the number of interfaces between the different mesh blocks is explained in

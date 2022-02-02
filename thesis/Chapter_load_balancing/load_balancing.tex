@@ -537,19 +537,19 @@ it is easy to compute to which process the elements need to be sent based on the
 id. Any element missing from their new range, they need to receive. Again, using the previous number
 of elements per process, it is easy to compute from which process these elements should come. 
 
-The knowledge of which elements to receive and send with which process is used to setup MPI
-transfers. All the data is sent and received in a non-blocking way with $MPI\_Isend$ and
-$MPI\_Irecv$, and once these transactions are completed the mesh can be reconstructed in each
-process.
+The knowledge of which elements to receive and send with which process is used to setup
+\acrshort{acr:MPI} transfers. All the data is sent and received in a non-blocking way with
+$MPI\_Isend$ and $MPI\_Irecv$, and once these transactions are completed the mesh can be
+reconstructed in each process.
 
 \subsection{Data transfer} \label{subsection:load_balancing:reconstruction:data_transfer}
 
 Elements are allocated from the CPU, therefore they can be copied from the GPU to the CPU directly.
 The relevant members are the polynomial order of the elements, their Hilbert curve status, their
 rotation and their split level. All other members are either not stored directly in the element
-structure and therefore cannot be copied directly, or can be computed again when received. An MPI
-datatype is created to be able to send and receive arrays of elements directly without copying that
-data into separate arrays.
+structure and therefore cannot be copied directly, or can be computed again when received. An
+\acrshort{acr:MPI} datatype is created to be able to send and receive arrays of elements directly
+without copying that data into separate arrays.
 Subsection~\ref{subsection:load_balancing:implementation:element_exchange} details this process.
 
 The solution of all elements to send is not so easy to transfer between processes. It is stored in
@@ -583,24 +583,24 @@ arrays that can fit the total number of neighbours, as well as compute offsets t
 has its neighbours in these arrays. Neighbour information to send includes: their local index, their
 process, their side, their polynomial order, and the two nodes on their connecting side. This
 information is used both to find the relevant neighbour if it is also in the receiving process, and
-to create MPI boundaries if the neighbour is in another process.
+to create \acrshort{acr:MPI} boundaries if the neighbour is in another process.
 
-On the subject of MPI boundaries, another data exchange must take place during load balancing. Every
-process that has an MPI boundary with another process must send the new local index and new process
-of each element making up that boundary. This is so the other process knows to receive from another
-process if the element has been sent to a new process. This is also necessary to send elements that
-are adjacent to an MPI boundary, as these elements will have neighbours in another process whose
-local indices need to be updated.
+On the subject of \acrshort{acr:MPI} boundaries, another data exchange must take place during load
+balancing. Every process that has an \acrshort{acr:MPI} boundary with another process must send the
+new local index and new process of each element making up that boundary. This is so the other
+process knows to receive from another process if the element has been sent to a new process. This is
+also necessary to send elements that are adjacent to an \acrshort{acr:MPI} boundary, as these
+elements will have neighbours in another process whose local indices need to be updated.
 
 \subsection{Connectivity} \label{subsection:load_balancing:reconstruction:connectivity}
 
 Once all the data has been received, the mesh needs to be reassembled. Faces and boundary elements
 that link to elements that have been sent are removed. Faces around received elements are created,
-or reused if the element happens to have been the destination of an MPI interface. New boundary
-elements are created around received elements, and as a replacement for sent elements. Elements and
-faces that are kept are moved to new indices, using a similar prefix sum to the one used in
-Subsection~\ref{subsection:adaptive_mesh_refinement:implementation:moving_elements}. All references
-to these faces and elements are updated.
+or reused if the element happens to have been the destination of an \acrshort{acr:MPI} interface.
+New boundary elements are created around received elements, and as a replacement for sent elements.
+Elements and faces that are kept are moved to new indices, using a similar prefix sum to the one
+used in Subsection~\ref{subsection:adaptive_mesh_refinement:implementation:moving_elements}. All
+references to these faces and elements are updated.
 
 Figures~\ref{fig:lb_before} and~\ref{fig:lb_after} illustrate an example of the whole load balancing
 process, where two processes initially have an unbalanced number of elements. The domain spans $x, y

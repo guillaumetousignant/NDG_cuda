@@ -1,12 +1,11 @@
 \chapter{Discontinuous Galerkin Spectral Element Method} \label{chapter:spectral_element_method}
 
-We will use the \textit{discontinuous Galerkin spectral element method (DG-SEM)} to solve the 2D
-wave equation. This method is part of the broader class of spectral methods, applied within local
-elements as in finite-element methods. This method exhibits the exponential convergence of spectral
-methods, while adding the ability to model difficult geometries of finite-element methods. The
-method is described in~\cite{Kopriva2009}, along with efficient computer programming implementation
-strategies. The main model problem showcased throughout this work depicts a wave moving diagonally
-through a square domain.
+We will use the \textit{\acrfull{acr:DG-SEM}} to solve the 2D wave equation. This method is part of
+the broader class of spectral methods, applied within local elements as in finite-element methods.
+This method exhibits the exponential convergence of spectral methods, while adding the ability to
+model difficult geometries of finite-element methods. The method is described in~\cite{Kopriva2009},
+along with efficient computer programming implementation strategies. The main model problem
+showcased throughout this work depicts a wave moving diagonally through a square domain.
 
 \section{Spectral approximation} \label{section:spectral_element_method:spectral_approximation}
 % Legendre polynomials, both forms
@@ -301,17 +300,18 @@ problems~\cite{Deville2003}, including the full Navier-Stokes equations. Continu
 methods use the Gauss-Lobatto quadrature points to make the solution is made continuous at element
 boundaries. These quadrature points include points at $-1$ and $1$.
 
-In this work, we use the discontinuous Galerkin spectral element method. The DG-SEM uses the Gauss
-quadrature points described in
+In this work, we use the discontinuous Galerkin spectral element method. The \acrshort{acr:DG-SEM}
+uses the Gauss quadrature points described in
 Subsection~\ref{subsection:spectral_element_method:spectral_approximation:basis_functions}. The
 discontinuous Galerkin method, first proposed by Reed and Hill in 1973~\cite{Reed1973}, permits the
 absence of quadrature points at the edges of the domain lets the different elements be discontinuous
 at their boundaries. These discontinuities are then counterbalanced by fluxes between elements.
 Hesthaven and Warburton~\cite{Hesthaven2007} showed a comprehensive reference on the discontinuous
-Galerkin methods. This work follows the derivations from Kopriva~\cite{Kopriva2009} for the DG-SEM.
-This method is especially well suited for this program. It is accurate and geometrically flexible.
-It is also easy to parallelise, as the discontinuities between elements make them independent. Each
-element can be computed independently in parallel, then the fluxes are also computed in parallel.
+Galerkin methods. This work follows the derivations from Kopriva~\cite{Kopriva2009} for the
+\acrshort{acr:DG-SEM}. This method is especially well suited for this program. It is accurate and
+geometrically flexible. It is also easy to parallelise, as the discontinuities between elements make
+them independent. Each element can be computed independently in parallel, then the fluxes are also
+computed in parallel.
 
 We start by deriving the discontinuous Galerkin approximation for a simple 2D domain spanning
 $\left[ -1, 1 \right] \times \left[ -1, 1 \right]$ shown in Figure~\ref{fig:simple_domain}.
