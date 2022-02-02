@@ -45,36 +45,37 @@ stabilise the scheme. This method combines the accuracy and exponential converge
 methods with the geometric flexibility of finite element methods. 
 
 % GPUs
-With the stagnation of traditional computer \textit{central processing units (CPU)} operating
-frequencies over the last years~\cite{Parkhurst2006}, computer systems have evolved to use more
-parallel architectures. CPUs are now composed of several computing cores~\cite{Nayfeh1997} executing
-tasks together or in parallel, and contemporary \textit{\acrfull{acr:HPC}} platforms consist of
-several whole computers networked together executing tasks in parallel. Amidst those changes, an
-inherently parallel architecture has started to be used in scientific computing. \textit{Graphics
-processing units (GPU)} are computer chips that were initially used in computer graphics, a
-massively parallel workload. GPUs can now be programmed similarly to traditional
-CPUs~\cite{Owens2008}, offering their thousands of simpler cores to many kids of computation. This
-architecture is optimised for maximal bandwidth, to process great amounts of data as fast as
-possible. Recently, these processors have been incorporated into \acrshort{acr:HPC}
+With the stagnation of traditional computer \textit{\acrfullpl{acr:CPU}} operating frequencies over
+the last years~\cite{Parkhurst2006}, computer systems have evolved to use more parallel
+architectures. \Acrshortpl{acr:CPU} are now composed of several computing cores~\cite{Nayfeh1997}
+executing tasks together or in parallel, and contemporary \textit{\acrfull{acr:HPC}} platforms
+consist of several whole computers networked together executing tasks in parallel. Amidst those
+changes, an inherently parallel architecture has started to be used in scientific computing.
+\textit{\Acrfullpl{acr:GPU}} are computer chips that were initially used in computer graphics, a
+massively parallel workload. \Acrshortpl{acr:GPU} can now be programmed similarly to traditional
+\acrshortpl{acr:CPU}~\cite{Owens2008}, offering their thousands of simpler cores to many kids of
+computation. This architecture is optimised for maximal bandwidth, to process great amounts of data
+as fast as possible. Recently, these processors have been incorporated into \acrshort{acr:HPC}
 platforms~\cite{Fan2004}, enabling massively parallel workloads with theoretical processing power
-much greater than using traditional CPUs.
+much greater than using traditional \acrshortpl{acr:CPU}.
 
-We will use GPUs for our computations in hope to increase the available processing power to solve
-complex problems. This will not come free, as GPU architectures are more optimised for static
-workloads executing the exact same code on all GPU cores. We use the \acrshort{acr:CUDA} parallel
-computing platform~\cite{Garland2008}, which enables programming GPUs using the C++ language with
-some extensions, much like CPU programming.
+We will use \acrshortpl{acr:GPU} for our computations in hope to increase the available processing
+power to solve complex problems. This will not come free, as \acrshort{acr:GPU} architectures are
+more optimised for static workloads executing the exact same code on all \acrshort{acr:GPU} cores.
+We use the \acrshort{acr:CUDA} parallel computing platform~\cite{Garland2008}, which enables
+programming \acrshortpl{acr:GPU} using the C++ language with some extensions, much like
+\acrshort{acr:CPU} programming.
 
 % Adaptivity
-Even with highly accurate methods and the processing power of GPU-enables \acrshort{acr:HPC}
-platforms, the available resources must be spent judiciously. To get the accurate results we want,
-meshes need to be extremely fine. A mesh this fine throughout the whole domain can become
-impractical to compute even on the largest \acrshort{acr:HPC} systems. The limited resources must be
-spent where they will count most. Creating grids that are more refined in areas of interest is
-possible if those areas are known beforehand. This is a time-consuming process that must be started
-over for every new problem. It is sometimes not possible to predict where areas of interest will be,
-such as when modeling chaotic turbulent flows. It is also possible that the mathematically important
-areas are not easy to identify. 
+Even with highly accurate methods and the processing power of \acrshort{acr:GPU}-enabled
+\acrshort{acr:HPC} platforms, the available resources must be spent judiciously. To get the accurate
+results we want, meshes need to be extremely fine. A mesh this fine throughout the whole domain can
+become impractical to compute even on the largest \acrshort{acr:HPC} systems. The limited resources
+must be spent where they will count most. Creating grids that are more refined in areas of interest
+is possible if those areas are known beforehand. This is a time-consuming process that must be
+started over for every new problem. It is sometimes not possible to predict where areas of interest
+will be, such as when modeling chaotic turbulent flows. It is also possible that the mathematically
+important areas are not easy to identify. 
 
 \textit{\Acrfull{acr:AMR}} methods have been studied in order to solve this problem. These methods
 aim to identify the areas of the mesh that need refinement, and refine those areas to obtain more

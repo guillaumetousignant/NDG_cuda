@@ -23,11 +23,11 @@
 
 In order to simulate complex fluid flows, high-order methods can be used to obtain very fine
 results. However, these methods are computationally expensive, and care should be taken to optimise
-their execution time. \textit{Graphics Processing Units (GPUs)} are a relatively new architecture in
-the domain of scientific computing, leveraging massive parallelism at the expense of reduced
-flexibility. To achieve the resolution of high-order methods with the throughput of GPUs, we present
-in this thesis a GPU implementation of the \textit{\acrfull{acr:DG-SEM}} coupled with parallel
-\textit{\acrfull{acr:AMR}} to solve the two-dimensional wave equation. 
+their execution time. \textit{\Acrfullpl{acr:GPU}} are a relatively new architecture in the domain
+of scientific computing, leveraging massive parallelism at the expense of reduced flexibility. To
+achieve the resolution of high-order methods with the throughput of \acrshortpl{acr:GPU}, we present
+in this thesis a \acrshort{acr:GPU} implementation of the \textit{\acrfull{acr:DG-SEM}} coupled with
+parallel \textit{\acrfull{acr:AMR}} to solve the two-dimensional wave equation. 
 
 The \textit{\acrlong{acr:DG-SEM}} splits the domain into elements,  within which the solution is
 represented as a weighted series of orthogonal polynomials, the \textit{Legendre polynomials} in
@@ -44,7 +44,7 @@ during the calculation, the computation time will be determined by the most heav
 remedy this imbalance, a \textit{\acrfull{acr:SFC}} based repartitioning algorithm is used to even
 out the computational load and to keep a node's elements together, limiting the number of interfaces
 between nodes, as these transfers are particularly costly when the data also has to be  transferred
-from and to the GPUs in addition to between the nodes.
+from and to the \acrshortpl{acr:GPU} in addition to between the nodes.
 
 % Add stuff about viscosity when it works
 % Add some results

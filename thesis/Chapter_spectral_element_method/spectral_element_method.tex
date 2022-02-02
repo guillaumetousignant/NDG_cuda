@@ -759,11 +759,12 @@ Now that we know how to compute the interior terms and the numerical fluxes of
 Equation~\ref{equ:2d_wave_d}, we can compute the time derivative $\mathbf{Q}_t$. We then need to
 integrate the equation in time. We will used a third-order low-storage Runge-Kutta method, as
 described by Williamson~\cite{Williamson1980}. As the name suggests, this method uses low memory to
-attain high temporal accuracy. This is especially useful in the context of GPU computation, as GPUs
-tend to have less available memory than usual \acrshort{acr:HPC} CPU platforms. This method requires
-$2 N$ storage, where $N$ is the number of variables. Concretely, we will need to store the computed
-time derivatives in temporary arrays, which will then be added to the real time derivative arrays.
-The truncation error is comparable to that of the usual Runge-Kutta methods~\cite{Williamson1980}.
+attain high temporal accuracy. This is especially useful in the context of \acrshort{acr:GPU}
+computation, as \acrshortpl{acr:GPU} tend to have less available memory than usual
+\acrshort{acr:HPC} \acrshort{acr:CPU} platforms. This method requires $2 N$ storage, where $N$ is
+the number of variables. Concretely, we will need to store the computed time derivatives in
+temporary arrays, which will then be added to the real time derivative arrays. The truncation error
+is comparable to that of the usual Runge-Kutta methods~\cite{Williamson1980}.
 
 The method works as follows. For a differential equation
 
