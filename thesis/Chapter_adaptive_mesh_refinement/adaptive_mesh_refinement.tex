@@ -663,11 +663,12 @@ The projection operation from faces to elements is therefore:
 As detailed in Chapter~\ref{chapter:graphics_processing_units}, the grid is stored on the GPU as a
 flat vector of elements, each element having pointers to its solution arrays, stored in GPU dynamic
 memory. This ensures the elements have a fixed size regardless of their polynomial order. The
-element vector is allocated in GPU memory by the CPU using the CUDA runtime. Only this memory can be
-transferred between the CPU and GPU. Each element's solution arrays, being allocated from the GPU,
-cannot be transferred between the CPU and GPU. The same goes for the faces of the grid. The grid
-being unstructured, the elements and faces store the index of their neighbours. The faces have one
-element on either side, and the elements can have one or multiple faces on each of their four sides.
+element vector is allocated in GPU memory by the CPU using the \acrshort{acr:CUDA} runtime. Only
+this memory can be transferred between the CPU and GPU. Each element's solution arrays, being
+allocated from the GPU, cannot be transferred between the CPU and GPU. The same goes for the faces
+of the grid. The grid being unstructured, the elements and faces store the index of their
+neighbours. The faces have one element on either side, and the elements can have one or multiple
+faces on each of their four sides.
 
 With that structure in mind, adaptive mesh refinement must be able to add elements to the mesh,
 change the polynomial order of elements, replace elements that have split, create, replace and

@@ -16,12 +16,12 @@ Section~\ref{section:results:load_balancing_performance}.
 
 \section{Platforms} \label{section:results:platforms}
 
-This program aims to perform large scale computations, and as such targets HPC platforms. The
-program has been designed to scale to multiple parallel level, the highest being splitting the
-workload between several HPC nodes, each having multiple CPUs and GPUs. To test this use case,
-most of the following tests were run on clusters graciously offered by Compute
-Canada\footnote{https://www.computecanada.ca/}. Two such clusters were used for our experiments,
-Béluga and Narval.
+This program aims to perform large scale computations, and as such targets \acrshort{acr:HPC}
+platforms. The program has been designed to scale to multiple parallel level, the highest being
+splitting the workload between several \acrshort{acr:HPC} nodes, each having multiple CPUs and GPUs.
+To test this use case, most of the following tests were run on clusters graciously offered by
+Compute Canada\footnote{https://www.computecanada.ca/}. Two such clusters were used for our
+experiments, Béluga and Narval.
 
 \subsection{Béluga} \label{subsection:results:platforms:beluga}
 
@@ -48,16 +48,16 @@ are connected by Infiniband EDR (100 Gb/s) interconnections.
 \subsection{Consumer hardware} \label{subsection:results:platforms:consumer}
 
 Some smaller scale tests or tests that didn't involve performance were run on consumer hardware.
-This is important, as it may not always be possible to access HPC systems when flow simulations have
-to be performed. The program should also have reasonable performance on regular systems. The system
-used in these cases is a single computer containing 16 CPU cores and 128 GB of memory across two
-Intel E5-2650 V2 CPUs, and one NVidia GTX 1070 GPU with 8 GB of memory. This totals about 0.5 TFlops
-of double precision CPU computing power, and 0.25 TFlops of double precision GPU computing power.
-This is an interesting comparison, as consumer GPUs are not geared towards high precision compute
-loads. GPUs found in HPC systems typically have a 1:2 ratio between their double precision and
-single precision performance, whereas consumer GPUs usually have 1:32 ratio. This means that
-computations using double precision floating point numbers will execute at one sixteenth of the
-speed of compute-oriented GPUS, all other factors being equal.
+This is important, as it may not always be possible to access \acrshort{acr:HPC} systems when flow
+simulations have to be performed. The program should also have reasonable performance on regular
+systems. The system used in these cases is a single computer containing 16 CPU cores and 128 GB of
+memory across two Intel E5-2650 V2 CPUs, and one NVidia GTX 1070 GPU with 8 GB of memory. This
+totals about 0.5 TFlops of double precision CPU computing power, and 0.25 TFlops of double precision
+GPU computing power. This is an interesting comparison, as consumer GPUs are not geared towards high
+precision compute loads. GPUs found in \acrshort{acr:HPC} systems typically have a 1:2 ratio between
+their double precision and single precision performance, whereas consumer GPUs usually have 1:32
+ratio. This means that computations using double precision floating point numbers will execute at
+one sixteenth of the speed of compute-oriented GPUS, all other factors being equal.
 
 \section{Test case} \label{section:results:test_case}
 % new case
@@ -164,9 +164,9 @@ that regime. With a lower number of elements being worked on by a GPU, cache has
 often to make room for more elements to use for computations.
 
 At the end of the curve, we see that the scaling lowers slightly. This could be a hint that the GPUs
-are then not loaded enough. These GPUs have many CUDA cores, 5120 each in the case of Béluga. If the
-workload does not saturate the GPU, some of those cores will be idle, leading to worse performance.
-The optimal number of elements per GPU seems to be around 4096.
+are then not loaded enough. These GPUs have many CU\acrshort{acr:CUDA}DA cores, 5120 each in the
+case of Béluga. If the workload does not saturate the GPU, some of those cores will be idle, leading
+to worse performance. The optimal number of elements per GPU seems to be around 4096.
 
 The next test, shown on Figure~\ref{fig:strong_scaling_N6_W32}, shows the same test case but with an
 increased polynomial order of $N = 6$ for all elements. The rationale is that the GPU should spend
@@ -222,7 +222,7 @@ influences on the performance.
 The weak scaling test uses the text case from Section~\ref{section:results:test_case}. The domain is
 split up into elements such that each node contains 16384 elements. This amounts to 4096 elements
 per GPU, or 410 elements per CPU core. The simulation is first computed with the highest number of
-nodes, therefore the smallest elements and time step size. The CFL number is adjusted for all other
+nodes, therefore the smallest elements and time step size. The \acrshort{acr:CFL} number is adjusted for all other
 simulations to get the same time step size, therefore the same total number of iterations. An ideal
 result is a flat curve, indicating that by increasing the problem size and resources by the same
 amount, the simulation time stays the same. The problem is studied from ¼ node to 16 nodes.

@@ -406,10 +406,10 @@ shown in Green to access the quality of the ordering.
 \section{Workload leveling} \label{section:load_balancing:workload_leveling}
 
 Now that the problem can be partitioned in one dimension, we can begin redistributing elements to
-level out the workload between the different worker GPUs. We use \textit{chains-on-chains
-partitioning} (CCP), where a linear list of $N$ tasks $i$ have associated weights $w_i$. This list
-of tasks is then split into $K$ parts, equal to the number of workers $k$. Each worker has a capacity
-$c_k$, indicating the relative workload it can execute.
+level out the workload between the different worker GPUs. We use \textit{\acrfull{acr:CCP}}, where a
+linear list of $N$ tasks $i$ have associated weights $w_i$. This list of tasks is then split into
+$K$ parts, equal to the number of workers $k$. Each worker has a capacity $c_k$, indicating the
+relative workload it can execute.
 
 To repartition, each worker sums the total weight of the $I_k$ tasks it contains, $w_k$.
 
@@ -504,9 +504,9 @@ We repartition the problem, so that the workers have a weight closer to their id
 
 This is the more general approach to repartitioning. Knowing our problem, we can simplify in two
 ways. Tasks are elements, and workers are GPUs. Firstly, since we do not work in mixed systems, all
-workers have equal capacity. In typical HPC systems, nodes have multiples of the same model of GPU.
-Since the program only executes on GPUs, all the workers will therefore be the same. See
-Section~\ref{section:conclusion:future_work} for proposals of a solver that has both GPU and CPU
+workers have equal capacity. In typical \acrshort{acr:HPC} systems, nodes have multiples of the same
+model of GPU. Since the program only executes on GPUs, all the workers will therefore be the same.
+See Section~\ref{section:conclusion:future_work} for proposals of a solver that has both GPU and CPU
 workers in order to fully utilise supercomputer nodes. Such a system would necessitate the use of
 different capacities, since these nodes have many more CPU cores than GPUs, while each GPU is much
 faster. 

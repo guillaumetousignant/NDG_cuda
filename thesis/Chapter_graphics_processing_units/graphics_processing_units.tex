@@ -38,30 +38,30 @@ Graphics processing units and central processing units are fundamentally made up
 components. First, data processing hardware, shown in green on Figure~\ref{fig:cpu_gpu}, consists of
 the parts of the chips that do calculations on data. Control flow hardware, shown in yellow,
 schedules instructions to be executed on processing hardware. In orange is the main memory of either
-architecture. Main memory or DRAM, shown in orange, stores data to be used for computations. The
-main memory very big, and takes a relatively long time to access. Finally, in blue and purple are
-different levels of cache memory. Cache is much smaller and much faster than main memory, and as
-such stores parts of the memory that the processing hardware is actively using in order to speed up
-access.
+architecture. Main memory or \textit{\acrfull{acr:DRAM}}, shown in orange, stores data to be used
+for computations. The main memory very big, and takes a relatively long time to access. Finally, in
+blue and purple are different levels of cache memory. Cache is much smaller and much faster than
+main memory, and as such stores parts of the memory that the processing hardware is actively using
+in order to speed up access.
 
 The two architectures differ as to the balance between the size and capacities of these components.
 Chip area is limited by the processes used to manufacture them, so the different components must
 share this limited space, and sacrifices must be made. GPUs dedicate much more space to data
 processing, increasing throughput. Their compute units are also smaller, to work on more data in
 parallel. CPUs, on the other hand, have fewer bigger compute units with a higher clock speed in
-order to reduce latency. Their compute units are called cores. The GPU compute units are called CUDA
-cores, and are arranged in rows as \textit{Streaming Multiprocessors (SMs)}.
+order to reduce latency. Their compute units are called cores. The GPU compute units are called
+\acrshort{acr:CUDA} cores, and are arranged in rows as \textit{Streaming Multiprocessors (SMs)}.
 
 In order to reduce latency, CPUs have a lot of die space dedicated to cache. More cache helps keep
 data close in access time. More data is loaded from main memory at a time, assuming that data that
 is near needed data will also be needed later. The deeper hierarchy of cache of CPUs helps keep the
 cores working on the current problem as fast as possible, never starving for memory. GPUs have less
-total cache and fewer levels of cache to make room for more CUDA cores. As a throughput oriented
-device, it is less important how fast individual tasks complete, as long as more tasks overall are
-completed. The reduced cache is acceptable because if a CUDA core is waiting on data from the main
-memory that was not found in cache, it will simply pause execution of that thread and execute
-another thread. On GPUs, the smallest and fastest cache, L1 cache, is shared within a SM. It is thus
-fast to access shared data, as long as conflicts are avoided.
+total cache and fewer levels of cache to make room for more \acrshort{acr:CUDA} cores. As a
+throughput oriented device, it is less important how fast individual tasks complete, as long as more
+tasks overall are completed. The reduced cache is acceptable because if a \acrshort{acr:CUDA} core
+is waiting on data from the main memory that was not found in cache, it will simply pause execution
+of that thread and execute another thread. On GPUs, the smallest and fastest cache, L1 cache, is
+shared within a SM. It is thus fast to access shared data, as long as conflicts are avoided.
 
 Finally, CPUs also reduce latency by using much more potent control flow units. Firstly, they have
 one control flow unit per core, where GPUs have one control flow unit per row of cores. This limits
@@ -81,17 +81,17 @@ warps.
 
 \subsection{Programming model} \label{subsection:graphics_processing_units:architecture:programming_model}
 
-This work uses the CUDA programming model. It is a programming language, framework and runtime
-developed to enable programming on GPUs with an extension of the C++ language. Programs using the
-language execute on the CPU like a normal program, but can schedule parts of the program, called
-kernels, to be executed on the GPU. Kernels are run in parallel on the GPU, asynchronously from the
-CPU. The CPU is therefore free to do computations of its own while the GPU is executing, including
-adding more kernels or transfers to the GPU execution queue. Multiple such queues, called streams,
-can exist. The purpose of using multiple streams is to execute independent computations on the GPU
-concurrently, and maximise GPU usage in case a stream is waiting. GPUs can concurrently execute
-kernels, transfer data from the CPU to the GPU, and transfer data from the GPU to the CPU. These
-transfers are necessary because CPU and GPU main random access memory are separate. This means that
-data needed for computations on the GPU that cannot be generated on it must be explicitly
+This work uses the \acrshort{acr:CUDA} programming model. It is a programming language, framework
+and runtime developed to enable programming on GPUs with an extension of the C++ language. Programs
+using the language execute on the CPU like a normal program, but can schedule parts of the program,
+called kernels, to be executed on the GPU. Kernels are run in parallel on the GPU, asynchronously
+from the CPU. The CPU is therefore free to do computations of its own while the GPU is executing,
+including adding more kernels or transfers to the GPU execution queue. Multiple such queues, called
+streams, can exist. The purpose of using multiple streams is to execute independent computations on
+the GPU concurrently, and maximise GPU usage in case a stream is waiting. GPUs can concurrently
+execute kernels, transfer data from the CPU to the GPU, and transfer data from the GPU to the CPU.
+These transfers are necessary because CPU and GPU main random access memory are separate. This means
+that data needed for computations on the GPU that cannot be generated on it must be explicitly
 transferred from the CPU, and results living on the GPU must be transferred back to the CPU in order
 to be displayed or written to disk. As GPUs are also generally running the displays of non-server
 computers, results that are only meant to be viewed can be directly displayed and such transfers can
@@ -111,13 +111,13 @@ core executing the same function. Figure~\ref{fig:gpu_programming_model} shows h
 decomposes a problem. The whole problem to be solved is represented as a multidimensional grid of
 tasks, with two dimensions in this example. The kernel will execute until the whole grid has been
 computed. The grid is broken up into blocks of threads. The different blocks will be dispatched to
-the streaming multiprocessors of the GPU, and each thread of that block will be executed on a CUDA
-core of the SM. A SM can execute multiple blocks at the same time if there are more cores within the
-SM than threads within a block. Blocks need to be completely independent of each other, as they
-cannot be synchronised and may execute in any order. They also cannot share local memory, as each SM
-has its own L1 cache. Threads within the same block can depend on one another, as they are executed
-concurrently on the same SM. Threads from a block execute the same instruction at the same time in
-groups of 32, or warps. This is the \textit{single-instruction, multiple-thread (SIMT)}
+the streaming multiprocessors of the GPU, and each thread of that block will be executed on a
+\acrshort{acr:CUDA} core of the SM. A SM can execute multiple blocks at the same time if there are
+more cores within the SM than threads within a block. Blocks need to be completely independent of
+each other, as they cannot be synchronised and may execute in any order. They also cannot share
+local memory, as each SM has its own L1 cache. Threads within the same block can depend on one
+another, as they are executed concurrently on the same SM. Threads from a block execute the same
+instruction at the same time in groups of 32, or warps. This is the \textit{\acrfull{acr:SIMT}}
 architecture. If there are more threads within a block than cores within a SM, warps will be run
 sequentially until all threads are done with the instruction. Threads within a block can share local
 memory, and synchronise with each other. This is useful for algorithms with steps like reductions,
@@ -127,14 +127,14 @@ result of that level for the next one.
 Typical execution of a program that adds an array A to an array B and stores the result in an array
 C will proceed as follows. The CPU side of the program will create two arrays of data in its memory,
 and initialise them as needed. It will then create two arrays of the same size on the GPU using the
-CUDA runtime, and transfer the data from the CPU arrays A and B to the GPU arrays. It will then
-create a result array C on the GPU, and one on the CPU. It will then launch a kernel on the GPU, 
-with pointers to the GPU A and B arrays, and the GPU C array. The number of elements in the vectors
-will dictate the size of the execution grid. The number of elements will be split in blocks of
-threads of fixed size, for example blocks of 128 threads. The number and size of blocks is given to
-the GPU when calling the kernel. The CPU then must wait until the computation is done using a
-synchronisation with the CUDA runtime, transfer the data from the GPU C array to the CPU C array,
-and display the results. 
+\acrshort{acr:CUDA} runtime, and transfer the data from the CPU arrays A and B to the GPU arrays. It
+will then create a result array C on the GPU, and one on the CPU. It will then launch a kernel on
+the GPU, with pointers to the GPU A and B arrays, and the GPU C array. The number of elements in the
+vectors will dictate the size of the execution grid. The number of elements will be split in blocks
+of threads of fixed size, for example blocks of 128 threads. The number and size of blocks is given
+to the GPU when calling the kernel. The CPU then must wait until the computation is done using a
+synchronisation with the \acrshort{acr:CUDA} runtime, transfer the data from the GPU C array to the
+CPU C array, and display the results. 
 
 This model fits well with many \acrshort{acr:CFD} methods, including the DG-SEM used in this work.
 We work on a mesh made up of elements and faces connecting them. Elements are independent during
@@ -244,14 +244,14 @@ components of a two block mesh.
 \subsection{Performance} \label{subsection:graphics_processing_units:data_structure:performance}
 
 In order to get good performance and fit naturally with the GPU architecture, the different objects
-are stored as flat one-dimensional arrays on the GPU. The CUDA memory allocation functions are run
-on the CPU and return a continuous block of memory on the GPU, and the memory transfers between the
-CPU and GPU copy continuous blocks of memory. This matches well with having flat arrays of objects.
-Other data structures, like trees, would need multiple memory allocations from the CPU and a kernel
-to assemble them in some kind of structure. This would be manageable for a non-adaptive solver as it
-would be performed once, but with mesh refinement and load balancing the mesh changes constantly.
-With arrays, an array of the new size is allocated and the objects are moved to it. Thanks to the
-structure from
+are stored as flat one-dimensional arrays on the GPU. The \acrshort{acr:CUDA} memory allocation
+functions are run on the CPU and return a continuous block of memory on the GPU, and the memory
+transfers between the CPU and GPU copy continuous blocks of memory. This matches well with having
+flat arrays of objects. Other data structures, like trees, would need multiple memory allocations
+from the CPU and a kernel to assemble them in some kind of structure. This would be manageable for a
+non-adaptive solver as it would be performed once, but with mesh refinement and load balancing the
+mesh changes constantly. With arrays, an array of the new size is allocated and the objects are
+moved to it. Thanks to the structure from
 Subsection~\ref{subsection:graphics_processing_units:data_structure:ease_of_programming}, the
 elements themselves have a known constant size regardless of polynomial order, and have the bulk of
 their size out of the element object, making them fast to move and making the element array smaller.
@@ -317,9 +317,9 @@ The program uses the \textit{\acrfull{acr:CGNS}} mesh format. Both the provided 
 the format, and the mesh partitioner and solver can read the format. The format is widely used,
 which should enable this program to read the many already available meshes using the format.
 
-The program outputs data using the VTK format. Once again, this is a widely used format, notably
-used by the \textit{ParaView} visualisation application. The results of the program should then be
-easy to manipulate and display.
+The program outputs data using the \textit{\acrfull{acr:VTK}} format. Once again, this is a widely
+used format, notably used by the \textit{ParaView} visualisation application. The results of the
+program should then be easy to manipulate and display.
 
 \subsection{Ease of programming} \label{subsection:graphics_processing_units:data_structure:ease_of_programming}
 
@@ -357,13 +357,13 @@ hold pointers to that memory, making the objects themselves fixed in size. This 
 benefit of making the objects smaller and easier to move around, as only the pointers and the
 geometry data have to be moved while the bigger solution data stays in dynamic memory. 
 
-Unlike the main arrays which are allocated from the CPU on the GPU using the CUDA runtime, GPU
-dynamic memory is allocated on the GPU itself. When the elements are created in a kernel, each
-thread will allocate memory in parallel in the object constructor. That memory will be deallocated
-when the element is deleted. Coupled with move semantics of modern C++, this allows an automatic
-management of that memory on the GPU, similar to how we would use smart pointers or arrays in usual
-C++. Dynamic memory allocation on the GPU is a relatively new feature, which enables programming
-patterns closer to those used for CPU programming.
+Unlike the main arrays which are allocated from the CPU on the GPU using the \acrshort{acr:CUDA}
+runtime, GPU dynamic memory is allocated on the GPU itself. When the elements are created in a
+kernel, each thread will allocate memory in parallel in the object constructor. That memory will be
+deallocated when the element is deleted. Coupled with move semantics of modern C++, this allows an
+automatic management of that memory on the GPU, similar to how we would use smart pointers or arrays
+in usual C++. Dynamic memory allocation on the GPU is a relatively new feature, which enables
+programming patterns closer to those used for CPU programming.
 
 \section{Implementation} \label{section:graphics_processing_units:implementation}
 % Talk about reduce operations, data transfers for boundaries
