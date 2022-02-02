@@ -41,6 +41,7 @@
 \usepackage{amssymb}					% slanted symbols
 \usepackage{mathtools}					% better matrices
 \usepackage{indentfirst}				% indent the first paragraph too
+\usepackage{minted}						% code syntax highlighting
 
 % nonumberlist: no page number in glossary
 \usepackage[toc, nopostdot, nonumberlist, nogroupskip, acronym, order=letter]{glossaries} % [toc] put glossaries in content
@@ -69,6 +70,9 @@
 
 % Operator definitions 
 \DeclareMathOperator{\CFL}{CFL}
+
+% Code snippets
+\usemintedstyle[cuda]{monokai}
 
 % preamble
 \begin{document}
