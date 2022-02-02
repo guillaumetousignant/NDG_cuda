@@ -43,12 +43,12 @@ algorithms~\cite{Pinar2004}, often called chains-on-chains partitioning. Chains-
 partitioning will be used here for its relative speed. This will require a scheme to transform our
 domain from two-dimensional space to one-dimensional space, as required by the algorithm.
 
-Here, the repartitioning scheme uses Space-Filling Curves (SFC), more specifically the Hilbert
-Curve. SFCs map multi-dimensional space to one-dimensional space. This space can be partitioned in
-segments, and upon change of the size of these segments elements can then be sent or received from
-the ends of these segments. In addition, these curves are fast to generate, use low memory, and
-maximise locality. Elements that are close in curve space will also be close by in the space used
-for computations. This limits the number of interfaces between processes.
+Here, the repartitioning scheme uses \textit{\acrfullpl{acr:SFC}}, more specifically the Hilbert
+Curve. \acrshortpl{acr:SFC} map multi-dimensional space to one-dimensional space. This space can be
+partitioned in segments, and upon change of the size of these segments elements can then be sent or
+received from the ends of these segments. In addition, these curves are fast to generate, use low
+memory, and maximise locality. Elements that are close in curve space will also be close by in the
+space used for computations. This limits the number of interfaces between processes.
 
 \section{Hilbert curve} \label{section:load_balancing:hilbert_curve}
 

@@ -135,18 +135,19 @@ Section~\ref{section:adaptive_mesh_refinement:mortar_element_method}.
 	\label{fig:load_imbalance}
 \end{figure}
 
-One last potential issue with AMR is the appearance of load imbalance. For example, the mesh from
-Figure~\ref{fig:mesh_refinement} is split into two blocks for two GPUs to work in parallel, as shown
-on Figure~\ref{fig:load_imbalance}. Initially, both the left (purple) and right (blue) GPUs have the
-same number of elements in their domain. After refining, the left GPU has more elements as the wave
-is in its domain and more elements have split there. Elements will have to be sent from the left GPU
-to the right GPU in order to even out the computational load, while ensuring that there are as few
-interfaces as possible between the GPUs. Interfaces need to be minimised because the GPUs need to
-communicate at every timestep when computing fluxes on these interfaces. This involves transfers
-from the GPUs to their CPU, between CPUs, and finally back from the CPUs to their GPU. This happens
-twice, once for each side of the interface. This is an expensive process, and improving locality of
-the elements will help reduce the runtime of that part of the computation. This is known as dynamic
-load balancing, and Chapter~\ref{chapter:load_balancing} is dedicated to solving this problem.
+One last potential issue with \acrshort{acr:AMR} is the appearance of load imbalance. For example,
+the mesh from Figure~\ref{fig:mesh_refinement} is split into two blocks for two GPUs to work in
+parallel, as shown on Figure~\ref{fig:load_imbalance}. Initially, both the left (purple) and right
+(blue) GPUs have the same number of elements in their domain. After refining, the left GPU has more
+elements as the wave is in its domain and more elements have split there. Elements will have to be
+sent from the left GPU to the right GPU in order to even out the computational load, while ensuring
+that there are as few interfaces as possible between the GPUs. Interfaces need to be minimised
+because the GPUs need to communicate at every timestep when computing fluxes on these interfaces.
+This involves transfers from the GPUs to their CPU, between CPUs, and finally back from the CPUs to
+their GPU. This happens twice, once for each side of the interface. This is an expensive process,
+and improving locality of the elements will help reduce the runtime of that part of the computation.
+This is known as dynamic load balancing, and Chapter~\ref{chapter:load_balancing} is dedicated to
+solving this problem.
 
 \section{Error Estimation} \label{section:adaptive_mesh_refinement:error_estimation}
 
@@ -369,12 +370,12 @@ smaller elements, increasing $K$.
 
 \section{The Mortar Element Method} \label{section:adaptive_mesh_refinement:mortar_element_method}
 
-One issue that can arise from AMR is the presence of non-conforming interfaces. The flux
-calculations from Chapter~\ref{chapter:spectral_element_method} involve taking the extrapolated
+One issue that can arise from \acrshort{acr:AMR} is the presence of non-conforming interfaces. The
+flux calculations from Chapter~\ref{chapter:spectral_element_method} involve taking the extrapolated
 values of the solution of two elements at their interface, and computing the flux at points along
-the interface from the two adjacent elements. The elements can then use these fluxes to compute their derivative for that row or
-column. This works well when the interfaces are conforming, because the extrapolated solution
-values, at the intersection of the thin and bold black lines on
+the interface from the two adjacent elements. The elements can then use these fluxes to compute
+their derivative for that row or column. This works well when the interfaces are conforming, because
+the extrapolated solution values, at the intersection of the thin and bold black lines on
 Figure~\ref{fig:conforming_interfaces}, line up between elements.
 
 \begin{figure}[H]
