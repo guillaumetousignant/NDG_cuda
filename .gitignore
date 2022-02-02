@@ -71,3 +71,4 @@
 *.nsys-rep
 *.pvtu.series
 /thesis/_minted-thesis/*
+*.pyg
