@@ -20,7 +20,7 @@ may be acceptable.
 	\hfill
 	\subfloat[Mesh after refining]
 	{\includegraphics[width=0.45\textwidth]{Chapter_adaptive_mesh_refinement/media/mesh_refinement} \label{fig:mesh_after_refinement}}
-	\caption{Adaptive mesh refinement: The elements have split near the wave, where the solution is steeper. (a) Before refining (b) After refining}
+	\caption{\Acrlong{acr:AMR}: The elements have split near the wave, where the solution is steeper. (a) Before refining (b) After refining}
 	\label{fig:mesh_refinement}
 \end{figure}
 
@@ -33,13 +33,12 @@ areas before the computation has started. However, it is not always possible to 
 beforehand, or these areas may move as time advances if the problem is transient. The error may also
 be higher in unforeseen areas.
 
-Adaptive mesh refinement is the process of altering the mesh as the computation goes, where the
-effect of that increase in resolution is most needed. To find out where to refine, the solution
-error must be estimated, and a refinement method must be chosen. The error can be estimated by
-extrapolating the value of the next mode in the spectral approximation, and the slope of the last
-few modes can guide the choice of the refinement method. The two refinement methods studied here are
-h-refinement and p-refinement, increasing the number of elements and the polynomial order,
-respectively.
+\Acrlong{acr:AMR} is the process of altering the mesh as the computation goes, where the effect of
+that increase in resolution is most needed. To find out where to refine, the solution error must be
+estimated, and a refinement method must be chosen. The error can be estimated by extrapolating the
+value of the next mode in the spectral approximation, and the slope of the last few modes can guide
+the choice of the refinement method. The two refinement methods studied here are h-refinement and
+p-refinement, increasing the number of elements and the polynomial order, respectively.
 
 This whole process must be executed in parallel and with as much as the work as possible executed on
 the GPU. GPUs are more efficient at working with fixed workloads where all threads of a block
@@ -671,12 +670,12 @@ of the grid. The grid being unstructured, the elements and faces store the index
 neighbours. The faces have one element on either side, and the elements can have one or multiple
 faces on each of their four sides.
 
-With that structure in mind, adaptive mesh refinement must be able to add elements to the mesh,
-change the polynomial order of elements, replace elements that have split, create, replace and
-change the polynomial order of faces, and keep the element and face references coherent. The whole
-adaptivity process happens in parallel on each GPU, each on its mesh block. The adaptivity process
-starts by calculating the error in parallel on each element on the GPU. The elements store their
-estimated error $\tau$ and their error refinement criterion $\sigma$.
+With that structure in mind, \acrlong{acr:AMR} must be able to add elements to the mesh, change the
+polynomial order of elements, replace elements that have split, create, replace and change the
+polynomial order of faces, and keep the element and face references coherent. The whole adaptivity
+process happens in parallel on each GPU, each on its mesh block. The adaptivity process starts by
+calculating the error in parallel on each element on the GPU. The elements store their estimated
+error $\tau$ and their error refinement criterion $\sigma$.
 
 \subsection{Counting refining elements} \label{subsection:adaptive_mesh_refinement:implementation:counting_refining_elements}
 
@@ -722,7 +721,7 @@ P-refining elements act a bit like non-refining elements, except that they need 
 solution arrays with their new polynomial order and project their solution to it.
 
 H-refining elements create four smaller elements in the new vector. They are placed consecutively at
-the new index of the splitting element, in an order determined by the space-filling curve used,
+the new index of the splitting element, in an order determined by the \acrfull{acr:SFC} used,
 detailed in~\ref{chapter:adaptive_mesh_refinement}. The solution of the splitting element is
 projected on the smaller elements. Four associated faces have to be created to connect the smaller
 elements to each other, as well as a node in the center. 

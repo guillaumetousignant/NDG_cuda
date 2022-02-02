@@ -10,7 +10,7 @@
 Following are results studying the effectiveness of the program. Three main components are studied.
 First, the performance of the core spectral element method code on GPUs, with a comparison with the
 same code running on CPUs is presented in Section~\ref{section:results:scaling_tests}. Then, the
-performance of the adaptive mesh refinement is studied in
+performance of the \acrlong{acr:AMR} is studied in
 Section~\ref{section:results:adaptivity_performance}. Finally, dynamic load balancing is studied in
 Section~\ref{section:results:load_balancing_performance}.
 
@@ -120,7 +120,7 @@ execution time of those tests therefore represents the program running on 16 GPU
 for the GPU and CPU computations respectively.
 
 Both scaling tests evaluate the core solver part of the program, as the meshes start with enough
-elements to have a well resolved solution all along the simulation. The adaptive mesh refinement and
+elements to have a well resolved solution all along the simulation. The \acrlong{acr:AMR} and
 dynamic load balancing subroutines are still enabled. The subroutines still run their evaluation
 phases, the error estimation and load imbalance computation respectively, but do not deem the
 estimated error and load imbalance high enough to trigger the whole subroutine. 
@@ -247,18 +247,18 @@ with regards to the number of CPU cores.
 % Error adaptive vs non-adaptive, time to run
 % Error at same runtime
 
-This section establishes the performance of the adaptive mesh refinement. The problem from
+This section establishes the performance of the \acrlong{acr:AMR}. The problem from
 Section~\ref{section:results:test_case} is used, initially split into four elements in the $x$ and
 $y$ direction, for $K = 16$. The initial polynomial order $N$ of four. The system is allowed to
 refine up to a split level of three, meaning a cell can split three times and become one eighth the
 size of the original cell, and up to a polynomial order $N$ of 12.
 
-Adaptive mesh refinement is a costly process, as the CPU must reallocate arrays on the GPU for the
+\Acrlong{acr:AMR} is a costly process, as the CPU must reallocate arrays on the GPU for the
 different objects making up the mesh, and then schedule kernels to move objects to the new arrays.
-We test here two strategies to reduce the performance overhead of adaptive mesh refinement, while
-reducing error. 
+We test here two strategies to reduce the performance overhead of \acrlong{acr:AMR}, while reducing
+error. 
 
-First, adaptive mesh refinement will be performed at an interval.
+First, \acrlong{acr:AMR} will be performed at an interval.
 Figures~\ref{fig:adaptivity_efficiency_C5}, \ref{fig:adaptivity_efficiency_C20},
 \ref{fig:adaptivity_efficiency_C100} and~\ref{fig:adaptivity_efficiency_C500} show the results of
 refining the mesh every 5, 20, 100 and 500 timesteps, respectively.

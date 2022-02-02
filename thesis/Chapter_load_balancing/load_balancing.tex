@@ -39,9 +39,9 @@ have limited memory, especially compared to CPUs.
 
 The algorithm needs to select which elements to send from one GPU to another. Many such algorithms
 exist, notably graph-based algorithms~\cite{Karypis1998} and one-dimensional
-algorithms~\cite{Pinar2004}, often called chains-on-chains partitioning. Chains-on-chains
-partitioning will be used here for its relative speed. This will require a scheme to transform our
-domain from two-dimensional space to one-dimensional space, as required by the algorithm.
+algorithms~\cite{Pinar2004}, often called \textit{\acrfull{acr:CCP}}. \Acrlong{acr:CCP} will be used
+here for its relative speed. This will require a scheme to transform our domain from two-dimensional
+space to one-dimensional space, as required by the algorithm.
 
 Here, the repartitioning scheme uses \textit{\acrfullpl{acr:SFC}}, more specifically the Hilbert
 Curve. \acrshortpl{acr:SFC} map multi-dimensional space to one-dimensional space. This space can be
@@ -175,8 +175,8 @@ the children, $P(s, j)$.
 This table-driven approach has the added benefit of working seamlessly in parallel, as each element
 can generate its children using nothing more than its own order.
 
-Without adaptive mesh refinement, no more work is needed. The elements wouldn't even need to store
-their state, as the compact numbering of the elements is the result of the Hilbert curve. The mesh
+Without \acrlong{acr:AMR}, no more work is needed. The elements wouldn't even need to store their
+state, as the compact numbering of the elements is the result of the Hilbert curve. The mesh
 generator included with the program works this way, creating a uniform power of two sized 2D mesh
 numbered according to the Hilbert curve. The mesh generator uses the standard \acrshort{acr:CGNS}
 format. The meshes generated in this way can be used directly by the program on a single GPU, or
@@ -406,10 +406,10 @@ shown in Green to access the quality of the ordering.
 \section{Workload leveling} \label{section:load_balancing:workload_leveling}
 
 Now that the problem can be partitioned in one dimension, we can begin redistributing elements to
-level out the workload between the different worker GPUs. We use \textit{\acrfull{acr:CCP}}, where a
-linear list of $N$ tasks $i$ have associated weights $w_i$. This list of tasks is then split into
-$K$ parts, equal to the number of workers $k$. Each worker has a capacity $c_k$, indicating the
-relative workload it can execute.
+level out the workload between the different worker GPUs. We use \acrlong{acr:CCP}, where a linear
+list of $N$ tasks $i$ have associated weights $w_i$. This list of tasks is then split into $K$
+parts, equal to the number of workers $k$. Each worker has a capacity $c_k$, indicating the relative
+workload it can execute.
 
 To repartition, each worker sums the total weight of the $I_k$ tasks it contains, $w_k$.
 

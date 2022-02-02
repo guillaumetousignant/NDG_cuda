@@ -50,7 +50,7 @@ share this limited space, and sacrifices must be made. GPUs dedicate much more s
 processing, increasing throughput. Their compute units are also smaller, to work on more data in
 parallel. CPUs, on the other hand, have fewer bigger compute units with a higher clock speed in
 order to reduce latency. Their compute units are called cores. The GPU compute units are called
-\acrshort{acr:CUDA} cores, and are arranged in rows as \textit{Streaming Multiprocessors (SMs)}.
+\acrshort{acr:CUDA} cores, and are arranged in rows as \textit{\acrfullpl{acr:SM}}.
 
 In order to reduce latency, CPUs have a lot of die space dedicated to cache. More cache helps keep
 data close in access time. More data is loaded from main memory at a time, assuming that data that
@@ -61,23 +61,24 @@ throughput oriented device, it is less important how fast individual tasks compl
 tasks overall are completed. The reduced cache is acceptable because if a \acrshort{acr:CUDA} core
 is waiting on data from the main memory that was not found in cache, it will simply pause execution
 of that thread and execute another thread. On GPUs, the smallest and fastest cache, L1 cache, is
-shared within a SM. It is thus fast to access shared data, as long as conflicts are avoided.
+shared within a \acrshort{acr:SM}. It is thus fast to access shared data, as long as conflicts are
+avoided.
 
 Finally, CPUs also reduce latency by using much more potent control flow units. Firstly, they have
 one control flow unit per core, where GPUs have one control flow unit per row of cores. This limits
-how many instructions can be dispatched to the cores making up a SM. The cores will therefore
-execute the same execution at the same time in groups of 32, called warps. This makes branching much
-more expensive if it happens within a warp. If a part of a program has two branches, A and B, the
-cores executing branch A will execute, followed by the cores executing branch B. These have to be
-executed sequentially because the control flow unit can only dispatch one instruction per warp. This
-multiplies the computation time by the number of taken branches. CPU cores only execute a single
-branch, or can even execute both branches at once while waiting for the result of the conditional,
-keeping only the correct result once the conditional has been evaluated. The more powerful control
-flow units of CPUs may also perform branch prediction, consisting of the CPU guessing the most
-likely branch based on the result of previous computations and starting to execute this branch while
-waiting for the conditional. All this is performed as an effort to reduce latency as much as
-possible. Programs running on GPUs must compensate by avoiding divergence as much as possible within
-warps.
+how many instructions can be dispatched to the cores making up a \acrshort{acr:SM}. The cores will
+therefore execute the same execution at the same time in groups of 32, called warps. This makes
+branching much more expensive if it happens within a warp. If a part of a program has two branches,
+A and B, the cores executing branch A will execute, followed by the cores executing branch B. These
+have to be executed sequentially because the control flow unit can only dispatch one instruction per
+warp. This multiplies the computation time by the number of taken branches. CPU cores only execute a
+single branch, or can even execute both branches at once while waiting for the result of the
+conditional, keeping only the correct result once the conditional has been evaluated. The more
+powerful control flow units of CPUs may also perform branch prediction, consisting of the CPU
+guessing the most likely branch based on the result of previous computations and starting to execute
+this branch while waiting for the conditional. All this is performed as an effort to reduce latency
+as much as possible. Programs running on GPUs must compensate by avoiding divergence as much as
+possible within warps.
 
 \subsection{Programming model} \label{subsection:graphics_processing_units:architecture:programming_model}
 
@@ -90,7 +91,7 @@ including adding more kernels or transfers to the GPU execution queue. Multiple 
 streams, can exist. The purpose of using multiple streams is to execute independent computations on
 the GPU concurrently, and maximise GPU usage in case a stream is waiting. GPUs can concurrently
 execute kernels, transfer data from the CPU to the GPU, and transfer data from the GPU to the CPU.
-These transfers are necessary because CPU and GPU main random access memory are separate. This means
+These transfers are necessary because CPU and GPU main \acrlong{acr:RAM} are separate. This means
 that data needed for computations on the GPU that cannot be generated on it must be explicitly
 transferred from the CPU, and results living on the GPU must be transferred back to the CPU in order
 to be displayed or written to disk. As GPUs are also generally running the displays of non-server
@@ -111,18 +112,19 @@ core executing the same function. Figure~\ref{fig:gpu_programming_model} shows h
 decomposes a problem. The whole problem to be solved is represented as a multidimensional grid of
 tasks, with two dimensions in this example. The kernel will execute until the whole grid has been
 computed. The grid is broken up into blocks of threads. The different blocks will be dispatched to
-the streaming multiprocessors of the GPU, and each thread of that block will be executed on a
-\acrshort{acr:CUDA} core of the SM. A SM can execute multiple blocks at the same time if there are
-more cores within the SM than threads within a block. Blocks need to be completely independent of
-each other, as they cannot be synchronised and may execute in any order. They also cannot share
-local memory, as each SM has its own L1 cache. Threads within the same block can depend on one
-another, as they are executed concurrently on the same SM. Threads from a block execute the same
-instruction at the same time in groups of 32, or warps. This is the \textit{\acrfull{acr:SIMT}}
-architecture. If there are more threads within a block than cores within a SM, warps will be run
-sequentially until all threads are done with the instruction. Threads within a block can share local
-memory, and synchronise with each other. This is useful for algorithms with steps like reductions,
-where threads will wait until all threads have computed one level of the reduction, to use the
-result of that level for the next one.
+the \acrlongpl{acr:SM} of the GPU, and each thread of that block will be executed on a
+\acrshort{acr:CUDA} core of the \acrshort{acr:SM}. A \acrshort{acr:SM} can execute multiple blocks
+at the same time if there are more cores within the \acrshort{acr:SM} than threads within a block.
+Blocks need to be completely independent of each other, as they cannot be synchronised and may
+execute in any order. They also cannot share local memory, as each \acrshort{acr:SM} has its own L1
+cache. Threads within the same block can depend on one another, as they are executed concurrently on
+the same \acrshort{acr:SM}. Threads from a block execute the same instruction at the same time in
+groups of 32, or warps. This is the \textit{\acrfull{acr:SIMT}} architecture. If there are more
+threads within a block than cores within a \acrshort{acr:SM}, warps will be run sequentially until
+all threads are done with the instruction. Threads within a block can share local memory, and
+synchronise with each other. This is useful for algorithms with steps like reductions, where threads
+will wait until all threads have computed one level of the reduction, to use the result of that
+level for the next one.
 
 Typical execution of a program that adds an array A to an array B and stores the result in an array
 C will proceed as follows. The CPU side of the program will create two arrays of data in its memory,
@@ -175,16 +177,15 @@ available in Sections~\ref{section:spectral_element_method:implementation},
 \ref{section:adaptive_mesh_refinement:implementation} and
 \ref{section:load_balancing:implementation}.
 
-The meshes generated by adaptive mesh refinement and dynamic load balancing are also not naturally
-suited for GPUs. These processors are more suited for static repetitive tasks. Element splitting,
-changing their polynomial order and moving elements around will reduce the efficiency of the
-computations if care is not taken to tune the algorithms to this platform. Different polynomial
-orders elements in a thread warp will introduce branching, and the warp will take as much time to
-execute as the highest polynomial order elements. Moving and splitting elements will put more
-pressure on the limited cache of GPUs, as threads will loop on different elements after refinement
-and load balancing. The interval between each refinement and load balancing will have to be tuned to
-trade off between having an optimal mesh for computations and having a static mesh for more
-iterations.
+The meshes generated by \acrlong{acr:AMR} and dynamic load balancing are also not naturally suited
+for GPUs. These processors are more suited for static repetitive tasks. Element splitting, changing
+their polynomial order and moving elements around will reduce the efficiency of the computations if
+care is not taken to tune the algorithms to this platform. Different polynomial orders elements in a
+thread warp will introduce branching, and the warp will take as much time to execute as the highest
+polynomial order elements. Moving and splitting elements will put more pressure on the limited cache
+of GPUs, as threads will loop on different elements after refinement and load balancing. The
+interval between each refinement and load balancing will have to be tuned to trade off between
+having an optimal mesh for computations and having a static mesh for more iterations.
 
 \section{Process Parallelism} \label{section:graphics_processing_units:process_parallelism}
 
