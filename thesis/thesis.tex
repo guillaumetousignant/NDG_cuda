@@ -64,10 +64,10 @@
 
 \makenoidxglossaries
 
-\glsdisablehyper	% disable hyper of the symbol in text
+\glsdisablehyper    % disable hyper of the symbol in text
 
-\include{glossary_entries.tex} % define all your symbols in a separated file. 
-\include{colours.tex} % define all your colours in a separated file.
+\include{glossary_entries.tex}  % define all your symbols in a separated file. 
+\include{colours.tex}           % define all your colours in a separated file.
 
 % Operator definitions 
 \DeclareMathOperator{\CFL}{CFL}
@@ -96,17 +96,17 @@
     % -----------------------------------------------------------------
 
     % generate table of contents ======================================
-    \setcounter{tocdepth}{5}	% set the depth of table of contents
+    \setcounter{tocdepth}{5}    % set the depth of table of contents
     \tableofcontents
-    \addcontentsline{toc}{chapter}{Contents} % put toc to the toc
+    \addcontentsline{toc}{chapter}{Contents}    % put toc to the toc
     % =================================================================
     
     % =================================================================
-    \listoffigures	% list of figures
+    \listoffigures      % list of figures
     
-    \listoftables	% list of tables
+    \listoftables       % list of tables
     
-    \listofalgorithms % list of algorithms
+    \listofalgorithms   % list of algorithms
     \addcontentsline{toc}{chapter}{List of Algorithms} 
     % =================================================================
     
@@ -157,7 +157,7 @@
     \input{Chapter_conclusion/conclusion.tex}
     
     % put bibliography in the table of contents
-    \bibliographystyle{abbrv}	% set the bib style
+    \bibliographystyle{abbrv}   % set the bib style
     \bibliography{reference/reference.bib}
     %================================================================
 
