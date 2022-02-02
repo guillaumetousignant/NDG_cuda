@@ -5,7 +5,6 @@
 \usepackage{import}
 
 % packages used
-\usepackage[utf8]{inputenc}
 \usepackage[english]{babel}
 
 % page setting ----------------------------------------------------------
@@ -70,7 +69,8 @@
 \DeclareMathOperator{\CFL}{CFL}
 
 % Code snippets
-\usemintedstyle[cuda]{material}
+\usemintedstyle[cuda]{monokai}
+\setminted[cuda]{bgcolor = vs_black, fontsize = \scriptsize, linenos, mathescape}
 
 % Bibliography
 \addbibresource{references/references.bib}

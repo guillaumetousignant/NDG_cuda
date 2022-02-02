@@ -858,9 +858,7 @@ The global timestep will be chosen as the minimum timestep of all elemental time
 \subsection{Fluxes} \label{subsection:spectral_element_method:implementation:fluxes}
 
 \begin{algorithm}[H]
-\begin{minted}
-[bgcolor = vs_black, fontsize = \scriptsize, linenos, mathescape]
-{cuda}
+\begin{minted}{cuda}
 __global__
 auto SEM::Device::Solvers::calculate_wave_fluxes(size_t N_faces, Face2D_t* faces) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
