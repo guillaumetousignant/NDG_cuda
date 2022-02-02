@@ -11,37 +11,38 @@
 % page setting ----------------------------------------------------------
 \usepackage{geometry}
 \geometry{
-	letterpaper,						% 8.5in * 11 in
-	left=1.5in,
-	top=1in,
+    letterpaper,                        % 8.5in * 11 in
+    left=1.5in,
+    top=1in,
 }
-\linespread{1.3} 						% set the line spacing to be 1.3
-\setlength{\parindent}{2em} 			% indentation 2
-\setlength{\parskip}{0.5em} 			% paragraph spacing
+\linespread{1.3}                        % set the line spacing to be 1.3
+\setlength{\parindent}{2em}             % indentation 2
+\setlength{\parskip}{0.5em}             % paragraph spacing
 % ------------------------------------------------------------------------
 
-\usepackage{float}  					% for figure "H"
-\usepackage{amsmath}    				% math
-\usepackage[hidelinks]{hyperref}		% hyperlinks
-\usepackage[dvipsnames, table]{xcolor}	% color 
-\usepackage{graphicx}					% figures
-\usepackage{svg}						% svg figures
-\usepackage{subfig}						% sub figures
-\usepackage[nottoc]{tocbibind}			% put bib in the table of content 
-\usepackage{amsfonts} 					% for math equations
-\usepackage{array} 						% table
+\usepackage{float}                      % for figure "H"
+\usepackage{amsmath}                    % math
+\usepackage[hidelinks]{hyperref}        % hyperlinks
+\usepackage[dvipsnames, table]{xcolor}  % color 
+\usepackage{graphicx}                   % figures
+\usepackage{svg}                        % svg figures
+\usepackage{subfig}                     % sub figures
+\usepackage[nottoc]{tocbibind}          % put bib in the table of content 
+\usepackage{amsfonts}                   % for math equations
+\usepackage{array}                      % table
 \newcolumntype{M}[1]{>{\centering\arraybackslash}m{#1}}
-\usepackage{listings}					% code
-\usepackage{adjustbox} 					% adjust table width
+\usepackage{listings}                   % code
+\usepackage{adjustbox}                  % adjust table width
 
-\usepackage[chapter]{algorithm}			% algorithm numbered by chapter
-\usepackage{algorithmicx}				% algorithm
-\usepackage{algpseudocode}				% pseudocode
-\usepackage{varwidth}					% code indentation
-\usepackage{amssymb}					% slanted symbols
-\usepackage{mathtools}					% better matrices
-\usepackage{indentfirst}				% indent the first paragraph too
-\usepackage{minted}						% code syntax highlighting
+\usepackage[chapter]{algorithm}         % algorithm numbered by chapter
+\usepackage{algorithmicx}               % algorithm
+\usepackage{algpseudocode}              % pseudocode
+\usepackage{varwidth}                   % code indentation
+\usepackage{amssymb}                    % slanted symbols
+\usepackage{mathtools}                  % better matrices
+\usepackage{indentfirst}                % indent the first paragraph too
+\usepackage{minted}                     % code syntax highlighting
+\usepackage{FiraMono}                   % nice monospaced font
 
 % nonumberlist: no page number in glossary
 \usepackage[toc, nopostdot, nonumberlist, nogroupskip, acronym, order=letter]{glossaries} % [toc] put glossaries in content
@@ -76,88 +77,88 @@
 
 % preamble
 \begin{document}
-	\pagenumbering{roman}
+    \pagenumbering{roman}
 
     % title page-------------------------------------------------------
-	\addcontentsline{toc}{chapter}{Title Page}
-	\input{Chapter_title/title_page.tex}
-	% -----------------------------------------------------------------
+    \addcontentsline{toc}{chapter}{Title Page}
+    \input{Chapter_title/title_page.tex}
+    % -----------------------------------------------------------------
 
     \newpage
-	\setcounter{page}{2}
-	% abstract --------------------------------------------------------
-	\input{Chapter_abstract/abstract.tex}
-	% -----------------------------------------------------------------
+    \setcounter{page}{2}
+    % abstract --------------------------------------------------------
+    \input{Chapter_abstract/abstract.tex}
+    % -----------------------------------------------------------------
 
-	% acknowledgement -------------------------------------------------
-	\input{Chapter_acknowledgements/acknowledgements.tex}
-	\addcontentsline{toc}{chapter}{Acknowledgements}
-	% -----------------------------------------------------------------
+    % acknowledgement -------------------------------------------------
+    \input{Chapter_acknowledgements/acknowledgements.tex}
+    \addcontentsline{toc}{chapter}{Acknowledgements}
+    % -----------------------------------------------------------------
 
-	% generate table of contents ======================================
-	\setcounter{tocdepth}{5}	% set the depth of table of contents
-	\tableofcontents
-	\addcontentsline{toc}{chapter}{Contents} % put toc to the toc
-	% =================================================================
-	
-	% =================================================================
-	\listoffigures	% list of figures
-	
-	\listoftables	% list of tables
-	
-	\listofalgorithms % list of algorithms
-	\addcontentsline{toc}{chapter}{List of Algorithms} 
-	% =================================================================
-	
-	% print all the symbols without referencing them
-	\glsaddall
-	% remove the left vacant space of long style
-	\setlength\LTleft{0pt}
-	\setlength\LTright{0pt}
-	\setlength\glsdescwidth{1.0\hsize}
-	
-	\printnoidxglossary[title=List of Symbols]
-	\printnoidxglossary[sort=standard, type=greekstyle] % self-defined ordering 
-	\printnoidxglossary[type=othersymbol]
-	\printnoidxglossary[type=superscript]
-	\printnoidxglossary[type=subscript]
-	\printnoidxglossary[type=othernotation]
-	\printnoidxglossary[title=List of Acronyms, type=\acronymtype]
-	
-	% start arabic page numbering here--------------------------------
- 	\newpage
- 	\setcounter{page}{1}
-	\pagenumbering{arabic}
-	%-----------------------------------------------------------------
-	
-	% input takes all the contents in the specified file
-	% intro
-	\input{Chapter_introduction/introduction.tex}
+    % generate table of contents ======================================
+    \setcounter{tocdepth}{5}	% set the depth of table of contents
+    \tableofcontents
+    \addcontentsline{toc}{chapter}{Contents} % put toc to the toc
+    % =================================================================
+    
+    % =================================================================
+    \listoffigures	% list of figures
+    
+    \listoftables	% list of tables
+    
+    \listofalgorithms % list of algorithms
+    \addcontentsline{toc}{chapter}{List of Algorithms} 
+    % =================================================================
+    
+    % print all the symbols without referencing them
+    \glsaddall
+    % remove the left vacant space of long style
+    \setlength\LTleft{0pt}
+    \setlength\LTright{0pt}
+    \setlength\glsdescwidth{1.0\hsize}
+    
+    \printnoidxglossary[title=List of Symbols]
+    \printnoidxglossary[sort=standard, type=greekstyle] % self-defined ordering 
+    \printnoidxglossary[type=othersymbol]
+    \printnoidxglossary[type=superscript]
+    \printnoidxglossary[type=subscript]
+    \printnoidxglossary[type=othernotation]
+    \printnoidxglossary[title=List of Acronyms, type=\acronymtype]
+    
+    % start arabic page numbering here--------------------------------
+     \newpage
+     \setcounter{page}{1}
+    \pagenumbering{arabic}
+    %-----------------------------------------------------------------
+    
+    % input takes all the contents in the specified file
+    % intro
+    \input{Chapter_introduction/introduction.tex}
 
-	% literature review
-	\input{Chapter_literature_review/literature_review.tex}
+    % literature review
+    \input{Chapter_literature_review/literature_review.tex}
 
-	% graphics processing units
-	\input{Chapter_graphics_processing_units/graphics_processing_units.tex}
+    % graphics processing units
+    \input{Chapter_graphics_processing_units/graphics_processing_units.tex}
 
-	% spectral element method
-	\input{Chapter_spectral_element_method/spectral_element_method.tex}
+    % spectral element method
+    \input{Chapter_spectral_element_method/spectral_element_method.tex}
 
-	% adaptive mesh refinement
-	\input{Chapter_adaptive_mesh_refinement/adaptive_mesh_refinement.tex}
+    % adaptive mesh refinement
+    \input{Chapter_adaptive_mesh_refinement/adaptive_mesh_refinement.tex}
 
-	% load balancing
-	\input{Chapter_load_balancing/load_balancing.tex}
+    % load balancing
+    \input{Chapter_load_balancing/load_balancing.tex}
 
-	% results
-	\input{Chapter_results/results.tex}
-	
-	% conclusion
-	\input{Chapter_conclusion/conclusion.tex}
-	
-	% put bibliography in the table of contents
-	\bibliographystyle{abbrv}	% set the bib style
-	\bibliography{reference/reference.bib}
-	%================================================================
+    % results
+    \input{Chapter_results/results.tex}
+    
+    % conclusion
+    \input{Chapter_conclusion/conclusion.tex}
+    
+    % put bibliography in the table of contents
+    \bibliographystyle{abbrv}	% set the bib style
+    \bibliography{reference/reference.bib}
+    %================================================================
 
 \end{document}
