@@ -857,6 +857,7 @@ The global timestep will be chosen as the minimum timestep of all elemental time
 
 \subsection{Fluxes} \label{subsection:spectral_element_method:implementation:fluxes}
 
+\begin{algorithm}[H]
 \begin{minted}
 [
 bgcolor = vs_black,
@@ -888,5 +889,8 @@ auto SEM::Device::Solvers::calculate_wave_fluxes(size_t N_faces, Face2D_t* faces
     }
 }
 \end{minted}
+\caption{\textbf{calculate\_wave\_fluxes:} Riemann solver for the wave equation fluxes.}
+\label{alg:wave_fluxes}
+\end{algorithm}
 
 \subsection{Time integration} \label{subsection:spectral_element_method:implementation:time}
