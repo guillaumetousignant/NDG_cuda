@@ -859,12 +859,7 @@ The global timestep will be chosen as the minimum timestep of all elemental time
 
 \begin{algorithm}[H]
 \begin{minted}
-[
-bgcolor = vs_black,
-fontsize = \footnotesize,
-linenos,
-mathescape
-]
+[bgcolor = vs_black, fontsize = \scriptsize, linenos, mathescape]
 {cuda}
 __global__
 auto SEM::Device::Solvers::calculate_wave_fluxes(size_t N_faces, Face2D_t* faces) -> void {
