@@ -136,13 +136,13 @@ the GPU when calling the kernel. The CPU then must wait until the computation is
 synchronisation with the CUDA runtime, transfer the data from the GPU C array to the CPU C array,
 and display the results. 
 
-This model fits well with many CFD methods, including the DG-SEM used in this work. We work on a
-mesh made up of elements and faces connecting them. Elements are independent during most of the
-computation and their computations can be executed in parallel. The only step from the main solver
-loop needing extra care is the computation of the fluxes between the elements. The flux computation
-uses the data from the elements on either side of a face, computes a flux and stores that flux back
-in both elements so they can compute their derivative. Since there can be multiple faces on each
-side of an element as detailed in
+This model fits well with many \acrshort{acr:CFD} methods, including the DG-SEM used in this work.
+We work on a mesh made up of elements and faces connecting them. Elements are independent during
+most of the computation and their computations can be executed in parallel. The only step from the
+main solver loop needing extra care is the computation of the fluxes between the elements. The flux
+computation uses the data from the elements on either side of a face, computes a flux and stores
+that flux back in both elements so they can compute their derivative. Since there can be multiple
+faces on each side of an element as detailed in
 Section~\ref{section:adaptive_mesh_refinement:mortar_element_method}, and each element has multiple
 sides, multiple threads will attempt to read and write to the same locations at the same time. This
 is a race condition, where the result of the computation will be dependent on the order in which the
