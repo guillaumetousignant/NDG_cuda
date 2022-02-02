@@ -20,45 +20,38 @@
 \setlength{\parskip}{0.5em}             % paragraph spacing
 % ------------------------------------------------------------------------
 
-\usepackage{float}                      % for figure "H"
-\usepackage{amsmath}                    % math
-\usepackage[hidelinks]{hyperref}        % hyperlinks
-\usepackage[dvipsnames, table]{xcolor}  % color 
-\usepackage{graphicx}                   % figures
-\usepackage{svg}                        % svg figures
-\usepackage{subfig}                     % sub figures
-\usepackage[nottoc]{tocbibind}          % put bib in the table of content 
-\usepackage{amsfonts}                   % for math equations
-\usepackage{array}                      % table
+\usepackage{float}                                  % for figure "H"
+\usepackage{amsmath}                                % math
+\usepackage[hidelinks]{hyperref}                    % hyperlinks
+\usepackage[dvipsnames, table]{xcolor}              % color 
+\usepackage{graphicx}                               % figures
+\usepackage{svg}                                    % svg figures
+\usepackage{subfig}                                 % sub figures
+\usepackage[nottoc]{tocbibind}                      % put bib in the table of content 
+\usepackage{amsfonts}                               % for math equations
+\usepackage{array}                                  % table
 \newcolumntype{M}[1]{>{\centering\arraybackslash}m{#1}}
-\usepackage{listings}                   % code
-\usepackage{adjustbox}                  % adjust table width
+\usepackage{adjustbox}                              % adjust table width
 
-\usepackage[chapter]{algorithm}         % algorithm numbered by chapter
-\usepackage{algorithmicx}               % algorithm
-\usepackage{algpseudocode}              % pseudocode
-\usepackage{varwidth}                   % code indentation
-\usepackage{amssymb}                    % slanted symbols
-\usepackage{mathtools}                  % better matrices
-\usepackage{indentfirst}                % indent the first paragraph too
-\usepackage{minted}                     % code syntax highlighting
-%\usepackage{FiraMono}                   % nice monospaced font
-%\usepackage[T1]{fontenc}                % 8 bit font encoding
-%\usepackage{fontspec}
-%\setmonofont{Fira Code}[contextuals=Alternate]
-\usepackage{csquotes}                   % properly quoted text
-\usepackage[style=numeric]{biblatex}    % better bibliography
+\usepackage[chapter]{algorithm}                     % algorithm numbered by chapter
+\usepackage{algorithmicx}                           % algorithm
+\usepackage{varwidth}                               % code indentation
+\usepackage{amssymb}                                % slanted symbols
+\usepackage{mathtools}                              % better matrices
+\usepackage{indentfirst}                            % indent the first paragraph too
+\usepackage{minted}                                 % code syntax highlighting
+\usepackage{fontspec}                               % font control
+\setmonofont[Contextuals={Alternate}]{Fira Code}    % better monospace font
+\usepackage{csquotes}                               % properly quoted text
+\usepackage[style=numeric]{biblatex}                % better bibliography
 
 % nonumberlist: no page number in glossary
 \usepackage[toc, nopostdot, nonumberlist, nogroupskip, acronym, order=letter]{glossaries} % [toc] put glossaries in content
 
 % add list of Greek symbols----------------------------------------------
-% [glg]{domain_name}{gls}{glo}{title_name}
 \newglossary*{greekstyle}{List of Greek Symbols}
-
 \newglossary*{superscript}{Superscripts}
 \newglossary*{subscript}{Subscripts}
-
 \newglossary*{othersymbol}{Other Symbols}
 \newglossary*{othernotation}{Other Notations}
 %------------------------------------------------------------------------
