@@ -858,30 +858,29 @@ The global timestep will be chosen as the minimum timestep of all elemental time
 \subsection{Fluxes} \label{subsection:spectral_element_method:implementation:fluxes}
 
 \begin{algorithm}[H]
-\begin{minted}{cuda}
-__global__
-auto SEM::Device::Solvers::calculate_wave_fluxes(size_t N_faces, Face2D_t* faces) -> void {
-    const int index = blockIdx.x * blockDim.x + threadIdx.x;
-    const int stride = blockDim.x * gridDim.x;
+    \begin{cuda}
+        __global__
+        auto SEM::Device::Solvers::calculate_wave_fluxes(size_t N_faces, Face2D_t* faces) -> void {
+            const int index = blockIdx.x * blockDim.x + threadIdx.x;
+            const int stride = blockDim.x * gridDim.x;
 
-    for (size_t face_index = index; face_index < N_faces; face_index += stride) {
-        Face2D_t& face = faces[face_index];
+            for (size_t face_index = index; face_index < N_faces; face_index += stride) {
+                Face2D_t& face = faces[face_index];
 
-        // Computing fluxes
-        for (int i = 0; i <= face.N_; ++i) {
-            const Vec2<deviceFloat> u_L {face.u_[0][i], face.v_[0][i]};
-            const Vec2<deviceFloat> u_R {face.u_[1][i], face.v_[1][i]};
+                // Computing fluxes
+                for (int i = 0; i <= face.N_; ++i) {
+                    const Vec2<deviceFloat> u_L {face.u_[0][i], face.v_[0][i]};
+                    const Vec2<deviceFloat> u_R {face.u_[1][i], face.v_[1][i]};
 
-            const deviceFloat w_L = face.p_[0][i] + Constants::c * u_L.dot(face.normal_);
-            const deviceFloat w_R = face.p_[1][i] - Constants::c * u_R.dot(face.normal_);
+                    const deviceFloat w_L = face.p_[0][i] + Constants::c * u_L.dot(face.normal_);
+                    const deviceFloat w_R = face.p_[1][i] - Constants::c * u_R.dot(face.normal_);
 
-            face.p_flux_[i] = Constants::c * (w_L - w_R) / 2;
-            face.u_flux_[i] = face.normal_.x() * (w_L + w_R) / 2;
-            face.v_flux_[i] = face.normal_.y() * (w_L + w_R) / 2;
-        }
-    }
-}
-\end{minted}
+                    face.p_flux_[i] = Constants::c * (w_L - w_R) / 2;
+                    face.u_flux_[i] = face.normal_.x() * (w_L + w_R) / 2;
+                    face.v_flux_[i] = face.normal_.y() * (w_L + w_R) / 2;
+                }
+            }
+        }\end{cuda}
 \caption{\textbf{calculate\_wave\_fluxes:} Riemann solver for the wave equation fluxes.}
 \label{alg:wave_fluxes}
 \end{algorithm}

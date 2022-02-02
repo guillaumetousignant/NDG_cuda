@@ -38,6 +38,7 @@
 \usepackage{amssymb}                                % slanted symbols
 \usepackage{mathtools}                              % better matrices
 \usepackage{indentfirst}                            % indent the first paragraph too
+\usepackage{tcolorbox}                              % box around code
 \usepackage{minted}                                 % code syntax highlighting
 \usepackage{fontspec}                               % font control
 \usepackage{csquotes}                               % properly quoted text
@@ -69,8 +70,12 @@
 \DeclareMathOperator{\CFL}{CFL}
 
 % Code snippets
-\usemintedstyle[cuda]{monokai}
-\setminted[cuda]{bgcolor = vs_black, fontsize = \scriptsize, linenos, mathescape, breaklines, autogobble}
+\tcbuselibrary{minted, skins}
+\newtcblisting{cuda}{listing only, minted language=cuda, minted style=monokai,
+    colback=vs_black, enhanced, frame hidden, 
+    left=0mm, right=0mm, top=0mm, bottom=0mm, boxsep=2mm,
+    minted options={fontsize=\scriptsize, 
+    linenos, mathescape, breaklines, autogobble}}
 
 % Bibliography
 \addbibresource{references/references.bib}
