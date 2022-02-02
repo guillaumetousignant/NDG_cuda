@@ -72,3 +72,6 @@
 *.pvtu.series
 /thesis/_minted-thesis/*
 *.pyg
+*.bcf
+*.lof
+*.run.xml

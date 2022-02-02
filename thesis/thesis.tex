@@ -42,8 +42,11 @@
 \usepackage{mathtools}                  % better matrices
 \usepackage{indentfirst}                % indent the first paragraph too
 \usepackage{minted}                     % code syntax highlighting
-\usepackage{FiraMono}                   % nice monospaced font
-\usepackage[T1]{fontenc}                % 8 bit font encoding
+%\usepackage{FiraMono}                   % nice monospaced font
+%\usepackage[T1]{fontenc}                % 8 bit font encoding
+%\usepackage{fontspec}
+%\setmonofont{Fira Code}[contextuals=Alternate]
+\usepackage[style=numeric]{biblatex}
 
 % nonumberlist: no page number in glossary
 \usepackage[toc, nopostdot, nonumberlist, nogroupskip, acronym, order=letter]{glossaries} % [toc] put glossaries in content
@@ -75,6 +78,9 @@
 
 % Code snippets
 \usemintedstyle[cuda]{material}
+
+% Bibliography
+\addbibresource{references/references.bib}
 
 % preamble
 \begin{document}
@@ -158,8 +164,7 @@
     \input{Chapter_conclusion/conclusion.tex}
     
     % put bibliography in the table of contents
-    \bibliographystyle{abbrv}   % set the bib style
-    \bibliography{reference/reference.bib}
+    \printbibliography
     %================================================================
 
 \end{document}
