@@ -75,18 +75,20 @@ adaptivity_baseline_t = np.array([293.175, 292.261, 289.285, 295.575])
 adaptivity_baseline_max_error = np.array([1.2e-9, 1.2e-9, 1.2e-9, 1.2e-9])
 
 # Load balancing efficiency interval
-load_balancing_interval_A = np.array([20])          # Adaptivity interval
-load_balancing_interval_N = np.array([4])           # Initial N
-load_balancing_interval_K = np.array([128 * 128])   # Initial number of elements
-load_balancing_interval_P = np.array([16])          # Number of processes
-load_balancing_interval_S = np.array([3])           # Max split level
-load_balancing_interval_max_N = np.array([12])      # Max split level
+load_balancing_interval_A = np.array([20, 20])                  # Adaptivity interval
+load_balancing_interval_N = np.array([4, 4])                    # Initial N
+load_balancing_interval_K = np.array([128 * 128, 128 * 128])    # Initial number of elements
+load_balancing_interval_P = np.array([16, 16])                  # Number of processes
+load_balancing_interval_S = np.array([3, 5])                    # Max split level
+load_balancing_interval_max_N = np.array([12, 12])              # Max N
 
-load_balancing_interval_L = np.array([[20, 100, 200, 500, 1000]]) # Load balancing interval
-load_balancing_interval_t = np.array([[346.838, 284.198, 266.794, 248.574, 254.721]]) # Simulation time
+load_balancing_interval_L = np.array([[20, 100, 200, 500, 1000],
+                                      [20, 100, 200, 500, 1000]]) # Load balancing interval
+load_balancing_interval_t = np.array([[346.838, 284.198, 266.794, 248.574, 254.721],
+                                      [2928.21, 2107.16, 1989.26, 1966.79, 2112.57]]) # Simulation time
 
 load_balancing_interval_baseline_L = load_balancing_interval_L[:, [0,-1]]
-load_balancing_interval_baseline_t = np.array([274.415])
+load_balancing_interval_baseline_t = np.array([274.415, 4962.06])
 
 # Load balancing efficiency threshold
 load_balancing_threshold_A = np.array([20, 20])                 # Adaptivity interval
@@ -95,7 +97,7 @@ load_balancing_threshold_N = np.array([4, 4])                   # Initial N
 load_balancing_threshold_K = np.array([128 * 128, 128 * 128])   # Initial number of elements
 load_balancing_threshold_P = np.array([16, 16])                 # Number of processes
 load_balancing_threshold_S = np.array([3, 5])                   # Max split level
-load_balancing_threshold_max_N = np.array([12, 12])             # Max split level
+load_balancing_threshold_max_N = np.array([12, 12])             # Max N
 
 load_balancing_threshold_T = np.array([[1, 1.01, 1.1, 1.5, 2],
                                        [1, 1.01, 1.1, 1.5, 2]]) # Load balancing threshold
