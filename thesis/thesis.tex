@@ -83,7 +83,7 @@
 % Fonts
 \setmonofont[Contextuals={Alternate}]{Fira Code}    % better monospace font
 
-% preamble
+% Main document
 \begin{document}
     \pagenumbering{roman}
 
@@ -110,12 +110,13 @@
     % =================================================================
     
     % =================================================================
-    \listoffigures      % list of figures
+    \listoffigures                                      % list of figures
     
-    \listoftables       % list of tables
+    \listoftables                                       % list of tables
     
-    \listofalgorithms   % list of algorithms
-    \addcontentsline{toc}{chapter}{List of Algorithms} 
+    \listofalgorithms                                   % list of algorithms
+
+    \addcontentsline{toc}{chapter}{List of Algorithms}  % list of algorithms
     % =================================================================
     
     % print all the symbols without referencing them
@@ -134,8 +135,8 @@
     \printnoidxglossary[title=List of Acronyms, type=\acronymtype]
     
     % start arabic page numbering here--------------------------------
-     \newpage
-     \setcounter{page}{1}
+    \newpage
+    \setcounter{page}{1}
     \pagenumbering{arabic}
     %-----------------------------------------------------------------
     
