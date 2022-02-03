@@ -47,7 +47,7 @@
 % nonumberlist: no page number in glossary
 \usepackage[toc, nopostdot, nonumberlist, nogroupskip, acronym, order=letter]{glossaries} % [toc] put glossaries in content
 
-% add list of Greek symbols----------------------------------------------
+% Glossaries-------------------------------------------------------------
 \newglossary*{greekstyle}{List of Greek Symbols}
 \newglossary*{superscript}{Superscripts}
 \newglossary*{subscript}{Subscripts}
@@ -141,28 +141,28 @@
     
     % input takes all the contents in the specified file
     % intro
-    \input{Chapter_introduction/introduction.tex}
+    \include{Chapter_introduction/introduction.tex}
 
     % literature review
-    \input{Chapter_literature_review/literature_review.tex}
+    \include{Chapter_literature_review/literature_review.tex}
 
     % graphics processing units
-    \input{Chapter_graphics_processing_units/graphics_processing_units.tex}
+    \include{Chapter_graphics_processing_units/graphics_processing_units.tex}
 
     % spectral element method
-    \input{Chapter_spectral_element_method/spectral_element_method.tex}
+    \include{Chapter_spectral_element_method/spectral_element_method.tex}
 
     % adaptive mesh refinement
-    \input{Chapter_adaptive_mesh_refinement/adaptive_mesh_refinement.tex}
+    \include{Chapter_adaptive_mesh_refinement/adaptive_mesh_refinement.tex}
 
     % load balancing
-    \input{Chapter_load_balancing/load_balancing.tex}
+    \include{Chapter_load_balancing/load_balancing.tex}
 
     % results
-    \input{Chapter_results/results.tex}
+    \include{Chapter_results/results.tex}
     
     % conclusion
-    \input{Chapter_conclusion/conclusion.tex}
+    \include{Chapter_conclusion/conclusion.tex}
     
     % put bibliography in the table of contents
     \printbibliography
