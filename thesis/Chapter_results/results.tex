@@ -325,12 +325,22 @@ Max split level  \(S\). Where  \(K_p\) is the number of elements in process  \(p
 
 \begin{figure}[H]
 	\centering
+	\subfloat[Full domain]
+	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/problem_big}\label{fig:load_imbalance_case_p_far}}
+	\hfill
+	\subfloat[Detail]
+	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/problem_big}\label{fig:load_imbalance_case_p_near}}
+	\caption{Load imbalance test case pressure: A wave passes through a very big domain. (a) Complete domain (b) Area of interest}\label{fig:load_imbalance_case_p}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
 	\subfloat[Pressure]
-	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/problem_big}\label{fig:load_imbalance_case_p}}
+	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/split_level_big}\label{fig:load_imbalance_case_s_far}}
 	\hfill
 	\subfloat[Split level]
-	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/split_level_big}\label{fig:load_imbalance_case_s}}
-	\caption{Load imbalance test case: A wave passes through a very big domain, only the bottom right refines. (a) Pressure (b) Split level, indicating how many times the elements have split}\label{fig:load_imbalance_case}
+	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/split_level_big}\label{fig:load_imbalance_case_s_near}}
+	\caption{Load imbalance test case split level: Split level, indicating how many times the elements have split, only the bottom right refines. (a) Complete domain (b) Area of interest}\label{fig:load_imbalance_case_s}
 \end{figure}
 
 \begin{table}[H]
