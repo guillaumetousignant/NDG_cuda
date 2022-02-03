@@ -2,45 +2,47 @@
 
 In this work, we aim to accelerate the execution of our solver using a relatively new architecture,
 \acrshortpl{acr:GPU}. \Acrshortpl{acr:GPU} are massively parallel computer chips that have recently
-started to be used in the scientific computing domain. \Acrshortpl{acr:GPU} have initially been used
-to compute graphical computations, such as the output to a computer screen, video processing, and
-synthetic image generation. These computations are \textit{embarrassingly parallel}, meaning that
-they are comprised of many identical computations independent of each other. \Acrshortpl{acr:GPU}
-are therefore optimised for parallel efficiency. Combined with the fact that these problems deal
-with huge amounts of data, \acrshortpl{acr:GPU} are also optimised for maximum bandwidth. They are
-significantly different from \textit{\acrfullpl{acr:CPU}}, the traditional architecture on which
-code is run. \Acrshortpl{acr:CPU} are optimised to solve serial problems as fast as possible,
-meaning they prioritise serial speed over parallel efficiency, and latency over bandwidth. 
+started to be used in the scientific computing domain. \Acrshortpl{acr:GPU} were initially designed
+to perform repetitive graphical computations, such as the output to a computer screen, video
+processing, and synthetic image generation. These computations are \textit{embarrassingly parallel},
+meaning that they are comprised of many identical computations independent of each other.
+\Acrshortpl{acr:GPU} are therefore optimised for parallel efficiency. Combined with the fact that
+these problems deal with huge amounts of data, \acrshortpl{acr:GPU} are also optimised for maximum
+bandwidth. They are significantly different from \textit{\acrfullpl{acr:CPU}}, the traditional
+architecture on which code is run. \Acrshortpl{acr:CPU} are optimised to solve serial problems as
+fast as possible, meaning they prioritise serial speed over parallel efficiency, and latency over
+bandwidth. 
 
 Solving fluid flows on a mesh is a parallel problem, as at most steps it is possible to compute the
 solution on the different elements making up the mesh in parallel. On the other hand, elements must
 exchange information at their interfaces at each time step, meaning careful synchronisation will be
-needed. Finally, the adaptivity process detailed in Chapter~\ref{chapter:adaptive_mesh_refinement}
-and the load balancing process from Chapter~\ref{chapter:load_balancing} are not inherently parallel
-processes. A lot of effort will have to be put into breaking up these algorithms into parallel tasks
-to be run on \acrshortpl{acr:GPU}. Overall, if it is possible to efficiently parallelise these
-sequential parts of the problem, the gains from running the main solving loop on the highly parallel
+needed. Finally, the adaptive mesh refinement process detailed in
+Chapter~\ref{chapter:adaptive_mesh_refinement} and the dynamic load balancing process from
+Chapter~\ref{chapter:load_balancing} are not inherently parallel processes. A significant
+programming task then becomes necessary to break up these algorithms into parallel tasks to be run
+on \acrshortpl{acr:GPU}. Overall, if it is possible to efficiently parallelise these sequential
+parts of the problem, the gains from running the main solving loop on the highly parallel
 \acrshortpl{acr:GPU} should incur a significant speedup to the program.
 
 \section{Architecture}\label{section:graphics_processing_units:architecture}
 
 \subsection{Hardware model}\label{subsection:graphics_processing_units:architecture:hardware_model}
 
+\Acrlongpl{acr:GPU} and \acrlongpl{acr:CPU} are fundamentally made up of the same core components.
+First, data processing hardware, shown in green in Figure~\ref{fig:cpu_gpu}, consists of the parts
+of the chips that do calculations on data. Control flow hardware, shown in yellow, schedules
+instructions to be executed on processing hardware. In orange is the main memory of either
+architecture. Main memory or \textit{\acrfull{acr:DRAM}}, shown in orange, stores data to be used
+for computations. The main memory is very big, and takes a relatively long time to access. Finally,
+in blue and purple are different levels of cache memory. Cache is much smaller and much faster than
+main memory, and as such stores parts of the memory that the processing hardware is actively using
+in order to speed up access.
+
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.8\textwidth]{Chapter_graphics_processing_units/media/gpu-devotes-more-transistors-to-data-processing}
 	\caption{\Acrshort{acr:CPU} and \acrshort{acr:GPU} architecture~\cite{Nvidia2021}: \acrshortpl{acr:GPU} dedicate more space to data processing}\label{fig:cpu_gpu}
 \end{figure}
-
-\Acrlongpl{acr:GPU} and \acrlongpl{acr:CPU} are fundamentally made up of the same core components.
-First, data processing hardware, shown in green on Figure~\ref{fig:cpu_gpu}, consists of the parts
-of the chips that do calculations on data. Control flow hardware, shown in yellow, schedules
-instructions to be executed on processing hardware. In orange is the main memory of either
-architecture. Main memory or \textit{\acrfull{acr:DRAM}}, shown in orange, stores data to be used
-for computations. The main memory very big, and takes a relatively long time to access. Finally, in
-blue and purple are different levels of cache memory. Cache is much smaller and much faster than
-main memory, and as such stores parts of the memory that the processing hardware is actively using
-in order to speed up access.
 
 The two architectures differ as to the balance between the size and capacities of these components.
 Chip area is limited by the processes used to manufacture them, so the different components must
@@ -66,9 +68,9 @@ not found in cache, it will simply pause execution of that thread and execute an
 Finally, \acrshortpl{acr:CPU} also reduce latency by using much more potent control flow units.
 Firstly, they have one control flow unit per core, where \acrshortpl{acr:GPU} have one control flow
 unit per row of cores. This limits how many instructions can be dispatched to the cores making up a
-\acrshort{acr:SM}. The cores will therefore execute the same execution at the same time in groups of
-32, called warps. This makes branching much more expensive if it happens within a warp. If a part of
-a program has two branches, A and B, the cores executing branch A will execute, followed by the
+\acrshort{acr:SM}. The cores will therefore execute the same instruction at the same time in groups
+of 32, called warps. This makes branching much more expensive if it happens within a warp. If a part
+of a program has two branches, A and B, the cores executing branch A will go first, followed by the
 cores executing branch B. These have to be executed sequentially because the control flow unit can
 only dispatch one instruction per warp. This multiplies the computation time by the number of taken
 branches. \Acrshort{acr:CPU} cores only execute a single branch, or can even execute both branches
@@ -111,9 +113,9 @@ the case for this work.
 The programing model ties in with the hardware model from
 Subsection~\ref{subsection:graphics_processing_units:architecture:hardware_model} by decomposing the
 execution of kernels to multiple parallel levels. A kernel will be executed in parallel, with each
-core executing the same function. Figure~\ref{fig:gpu_programming_model} shows how programming model
-decomposes a problem. The whole problem to be solved is represented as a multidimensional grid of
-tasks, with two dimensions in this example. The kernel will execute until the whole grid has been
+core executing the same function. Figure~\ref{fig:gpu_programming_model} shows how the programming
+model decomposes a problem. The whole problem to be solved is represented as a multidimensional grid
+of tasks, with two dimensions in this example. The kernel will execute until the whole grid has been
 computed. The grid is broken up into blocks of threads. The different blocks will be dispatched to
 the \acrlongpl{acr:SM} of the \acrshort{acr:GPU}, and each thread of that block will be executed on
 a \acrshort{acr:CUDA} core of the \acrshort{acr:SM}. A \acrshort{acr:SM} can execute multiple blocks
@@ -138,8 +140,8 @@ array C on the \acrshort{acr:GPU}, and one on the \acrshort{acr:CPU}. It will th
 on the \acrshort{acr:GPU}, with pointers to the \acrshort{acr:GPU} A and B arrays, and the
 \acrshort{acr:GPU} C array. The number of elements in the vectors will dictate the size of the
 execution grid. The number of elements will be split in blocks of threads of fixed size, for example
-blocks of 128 threads. The number and size of blocks is given to the \acrshort{acr:GPU} when calling
-the kernel. The \acrshort{acr:CPU} then must wait until the computation is done using a
+blocks of 128 threads. The number and size of blocks are given to the \acrshort{acr:GPU} when
+calling the kernel. The \acrshort{acr:CPU} then must wait until the computation is done using a
 synchronisation with the \acrshort{acr:CUDA} runtime, transfer the data from the \acrshort{acr:GPU}
 C array to the \acrshort{acr:CPU} C array, and display the results. 
 
@@ -155,9 +157,9 @@ sides, multiple threads will attempt to read and write to the same locations at 
 is a race condition, where the result of the computation will be dependent on the order in which the
 threads will try to access the memory location. The results may also be wrong. If two threads read a
 value, add their contribution, and store the value, only whichever thread wrote its result last will
-have its contributed accounted for in the final result. Different approaches are possible to solve
+have its contribution accounted for in the final result. Different approaches are possible to solve
 this issue. For example, Giuliani and Krivodonova~\cite{Giuliani2019} use an edge colouring method
-where the same kernel is run multiple times on different edges in order to avoir writing to the
+where the same kernel is run multiple times on different edges in order to avoid writing to the
 elements at the same time. Our program parallelises this part of the computation on the faces
 connecting the elements instead, as described in
 Section~\ref{section:spectral_element_method:implementation}. As long as there are enough elements
@@ -246,7 +248,7 @@ Figure~\ref{fig:mesh_structure} shows the different components of a two block me
 \begin{figure}[H]
 	\centering
 	\subfloat[First mesh block]
-	{\includesvg[height=0.55\textwidth]{Chapter_graphics_processing_units/media/mesh_0_after0_P2}\label{fig:mesh_left}}
+	{\includesvg[height=0.55\textwidth]{Chapter_graphics_processing_units/media/mesh_0_after0_P2_MOD}\label{fig:mesh_left}}
 	\hfill
 	\subfloat[Second mesh block]
 	{\includesvg[height=0.55\textwidth]{Chapter_graphics_processing_units/media/mesh_1_after0_P2}\label{fig:mesh_right}}
@@ -268,12 +270,14 @@ allocated and the objects are moved to it. Thanks to the structure from
 Subsection~\ref{subsection:graphics_processing_units:data_structure:ease_of_programming}, the
 elements themselves have a known constant size regardless of polynomial order, and have the bulk of
 their size out of the element object, making them fast to move and making the element array smaller.
-The flat arrays also reduce indirection and structure the memory accesses. Threads from a kernel
-executing on elements directly access the element at their thread index in the element array.
+The flat arrays also reduce indirection and structure the memory accesses. Memory indirection occurs
+when data is not accessed directly, but multiple data structures must be accessed sequentially to
+find the address of where the data is stored. Threads from a kernel executing on elements directly
+access the element at their thread index in the element array.
 
-This simplifies greatly transfers between the \acrshort{acr:CPU} and \acrshort{acr:GPU}, and mesh
+This greatly simplifies transfers between the \acrshort{acr:CPU} and \acrshort{acr:GPU}, and mesh
 reallocation when refining or load balancing. On the other hand, it carries less context on the
-relation between mesh blocks, complicating the element exchanges from
+relation between mesh blocks, complicating the element exchanges from the load balancing process of
 Chapter~\ref{chapter:load_balancing}. It also means that elements and faces move around in the
 arrays as more are added, and their indices must be updated in other objects linking to them. 
 
@@ -286,49 +290,51 @@ storing the data into the \acrshort{acr:GPU} array. The array can then be transf
 
 \subsection{Ease of use}\label{subsection:graphics_processing_units:data_structure:ease_of_use}
 
-\begin{figure}[H]
-	\centering
-	\subfloat[Structured mesh]
-	{\includegraphics[width=0.45\textwidth]{Chapter_graphics_processing_units/media/structured_mesh}\label{fig:structured_mesh}}
-	\hfill
-	\subfloat[Unstructured mesh]
-	{\includegraphics[width=0.45\textwidth]{Chapter_graphics_processing_units/media/unstructured_mesh}\label{fig:unstructured_mesh}}
-	\caption{Types of meshes~\cite{Clucas1999}: (a) Structured (b) Unstructured}\label{fig:mesh_types}
-\end{figure}
-
 In order to increase ease of use, the program is made to work with unstructured meshes. Unstructured
 meshes allow for increased flexibility when meshing, and an unstructured mesh solver can easily be
 made to also read structured meshes. In unstructured meshes, elements are not necessarily numbered
 in any order. Elements hold an explicit list of the indices of their neighbours. In structured
 meshes, elements are placed in a regular grid, and have an index describing their location. In 2D,
 this is the row and column of the element. The neighbours of an element are found by simply
-incrementing or decrementing the index.
+incrementing or decrementing the index. Figure~\ref{fig:mesh_types} shows a comparison of the two
+types of meshes used to represent the same geometry. 
 
 \begin{figure}[H]
 	\centering
 	\subfloat[Structured mesh]
-	{\includesvg[width=0.5\textwidth]{Chapter_graphics_processing_units/media/structured_memory}\label{fig:structured_memory}}
+	{\includegraphics[width=0.458\textwidth]{Chapter_graphics_processing_units/media/structured_mesh}\label{fig:structured_mesh}}
 	\hfill
 	\subfloat[Unstructured mesh]
-	{\includesvg[width=0.5\textwidth]{Chapter_graphics_processing_units/media/unstructured_memory}\label{fig:unstructured_memory}}
-	\caption{Memory accesses: (a) Structured (b) Unstructured}\label{fig:mesh_memory}
+	{\includegraphics[width=0.45\textwidth]{Chapter_graphics_processing_units/media/unstructured_mesh}\label{fig:unstructured_mesh}}
+	\caption{Types of meshes~\cite{Clucas1999}: (a) Structured (b) Unstructured}\label{fig:mesh_types}
 \end{figure}
 
 Here a concession has been made for flexibility, as structured meshes would be faster than
 unstructured meshes on a \acrshort{acr:GPU}. Threads on a \acrshort{acr:GPU} benefit from accessing
 memory in an ordered fashion. With a structured mesh, thread warps need only one memory access to
-obtain all their neighbours. The neighbours are packed in memory, and their index can be computed
-easily by incrementing the element indices. For unstructured meshes, neighbour indices have to be
-fetched from an area in memory, and the neighbours are not guaranteed to be contiguous in memory.
-This adds an indirection, and may need multiple memory accesses.
+obtain all their neighbours. As shown in Figure~\ref{fig:structured_memory}, the neighbours are
+packed in memory, and their index can be computed easily by incrementing the element indices. For
+unstructured meshes, neighbour indices have to be fetched from an area in memory, and the neighbours
+are not guaranteed to be contiguous in memory. This adds an indirection, and may need multiple
+memory accesses. Figure~\ref{fig:unstructured_memory} shows the relation between elements from an
+unstructured mesh and their neighbours. Since unstructured meshes enable more complex meshes to be
+represented than strictly regular quadrilaterals, this tradeoff is accepted, and acts as a worst
+case scenario for the performance of \acrshortpl{acr:GPU}.
 
-Since unstructured meshes enable more complex meshes to be represented than strictly regular
-quadrilaterals, this tradeoff is accepted, and acts as a worst case scenario for the performance of
-\acrshortpl{acr:GPU}.
+\begin{figure}[H]
+	\centering
+	\subfloat[Structured mesh]
+	{\includesvg[height=0.32\textwidth]{Chapter_graphics_processing_units/media/structured_memory}\label{fig:structured_memory}}
+	\hfill
+	\subfloat[Unstructured mesh]
+	{\includesvg[height=0.32\textwidth]{Chapter_graphics_processing_units/media/unstructured_memory}\label{fig:unstructured_memory}}
+	\caption{Memory accesses: (a) Structured (b) Unstructured}\label{fig:mesh_memory}
+\end{figure}
 
-The program uses the \textit{\acrfull{acr:CGNS}} mesh format. Both the provided mesh generator and mesh partitioner output
-the format, and the mesh partitioner and solver can read the format. The format is widely used,
-which should enable this program to read the many already available meshes using the format.
+The program uses the \textit{\acrfull{acr:CGNS}} mesh format. Both the provided mesh generator and
+mesh partitioner output the format, and the mesh partitioner and solver can read the format. The
+format is widely used, which should enable this program to read the many meshes already available
+using the format.
 
 The program outputs data using the \textit{\acrfull{acr:VTK}} format. Once again, this is a widely
 used format, notably used by the \textit{ParaView} visualisation application. The results of the
@@ -336,18 +342,18 @@ program should then be easy to manipulate and display.
 
 \subsection{Ease of programming}\label{subsection:graphics_processing_units:data_structure:ease_of_programming}
 
-The program is written partly using the Object-oriented paradigm, especially for the data structure
+The program is written partly using the object-oriented paradigm, especially for the data structure
 part. Elements, faces and nodes are objects, each with multiple data members and methods. This
 groups many parameters together that would be separate arrays otherwise, making it easier to program
 and keep track of the different members of objects. This has the disadvantage of putting more
-pressure on the limited cache of \acrshortpl{acr:GPU}, and potentially increase the number of memory
-accesses needed. This is the structure of arrays against array of structures debate. It increases
-cache pressure when a loop only accesses a subset of the data members of an object. For example, the
-solution update function only uses the solution and derivative of an element. When threads loop over
-those elements, they have to load entire elements into cache. If the solution and derivative were
-stored into separate arrays, many more elements could fit in cache as only their solution and
-derivative would be fetched. This would also improve memory accesses, as warps of threads would need
-fewer memory accesses since the data is continuous.
+pressure on the limited cache of \acrshortpl{acr:GPU} and of potentially increasing the number of
+memory accesses needed. This is the structure of arrays against array of structures debate. It
+increases cache pressure when a loop only accesses a subset of the data members of an object. For
+example, the solution update function only uses the solution and derivative of an element. When
+threads loop over those elements, they have to load entire elements into cache. If the solution and
+derivative were stored into separate arrays, many more elements could fit in cache as only their
+solution and derivative would be fetched. This would also improve memory accesses, as warps of
+threads would need fewer memory accesses since the data is continuous.
 
 On the other hand, using objects simplifies many parts of the code. Elements can be sent and
 received from process to process as a whole: adding a data member doesn't necessitate modifying
