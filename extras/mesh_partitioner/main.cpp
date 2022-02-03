@@ -112,16 +112,22 @@ auto build_element_to_element(const std::vector<cgsize_t>& elements, const std::
 auto main(int argc, char* argv[]) -> int {
     const SEM::Helpers::InputParser_t input_parser(argc, argv);
     if (input_parser.cmdOptionExists("--help") || input_parser.cmdOptionExists("-h")) {
-        std::cout << "Square unstructured mesh partitioner" << std::endl;
-        std::cout << '\t' << "Generates multi-block 2D unstructured meshes from single-block meshes, both using the CGNS HDF5 format." << std::endl << std::endl;
-        std::cout << "Available options:" << std::endl;
-        std::cout << '\t' <<  "--in_path"       <<  '\t' <<  "Full path of the input mesh file. Overrides filename and directory if set." << std::endl;
-        std::cout << '\t' <<  "--in_filename"   <<  '\t' <<  "File name of the input mesh file. Defaults to [mesh.cgns]" << std::endl;
-        std::cout << '\t' <<  "--in_directory"  <<  '\t' <<  "Directory of the input mesh file. Defaults to [./meshes/]" << std::endl;
-        std::cout << '\t' <<  "--out_path"      <<  '\t' <<  "Full path of the output mesh file. Overrides filename and directory if set." << std::endl;
-        std::cout << '\t' <<  "--out_filename"  <<  '\t' <<  "File name of the output mesh file. Defaults to [mesh_partitioned.cgns]" << std::endl;
-        std::cout << '\t' <<  "--out_directory" <<  '\t' <<  "Directory of the output mesh file. Defaults to [./meshes/]" << std::endl;
-        std::cout << '\t' <<  "--n"             <<  '\t' <<  "Number of blocks in the output mesh. Defaults to [4]" << std::endl;
+        std::cout << "usage: mesh_partitioner.exe [-h] [--in_path IN_PATH | [--in_filename IN_FILENAME] [--in_directory IN_DIRECTORY]] [--out_path OUT_PATH | [--out_filename OUT_FILENAME] [--out_directory OUT_DIRECTORY]] [--n N] [-v]" << std::endl << std::endl;
+        std::cout << "Unstructured mesh partitioner. Generates multi-block 2D unstructured meshes in the CGNS HDF5 format from single-block meshes using the CGNS HDF5 format." << std::endl << std::endl;
+        std::cout << "options:" << std::endl;
+        std::cout << '\t' <<  "-h, --help"      <<  '\t' <<  "show this help message and exit" << std::endl;
+        std::cout << '\t' <<  "--in_path"       <<  '\t' <<  "full path of the input mesh file, overrides filename and directory if set." << std::endl;
+        std::cout << '\t' <<  "--in_filename"   <<  '\t' <<  "file name of the input mesh file, (default: mesh.cgns)" << std::endl;
+        std::cout << '\t' <<  "--in_directory"  <<  '\t' <<  "directory of the input mesh file (default: ./meshes/)" << std::endl;
+        std::cout << '\t' <<  "--out_path"      <<  '\t' <<  "full path of the output mesh file, overrides filename and directory if set" << std::endl;
+        std::cout << '\t' <<  "--out_filename"  <<  '\t' <<  "file name of the output mesh file (default: mesh_partitioned.cgns)" << std::endl;
+        std::cout << '\t' <<  "--out_directory" <<  '\t' <<  "directory of the output mesh file (default: ./meshes/)" << std::endl;
+        std::cout << '\t' <<  "--n"             <<  '\t' <<  "number of blocks in the output mesh (default: 4)" << std::endl;
+        std::cout << '\t' <<  "-v, --version"   <<  '\t' <<  "show program's version number and exit" << std::endl;
+        exit(0);
+    }
+    else if (input_parser.cmdOptionExists("--version") || input_parser.cmdOptionExists("-v")) {
+        std::cout << "mesh_partitioner.exe 1.0.0" << std::endl;
         exit(0);
     }
 
