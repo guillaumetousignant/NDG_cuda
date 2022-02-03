@@ -1,4 +1,4 @@
-\chapter{Discontinuous Galerkin Spectral Element Method} \label{chapter:spectral_element_method}
+\chapter{Discontinuous Galerkin Spectral Element Method}\label{chapter:spectral_element_method}
 
 We will use the \textit{\acrfull{acr:DG-SEM}} to solve the 2D wave equation. This method is part of
 the broader class of spectral methods, applied within local elements as in finite-element methods.
@@ -7,14 +7,14 @@ model difficult geometries of finite-element methods. The method is described in
 along with efficient computer programming implementation strategies. The main model problem
 showcased throughout this work depicts a wave moving diagonally through a square domain.
 
-\section{Spectral approximation} \label{section:spectral_element_method:spectral_approximation}
+\section{Spectral approximation}\label{section:spectral_element_method:spectral_approximation}
 % Legendre polynomials, both forms
 % Polynomial interpolation
 
 Spectral methods, as described by Gottlieb and Orszag~\cite{Gottlieb1977}, model functions as sums
-of weighted orthogonal functions, often polynomials. Let us denote $\phi_n(x)$ as the polynomial of
-degree $n$, and $a_n$ as the weight of said polynomial. The weights make up the spectrum of the
-solution.
+of weighted orthogonal functions, often polynomials. Let us denote \(\phi_n(x)\) as the polynomial
+of degree \(n\), and \(a_n\) as the weight of said polynomial. The weights make up the spectrum of
+the solution.
 
 \begin{equation} \label{equ:infinite_sum}
     \begin{split}
@@ -23,8 +23,8 @@ solution.
 \end{equation}
 
 Since it is impractical to sum an infinite number of polynomials on a computer, the sum is truncated
-to a polynomial order $N$. This becomes the polynomial order of the approximation. The truncated
-part becomes $\tau$, the truncation error.
+to a polynomial order \(N\). This becomes the polynomial order of the approximation. The truncated
+part becomes \(\tau \), the truncation error.
 
 \begin{equation} \label{equ:truncated_sum}
     \begin{split}
@@ -41,27 +41,27 @@ This will be a characteristic of the polynomials we choose. For example, Fourier
 polynomials and Chebyshev polynomials have been proved~\cite{Kopriva2009} to have exponentially
 decaying coefficients, giving them spectral accuracy.
 
-\subsection{Basis functions} \label{subsection:spectral_element_method:spectral_approximation:basis_functions}
+\subsection{Basis functions}\label{subsection:spectral_element_method:spectral_approximation:basis_functions}
 
 Spectral methods exploit the orthogonality property of sets of functions. For orthogonal
-functions in the domain $[a, b]$, we have:
+functions in the domain \([a, b]\), we have:
 
 \begin{equation} \label{equ:orthogonality}
 	\int_{a}^{b}\phi_i(x) \phi_j(x)dx = C_i \delta_{i j}
 \end{equation}
 
 \noindent
-with $C_i$ being a constant, and $\delta_{i j}$ being the Kronecker delta, defined as such:
+with \(C_i\) being a constant, and \(\delta_{i j}\) being the Kronecker delta, defined as such:
 
 \begin{equation} \label{equ:kronecker}
-	\delta _{ij} = \left\{ \begin{matrix}
-                    1, & if \:\: i = j,\\ 
-                    0, & if \:\: i \neq j.
+	\delta _{ij} = \left \{ \begin{matrix}
+                    1, & if \: \: i = j,\\ 
+                    0, & if \: \: i \neq j.
                     \end{matrix} \right.
 \end{equation}
 
-The inner product of two functions $f \left( x \right)$ and $g \left( x \right)$ continuous in
-$\left[ a, b \right]$, is:
+The inner product of two functions \(f \left( x \right)\) and \(g \left( x \right)\) continuous in
+\(\left[ a, b \right]\), is:
 
 \begin{equation}
     \left( f, g \right) = \int_{a}^{b}f(x)g(x)dx
@@ -74,8 +74,8 @@ We can therefore rewrite Equation~\ref{equ:orthogonality} in inner product form:
 	\left( \phi_i, \phi_j \right) = \int_{a}^{b}\phi_i(x) \phi_j(x)dx = C_i \delta_{i j}
 \end{equation}
 
-The high-order orthogonal polynomials we use have associated weights $w$ that ensures orthogonality
-of the polynomials. $D_{ij}$ is a constant.
+The high-order orthogonal polynomials we use have associated weights \(w\) that ensures
+orthogonality of the polynomials. \(D_{ij}\) is a constant.
 
 \begin{equation}
 	\left ( \phi_i, \phi_j \right ) = \int_a^b \phi_i(x)\phi_j(x)w(x)dx = D_{ij}\delta_{i j}
@@ -83,64 +83,63 @@ of the polynomials. $D_{ij}$ is a constant.
 
 Fourier series can be used for periodic problems. As for non-periodic problems, Legendre polynomials
 and Chebyshev polynomials fit these criteria. Legendre polynomials have a weighting function of
-$w(x) = 1$, which simplifies computations. We will therefore use the Legendre polynomials.
+\(w(x) = 1\), which simplifies computations. We will therefore use the Legendre polynomials.
 
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.8\textwidth]{Chapter_spectral_element_method/media/polynomials}
-	\caption{Legendre polynomials: The first six Legendre polynomials.}
-	\label{fig:polynomials}
+	\caption{Legendre polynomials: The first six Legendre polynomials.}\label{fig:polynomials}
 \end{figure}
 
 The Legendre polynomials were discovered by Adrien-Marie Legendre in 1782. Using their associated
-weights $w(x) = 1$ and the interval $\left[ -1, 1 \right]$, the polynomials are orthogonal. The
-Legendre polynomials $L_k \left( x \right)$ of degree $k$ therefore have the property:
+weights \(w(x) = 1\) and the interval \(\left[ -1, 1 \right]\), the polynomials are orthogonal. The
+Legendre polynomials \(L_k \left( x \right)\) of degree \(k\) therefore have the property:
 
 \begin{equation}
-	\int_{-1}^{1}L_{k_1}(x) L_{k_2}(x) dx = 0, \quad if \:\: k_1 \neq k_2.
+	\int_{-1}^{1}L_{k_1}(x) L_{k_2}(x) dx = 0, \quad if \: \: k_1 \neq k_2.
 \end{equation}
 
 The Legendre polynomials can be generated using a three-term recursive formula. Knowing that the
-first two polynomials are $L_0 \left( x \right) = 1$ and $L_1 \left( x \right) = x$, all subsequent
-polynomials can be generated from the following formula.
+first two polynomials are \(L_0 \left( x \right) = 1\) and \(L_1 \left( x \right) = x\), all
+subsequent polynomials can be generated from the following formula.
 
 \begin{equation} \label{equ:three_terms}
 	L_{k + 1}(x) = \frac{2k + 1}{k + 1}xL_k(x) - \frac{k}{k + 1}L_{k - 1}(x)
 \end{equation}
 
-These polynomials will help us compute integrals using Gauss quadrature. For an interval $\left[ -1, 1
-\right]$, the Gauss quadrature formula is:
+These polynomials will help us compute integrals using Gauss quadrature. For an interval \(\left[
+-1, 1 \right]\), the Gauss quadrature formula is:
 
 \begin{equation}
 	\int_{-1}^{1}f(x)dx \approx \sum_{i = 0}^{N}w_i f(x_i).
 \end{equation}
 
-The points $x_i$ used for the quadrature are the Gauss quadrature points, or collocation points.
+The points \(x_i\) used for the quadrature are the Gauss quadrature points, or collocation points.
 Using the roots of the (N + 1)\textsuperscript{th} Legendre polynomial, the quadrature is exact for
-polynomials of degree $\leq 2 N + 1$. This is the \textit{Gauss-Legendre quadrature rule}. We use
-the roots of the (N + 1)\textsuperscript{th} Legendre polynomial to get the points $x_i$ and weights
-$w_i$.
+polynomials of degree \(\leq 2 N + 1\). This is the \textit{Gauss-Legendre quadrature rule}. We use
+the roots of the (N + 1)\textsuperscript{th} Legendre polynomial to get the points \(x_i\) and
+weights \(w_i\).
 
 \begin{gather}
-	x_i = roots \:\: of \:\: L_{N + 1}(x), \quad i = 0, ..., N \\
-	w_i = \frac{2}{(1-x_i^2)\left [ L'_{N + 1}(x_i) \right ]^2}
+	x_i = roots \: \: of \: \: L_{N + 1}(x), \quad i = 0, \ldots, N \\
+	w_i = \frac{2}{(1-x_i^2) {\left[ L'_{N + 1}(x_i) \right]}^2}
 \end{gather}
 
-\subsection{Polynomial interpolation} \label{subsection:spectral_element_method:spectral_approximation:polynomial_interpolation}
+\subsection{Polynomial interpolation}\label{subsection:spectral_element_method:spectral_approximation:polynomial_interpolation}
 
 Polynomial interpolation fits data to a polynomial passing through known points. The polynomial has
-an order equal to the number of points. In this work we use Lagrange integrating polynomials $l_j$
+an order equal to the number of points. In this work we use Lagrange integrating polynomials \(l_j\)
 of degree N.
 
 \begin{equation}
 	l_j(x) = \prod_{\substack{i = 0 \\ i \neq j}}^{N}\frac{x- x_i}{x_j - x_i}
 \end{equation}
 
-At each collocation point $x_i$ only one of the integrating polynomials has the value 1, the others
-having a value of 0. This mimics the Kronecker delta $\delta_{i j}$.
+At each collocation point \(x_i\) only one of the integrating polynomials has the value 1, the
+others having a value of 0. This mimics the Kronecker delta \(\delta_{i j}\).
 
 \begin{equation}
-	l_j(x_i) = \delta_{i j} = \left\{\begin{matrix}
+	l_j(x_i) = \delta_{i j} = \left \{\begin{matrix}
 	1, \quad i = j\\ 
 	0, \quad i \neq j,
 	\end{matrix}\right.
@@ -151,11 +150,10 @@ Figure~\ref{fig:interpolants} displays the interpolating polynomials of degree s
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.8\textwidth]{Chapter_spectral_element_method/media/interpolants}
-	\caption{Polynomial interpolation: The Lagrange integrating polynomials of degree six.}
-	\label{fig:interpolants}
+	\caption{Polynomial interpolation: The Lagrange integrating polynomials of degree six.}\label{fig:interpolants}
 \end{figure}
 
-With this, we can interpolate a function $p_N \left( x \right)$ of degree N:
+With this, we can interpolate a function \(p_N \left( x \right)\) of degree N\@:
 
 \begin{equation}
 	p_N(x) = \sum_{j = 0}^{N}p(x_j)l_j(x).
@@ -177,14 +175,14 @@ We retain the same property as the initial form:
 \end{equation}
 
 We can then rewrite the complete Lagrange interpolation in barycentric form. By pre-computing the
-barycentric weights $w_j$, we can compute the interpolated value at any point $x$ using only the
+barycentric weights \(w_j\), we can compute the interpolated value at any point \(x\) using only the
 known values at the collocation points, without computing the interpolating polynomials. 
 
 \begin{equation}
 	p_N(x) = \frac{\sum_{j = 0}^{N} p(x_j)\frac{w_j}{x - x_j}}{\sum_{j = 0}^{N}\frac{w_j}{x - x_j}}
 \end{equation}
 
-\section{The Wave Equation Model} \label{section:spectral_element_method:equation}
+\section{The Wave Equation Model}\label{section:spectral_element_method:equation}
 
 We want to solve the 2D wave equation:
 
@@ -194,11 +192,11 @@ We want to solve the 2D wave equation:
 	v_t = -p_y
 \end{gather}
 
-With $p$ being the pressure, $u$ and $v$ being the two components of the velocity, and $c$ being the
-sound speed. The three equations can be combined into one.
+With \(p\) being the pressure, \(u\) and \(v\) being the two components of the velocity, and \(c\)
+being the sound speed. The three equations can be combined into one.
 
 \begin{equation} \label{equ:2d_wave}
-	\frac{\partial^2p}{\partial t^2} + c^2\left ( (u_x)_t + (v_y)_t \right ) = 0
+	\frac{\partial^2p}{\partial t^2} + c^2 \left( {\left( u_x \right)}_t + {\left( v_y \right)}_t \right) = 0
 \end{equation}
 
 We then integrate once with respect to time, to get:
@@ -244,7 +242,7 @@ or in vector form:
 	\mathbf{q_t} + B \mathbf{q_x} + C \mathbf{q_y} = 0.
 \end{equation}
 
-$B$ and $C$ are constant matrices, and as such can be combined with the derivatives.
+\(B\) and \(C\) are constant matrices, and as such can be combined with the derivatives.
 
 \begin{gather}
 	\mathbf{f} = B \mathbf{q} \\
@@ -255,7 +253,7 @@ $B$ and $C$ are constant matrices, and as such can be combined with the derivati
 	\mathbf{q_t} + \mathbf{f_x} + \mathbf{g_y} = 0
 \end{equation}
 
-By combining $\mathbf{f}$ and $\mathbf{g}$ into a flux vector $\mathfrak{F}$, 
+By combining \(\mathbf{f}\) and \(\mathbf{g}\) into a flux vector \(\mathfrak{F}\), 
 
 \begin{equation} \label{equ:2d_wave_fluxes}
 	\mathfrak{F} = \mathbf{f}\widehat{x} + \mathbf{g}\widehat{y},
@@ -264,7 +262,7 @@ By combining $\mathbf{f}$ and $\mathbf{g}$ into a flux vector $\mathfrak{F}$,
 \noindent
 we get the conservative form of the wave equation.
 
-Where $\widehat{x}$ and $\widehat{y}$ are the unit vectors in the $x$ and $y$ directions,
+Where \(\widehat{x}\) and \(\widehat{y}\) are the unit vectors in the \(x\) and \(y\) directions,
 respectively. 
 
 \begin{equation} \label{equ:2d_wave_conservation}
@@ -272,20 +270,20 @@ respectively.
 \end{equation}
 
 We apply the divergence theorem to Equation~\ref{equ:2d_wave_conservation} to obtain two integrals,
-one on the control volume $V$ and one on the surface $S$ of said volume.
+one on the control volume \(V\) and one on the surface \(S\) of said volume.
 
 \begin{equation} \label{equ:2d_wave_integral}
 	\frac{d}{dt}\int_{V}\mathbf{q}dV = -\int_{S} \mathfrak{F} \cdot \widehat{n}dS
 \end{equation}
 
 \noindent
-Where $\widehat{n}$ is the surface normal vector, pointing outwards.
+Where \(\widehat{n}\) is the surface normal vector, pointing outwards.
 
-\section{DG-SEM} \label{section:spectral_element_method:dg_sem}
+\section{DG-SEM}\label{section:spectral_element_method:dg_sem}
 
 Section~\ref{section:spectral_element_method:spectral_approximation} shows how to approximate
-functions with polynomials and how to compute integrals on fixed intervals, for example $\left[ -1,
-1 \right]$. We must then apply those tools to arbitrary domains. Pure spectral approximations apply
+functions with polynomials and how to compute integrals on fixed intervals, for example \(\left[ -1,
+1 \right]\). We must then apply those tools to arbitrary domains. Pure spectral approximations apply
 the polynomials to the whole domain through a simple mapping. This can be problematic when
 discontinuities or very steep solutions are present, as the finite order polynomials cannot match
 the solution, and solutions exhibit oscillations. Also, these methods only work for simple domain
@@ -298,7 +296,7 @@ geometries by splitting the domain into multiple elements, with the equations be
 elements. Spectral element methods are used to solve a wide range of complex
 problems~\cite{Deville2003}, including the full Navier-Stokes equations. Continuous spectral element
 methods use the Gauss-Lobatto quadrature points to make the solution is made continuous at element
-boundaries. These quadrature points include points at $-1$ and $1$.
+boundaries. These quadrature points include points at \(-1\) and \(1\).
 
 In this work, we use the \textit{\acrfull{acr:DG-SEM}}. The \acrshort{acr:DG-SEM} uses the Gauss
 quadrature points described in
@@ -314,16 +312,15 @@ them independent. Each element can be computed independently in parallel, then t
 computed in parallel.
 
 We start by deriving the discontinuous Galerkin approximation for a simple 2D domain spanning
-$\left[ -1, 1 \right] \times \left[ -1, 1 \right]$ shown in Figure~\ref{fig:simple_domain}.
+\(\left[ -1, 1 \right] \times \left[ -1, 1 \right]\) shown in Figure~\ref{fig:simple_domain}.
 
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_spectral_element_method/media/domain}
-	\caption{2D simple domain: $\left[ -1, 1 \right] \times \left[ -1, 1 \right]$, with the four normals $n_i$, i = 0, 1, 2, 3.}
-	\label{fig:simple_domain}
+	\caption{2D simple domain: \(\left[ -1, 1 \right] \times \left[ -1, 1 \right]\), with the four normals \(n_i\), i = 0, 1, 2, 3.}\label{fig:simple_domain}
 \end{figure}
 
-We approximate our solutions by polynomials of degree $N$ in both directions, in Lagrange
+We approximate our solutions by polynomials of degree \(N\) in both directions, in Lagrange
 form. 
 
 \begin{gather}
@@ -331,10 +328,10 @@ form.
 	\mathfrak{F} \approx \mathbf{F} = \sum_{i = 0}^{N} \sum_{j = 0}^{N} \left ( \mathbf{F}_{i, j} \widehat{x} + \mathbf{G}_{i, j}\widehat{y}\right ) l_i(x) l_j(y)
 \end{gather}
 
-Where $\mathbf{F}_{i, j} \widehat{x} + \mathbf{G}_{i, j}\widehat{y} = B \mathbf{Q}_{i, j}\widehat{x}
-+ C \mathbf{Q}_{i, j}\widehat{y}$. 
+Where \(\mathbf{F}_{i, j} \widehat{x} + \mathbf{G}_{i, j}\widehat{y} = B \mathbf{Q}_{i, j}\widehat{x}
++ C \mathbf{Q}_{i, j}\widehat{y}\). 
 
-We rewrite Equation~\ref{equ:2d_wave_conservation} in weak form, using the test functions $v$.
+We rewrite Equation~\ref{equ:2d_wave_conservation} in weak form, using the test functions \(v\).
 
 \begin{equation} \label{equ:2d_wave_weak}
 	\left( \mathbf{q_t}, v \right) + \left( \bigtriangledown \cdot \mathfrak{F}, v \right) = 0
@@ -353,11 +350,11 @@ Substituting Equation~\ref{equ:test_lagrange} in~\ref{equ:2d_wave_weak}, we obta
 \end{equation}
 
 \noindent
-where $\Omega$ is the whole domain. Since $\widetilde{v}_{i, j}$ are arbitrary, the relation must be
-true for all $i,j$ independently. Therefore:
+where \(\Omega \) is the whole domain. Since \(\widetilde{v}_{i, j}\) are arbitrary, the relation
+must be true for all \(i,j\) independently. Therefore:
 
 \begin{equation}
-    \int_{\Omega} \mathbf{q_t} l_i(x) l_j(y) dx dy + \int_{\Omega } \left( \bigtriangledown \cdot \mathfrak{F} \right) l_i(x) l_j(y) dx dy = 0, \quad i,j = 0, ..., N
+    \int_{\Omega} \mathbf{q_t} l_i(x) l_j(y) dx dy + \int_{\Omega } \left( \bigtriangledown \cdot \mathfrak{F} \right) l_i(x) l_j(y) dx dy = 0, \quad i,j = 0, \ldots, N
 \end{equation}
 
 \noindent
@@ -365,11 +362,11 @@ and
 
 \begin{equation} % CHECK partial derivative?
     \int_{\Omega} \frac{d\mathbf{Q}}{dt} \phi_{i, j} dx dy
-    + \int _{\Omega} \bigtriangledown \cdot \mathbf{F} \phi_{i, j} dx dy = 0, \quad i,j = 0, ..., N \label{equ:2d_wave_test}
+    + \int _{\Omega} \bigtriangledown \cdot \mathbf{F} \phi_{i, j} dx dy = 0, \quad i,j = 0, \ldots, N \label{equ:2d_wave_test}
 \end{equation}
 
 \noindent
-with $\phi_{i, j} = l_i(x)l_j(y)$. We can then rewrite Equation~\ref{equ:2d_wave_test} in inner
+with \(\phi_{i, j} = l_i(x)l_j(y)\). We can then rewrite Equation~\ref{equ:2d_wave_test} in inner
 product form: 
 
 \begin{equation} \label{equ:2d_wave_inner_product}
@@ -384,9 +381,9 @@ Equation~\ref{equ:2d_wave_inner_product}'s second term. Green's first identity g
     \int_{\Omega} \bigtriangledown \phi \cdot \mathbf{X} + \phi \bigtriangledown \cdot \mathbf{X} d\Omega = \oint _{S} \phi \mathbf{X} \cdot \widehat{n} dS
 \end{equation}
 
-Where $\Omega$ is the domain, and $S$ is that domain's boundary. $\phi$ is a scalar function, and
-$\mathbf{X}$ is a vector field. $\widehat{n}$ is the boundary's normal vector, pointing outwards.
-Applied to Equation~\ref{equ:2d_wave_inner_product}'s second term, we get:
+Where \(\Omega \) is the domain, and \(S\) is that domain's boundary. \(\phi \) is a scalar
+function, and \(\mathbf{X}\) is a vector field. \(\widehat{n}\) is the boundary's normal vector,
+pointing outwards. Applied to Equation~\ref{equ:2d_wave_inner_product}'s second term, we get:
 
 \begin{equation} \label{equ:flux_green}
     \left( \bigtriangledown \cdot \mathbf{F}, \phi_{i, j} \right) = \int_{-1}^{1}\int_{-1}^{1}\phi_{i, j} \bigtriangledown \cdot \mathbf{F} dx dy = \oint_{S}\phi_{i, j} \mathbf{F} \cdot \widehat{n}dS - \int_{-1}^{1}\int_{-1}^{1} \mathbf{F} \cdot \bigtriangledown \phi_{i, j} dx dy.
@@ -399,7 +396,7 @@ The complete equation becomes:
     \left( \mathbf{Q}_t, \phi_{i, j} \right) + \oint_{S}\phi_{i, j} \mathbf{F}^* \cdot \widehat{n}dS - \int_{-1}^{1}\int_{-1}^{1} \mathbf{F} \cdot \bigtriangledown \phi_{i, j} dx dy = 0.
 \end{equation}
 
-The boundary conditions are weakly enforced using fluxes $\mathbf{F}^*$, as explained in
+The boundary conditions are weakly enforced using fluxes \(\mathbf{F}^*\), as explained in
 Subsection~\ref{subsection:spectral_element_method:dg_sem:fluxes}. 
 
 We then need to evaluate the integrals. A distinction is made between the boundary terms, that are
@@ -409,8 +406,7 @@ collocation points on the element boundaries.
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.4\textwidth]{Chapter_spectral_element_method/media/nodes}
-	\caption{2D simple domain: Interior collocation points in lilac, boundary collocation points in blue.}
-	\label{fig:domain_nodes}
+	\caption{2D simple domain: Interior collocation points in lilac, boundary collocation points in blue.}\label{fig:domain_nodes}
 \end{figure}
 
 We start by applying Gauss quadrature to the first term of Equation~\ref{equ:integral_equ}.
@@ -423,9 +419,9 @@ We start by applying Gauss quadrature to the first term of Equation~\ref{equ:int
 	\end{split}
 \end{equation}
 
-Since the integrand is a polynomial of degree $2 N$, and the Gauss quadrature is exact for
-polynomials up to $2 N + 1$, the integral calculation is exact. We use the fact that only one integrating
-polynomial $l_i$ is equal to 1 and not 0 on each collocation point $x_k$ to get:
+Since the integrand is a polynomial of degree \(2 N\), and the Gauss quadrature is exact for
+polynomials up to \(2 N + 1\), the integral calculation is exact. We use the fact that only one
+integrating polynomial \(l_i\) is equal to 1 and not 0 on each collocation point \(x_k\) to get:
 
 \begin{equation} \label{equ:integral_1}
     \int_{-1}^{1}\int_{-1}^{1} \mathbf{Q}_t \phi_{i, j} dx dy 
@@ -437,7 +433,7 @@ We do the same for the third term of Equation~\ref{equ:integral_equ}.
 \begin{equation} \label{equ:integral_3}
 	\begin{split}
 		\int_{-1}^{1}\int_{-1}^{1}\mathbf{F} \cdot \bigtriangledown \phi_{i, j} dx dy 
-		&= \int_{-1}^{1}\int_{-1}^{1}\mathbf{F}(x, y) l'_i(x)l_j(y) + \mathbf{G}(x, y) l_i(x) l'_j(y) \:\: dx dy \\ 
+		&= \int_{-1}^{1}\int_{-1}^{1}\mathbf{F}(x, y) l'_i(x)l_j(y) + \mathbf{G}(x, y) l_i(x) l'_j(y) \: \: dx dy \\ 
 		&= \sum_{k = 0}^{N} \sum_{l = 0}^{N}\left [ \mathbf{F}(x_k, y_l)l'_i(x_k)l_j(y_l) + \mathbf{G}(x_k, y_l) l_i(x_k)l'_j(y_l) \right ]w_k^{(x)} w_l^{(y)} \\
 		&= \sum_{k = 0}^{N} \mathbf{F}(x_k, y_j)l'_i(x_k)w_k^{(x)} w_j^{(y)} + \sum_{l = 0}^{N}\mathbf{G}(x_i, y_l) l'_j(y_l) w_i^{(x)} w_l^{(y)}
 	\end{split}
@@ -464,23 +460,24 @@ quadrature to the developed integral.
 	\end{split}
 \end{equation}
 
-Note that the integrands are also of order $2 N$, and are computed exactly. We put
-Equations~\ref{equ:integral_1}, ~\ref{equ:integral_2} and ~\ref{equ:integral_3} in
-Equation~\ref{equ:integral_equ} and divide by the weights $w_i^{ \left( x \right) } w_j^{ \left( y \right) }$.
+Note that the integrands are also of order \(2 N\), and are computed exactly. We put
+Equations~\ref{equ:integral_1},~\ref{equ:integral_2} and~\ref{equ:integral_3} in
+Equation~\ref{equ:integral_equ} and divide by the weights \(w_i^{ \left( x \right) } w_j^{ \left( y
+\right) }\).
 
 \begin{equation} \label{equ:2d_wave_full}
 	\begin{split}
         & \frac{d\mathbf{Q}(x_i, y_j)}{dt} \\
-        & + \left\{ \left[ l_i \left( -1 \right) \mathbf{F}^* \left( -1, y_j \right) \cdot \left( -\widehat{x} \right) \frac{1}{w_i^{ \left( x \right) }} + l_i \left( 1 \right) \mathbf{F}^* \left( 1, y_j \right) \cdot
-        \left( \widehat{x} \right) \frac{1}{w_i^{ \left( x \right) }} \right] - \sum_{k = 0}^{N} \mathbf{F} \left(x_k, y_j \right) \frac{l'_i \left( x_k \right) w_k^{ \left( x \right) }}{w_i^{ \left( x \right) }} \right\} \\
-        & + \left\{ \left[ l_j \left( -1 \right) \mathbf{F}^* (x_i, -1) \cdot \left( -\widehat{y} \right) \frac{1}{w_j^{ \left( y \right) }} + l_j \left( 1 \right) \mathbf{F}^*(x_i, 1) \cdot
-        \left( \widehat{y} \right) \frac{1}{w_j^{ \left( y \right) }} \right] - \sum_{l = 0}^{N} \mathbf{G} \left(x_i, y_l \right) \frac{l'_j \left( y_l \right) w_l^{ \left( y \right) }}{w_j^{ \left( y \right) }} \right\} \\
-        & = 0, \quad i,j = 0, ..., N
+        & + \left \{ \left[ l_i \left( -1 \right) \mathbf{F}^* \left( -1, y_j \right) \cdot \left( -\widehat{x} \right) \frac{1}{w_i^{ \left( x \right) }} + l_i \left( 1 \right) \mathbf{F}^* \left( 1, y_j \right) \cdot
+        \left( \widehat{x} \right) \frac{1}{w_i^{ \left( x \right) }} \right] - \sum_{k = 0}^{N} \mathbf{F} \left(x_k, y_j \right) \frac{l'_i \left( x_k \right) w_k^{ \left( x \right) }}{w_i^{ \left( x \right) }} \right \} \\
+        & + \left \{ \left[ l_j \left( -1 \right) \mathbf{F}^* (x_i, -1) \cdot \left( -\widehat{y} \right) \frac{1}{w_j^{ \left( y \right) }} + l_j \left( 1 \right) \mathbf{F}^*(x_i, 1) \cdot
+        \left( \widehat{y} \right) \frac{1}{w_j^{ \left( y \right) }} \right] - \sum_{l = 0}^{N} \mathbf{G} \left(x_i, y_l \right) \frac{l'_j \left( y_l \right) w_l^{ \left( y \right) }}{w_j^{ \left( y \right) }} \right \} \\
+        & = 0, \quad i,j = 0, \ldots, N
 	\end{split} 
 \end{equation}
 
-We define $l'_i(x_k)$ as the derivative matrix $D_{k i}$. Since they are constant, we also
-incorporate the weights $w_i$ and $w_k$.
+We define \(l'_i(x_k)\) as the derivative matrix \(D_{k i}\). Since they are constant, we also
+incorporate the weights \(w_i\) and \(w_k\).
 
 \begin{equation} \label{equ:d_hat}
 	\begin{split}
@@ -494,23 +491,23 @@ This simplifies Equation~\ref{equ:2d_wave_full} to:
 \begin{equation} \label{equ:2d_wave_d}
 	\begin{split}
         & \frac{d\mathbf{Q}(x_i, y_j)}{dt} \\
-        & + \left\{ \left[ l_i \left( -1 \right) \mathbf{F}^* \left( -1, y_j \right) \cdot \left( -\widehat{x} \right) \frac{1}{w_i^{ \left( x \right) }} + l_i \left( 1 \right) \mathbf{F}^* \left( 1, y_j \right) \cdot
-        \left( \widehat{x} \right) \frac{1}{w_i^{ \left( x \right) }} + \sum_{k = 0}^{N} \mathbf{F} \left( x_k, y_j \right) \widehat{D}_{i k}^{ \left( x \right) } \right] \right\} \\
+        & + \left \{ \left[ l_i \left( -1 \right) \mathbf{F}^* \left( -1, y_j \right) \cdot \left( -\widehat{x} \right) \frac{1}{w_i^{ \left( x \right) }} + l_i \left( 1 \right) \mathbf{F}^* \left( 1, y_j \right) \cdot
+        \left( \widehat{x} \right) \frac{1}{w_i^{ \left( x \right) }} + \sum_{k = 0}^{N} \mathbf{F} \left( x_k, y_j \right) \widehat{D}_{i k}^{ \left( x \right) } \right] \right \} \\
         & + \left \{ \left [ l_j \left( -1 \right) \mathbf{F}^* \left( x_i, -1 \right) \cdot \left( -\widehat{y} \right) \frac{1}{w_j^{ \left( y \right) }} + l_j \left( 1 \right) \mathbf{F}^* \left(x_i, 1 \right) \cdot
-        \left( \widehat{y} \right) \frac{1}{w_j^{ \left( y \right) }} + \sum_{l = 0}^{N} \mathbf{G} \left( x_i, y_l \right) \widehat{D}_{j l}^{ \left( y \right) } \right] \right\} \\
-        & = 0, \quad i, j = 0, ..., N
+        \left( \widehat{y} \right) \frac{1}{w_j^{ \left( y \right) }} + \sum_{l = 0}^{N} \mathbf{G} \left( x_i, y_l \right) \widehat{D}_{j l}^{ \left( y \right) } \right] \right \} \\
+        & = 0, \quad i, j = 0, \ldots, N
 	\end{split}
 \end{equation}
 
 The collocation points, weights and derivative matrices from Equation~\ref{equ:2d_wave_d} can be
 computed directly and stored for the whole computation. Algorithms for those are discussed in
 Section~\ref{section:spectral_element_method:implementation}. The next section discusses the
-computation of the fluxes $\mathbf{F}^*$.
+computation of the fluxes \(\mathbf{F}^*\).
 
-\subsection{Fluxes} \label{subsection:spectral_element_method:dg_sem:fluxes}
+\subsection{Fluxes}\label{subsection:spectral_element_method:dg_sem:fluxes}
 
-We now need to compute the numerical fluxes $\mathbf{F}^*$ as a way to approximate the physical
-fluxes $\mathfrak{F}$. We recall the formulation for the fluxes from
+We now need to compute the numerical fluxes \(\mathbf{F}^*\) as a way to approximate the physical
+fluxes \(\mathfrak{F}\). We recall the formulation for the fluxes from
 Equation~\ref{equ:2d_wave_integral}. The flux derivation can be found in more detail
 in~\cite{Kopriva2009}.
 
@@ -519,7 +516,7 @@ in~\cite{Kopriva2009}.
 \end{equation}
 
 \noindent
-With matrices $B$ and $C$ taken from Equation~\ref{equ:2d_wave_matrix}.
+With matrices \(B\) and \(C\) taken from Equation~\ref{equ:2d_wave_matrix}.
 
 \begin{equation}
 	B = \begin{bmatrix}
@@ -534,8 +531,8 @@ With matrices $B$ and $C$ taken from Equation~\ref{equ:2d_wave_matrix}.
 	\end{bmatrix}
 \end{equation}
 
-We also define the normal vector $\mathbf{n} = \alpha \widehat{x} + \beta \widehat{y} = n_x
-\widehat{x} + n_y \widehat{y}$. We can then write the $A$ matrix:
+We also define the normal vector \(\mathbf{n} = \alpha \widehat{x} + \beta \widehat{y} = n_x
+\widehat{x} + n_y \widehat{y}\). We can then write the \(A\) matrix:
 
 \begin{equation}
     A = \begin{bmatrix}
@@ -551,8 +548,8 @@ interface is the left state if the wave goes from left to right, or the right st
 from right to left. This is the upwind state of the boundary.
 
 Since it is not evident what the upwind state of the system as is described in
-Equation~\ref{equ:physical_fluxes}, we will decouple the wave components. We decompose $A$ to a
-diagonal matrix $\Lambda$, its right eigenvectors $A$, and their inverse $A^{-1}$.
+Equation~\ref{equ:physical_fluxes}, we will decouple the wave components. We decompose \(A\) to a
+diagonal matrix \(\Lambda \), its right eigenvectors \(A\), and their inverse \(A^{-1}\).
 
 \begin{equation}
     \Lambda = 
@@ -620,24 +617,23 @@ We can evaluate the flux with:
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.25\textwidth]{Chapter_spectral_element_method/media/waves}
-	\caption{States on both sides of an interface: The normal $\widehat{n}$ of the interface
-	    determines the left and right sides. $\mathbf{Q}^L$ and $\mathbf{Q}^R$ are the states on the
-	    left and right of the interface, respectively. $w^+$ and $w^-$ indicate the left-to-right
-	    and right-to-left waves, respectively.}
-	\label{fig:waves}
+	\caption{States on both sides of an interface: The normal \(\widehat{n}\) of the interface
+	    determines the left and right sides. \(\mathbf{Q}^L\) and \(\mathbf{Q}^R\) are the states on the
+	    left and right of the interface, respectively. \(w^+\) and \(w^-\) indicate the left-to-right
+	    and right-to-left waves, respectively.}\label{fig:waves}
 \end{figure}
 
 Figure~\ref{fig:waves} shows a boundary, with the associated states and waves. This guides us in
-choosing the states $\mathbf{q}$ in Equation~\ref{equ:flux}. The upwind state for the
-left-to-right wave is $\mathbf{Q}^L$, and the upwind state for the right-to-left wave is
-$\mathbf{Q}^R$. The stationary wave only has zeros in its matrix, and can be removed. This gives us
-the formulation for the numerical fluxes. This is what is called the Riemann problem.
+choosing the states \(\mathbf{q}\) in Equation~\ref{equ:flux}. The upwind state for the
+left-to-right wave is \(\mathbf{Q}^L\), and the upwind state for the right-to-left wave is
+\(\mathbf{Q}^R\). The stationary wave only has zeros in its matrix, and can be removed. This gives
+us the formulation for the numerical fluxes. This is what is called the Riemann problem.
 
 \begin{equation} \label{equ:flux_states}
 	\mathbf{F}^* \cdot \widehat{n} = A^+ \mathbf{Q}^L + A^- \mathbf{Q}^R
 \end{equation}
 
-We can now compute the numerical fluxes. We define the characteristic variable $\mathbf{W}$.
+We can now compute the numerical fluxes. We define the characteristic variable \(\mathbf{W}\).
 
 \begin{equation}
 	\mathbf{W} = S^{-1} \mathbf{q} = 
@@ -663,7 +659,7 @@ We can now compute the numerical fluxes. We define the characteristic variable $
     \end{bmatrix}   
 \end{equation}
 
-We define $w^+$, $w^-$ and $w^0$ as the left-to-right, right-to-left and stationary waves,
+We define \(w^+\), \(w^-\) and \(w^0\) as the left-to-right, right-to-left and stationary waves,
 respectively:
 
 \begin{equation} \label{equ:waves_x}
@@ -674,7 +670,7 @@ respectively:
 	\end{split} 
 \end{equation}
 
-Next, we multiply with the diagonal matrices $\Lambda$, which contain the direction of the waves:
+Next, we multiply with the diagonal matrices \(\Lambda \), which contain the direction of the waves:
 
 \begin{equation}
 	\begin{split}
@@ -733,7 +729,7 @@ Next, we multiply with the diagonal matrices $\Lambda$, which contain the direct
 \end{equation}
 
 \noindent
-Finally, multiplying by $S$, we get the full numerical flux:
+Finally, multiplying by \(S\), we get the full numerical flux:
 
 \begin{equation} \label{equ:numerical_flux}
     \mathbf{F}^* \cdot \widehat{n} = 
@@ -745,7 +741,7 @@ Finally, multiplying by $S$, we get the full numerical flux:
     \end{bmatrix}.
 \end{equation}
 
-The superscripts $L$ and $R$ indicate which state is used, according to
+The superscripts \(L\) and \(R\) indicate which state is used, according to
 Equation~\ref{equ:flux_states}. 
 
 With the relation~\ref{equ:numerical_flux}, we can compute the numerical fluxes. The algorithm used
@@ -753,16 +749,16 @@ to compute these fluxes is presented in
 Subsection~\ref{subsection:spectral_element_method:implementation:fluxes}. It is commonly known as
 the Riemann solver.
 
-\subsection{Time integration} \label{subsection:spectral_element_method:dg_sem:time}
+\subsection{Time integration}\label{subsection:spectral_element_method:dg_sem:time}
 
 Now that we know how to compute the interior terms and the numerical fluxes of
-Equation~\ref{equ:2d_wave_d}, we can compute the time derivative $\mathbf{Q}_t$. We then need to
+Equation~\ref{equ:2d_wave_d}, we can compute the time derivative \(\mathbf{Q}_t\). We then need to
 integrate the equation in time. We will used a third-order low-storage Runge-Kutta method, as
 described by Williamson~\cite{Williamson1980}. As the name suggests, this method uses low memory to
 attain high temporal accuracy. This is especially useful in the context of \acrshort{acr:GPU}
 computation, as \acrshortpl{acr:GPU} tend to have less available memory than usual
-\acrshort{acr:HPC} \acrshort{acr:CPU} platforms. This method requires $2 N$ storage, where $N$ is
-the number of variables. Concretely, we will need to store the computed time derivatives in
+\acrshort{acr:HPC} \acrshort{acr:CPU} platforms. This method requires \(2 N\) storage, where \(N\)
+is the number of variables. Concretely, we will need to store the computed time derivatives in
 temporary arrays, which will then be added to the real time derivative arrays. The truncation error
 is comparable to that of the usual Runge-Kutta methods~\cite{Williamson1980}.
 
@@ -773,10 +769,10 @@ The method works as follows. For a differential equation
 \end{equation}
 
 \noindent
-we will use $\Delta t$ to represent the time step, $n$ to represent the number of time steps thus
-far, and $t_n = n \Delta t$ as the current time. $u$ is the solution vector with $N$ variables, and
-$U^n$ is the approximation of the solution at $t_n$. The method gives the approximation of the
-solution at the next timestep as:
+we will use \(\Delta t\) to represent the time step, \(n\) to represent the number of time steps
+thus far, and \(t_n = n \Delta t\) as the current time. \(u\) is the solution vector with \(N\)
+variables, and \(U^n\) is the approximation of the solution at \(t_n\). The method gives the
+approximation of the solution at the next timestep as:
 
 \begin{equation} \label{equ:runge_kutta}
 	\begin{split}
@@ -790,10 +786,10 @@ solution at the next timestep as:
 	\end{split}
 \end{equation}
 
-$T$ is introduced as a temporary variable to store the time derivative after partial time steps. As
-$U$ and $T$ are overwritten at each of the three stages, the storage required is only $2 N$, where
-$N$ is the number of variables making up $U$. The algorithm can be summarised as the following stage
-run three times, where $m$ is the stage number.
+\(T\) is introduced as a temporary variable to store the time derivative after partial time steps.
+As \(U\) and \(T\) are overwritten at each of the three stages, the storage required is only \(2
+N\), where \(N\) is the number of variables making up \(U\). The algorithm can be summarised as the
+following stage run three times, where \(m\) is the stage number.
 
 \begin{equation} \label{equ:runge_kutta_stage}
 	\begin{split}
@@ -802,21 +798,20 @@ run three times, where $m$ is the stage number.
 	\end{split}
 \end{equation}
 
-The following table lists the coefficients $a_m$, $b_m$ and $g_m$. The algorithm used by the program
-to advance the simulation in time is described in
+The following table lists the coefficients \(a_m\), \(b_m\) and \(g_m\). The algorithm used by the
+program to advance the simulation in time is described in
 Subsection~\ref{subsection:spectral_element_method:implementation:time}. 
 
 \begin{table}[H]
 	\centering
 	\begin{tabular}{c c c c}
-		$m$ & $a_m$ & $b_m$ & $g_m$ \\
-		\hline
-		0 & 0 & 0 & $\frac{1}{3}$ \\
-		1 & $-\frac{5}{9}$ & $\frac{1}{3}$ & $\frac{15}{16}$ \\
-		2 & $-\frac{153}{128}$ & $\frac{3}{4}$ & $\frac{8}{15}$ \\
+		\(m\) & \(a_m\) & \(b_m\) & \(g_m\) \\
+		\midrule
+		0 & 0 & 0 & \(\frac{1}{3}\) \\
+		1 & \(-\frac{5}{9}\) & \(\frac{1}{3}\) & \(\frac{15}{16}\) \\
+		2 & \(-\frac{153}{128}\) & \(\frac{3}{4}\) & \(\frac{8}{15}\) \\
 	\end{tabular}
-	\caption{Coefficients of the third-order low storage Runge-Kutta method.}
-	\label{table:runge_kutta_coefficient}
+	\caption{Coefficients of the third-order low storage Runge-Kutta method.}\label{table:runge_kutta_coefficient}
 \end{table}
 
 This method is an explicit time stepping method, therefore we have to fulfill the
@@ -827,8 +822,9 @@ This method is an explicit time stepping method, therefore we have to fulfill th
 	\left| \frac{c \Delta t}{\Delta x} \right| \leq \CFL
 \end{equation}
 
-Where the $\CFL$ number is usually 1. As we have a higher-order time integration scheme, the $\CFL$
-number can be increased above this number~\cite{Gottlieb2001}. % CHECK show why higher than 1?
+Where the \(\CFL \) number is usually 1. As we have a higher-order time integration scheme, the
+\(\CFL \) number can be increased above this number~\cite{Gottlieb2001}.
+% CHECK show why higher than 1?
 
 \begin{equation}
         0 \leq \CFL \leq 1
@@ -841,8 +837,8 @@ the smallest spacing in an element as:
     \Delta x = \frac{\Delta x_k}{N^2}
 \end{equation}
 
-Where $\Delta x_k$ is the length of element $k$, and $N$ is the polynomial order of that element.
-The global timestep will be chosen as the minimum timestep of all elemental timesteps. 
+Where \(\Delta x_k\) is the length of element \(k\), and \(N\) is the polynomial order of that
+element. The global timestep will be chosen as the minimum timestep of all elemental timesteps. 
 
 \begin{equation}
     \Delta t = \min_{k \in 0:K} \left( \Delta t_k \right)
@@ -852,10 +848,10 @@ The global timestep will be chosen as the minimum timestep of all elemental time
     \Delta t_k \leq \CFL \frac{c \Delta x_k}{N^2}
 \end{equation}
 
-\section{Implementation} \label{section:spectral_element_method:implementation}
+\section{Implementation}\label{section:spectral_element_method:implementation}
 % Talk about the flux computation, possible race conditions
 
-\subsection{Fluxes} \label{subsection:spectral_element_method:implementation:fluxes}
+\subsection{Fluxes}\label{subsection:spectral_element_method:implementation:fluxes}
 
 \begin{algorithm}[H]
     \begin{cuda}
@@ -881,8 +877,7 @@ The global timestep will be chosen as the minimum timestep of all elemental time
                 }
             }
         }\end{cuda}
-\caption{\textbf{calculate\_wave\_fluxes:} Riemann solver for the wave equation fluxes.}
-\label{alg:wave_fluxes}
+\caption{\textbf{calculate\_wave\_fluxes:} Riemann solver for the wave equation fluxes.}\label{alg:wave_fluxes}
 \end{algorithm}
 
-\subsection{Time integration} \label{subsection:spectral_element_method:implementation:time}
+\subsection{Time integration}\label{subsection:spectral_element_method:implementation:time}
