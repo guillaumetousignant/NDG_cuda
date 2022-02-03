@@ -7,21 +7,24 @@
 % Hybrid solver?
 % Different block sizes!!
 
-Following are results studying the effectiveness of the program. Three main components are studied.
-First, the performance of the core spectral element method code on \acrshortpl{acr:GPU}, with a
-comparison with the same code running on \acrshortpl{acr:CPU} is presented in
-Section~\ref{section:results:scaling_tests}. Then, the performance of the \acrlong{acr:AMR} is
-studied in Section~\ref{section:results:adaptivity_performance}. Finally, dynamic load balancing is
-studied in Section~\ref{section:results:load_balancing_performance}.
+This chapter presents results of the implementation of the adaptive \acrshort{acr:DG-SEM} wave
+equation solver on \acrshort{acr:GPU} architectures and studies its effectiveness. Three main
+components are studied. First, the performance of the core spectral element method code on
+\acrshortpl{acr:GPU}, with a comparison with the same code running on \acrshortpl{acr:CPU} is
+presented in Section~\ref{section:results:scaling_tests}. Then, the performance of the
+\acrlong{acr:AMR} is studied in Section~\ref{section:results:adaptivity_performance}. Dynamic load
+balancing is studied in Section~\ref{section:results:load_balancing_performance}. Finally, a more
+complex application is shown in Section~\ref{section:results:complex_application}
 
 \section{Platforms}\label{section:results:platforms}
 
-This program aims to perform large scale computations, and as such targets \acrshort{acr:HPC}
-platforms. The program has been designed to scale to multiple parallel level, the highest being
-splitting the workload between several \acrshort{acr:HPC} nodes, each having multiple
-\acrshortpl{acr:CPU} and \acrshortpl{acr:GPU}. To test this use case, most of the following tests
-were run on clusters graciously offered by Compute Canada\footnote{https://www.computecanada.ca/}.
-Two such clusters were used for our experiments, Béluga and Narval.
+The implementation we have developed aims to perform large scale computations, and as such targets
+\acrshort{acr:HPC} platforms. The program has been designed to scale to multiple levels of
+parallelism, the highest being splitting the workload between several \acrshort{acr:HPC} nodes, each
+having multiple \acrshortpl{acr:CPU} and \acrshortpl{acr:GPU}. To test this use case, most of the
+following tests were run on clusters graciously offered by Compute
+Canada\footnote{https://www.computecanada.ca/}. Two such clusters were used for our experiments,
+Béluga and Narval.
 
 \subsection{Béluga}\label{subsection:results:platforms:beluga}
 
@@ -29,12 +32,12 @@ Béluga is a heterogeneous cluster suitable for a variety of purposes, from trad
 \acrshort{acr:CPU} computing to massively parallel \acrshort{acr:GPU} computing. It is located at
 the École de technologie supérieure in Montréal. Béluga is made up of 977 compute nodes of different
 types, totaling 39,120 \acrshort{acr:CPU} cores and 696 \acrshortpl{acr:GPU}. For our testing, we
-use Béluga's \acrshort{acr:GPU} nodes. Each one of the 172 \acrshort{acr:GPU} nodes contains 40
-\acrshort{acr:CPU} cores and 186 GB of memory across two Intel Gold 6148 \acrshortpl{acr:CPU}, and
-four NVidia V100 SXM2 \acrshortpl{acr:GPU} with 16 GB of memory each. One such node totals about 2
-TFlops of double precision \acrshort{acr:CPU} computing power, and 13 TFlops of double precision
-\acrshort{acr:GPU} computing power. The nodes are connected by Infiniband HDR (100 Gb/s)
-interconnections.
+use Béluga's general usage \acrshort{acr:GPU} nodes. Each one of the 172 \acrshort{acr:GPU} nodes
+contains 40 \acrshort{acr:CPU} cores and 186 GB of memory across two Intel Gold 6148
+\acrshortpl{acr:CPU}, and four NVidia V100 SXM2 \acrshortpl{acr:GPU} with 16 GB of memory each. One
+such node totals about 2 TFlops of double precision \acrshort{acr:CPU} computing power, and 13
+TFlops of double precision \acrshort{acr:GPU} computing power. The nodes are connected by Infiniband
+HDR (100 Gb/s) interconnections.
 
 \subsection{Narval}\label{subsection:results:platforms:narval}
 
@@ -51,7 +54,7 @@ Infiniband EDR (100 Gb/s) interconnections.
 
 \subsection{Consumer hardware}\label{subsection:results:platforms:consumer}
 
-Some smaller scale tests or tests that didn't involve performance were run on consumer hardware.
+Some smaller scale tests or tests that did not involve performance were run on consumer hardware.
 This is important, as it may not always be possible to access \acrshort{acr:HPC} systems when flow
 simulations have to be performed. The program should also have reasonable performance on regular
 systems. The system used in these cases is a single computer containing 16 \acrshort{acr:CPU} cores
@@ -379,7 +382,10 @@ Max split level  \(S\). Where  \(K_p\) is the number of elements in process  \(p
 	\caption{Polynomial order influence: Iteration time with increasing polynomial order.}\label{fig:N_influence}
 \end{figure}
 
+\section{Complex application}\label{section:results:complex_application}
+
 \section{Complex meshes}\label{section:results:complex_meshes}
+% Move to annex
 
 \begin{figure}[H]
 	\centering
