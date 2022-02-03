@@ -42,14 +42,16 @@ categories~\cite{Karniadakis2005}: collocation methods and Galerkin methods. Gal
 governing equations in integral form over the domain~\cite{Reed1973}, which is broken up into
 elements. This method, in combination with the spectral approximation, will be used in this work. It
 is called the \textit{Galerkin spectral element method}. This method can be formulated both in
-\textit{continuous} and \textit{discontinuous} versions.
-The method is discontinuous because it allows the
-solution to be discontinuous at element boundaries, using fluxes between elements to
-stabilise the scheme. This method combines the accuracy and exponential convergence of spectral
-methods with the geometric flexibility of finite element methods. 
-
-%This method can be formulated in both continuous and discontinuous versions. explain continuous oneWe choose to use the discontinuous .... WHY? 
-
+\textit{continuous} and \textit{discontinuous} versions. Continuous methods decompose the domain
+into elements, within which the solution are represented as functions. These functions join at the
+element boundaries, making the method continuous. Discontinuous methods allow the solution to be
+discontinuous at element boundaries, using fluxes between elements to stabilise the scheme. It is
+the \textit{\acrfull{acr:DG-SEM}}. We will use this method, as it is easier to be made parallel. The
+fact that elements are independent and only connect through fluxes should map better to the
+\acrshort{acr:GPU} architecture, where the solution of all elements will be computed concurrently.
+It also simplifies refining the mesh by simplifying the usage of non-conforming interfaces. This
+method combines the accuracy and exponential convergence of spectral methods with the geometric
+flexibility of finite element methods. 
 
 % GPUs
 With the stagnation of traditional computer \textit{\acrfullpl{acr:CPU}} operating frequencies over
