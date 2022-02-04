@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <array>
 #include <vector>
+#include <fstream>
 
 // I think this was the most annoying thing to write yet.
 
@@ -475,7 +476,462 @@ auto read_cgns_mesh(const fs::path in_file) -> MeshPart_t {
 }
 
 auto read_su2_mesh(const fs::path in_file) -> MeshPart_t {
+    std::string line;
+    std::string token;
+    size_t value;
 
+    std::ifstream meshfile(in_file);
+    if (!meshfile.is_open()) {
+        std::cerr << "Error: file '" << in_file << "' could not be opened. Exiting." << std::endl;
+        exit(69);
+    }
+
+    do {
+        std::getline(meshfile, line);  
+    }
+    while (line.empty());
+
+    std::istringstream liness(line);
+    liness >> token;
+    liness >> value;
+    if (token != "NDIME=") {
+        std::cerr << "Error: first token should be 'NDIME=', found '" << token << "'. Exiting." << std::endl;
+        exit(70);
+    }
+
+    if (value != 2) {
+        std::cerr << "Error: program only works for 2 dimensions, found '" << value << "'. Exiting." << std::endl;
+        exit(71);
+    }
+
+    std::array<std::vector<double>, 2> xy;
+    std::vector<std::array<size_t, 4>> elements;
+    std::vector<std::array<size_t, 2>> wall;
+    std::vector<std::array<size_t, 2>> symmetry;
+    std::vector<std::array<size_t, 2>> inflow;
+    std::vector<std::array<size_t, 2>> outflow;
+
+    while (!meshfile.eof()) {
+        do {
+            std::getline(meshfile, line);  
+        }
+        while (line.empty() && !meshfile.eof());
+
+        std::istringstream liness(line);
+        liness >> token;
+        std::transform(token.begin(), token.end(), token.begin(),
+            [](unsigned char c){ return std::toupper(c); });
+
+        if (token == "NPOIN=") {
+            liness >> value;
+            xy[0] = std::vector<double>(value);
+            xy[1] = std::vector<double>(value);
+
+            for (size_t i = 0; i < xy[0].size(); ++i) {
+                std::getline(meshfile, line);
+                std::istringstream liness2(line);
+                liness2 >> xy[0][i] >> xy[0][i];
+            }
+        }
+        else if (token == "NELEM=") {
+            liness >> value;
+            elements = std::vector<std::array<size_t, 4>>(value);
+
+            for (size_t i = 0; i < elements.size(); ++i) {
+                std::getline(meshfile, line);
+                std::istringstream liness2(line);
+                liness2 >> token;
+                if (token == "9") {
+                    liness2 >> elements[i][0] >> elements[i][1] >> elements[i][2] >> elements[i][3];
+                }
+                else {
+                    std::cerr << "Error: expected token '9', found '" << token << "'. Exiting." << std::endl;
+                    exit(73);
+                }
+            }
+
+        }
+        else if (token == "NMARK=") {
+            size_t n_markers;
+            liness >> n_markers;
+
+            size_t n_wall = 0;
+            size_t n_symmetry = 0;
+            size_t n_inflow = 0;
+            size_t n_outflow = 0;
+
+            for (size_t i = 0; i < n_markers; ++i) {
+                std::string type;
+                do {
+                    std::getline(meshfile, line);
+                    if (!line.empty()) {
+                        std::istringstream liness(line);
+                        liness >> token;
+                        liness >> type;
+                    }   
+                }
+                while (token != "MARKER_TAG=");
+                std::transform(type.begin(), type.end(), type.begin(),
+                    [](unsigned char c){ return std::tolower(c); });
+
+                if (type == "farfield") {
+                    do {
+                        std::getline(meshfile, line);
+                        if (!line.empty()) {
+                            std::istringstream liness(line);
+                            liness >> token;
+                            liness >> value;
+                        }   
+                    }
+                    while (token != "MARKER_ELEMS=");
+
+                    n_outflow += value;
+                    outflow.reserve(n_outflow);
+
+                    for (size_t j = 0; j < value; ++j) {
+
+                        std::getline(meshfile, line);
+                        std::istringstream liness6(line);
+
+                        liness6 >> token;
+                        if (token != "3") {
+                            std::cerr << "Error: expected token '3', found '" << token << "'. Exiting." << std::endl;
+                            exit(75);
+                        }
+
+                        size_t val0, val1;
+                        liness6 >> val0 >> val1;
+                        outflow.push_back({val0, val1});
+                    }
+                }
+                else if (type == "wall") {
+                    do {
+                        std::getline(meshfile, line);
+                        if (!line.empty()) {
+                            std::istringstream liness(line);
+                            liness >> token;
+                            liness >> value;
+                        }   
+                    }
+                    while (token != "MARKER_ELEMS=");
+
+                    n_wall += value;
+                    wall.reserve(n_wall);
+
+                    for (size_t j = 0; j < value; ++j) {
+
+                        std::getline(meshfile, line);
+                        std::istringstream liness6(line);
+
+                        liness6 >> token;
+                        if (token != "3") {
+                            std::cerr << "Error: expected token '3', found '" << token << "'. Exiting." << std::endl;
+                            exit(75);
+                        }
+
+                        size_t val0, val1;
+                        liness6 >> val0 >> val1;
+                        wall.push_back({val0, val1});
+                    }
+                }
+                else if (type == "inlet") {
+                    do {
+                        std::getline(meshfile, line);
+                        if (!line.empty()) {
+                            std::istringstream liness(line);
+                            liness >> token;
+                            liness >> value;
+                        }   
+                    }
+                    while (token != "MARKER_ELEMS=");
+
+                    n_inflow += value;
+                    inflow.reserve(n_inflow);
+
+                    for (size_t j = 0; j < value; ++j) {
+
+                        std::getline(meshfile, line);
+                        std::istringstream liness6(line);
+
+                        liness6 >> token;
+                        if (token != "3") {
+                            std::cerr << "Error: expected token '3', found '" << token << "'. Exiting." << std::endl;
+                            exit(75);
+                        }
+
+                        size_t val0, val1;
+                        liness6 >> val0 >> val1;
+                        inflow.push_back({val0, val1});
+                    }
+                }
+                else if (type == "symmetry") {
+                    do {
+                        std::getline(meshfile, line);
+                        if (!line.empty()) {
+                            std::istringstream liness(line);
+                            liness >> token;
+                            liness >> value;
+                        }   
+                    }
+                    while (token != "MARKER_ELEMS=");
+
+                    n_symmetry += value;
+                    symmetry.reserve(n_symmetry);
+
+                    for (size_t j = 0; j < value; ++j) {
+
+                        std::getline(meshfile, line);
+                        std::istringstream liness6(line);
+
+                        liness6 >> token;
+                        if (token != "3") {
+                            std::cerr << "Error: expected token '3', found '" << token << "'. Exiting." << std::endl;
+                            exit(75);
+                        }
+
+                        size_t val0, val1;
+                        liness6 >> val0 >> val1;
+                        symmetry.push_back({val0, val1});
+                    }
+                }
+                else {
+                    std::cerr << "Error: expected marker tag 'farfield', 'wall', 'symmetry' or 'inlet', found '" << type << "'. Exiting." << std::endl;
+                    exit(74);
+                }
+            }
+        }
+        else {
+            if (!meshfile.eof()) {
+                std::cerr << "Error: expected marker 'NPOIN=', 'NELEM=' or 'NMARK=', found '" << token << "'. Exiting." << std::endl;
+                exit(72);
+            }
+        }
+    }
+
+    meshfile.close();
+
+    // Change to a format like CGNS
+    std::array<std::array<char, CGIO_MAX_NAME_LENGTH>, 2> coord_names {"x", "y"};
+    const int n_boundaries = !wall.empty() + !symmetry.empty() + !inflow.empty() + !outflow.empty();
+    const int n_sections = 1 + n_boundaries;
+    const int wall_boundary_index = 0;
+    const int symmetry_boundary_index = !wall.empty();
+    const int inflow_boundary_index = !wall.empty() + !symmetry.empty();
+    const int outflow_boundary_index = !wall.empty() + !symmetry.empty() + !inflow.empty();
+    const int wall_section_index = 1;
+    const int symmetry_section_index = 1 + symmetry_boundary_index;
+    const int inflow_section_index = 1 + + inflow_boundary_index;
+    const int outflow_section_index = 1 + outflow_boundary_index;
+
+    std::vector<bool> section_is_domain(n_sections);
+    std::vector<std::array<cgsize_t, 2>> section_ranges(n_sections);
+    std::vector<std::vector<cgsize_t>> connectivity(n_sections);
+    std::vector<cgsize_t> boundary_sizes(n_boundaries);
+    std::vector<std::vector<cgsize_t>> boundary_elements(n_boundaries);
+    std::vector<BCType_t> boundary_types(n_boundaries);
+    std::vector<PointSetType_t> boundary_point_set_types(n_boundaries, PointSetType_t::PointList);
+    std::vector<PointSetType_t> connectivity_point_set_types; // No connectivity in su2
+    std::vector<PointSetType_t> connectivity_donor_point_set_types; // No connectivity in su2
+    std::vector<GridLocation_t> boundary_grid_locations(n_boundaries, GridLocation_t::EdgeCenter);
+    std::vector<GridLocation_t> connectivity_grid_locations; // No connectivity in su2
+    std::vector<cgsize_t> connectivity_sizes; // No connectivity in su2
+    std::vector<std::vector<cgsize_t>> interface_elements; // No connectivity in su2
+    std::vector<std::vector<cgsize_t>> interface_donor_elements; // No connectivity in su2
+    std::vector<GridConnectivityType_t> connectivity_types; // No connectivity in su2
+    std::vector<ZoneType_t> connectivity_donor_zone_types; // No connectivity in su2
+    std::vector<DataType_t> connectivity_donor_data_types; // No connectivity in su2
+
+
+    std::array<char, CGIO_MAX_NAME_LENGTH> base_name;
+    std::vector<std::array<char, CGIO_MAX_NAME_LENGTH>> section_names(n_sections);
+    std::vector<std::array<char, CGIO_MAX_NAME_LENGTH>> boundary_names(n_boundaries);
+    std::vector<std::array<char, CGIO_MAX_NAME_LENGTH>> connectivity_names; // No connectivity in su2
+
+    if (in_file.has_stem()) {
+        const std::string stem = in_file.stem().string();
+        for (size_t i = 0; i < std::min(stem.size(), static_cast<size_t>(CGIO_MAX_NAME_LENGTH - 1)); ++i) {
+            base_name[i] = stem[i];
+        }
+        base_name[std::min(stem.size(), static_cast<size_t>(CGIO_MAX_NAME_LENGTH - 1))] = '\0';
+    }
+    else {
+        base_name[0] = 's';
+        base_name[1] = 'u';
+        base_name[2] = '2';
+        base_name[3] = ' ';
+        base_name[4] = 'm';
+        base_name[5] = 'e';
+        base_name[6] = 's';
+        base_name[7] = 'h';
+        base_name[8] = '\0';
+    }
+    
+    section_is_domain[0] = true;
+    section_ranges[0][0] = 1;
+    section_ranges[0][1] = elements.size();
+    section_names[0][0] = 'd'; // straight madness
+    section_names[0][1] = 'o';
+    section_names[0][2] = 'm';
+    section_names[0][3] = 'a';
+    section_names[0][4] = 'i';
+    section_names[0][5] = 'n';
+    section_names[0][6] = '\0';
+    connectivity[0] = std::vector<cgsize_t>(4 * elements.size());
+    for (size_t i = 0; i < elements.size(); ++i) {
+        connectivity[0][4 * i] = elements[i][0] + 1;
+        connectivity[0][4 * i + 1] = elements[i][1] + 1;
+        connectivity[0][4 * i + 2] = elements[i][2] + 1;
+        connectivity[0][4 * i + 3] = elements[i][3] + 1;
+    }
+
+    if (!wall.empty()) {
+        section_is_domain[wall_section_index] = false;
+        section_ranges[0][wall_section_index] = elements.size() + 1;
+        section_ranges[1][wall_section_index] = elements.size() + wall.size();
+        boundary_sizes[wall_boundary_index] = wall.size();
+        section_names[wall_section_index][0] = 'w'; // straight madness
+        section_names[wall_section_index][1] = 'a';
+        section_names[wall_section_index][2] = 'l';
+        section_names[wall_section_index][3] = 'l';
+        section_names[wall_section_index][4] = '\0';
+        section_names[wall_boundary_index][0] = 'w';
+        section_names[wall_boundary_index][1] = 'a';
+        section_names[wall_boundary_index][2] = 'l';
+        section_names[wall_boundary_index][3] = 'l';
+        section_names[wall_boundary_index][4] = '\0';
+        boundary_types[wall_boundary_index] = BCType_t::BCWall;
+        connectivity[wall_section_index] = std::vector<cgsize_t>(2 * wall.size());
+        boundary_elements[wall_boundary_index] = std::vector<cgsize_t>(wall.size());
+        for (size_t i = 0; i < wall.size(); ++i) {
+            connectivity[wall_section_index][2 * i] = wall[i][0] + 1;
+            connectivity[wall_section_index][2 * i + 1] = wall[i][1] + 1;
+            boundary_elements[wall_boundary_index][i] = section_ranges[0][wall_section_index] + i;
+        }
+    }
+
+    if (!symmetry.empty()) {
+        section_is_domain[symmetry_section_index] = false;
+        section_ranges[0][symmetry_section_index] = elements.size() + wall.size() + 1;
+        section_ranges[1][symmetry_section_index] = elements.size() + wall.size() + symmetry.size();
+        boundary_sizes[symmetry_boundary_index] = symmetry.size();
+        section_names[symmetry_section_index][0] = 's'; // straight madness
+        section_names[symmetry_section_index][1] = 'y';
+        section_names[symmetry_section_index][2] = 'm';
+        section_names[symmetry_section_index][3] = 'm';
+        section_names[symmetry_section_index][4] = 'e';
+        section_names[symmetry_section_index][5] = 't';
+        section_names[symmetry_section_index][6] = 'r';
+        section_names[symmetry_section_index][7] = 'y';
+        section_names[symmetry_section_index][8] = '\0';
+        section_names[symmetry_boundary_index][0] = 's';
+        section_names[symmetry_boundary_index][1] = 'y';
+        section_names[symmetry_boundary_index][2] = 'm';
+        section_names[symmetry_boundary_index][3] = 'm';
+        section_names[symmetry_boundary_index][4] = 'e';
+        section_names[symmetry_boundary_index][5] = 't';
+        section_names[symmetry_boundary_index][6] = 'r';
+        section_names[symmetry_boundary_index][7] = 'y';
+        section_names[symmetry_boundary_index][8] = '\0';
+        boundary_types[symmetry_boundary_index] = BCType_t::BCSymmetryPlane;
+        connectivity[symmetry_section_index] = std::vector<cgsize_t>(2 * symmetry.size());
+        boundary_elements[symmetry_boundary_index] = std::vector<cgsize_t>(symmetry.size());
+        for (size_t i = 0; i < symmetry.size(); ++i) {
+            connectivity[symmetry_section_index][2 * i] = symmetry[i][0] + 1;
+            connectivity[symmetry_section_index][2 * i + 1] = symmetry[i][1] + 1;
+            boundary_elements[symmetry_boundary_index][i] = section_ranges[0][symmetry_section_index] + i;
+        }
+    }
+
+    if (!inflow.empty()) {
+        section_is_domain[inflow_section_index] = false;
+        section_ranges[0][inflow_section_index] = elements.size() + wall.size() + symmetry.size() + 1;
+        section_ranges[1][inflow_section_index] = elements.size() + wall.size() + symmetry.size() + inflow.size();
+        boundary_sizes[inflow_boundary_index] = inflow.size();
+        section_names[inflow_section_index][0] = 'i'; // straight madness
+        section_names[inflow_section_index][1] = 'n';
+        section_names[inflow_section_index][2] = 'f';
+        section_names[inflow_section_index][3] = 'l';
+        section_names[inflow_section_index][4] = 'o';
+        section_names[inflow_section_index][5] = 'w';
+        section_names[inflow_section_index][6] = '\0';
+        section_names[inflow_boundary_index][0] = 'i';
+        section_names[inflow_boundary_index][1] = 'n';
+        section_names[inflow_boundary_index][2] = 'f';
+        section_names[inflow_boundary_index][3] = 'l';
+        section_names[inflow_boundary_index][4] = 'o';
+        section_names[inflow_boundary_index][5] = 'w';
+        section_names[inflow_boundary_index][6] = '\0';
+        boundary_types[inflow_boundary_index] = BCType_t::BCInflow;
+        connectivity[inflow_section_index] = std::vector<cgsize_t>(2 * inflow.size());
+        boundary_elements[inflow_boundary_index] = std::vector<cgsize_t>(inflow.size());
+        for (size_t i = 0; i < inflow.size(); ++i) {
+            connectivity[inflow_section_index][2 * i] = inflow[i][0] + 1;
+            connectivity[inflow_section_index][2 * i + 1] = inflow[i][1] + 1;
+            boundary_elements[inflow_boundary_index][i] = section_ranges[0][inflow_section_index] + i;
+        }
+    }
+
+    if (!outflow.empty()) {
+        section_is_domain[outflow_section_index] = false;
+        section_ranges[0][outflow_section_index] = elements.size() + wall.size() + symmetry.size() + inflow.size() + 1;
+        section_ranges[1][outflow_section_index] = elements.size() + wall.size() + symmetry.size() + inflow.size() + outflow.size();
+        boundary_sizes[outflow_boundary_index] = outflow.size();
+        section_names[outflow_section_index][0] = 'o'; // straight madness
+        section_names[outflow_section_index][1] = 'u';
+        section_names[outflow_section_index][2] = 't';
+        section_names[outflow_section_index][3] = 'f';
+        section_names[outflow_section_index][4] = 'l';
+        section_names[outflow_section_index][5] = 'o';
+        section_names[outflow_section_index][6] = 'w';
+        section_names[outflow_section_index][7] = '\0';
+        section_names[outflow_boundary_index][0] = 'o';
+        section_names[outflow_boundary_index][1] = 'u';
+        section_names[outflow_boundary_index][2] = 't';
+        section_names[outflow_boundary_index][3] = 'f';
+        section_names[outflow_boundary_index][4] = 'l';
+        section_names[outflow_boundary_index][5] = 'o';
+        section_names[outflow_boundary_index][6] = 'w';
+        section_names[outflow_boundary_index][7] = '\0';
+        boundary_types[outflow_boundary_index] = BCType_t::BCOutflow;
+        connectivity[outflow_section_index] = std::vector<cgsize_t>(2 * outflow.size());
+        boundary_elements[outflow_boundary_index] = std::vector<cgsize_t>(outflow.size());
+        for (size_t i = 0; i < outflow.size(); ++i) {
+            connectivity[outflow_section_index][2 * i] = outflow[i][0] + 1;
+            connectivity[outflow_section_index][2 * i + 1] = outflow[i][1] + 1;
+            boundary_elements[outflow_boundary_index][i] = section_ranges[0][outflow_section_index] + i;
+        }
+    }
+
+    return MeshPart_t{elements.size(), 
+                      wall.size() + symmetry.size() + inflow.size() + outflow.size(), 
+                      2, 
+                      2, 
+                      1, 
+                      1, 
+                      ZoneType_t::Unstructured, 
+                      base_name, 
+                      coord_names, 
+                      std::move(section_names), 
+                      std::move(boundary_names), 
+                      std::move(connectivity_names),
+                      std::move(section_is_domain), 
+                      std::move(section_ranges), 
+                      std::move(connectivity), 
+                      std::move(xy), 
+                      std::move(boundary_sizes), 
+                      std::move(boundary_elements), 
+                      std::move(boundary_types), 
+                      std::move(boundary_point_set_types), 
+                      std::move(connectivity_point_set_types),
+                      std::move(connectivity_donor_point_set_types),
+                      std::move(boundary_grid_locations), 
+                      std::move(connectivity_grid_locations),
+                      std::move(connectivity_sizes),
+                      std::move(interface_elements),
+                      std::move(interface_donor_elements),
+                      std::move(connectivity_types),
+                      std::move(connectivity_donor_zone_types),
+                      std::move(connectivity_donor_data_types)};
 }
 
 auto write_cgns_mesh(cgsize_t n_proc, const MeshPart_t mesh, const fs::path out_file) -> void {
