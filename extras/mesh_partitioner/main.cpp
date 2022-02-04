@@ -11,7 +11,8 @@
 
 namespace fs = std::filesystem;
 
-constexpr int CGIO_MAX_NAME_LENGTH = 33; // Includes the null terminator
+constexpr size_t CGIO_MAX_NAME_LENGTH_WITHOUT_TERMINATOR = 32; // Does not include the null terminator
+constexpr size_t CGIO_MAX_NAME_LENGTH = CGIO_MAX_NAME_LENGTH_WITHOUT_TERMINATOR + 1; // Includes the null terminator
 
 auto get_input_file(const SEM::Helpers::InputParser_t& input_parser) -> fs::path {
     const std::string input_path = input_parser.getCmdOption("--in_path");
@@ -749,10 +750,10 @@ auto read_su2_mesh(const fs::path in_file) -> MeshPart_t {
 
     if (in_file.has_stem()) {
         const std::string stem = in_file.stem().string();
-        for (size_t i = 0; i < std::min(stem.size(), static_cast<size_t>(CGIO_MAX_NAME_LENGTH - 1)); ++i) {
+        for (size_t i = 0; i < std::min(stem.size(), CGIO_MAX_NAME_LENGTH_WITHOUT_TERMINATOR); ++i) {
             base_name[i] = stem[i];
         }
-        base_name[std::min(stem.size(), static_cast<size_t>(CGIO_MAX_NAME_LENGTH - 1))] = '\0';
+        base_name[std::min(stem.size(), CGIO_MAX_NAME_LENGTH_WITHOUT_TERMINATOR)] = '\0';
     }
     else {
         base_name[0] = 's';
@@ -902,8 +903,8 @@ auto read_su2_mesh(const fs::path in_file) -> MeshPart_t {
         }
     }
 
-    return MeshPart_t{elements.size(), 
-                      wall.size() + symmetry.size() + inflow.size() + outflow.size(), 
+    return MeshPart_t{static_cast<cgsize_t>(elements.size()), 
+                      static_cast<cgsize_t>(wall.size() + symmetry.size() + inflow.size() + outflow.size()), 
                       2, 
                       2, 
                       1, 
