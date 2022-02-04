@@ -51,13 +51,13 @@ auto build_node_to_element(cgsize_t n_nodes, const std::vector<cgsize_t>& elemen
     for (cgsize_t j = 0; j < n_elements_domain; ++j) {
         for (cgsize_t side_index = 0; side_index < 4; ++side_index) {
             const size_t node_index = elements[4 * j + side_index] - 1;
-            node_to_element[node_index].push_back(j); // Doesn't work if elements have the same node multiple times. Shouldn't happen with correct meshes I think, otherwise do as in Mesh2D_t.
+            node_to_element[node_index].push_back(j); // Doesn't work if elements have the same node multiple times. Shouldn't happen with correct meshes I think, otherwise do as in MeshPart_t.
         }
     }
     for (cgsize_t j = 0; j < n_elements_ghost; ++j) {
         for (cgsize_t side_index = 0; side_index < 2; ++side_index) {
             const size_t node_index = elements[4 * n_elements_domain + 2 * j + side_index] - 1;
-            node_to_element[node_index].push_back(n_elements_domain + j); // Doesn't work if elements have the same node multiple times. Shouldn't happen with correct meshes I think, otherwise do as in Mesh2D_t.
+            node_to_element[node_index].push_back(n_elements_domain + j); // Doesn't work if elements have the same node multiple times. Shouldn't happen with correct meshes I think, otherwise do as in MeshPart_t.
         }
     }
 
@@ -109,33 +109,101 @@ auto build_element_to_element(const std::vector<cgsize_t>& elements, const std::
     return element_to_element;
 }
 
-auto main(int argc, char* argv[]) -> int {
-    const SEM::Helpers::InputParser_t input_parser(argc, argv);
-    if (input_parser.cmdOptionExists("--help") || input_parser.cmdOptionExists("-h")) {
-        std::cout << "usage: mesh_partitioner.exe [-h] [--in_path IN_PATH | [--in_filename IN_FILENAME] [--in_directory IN_DIRECTORY]] [--out_path OUT_PATH | [--out_filename OUT_FILENAME] [--out_directory OUT_DIRECTORY]] [--n N] [-v]" << std::endl << std::endl;
-        std::cout << "Unstructured mesh partitioner. Generates multi-block 2D unstructured meshes in the CGNS HDF5 format from single-block meshes using the CGNS HDF5 format." << std::endl << std::endl;
-        std::cout << "options:" << std::endl;
-        std::cout << '\t' <<  "-h, --help"      <<  '\t' <<  "show this help message and exit" << std::endl;
-        std::cout << '\t' <<  "--in_path"       <<  '\t' <<  "full path of the input mesh file, overrides filename and directory if set." << std::endl;
-        std::cout << '\t' <<  "--in_filename"   <<  '\t' <<  "file name of the input mesh file, (default: mesh.cgns)" << std::endl;
-        std::cout << '\t' <<  "--in_directory"  <<  '\t' <<  "directory of the input mesh file (default: ./meshes/)" << std::endl;
-        std::cout << '\t' <<  "--out_path"      <<  '\t' <<  "full path of the output mesh file, overrides filename and directory if set" << std::endl;
-        std::cout << '\t' <<  "--out_filename"  <<  '\t' <<  "file name of the output mesh file (default: mesh_partitioned.cgns)" << std::endl;
-        std::cout << '\t' <<  "--out_directory" <<  '\t' <<  "directory of the output mesh file (default: ./meshes/)" << std::endl;
-        std::cout << '\t' <<  "--n"             <<  '\t' <<  "number of blocks in the output mesh (default: 4)" << std::endl;
-        std::cout << '\t' <<  "-v, --version"   <<  '\t' <<  "show program's version number and exit" << std::endl;
-        exit(0);
-    }
-    else if (input_parser.cmdOptionExists("--version") || input_parser.cmdOptionExists("-v")) {
-        std::cout << "mesh_partitioner.exe 1.0.0" << std::endl;
-        exit(0);
-    }
+class MeshPart_t {
+    public:
+        MeshPart_t(cgsize_t n_elements_domain, 
+                   cgsize_t n_elements_ghost, 
+                   int dim, 
+                   int physDim, 
+                   int index_in_base, 
+                   int index_in_zone, 
+                   ZoneType_t zone_type, 
+                   std::array<char, CGIO_MAX_NAME_LENGTH> base_name, 
+                   std::array<std::array<char, CGIO_MAX_NAME_LENGTH>, 2> coord_names, 
+                   std::vector<std::array<char, CGIO_MAX_NAME_LENGTH>> section_names, 
+                   std::vector<std::array<char, CGIO_MAX_NAME_LENGTH>> boundary_names, 
+                   std::vector<std::array<char, CGIO_MAX_NAME_LENGTH>> connectivity_names,
+                   std::vector<bool> section_is_domain, 
+                   std::vector<std::array<cgsize_t, 2>> section_ranges, 
+                   std::vector<std::vector<cgsize_t>> connectivity, 
+                   std::array<std::vector<double>, 2> xy, 
+                   std::vector<cgsize_t> boundary_sizes, 
+                   std::vector<std::vector<cgsize_t>> boundary_elements, 
+                   std::vector<BCType_t> boundary_types, 
+                   std::vector<PointSetType_t> boundary_point_set_types, 
+                   std::vector<PointSetType_t> connectivity_point_set_types,
+                   std::vector<PointSetType_t> connectivity_donor_point_set_types,
+                   std::vector<GridLocation_t> boundary_grid_locations, 
+                   std::vector<GridLocation_t> connectivity_grid_locations,
+                   std::vector<cgsize_t> connectivity_sizes,
+                   std::vector<std::vector<cgsize_t>> interface_elements,
+                   std::vector<std::vector<cgsize_t>> interface_donor_elements,
+                   std::vector<GridConnectivityType_t> connectivity_types,
+                   std::vector<ZoneType_t> connectivity_donor_zone_types,
+                   std::vector<DataType_t> connectivity_donor_data_types) : 
+            n_elements_domain_(n_elements_domain),
+            n_elements_ghost_(n_elements_ghost),
+            dim_(dim),
+            physDim_(physDim),
+            index_in_base_(index_in_base),
+            zone_type_(zone_type),
+            base_name_(base_name),
+            coord_names_(coord_names),
+            section_names_(section_names),
+            boundary_names_(boundary_names),
+            connectivity_names_(connectivity_names),
+            section_is_domain_(section_is_domain),
+            section_ranges_(section_ranges),
+            connectivity_(connectivity),
+            xy_(xy),
+            boundary_sizes_(boundary_sizes),
+            boundary_elements_(boundary_elements),
+            boundary_types_(boundary_types),
+            boundary_point_set_types_(boundary_point_set_types),
+            connectivity_point_set_types_(connectivity_point_set_types),
+            connectivity_donor_point_set_types_(connectivity_donor_point_set_types),
+            boundary_grid_locations_(boundary_grid_locations),
+            connectivity_grid_locations_(connectivity_grid_locations),
+            connectivity_sizes_(connectivity_sizes),
+            interface_elements_(interface_elements),
+            interface_donor_elements_(interface_donor_elements),
+            connectivity_types_(connectivity_types),
+            connectivity_donor_zone_types_(connectivity_donor_zone_types),
+            connectivity_donor_data_types_(connectivity_donor_data_types) {};
 
-    // Argument parsing
-    const fs::path in_file = get_input_file(input_parser);
-    const fs::path out_file = get_output_file(input_parser);
-    const cgsize_t n_proc = input_parser.getCmdOptionOr("--n", static_cast<cgsize_t>(4));
+        cgsize_t n_elements_domain_;
+        cgsize_t n_elements_ghost_;
+        int dim_;
+        int physDim_;
+        int index_in_base_;
+        int index_in_zone_;
+        ZoneType_t zone_type_;
+        std::array<char, CGIO_MAX_NAME_LENGTH> base_name_;
+        std::array<std::array<char, CGIO_MAX_NAME_LENGTH>, 2> coord_names_;
+        std::vector<std::array<char, CGIO_MAX_NAME_LENGTH>> section_names_;
+        std::vector<std::array<char, CGIO_MAX_NAME_LENGTH>> boundary_names_;
+        std::vector<std::array<char, CGIO_MAX_NAME_LENGTH>> connectivity_names_;
+        std::vector<bool> section_is_domain_;
+        std::vector<std::array<cgsize_t, 2>> section_ranges_;
+        std::vector<std::vector<cgsize_t>> connectivity_;
+        std::array<std::vector<double>, 2> xy_;
+        std::vector<cgsize_t> boundary_sizes_;
+        std::vector<std::vector<cgsize_t>> boundary_elements_;
+        std::vector<BCType_t> boundary_types_;
+        std::vector<PointSetType_t> boundary_point_set_types_;
+        std::vector<PointSetType_t> connectivity_point_set_types_;
+        std::vector<PointSetType_t> connectivity_donor_point_set_types_;
+        std::vector<GridLocation_t> boundary_grid_locations_;
+        std::vector<GridLocation_t> connectivity_grid_locations_;
+        std::vector<cgsize_t> connectivity_sizes_;
+        std::vector<std::vector<cgsize_t>> interface_elements_;
+        std::vector<std::vector<cgsize_t>> interface_donor_elements_;
+        std::vector<GridConnectivityType_t> connectivity_types_;
+        std::vector<ZoneType_t> connectivity_donor_zone_types_;
+        std::vector<DataType_t> connectivity_donor_data_types_;
+};
 
+auto read_cgns_mesh(const fs::path in_file) -> MeshPart_t {
     // CGNS input
     int index_in_file = 0;
     const int open_error = cg_open(in_file.string().c_str(), CG_MODE_READ, &index_in_file);
@@ -374,8 +442,45 @@ auto main(int argc, char* argv[]) -> int {
         exit(34);  
     }
 
+    return MeshPart_t(n_elements_domain, 
+                      n_elements_ghost, 
+                      dim, 
+                      physDim, 
+                      index_in_base, 
+                      index_in_zone, 
+                      zone_type, 
+                      base_name, 
+                      coord_names, 
+                      std::move(section_names), 
+                      std::move(boundary_names), 
+                      std::move(connectivity_names),
+                      std::move(section_is_domain), 
+                      std::move(section_ranges), 
+                      std::move(connectivity), 
+                      std::move(xy), 
+                      std::move(boundary_sizes), 
+                      std::move(boundary_elements), 
+                      std::move(boundary_types), 
+                      std::move(boundary_point_set_types), 
+                      std::move(connectivity_point_set_types),
+                      std::move(connectivity_donor_point_set_types),
+                      std::move(boundary_grid_locations), 
+                      std::move(connectivity_grid_locations),
+                      std::move(connectivity_sizes),
+                      std::move(interface_elements),
+                      std::move(interface_donor_elements),
+                      std::move(connectivity_types),
+                      std::move(connectivity_donor_zone_types),
+                      std::move(connectivity_donor_data_types));
+}
+
+auto read_su2_mesh(const fs::path in_file) -> MeshPart_t {
+
+}
+
+auto write_cgns_mesh(cgsize_t n_proc, const MeshPart_t mesh, const fs::path out_file) -> void {
     // Splitting elements
-    const auto [n_elements_div, n_elements_mod] = std::div(n_elements_domain, n_proc);
+    const auto [n_elements_div, n_elements_mod] = std::div(mesh.n_elements_domain_, n_proc);
     std::vector<cgsize_t> n_elements(n_proc);
     std::vector<cgsize_t> starting_elements(n_proc);
     for (cgsize_t i = 0; i < n_proc; ++i) {
@@ -385,36 +490,36 @@ auto main(int argc, char* argv[]) -> int {
     }
 
     // Putting connectivity data together
-    std::vector<cgsize_t> elements(4 * n_elements_domain + 2 * n_elements_ghost);
-    std::vector<cgsize_t> section_start_indices(n_sections);
+    std::vector<cgsize_t> elements(4 * mesh.n_elements_domain_ + 2 * mesh.n_elements_ghost_);
+    std::vector<cgsize_t> section_start_indices(mesh.section_is_domain_.size());
     cgsize_t element_domain_index = 0;
-    cgsize_t element_ghost_index = 4 * n_elements_domain;
-    for (int i = 0; i < n_sections; ++i) {
-        if (section_is_domain[i]) {
+    cgsize_t element_ghost_index = 4 * mesh.n_elements_domain_;
+    for (int i = 0; i < mesh.section_is_domain_.size(); ++i) {
+        if (mesh.section_is_domain_[i]) {
             section_start_indices[i] = element_domain_index;
-            for (cgsize_t j = 0; j < section_ranges[i][1] - section_ranges[i][0] + 1; ++j) {
-                elements[section_start_indices[i] + 4 * j] = connectivity[i][4 * j];
-                elements[section_start_indices[i] + 4 * j + 1] = connectivity[i][4 * j + 1];
-                elements[section_start_indices[i] + 4 * j + 2] = connectivity[i][4 * j + 2];
-                elements[section_start_indices[i] + 4 * j + 3] = connectivity[i][4 * j + 3];
+            for (cgsize_t j = 0; j < mesh.section_ranges_[i][1] - mesh.section_ranges_[i][0] + 1; ++j) {
+                elements[section_start_indices[i] + 4 * j] = mesh.connectivity_[i][4 * j];
+                elements[section_start_indices[i] + 4 * j + 1] = mesh.connectivity_[i][4 * j + 1];
+                elements[section_start_indices[i] + 4 * j + 2] = mesh.connectivity_[i][4 * j + 2];
+                elements[section_start_indices[i] + 4 * j + 3] = mesh.connectivity_[i][4 * j + 3];
             }
-            element_domain_index += 4 * (section_ranges[i][1] - section_ranges[i][0] + 1);
+            element_domain_index += 4 * (mesh.section_ranges_[i][1] - mesh.section_ranges_[i][0] + 1);
         }
         else {
             section_start_indices[i] = element_ghost_index;
-            for (cgsize_t j = 0; j < section_ranges[i][1] - section_ranges[i][0] + 1; ++j) {
-                elements[section_start_indices[i] + 2 * j] = connectivity[i][2 * j];
-                elements[section_start_indices[i] + 2 * j + 1] = connectivity[i][2 * j + 1];
+            for (cgsize_t j = 0; j < mesh.section_ranges_[i][1] - mesh.section_ranges_[i][0] + 1; ++j) {
+                elements[section_start_indices[i] + 2 * j] = mesh.connectivity_[i][2 * j];
+                elements[section_start_indices[i] + 2 * j + 1] = mesh.connectivity_[i][2 * j + 1];
             }
-            element_ghost_index += 2 * (section_ranges[i][1] - section_ranges[i][0] + 1);
+            element_ghost_index += 2 * (mesh.section_ranges_[i][1] - mesh.section_ranges_[i][0] + 1);
         }
     }
 
     // Computing nodes to elements
-    const std::vector<std::vector<cgsize_t>> node_to_element = build_node_to_element(n_nodes, elements, n_elements_domain, n_elements_ghost);
+    const std::vector<std::vector<cgsize_t>> node_to_element = build_node_to_element(mesh.xy_[0].size(), elements, mesh.n_elements_domain_, mesh.n_elements_ghost_);
 
     // Computing element to elements
-    const std::vector<cgsize_t> element_to_element = build_element_to_element(elements, node_to_element, n_elements_domain, n_elements_ghost);
+    const std::vector<cgsize_t> element_to_element = build_element_to_element(elements, node_to_element, mesh.n_elements_domain_, mesh.n_elements_ghost_);
 
     // Creating output file
     int index_out_file = 0;
@@ -425,7 +530,7 @@ auto main(int argc, char* argv[]) -> int {
     }
 
     int index_out_base = 0;
-    cg_base_write(index_out_file, base_name.data(), dim, physDim, &index_out_base);
+    cg_base_write(index_out_file, mesh.base_name_.data(), mesh.dim_, mesh.physDim_, &index_out_base);
 
     // Building the different sections
     std::vector<int> index_out_zone(n_proc);
@@ -445,32 +550,32 @@ auto main(int argc, char* argv[]) -> int {
         }
 
         // Getting relevant zones
-        std::vector<std::vector<cgsize_t>> new_boundary_indices(n_sections);
-        for (int k = 0; k < n_sections; ++k) {
-            if (!section_is_domain[k]) {
-                new_boundary_indices[k] = std::vector<cgsize_t>(section_ranges[k][1] - section_ranges[k][0] + 1);
-                for (cgsize_t j = 0; j < section_ranges[k][1] - section_ranges[k][0] + 1; ++j) {
+        std::vector<std::vector<cgsize_t>> new_boundary_indices(mesh.section_is_domain_.size());
+        for (int k = 0; k < mesh.section_is_domain_.size(); ++k) {
+            if (!mesh.section_is_domain_[k]) {
+                new_boundary_indices[k] = std::vector<cgsize_t>(mesh.section_ranges_[k][1] - mesh.section_ranges_[k][0] + 1);
+                for (cgsize_t j = 0; j < mesh.section_ranges_[k][1] - mesh.section_ranges_[k][0] + 1; ++j) {
                     cgsize_t ghost_index = j;
                     for (cgsize_t zone_loop = 0; zone_loop < k; ++zone_loop) {
-                        if (!section_is_domain[zone_loop]) {
-                            ghost_index += section_ranges[k][1] - section_ranges[k][0] + 1;
+                        if (!mesh.section_is_domain_[zone_loop]) {
+                            ghost_index += mesh.section_ranges_[k][1] - mesh.section_ranges_[k][0] + 1;
                         }
                     }
 
-                    const cgsize_t domain_element_index = element_to_element[4 * n_elements_domain + ghost_index];
+                    const cgsize_t domain_element_index = element_to_element[4 * mesh.n_elements_domain_ + ghost_index];
                     if (domain_element_index >= starting_elements[i] && domain_element_index < starting_elements[i] + n_elements[i]) {
                         new_boundary_indices[k][j] = 1;
                     }
                 }
             }
         }
-        std::vector<cgsize_t> n_boundaries_in_proc(n_sections);
-        std::vector<cgsize_t> boundaries_start_index(n_sections);
+        std::vector<cgsize_t> n_boundaries_in_proc(mesh.section_is_domain_.size());
+        std::vector<cgsize_t> boundaries_start_index(mesh.section_is_domain_.size());
         cgsize_t n_total_boundaries_in_proc = 0;
-        for (int k = 0; k < n_sections; ++k) {
-            if (!section_is_domain[k]) {
+        for (int k = 0; k < mesh.section_is_domain_.size(); ++k) {
+            if (!mesh.section_is_domain_[k]) {
                 boundaries_start_index[k] = n_elements[i] + n_total_boundaries_in_proc;
-                for (cgsize_t j = 0; j < section_ranges[k][1] - section_ranges[k][0] + 1; ++j) {
+                for (cgsize_t j = 0; j < mesh.section_ranges_[k][1] - mesh.section_ranges_[k][0] + 1; ++j) {
                     if (new_boundary_indices[k][j]) {
                         new_boundary_indices[k][j] = n_elements[i] + n_total_boundaries_in_proc;
                         ++n_boundaries_in_proc[k];
@@ -479,14 +584,14 @@ auto main(int argc, char* argv[]) -> int {
                 }
             }
         }
-        std::vector<std::vector<cgsize_t>> boundaries_in_proc(n_sections);
-        for (int k = 0; k < n_sections; ++k) {
-            if (!section_is_domain[k]) {
+        std::vector<std::vector<cgsize_t>> boundaries_in_proc(mesh.section_is_domain_.size());
+        for (int k = 0; k < mesh.section_is_domain_.size(); ++k) {
+            if (!mesh.section_is_domain_[k]) {
                 if (n_boundaries_in_proc[k] > 0) {
                     boundaries_in_proc[k].reserve(n_boundaries_in_proc[k] * 2);
                     n_elements_in_proc += n_boundaries_in_proc[k];
 
-                    for (cgsize_t j = 0; j < section_ranges[k][1] - section_ranges[k][0] + 1; ++j) {
+                    for (cgsize_t j = 0; j < mesh.section_ranges_[k][1] - mesh.section_ranges_[k][0] + 1; ++j) {
                         if (new_boundary_indices[k][j]) {
                             const cgsize_t ghost_index = 2 * j + section_start_indices[k];
                             boundaries_in_proc[k].push_back(elements[ghost_index]);
@@ -506,7 +611,7 @@ auto main(int argc, char* argv[]) -> int {
             const cgsize_t element_index = j + starting_elements[i];
             for (cgsize_t side_index = 0; side_index < 4; ++side_index) {
                 const cgsize_t neighbour_element_index = element_to_element[4 * element_index + side_index];
-                if (neighbour_element_index < n_elements_domain && !(neighbour_element_index >= starting_elements[i] && neighbour_element_index < starting_elements[i] + n_elements[i])) {
+                if (neighbour_element_index < mesh.n_elements_domain_ && !(neighbour_element_index >= starting_elements[i] && neighbour_element_index < starting_elements[i] + n_elements[i])) {
                     cgsize_t destination_proc = static_cast<cgsize_t>(-1);
                     cgsize_t element_index_in_destination = static_cast<cgsize_t>(-1);
                     for (cgsize_t process_index = 0; process_index < n_proc; ++process_index) {
@@ -518,7 +623,7 @@ auto main(int argc, char* argv[]) -> int {
                     }
 
                     if (destination_proc == static_cast<cgsize_t>(-1) ) {
-                        std::cerr << "Error: CGNS mesh, base " << index_in_base << ", zone " << index_in_zone << " contains neighbour element " << neighbour_element_index << " but it is not found in any process. Exiting." << std::endl;
+                        std::cerr << "Error: CGNS mesh, base " << mesh.index_in_base_ << ", zone " << mesh.index_in_zone_ << " contains neighbour element " << neighbour_element_index << " but it is not found in any process. Exiting." << std::endl;
                         exit(60);
                     }
 
@@ -534,13 +639,13 @@ auto main(int argc, char* argv[]) -> int {
         n_elements_in_proc += n_connectivity_elements;
 
         // Getting relevant points
-        std::vector<bool> is_point_needed(n_nodes);
+        std::vector<bool> is_point_needed(mesh.xy_[0].size());
         for (cgsize_t element_index = 0; element_index < n_elements[i]; ++element_index) {
             for (cgsize_t side_index = 0; side_index < 4; ++side_index) {
                 is_point_needed[elements_in_proc[4 * element_index + side_index] - 1] = true;
             }
         }
-        for (int k = 0; k < n_sections; ++k) {
+        for (int k = 0; k < mesh.section_is_domain_.size(); ++k) {
             for (cgsize_t j = 0; j < n_boundaries_in_proc[k]; ++j) {
                 is_point_needed[boundaries_in_proc[k][2 * j] - 1] = true;
                 is_point_needed[boundaries_in_proc[k][2 * j + 1] - 1] = true;
@@ -560,14 +665,14 @@ auto main(int argc, char* argv[]) -> int {
         xy_in_proc[0].reserve(n_nodes_in_proc);
         xy_in_proc[1].reserve(n_nodes_in_proc);
 
-        for (cgsize_t node_index = 0; node_index < n_nodes; ++node_index) {
+        for (cgsize_t node_index = 0; node_index < mesh.xy_[0].size(); ++node_index) {
             if (is_point_needed[node_index]) {
-                xy_in_proc[0].push_back(xy[0][node_index]);
-                xy_in_proc[1].push_back(xy[1][node_index]);
+                xy_in_proc[0].push_back(mesh.xy_[0][node_index]);
+                xy_in_proc[1].push_back(mesh.xy_[1][node_index]);
 
                 // Replacing point indices CHECK do with node_to_elem
                 for (auto element_index : node_to_element[node_index]) {
-                    if (element_index < n_elements_domain ) {
+                    if (element_index < mesh.n_elements_domain_ ) {
                         if (element_index >= starting_elements[i] && element_index < starting_elements[i] + n_elements[i]) {
                             for (cgsize_t side_index = 0; side_index < 4; ++side_index) {
                                 if (elements_in_proc[4 * (element_index - starting_elements[i]) + side_index] == node_index + 1) {
@@ -578,18 +683,18 @@ auto main(int argc, char* argv[]) -> int {
                     }
                     else {
                         int section_index = -1;
-                        for (int k = 0; k < n_sections; ++k) {
-                            if (element_index + 1 >= section_ranges[k][0] && element_index + 1 <= section_ranges[k][1]) {
+                        for (int k = 0; k < mesh.section_is_domain_.size(); ++k) {
+                            if (element_index + 1 >= mesh.section_ranges_[k][0] && element_index + 1 <= mesh.section_ranges_[k][1]) {
                                 section_index = k;
                                 break;
                             }
                         }
                         if (section_index == -1) {
-                            std::cerr << "Error: CGNS mesh, base " << index_in_base << ", zone " << index_in_zone << ", node to elements of point " << node_index << " contains element " << element_index << " but it is not found in any mesh section. Exiting." << std::endl;
+                            std::cerr << "Error: CGNS mesh, base " << mesh.index_in_base_ << ", zone " << mesh.index_in_zone_ << ", node to elements of point " << node_index << " contains element " << element_index << " but it is not found in any mesh section. Exiting." << std::endl;
                             exit(52);
                         }
 
-                        const cgsize_t element_section_index = element_index + 1 - section_ranges[section_index][0];
+                        const cgsize_t element_section_index = element_index + 1 - mesh.section_ranges_[section_index][0];
                         const cgsize_t new_element_index = new_boundary_indices[section_index][element_section_index];
                         if (new_element_index != 0) {
                             const cgsize_t boundary_element_index = new_element_index - boundaries_start_index[section_index];
@@ -621,12 +726,12 @@ auto main(int argc, char* argv[]) -> int {
 
         std::stringstream ss;
         ss << "Zone " << std::setfill('0') << std::setw(n_digits) << i + 1;
-        cg_zone_write(index_out_file, index_out_base, ss.str().c_str(), isize.data(), zone_type, &index_out_zone[i]);
+        cg_zone_write(index_out_file, index_out_base, ss.str().c_str(), isize.data(), mesh.zone_type_, &index_out_zone[i]);
 
         /* write grid coordinates (user must use SIDS-standard names here) */
         int index_out_coord = 0;
-        cg_coord_write(index_out_file, index_out_base, index_out_zone[i], DataType_t::RealDouble, coord_names[0].data(), xy_in_proc[0].data(), &index_out_coord);
-        cg_coord_write(index_out_file, index_out_base, index_out_zone[i], DataType_t::RealDouble, coord_names[1].data(), xy_in_proc[1].data(), &index_out_coord);
+        cg_coord_write(index_out_file, index_out_base, index_out_zone[i], DataType_t::RealDouble, mesh.coord_names_[0].data(), xy_in_proc[0].data(), &index_out_coord);
+        cg_coord_write(index_out_file, index_out_base, index_out_zone[i], DataType_t::RealDouble, mesh.coord_names_[1].data(), xy_in_proc[1].data(), &index_out_coord);
 
         // Writing domain sections to file
         cgsize_t section_start = 0;
@@ -635,20 +740,20 @@ auto main(int argc, char* argv[]) -> int {
         cgsize_t remaining_elements = n_elements[i];
         cgsize_t domain_index_start = 0;
         cgsize_t domain_index_end = 0;
-        for (int k = 0; k < n_sections; ++k) {
-            if (section_is_domain[k]) {
-                section_end += section_ranges[k][1] - section_ranges[k][0] + 1;
+        for (int k = 0; k < mesh.section_is_domain_.size(); ++k) {
+            if (mesh.section_is_domain_[k]) {
+                section_end += mesh.section_ranges_[k][1] - mesh.section_ranges_[k][0] + 1;
 
                 if (element_index >= section_start && element_index < section_end) {
                     const cgsize_t section_offset = element_index - section_start;
-                    const cgsize_t n_elements_in_this_section = section_ranges[k][1] - section_ranges[k][0] + 1;
+                    const cgsize_t n_elements_in_this_section = mesh.section_ranges_[k][1] - mesh.section_ranges_[k][0] + 1;
                     const cgsize_t section_end_offset = (n_elements_in_this_section - section_offset > remaining_elements) ? n_elements_in_this_section - section_offset - remaining_elements: 0;
                     const cgsize_t n_elements_from_this_section = n_elements_in_this_section - section_offset - section_end_offset;
 
                     int index_out_section = 0;
                     domain_index_end += n_elements_from_this_section;
                     const cgsize_t n_boundary_elem = 0; // No boundary elements yet
-                    cg_section_write(index_out_file, index_out_base, index_out_zone[i], section_names[k].data(), ElementType_t::QUAD_4, domain_index_start + 1, domain_index_end, n_boundary_elem, elements_in_proc.data() + element_index - starting_elements[i], &index_out_section);
+                    cg_section_write(index_out_file, index_out_base, index_out_zone[i], mesh.section_names_[k].data(), ElementType_t::QUAD_4, domain_index_start + 1, domain_index_end, n_boundary_elem, elements_in_proc.data() + element_index - starting_elements[i], &index_out_section);
                     domain_index_start = domain_index_end;
 
                     element_index += n_elements_from_this_section;
@@ -665,13 +770,13 @@ auto main(int argc, char* argv[]) -> int {
         // Writing ghost sections to file
         cgsize_t boundary_index_start = n_elements[i];
         cgsize_t boundary_index_end = n_elements[i];
-        for (int k = 0; k < n_sections; ++k) {
-            if (!section_is_domain[k]) {
+        for (int k = 0; k < mesh.section_is_domain_.size(); ++k) {
+            if (!mesh.section_is_domain_[k]) {
                 if (n_boundaries_in_proc[k] > 0) {
                     boundary_index_end += n_boundaries_in_proc[k];
                     int index_out_section = 0;
                     const cgsize_t n_boundary_elem = 0; // No boundary elements yet
-                    cg_section_write(index_out_file, index_out_base, index_out_zone[i], section_names[k].data(), ElementType_t::BAR_2, boundary_index_start + 1, boundary_index_end, n_boundary_elem, boundaries_in_proc[k].data(), &index_out_section);
+                    cg_section_write(index_out_file, index_out_base, index_out_zone[i], mesh.section_names_[k].data(), ElementType_t::BAR_2, boundary_index_start + 1, boundary_index_end, n_boundary_elem, boundaries_in_proc[k].data(), &index_out_section);
                     boundary_index_start = boundary_index_end;
                 }
             }
@@ -688,22 +793,22 @@ auto main(int argc, char* argv[]) -> int {
         }
 
         // Finding which elements are boundary condition elements
-        for (int index_boundary = 0; index_boundary < n_boundaries; ++index_boundary) {
+        for (int index_boundary = 0; index_boundary < mesh.boundary_sizes_.size(); ++index_boundary) {
             cgsize_t n_boundary_elements_in_proc = 0;
-            for (cgsize_t j = 0; j < boundary_sizes[index_boundary]; ++j) {
+            for (cgsize_t j = 0; j < mesh.boundary_sizes_[index_boundary]; ++j) {
                 int section_index = -1;
-                for (int k = 0; k < n_sections; ++k) {
-                    if ((boundary_elements[index_boundary][j] >= section_ranges[k][0]) && (boundary_elements[index_boundary][j] <= section_ranges[k][1])) {
+                for (int k = 0; k < mesh.section_is_domain_.size(); ++k) {
+                    if ((mesh.boundary_elements_[index_boundary][j] >= mesh.section_ranges_[k][0]) && (mesh.boundary_elements_[index_boundary][j] <= mesh.section_ranges_[k][1])) {
                         section_index = k;
                         break;
                     }
                 }
                 if (section_index == -1) {
-                    std::cerr << "Error: CGNS mesh, base " << index_in_base << ", zone " << index_in_zone << ", boundary " << index_boundary << " contains element " << boundary_elements[index_boundary][j] << " but it is not found in any mesh section. Exiting." << std::endl;
+                    std::cerr << "Error: CGNS mesh, base " << mesh.index_in_base_ << ", zone " << mesh.index_in_zone_ << ", boundary " << index_boundary << " contains element " << mesh.boundary_elements_[index_boundary][j] << " but it is not found in any mesh section. Exiting." << std::endl;
                     exit(45);
                 }
 
-                const cgsize_t new_element_index = new_boundary_indices[section_index][boundary_elements[index_boundary][j] - section_ranges[section_index][0]];
+                const cgsize_t new_element_index = new_boundary_indices[section_index][mesh.boundary_elements_[index_boundary][j] - mesh.section_ranges_[section_index][0]];
                 if (new_element_index != 0) {
                     ++n_boundary_elements_in_proc;
                 }
@@ -713,73 +818,73 @@ auto main(int argc, char* argv[]) -> int {
                 std::vector<cgsize_t> boundary_conditions;
                 boundary_conditions.reserve(n_boundary_elements_in_proc);
 
-                for (cgsize_t j = 0; j < boundary_sizes[index_boundary]; ++j) {
+                for (cgsize_t j = 0; j < mesh.boundary_sizes_[index_boundary]; ++j) {
                     int section_index = -1;
-                    for (int k = 0; k < n_sections; ++k) {
-                        if ((boundary_elements[index_boundary][j] >= section_ranges[k][0]) && (boundary_elements[index_boundary][j] <= section_ranges[k][1])) {
+                    for (int k = 0; k < mesh.section_is_domain_.size(); ++k) {
+                        if ((mesh.boundary_elements_[index_boundary][j] >= mesh.section_ranges_[k][0]) && (mesh.boundary_elements_[index_boundary][j] <= mesh.section_ranges_[k][1])) {
                             section_index = k;
                             break;
                         }
                     }
                     if (section_index == -1) {
-                        std::cerr << "Error: CGNS mesh, base " << index_in_base << ", zone " << index_in_zone << ", boundary " << index_boundary << " contains element " << boundary_elements[index_boundary][j] << " but it is not found in any mesh section. Exiting." << std::endl;
+                        std::cerr << "Error: CGNS mesh, base " << mesh.index_in_base_ << ", zone " << mesh.index_in_zone_ << ", boundary " << index_boundary << " contains element " << mesh.boundary_elements_[index_boundary][j] << " but it is not found in any mesh section. Exiting." << std::endl;
                         exit(45);
                     }
 
-                    const cgsize_t new_element_index = new_boundary_indices[section_index][boundary_elements[index_boundary][j] - section_ranges[section_index][0]];
+                    const cgsize_t new_element_index = new_boundary_indices[section_index][mesh.boundary_elements_[index_boundary][j] - mesh.section_ranges_[section_index][0]];
                     if (new_element_index != 0) {
                         boundary_conditions.push_back(new_element_index + 1);
                     }
                 }
 
                 int index_out_boundary = 0;
-                cg_boco_write(index_out_file, index_out_base, index_out_zone[i], boundary_names[index_boundary].data(), boundary_types[index_boundary], boundary_point_set_types[index_boundary], n_boundary_elements_in_proc, boundary_conditions.data(), &index_out_boundary);
-                cg_boco_gridlocation_write(index_out_file, index_out_base, index_out_zone[i], index_out_boundary, boundary_grid_locations[index_boundary]);
+                cg_boco_write(index_out_file, index_out_base, index_out_zone[i], mesh.boundary_names_[index_boundary].data(), mesh.boundary_types_[index_boundary], mesh.boundary_point_set_types_[index_boundary], n_boundary_elements_in_proc, boundary_conditions.data(), &index_out_boundary);
+                cg_boco_gridlocation_write(index_out_file, index_out_base, index_out_zone[i], index_out_boundary, mesh.boundary_grid_locations_[index_boundary]);
             }
         }
 
         // Self interfaces
-        for (int index_connectivity = 0; index_connectivity < n_connectivity; ++index_connectivity) {
+        for (int index_connectivity = 0; index_connectivity < mesh.connectivity_sizes_.size(); ++index_connectivity) {
             cgsize_t n_connectivity_elements_in_proc = 0;
-            for (cgsize_t j = 0; j < connectivity_sizes[index_connectivity]; ++j) {
-                const cgsize_t element_index = interface_elements[index_connectivity][j];
-                const cgsize_t element_donor_index = interface_donor_elements[index_connectivity][j];
+            for (cgsize_t j = 0; j < mesh.connectivity_sizes_[index_connectivity]; ++j) {
+                const cgsize_t element_index = mesh.interface_elements_[index_connectivity][j];
+                const cgsize_t element_donor_index = mesh.interface_donor_elements_[index_connectivity][j];
                 
                 int section_index = -1;
-                for (int k = 0; k < n_sections; ++k) {
-                    if ((element_index >= section_ranges[k][0]) && (element_index <= section_ranges[k][1])) {
+                for (int k = 0; k < mesh.section_is_domain_.size(); ++k) {
+                    if ((element_index >= mesh.section_ranges_[k][0]) && (element_index <= mesh.section_ranges_[k][1])) {
                         section_index = k;
                         break;
                     }
                 }
                 if (section_index == -1) {
-                    std::cerr << "Error: CGNS mesh, base " << index_in_base << ", zone " << index_in_zone << ", connectivity " << index_connectivity << " contains element " << element_index << " but it is not found in any mesh section. Exiting." << std::endl;
+                    std::cerr << "Error: CGNS mesh, base " << mesh.index_in_base_ << ", zone " << mesh.index_in_zone_ << ", connectivity " << index_connectivity << " contains element " << element_index << " but it is not found in any mesh section. Exiting." << std::endl;
                     exit(46);
                 }
 
-                const cgsize_t new_element_index = new_boundary_indices[section_index][element_index - section_ranges[section_index][0]];
+                const cgsize_t new_element_index = new_boundary_indices[section_index][element_index - mesh.section_ranges_[section_index][0]];
 
                 section_index = -1;
-                for (int k = 0; k < n_sections; ++k) {
-                    if ((element_donor_index >= section_ranges[k][0]) && (element_donor_index <= section_ranges[k][1])) {
+                for (int k = 0; k < mesh.section_is_domain_.size(); ++k) {
+                    if ((element_donor_index >= mesh.section_ranges_[k][0]) && (element_donor_index <= mesh.section_ranges_[k][1])) {
                         section_index = k;
                         break;
                     }
                 }
                 if (section_index == -1) {
-                    std::cerr << "Error: CGNS mesh, base " << index_in_base << ", zone " << index_in_zone << ", connectivity " << index_connectivity << " contains donor element " << element_donor_index << " but it is not found in any mesh section. Exiting." << std::endl;
+                    std::cerr << "Error: CGNS mesh, base " << mesh.index_in_base_ << ", zone " << mesh.index_in_zone_ << ", connectivity " << index_connectivity << " contains donor element " << element_donor_index << " but it is not found in any mesh section. Exiting." << std::endl;
                     exit(47);
                 }
 
-                const cgsize_t new_element_donor_index = new_boundary_indices[section_index][element_donor_index - section_ranges[section_index][0]];
+                const cgsize_t new_element_donor_index = new_boundary_indices[section_index][element_donor_index - mesh.section_ranges_[section_index][0]];
 
                 if (new_element_index != 0) {
                     if (new_element_donor_index != 0) {
                         ++n_connectivity_elements_in_proc;
                     }
                     else {
-                        const cgsize_t domain_element = element_to_element[4 * n_elements_domain + element_index - n_elements_domain - 1];
-                        const cgsize_t donor_domain_element = element_to_element[4 * n_elements_domain + element_donor_index - n_elements_domain - 1];
+                        const cgsize_t domain_element = element_to_element[4 * mesh.n_elements_domain_ + element_index - mesh.n_elements_domain_ - 1];
+                        const cgsize_t donor_domain_element = element_to_element[4 * mesh.n_elements_domain_ + element_donor_index - mesh.n_elements_domain_ - 1];
 
                         cgsize_t destination_proc = static_cast<cgsize_t>(-1);
                         cgsize_t element_index_in_destination = static_cast<cgsize_t>(-1);
@@ -792,7 +897,7 @@ auto main(int argc, char* argv[]) -> int {
                         }
 
                         if (destination_proc == static_cast<cgsize_t>(-1)) {
-                            std::cerr << "Error: CGNS mesh, base " << index_in_base << ", zone " << index_in_zone << " contains neighbour element " << donor_domain_element << " but it is not found in any process. Exiting." << std::endl;
+                            std::cerr << "Error: CGNS mesh, base " << mesh.index_in_base_ << ", zone " << mesh.index_in_zone_ << " contains neighbour element " << donor_domain_element << " but it is not found in any process. Exiting." << std::endl;
                             exit(61);
                         }
 
@@ -810,37 +915,37 @@ auto main(int argc, char* argv[]) -> int {
                 std::vector<cgsize_t> local_connectivity_donor_elements;
                 local_connectivity_donor_elements.reserve(n_connectivity_elements_in_proc);
 
-                for (cgsize_t j = 0; j < connectivity_sizes[index_connectivity]; ++j) {
-                    const cgsize_t element_index = interface_elements[index_connectivity][j];
-                    const cgsize_t element_donor_index = interface_donor_elements[index_connectivity][j];
+                for (cgsize_t j = 0; j < mesh.connectivity_sizes_[index_connectivity]; ++j) {
+                    const cgsize_t element_index = mesh.interface_elements_[index_connectivity][j];
+                    const cgsize_t element_donor_index = mesh.interface_donor_elements_[index_connectivity][j];
                     
                     int section_index = -1;
-                    for (int k = 0; k < n_sections; ++k) {
-                        if ((element_index >= section_ranges[k][0]) && (element_index <= section_ranges[k][1])) {
+                    for (int k = 0; k < mesh.section_is_domain_.size(); ++k) {
+                        if ((element_index >= mesh.section_ranges_[k][0]) && (element_index <= mesh.section_ranges_[k][1])) {
                             section_index = k;
                             break;
                         }
                     }
                     if (section_index == -1) {
-                        std::cerr << "Error: CGNS mesh, base " << index_in_base << ", zone " << index_in_zone << ", connectivity " << index_connectivity << " contains element " << element_index << " but it is not found in any mesh section. Exiting." << std::endl;
+                        std::cerr << "Error: CGNS mesh, base " << mesh.index_in_base_ << ", zone " << mesh.index_in_zone_ << ", connectivity " << index_connectivity << " contains element " << element_index << " but it is not found in any mesh section. Exiting." << std::endl;
                         exit(46);
                     }
 
-                    const cgsize_t new_element_index = new_boundary_indices[section_index][element_index - section_ranges[section_index][0]];
+                    const cgsize_t new_element_index = new_boundary_indices[section_index][element_index - mesh.section_ranges_[section_index][0]];
 
                     section_index = -1;
-                    for (int k = 0; k < n_sections; ++k) {
-                        if ((element_donor_index >= section_ranges[k][0]) && (element_donor_index <= section_ranges[k][1])) {
+                    for (int k = 0; k < mesh.section_is_domain_.size(); ++k) {
+                        if ((element_donor_index >= mesh.section_ranges_[k][0]) && (element_donor_index <= mesh.section_ranges_[k][1])) {
                             section_index = k;
                             break;
                         }
                     }
                     if (section_index == -1) {
-                        std::cerr << "Error: CGNS mesh, base " << index_in_base << ", zone " << index_in_zone << ", connectivity " << index_connectivity << " contains donor element " << element_donor_index << " but it is not found in any mesh section. Exiting." << std::endl;
+                        std::cerr << "Error: CGNS mesh, base " << mesh.index_in_base_ << ", zone " << mesh.index_in_zone_ << ", connectivity " << index_connectivity << " contains donor element " << element_donor_index << " but it is not found in any mesh section. Exiting." << std::endl;
                         exit(47);
                     }
 
-                    const cgsize_t new_element_donor_index = new_boundary_indices[section_index][element_donor_index - section_ranges[section_index][0]];
+                    const cgsize_t new_element_donor_index = new_boundary_indices[section_index][element_donor_index - mesh.section_ranges_[section_index][0]];
 
                     if (new_element_index != 0 && new_element_donor_index != 0) {
                         local_connectivity_elements.push_back(new_element_index + 1);
@@ -849,7 +954,7 @@ auto main(int argc, char* argv[]) -> int {
                 }
 
                 int index_out_connectivity = 0;
-                cg_conn_write(index_out_file, index_out_base, index_out_zone[i], connectivity_names[index_connectivity].data(), connectivity_grid_locations[index_connectivity], connectivity_types[index_connectivity], connectivity_point_set_types[index_connectivity], n_connectivity_elements_in_proc, local_connectivity_elements.data(), ss.str().c_str(), connectivity_donor_zone_types[index_connectivity], connectivity_donor_point_set_types[index_connectivity], connectivity_donor_data_types[index_connectivity], n_connectivity_elements_in_proc, local_connectivity_donor_elements.data(), &index_out_connectivity);
+                cg_conn_write(index_out_file, index_out_base, index_out_zone[i], mesh.connectivity_names_[index_connectivity].data(), mesh.connectivity_grid_locations_[index_connectivity], mesh.connectivity_types_[index_connectivity], mesh.connectivity_point_set_types_[index_connectivity], n_connectivity_elements_in_proc, local_connectivity_elements.data(), ss.str().c_str(), mesh.connectivity_donor_zone_types_[index_connectivity], mesh.connectivity_donor_point_set_types_[index_connectivity], mesh.connectivity_donor_data_types_[index_connectivity], n_connectivity_elements_in_proc, local_connectivity_donor_elements.data(), &index_out_connectivity);
             }
         }
     }
@@ -895,6 +1000,45 @@ auto main(int argc, char* argv[]) -> int {
     if (close_out_error != CG_OK) {
         std::cerr << "Error: output file '" << out_file << "' could not be closed with error '" << cg_get_error() << "'. Exiting." << std::endl;
         exit(42);
+    }
+}
+
+auto main(int argc, char* argv[]) -> int {
+    const SEM::Helpers::InputParser_t input_parser(argc, argv);
+    if (input_parser.cmdOptionExists("--help") || input_parser.cmdOptionExists("-h")) {
+        std::cout << "usage: mesh_partitioner.exe [-h] [--in_path IN_PATH | [--in_filename IN_FILENAME] [--in_directory IN_DIRECTORY]] [--out_path OUT_PATH | [--out_filename OUT_FILENAME] [--out_directory OUT_DIRECTORY]] [--n N] [-v]" << std::endl << std::endl;
+        std::cout << "Unstructured mesh partitioner. Generates multi-block 2D unstructured meshes in the CGNS HDF5 format from single-block meshes using the CGNS HDF5 or SU2 format." << std::endl << std::endl;
+        std::cout << "options:" << std::endl;
+        std::cout << '\t' <<  "-h, --help"      <<  '\t' <<  "show this help message and exit" << std::endl;
+        std::cout << '\t' <<  "--in_path"       <<  '\t' <<  "full path of the input mesh file, overrides filename and directory if set." << std::endl;
+        std::cout << '\t' <<  "--in_filename"   <<  '\t' <<  "file name of the input mesh file, (default: mesh.cgns)" << std::endl;
+        std::cout << '\t' <<  "--in_directory"  <<  '\t' <<  "directory of the input mesh file (default: ./meshes/)" << std::endl;
+        std::cout << '\t' <<  "--out_path"      <<  '\t' <<  "full path of the output mesh file, overrides filename and directory if set" << std::endl;
+        std::cout << '\t' <<  "--out_filename"  <<  '\t' <<  "file name of the output mesh file (default: mesh_partitioned.cgns)" << std::endl;
+        std::cout << '\t' <<  "--out_directory" <<  '\t' <<  "directory of the output mesh file (default: ./meshes/)" << std::endl;
+        std::cout << '\t' <<  "--n"             <<  '\t' <<  "number of blocks in the output mesh (default: 4)" << std::endl;
+        std::cout << '\t' <<  "-v, --version"   <<  '\t' <<  "show program's version number and exit" << std::endl;
+        exit(0);
+    }
+    else if (input_parser.cmdOptionExists("--version") || input_parser.cmdOptionExists("-v")) {
+        std::cout << "mesh_partitioner.exe 1.0.0" << std::endl;
+        exit(0);
+    }
+
+    // Argument parsing
+    const fs::path in_file = get_input_file(input_parser);
+    const fs::path out_file = get_output_file(input_parser);
+    const cgsize_t n_proc = input_parser.getCmdOptionOr("--n", static_cast<cgsize_t>(4));
+
+    if (in_file.extension().compare(".cgns") == 0) {
+        write_cgns_mesh(n_proc, read_cgns_mesh(in_file), out_file);
+    }
+    else if (in_file.extension().compare(".su2") == 0) {
+        write_cgns_mesh(n_proc, read_su2_mesh(in_file), out_file);
+    }
+    else {
+        std::cerr << "Error: in file '" << in_file << "' has unknown extension '" << in_file.extension() << "'. Known extensions are: '.cgns', '.su2'. Exiting." << std::endl;
+        exit(43);
     }
 
     return 0;
