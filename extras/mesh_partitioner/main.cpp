@@ -1015,7 +1015,7 @@ auto write_cgns_mesh(cgsize_t n_proc, const MeshPart_t mesh, const fs::path out_
                     cgsize_t ghost_index = j;
                     for (cgsize_t zone_loop = 0; zone_loop < k; ++zone_loop) {
                         if (!mesh.section_is_domain_[zone_loop]) {
-                            ghost_index += mesh.section_ranges_[k][1] - mesh.section_ranges_[k][0] + 1;
+                            ghost_index += mesh.section_ranges_[zone_loop][1] - mesh.section_ranges_[zone_loop][0] + 1;
                         }
                     }
 
