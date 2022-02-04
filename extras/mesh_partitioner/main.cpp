@@ -787,8 +787,8 @@ auto read_su2_mesh(const fs::path in_file) -> MeshPart_t {
 
     if (!wall.empty()) {
         section_is_domain[wall_section_index] = false;
-        section_ranges[0][wall_section_index] = elements.size() + 1;
-        section_ranges[1][wall_section_index] = elements.size() + wall.size();
+        section_ranges[wall_section_index][0] = elements.size() + 1;
+        section_ranges[wall_section_index][1] = elements.size() + wall.size();
         boundary_sizes[wall_boundary_index] = wall.size();
         section_names[wall_section_index][0] = 'w'; // straight madness
         section_names[wall_section_index][1] = 'a';
@@ -806,14 +806,14 @@ auto read_su2_mesh(const fs::path in_file) -> MeshPart_t {
         for (size_t i = 0; i < wall.size(); ++i) {
             connectivity[wall_section_index][2 * i] = wall[i][0] + 1;
             connectivity[wall_section_index][2 * i + 1] = wall[i][1] + 1;
-            boundary_elements[wall_boundary_index][i] = section_ranges[0][wall_section_index] + i;
+            boundary_elements[wall_boundary_index][i] = section_ranges[wall_section_index][0] + i;
         }
     }
 
     if (!symmetry.empty()) {
         section_is_domain[symmetry_section_index] = false;
-        section_ranges[0][symmetry_section_index] = elements.size() + wall.size() + 1;
-        section_ranges[1][symmetry_section_index] = elements.size() + wall.size() + symmetry.size();
+        section_ranges[symmetry_section_index][0] = elements.size() + wall.size() + 1;
+        section_ranges[symmetry_section_index][1] = elements.size() + wall.size() + symmetry.size();
         boundary_sizes[symmetry_boundary_index] = symmetry.size();
         section_names[symmetry_section_index][0] = 's'; // straight madness
         section_names[symmetry_section_index][1] = 'y';
@@ -839,14 +839,14 @@ auto read_su2_mesh(const fs::path in_file) -> MeshPart_t {
         for (size_t i = 0; i < symmetry.size(); ++i) {
             connectivity[symmetry_section_index][2 * i] = symmetry[i][0] + 1;
             connectivity[symmetry_section_index][2 * i + 1] = symmetry[i][1] + 1;
-            boundary_elements[symmetry_boundary_index][i] = section_ranges[0][symmetry_section_index] + i;
+            boundary_elements[symmetry_boundary_index][i] = section_ranges[symmetry_section_index][0] + i;
         }
     }
 
     if (!inflow.empty()) {
         section_is_domain[inflow_section_index] = false;
-        section_ranges[0][inflow_section_index] = elements.size() + wall.size() + symmetry.size() + 1;
-        section_ranges[1][inflow_section_index] = elements.size() + wall.size() + symmetry.size() + inflow.size();
+        section_ranges[inflow_section_index][0] = elements.size() + wall.size() + symmetry.size() + 1;
+        section_ranges[inflow_section_index][1] = elements.size() + wall.size() + symmetry.size() + inflow.size();
         boundary_sizes[inflow_boundary_index] = inflow.size();
         section_names[inflow_section_index][0] = 'i'; // straight madness
         section_names[inflow_section_index][1] = 'n';
@@ -868,14 +868,14 @@ auto read_su2_mesh(const fs::path in_file) -> MeshPart_t {
         for (size_t i = 0; i < inflow.size(); ++i) {
             connectivity[inflow_section_index][2 * i] = inflow[i][0] + 1;
             connectivity[inflow_section_index][2 * i + 1] = inflow[i][1] + 1;
-            boundary_elements[inflow_boundary_index][i] = section_ranges[0][inflow_section_index] + i;
+            boundary_elements[inflow_boundary_index][i] = section_ranges[inflow_section_index][0] + i;
         }
     }
 
     if (!outflow.empty()) {
         section_is_domain[outflow_section_index] = false;
-        section_ranges[0][outflow_section_index] = elements.size() + wall.size() + symmetry.size() + inflow.size() + 1;
-        section_ranges[1][outflow_section_index] = elements.size() + wall.size() + symmetry.size() + inflow.size() + outflow.size();
+        section_ranges[outflow_section_index][0] = elements.size() + wall.size() + symmetry.size() + inflow.size() + 1;
+        section_ranges[outflow_section_index][1] = elements.size() + wall.size() + symmetry.size() + inflow.size() + outflow.size();
         boundary_sizes[outflow_boundary_index] = outflow.size();
         section_names[outflow_section_index][0] = 'o'; // straight madness
         section_names[outflow_section_index][1] = 'u';
@@ -899,7 +899,7 @@ auto read_su2_mesh(const fs::path in_file) -> MeshPart_t {
         for (size_t i = 0; i < outflow.size(); ++i) {
             connectivity[outflow_section_index][2 * i] = outflow[i][0] + 1;
             connectivity[outflow_section_index][2 * i + 1] = outflow[i][1] + 1;
-            boundary_elements[outflow_boundary_index][i] = section_ranges[0][outflow_section_index] + i;
+            boundary_elements[outflow_boundary_index][i] = section_ranges[outflow_section_index][0] + i;
         }
     }
 
