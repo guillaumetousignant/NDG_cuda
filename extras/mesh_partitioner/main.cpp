@@ -531,7 +531,7 @@ auto read_su2_mesh(const fs::path in_file) -> MeshPart_t {
             for (size_t i = 0; i < xy[0].size(); ++i) {
                 std::getline(meshfile, line);
                 std::istringstream liness2(line);
-                liness2 >> xy[0][i] >> xy[0][i];
+                liness2 >> xy[0][i] >> xy[1][i];
             }
         }
         else if (token == "NELEM=") {
