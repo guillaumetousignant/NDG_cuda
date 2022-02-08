@@ -77,7 +77,7 @@ def read_su2(filename: Path) -> tuple[npt.ArrayLike, npt.ArrayLike, npt.ArrayLik
                     index += n_marker_elements
 
                 marker_end = index
-                marker_lines = lines[marker_start : marker_end]
+                marker_lines = lines[marker_start : marker_end + 1]
                 index += 1
 
             else:
