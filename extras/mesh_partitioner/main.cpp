@@ -605,7 +605,7 @@ auto read_su2_mesh(const fs::path in_file) -> MeshPart_t {
                         outflow.push_back({val0, val1});
                     }
                 }
-                else if (type == "wall") {
+                else if (type == "wall" || type == "airfoil") {
                     do {
                         std::getline(meshfile, line);
                         if (!line.empty()) {

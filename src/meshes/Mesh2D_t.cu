@@ -189,7 +189,7 @@ auto SEM::Device::Meshes::Mesh2D_t::read_su2(std::filesystem::path filename) -> 
                         outflow.push_back({val0, val1});
                     }
                 }
-                else if (type == "wall") {
+                else if (type == "wall" || type == "airfoil") {
                     do {
                         std::getline(meshfile, line);
                         if (!line.empty()) {
