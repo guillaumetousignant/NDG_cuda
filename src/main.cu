@@ -26,7 +26,9 @@ auto get_input_file(const SEM::Helpers::InputParser_t& input_parser) -> fs::path
     const std::string input_mesh_path = input_parser.getCmdOption("--mesh");
     if (!input_mesh_path.empty()) {
         const fs::path mesh_file = input_mesh_path;
-        fs::create_directory(mesh_file.parent_path());
+        if (mesh_file.has_parent_path()) {
+            fs::create_directory(mesh_file.parent_path());
+        }
         return (mesh_file.extension().empty()) ? mesh_file / ".cgns" : mesh_file;
     }
     else {
@@ -44,7 +46,9 @@ auto get_output_file(const SEM::Helpers::InputParser_t& input_parser) -> fs::pat
     const std::string input_save_path = input_parser.getCmdOption("--output");
     if (!input_save_path.empty()) {
         const fs::path save_file = input_save_path;
-        fs::create_directory(save_file.parent_path());
+        if (save_file.has_parent_path()) {
+            fs::create_directory(save_file.parent_path());
+        }
         return (save_file.extension().empty()) ? save_file / ".pvtu" : save_file;
     }
     else {
