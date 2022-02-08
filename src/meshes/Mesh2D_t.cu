@@ -1608,6 +1608,199 @@ auto SEM::Device::Meshes::Mesh2D_t::print() const -> void {
     std::cout << std::endl;
 }
 
+auto SEM::Device::Meshes::Mesh2D_t::print_to_file(std::filesystem::path filename) const -> void {
+    std::vector<Face2D_t> host_faces(faces_.size());
+    std::vector<Element2D_t> host_elements(elements_.size());
+    std::vector<Vec2<deviceFloat>> host_nodes(nodes_.size());
+    std::vector<size_t> host_wall_boundaries(wall_boundaries_.size());
+    std::vector<size_t> host_symmetry_boundaries(symmetry_boundaries_.size());
+    std::vector<size_t> host_inflow_boundaries(inflow_boundaries_.size());
+    std::vector<size_t> host_outflow_boundaries(outflow_boundaries_.size());
+    std::vector<size_t> host_interfaces_origin(interfaces_origin_.size());
+    std::vector<size_t> host_interfaces_origin_side(interfaces_origin_side_.size());
+    std::vector<size_t> host_interfaces_destination(interfaces_destination_.size());
+    std::vector<size_t> host_mpi_interfaces_origin(mpi_interfaces_origin_.size());
+    std::vector<size_t> host_mpi_interfaces_origin_side(mpi_interfaces_origin_side_.size());
+    std::vector<size_t> host_mpi_interfaces_destination(mpi_interfaces_destination_.size());
+    
+    faces_.copy_to(host_faces, stream_);
+    elements_.copy_to(host_elements, stream_);
+    nodes_.copy_to(host_nodes, stream_);
+    wall_boundaries_.copy_to(host_wall_boundaries, stream_);
+    symmetry_boundaries_.copy_to(host_symmetry_boundaries, stream_);
+    inflow_boundaries_.copy_to(host_inflow_boundaries, stream_);
+    outflow_boundaries_.copy_to(host_outflow_boundaries, stream_);
+    interfaces_origin_.copy_to(host_interfaces_origin, stream_);
+    interfaces_origin_side_.copy_to(host_interfaces_origin_side, stream_);
+    interfaces_destination_.copy_to(host_interfaces_destination, stream_);
+    mpi_interfaces_origin_.copy_to(host_mpi_interfaces_origin, stream_);
+    mpi_interfaces_origin_side_.copy_to(host_mpi_interfaces_origin_side, stream_);
+    mpi_interfaces_destination_.copy_to(host_mpi_interfaces_destination, stream_);
+    cudaStreamSynchronize(stream_);
+
+    if (filename.has_parent_path()) {
+        fs::create_directory(filename.parent_path());
+    }
+    std::ofstream meshfile(filename);
+    if (!meshfile.is_open()) {
+        std::cerr << "Error: file '" << filename << "' could not be opened. Exiting." << std::endl;
+        exit(78);
+    }
+    
+    meshfile << "N elements: " << n_elements_ << std::endl;
+    meshfile << "N elements and ghosts: " << elements_.size() << std::endl;
+    meshfile << "N faces: " << faces_.size() << std::endl;
+    meshfile << "N nodes: " << nodes_.size() << std::endl;
+    meshfile << "N wall boundaries: " << wall_boundaries_.size() << std::endl;
+    meshfile << "N symmetry boundaries: " << symmetry_boundaries_.size() << std::endl;
+    meshfile << "N inflow boundaries: " << inflow_boundaries_.size() << std::endl;
+    meshfile << "N outflow boundaries: " << outflow_boundaries_.size() << std::endl;
+    meshfile << "N interfaces: " << interfaces_origin_.size() << std::endl;
+    meshfile << "N mpi incoming interfaces: " << mpi_interfaces_destination_.size() << std::endl;
+    meshfile << "N mpi outgoing interfaces: " << mpi_interfaces_origin_.size() << std::endl;
+    meshfile << "Initial N: " << initial_N_ << std::endl;
+
+    meshfile << std::endl <<  "Connectivity" << std::endl;
+    meshfile << '\t' <<  "Nodes:" << std::endl;
+    for (size_t i = 0; i < host_nodes.size(); ++i) {
+        meshfile << '\t' << '\t' << "node " << std::setw(6) << i << " : " << std::setw(6) << host_nodes[i] << std::endl;
+    }
+
+    meshfile << std::endl << '\t' <<  "Element nodes:" << std::endl;
+    for (size_t i = 0; i < host_elements.size(); ++i) {
+        meshfile << '\t' << '\t' << "element " << std::setw(6) << i << " : ";
+        for (auto node_index : host_elements[i].nodes_) {
+            meshfile << std::setw(6) << node_index << " ";
+        }
+        meshfile << std::endl;
+    }
+
+    meshfile << std::endl << '\t' <<  "Face nodes:" << std::endl;
+    for (size_t i = 0; i < host_faces.size(); ++i) {
+        meshfile << '\t' << '\t' << "face " << std::setw(6) << i << " : ";
+        for (auto node_index : host_faces[i].nodes_) {
+            meshfile << std::setw(6) << node_index << " ";
+        }
+        meshfile << std::endl;
+    }
+
+    meshfile << std::endl << '\t' <<  "Face elements:" << std::endl;
+    for (size_t i = 0; i < host_faces.size(); ++i) {
+        meshfile << '\t' << '\t' << "face " << std::setw(6) << i << " : ";
+        for (auto element_index : host_faces[i].elements_) {
+            meshfile << std::setw(6) << element_index << " ";
+        }
+        meshfile << std::endl;
+    }
+
+    meshfile << std::endl << '\t' <<  "Face elements side:" << std::endl;
+    for (size_t i = 0; i < host_faces.size(); ++i) {
+        meshfile << '\t' << '\t' << "face " << std::setw(6) << i << " : ";
+        for (auto side_index : host_faces[i].elements_side_) {
+            meshfile << side_index << " ";
+        }
+        meshfile << std::endl;
+    }
+
+    meshfile << std::endl <<  "Geometry" << std::endl;
+    meshfile << '\t' <<  "Element Hilbert status:" << std::endl;
+    constexpr std::array<char, 4> status_letter {'H', 'A', 'R', 'B'};
+    for (size_t i = 0; i < host_elements.size(); ++i) {
+        meshfile << '\t' << '\t' << "element " << std::setw(6) << i << " : " << status_letter[host_elements[i].status_] << std::endl;
+    }
+
+    meshfile << std::endl << '\t' <<  "Element rotation:" << std::endl;
+    for (size_t i = 0; i < host_elements.size(); ++i) {
+        meshfile << '\t' << '\t' << "element " << std::setw(6) << i << " : " << host_elements[i].rotation_ << std::endl;
+    }
+
+    meshfile << std::endl << '\t' <<  "Element min length:" << std::endl;
+    for (size_t i = 0; i < host_elements.size(); ++i) {
+        meshfile << '\t' << '\t' << "element " << std::setw(6) << i << " : " << host_elements[i].delta_xy_min_ << std::endl;
+    }
+
+    meshfile << std::endl << '\t' <<  "Element N:" << std::endl;
+    for (size_t i = 0; i < host_elements.size(); ++i) {
+        meshfile << '\t' << '\t' << "element " << std::setw(6) << i << " : " << host_elements[i].N_ << std::endl;
+    }
+    
+    meshfile << std::endl << '\t' <<  "Face N:" << std::endl;
+    for (size_t i = 0; i < host_faces.size(); ++i) {
+        meshfile << '\t' << '\t' << "face " << std::setw(6) << i << " : " << host_faces[i].N_ << std::endl;
+    }
+
+    meshfile << std::endl << '\t' <<  "Face length:" << std::endl;
+    for (size_t i = 0; i < host_faces.size(); ++i) {
+        meshfile << '\t' << '\t' << "face " << std::setw(6) << i << " : " << host_faces[i].length_ << std::endl;
+    }
+
+    meshfile << std::endl << '\t' <<  "Face normal:" << std::endl;
+    for (size_t i = 0; i < host_faces.size(); ++i) {
+        meshfile << '\t' << '\t' << "face " << std::setw(6) << i << " : " << host_faces[i].normal_ << std::endl;
+    }
+
+    meshfile << std::endl << '\t' <<  "Face tangent:" << std::endl;
+    for (size_t i = 0; i < host_faces.size(); ++i) {
+        meshfile << '\t' << '\t' << "face " << std::setw(6) << i << " : " << host_faces[i].tangent_ << std::endl;
+    }
+
+    meshfile << std::endl << '\t' <<  "Face offset:" << std::endl;
+    for (size_t i = 0; i < host_faces.size(); ++i) {
+        meshfile << '\t' << '\t' << "face " << std::setw(6) << i << " : " << std::setw(6) << host_faces[i].offset_[0] << " " << std::setw(6) << host_faces[i].offset_[1] << std::endl;
+    }
+
+    meshfile << std::endl << '\t' <<  "Face scale:" << std::endl;
+    for (size_t i = 0; i < host_faces.size(); ++i) {
+        meshfile << '\t' << '\t' << "face " << std::setw(6) << i << " : " << std::setw(6) << host_faces[i].scale_[0] << " " << std::setw(6) << host_faces[i].scale_[1] << std::endl;
+    }
+
+    meshfile << std::endl << '\t' <<  "Face refine:" << std::endl;
+    for (size_t i = 0; i < host_faces.size(); ++i) {
+        meshfile << '\t' << '\t' << "face " << std::setw(6) << i << " : " << host_faces[i].refine_ << std::endl;
+    }
+
+    meshfile << std::endl <<  "Interfaces" << std::endl;
+    meshfile << '\t' <<  "Interface destination, origin and origin side:" << std::endl;
+    for (size_t i = 0; i < host_interfaces_origin.size(); ++i) {
+        meshfile << '\t' << '\t' << "interface " << std::setw(6) << i << " : " << std::setw(6) << host_interfaces_destination[i] << " " << std::setw(6) << host_interfaces_origin[i] << " " << std::setw(6) << host_interfaces_origin_side[i] << std::endl;
+    }
+
+    meshfile <<  "MPI interfaces:" << std::endl;
+    for (size_t j = 0; j < mpi_interfaces_process_.size(); ++j) {
+        meshfile << '\t' << "MPI interface to process " << mpi_interfaces_process_[j] << " of outgoing size " << mpi_interfaces_outgoing_size_[j] << ", incoming size " << mpi_interfaces_incoming_size_[j] << ", outgoing offset " << mpi_interfaces_outgoing_offset_[j] << " and incoming offset " << mpi_interfaces_incoming_offset_[j] << ":" << std::endl;
+        meshfile << '\t' << '\t' << "Outgoing element and element side:" << std::endl;
+        for (size_t i = 0; i < mpi_interfaces_outgoing_size_[j]; ++i) {
+            meshfile << '\t' << '\t' << '\t' << "mpi interface " << std::setw(6) << i << " : " << std::setw(6) << host_mpi_interfaces_origin[mpi_interfaces_outgoing_offset_[j] + i] << " " << std::setw(6) << host_mpi_interfaces_origin_side[mpi_interfaces_outgoing_offset_[j] + i] << std::endl;
+        }
+        meshfile << '\t' << '\t' << "Incoming element:" << std::endl;
+        for (size_t i = 0; i < mpi_interfaces_incoming_size_[j]; ++i) {
+            meshfile << '\t' << '\t' << '\t' << "mpi interface " << std::setw(6) << i << " : " << std::setw(6) << host_mpi_interfaces_destination[mpi_interfaces_incoming_offset_[j] + i] << std::endl;
+        }
+    }
+
+    meshfile << std::endl << '\t' <<  "Wall boundaries:" << std::endl;
+    for (size_t i = 0; i < host_wall_boundaries.size(); ++i) {
+        meshfile << '\t' << '\t' << "wall " << std::setw(6) << i << " : " << std::setw(6) << host_wall_boundaries[i] << std::endl;
+    }
+
+    meshfile << std::endl << '\t' <<  "Symmetry boundaries:" << std::endl;
+    for (size_t i = 0; i < host_symmetry_boundaries.size(); ++i) {
+        meshfile << '\t' << '\t' << "symmetry " << std::setw(6) << i << " : " << std::setw(6) << host_symmetry_boundaries[i] << std::endl;
+    }
+
+    meshfile << std::endl << '\t' <<  "Inflow boundaries:" << std::endl;
+    for (size_t i = 0; i < host_inflow_boundaries.size(); ++i) {
+        meshfile << '\t' << '\t' << "inflow " << std::setw(6) << i << " : " << std::setw(6) << host_inflow_boundaries[i] << std::endl;
+    }
+
+    meshfile << std::endl << '\t' <<  "Outflow boundaries:" << std::endl;
+    for (size_t i = 0; i < host_outflow_boundaries.size(); ++i) {
+        meshfile << '\t' << '\t' << "outflow " << std::setw(6) << i << " : " << std::setw(6) << host_outflow_boundaries[i] << std::endl;
+    }
+
+    meshfile.close();
+}
+
 auto SEM::Device::Meshes::Mesh2D_t::write_data(deviceFloat time, const device_vector<deviceFloat>& interpolation_matrices, const SEM::Helpers::DataWriter_t& data_writer) -> void {
     SEM::Device::Meshes::get_solution<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, n_interpolation_points_, elements_.data(), nodes_.data(), interpolation_matrices.data(), x_output_device_.data(), y_output_device_.data(), p_output_device_.data(), u_output_device_.data(), v_output_device_.data());
     
