@@ -146,7 +146,21 @@ smoothness of the solution. The smoothness of the solution is used to determine 
 type is expected to increase accuracy the most. Elements with a high error get refined, using
 p-refinement if their solution is smooth or h-refinement if it is not.
 
+The benefits of \acrshort{acr:AMR} do not come without added complications. Two main complications
+are: non-conforming interfaces and load imbalance.
+
+% Mortar element method
+As the mesh refines, it becomes non-uniform. Elements can have neighbours with a different
+polynomial order, different sizes, or both. The interfaces between such elements are called
+\textit{non-conforming interfaces}. Such interfaces can be \textit{functionally non-conforming},
+\textit{geometrically non-conforming}, or both. Several methods have been developed to deal with
+these interfaces. We use the \textit{mortar element method}~\cite{Maday1989}, as it retains the
+exponential convergence of spectral methods.
+
+% Figure?
+
 % Load balancing
+The second complication of \acrshort{acr:AMR} is load imbalance. 
 
 \begin{figure}[H]
 	\centering
