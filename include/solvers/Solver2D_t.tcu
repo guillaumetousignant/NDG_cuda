@@ -258,10 +258,10 @@ auto SEM::Device::Solvers::reduce_wave_delta_t(deviceFloat CFL, size_t N_element
     sdata[tid] = std::numeric_limits<deviceFloat>::infinity();
 
     while (i < N_elements) { 
-        deviceFloat delta_t_wave = CFL * elements[i].delta_xy_min_/(elements[i].N_ * elements[i].N_);
+        deviceFloat delta_t_wave = CFL * elements[i].delta_xy_min_/(elements[i].N_ * elements[i].N_ * SEM::Device::Constants::c);
 
         if (i+blockSize < N_elements) {
-            delta_t_wave = std::min(delta_t_wave, CFL * elements[i+blockSize].delta_xy_min_/(elements[i+blockSize].N_ * elements[i+blockSize].N_));
+            delta_t_wave = std::min(delta_t_wave, CFL * elements[i+blockSize].delta_xy_min_/(elements[i+blockSize].N_ * elements[i+blockSize].N_ * SEM::Device::Constants::c));
         }
 
         sdata[tid] = std::min(sdata[tid], delta_t_wave); 
