@@ -134,7 +134,17 @@ having elements refine independently.
 	\caption{\Acrlong{acr:AMR} approaches: Two different approaches to refining the important areas of a mesh. (a) Finer meshes are patched unto the initial coarse mesh (reprinted from~\cite{Berger1984}) (b) Elements are refined individually (reprinted from~\cite{Khokhlov1998})}\label{fig:amr_structures}
 \end{figure}
 
-Two types of refinement will be used in this work.
+Two types of refinement will be used in this work. \textit{p-refinement} increases the polynomial
+order of the spectral approximation inside an element, increasing the number of collocation points
+inside the element. \textit{h-refinement} splits elements into smaller elements, increasing the
+number of elements in the mesh.
+
+The choice of which refinement type to use, as well as the choice of which area of the mesh to
+refine is guided by an error estimator. Mavriplis~\cite{Mavriplis1990} describes an \textit{a
+posteriori error estimator} that uses the spectral approximation to estimate the error and the
+smoothness of the solution. The smoothness of the solution is used to determine which refinement
+type is expected to increase accuracy the most. Elements with a high error get refined, using
+p-refinement if their solution is smooth or h-refinement if it is not.
 
 % Load balancing
 
