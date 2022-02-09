@@ -27,9 +27,18 @@ methods.
 % DG-SEM
 Spectral methods are an answer to that need of more accurate numerical methods. Unlike traditional
 methods like finite differences methods, finite element methods and finite volume methods, spectral
-methods are high-order methods and converge exponentially fast. Instead of modelling the solution as
-individual values at points, or a linear or quadratic function within a space subdivision, spectral
-methods represent a function as a truncated series:
+methods are high-order methods and converge exponentially fast. Such methods are used to solve
+complex flows, such as direct numerical simulation or turbulence~\cite{Cantwell2015} as shown in
+Figure~\ref{fig:intro_sem}. 
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.8\textwidth]{Chapter_introduction/media/spectral_element_method}
+	\caption{Direct numerical simulation: Spectral methods have sufficient accuracy to model very complex flows (reprinted from~\cite{Cantwell2015}).}\label{fig:intro_sem}
+\end{figure}
+
+Instead of modelling the solution as individual values at points, or a linear or quadratic function
+within a space subdivision, spectral methods represent a function as a truncated series:
 
 \begin{equation}
 	u(x) \approx u_N(x) = \sum_{n = 0}^{N} \widehat{u}_n \phi _n(x).
@@ -68,6 +77,12 @@ as fast as possible. Recently, these processors have been incorporated into \acr
 platforms~\cite{Fan2004}, enabling massively parallel workloads with theoretical processing power
 much greater than that using traditional \acrshortpl{acr:CPU}.
 
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.8\textwidth]{Chapter_introduction/media/graphics_processing_unit}
+	\caption{\Acrshort{acr:GPU} architecture: \Acrshortpl{acr:GPU} dedicate much more die space to computations.}\label{fig:intro_gpu}
+\end{figure}
+
 We will use \acrshortpl{acr:GPU} for our computations in hope to increase the available processing
 power to solve complex problems. This will not come free, as \acrshort{acr:GPU} architectures are
 more optimised for static workloads executing the exact same code on all \acrshort{acr:GPU} cores.
@@ -90,19 +105,43 @@ important areas are not easy to identify.
 aim to identify the areas of the mesh that need refinement, and refine those areas to obtain more
 accurate results while not wasting resources on areas of less interest. Berger and
 Oliger~\cite{Berger1984} describe a recursive method where refined grids can contain further refined
-grids. They use \textit{block-structured} \acrshort{acr:AMR}, where uniformly refined meshes are
-overlaid on coarse meshes. Another approach is \textit{tree-structured} \acrsshort{acr:AMR}, where
-elements themselves are refined recursively. Khokhlov~\cite{Khokhlov1998} describes such an approach
-that works fully in parallel. We will use a tree-structured approach, since it can easily work in
-parallel by having elements refine independently.
-% Something about performance?
+grids. Another method by Khokhlov~\cite{Khokhlov1998} has reported a factor of 10 savings of both
+memory and computing time. We will use \acrlong{acr:AMR} to make more efficient use of the resources
+we have and to ease working with the more limited amount of memory of \acrshortpl{acr:GPU} compared
+to \acrshortpl{acr:CPU}.
 
-% figure from Berger and Oliger with mesh refinement
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.8\textwidth]{Chapter_introduction/media/adaptive_mesh_refinement}
+	\caption{\Acrlong{acr:AMR}: The mesh is more refined in important flow regions.}\label{fig:intro_amr}
+\end{figure}
 
-% figure with tree refinement
+Two general approaches to \acrshort{acr:AMR} exist. Berger and Oliger~\cite{Berger1984} use
+\textit{block-structured} \acrshort{acr:AMR}, where uniformly refined meshes are overlaid on coarse
+meshes, as shown in Figure~\ref{fig:block_structured}. Another approach is \textit{tree-structured}
+\acrshort{acr:AMR}, where elements themselves are refined recursively as in
+Figure~\ref{fig:tree_structured}. Khokhlov~\cite{Khokhlov1998} describes such an approach that works
+fully in parallel. We will use a tree-structured approach, since it can easily work in parallel by
+having elements refine independently.
+
+\begin{figure}[H]
+	\centering
+	\subfloat[Block-structured \acrlong{acr:AMR}]
+	{\includegraphics[width=0.45\textwidth]{Chapter_introduction/media/block_structured}\label{fig:block_structured}}
+	\hfill
+	\subfloat[Tree-structured \acrlong{acr:AMR}]
+	{\includegraphics[width=0.45\textwidth]{Chapter_introduction/media/tree_structured}\label{fig:tree_structured}}
+	\caption{\Acrlong{acr:AMR} approaches: Two different approaches to refining the important areas of a mesh. (a) Finer meshes are patched unto the initial coarse mesh (reprinted from~\cite{Berger1984}) (b) Elements are refined individually (reprinted from~\cite{Khokhlov1998})}\label{fig:amr_structures}
+\end{figure}
 
 Two types of refinement will be used in this work.
 
 % Load balancing
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.8\textwidth]{Chapter_introduction/media/dynamic_load_balancing}
+	\caption{Dynamic load balancing: Load imbalance can appear as a result of \acrshort{acr:AMR}.}\label{fig:intro_load_balancing}
+\end{figure}
 
 % Problem
