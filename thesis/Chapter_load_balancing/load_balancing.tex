@@ -141,7 +141,7 @@ of the children, \(P(s, j)\).
 	\begin{center}
 		\begin{tabular}{ c | c c c c} 
 			\(S\left ( s, j \right )\) & \(j = 0\) & \(j = 1\) & \(j = 2\) & \(j = 3\)  \\
-			\midrule
+			\hline
 			\(s = H\) & \textcolor{vs_red}{\(A\)} & \textcolor{vs_red}{\(B\)} & \textcolor{vs_red}{\(H\)} & \textcolor{vs_red}{\(H\)} \\ 
 			\(s = A\) & \textcolor{vs_blue}{\(H\)} & \textcolor{vs_blue}{\(A\)} & \textcolor{vs_blue}{\(A\)} & \textcolor{vs_blue}{\(R\)} \\
 			\(s = R\) & \textcolor{vs_teal}{\(R\)} & \textcolor{vs_teal}{\(R\)} & \textcolor{vs_teal}{\(B\)} & \textcolor{vs_teal}{\(A\)} \\
@@ -156,7 +156,7 @@ of the children, \(P(s, j)\).
 	\begin{center}
 		\begin{tabular}{ c | c c c c} 
 			\(P\left ( s, j \right )\) & \(j = 0\) & \(j = 1\) & \(j = 2\) & \(j = 3\)  \\
-			\midrule
+			\hline
 			\(s = H\) & \textcolor{vs_red}{\(0\)} & \textcolor{vs_red}{\(3\)} & \textcolor{vs_red}{\(2\)} & \textcolor{vs_red}{\(1\)} \\ 
 			\(s = A\) & \textcolor{vs_blue}{\(0\)} & \textcolor{vs_blue}{\(1\)} & \textcolor{vs_blue}{\(2\)} & \textcolor{vs_blue}{\(3\)} \\
 			\(s = R\) & \textcolor{vs_teal}{\(2\)} & \textcolor{vs_teal}{\(1\)} & \textcolor{vs_teal}{\(0\)} & \textcolor{vs_teal}{\(3\)} \\
@@ -216,7 +216,7 @@ and exiting side for elements, and 1D matrices for the first and last elements.
 	\begin{center}
 		\begin{tabular}{ c | c c c c} 
 			& \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_0} \end{tabular} & \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_1} \end{tabular} & \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_2} \end{tabular} & \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_3} \end{tabular} \\
-			\midrule
+			\hline
 			\begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_0} \end{tabular} & \begin{tabular}{c}       \end{tabular} & \begin{tabular}{c} \(H\) \end{tabular} & \begin{tabular}{c} \(A\) \end{tabular} & \begin{tabular}{c} \(A\) \end{tabular} \\ 
 			\begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_1} \end{tabular} & \begin{tabular}{c} \(B\) \end{tabular} & \begin{tabular}{c}       \end{tabular} & \begin{tabular}{c} \(R\) \end{tabular} & \begin{tabular}{c} \(R\) \end{tabular} \\
 			\begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_2} \end{tabular} & \begin{tabular}{c} \(B\) \end{tabular} & \begin{tabular}{c} \(B\) \end{tabular} & \begin{tabular}{c}       \end{tabular} & \begin{tabular}{c} \(R\) \end{tabular} \\
@@ -285,7 +285,7 @@ We can then obtain the full matrix.
 	\begin{center}
 		\begin{tabular}{ c | c c c c} 
 			& \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_0} \end{tabular} & \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_1} \end{tabular} & \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_2} \end{tabular} & \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_3} \end{tabular} \\
-			\midrule
+			\hline
 			\begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_0} \end{tabular} & \begin{tabular}{c} \(H\) \end{tabular} & \begin{tabular}{c} \(H\) \end{tabular} & \begin{tabular}{c} \(A\) \end{tabular} & \begin{tabular}{c} \(A\) \end{tabular} \\ 
 			\begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_1} \end{tabular} & \begin{tabular}{c} \(B\) \end{tabular} & \begin{tabular}{c} \(B\) \end{tabular} & \begin{tabular}{c} \(R\) \end{tabular} & \begin{tabular}{c} \(R\) \end{tabular} \\
 			\begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_2} \end{tabular} & \begin{tabular}{c} \(B\) \end{tabular} & \begin{tabular}{c} \(B\) \end{tabular} & \begin{tabular}{c} \(R\) \end{tabular} & \begin{tabular}{c} \(R\) \end{tabular} \\
@@ -436,21 +436,21 @@ repartitioning between four workers using this method.
 \begin{table}[H]
 	\begin{center}
 		\begin{tabular}{ | c | c | c | c | c | c | c | c | c | c | c | c | c | c | c | c | c | } 
-			\midrule
+			\hline
 			worker \(k\) & \multicolumn{4}{c|}{\cellcolor{vs_lightgreen}0} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}1} & \multicolumn{4}{c|}{\cellcolor{vs_lightred}2} & \multicolumn{4}{c|}{\cellcolor{vs_lightplum}3}  \\
-			\midrule
+			\hline
 			capacity \(c_k\) & \multicolumn{4}{c|}{\cellcolor{vs_lightgreen}2} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}2} & \multicolumn{4}{c|}{\cellcolor{vs_lightred}1} & \multicolumn{4}{c|}{\cellcolor{vs_lightplum}1}  \\
-			\midrule
+			\hline
 			global id & \cellcolor{vs_lightgreen}0 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}2 & \cellcolor{vs_lightgreen}3 & \cellcolor{vs_lightblue}4 & \cellcolor{vs_lightblue}5 & \cellcolor{vs_lightblue}6 & \cellcolor{vs_lightblue}7 & \cellcolor{vs_lightred}8 & \cellcolor{vs_lightred}9 & \cellcolor{vs_lightred}10 & \cellcolor{vs_lightred}11 & \cellcolor{vs_lightplum}12 & \cellcolor{vs_lightplum}13 & \cellcolor{vs_lightplum}14 & \cellcolor{vs_lightplum}15 \\ 
-			\midrule
+			\hline
 			local id i & \cellcolor{vs_lightgreen}0 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}2 & \cellcolor{vs_lightgreen}3 & \cellcolor{vs_lightblue}0 & \cellcolor{vs_lightblue}1 & \cellcolor{vs_lightblue}2 & \cellcolor{vs_lightblue}3 & \cellcolor{vs_lightred}0 & \cellcolor{vs_lightred}1 & \cellcolor{vs_lightred}2 & \cellcolor{vs_lightred}3 & \cellcolor{vs_lightplum}0 & \cellcolor{vs_lightplum}1 & \cellcolor{vs_lightplum}2 & \cellcolor{vs_lightplum}3 \\ 
-			\midrule
+			\hline
 			weight \(w_i\) & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightblue}2 & \cellcolor{vs_lightblue}2 & \cellcolor{vs_lightblue}3 & \cellcolor{vs_lightblue}2 & \cellcolor{vs_lightred}2 & \cellcolor{vs_lightred}1 & \cellcolor{vs_lightred}2 & \cellcolor{vs_lightred}1 & \cellcolor{vs_lightplum}1 & \cellcolor{vs_lightplum}1 & \cellcolor{vs_lightplum}2 & \cellcolor{vs_lightplum}1 \\ 
-			\midrule
+			\hline
 			total weight \(w_k\) & \multicolumn{4}{c|}{\cellcolor{vs_lightgreen}4} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}9} & \multicolumn{4}{c|}{\cellcolor{vs_lightred}6} & \multicolumn{4}{c|}{\cellcolor{vs_lightplum}5} \\ 
-			\midrule
+			\hline
 			ideal weight \(w_{ideal,k}\) & \multicolumn{4}{c|}{\cellcolor{vs_lightgreen}8} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}8} & \multicolumn{4}{c|}{\cellcolor{vs_lightred}4} & \multicolumn{4}{c|}{\cellcolor{vs_lightplum}4} \\ 
-			\midrule
+			\hline
 		\end{tabular}
 	
 		\caption{Problem before repartition: The workers have uneven weight.}\label{table:before_repartition}
@@ -462,21 +462,21 @@ We repartition the problem, so that the workers have a weight closer to their id
 \begin{table}[H]
 	\begin{center}
 		\begin{tabular}{ | c | c | c | c | c | c | c | c | c | c | c | c | c | c | c | c | c | } 
-			\midrule
+			\hline
 			worker \(k\) & \multicolumn{6}{c|}{\cellcolor{vs_lightgreen}0} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}1} & \multicolumn{3}{c|}{\cellcolor{vs_lightred}2} & \multicolumn{3}{c|}{\cellcolor{vs_lightplum}3}  \\
-			\midrule
+			\hline
 			capacity \(c_k\) & \multicolumn{6}{c|}{\cellcolor{vs_lightgreen}2} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}2} & \multicolumn{3}{c|}{\cellcolor{vs_lightred}1} & \multicolumn{3}{c|}{\cellcolor{vs_lightplum}1}  \\
-			\midrule
+			\hline
 			global id & \cellcolor{vs_lightgreen}0 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}2 & \cellcolor{vs_lightgreen}3 & \cellcolor{vs_lightgreen}4 & \cellcolor{vs_lightgreen}5 & \cellcolor{vs_lightblue}6 & \cellcolor{vs_lightblue}7 & \cellcolor{vs_lightblue}8 & \cellcolor{vs_lightblue}9 & \cellcolor{vs_lightred}10 & \cellcolor{vs_lightred}11 & \cellcolor{vs_lightred}12 & \cellcolor{vs_lightplum}13 & \cellcolor{vs_lightplum}14 & \cellcolor{vs_lightplum}15 \\ 
-			\midrule
+			\hline
 			local id i & \cellcolor{vs_lightgreen}0 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}2 & \cellcolor{vs_lightgreen}3 & \cellcolor{vs_lightgreen}0 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightblue}2 & \cellcolor{vs_lightblue}3 & \cellcolor{vs_lightblue}0 & \cellcolor{vs_lightblue}1 & \cellcolor{vs_lightred}2 & \cellcolor{vs_lightred}3 & \cellcolor{vs_lightred}0 & \cellcolor{vs_lightplum}1 & \cellcolor{vs_lightplum}2 & \cellcolor{vs_lightplum}3 \\ 
-			\midrule
+			\hline
 			weight \(w_i\) & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}2 & \cellcolor{vs_lightgreen}2 & \cellcolor{vs_lightblue}3 & \cellcolor{vs_lightblue}2 & \cellcolor{vs_lightblue}2 & \cellcolor{vs_lightblue}1 & \cellcolor{vs_lightred}2 & \cellcolor{vs_lightred}1 & \cellcolor{vs_lightred}1 & \cellcolor{vs_lightplum}1 & \cellcolor{vs_lightplum}2 & \cellcolor{vs_lightplum}1 \\ 
-			\midrule
+			\hline
 			total weight \(w_k\) & \multicolumn{6}{c|}{\cellcolor{vs_lightgreen}8} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}8} & \multicolumn{3}{c|}{\cellcolor{vs_lightred}4} & \multicolumn{3}{c|}{\cellcolor{vs_lightplum}4} \\ 
-			\midrule
+			\hline
 			ideal weight \(w_{ideal,k}\) & \multicolumn{6}{c|}{\cellcolor{vs_lightgreen}8} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}8} & \multicolumn{3}{c|}{\cellcolor{vs_lightred}4} & \multicolumn{3}{c|}{\cellcolor{vs_lightplum}4} \\ 
-			\midrule
+			\hline
 		\end{tabular}
 	
 		\caption{Problem after repartition: The workers have a better workload distribution.}\label{table:after_repartition}
