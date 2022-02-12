@@ -98,8 +98,14 @@ def compute_theta(centers: npt.ArrayLike) -> npt.ArrayLike:
         theta[i] = math.atan2(centers[i][1], centers[i][0])
     return theta
 
-def compute_order(theta: npt.ArrayLike) -> npt.ArrayLike:
-    return np.argsort(theta)
+def compute_circular_order(centers: npt.ArrayLike) -> npt.ArrayLike:
+    return np.argsort(compute_theta(centers))
+
+def compute_circular_hilbert_order(centers: npt.ArrayLike) -> npt.ArrayLike:
+    #span = np.max()
+
+
+    return np.argsort(compute_theta(centers))
 
 def write_su2(filename: Path, elements: npt.ArrayLike, nodes_lines: npt.ArrayLike, marker_lines: npt.ArrayLike, order: npt.ArrayLike):
     with open(filename, 'w') as file:
@@ -114,13 +120,22 @@ def main(argv: list[str]):
     parser = argparse.ArgumentParser(description="Re-numbers SU2 meshes clockwise.")
     parser.add_argument('-i', '--input', type=Path, help='path to a mesh to re-number')
     parser.add_argument('-o', '--output', type=Path, help='path of the re-numbered mesh')
+    parser.add_argument('-a', '--algorithm', type=str, default='circular', choices=['circular', 'circular-hilbert'], help='renumbering algorithm')
     parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.0.0')
     args = parser.parse_args(argv)
 
     nodes, elements, nodes_lines, marker_lines = read_su2(args.input)
     centers = compute_centers(nodes, elements)
-    theta = compute_theta(centers)
-    order = compute_order(theta)
+    order = []
+
+    match args.algorithm:
+        case "circular":
+            order = compute_circular_order(centers)
+        case "circular-hilbert":
+            order = compute_circular_hilbert_order(centers)
+        case _:
+            sys.exit(f"Error: unknown algorithm '{args.algorithm}', only 'circular' and 'circular-hilbert' are supported. Exiting.")
+
     write_su2(args.output, elements, nodes_lines, marker_lines, order)
 
 if __name__ == "__main__":
