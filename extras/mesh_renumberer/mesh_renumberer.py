@@ -1,10 +1,8 @@
 import numpy as np
 import numpy.typing as npt
-import re
 from pathlib import Path
 import sys
 import argparse
-import math
 
 def read_su2(filename: Path) -> tuple[npt.ArrayLike, npt.ArrayLike, npt.ArrayLike, npt.ArrayLike]:
     nodes = np.zeros((0, 2))
@@ -93,19 +91,24 @@ def compute_centers(nodes: npt.ArrayLike, elements: npt.ArrayLike) -> npt.ArrayL
     return centers
 
 def compute_theta(centers: npt.ArrayLike) -> npt.ArrayLike:
-    theta = np.zeros((centers.shape[0]))
-    for i in range(centers.shape[0]):
-        theta[i] = math.atan2(centers[i][1], centers[i][0])
-    return theta
+    return np.arctan(centers[:, 1], centers[:, 0])
 
 def compute_circular_order(centers: npt.ArrayLike) -> npt.ArrayLike:
     return np.argsort(compute_theta(centers))
 
-def compute_circular_hilbert_order(centers: npt.ArrayLike) -> npt.ArrayLike:
-    #span = np.max()
+def compute_circle_square_mapping(centers: npt.ArrayLike) -> npt.ArrayLike:
+    radii = np.sqrt(np.power(centers[:, 0], 2) + np.power(centers[:, 1], 2))
+    radius = np.max(radii)
+    
+    x = centers[:, 0]/radius
+    y = centers[:, 1]/radius
 
+    return np.concatenate((np.atleast_2d(np.sqrt(2 + np.power(x, 2) - np.power(y, 2) + x * 2 * np.sqrt(2))/2 - np.sqrt(2 + np.power(x, 2) - np.power(y, 2) - x * 2 * np.sqrt(2))/2).T, np.atleast_2d(np.sqrt(2 - np.power(x, 2) + np.power(y, 2) + y * 2 * np.sqrt(2))/2 - np.sqrt(2 - np.power(x, 2) + np.power(y, 2) - y * 2 * np.sqrt(2))/2).T), axis=1)
 
-    return np.argsort(compute_theta(centers))
+def compute_hilbert_circular_order(centers: npt.ArrayLike) -> npt.ArrayLike:
+    centers_square = compute_circle_square_mapping(centers)
+
+    return np.argsort(compute_theta(centers_square))
 
 def write_su2(filename: Path, elements: npt.ArrayLike, nodes_lines: npt.ArrayLike, marker_lines: npt.ArrayLike, order: npt.ArrayLike):
     with open(filename, 'w') as file:
@@ -120,7 +123,7 @@ def main(argv: list[str]):
     parser = argparse.ArgumentParser(description="Re-numbers SU2 meshes clockwise.")
     parser.add_argument('-i', '--input', type=Path, help='path to a mesh to re-number')
     parser.add_argument('-o', '--output', type=Path, help='path of the re-numbered mesh')
-    parser.add_argument('-a', '--algorithm', type=str, default='circular', choices=['circular', 'circular-hilbert'], help='renumbering algorithm')
+    parser.add_argument('-a', '--algorithm', type=str, default='circular', choices=['circular', 'hilbert-circular'], help='renumbering algorithm')
     parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.0.0')
     args = parser.parse_args(argv)
 
@@ -131,10 +134,10 @@ def main(argv: list[str]):
     match args.algorithm:
         case "circular":
             order = compute_circular_order(centers)
-        case "circular-hilbert":
-            order = compute_circular_hilbert_order(centers)
+        case "hilbert-circular":
+            order = compute_hilbert_circular_order(centers)
         case _:
-            sys.exit(f"Error: unknown algorithm '{args.algorithm}', only 'circular' and 'circular-hilbert' are supported. Exiting.")
+            sys.exit(f"Error: unknown algorithm '{args.algorithm}', only 'circular' and 'hilbert-circular' are supported. Exiting.")
 
     write_su2(args.output, elements, nodes_lines, marker_lines, order)
 
