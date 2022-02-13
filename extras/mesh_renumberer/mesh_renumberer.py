@@ -3,6 +3,7 @@ import numpy.typing as npt
 from pathlib import Path
 import sys
 import argparse
+import hilbert
 
 def read_su2(filename: Path) -> tuple[npt.ArrayLike, npt.ArrayLike, npt.ArrayLike, npt.ArrayLike]:
     nodes = np.zeros((0, 2))
@@ -108,7 +109,17 @@ def compute_circle_square_mapping(centers: npt.ArrayLike) -> npt.ArrayLike:
 def compute_hilbert_circular_order(centers: npt.ArrayLike) -> npt.ArrayLike:
     centers_square = compute_circle_square_mapping(centers)
 
-    return np.argsort(compute_theta(centers_square))
+    n = 2
+    while n <= centers.shape[0]:
+        n *= 2
+
+    xy_coord = np.rint((centers_square + 1) * n/2).astype(np.uint64)
+
+    d = np.zeros((centers.shape[0]), dtype=np.uint64)
+    for i in range(centers.shape[0]):
+        d[i] = hilbert.xy2d(n, xy_coord[i, :])
+
+    return np.argsort(d)
 
 def write_su2(filename: Path, elements: npt.ArrayLike, nodes_lines: npt.ArrayLike, marker_lines: npt.ArrayLike, order: npt.ArrayLike):
     with open(filename, 'w') as file:
