@@ -4731,19 +4731,17 @@ auto SEM::Device::Meshes::compute_element_status(size_t n_elements, Element2D_t*
     constexpr std::array<deviceFloat, 4> targets {-3*pi/4, -pi/4, pi/4, 3*pi/4};
 
     for (size_t element_index = index; element_index < n_elements; element_index += stride) {
-        deviceFloat rotation = 0;
+        long rotation = 0;
         for (size_t i = 0; i < elements[element_index].nodes_.size(); ++i) {
             const Vec2<deviceFloat> delta = nodes[elements[element_index].nodes_[i]] - elements[element_index].center_;
             const deviceFloat angle = std::atan2(delta.y(), delta.x());
-            const deviceFloat offset = angle - targets[i]; // CHECK only works on quadrilaterals
-            const deviceFloat n_turns = offset * 2 /pi + 4 * (offset < 0);
-
-            rotation += n_turns;
+            const deviceFloat offset = std::atan2(std::sin(angle - targets[i]), std::cos(angle - targets[i]));
+            const long n_turns = std::lround(offset * 2/pi + 4 * (offset < 0));
+            rotation += n_turns * (n_turns < 4);
         }
         rotation /= elements[element_index].nodes_.size();
 
-        elements[element_index].rotation_ = std::lround(rotation);
-        elements[element_index].rotation_ *= elements[element_index].rotation_ < 4;
+        elements[element_index].rotation_ = rotation;
 
         if (n_elements == 1) {
             elements[element_index].status_ = Hilbert::Status::H;
