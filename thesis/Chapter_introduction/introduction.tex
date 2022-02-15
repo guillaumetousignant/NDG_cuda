@@ -210,3 +210,19 @@ this work, we will implement a \acrshort{acr:SFC} based repartitioning scheme us
 curve in order to perform dynamic load balancing.
 
 % Problem
+In order to showcase these techniques, we will solve a sample problem using the 2D wave equation:
+
+\begin{gather}
+	\frac{\partial^2p}{\partial t^2} - c^2(p_{xx} + p_{yy}) = 0 \\
+	u_t = - p_x \\
+	v_t = -p_y.
+\end{gather}
+
+In summary, we use the \acrlong{acr:DG-SEM} as a very accurate numerical method. We perform the
+computations on \acrlongpl{acr:GPU} to access their great amount of parallel processing power. We
+use this increased amount of computing power more efficiently by performing \acrlong{acr:AMR} to use
+more ressources where needed, and less elsewhere. We finally add dynamic load balancing to keep the
+parallel efficiency of the program as high as possible while the topology changes. This tackles the
+main challenges necessary to keep advancing \acrshort{acr:CFD}.
+
+% Structure
