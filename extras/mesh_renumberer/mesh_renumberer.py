@@ -92,7 +92,7 @@ def compute_centers(nodes: npt.ArrayLike, elements: npt.ArrayLike) -> npt.ArrayL
     return centers
 
 def compute_theta(centers: npt.ArrayLike) -> npt.ArrayLike:
-    return np.arctan(centers[:, 1], centers[:, 0])
+    return np.arctan2(centers[:, 1], centers[:, 0])
 
 def compute_circular_order(centers: npt.ArrayLike) -> npt.ArrayLike:
     return np.argsort(compute_theta(centers))
