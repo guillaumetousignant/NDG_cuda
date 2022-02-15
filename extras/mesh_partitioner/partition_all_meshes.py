@@ -1,7 +1,7 @@
 from pathlib import Path
 import subprocess
 
-P_list = [2, 4, 8, 10, 12, 16, 20, 24, 32, 40, 48, 80, 96, 160, 320, 384]
+P_list = [2, 4, 8, 10, 12, 16, 20, 24, 32, 40, 48, 80, 96, 160, 192, 320, 384]
 folder = Path('.')
 
 files = [x for x in folder.iterdir() if x.is_file() and x.suffix == ".cgns"]
