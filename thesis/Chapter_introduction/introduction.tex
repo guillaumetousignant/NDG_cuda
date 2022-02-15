@@ -186,7 +186,7 @@ parallel systems. Figure~\ref{fig:intro_load_balancing} shows an imbalanced syst
 In order to avoid this problem, the mesh needs to be repartitioned as it is refined. This is
 \textit{dynamic load balancing}. When the mesh is repartitioned, elements are sent between
 \acrshortpl{acr:GPU} to even out their computational load. The repartitioning scheme dictates which
-elements are sent from one \acrshort{arc:GPU} to another. This scheme should satisfy several
+elements are sent from one \acrshort{acr:GPU} to another. This scheme should satisfy several
 conditions: it must even the load between the workers, it must be fast to execute, and it must
 minimise the boundaries between the mesh blocks it creates. 
 
