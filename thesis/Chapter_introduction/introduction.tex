@@ -190,4 +190,23 @@ elements are sent from one \acrshort{acr:GPU} to another. This scheme should sat
 conditions: it must even the load between the workers, it must be fast to execute, and it must
 minimise the boundaries between the mesh blocks it creates. 
 
+Many approaches to this problem have been studied. \textit{Graph-based} repartitioning schemes
+represent a mesh as nodes connected by edges, which can then be partitioned by splitting it into
+parts of equal size while severing as few edges as possible. The well-known
+\textit{Metis}\cite{Karypis1998} library uses this technique. Graph-based techniques produce very
+well partitioned meshes, but can be slower to execute than other techniques and need to know the
+topology of the entire mesh to partition it, which can be a problem on parallel systems where the
+problem should be split between the different workers.
+
+A different approach is \acrfullpl{acr:SFC}~\textit{based} repartitioning schemes. These schemes
+reduce multidimensional problems to one dimension by mapping elements to a single curve going
+through the entire domain\cite{Peano1890}. The elements can then be indexed in 1D, and repartitioned
+by splitting that line into segments of equal size. \Acrshortpl{acr:SFC} are very fast to generate,
+which is especially relevant to this work as the repartitioning will be performed often, while the
+computation is underway. Some curves, like the \textit{Hilbert curve}~\cite{Hilbert1891}, have a
+very good locality. This will help reduce the size of inter-block boundaries. This can improve the
+performance of the program by reducing the amount of communication between \acrshortpl{acr:GPU}. In
+this work, we will implement a \acrshort{acr:SFC} based repartitioning scheme using the Hilbert
+curve in order to perform dynamic load balancing.
+
 % Problem
