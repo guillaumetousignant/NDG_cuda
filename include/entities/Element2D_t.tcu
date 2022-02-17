@@ -193,9 +193,6 @@ auto SEM::Device::Entities::Element2D_t::estimate_p_error(deviceFloat tolerance_
     const int offset_1D = N_ * (N_ + 1) /2;
     const int n_points_least_squares = std::min(N_ + 1, SEM::Device::Constants::n_points_least_squares_max); // Number of points to use for thew least squares reduction, but don't go above N.
 
-    refine_ = false;
-    coarsen_ = true;
-
     // Pressure
     for (int node_index = 0; node_index < n_points_least_squares; ++node_index) {
         spectrum_[node_index] = deviceFloat{0};
@@ -249,5 +246,5 @@ auto SEM::Device::Entities::Element2D_t::estimate_p_error(deviceFloat tolerance_
                          + C_p * C_p * deviceFloat{0.5} / sigma_p * std::exp(-2 * sigma_p * (N_ + 1)));
 
     refine_ = p_error_ > tolerance_min; // need refinement
-    coarsen_ = p_error_ > tolerance_max; // need coarsening
+    coarsen_ = p_error_ < tolerance_max; // need coarsening
 }
