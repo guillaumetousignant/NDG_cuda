@@ -177,10 +177,15 @@ waiting while the more heavily loaded \acrshortpl{acr:GPU} finish their computat
 time will be driven by the most heavily loaded \acrshort{acr:GPU}, which will degrade performance on
 parallel systems. Figure~\ref{fig:intro_load_balancing} shows an imbalanced system.
 
+
 \begin{figure}[H]
 	\centering
-	\includegraphics[width=0.8\textwidth]{Chapter_introduction/media/dynamic_load_balancing}
-	\caption{Dynamic load balancing: Load imbalance can appear as a result of \acrshort{acr:AMR}.}\label{fig:intro_load_balancing}
+	\subfloat[Mesh before refining]
+	{\includegraphics[width=0.45\textwidth]{Chapter_introduction/media/load_imbalance_initial}\label{fig:intro_mesh_imbalance_initial}}
+	\hfill
+	\subfloat[Mesh after refining]
+	{\includegraphics[width=0.45\textwidth]{Chapter_introduction/media/load_imbalance}\label{fig:intro_mesh_imbalance_after_refinement}}
+	\caption{Load imbalance: The elements have split unequally in the two worker \acrshortpl{acr:GPU}, purple and blue, one having a higher computational load. (a) Before refining (b) After refining}\label{fig:intro_load_balancing}
 \end{figure}
 
 In order to avoid this problem, the mesh needs to be repartitioned as it is refined. This is
