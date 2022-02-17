@@ -103,6 +103,10 @@ namespace SEM { namespace Device { namespace Entities {
             __device__
             auto estimate_error(deviceFloat tolerance_min, deviceFloat tolerance_max, const deviceFloat* polynomial_nodes, const deviceFloat* weights) -> void;
 
+            template<typename Polynomial>
+            __device__
+            auto estimate_p_error(deviceFloat tolerance_min, deviceFloat tolerance_max, const deviceFloat* polynomial_nodes, const deviceFloat* weights) -> void;
+
             // This is used when the elements have different points
             __device__
             auto interpolate_from(const std::array<SEM::Device::Entities::Vec2<deviceFloat>, 4>& points, const std::array<SEM::Device::Entities::Vec2<deviceFloat>, 4>& points_other, const Element2D_t& other, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void;

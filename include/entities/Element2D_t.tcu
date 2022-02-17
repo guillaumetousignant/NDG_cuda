@@ -186,3 +186,68 @@ auto SEM::Device::Entities::Element2D_t::estimate_error(deviceFloat tolerance_mi
         coarsen_ = false;
     }
 }
+
+template<typename Polynomial>
+__device__
+auto SEM::Device::Entities::Element2D_t::estimate_p_error(deviceFloat tolerance_min, deviceFloat tolerance_max, const deviceFloat* polynomial_nodes, const deviceFloat* weights) -> void {
+    const int offset_1D = N_ * (N_ + 1) /2;
+    const int n_points_least_squares = std::min(N_ + 1, SEM::Device::Constants::n_points_least_squares_max); // Number of points to use for thew least squares reduction, but don't go above N.
+
+    refine_ = false;
+    coarsen_ = true;
+
+    // Pressure
+    for (int node_index = 0; node_index < n_points_least_squares; ++node_index) {
+        spectrum_[node_index] = deviceFloat{0};
+        const int p = N_ + node_index + 1 - n_points_least_squares;
+
+        // x direction
+        for (int i = 0; i <= p; ++i) {
+            deviceFloat local_spectrum{0};
+
+            for (int k = 0; k <= N_; ++k) {
+                const deviceFloat L_N_x = Polynomial::polynomial(i, polynomial_nodes[offset_1D + k]);
+
+                for (int l = 0; l <= N_; ++l) {
+                    const deviceFloat L_N_y = Polynomial::polynomial(p, polynomial_nodes[offset_1D + l]);
+
+                    local_spectrum += (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} *
+                                      p_[k * (N_ + 1) + l] *
+                                      L_N_x * L_N_y * 
+                                      weights[offset_1D + k] * weights[offset_1D + l];
+                }
+
+            }
+            spectrum_[node_index] += std::abs(local_spectrum);
+        }
+
+        // y direction
+        for (int j = 0; j < p; ++j) { // No need to include the last point here
+            deviceFloat local_spectrum{0};
+
+            for (int k = 0; k <= N_; ++k) {
+                const deviceFloat L_N_x = Polynomial::polynomial(p, polynomial_nodes[offset_1D + k]);
+
+                for (int l = 0; l <= N_; ++l) {
+                    const deviceFloat L_N_y = Polynomial::polynomial(j, polynomial_nodes[offset_1D + l]);
+
+                    local_spectrum += (2 * j + 1) * (2 * p + 1) * deviceFloat{0.25} *
+                                      p_[k * (N_ + 1) + l] *
+                                      L_N_x * L_N_y * 
+                                      weights[offset_1D + k] * weights[offset_1D + l];
+                }
+            }
+            spectrum_[node_index] += std::abs(local_spectrum);
+        }
+    }
+
+    const auto [C_p, sigma_p] = exponential_decay(n_points_least_squares);
+    p_sigma_ = sigma_p;
+
+    // Sum of error
+    p_error_ = std::sqrt(spectrum_[n_points_least_squares - 1] * spectrum_[n_points_least_squares - 1] // Why this part?
+                         + C_p * C_p * deviceFloat{0.5} / sigma_p * std::exp(-2 * sigma_p * (N_ + 1)));
+
+    refine_ = p_error_ > tolerance_min; // need refinement
+    coarsen_ = p_error_ > tolerance_max; // need coarsening
+}
