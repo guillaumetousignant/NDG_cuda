@@ -76,3 +76,7 @@
 *.lof
 *.run.xml
 *.listing
+*.nsight-cuprof-report
+*.nvvp
+*.qdrep
+*.qdstrm
