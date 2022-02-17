@@ -92,16 +92,16 @@ void SEM::Device::Polynomials::LegendrePolynomial_t::polynomial_and_derivative(i
 __device__
 deviceFloat SEM::Device::Polynomials::LegendrePolynomial_t::polynomial(int N, deviceFloat x) {
     if (N == 0) {
-        return 1.0f;
+        return deviceFloat{1};
     }
     if (N == 1) {
         return x;
     }
     
-    deviceFloat L_N_2 = 1.0f;
+    deviceFloat L_N_2{1};
     deviceFloat L_N_1 = x;
-    deviceFloat L_N_2_prime = 0.0f;
-    deviceFloat L_N_1_prime = 1.0f;
+    deviceFloat L_N_2_prime{0};
+    deviceFloat L_N_1_prime{1};
     deviceFloat L_N;
 
     for (int k = 2; k <= N; ++k) {
