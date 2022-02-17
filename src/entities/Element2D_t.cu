@@ -138,8 +138,8 @@ auto SEM::Device::Entities::Element2D_t::interpolate_q_to_boundaries(const devic
 
 __device__
 auto SEM::Device::Entities::Element2D_t::exponential_decay(int n_points_least_squares) -> std::array<deviceFloat, 2> {
-    deviceFloat x_avg = 0.0;
-    deviceFloat y_avg = 0.0;
+    deviceFloat x_avg{0};
+    deviceFloat y_avg{0};
 
     for (int i = 0; i < n_points_least_squares; ++i) {
         x_avg += N_ + i + 1 - n_points_least_squares;
@@ -149,8 +149,8 @@ auto SEM::Device::Entities::Element2D_t::exponential_decay(int n_points_least_sq
     x_avg /= n_points_least_squares;
     y_avg /= n_points_least_squares;
 
-    deviceFloat numerator = 0.0;
-    deviceFloat denominator = 0.0;
+    deviceFloat numerator{0};
+    deviceFloat denominator{0};
 
     for (int i = 0; i < n_points_least_squares; ++i) {
         const int p = N_ + i + 1 - n_points_least_squares;
