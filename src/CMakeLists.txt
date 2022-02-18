@@ -128,7 +128,7 @@ if (BUILD_GPU)
         set_property(TARGET SEM PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
         set_property(TARGET SEM-CUDA PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
     endif()
-    target_compile_options(SEM-CUDA PUBLIC "$<$<AND:$<COMPILE_LANGUAGE:CUDA>,$<CONFIG:DEBUG>>:-lineinfo>")
+    target_compile_options(SEM-CUDA PUBLIC "$<$<AND:$<COMPILE_LANGUAGE:CUDA>,$<OR:$<CONFIG:DEBUG>,$<CONFIG:RelWithDebInfo>>>:-lineinfo>")
     target_compile_options(SEM-CUDA PUBLIC "$<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>")
 
     target_link_libraries(SEM-CUDA PUBLIC 
