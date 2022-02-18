@@ -427,3 +427,18 @@ encourage the reader to experiment with thealgorithms.},
    url = {https://blogs.sw.siemens.com/simcenter/whistle-while-you-mesh-simcenter-star-ccm-model-driven-adaptive-mesh-refinement-amr},
    urldate = {2022-02-11}
 }
+
+@article{Schive2018,
+   abstract = {We present gamer-2, a GPU-accelerated adaptive mesh refinement (AMR) code for astrophysics. It provides a rich set of features, including adaptive time-stepping, several hydrodynamic schemes, magnetohydrodynamics, self-gravity, particles, star formation, chemistry, and radiative processes with grackle, data analysis with yt, and memory pool for efficient object allocation. gamer-2 is fully bitwise reproducible. For the performance optimization, it adopts hybrid OpenMP/MPI/GPU parallelization and utilizes overlapping CPU computation, GPU computation, and CPU–GPU communication. Load balancing is achieved using a Hilbert space-filling curve on a level-by-level basis without the need to duplicate the entire AMR hierarchy on each MPI process. To provide convincing demonstrations of the accuracy and performance of gamer-2, we directly compare with enzo on isolated disc galaxy simulations and with flash on galaxy cluster merger simulations. We show that the physical results obtained by different codes are in very good agreement, and gamer-2 outperforms enzo and flash by nearly one and two orders of magnitude, respectively, on the Blue Waters supercomputers using 1–256 nodes. More importantly, gamer-2 exhibits similar or even better parallel scalability compared to the other two codes. We also demonstrate good weak and strong scaling using up to 4096 GPUs and 65 536 CPU cores, and achieve a uniform resolution as high as \\10\\, 240^3\\ cells. Furthermore, gamer-2 can be adopted as an AMR + GPUs framework and has been extensively used for the wave dark matter simulations. gamer-2 is open source (available at https://github.com/gamer-project/gamer) and new contributions are welcome.},
+   author = {Hsi-Yu Schive and John A ZuHone and Nathan J Goldbaum and Matthew J Turk and Massimo Gaspari and Chin-Yu Cheng},
+   doi = {10.1093/mnras/sty2586},
+   issn = {0035-8711},
+   issue = {4},
+   journal = {Monthly Notices of the Royal Astronomical Society},
+   month = {2},
+   pages = {4815-4840},
+   title = {gamer-2: a GPU-accelerated adaptive mesh refinement code – accuracy, performance, and scalability},
+   volume = {481},
+   url = {https://doi.org/10.1093/mnras/sty2586},
+   year = {2018},
+}
