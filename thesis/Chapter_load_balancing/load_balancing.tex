@@ -51,7 +51,7 @@ received from the ends of these segments. In addition, these curves are fast to 
 memory, and maximise locality. Elements that are close in curve space will also be close by in the
 space used for computations. This limits the number of interfaces between processes.
 
-\section{Hilbert curve}\label{section:load_balancing:hilbert_curve}
+\section{Hilbert Curve}\label{section:load_balancing:hilbert_curve}
 
 The Hilbert curve, developed by D. Hilbert~\cite{Hilbert1891}, is a specific kind of space-filling
 curve as described by G. Peano~\cite{Peano1890}. This curve works for 2D domains with equal and
@@ -386,7 +386,7 @@ curve is shown in Green to access the quality of the ordering.
 	\caption{Mesh refining: The elements follow mixed levels of the Hilbert curve, without jumps or discontinuities.}\label{fig:mesh_1_after2}
 \end{figure}
 
-\section{Workload leveling}\label{section:load_balancing:workload_leveling}
+\section{Workload Leveling}\label{section:load_balancing:workload_leveling}
 
 Now that the problem can be partitioned in one dimension, we can begin redistributing elements to
 level out the workload between the different worker \acrshortpl{acr:GPU}. We use \acrlong{acr:CCP},
