@@ -17,9 +17,27 @@ proven to scale well to above a million processors~\cite{Offermans2017}. Other s
 as the Nektar++~\cite{Cantwell2015} library. It is a spectral finite element library used to create
 purpose-built solvers for different kinds of problems.
 
-These are the kind of 
+These are the kind of solid foundations we wish to build upon in this work. These solvers
+traditionally use \acrshortpl{acr:CPU} to compute their solutions. We wish to use
+\acrshortpl{acr:GPU}, so the methods will need to be ported to this new architecture.
 
 \section{Graphics Processing Units}\label{section:literature_review:gpu}
+
+In recent years, the scientific computing world has started using \acrshortpl{acr:GPU} to perform
+computations. Some traditionally \acrshort{acr:CPU}-based commercial solvers were upgraded to run
+entirely on \acrshortpl{acr:GPU}, or have some parts of the code \acrshort{acr:GPU}-accelerated.
+Krawezik and Poole present a new \acrshort{acr:GPU}-accelerated direct sparse solver for Ansys
+Fluent, boasting a \(2.9 \times \) speedup compared to the \acrshort{acr:CPU}-only solver.
+Open-source solutions like OpenFOAM~\cite{Alonazi2015} have also been extended to work on hybrid
+\acrshort{acr:CPU} and \acrshort{acr:GPU} architectures. Another example is
+RapidCFD~\cite{SimFlow2020}, a collection of OpenFOAM solvers ported to Nvidia \acrshort{acr:CUDA}.
+
+Some brand new solvers have been created for \acrshortpl{acr:GPU}, such as the AmgX solver, a
+distributed algebraic multigrid solver. This solver has been shown to have a \(2 \times \) to \(5
+\times \) speedup compared to a \acrshort{acr:CPU} implementation~\cite{Naumov2015}.
+
+In the realm of spectral methods, 
+
 ~\cite{Fischer2021} % NekRS
 ~\cite{Medina2014} % OCCA
 

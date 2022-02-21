@@ -472,3 +472,40 @@ encourage the reader to experiment with thealgorithms.},
    year = {2014},
    urldate = {2022-02-21},
 }
+
+@inproceedings{Krawezik2009,
+   author = {Geraud Krawezik and Gene Poole},
+   month = {2},
+   title = {Accelerating the ANSYS Direct Sparse Solver with GPUs},
+   year = {2009},
+}
+
+@article{Naumov2015,
+   abstract = { The solution of large sparse linear systems arises in many applications, such as computational fluid dynamics and oil reservoir simulation. In realistic cases the matrices are often so large that they require large scale distributed parallel computing to obtain the solution of interest in a reasonable time. In this paper we discuss the design and implementation of the AmgX library, which provides drop-in GPU acceleration of distributed algebraic multigrid (AMG) and preconditioned iterative methods. The AmgX library implements both classical and aggregation-based AMG methods with different selector and interpolation strategies, along with a variety of smoothers and preconditioners, including block-Jacobi, Gauss–Seidel, and incomplete-LU factorization. The library contains many of the standard and flexible preconditioned Krylov subspace iterative methods, which can be combined with any of the available multigrid methods or simpler preconditioners. The parallelism in the aggregation scheme exploits parallel graph matching techniques, while the smoothers and preconditioners often rely on parallel graph coloring algorithms. The AMG algorithm implemented in the AmgX library achieves $2$–$5$ speedup on a single GPU against a competitive implementation on the CPU. As will be shown in the numerical experiments section, both setup and solve phases scale well across multiple nodes, sustaining this performance advantage. },
+   author = {M Naumov and M Arsaev and P Castonguay and J Cohen and J Demouth and J Eaton and S Layton and N Markovskiy and I Reguly and N Sakharnykh and V Sellappan and R Strzodka},
+   doi = {10.1137/140980260},
+   issue = {5},
+   journal = {SIAM Journal on Scientific Computing},
+   pages = {S602-S626},
+   title = {AmgX: A Library for GPU Accelerated Algebraic Multigrid and Preconditioned Iterative Methods},
+   volume = {37},
+   url = {https://doi.org/10.1137/140980260},
+   year = {2015},
+}
+
+@article{Alonazi2015,
+   author = {Amani Alonazi and David Keyes and Alexey Lastovetsky and Vladimir Rychkov},
+   month = {2},
+   title = {Design and Optimization of OpenFOAM-based CFD Applications for Hybrid and Heterogeneous HPC Platforms},
+   year = {2015},
+}
+
+@online{SimFlow2020,
+   author = {SimFlow},
+   journal = {SimFlow},
+   pages = {1-1},
+   title = {RapidCFD GPU - OpenFOAM on GPU},
+   year = {2020},
+   url = {https://sim-flow.com/rapid-cfd-gpu/},
+   urldate = {2022-02-21}
+}
