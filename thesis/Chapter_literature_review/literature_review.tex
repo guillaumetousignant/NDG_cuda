@@ -36,12 +36,29 @@ Some brand new solvers have been created for \acrshortpl{acr:GPU}, such as the A
 distributed algebraic multigrid solver. This solver has been shown to have a \(2 \times \) to \(5
 \times \) speedup compared to a \acrshort{acr:CPU} implementation~\cite{Naumov2015}.
 
-In the realm of spectral methods, 
+In the realm of spectral methods, there have been a few advances using \acrshortpl{acr:GPU}.
+Notably, NekRS is a Navier Stokes solver designed to run on diverse hardware, including
+\acrshortpl{acr:CPU} and \acrshortpl{acr:GPU}~\cite{Fischer2021}. It is related to the traditional
+Nek5000 solver. It uses the OCCA~\cite{Medina2014}, a parallel programming language that provides
+code that can be compiled to different architectures, notably OpenMP \acrshort{acr:CPU} code,
+\acrshort{acr:CUDA} \acrshort{acr:GPU} code and OpenCL code. NekRS shows a parallel efficiency of
+\(80 \% \), and \(80 \% \) to \(90 \% \) of the realizable peak performance of \acrshort{acr:HPC}
+systems for large problems~\cite{Fischer2021}.
 
-~\cite{Fischer2021} % NekRS
-~\cite{Medina2014} % OCCA
+This indicates that \acrshort{acr:SEM} solvers can have very good performance on the
+\acrshort{acr:GPU} architecture. This gives a promising foundation for this work, as the core solver
+is expected to be fast. These solvers use static meshes, meaning that the mesh does not change
+during the simulation. This can be problematic for complex problems, when uniformly increasing the
+mesh resolution to capture fine detail in the solution makes the problem prohibitively expensive to
+compute. The mesh can be refined beforehand in areas of the flow expected to need refinement, which
+is not always possible if these areas cannot be predicted in advance, change position in time, or
+are not easy to predict visually. We will therefore want to implement \acrlong{acr:AMR}, which is
+not available in any of those well-known solvers.
 
 \section{Adaptive Mesh Refinement}\label{section:literature_review:amr}
+
+% SOmething about amr not being well suited for GPUs
+
 ~\cite{Schive2018} % GPU amr
 
-\glsentryshort{acr:DG-SEM}
+\section{Dynamic Load Balancing}\label{section:literature_review:load_balancing}
