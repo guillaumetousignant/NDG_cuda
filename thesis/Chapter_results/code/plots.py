@@ -65,14 +65,14 @@ adaptivity_t = np.array([[1291.83 + 0, 125.801 + 0.0882828, 618.956 + 0.268462, 
                          [925.343 + 0, 178.784 + 0.133373, 112.303 + 0.407997, 197.018 + 0.748684],
                          [69.993 + 0, 135.805 + 0.279973, 33.7466 + 0.812055, 45.6049 + 1.70332],
                          [0.283659 + 0, 0.913643 + 0.628911, 41.3044 + 1.42374, 68.5027 + 3.8267]])
-adaptivity_max_error = np.array([[4.2e-9, 1.3e-9, 1.0e-9, 4.9e-9],
+adaptivity_max_error = np.array([[7.6e-7, 3.6e-8, 7.4e-9, 1.6e-8],
                                  [5.7e-6, 3.4e-8, 1.3e-8, 4.8e-9],
                                  [2.3e-4, 1.4e-6, 2.7e-8, 1.9e-8],
                                  [1.1e-3, 2.0e-5, 6.4e-7, 1.6e-6]])
 
 adaptivity_baseline_C = adaptivity_C[:, [0,-1]]
 adaptivity_baseline_t = np.array([4632.26, 4632.26, 4632.26, 4632.26])
-adaptivity_baseline_max_error = np.array([2.3e-12, 2.3e-12, 2.3e-12, 2.3e-12])
+adaptivity_baseline_max_error = np.array([1.6e-11, 1.6e-11, 1.6e-11, 1.6e-11])
 
 # Load balancing efficiency interval
 load_balancing_interval_A = np.array([20, 20])                  # Adaptivity interval
