@@ -5,155 +5,168 @@
 \usepackage{import}
 
 % packages used
-\usepackage[utf8]{inputenc}
 \usepackage[english]{babel}
 
-% page setting ----------------------------------------------------------
+% page setting -------------------------------------------------------------------------------------
 \usepackage{geometry}
 \geometry{
-	letterpaper,						% 8.5in * 11 in
-	left=1.5in,
-	top=1in,
+    letterpaper,                        % 8.5in * 11 in
+    left=1.5in,
+    top=1in,
 }
-\linespread{1.3} 						% set the line spacing to be 1.3
-\setlength{\parindent}{2em} 			% indentation 2
-\setlength{\parskip}{0.5em} 			% paragraph spacing
-% ------------------------------------------------------------------------
+\linespread{1.3}                        % set the line spacing to be 1.3
+\setlength{\parindent}{2em}             % indentation 2
+\setlength{\parskip}{0.5em}             % paragraph spacing
+% --------------------------------------------------------------------------------------------------
 
-\usepackage{float}  					% for figure "H"
-\usepackage{amsmath}    				% math
-\usepackage[hidelinks]{hyperref}		% hyperlinks
-\usepackage[dvipsnames, table]{xcolor}	% color 
-\usepackage{graphicx}					% figures
-\usepackage{svg}						% svg figures
-\usepackage{subfig}						% sub figures
-\usepackage[nottoc]{tocbibind}			% put bib in the table of content 
-\usepackage{amsfonts} 					% for math equations
-\usepackage{array} 						% table
+\usepackage{float}                                  % for figure "H"
+\usepackage{amsmath}                                % math
+\usepackage[hidelinks]{hyperref}                    % hyperlinks
+\usepackage[dvipsnames, table]{xcolor}              % color 
+\usepackage{graphicx}                               % figures
+\usepackage[inkscapelatex=false]{svg}               % svg figures, without changing the fonts
+\usepackage{subfig}                                 % sub figures
+\usepackage[nottoc]{tocbibind}                      % put bib in the table of content 
+\usepackage{amsfonts}                               % for math equations
+\usepackage{array}                                  % table
 \newcolumntype{M}[1]{>{\centering\arraybackslash}m{#1}}
-\usepackage{listings}					% code
-\usepackage{adjustbox} 					% adjust table width
+\usepackage{adjustbox}                              % adjust table width
 
-\usepackage[chapter]{algorithm}			% algorithm numbered by chapter
-\usepackage{algorithmicx}				% algorithm
-\usepackage{algpseudocode}				% pseudocode
-\usepackage{varwidth}					% code indentation
-\usepackage{amssymb}					% slanted symbols
-\usepackage{mathtools}					% better matrices
-\usepackage{indentfirst}				% indent the first paragraph too
+\usepackage[chapter]{algorithm}                     % algorithm numbered by chapter
+\usepackage{algorithmicx}                           % algorithm
+\usepackage{varwidth}                               % code indentation
+\usepackage{amssymb}                                % slanted symbols
+\usepackage{mathtools}                              % better matrices
+\usepackage{indentfirst}                            % indent the first paragraph too
+\usepackage{tcolorbox}                              % box around code
+\usepackage{minted}                                 % code syntax highlighting
+\usepackage{fontspec}                               % font control
+\usepackage{csquotes}                               % properly quoted text
+\usepackage[style=numeric]{biblatex}                % better bibliography
+\usepackage{booktabs}                               % more control on tables
 
 % nonumberlist: no page number in glossary
-\usepackage[toc, nopostdot, nonumberlist, nogroupskip, acronym, order=letter]{glossaries} % [toc] put glossaries in content
+\usepackage[toc, nopostdot, nonumberlist, nogroupskip, acronym, order=letter, sanitizesort]{glossaries} % put glossaries in content
 
-% add list of Greek symbols----------------------------------------------
-% [glg]{domain_name}{gls}{glo}{title_name}
+% Glossaries----------------------------------------------------------------------------------------
 \newglossary*{greekstyle}{List of Greek Symbols}
-
 \newglossary*{superscript}{Superscripts}
 \newglossary*{subscript}{Subscripts}
-
 \newglossary*{othersymbol}{Other Symbols}
 \newglossary*{othernotation}{Other Notations}
-%------------------------------------------------------------------------
+%---------------------------------------------------------------------------------------------------
 
-\setglossarystyle{long} % left align
+\setglossarystyle{long}                     % left align
 \renewcommand{\glsnamefont}[1]{\textbf{#1}} % acronyms will be in bold style. 
-%------------------------------------------------------------------------
+%---------------------------------------------------------------------------------------------------
 
-\makenoidxglossaries
+\makenoidxglossaries{}
 
-\glsdisablehyper	% disable hyper of the symbol in text
+\glsdisablehyper{}              % disable hyper of the symbol in text
 
-\include{glossary_entries.tex} % define all your symbols in a separated file. 
-\include{colours.tex} % define all your colours in a separated file.
+\loadglsentries{glossary_entries.tex}   % define all symbols in a separated file.
+\usepackage{colours}                    % define all colours in a separated file
 
 % Operator definitions 
 \DeclareMathOperator{\CFL}{CFL}
 
-% preamble
-\begin{document}
-	\pagenumbering{roman}
+% Code snippets
+\tcbuselibrary{minted, skins}
+\newtcblisting{cuda}{listing only, minted language=cuda, minted style=monokai,
+    colback=vs_black, enhanced, frame hidden, 
+    left=0mm, right=0mm, top=0mm, bottom=0mm, boxsep=2mm,
+    minted options={fontsize=\scriptsize, 
+    linenos, mathescape, breaklines, autogobble}}
 
-    % title page-------------------------------------------------------
-	\addcontentsline{toc}{chapter}{Title Page}
-	\input{./Chapter_title/title_page.tex}
-	% -----------------------------------------------------------------
+% Bibliography
+\addbibresource{references/references.bib}
+
+% Fonts
+\setmonofont[Contextuals={Alternate}]{Fira Code}    % better monospace font
+
+% Main document
+\begin{document}
+    \pagenumbering{roman}
+
+    % title page------------------------------------------------------------------------------------
+    \addcontentsline{toc}{chapter}{Title Page}
+    \input{Chapter_title/title_page.tex}
+    % ----------------------------------------------------------------------------------------------
 
     \newpage
-	\setcounter{page}{2}
-	% abstract --------------------------------------------------------
-	\input{./Chapter_abstract/abstract.tex}
-	% -----------------------------------------------------------------
+    \setcounter{page}{2}
+    % abstract -------------------------------------------------------------------------------------
+    \input{Chapter_abstract/abstract.tex}
+    % ----------------------------------------------------------------------------------------------
 
-	% acknowledgement -------------------------------------------------
-	\input{./Chapter_acknowledgements/acknowledgements.tex}
-	\addcontentsline{toc}{chapter}{Acknowledgements}
-	% -----------------------------------------------------------------
+    % acknowledgement ------------------------------------------------------------------------------
+    \input{Chapter_acknowledgements/acknowledgements.tex}
+    \addcontentsline{toc}{chapter}{Acknowledgements}
+    % ----------------------------------------------------------------------------------------------
 
-	% generate table of contents ======================================
-	\setcounter{tocdepth}{5}	% set the depth of table of contents
-	\tableofcontents
-	\addcontentsline{toc}{chapter}{Contents} % put toc to the toc
-	% =================================================================
-	
-	% =================================================================
-	\listoffigures	% list of figures
-	
-	\listoftables	% list of tables
-	
-	\listofalgorithms % list of algorithms
-	\addcontentsline{toc}{chapter}{List of Algorithms} 
-	% =================================================================
-	
-	% print all the symbols without referencing them
-	\glsaddall
-	% remove the left vacant space of long style
-	\setlength\LTleft{0pt}
-	\setlength\LTright{0pt}
-	\setlength\glsdescwidth{1.0\hsize}
-	
-	\printnoidxglossary[title=List of Symbols]
-	\printnoidxglossary[sort=standard, type=greekstyle] % self-defined ordering 
-	\printnoidxglossary[type=othersymbol]
-	\printnoidxglossary[type=superscript]
-	\printnoidxglossary[type=subscript]
-	\printnoidxglossary[type=othernotation]
-	\printnoidxglossary[title=List of Acronyms, type=\acronymtype]
-	
-	% start arabic page numbering here--------------------------------
- 	\newpage
- 	\setcounter{page}{1}
-	\pagenumbering{arabic}
-	%-----------------------------------------------------------------
-	
-	% input takes all the contents in the specified file
-	% intro
-	\input{./Chapter_introduction/introduction.tex}
+    % generate table of contents ===================================================================
+    \setcounter{tocdepth}{5}    % set the depth of table of contents
+    \tableofcontents
+    \addcontentsline{toc}{chapter}{Contents}    % put toc to the toc
+    % ==============================================================================================
+    
+    % ==============================================================================================
+    \listoffigures                                      % list of figures
+    
+    \listoftables                                       % list of tables
+    
+    \listofalgorithms{}                                 % list of algorithms
 
-	% literature review
-	\input{./Chapter_literature_review/literature_review.tex}
+    \addcontentsline{toc}{chapter}{List of Algorithms}  % list of algorithms
+    % ==============================================================================================
+    
+    % print all the symbols without referencing them
+    \glsaddall{}
+    % remove the left vacant space of long style
+    \setlength\LTleft{0pt}
+    \setlength\LTright{0pt}
+    \setlength\glsdescwidth{1.0\hsize}
+    
+    \printnoidxglossary[title=List of Symbols]
+    \printnoidxglossary[sort=standard, type=greekstyle] % self-defined ordering 
+    \printnoidxglossary[type=othersymbol]
+    \printnoidxglossary[type=superscript]
+    \printnoidxglossary[type=subscript]
+    \printnoidxglossary[type=othernotation]
+    \printnoidxglossary[title=List of Acronyms, type=\acronymtype]
+    
+    % start arabic page numbering here--------------------------------------------------------------
+    \newpage
+    \setcounter{page}{1}
+    \pagenumbering{arabic}
+    %-----------------------------------------------------------------------------------------------
+    
+    % intro
+    \include{Chapter_introduction/introduction.tex}
 
-	% graphics processing units
-	\input{./Chapter_graphics_processing_units/graphics_processing_units.tex}
+    % literature review
+    \include{Chapter_literature_review/literature_review.tex}
 
-	% spectral element method
-	\input{./Chapter_spectral_element_method/spectral_element_method.tex}
+    % graphics processing units
+    \include{Chapter_graphics_processing_units/graphics_processing_units.tex}
 
-	% adaptive mesh refinement
-	\input{./Chapter_adaptive_mesh_refinement/adaptive_mesh_refinement.tex}
+    % spectral element method
+    \include{Chapter_spectral_element_method/spectral_element_method.tex}
 
-	% load balancing
-	\input{./Chapter_load_balancing/load_balancing.tex}
+    % adaptive mesh refinement
+    \include{Chapter_adaptive_mesh_refinement/adaptive_mesh_refinement.tex}
 
-	% results
-	\input{./Chapter_results/results.tex}
-	
-	% conclusion
-	\input{./Chapter_conclusion/conclusion.tex}
-	
-	% put bibliography in the table of contents
-	\bibliographystyle{abbrv}	% set the bib style
-	\bibliography{./reference/reference.bib}
-	%================================================================
+    % load balancing
+    \include{Chapter_load_balancing/load_balancing.tex}
+
+    % results
+    \include{Chapter_results/results.tex}
+    
+    % conclusion
+    \include{Chapter_conclusion/conclusion.tex}
+    
+    % bibliography
+    \printbibliography{}
+    %===============================================================================================
 
 \end{document}
