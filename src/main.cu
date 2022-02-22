@@ -5,6 +5,7 @@
 #include "meshes/Mesh2D_t.cuh"
 #include "solvers/Solver2D_t.cuh"
 #include "polynomials/LegendrePolynomial_t.cuh"
+#include "functions/Utilities.h"
 #include <filesystem>
 #include <iostream>
 #include <string>
@@ -20,7 +21,8 @@
 
 namespace fs = std::filesystem;
 
-constexpr deviceFloat pi = 3.14159265358979323846;
+constexpr deviceFloat pi{3.14159265358979323846};
+enum PreConditionAlgorithm : int {Iterative, Sequential, None};
 
 auto get_input_file(const SEM::Helpers::InputParser_t& input_parser) -> fs::path {
     const std::string input_mesh_path = input_parser.getCmdOption("--mesh");
@@ -108,6 +110,29 @@ auto get_output_times(const SEM::Helpers::InputParser_t& input_parser) -> std::v
     return output_times;
 }
 
+auto get_pre_condition_algorithm(const SEM::Helpers::InputParser_t& input_parser) -> PreConditionAlgorithm {
+    std::string algorithm_string = input_parser.getCmdOption("--pre_condition_algorithm");
+    if (!algorithm_string.empty()) {
+        SEM::to_lower(algorithm_string);
+        if (algorithm_string == "iterative") {
+            return PreConditionAlgorithm::Iterative;
+        }
+        else if (algorithm_string == "sequential") {
+            return PreConditionAlgorithm::Sequential;
+        }
+        else if (algorithm_string == "none") {
+            return PreConditionAlgorithm::None;
+        }
+        else {
+            std::cerr << "Error: pre-condition algorithm '" << algorithm_string << "' unknown, valid options are: 'iterative', 'sequential', 'none'. Exiting." << std::endl;
+            exit(79);
+        }
+    }
+    else {
+        return PreConditionAlgorithm::Sequential;
+    }
+}
+
 auto main(int argc, char* argv[]) -> int {
     const SEM::Helpers::InputParser_t input_parser(argc, argv);
     if (input_parser.cmdOptionExists("--help") || input_parser.cmdOptionExists("-h")) {
@@ -137,7 +162,9 @@ auto main(int argc, char* argv[]) -> int {
         std::cout << '\t' << "--tolerance_min"              << '\t' << "estimated error above which elements will refine (default: 1e-6)" << std::endl;
         std::cout << '\t' << "--tolerance_max"              << '\t' << "estimated error below which elements will coarsen (default: 1e-14)" << std::endl;
         std::cout << '\t' << "--load_balancing_threshold"   << '\t' << "load imbalance ratio, n_elements_max/n_elements_min below which no load balancing occurs (default: 1.01)" << std::endl;
-        std::cout << '\t' << "--pre_condition"              << '\t' << "number of adaptivity steps to run before restarting the computation, 0 to disable (default: 0)" << std::endl;
+        std::cout << '\t' << "--pre_condition"        << '\t' << "number of adaptivity steps to run before starting the computation, 0 to disable (default: 0)" << std::endl;
+        std::cout << '\t' << "--pre_condition_interval"     << '\t' << "number of iterations between adapting the mesh for pre-conditioning, 0 to disable (default: adaptivity_interval)" << std::endl;
+        std::cout << '\t' << "--pre_condition_algorithm {iterative,sequential,none}" << '\t' << "algorithm to use for pre-conditioning (default: sequential)" << std::endl;
         std::cout << '\t' << "-v, --version"                << '\t' << "show program's version number and exit" << std::endl;
         exit(0);
     }
@@ -164,7 +191,9 @@ auto main(int argc, char* argv[]) -> int {
     const deviceFloat tolerance_min = input_parser.getCmdOptionOr("--tolerance_min", deviceFloat{1e-6});
     const deviceFloat tolerance_max = input_parser.getCmdOptionOr("--tolerance_max", deviceFloat{1e-14});
     const deviceFloat load_balancing_threshold = input_parser.getCmdOptionOr("--load_balancing_threshold", deviceFloat{1.01});
-    const size_t pre_condition = input_parser.getCmdOptionOr("--pre_condition", std::size_t{0});
+    const size_t pre_condition_steps = input_parser.getCmdOptionOr("--pre_condition", std::size_t{0});
+    const size_t pre_condition_interval = input_parser.getCmdOptionOr("--pre_condition_interval", adaptivity_interval);
+    const PreConditionAlgorithm pre_condition_algorithm = get_pre_condition_algorithm(input_parser);
 
     // Error checking
     if (N_initial > N_max) {
@@ -269,14 +298,18 @@ auto main(int argc, char* argv[]) -> int {
               << "s." << std::endl;
 
     // Pre-condition
-    if (pre_condition > 0) {
+    if (pre_condition_steps > 0 && pre_condition_interval > 0 && pre_condition_algorithm != PreConditionAlgorithm::None) {
         if (global_rank == 0) {
             std::cout << "Pre-conditioning" << std::endl;
         }
         auto t_start_pre = std::chrono::high_resolution_clock::now();
 
-        solver.pre_condition(NDG, mesh, pre_condition);
-        mesh.initial_conditions(NDG.nodes_);
+        if (pre_condition_algorithm == PreConditionAlgorithm::Iterative) {
+            solver.pre_condition_iterative(NDG, mesh, pre_condition_steps, pre_condition_interval);
+        }
+        else if (pre_condition_algorithm == PreConditionAlgorithm::Sequential) {
+            solver.pre_condition(NDG, mesh, pre_condition_steps, pre_condition_interval);
+        }
         cudaStreamSynchronize(stream);
 
         auto t_end_pre = std::chrono::high_resolution_clock::now();

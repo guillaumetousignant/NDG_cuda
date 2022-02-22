@@ -8,10 +8,10 @@ auto SEM::Device::Solvers::Solver2D_t::solve(const SEM::Device::Entities::NDG_t<
     MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
     int global_size;
     MPI_Comm_size(MPI_COMM_WORLD, &global_size);
-    deviceFloat time = 0.0;
+    deviceFloat time{0};
     const deviceFloat t_end = output_times_.back();
     SEM::Helpers::ProgressBar_t bar;
-    size_t timestep = 0;
+    size_t timestep{0};
     constexpr std::array<deviceFloat, 3> am {0, -5.0/9.0, -153.0/128.0};
     constexpr std::array<deviceFloat, 3> bm {0, 1.0/3.0, 0.75};
     constexpr std::array<deviceFloat, 3> gm {1.0/3.0, 15.0/16.0, 8.0/15.0};
@@ -134,9 +134,9 @@ auto SEM::Device::Solvers::Solver2D_t::solve(const SEM::Device::Entities::NDG_t<
 }
 
 template<typename Polynomial>
-auto SEM::Device::Solvers::Solver2D_t::pre_condition(const SEM::Device::Entities::NDG_t<Polynomial> &NDG, SEM::Device::Meshes::Mesh2D_t& mesh, size_t n_adaptivity_steps) const -> void {
-    if (mesh.adaptivity_interval_ == 0) {
-        std::cerr << "Error, pre_condition should not be used with adaptivity disabled. Exiting." << std::endl;
+auto SEM::Device::Solvers::Solver2D_t::pre_condition(const SEM::Device::Entities::NDG_t<Polynomial> &NDG, SEM::Device::Meshes::Mesh2D_t& mesh, size_t n_adaptivity_steps, size_t pre_condition_interval) const -> void {
+    if (pre_condition_interval == 0) {
+        std::cerr << "Error, pre-condition should not be used with a pre-condition interval of 0. Exiting." << std::endl;
         exit(77);
     }
     
@@ -144,11 +144,10 @@ auto SEM::Device::Solvers::Solver2D_t::pre_condition(const SEM::Device::Entities
     MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
     int global_size;
     MPI_Comm_size(MPI_COMM_WORLD, &global_size);
-    deviceFloat time = 0.0;
-    const deviceFloat t_end = output_times_.back();
+    deviceFloat time{0};
     SEM::Helpers::ProgressBar_t bar;
-    size_t timestep = 0;
-    size_t n_adaptivity = 0;
+    size_t timestep{0};
+    size_t n_adaptivity{0};
     constexpr std::array<deviceFloat, 3> am {0, -5.0/9.0, -153.0/128.0};
     constexpr std::array<deviceFloat, 3> bm {0, 1.0/3.0, 0.75};
     constexpr std::array<deviceFloat, 3> gm {1.0/3.0, 15.0/16.0, 8.0/15.0};
@@ -164,9 +163,6 @@ auto SEM::Device::Solvers::Solver2D_t::pre_condition(const SEM::Device::Entities
     while (n_adaptivity < n_adaptivity_steps) {
         ++timestep;
         delta_t = get_delta_t(mesh);
-        if (time + delta_t > t_end) {
-            delta_t = t_end - time;
-        }
 
         // Kinda algorithm 62
         deviceFloat t = time + bm[0] * delta_t;
@@ -198,10 +194,10 @@ auto SEM::Device::Solvers::Solver2D_t::pre_condition(const SEM::Device::Entities
         
         time += delta_t;
 
-        if (timestep % mesh.adaptivity_interval_ == 0) {
+        if (timestep % pre_condition_interval == 0) {
             if (global_rank == 0) {
                 bar.set_status_text("Adapting");
-                bar.update(static_cast<deviceFloat>(timestep)/static_cast<deviceFloat>(n_adaptivity_steps * mesh.adaptivity_interval_)); // CHECK change if adaptivity is spaced out another way
+                bar.update(static_cast<deviceFloat>(timestep)/static_cast<deviceFloat>(n_adaptivity_steps * pre_condition_interval)); // CHECK change if adaptivity is spaced out another way
             }
 
             mesh.estimate_error<Polynomial>(NDG.nodes_, NDG.weights_);
@@ -212,7 +208,7 @@ auto SEM::Device::Solvers::Solver2D_t::pre_condition(const SEM::Device::Entities
         if (mesh.load_balancing_interval_ > 0 && global_size > 1 && timestep % mesh.load_balancing_interval_ == 0) {
             if (global_rank == 0) {
                 bar.set_status_text("Load Balancing");
-                bar.update(static_cast<deviceFloat>(timestep)/static_cast<deviceFloat>(n_adaptivity_steps * mesh.adaptivity_interval_)); // CHECK change if adaptivity is spaced out another way
+                bar.update(static_cast<deviceFloat>(timestep)/static_cast<deviceFloat>(n_adaptivity_steps * pre_condition_interval)); // CHECK change if adaptivity is spaced out another way
             }
 
             mesh.load_balance(NDG.nodes_);
@@ -222,7 +218,110 @@ auto SEM::Device::Solvers::Solver2D_t::pre_condition(const SEM::Device::Entities
             std::stringstream ss;
             ss << "Iteration " << timestep;
             bar.set_status_text(ss.str());
-            bar.update(static_cast<deviceFloat>(timestep)/static_cast<deviceFloat>(n_adaptivity_steps * mesh.adaptivity_interval_)); // CHECK change if adaptivity is spaced out another way
+            bar.update(static_cast<deviceFloat>(timestep)/static_cast<deviceFloat>(n_adaptivity_steps * pre_condition_interval)); // CHECK change if adaptivity is spaced out another way
+        }
+    }
+
+    mesh.initial_conditions(NDG.nodes_);
+
+    if (global_rank == 0) {
+        bar.set_status_text("Done");
+        bar.update(1.0);
+    }
+    if (global_rank == 0) {
+        std::cout << std::endl;
+    }
+}
+
+template<typename Polynomial>
+auto SEM::Device::Solvers::Solver2D_t::pre_condition_iterative(const SEM::Device::Entities::NDG_t<Polynomial> &NDG, SEM::Device::Meshes::Mesh2D_t& mesh, size_t n_adaptivity_steps, size_t pre_condition_interval) const -> void {
+    if (pre_condition_interval == 0) {
+        std::cerr << "Error, pre-condition should not be used with a pre-condition interval of 0. Exiting." << std::endl;
+        exit(77);
+    }
+    
+    int global_rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
+    int global_size;
+    MPI_Comm_size(MPI_COMM_WORLD, &global_size);
+    deviceFloat time{0};
+    SEM::Helpers::ProgressBar_t bar;
+    size_t timestep{0};
+    size_t n_adaptivity{0};
+    constexpr std::array<deviceFloat, 3> am {0, -5.0/9.0, -153.0/128.0};
+    constexpr std::array<deviceFloat, 3> bm {0, 1.0/3.0, 0.75};
+    constexpr std::array<deviceFloat, 3> gm {1.0/3.0, 15.0/16.0, 8.0/15.0};
+
+    deviceFloat delta_t = get_delta_t(mesh);
+    
+    if (global_rank == 0) {
+        bar.set_colour(termcolor::green);
+        bar.set_status_text("Iteration 0");
+        bar.update(0.0);
+    }
+    
+    while (n_adaptivity < n_adaptivity_steps) {
+        ++timestep;
+        delta_t = get_delta_t(mesh);
+
+        // Kinda algorithm 62
+        deviceFloat t = time + bm[0] * delta_t;
+        mesh.interpolate_to_boundaries(NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        mesh.boundary_conditions(t, NDG.nodes_, NDG.weights_, NDG.barycentric_weights_);
+        mesh.project_to_faces(NDG.nodes_, NDG.barycentric_weights_);
+        SEM::Device::Solvers::calculate_wave_fluxes<<<mesh.faces_numBlocks_, mesh.faces_blockSize_, 0, mesh.stream_>>>(mesh.faces_.size(), mesh.faces_.data());
+        mesh.project_to_elements(NDG.nodes_, NDG.weights_, NDG.barycentric_weights_);
+        SEM::Device::Solvers::compute_dg_wave_derivative<<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, mesh.stream_>>>(mesh.n_elements_, mesh.elements_.data(), mesh.faces_.data(), NDG.weights_.data(), NDG.derivative_matrices_hat_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
+        SEM::Device::Solvers::rk3_first_step<<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, mesh.stream_>>>(mesh.n_elements_, mesh.elements_.data(), delta_t, gm[0]);
+
+        t = time + bm[1] * delta_t;
+        mesh.interpolate_to_boundaries(NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        mesh.boundary_conditions(t, NDG.nodes_, NDG.weights_, NDG.barycentric_weights_);
+        mesh.project_to_faces(NDG.nodes_, NDG.barycentric_weights_);
+        SEM::Device::Solvers::calculate_wave_fluxes<<<mesh.faces_numBlocks_, mesh.faces_blockSize_, 0, mesh.stream_>>>(mesh.faces_.size(), mesh.faces_.data());
+        mesh.project_to_elements(NDG.nodes_, NDG.weights_, NDG.barycentric_weights_);
+        SEM::Device::Solvers::compute_dg_wave_derivative<<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, mesh.stream_>>>(mesh.n_elements_, mesh.elements_.data(), mesh.faces_.data(), NDG.weights_.data(), NDG.derivative_matrices_hat_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
+        SEM::Device::Solvers::rk3_step<<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, mesh.stream_>>>(mesh.n_elements_, mesh.elements_.data(), delta_t, am[1], gm[1]);
+
+        t = time + bm[2] * delta_t;
+        mesh.interpolate_to_boundaries(NDG.lagrange_interpolant_left_, NDG.lagrange_interpolant_right_);
+        mesh.boundary_conditions(t, NDG.nodes_, NDG.weights_, NDG.barycentric_weights_);
+        mesh.project_to_faces(NDG.nodes_, NDG.barycentric_weights_);
+        SEM::Device::Solvers::calculate_wave_fluxes<<<mesh.faces_numBlocks_, mesh.faces_blockSize_, 0, mesh.stream_>>>(mesh.faces_.size(), mesh.faces_.data());
+        mesh.project_to_elements(NDG.nodes_, NDG.weights_, NDG.barycentric_weights_);
+        SEM::Device::Solvers::compute_dg_wave_derivative<<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, mesh.stream_>>>(mesh.n_elements_, mesh.elements_.data(), mesh.faces_.data(), NDG.weights_.data(), NDG.derivative_matrices_hat_.data(), NDG.lagrange_interpolant_left_.data(), NDG.lagrange_interpolant_right_.data());
+        SEM::Device::Solvers::rk3_step<<<mesh.elements_numBlocks_, mesh.elements_blockSize_, 0, mesh.stream_>>>(mesh.n_elements_, mesh.elements_.data(), delta_t, am[2], gm[2]);
+        
+        time += delta_t;
+
+        if (timestep % pre_condition_interval == 0) {
+            if (global_rank == 0) {
+                bar.set_status_text("Adapting");
+                bar.update(static_cast<deviceFloat>(timestep)/static_cast<deviceFloat>(n_adaptivity_steps * pre_condition_interval)); // CHECK change if adaptivity is spaced out another way
+            }
+
+            mesh.estimate_error<Polynomial>(NDG.nodes_, NDG.weights_);
+            mesh.adapt(NDG.N_max_, NDG.nodes_, NDG.barycentric_weights_);
+            ++n_adaptivity;
+
+            mesh.initial_conditions(NDG.nodes_);
+            time = deviceFloat{0};
+        }
+
+        if (mesh.load_balancing_interval_ > 0 && global_size > 1 && timestep % mesh.load_balancing_interval_ == 0) {
+            if (global_rank == 0) {
+                bar.set_status_text("Load Balancing");
+                bar.update(static_cast<deviceFloat>(timestep)/static_cast<deviceFloat>(n_adaptivity_steps * pre_condition_interval)); // CHECK change if adaptivity is spaced out another way
+            }
+
+            mesh.load_balance(NDG.nodes_);
+        }
+
+        if (global_rank == 0) {
+            std::stringstream ss;
+            ss << "Iteration " << timestep;
+            bar.set_status_text(ss.str());
+            bar.update(static_cast<deviceFloat>(timestep)/static_cast<deviceFloat>(n_adaptivity_steps * pre_condition_interval)); // CHECK change if adaptivity is spaced out another way
         }
     }
 
