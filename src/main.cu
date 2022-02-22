@@ -6,6 +6,8 @@
 #include "solvers/Solver2D_t.cuh"
 #include "polynomials/LegendrePolynomial_t.cuh"
 #include "functions/Utilities.h"
+#define NOMINMAX
+#include "helpers/termcolor.hpp"
 #include <filesystem>
 #include <iostream>
 #include <string>
@@ -281,7 +283,9 @@ auto main(int argc, char* argv[]) -> int {
 
     // Initialisation
     if (global_rank == 0) {
+        std::cout << termcolor::bold << termcolor::blue;
         std::cout << "Initialising" << std::endl;
+        std::cout << termcolor::reset;
     }
     auto t_start_init = std::chrono::high_resolution_clock::now();
 
@@ -300,7 +304,9 @@ auto main(int argc, char* argv[]) -> int {
     // Pre-condition
     if (pre_condition_steps > 0 && pre_condition_interval > 0 && pre_condition_algorithm != PreConditionAlgorithm::None) {
         if (global_rank == 0) {
+            std::cout << termcolor::bold << termcolor::green;
             std::cout << "Pre-conditioning" << std::endl;
+            std::cout << termcolor::reset;
         }
         auto t_start_pre = std::chrono::high_resolution_clock::now();
 
@@ -320,7 +326,9 @@ auto main(int argc, char* argv[]) -> int {
 
     // Computation
     if (global_rank == 0) {
+        std::cout << termcolor::bold << termcolor::yellow;
         std::cout << "Solving" << std::endl;
+        std::cout << termcolor::reset;
     }
     auto t_start = std::chrono::high_resolution_clock::now();
 
