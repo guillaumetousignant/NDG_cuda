@@ -11,8 +11,8 @@ __host__ __device__
 auto SEM::Device::g(SEM::Device::Entities::Vec2<T> xy, T t) -> std::array<T, 3> {    
     const T p = std::exp(-std::pow((k.x() * (xy.x() - xy0.x()) + k.y() * (xy.y() - xy0.y()) - c * t), 2) / std::pow(d, 2));
 
-    SEM::Device::Entities::Vec2<T> xy1 {0.25, 0.5};
-    const deviceFloat radius = 100;
+    SEM::Device::Entities::Vec2<T> xy1 {0.5, 0.55};
+    const deviceFloat radius = 1000;
     const deviceFloat magnitude {0.75};
     const deviceFloat cloud = magnitude * std::exp(-radius * std::pow(xy.x() - xy1.x(), 2) - radius * std::pow(xy.y() - xy1.y(), 2));
     return {p + cloud,
