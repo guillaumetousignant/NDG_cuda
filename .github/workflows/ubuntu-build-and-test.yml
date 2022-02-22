@@ -74,15 +74,6 @@ jobs:
         env:
           I_MPI_ROOT: /usr/lib/x86_64-linux-gnu/openmpi
           MPI_HOME: /usr/lib/x86_64-linux-gnu/openmpi
-        continue-on-error: true
-      - name: what is happening please
-        shell: bash
-        run: cat CMakeFiles/CMakeOutput.log
-        working-directory: ${{ github.workspace }}/packages/hdf5/build
-      - name: what is happening please
-        shell: bash
-        run: cat CMakeFiles/CMakeError.log
-        working-directory: ${{ github.workspace }}/packages/hdf5/build
       - name: Building hdf5 (Ubuntu)
         shell: bash
         run: cmake --build .

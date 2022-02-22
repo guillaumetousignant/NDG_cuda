@@ -70,3 +70,13 @@
 *.pvtu
 *.nsys-rep
 *.pvtu.series
+/thesis/_minted-thesis/*
+*.pyg
+*.bcf
+*.lof
+*.run.xml
+*.listing
+*.nsight-cuprof-report
+*.nvvp
+*.qdrep
+*.qdstrm

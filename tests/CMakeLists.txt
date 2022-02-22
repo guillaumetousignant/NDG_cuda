@@ -35,7 +35,7 @@ if (BUILD_GPU)
     if(NOT ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug"))
         set_property(TARGET unit_tests PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
     endif()
-    target_compile_options(unit_tests PUBLIC "$<$<AND:$<COMPILE_LANGUAGE:CUDA>,$<CONFIG:DEBUG>>:-lineinfo>")
+    target_compile_options(unit_tests PUBLIC "$<$<AND:$<COMPILE_LANGUAGE:CUDA>,$<OR:$<CONFIG:DEBUG>,$<CONFIG:RelWithDebInfo>>>:-lineinfo>")
     target_compile_options(unit_tests PUBLIC "$<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>")
 
     catch_discover_tests(unit_tests)

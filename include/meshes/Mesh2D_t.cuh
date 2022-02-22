@@ -172,6 +172,7 @@ namespace SEM { namespace Device { namespace Meshes {
             auto estimate_error(const SEM::Device::Entities::device_vector<deviceFloat>& polynomial_nodes, const SEM::Device::Entities::device_vector<deviceFloat>& weights) -> void;
             
             auto print() const -> void;
+            auto print_to_file(std::filesystem::path filename) const -> void;
             auto write_data(deviceFloat time, const SEM::Device::Entities::device_vector<deviceFloat>& interpolation_matrices, const SEM::Helpers::DataWriter_t& data_writer) -> void;
             auto write_complete_data(deviceFloat time, const SEM::Device::Entities::device_vector<deviceFloat>& polynomial_nodes, const SEM::Device::Entities::device_vector<deviceFloat>& interpolation_matrices, const SEM::Helpers::DataWriter_t& data_writer) -> void;
 

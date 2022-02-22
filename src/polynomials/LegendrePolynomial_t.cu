@@ -1,7 +1,8 @@
 #include "polynomials/LegendrePolynomial_t.cuh"
 #include <cmath>
+#include <limits>
 
-constexpr deviceFloat pi = 3.14159265358979323846;
+constexpr deviceFloat pi{3.14159265358979323846};
 
 // Algorithm 23
 __global__
@@ -12,8 +13,8 @@ void SEM::Device::Polynomials::legendre_gauss_nodes_and_weights(int N, deviceFlo
 
     for (int i = index; i < (N + 1)/2; i += stride) {
         if (N == 1) { // CHECK will enter loop above
-            nodes[offset] = -std::sqrt(1.0f/3.0f);
-            weights[offset] = 1.0f;
+            nodes[offset] = -std::sqrt(deviceFloat{1}/deviceFloat{3});
+            weights[offset] = deviceFloat{1};
             nodes[offset + 1] = -nodes[offset];
             weights[offset + 1] = weights[offset];
         }
@@ -25,7 +26,7 @@ void SEM::Device::Polynomials::legendre_gauss_nodes_and_weights(int N, deviceFlo
                 LegendrePolynomial_t::polynomial_and_derivative(N + 1, nodes[offset + i], L_N_plus1, L_N_plus1_prime);
                 deviceFloat delta = -L_N_plus1/L_N_plus1_prime;
                 nodes[offset + i] += delta;
-                if (std::abs(delta) <= 0.00000001f * std::abs(nodes[offset + i])) {
+                if (std::abs(delta) < std::numeric_limits<deviceFloat>::min() * 2 * std::abs(nodes[offset + i])) {
                     break;
                 }
 
@@ -34,21 +35,21 @@ void SEM::Device::Polynomials::legendre_gauss_nodes_and_weights(int N, deviceFlo
             deviceFloat dummy, L_N_plus1_prime_final;
             LegendrePolynomial_t::polynomial_and_derivative(N + 1, nodes[offset + i], dummy, L_N_plus1_prime_final);
             nodes[offset + N - i] = -nodes[offset + i];
-            weights[offset + i] = 2.0f/((1.0f - nodes[offset + i] * nodes[offset + i]) * L_N_plus1_prime_final * L_N_plus1_prime_final);
+            weights[offset + i] = deviceFloat{2}/((1 - nodes[offset + i] * nodes[offset + i]) * L_N_plus1_prime_final * L_N_plus1_prime_final);
             weights[offset + N - i] = weights[offset + i];
         }
     }
 
     if (index == 0) {
         if (N == 0) {
-            nodes[offset] = 0.0f;
-            weights[offset] = 2.0f;
+            nodes[offset] = deviceFloat{0};
+            weights[offset] = deviceFloat{2};
         }
 
         if (N % 2 == 0) {
             deviceFloat dummy, L_N_plus1_prime_final;
-            LegendrePolynomial_t::polynomial_and_derivative(N + 1, 0.0f, dummy, L_N_plus1_prime_final);
-            nodes[offset + N/2] = 0.0f;
+            LegendrePolynomial_t::polynomial_and_derivative(N + 1, deviceFloat{0}, dummy, L_N_plus1_prime_final);
+            nodes[offset + N/2] = deviceFloat{0};
             weights[offset + N/2] = 2/(L_N_plus1_prime_final * L_N_plus1_prime_final);
         }
     }
@@ -65,18 +66,18 @@ void SEM::Device::Polynomials::LegendrePolynomial_t::nodes_and_weights(int N_max
 __device__
 void SEM::Device::Polynomials::LegendrePolynomial_t::polynomial_and_derivative(int N, deviceFloat x, deviceFloat &L_N, deviceFloat &L_N_prime) {
     if (N == 0) {
-        L_N = 1.0f;
-        L_N_prime = 0.0f;
+        L_N = deviceFloat{1};
+        L_N_prime = deviceFloat{0};
     }
     else if (N == 1) {
         L_N = x;
-        L_N_prime = 1.0f;
+        L_N_prime = deviceFloat{1};
     }
     else {
-        deviceFloat L_N_2 = 1.0f;
+        deviceFloat L_N_2{1};
         deviceFloat L_N_1 = x;
-        deviceFloat L_N_2_prime = 0.0f;
-        deviceFloat L_N_1_prime = 1.0f;
+        deviceFloat L_N_2_prime{0};
+        deviceFloat L_N_1_prime{1};
 
         for (int k = 2; k <= N; ++k) {
             L_N = (2 * k - 1) * x * L_N_1/k - (k - 1) * L_N_2/k; // L_N_1(x) ??
@@ -92,16 +93,16 @@ void SEM::Device::Polynomials::LegendrePolynomial_t::polynomial_and_derivative(i
 __device__
 deviceFloat SEM::Device::Polynomials::LegendrePolynomial_t::polynomial(int N, deviceFloat x) {
     if (N == 0) {
-        return 1.0f;
+        return deviceFloat{1};
     }
     if (N == 1) {
         return x;
     }
     
-    deviceFloat L_N_2 = 1.0f;
+    deviceFloat L_N_2{1};
     deviceFloat L_N_1 = x;
-    deviceFloat L_N_2_prime = 0.0f;
-    deviceFloat L_N_1_prime = 1.0f;
+    deviceFloat L_N_2_prime{0};
+    deviceFloat L_N_1_prime{1};
     deviceFloat L_N;
 
     for (int k = 2; k <= N; ++k) {

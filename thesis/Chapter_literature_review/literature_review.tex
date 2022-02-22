@@ -1,5 +1,69 @@
-\chapter{Literature Review} \label{chapter:literature_review} 
+\chapter{Literature Review}\label{chapter:literature_review} 
 % SEM
 % Large scale SEM (Nek)
 % Adaptivity
 % GPUs
+% Load balancing
+
+The issues that this work aims to overcome are not new, and as such a lot of work has been perform
+to overcome them. This section highlights the current state of the domain, and where this work fits
+within it.
+
+\section{Spectral Element Methods}\label{section:literature_review:sem}
+
+Large scale spectral element solvers have existed for quite a while now. One such solver is Nek5000,
+an open-source Navier Stokes spectral element solver that rune on \acrshortpl{acr:CPU}. It has been
+proven to scale well to above a million processors~\cite{Offermans2017}. Other solutions exist, such
+as the Nektar++~\cite{Cantwell2015} library. It is a spectral finite element library used to create
+purpose-built solvers for different kinds of problems.
+
+These are the kind of solid foundations we wish to build upon in this work. These solvers
+traditionally use \acrshortpl{acr:CPU} to compute their solutions. We wish to use
+\acrshortpl{acr:GPU}, so the methods will need to be ported to this new architecture.
+
+\section{Graphics Processing Units}\label{section:literature_review:gpu}
+
+In recent years, the scientific computing world has started using \acrshortpl{acr:GPU} to perform
+computations. Some traditionally \acrshort{acr:CPU}-based commercial solvers were upgraded to run
+entirely on \acrshortpl{acr:GPU}, or have some parts of the code \acrshort{acr:GPU}-accelerated.
+Krawezik and Poole present a new \acrshort{acr:GPU}-accelerated direct sparse solver for Ansys
+Fluent, boasting a \(2.9 \times \) speedup compared to the \acrshort{acr:CPU}-only solver.
+Open-source solutions like OpenFOAM~\cite{Alonazi2015} have also been extended to work on hybrid
+\acrshort{acr:CPU} and \acrshort{acr:GPU} architectures. Another example is
+RapidCFD~\cite{SimFlow2020}, a collection of OpenFOAM solvers ported to Nvidia \acrshort{acr:CUDA}.
+
+Some brand new solvers have been created for \acrshortpl{acr:GPU}, such as the AmgX solver, a
+distributed algebraic multigrid solver. This solver has been shown to have a \(2 \times \) to \(5
+\times \) speedup compared to a \acrshort{acr:CPU} implementation~\cite{Naumov2015}.
+
+In the realm of spectral methods, there have been a few advances using \acrshortpl{acr:GPU}.
+Notably, NekRS is a Navier Stokes solver designed to run on diverse hardware, including
+\acrshortpl{acr:CPU} and \acrshortpl{acr:GPU}~\cite{Fischer2021}. It is related to the traditional
+Nek5000 solver. It uses the OCCA~\cite{Medina2014}, a parallel programming language that provides
+code that can be compiled to different architectures, notably OpenMP \acrshort{acr:CPU} code,
+\acrshort{acr:CUDA} \acrshort{acr:GPU} code and OpenCL code. NekRS shows a parallel efficiency of
+\(80 \% \), and \(80 \% \) to \(90 \% \) of the realizable peak performance of \acrshort{acr:HPC}
+systems for large problems~\cite{Fischer2021}.
+
+This indicates that \acrshort{acr:SEM} solvers can have very good performance on the
+\acrshort{acr:GPU} architecture. This gives a promising foundation for this work, as the core solver
+is expected to be fast. These solvers use static meshes, meaning that the mesh does not change
+during the simulation. This can be problematic for complex problems, when uniformly increasing the
+mesh resolution to capture fine detail in the solution makes the problem prohibitively expensive to
+compute. The mesh can be refined beforehand in areas of the flow expected to need refinement, which
+is not always possible if these areas cannot be predicted in advance, change position in time, or
+are not easy to predict visually. We will therefore want to implement \acrlong{acr:AMR}, which is
+not available in any of those well-known solvers.
+
+\section{Adaptive Mesh Refinement}\label{section:literature_review:amr}
+
+\Acrshort{acr:AMR} has been proved to speedup significantly 
+
+~\cite{Plewa2005} % AMR book
+
+% something about not being ideal for GPUs
+
+~\cite{Schive2018} % GPU amr
+~\cite{Giuliani2019} % GPU amr gas dynamics
+
+\section{Dynamic Load Balancing}\label{section:literature_review:load_balancing}

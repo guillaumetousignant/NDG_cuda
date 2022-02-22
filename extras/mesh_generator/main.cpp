@@ -128,24 +128,30 @@ auto get_boundary_conditions(const SEM::Helpers::InputParser_t& input_parser) ->
 auto main(int argc, char* argv[]) -> int {
     const SEM::Helpers::InputParser_t input_parser(argc, argv);
     if (input_parser.cmdOptionExists("--help") || input_parser.cmdOptionExists("-h")) {
-        std::cout << "Square unstructured mesh generator" << std::endl;
-        std::cout << '\t' << "Generates 2D square unstructured meshes following a Hillbert curve, saved using the CGNS HDF5 format." << std::endl << std::endl;
-        std::cout << "Available options:" << std::endl;
-        std::cout << '\t' <<  "--path"            <<  '\t' <<  "Full path of the output mesh file. Overrides filename and directory if set." << std::endl;
-        std::cout << '\t' <<  "--filename"        <<  '\t' <<  "File name of the output mesh file. Defaults to [mesh.cgns]" << std::endl;
-        std::cout << '\t' <<  "--directory"       <<  '\t' <<  "Directory of the output mesh file. Defaults to [./meshes/]" << std::endl;
-        std::cout << '\t' <<  "--resolution"      <<  '\t' <<  "Number of elements in the x and y directions. Must be a power of two. Defaults to [4]" << std::endl;
-        std::cout << '\t' <<  "--x_periodic"      <<  '\t' <<  "Sets the mesh to be periodic in the x direction. Overrides left and right boundaries." << std::endl;
-        std::cout << '\t' <<  "--y_periodic"      <<  '\t' <<  "Sets the mesh to be periodic in the y direction. Overrides top and bottom boundaries." << std::endl;
-        std::cout << '\t' <<  "--boundaries"      <<  '\t' <<  "Sets all four boundary conditions. Acceptable values are \"wall\", \"symmetry\", \"inflow\", \"outflow\" and \"null\". Defaults to [wall]" << std::endl;
-        std::cout << '\t' <<  "--bottom_boundary" <<  '\t' <<  "Sets the bottom boundary condition. Acceptable values are \"wall\", \"symmetry\", \"inflow\", \"outflow\" and \"null\". Overrides boundaries." << std::endl;
-        std::cout << '\t' <<  "--right_boundary"  <<  '\t' <<  "Sets the right boundary condition. Acceptable values are \"wall\", \"symmetry\", \"inflow\", \"outflow\" and \"null\". Overrides boundaries." << std::endl;
-        std::cout << '\t' <<  "--top_boundary"    <<  '\t' <<  "Sets the top boundary condition. Acceptable values are \"wall\", \"symmetry\", \"inflow\", \"outflow\" and \"null\". Overrides boundaries." << std::endl;
-        std::cout << '\t' <<  "--left_boundary"   <<  '\t' <<  "Sets the left boundary condition. Acceptable values are \"wall\", \"symmetry\", \"inflow\", \"outflow\" and \"null\". Overrides boundaries." << std::endl;
-        std::cout << '\t' <<  "--x_min"           <<  '\t' <<  "x coordinate of the left side of the grid. Defaults to [0]" << std::endl;
-        std::cout << '\t' <<  "--x_max"           <<  '\t' <<  "x coordinate of the right side of the grid. Defaults to [1]" << std::endl;
-        std::cout << '\t' <<  "--y_min"           <<  '\t' <<  "y coordinate of the left side of the grid. Defaults to [0]" << std::endl;
-        std::cout << '\t' <<  "--y_max"           <<  '\t' <<  "y coordinate of the right side of the grid. Defaults to [1]" << std::endl;
+        std::cout << "usage: mesh_generator.exe [-h] [--path PATH] [--filename FILENAME | [--directory DIRECTORY] [--resolution RESOLUTION]] [--x_periodic] [--y_periodic] [--boundaries {wall,symmetry,inflow,outflow,null} | [--bottom_boundary {wall,symmetry,inflow,outflow,null}] [--right_boundary {wall,symmetry,inflow,outflow,null}] [--top_boundary {wall,symmetry,inflow,outflow,null}] [--left_boundary {wall,symmetry,inflow,outflow,null}]] [--x_min X_MIN] [--x_max X_MAX] [--y_min Y_MIN] [--y_max Y_MAX] [-v]" << std::endl << std::endl;
+        std::cout << "Square unstructured mesh generator. Generates 2D square unstructured meshes following a Hillbert curve, saved using the CGNS HDF5 format." << std::endl << std::endl;
+        std::cout << "options:" << std::endl;
+        std::cout << '\t' <<  "-h, --help"        <<  '\t' <<  "show this help message and exit" << std::endl;
+        std::cout << '\t' <<  "--path"            <<  '\t' <<  "full path of the output mesh file, overrides filename and directory if set" << std::endl;
+        std::cout << '\t' <<  "--filename"        <<  '\t' <<  "file name of the output mesh file (default: mesh.cgns)" << std::endl;
+        std::cout << '\t' <<  "--directory"       <<  '\t' <<  "directory of the output mesh file (default: ./meshes/)" << std::endl;
+        std::cout << '\t' <<  "--resolution"      <<  '\t' <<  "number of elements in the x and y directions, must be a power of two (default: 4)" << std::endl;
+        std::cout << '\t' <<  "--x_periodic"      <<  '\t' <<  "sets the mesh to be periodic in the x direction, overrides left and right boundaries" << std::endl;
+        std::cout << '\t' <<  "--y_periodic"      <<  '\t' <<  "sets the mesh to be periodic in the y direction, iverrides top and bottom boundaries" << std::endl;
+        std::cout << '\t' <<  "--boundaries"      <<  '\t' <<  "sets all four boundary conditions, acceptable values are \"wall\", \"symmetry\", \"inflow\", \"outflow\" and \"null\" (default: wall)" << std::endl;
+        std::cout << '\t' <<  "--bottom_boundary" <<  '\t' <<  "sets the bottom boundary condition, acceptable values are \"wall\", \"symmetry\", \"inflow\", \"outflow\" and \"null\", overrides boundaries" << std::endl;
+        std::cout << '\t' <<  "--right_boundary"  <<  '\t' <<  "sets the right boundary condition, acceptable values are \"wall\", \"symmetry\", \"inflow\", \"outflow\" and \"null\", overrides boundaries" << std::endl;
+        std::cout << '\t' <<  "--top_boundary"    <<  '\t' <<  "sets the top boundary condition, acceptable values are \"wall\", \"symmetry\", \"inflow\", \"outflow\" and \"null\", overrides boundaries" << std::endl;
+        std::cout << '\t' <<  "--left_boundary"   <<  '\t' <<  "sets the left boundary condition, acceptable values are \"wall\", \"symmetry\", \"inflow\", \"outflow\" and \"null\", overrides boundaries" << std::endl;
+        std::cout << '\t' <<  "--x_min"           <<  '\t' <<  "x coordinate of the left side of the grid (default: 0)" << std::endl;
+        std::cout << '\t' <<  "--x_max"           <<  '\t' <<  "x coordinate of the right side of the grid (default: 1)" << std::endl;
+        std::cout << '\t' <<  "--y_min"           <<  '\t' <<  "y coordinate of the left side of the grid (default: 0)" << std::endl;
+        std::cout << '\t' <<  "--y_max"           <<  '\t' <<  "y coordinate of the right side of the grid (default: 1)" << std::endl;
+        std::cout << '\t' <<  "-v, --version"     <<  '\t' <<  "show program's version number and exit" << std::endl;
+        exit(0);
+    }
+    else if (input_parser.cmdOptionExists("--version") || input_parser.cmdOptionExists("-v")) {
+        std::cout << "mesh_generator.exe 1.0.0" << std::endl;
         exit(0);
     }
 
