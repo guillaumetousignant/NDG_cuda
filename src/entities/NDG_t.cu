@@ -208,19 +208,3 @@ void SEM::Device::Entities::create_interpolation_matrices(int N, size_t n_interp
         }
     }
 }
-
-__global__
-void SEM::Device::Entities::calculate_polynomials(int N, const deviceFloat* nodes, const deviceFloat* polynomials, const deviceFloat* weights) {
-    const int index_x = blockIdx.x * blockDim.x + threadIdx.x;
-    const int index_y = blockIdx.y * blockDim.y + threadIdx.y;
-    const int stride_x = blockDim.x * gridDim.x;
-    const int stride_y = blockDim.y * gridDim.y;
-    const size_t offset_1D = N * (N + 1) /2;
-    const size_t offset_2D = N * (N + 1) * (2 * N + 1) /6;
-
-    for (int i = index_x; i <= N; i += stride_x) {
-        for (int j = index_y; j <= N; j += stride_y) {
-            polynomials[offset_2D + i * (N + 1) + j] = polynomial(i, polynomial_nodes[offset_1D + j]) * weights[offset_1D + j] * (2 * i + 1) * deviceFloat{0.5};
-        }
-    }
-}

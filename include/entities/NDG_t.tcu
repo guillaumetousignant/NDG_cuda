@@ -36,7 +36,7 @@ SEM::Device::Entities::NDG_t<Polynomial>::NDG_t(int N_max, size_t n_interpolatio
         const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
         const dim3 matrix_numBlocks((N +  matrix_blockSize.x) / matrix_blockSize.x, (N +  matrix_blockSize.y) / matrix_blockSize.y); // Should be (N + poly_blockSize - 1) if N is not inclusive
         SEM::Device::Entities::calculate_barycentric_weights<<<vector_numBlocks, poly_blockSize, 0, stream>>>(N, nodes_.data(), barycentric_weights_.data());
-        SEM::Device::Entities::calculate_polynomials<<<matrix_numBlocks, matrix_blockSize, 0, stream>>>(N, nodes_.data(), polynomials_.data(), weights_.data());
+        SEM::Device::Entities::calculate_polynomials<Polynomial><<<matrix_numBlocks, matrix_blockSize, 0, stream>>>(N, nodes_.data(), weights_.data(), polynomials_.data());
     }
 
     // We need the barycentric weights for derivative matrix, interpolation matrices and Lagrange interpolants
@@ -251,6 +251,23 @@ void SEM::Device::Entities::NDG_t<Polynomial>::print() {
                 std::cout << host_polynomials[offset_2D + i * (N + 1) + j] << " ";
             }
             std::cout << std::endl;
+        }
+    }
+}
+
+template<typename Polynomial>
+__global__
+void SEM::Device::Entities::calculate_polynomials(int N, const deviceFloat* nodes, const deviceFloat* weights, deviceFloat* polynomials) {
+    const int index_x = blockIdx.x * blockDim.x + threadIdx.x;
+    const int index_y = blockIdx.y * blockDim.y + threadIdx.y;
+    const int stride_x = blockDim.x * gridDim.x;
+    const int stride_y = blockDim.y * gridDim.y;
+    const size_t offset_1D = N * (N + 1) /2;
+    const size_t offset_2D = N * (N + 1) * (2 * N + 1) /6;
+
+    for (int i = index_x; i <= N; i += stride_x) {
+        for (int j = index_y; j <= N; j += stride_y) {
+            polynomials[offset_2D + i * (N + 1) + j] = Polynomial::polynomial(i, nodes[offset_1D + j]) * weights[offset_1D + j] * (2 * i + 1) * deviceFloat{0.5};
         }
     }
 }
