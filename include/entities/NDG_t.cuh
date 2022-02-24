@@ -26,6 +26,7 @@ namespace SEM { namespace Device { namespace Entities {
             SEM::Device::Entities::device_vector<deviceFloat> g_hat_derivative_matrices_;
             SEM::Device::Entities::device_vector<deviceFloat> derivative_matrices_hat_;
             SEM::Device::Entities::device_vector<deviceFloat> interpolation_matrices_;
+            SEM::Device::Entities::device_vector<deviceFloat> polynomials_;
 
             void print();
     };
