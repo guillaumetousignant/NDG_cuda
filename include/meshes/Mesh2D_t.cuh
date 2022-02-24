@@ -168,7 +168,6 @@ namespace SEM { namespace Device { namespace Meshes {
             auto project_to_faces(const SEM::Device::Entities::device_vector<deviceFloat>& polynomial_nodes, const SEM::Device::Entities::device_vector<deviceFloat>& barycentric_weights) -> void;
             auto project_to_elements(const SEM::Device::Entities::device_vector<deviceFloat>& polynomial_nodes, const SEM::Device::Entities::device_vector<deviceFloat>& weights, const SEM::Device::Entities::device_vector<deviceFloat>& barycentric_weights) -> void;
             
-            template<typename Polynomial>
             auto estimate_error(const SEM::Device::Entities::device_vector<deviceFloat>& polynomials) -> void;
             
             auto print() const -> void;
@@ -232,7 +231,6 @@ namespace SEM { namespace Device { namespace Meshes {
     __global__
     auto get_complete_solution(size_t n_elements, size_t n_interpolation_points, deviceFloat time, const SEM::Device::Entities::Element2D_t* elements, const SEM::Device::Entities::Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v, int* N, deviceFloat* dp_dt, deviceFloat* du_dt, deviceFloat* dv_dt, deviceFloat* p_error, deviceFloat* u_error, deviceFloat* v_error, deviceFloat* p_sigma, deviceFloat* u_sigma, deviceFloat* v_sigma, int* refine, int* coarsen, int* split_level, deviceFloat* p_analytical_error, deviceFloat* u_analytical_error, deviceFloat* v_analytical_error, int* status, int* rotation) -> void;
 
-    template<typename Polynomial>
     __global__
     auto estimate_error(size_t n_elements, SEM::Device::Entities::Element2D_t* elements, deviceFloat tolerance_min, deviceFloat tolerance_max, const deviceFloat* polynomials) -> void;
 
