@@ -22,9 +22,9 @@ auto SEM::Device::Entities::Element2D_t::estimate_error(deviceFloat tolerance_mi
 
             for (int k = 0; k <= N_; ++k) {
                 for (int l = 0; l <= N_; ++l) {
-                    const deviceFloat p = (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} * p_[k * (N_ + 1) + l] * weights[offset_1D + k] * weights[offset_1D + l];
-                    local_spectrum_x += p * polynomials[offset_2D + i * (N + 1) + k] * polynomials[offset_2D + p * (N + 1) + l];
-                    local_spectrum_y += p * polynomials[offset_2D + p * (N + 1) + k] * polynomials[offset_2D + i * (N + 1) + l];
+                    const deviceFloat p_temp = (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} * p_[k * (N_ + 1) + l] * weights[offset_1D + k] * weights[offset_1D + l];
+                    local_spectrum_x += p_temp * polynomials[offset_2D + i * (N + 1) + k] * polynomials[offset_2D + p * (N + 1) + l];
+                    local_spectrum_y += p_temp * polynomials[offset_2D + p * (N + 1) + k] * polynomials[offset_2D + i * (N + 1) + l];
                 }
 
             }
@@ -58,9 +58,9 @@ auto SEM::Device::Entities::Element2D_t::estimate_error(deviceFloat tolerance_mi
 
             for (int k = 0; k <= N_; ++k) {
                 for (int l = 0; l <= N_; ++l) {
-                    const deviceFloat u = (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} * u_[k * (N_ + 1) + l] * weights[offset_1D + k] * weights[offset_1D + l];
-                    local_spectrum_x += u * polynomials[offset_2D + i * (N + 1) + k] * polynomials[offset_2D + p * (N + 1) + l];
-                    local_spectrum_y += u * polynomials[offset_2D + p * (N + 1) + k] * polynomials[offset_2D + i * (N + 1) + l];
+                    const deviceFloat u_temp = (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} * u_[k * (N_ + 1) + l] * weights[offset_1D + k] * weights[offset_1D + l];
+                    local_spectrum_x += u_temp * polynomials[offset_2D + i * (N + 1) + k] * polynomials[offset_2D + p * (N + 1) + l];
+                    local_spectrum_y += u_temp * polynomials[offset_2D + p * (N + 1) + k] * polynomials[offset_2D + i * (N + 1) + l];
                 }
 
             }
@@ -94,9 +94,9 @@ auto SEM::Device::Entities::Element2D_t::estimate_error(deviceFloat tolerance_mi
 
             for (int k = 0; k <= N_; ++k) {
                 for (int l = 0; l <= N_; ++l) {
-                    const deviceFloat v = (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} * v_[k * (N_ + 1) + l] * weights[offset_1D + k] * weights[offset_1D + l];
-                    local_spectrum_x += v * polynomials[offset_2D + i * (N + 1) + k] * polynomials[offset_2D + p * (N + 1) + l];
-                    local_spectrum_y += v * polynomials[offset_2D + p * (N + 1) + k] * polynomials[offset_2D + i * (N + 1) + l];
+                    const deviceFloat v_temp = (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} * v_[k * (N_ + 1) + l] * weights[offset_1D + k] * weights[offset_1D + l];
+                    local_spectrum_x += v_temp * polynomials[offset_2D + i * (N + 1) + k] * polynomials[offset_2D + p * (N + 1) + l];
+                    local_spectrum_y += v_temp * polynomials[offset_2D + p * (N + 1) + k] * polynomials[offset_2D + i * (N + 1) + l];
                 }
 
             }
@@ -137,9 +137,9 @@ auto SEM::Device::Entities::Element2D_t::estimate_p_error(deviceFloat tolerance_
 
             for (int k = 0; k <= N_; ++k) {
                 for (int l = 0; l <= N_; ++l) {
-                    const deviceFloat p = (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} * p_[k * (N_ + 1) + l] * weights[offset_1D + k] * weights[offset_1D + l];
-                    local_spectrum_x += p * polynomials[offset_2D + i * (N + 1) + k] * polynomials[offset_2D + p * (N + 1) + l];
-                    local_spectrum_y += p * polynomials[offset_2D + p * (N + 1) + k] * polynomials[offset_2D + i * (N + 1) + l];
+                    const deviceFloat p_temp = (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} * p_[k * (N_ + 1) + l] * weights[offset_1D + k] * weights[offset_1D + l];
+                    local_spectrum_x += p_temp * polynomials[offset_2D + i * (N + 1) + k] * polynomials[offset_2D + p * (N + 1) + l];
+                    local_spectrum_y += p_temp * polynomials[offset_2D + p * (N + 1) + k] * polynomials[offset_2D + i * (N + 1) + l];
                 }
 
             }
