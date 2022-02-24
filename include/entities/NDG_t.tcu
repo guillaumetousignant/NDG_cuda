@@ -85,6 +85,7 @@ void SEM::Device::Entities::NDG_t<Polynomial>::print() {
     std::vector<deviceFloat> host_g_hat_derivative_matrices(matrix_length_);
     std::vector<deviceFloat> host_derivative_matrices_hat(matrix_length_);
     std::vector<deviceFloat> host_interpolation_matrices(interpolation_length_);
+    std::vector<deviceFloat> host_polynomials(matrix_length_);
 
     nodes_.copy_to(host_nodes);
     weights_.copy_to(host_weights);
@@ -97,6 +98,7 @@ void SEM::Device::Entities::NDG_t<Polynomial>::print() {
     g_hat_derivative_matrices_.copy_to(host_g_hat_derivative_matrices);
     derivative_matrices_hat_.copy_to(host_derivative_matrices_hat);
     interpolation_matrices_.copy_to(host_interpolation_matrices);
+    polynomials_.copy_to(host_polynomials);
 
     std::cout << "Nodes: " << std::endl;
     for (int N = 0; N <= N_max_; ++N) {
