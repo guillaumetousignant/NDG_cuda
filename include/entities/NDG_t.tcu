@@ -26,14 +26,17 @@ SEM::Device::Entities::NDG_t<Polynomial>::NDG_t(int N_max, size_t n_interpolatio
         derivative_matrices_{matrix_length_, stream},
         g_hat_derivative_matrices_{matrix_length_, stream},
         derivative_matrices_hat_{matrix_length_, stream},
-        interpolation_matrices_{interpolation_length_, stream} {
+        interpolation_matrices_{interpolation_length_, stream},
+        polynomials_{matrix_length_, stream} {
 
     Polynomial::nodes_and_weights(N_max_, poly_blockSize, nodes_.data(), weights_.data(), stream);
 
     // Nodes are needed to compute barycentric weights
     for (int N = 0; N <= N_max_; ++N) {
         const int vector_numBlocks = (N + poly_blockSize) / poly_blockSize; // Should be (N + poly_blockSize - 1) if N is not inclusive
+        const dim3 matrix_numBlocks((N +  matrix_blockSize.x) / matrix_blockSize.x, (N +  matrix_blockSize.y) / matrix_blockSize.y); // Should be (N + poly_blockSize - 1) if N is not inclusive
         SEM::Device::Entities::calculate_barycentric_weights<<<vector_numBlocks, poly_blockSize, 0, stream>>>(N, nodes_.data(), barycentric_weights_.data());
+        SEM::Device::Entities::calculate_polynomials<<<matrix_numBlocks, matrix_blockSize, 0, stream>>>(N, nodes_.data(), polynomials_.data());
     }
 
     // We need the barycentric weights for derivative matrix, interpolation matrices and Lagrange interpolants
@@ -82,6 +85,7 @@ void SEM::Device::Entities::NDG_t<Polynomial>::print() {
     std::vector<deviceFloat> host_g_hat_derivative_matrices(matrix_length_);
     std::vector<deviceFloat> host_derivative_matrices_hat(matrix_length_);
     std::vector<deviceFloat> host_interpolation_matrices(interpolation_length_);
+    std::vector<deviceFloat> host_polynomials(matrix_length_);
 
     nodes_.copy_to(host_nodes);
     weights_.copy_to(host_weights);
@@ -94,6 +98,7 @@ void SEM::Device::Entities::NDG_t<Polynomial>::print() {
     g_hat_derivative_matrices_.copy_to(host_g_hat_derivative_matrices);
     derivative_matrices_hat_.copy_to(host_derivative_matrices_hat);
     interpolation_matrices_.copy_to(host_interpolation_matrices);
+    polynomials_.copy_to(host_polynomials);
 
     std::cout << "Nodes: " << std::endl;
     for (int N = 0; N <= N_max_; ++N) {
@@ -230,6 +235,20 @@ void SEM::Device::Entities::NDG_t<Polynomial>::print() {
             std::cout << '\t' << '\t';
             for (int j = 0; j <= N; ++j) {
                 std::cout << host_interpolation_matrices[offset_interp + i * (N + 1) + j] << " ";
+            }
+            std::cout << std::endl;
+        }
+    }
+
+    std::cout << std::endl << "Polynomials: " << std::endl;
+    for (int N = 0; N <= N_max_; ++N) {
+        const size_t offset_2D = N * (N + 1) * (2 * N + 1) /6;
+
+        std::cout << '\t' << "N = " << N << ": " << std::endl;
+        for (int i = 0; i <= N; ++i) {
+            std::cout << '\t' << '\t';
+            for (int j = 0; j <= N; ++j) {
+                std::cout << host_polynomials[offset_2D + i * (N + 1) + j] << " ";
             }
             std::cout << std::endl;
         }

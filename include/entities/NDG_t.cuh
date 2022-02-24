@@ -26,6 +26,7 @@ namespace SEM { namespace Device { namespace Entities {
             SEM::Device::Entities::device_vector<deviceFloat> g_hat_derivative_matrices_;
             SEM::Device::Entities::device_vector<deviceFloat> derivative_matrices_hat_;
             SEM::Device::Entities::device_vector<deviceFloat> interpolation_matrices_;
+            SEM::Device::Entities::device_vector<deviceFloat> polynomials_;
 
             void print();
     };
@@ -75,6 +76,9 @@ namespace SEM { namespace Device { namespace Entities {
     // Will interpolate n_interpolation_points between -1 and 1
     __global__
     void create_interpolation_matrices(int N, size_t n_interpolation_points, const deviceFloat* nodes, const deviceFloat* barycentric_weights, deviceFloat* interpolation_matrices);
+
+    __global__
+    void calculate_polynomials(int N, const deviceFloat* nodes, const deviceFloat* polynomials);
 }}}
 
 #include "entities/NDG_t.tcu"
