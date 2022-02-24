@@ -101,11 +101,11 @@ namespace SEM { namespace Device { namespace Entities {
 
             template<typename Polynomial>
             __device__
-            auto estimate_error(deviceFloat tolerance_min, deviceFloat tolerance_max, const deviceFloat* polynomials, const deviceFloat* weights) -> void;
+            auto estimate_error(deviceFloat tolerance_min, deviceFloat tolerance_max, const deviceFloat* polynomials) -> void;
 
             template<typename Polynomial>
             __device__
-            auto estimate_p_error(deviceFloat tolerance_min, deviceFloat tolerance_max, const deviceFloat* polynomials, const deviceFloat* weights) -> void;
+            auto estimate_p_error(deviceFloat tolerance_min, deviceFloat tolerance_max, const deviceFloat* polynomials) -> void;
 
             // This is used when the elements have different points
             __device__
