@@ -210,7 +210,7 @@ void SEM::Device::Entities::create_interpolation_matrices(int N, size_t n_interp
 }
 
 __global__
-void SEM::Device::Entities::compute_polynomials(int N, const deviceFloat* nodes, const deviceFloat* polynomials) {
+void SEM::Device::Entities::calculate_polynomials(int N, const deviceFloat* nodes, const deviceFloat* polynomials) {
     const int index_x = blockIdx.x * blockDim.x + threadIdx.x;
     const int index_y = blockIdx.y * blockDim.y + threadIdx.y;
     const int stride_x = blockDim.x * gridDim.x;
