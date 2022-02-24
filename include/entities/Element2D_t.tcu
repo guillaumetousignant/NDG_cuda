@@ -18,7 +18,6 @@ auto SEM::Device::Entities::Element2D_t::estimate_error(deviceFloat tolerance_mi
         // x and y directions
         for (int i = 0; i <= p; ++i) {
             deviceFloat local_spectrum_x{0};
-            deviceFloat local_spectrum_y{0};
 
             for (int k = 0; k <= N_; ++k) {
                 const deviceFloat L_N_x = polynomials[offset_2D + i * (N_ + 1) + k];
