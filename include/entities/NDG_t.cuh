@@ -78,7 +78,7 @@ namespace SEM { namespace Device { namespace Entities {
     void create_interpolation_matrices(int N, size_t n_interpolation_points, const deviceFloat* nodes, const deviceFloat* barycentric_weights, deviceFloat* interpolation_matrices);
 
     __global__
-    void calculate_polynomials(int N, const deviceFloat* nodes, const deviceFloat* polynomials);
+    void calculate_polynomials(int N, const deviceFloat* nodes, const deviceFloat* polynomials, const deviceFloat* weights);
 }}}
 
 #include "entities/NDG_t.tcu"
