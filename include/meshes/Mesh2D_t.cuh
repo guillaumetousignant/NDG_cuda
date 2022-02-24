@@ -169,7 +169,7 @@ namespace SEM { namespace Device { namespace Meshes {
             auto project_to_elements(const SEM::Device::Entities::device_vector<deviceFloat>& polynomial_nodes, const SEM::Device::Entities::device_vector<deviceFloat>& weights, const SEM::Device::Entities::device_vector<deviceFloat>& barycentric_weights) -> void;
             
             template<typename Polynomial>
-            auto estimate_error(const SEM::Device::Entities::device_vector<deviceFloat>& polynomials, const SEM::Device::Entities::device_vector<deviceFloat>& weights) -> void;
+            auto estimate_error(const SEM::Device::Entities::device_vector<deviceFloat>& polynomial_nodes, const SEM::Device::Entities::device_vector<deviceFloat>& weights) -> void;
             
             auto print() const -> void;
             auto print_to_file(std::filesystem::path filename) const -> void;
@@ -234,7 +234,7 @@ namespace SEM { namespace Device { namespace Meshes {
 
     template<typename Polynomial>
     __global__
-    auto estimate_error(size_t n_elements, SEM::Device::Entities::Element2D_t* elements, deviceFloat tolerance_min, deviceFloat tolerance_max, const deviceFloat* polynomials, const deviceFloat* weights) -> void;
+    auto estimate_error(size_t n_elements, SEM::Device::Entities::Element2D_t* elements, deviceFloat tolerance_min, deviceFloat tolerance_max, const deviceFloat* polynomial_nodes, const deviceFloat* weights) -> void;
 
     __global__
     auto interpolate_to_boundaries(size_t n_elements, SEM::Device::Entities::Element2D_t* elements, const deviceFloat* lagrange_interpolant_minus, const deviceFloat* lagrange_interpolant_plus) -> void;
