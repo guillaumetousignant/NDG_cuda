@@ -205,14 +205,10 @@ auto SEM::Device::Entities::Element2D_t::estimate_p_error(deviceFloat tolerance_
             deviceFloat local_spectrum{0};
 
             for (int k = 0; k <= N_; ++k) {
-                const deviceFloat L_N_x = polynomials[offset_2D + i * (N_ + 1) + k];
-
                 for (int l = 0; l <= N_; ++l) {
-                    const deviceFloat L_N_y = polynomials[offset_2D + p * (N_ + 1) + l]; 
-
                     local_spectrum += (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} *
                                       p_[k * (N_ + 1) + l] *
-                                      L_N_x * L_N_y * 
+                                      polynomials[offset_2D + i * (N_ + 1) + k] * polynomials[offset_2D + p * (N_ + 1) + l] * 
                                       weights[offset_1D + k] * weights[offset_1D + l];
                 }
 
@@ -221,18 +217,14 @@ auto SEM::Device::Entities::Element2D_t::estimate_p_error(deviceFloat tolerance_
         }
 
         // y direction
-        for (int j = 0; j < p; ++j) { // No need to include the last point here
+        for (int i = 0; i < p; ++i) { // No need to include the last point here
             deviceFloat local_spectrum{0};
 
             for (int k = 0; k <= N_; ++k) {
-                const deviceFloat L_N_x = polynomials[offset_2D + p * (N_ + 1) + k];
-
                 for (int l = 0; l <= N_; ++l) {
-                    const deviceFloat L_N_y = polynomials[offset_2D + j * (N_ + 1) + l];
-
-                    local_spectrum += (2 * j + 1) * (2 * p + 1) * deviceFloat{0.25} *
+                    local_spectrum += (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} *
                                       p_[k * (N_ + 1) + l] *
-                                      L_N_x * L_N_y * 
+                                      polynomials[offset_2D + p * (N_ + 1) + k] * polynomials[offset_2D + i * (N_ + 1) + l] * 
                                       weights[offset_1D + k] * weights[offset_1D + l];
                 }
             }
