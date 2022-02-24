@@ -160,6 +160,7 @@ auto SEM::Device::Entities::Element2D_t::estimate_p_error(deviceFloat tolerance_
         // x and y directions
         for (int i = 0; i <= p; ++i) {
             deviceFloat local_spectrum_x{0};
+            deviceFloat local_spectrum_y{0};
 
             for (int k = 0; k <= N_; ++k) {
                 for (int l = 0; l <= N_; ++l) {
