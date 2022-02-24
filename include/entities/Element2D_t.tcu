@@ -4,6 +4,7 @@ template<typename Polynomial>
 __device__
 auto SEM::Device::Entities::Element2D_t::estimate_error(deviceFloat tolerance_min, deviceFloat tolerance_max, const deviceFloat* polynomials, const deviceFloat* weights) -> void {
     const int offset_1D = N_ * (N_ + 1) /2;
+    const size_t offset_2D = N_ * (N_ + 1) * (2 * N_ + 1) /6;
     const int n_points_least_squares = std::min(N_ + 1, SEM::Device::Constants::n_points_least_squares_max); // Number of points to use for thew least squares reduction, but don't go above N.
 
     refine_ = false;
@@ -191,6 +192,7 @@ template<typename Polynomial>
 __device__
 auto SEM::Device::Entities::Element2D_t::estimate_p_error(deviceFloat tolerance_min, deviceFloat tolerance_max, const deviceFloat* polynomials, const deviceFloat* weights) -> void {
     const int offset_1D = N_ * (N_ + 1) /2;
+    const size_t offset_2D = N_ * (N_ + 1) * (2 * N_ + 1) /6;
     const int n_points_least_squares = std::min(N_ + 1, SEM::Device::Constants::n_points_least_squares_max); // Number of points to use for thew least squares reduction, but don't go above N.
 
     // Pressure
