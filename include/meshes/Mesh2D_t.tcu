@@ -1,16 +1,16 @@
 template<typename Polynomial>
-auto SEM::Device::Meshes::Mesh2D_t::estimate_error<Polynomial>(const SEM::Device::Entities::device_vector<deviceFloat>& polynomial_nodes, const SEM::Device::Entities::device_vector<deviceFloat>& weights) -> void {
-    SEM::Device::Meshes::estimate_error<Polynomial><<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, elements_.data(), tolerance_min_, tolerance_max_, polynomial_nodes.data(), weights.data());
+auto SEM::Device::Meshes::Mesh2D_t::estimate_error<Polynomial>(const SEM::Device::Entities::device_vector<deviceFloat>& polynomials, const SEM::Device::Entities::device_vector<deviceFloat>& weights) -> void {
+    SEM::Device::Meshes::estimate_error<Polynomial><<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, elements_.data(), tolerance_min_, tolerance_max_, polynomials.data(), weights.data());
 }
 
 template<typename Polynomial>
 __global__
-auto SEM::Device::Meshes::estimate_error<Polynomial>(size_t n_elements, SEM::Device::Entities::Element2D_t* elements, deviceFloat tolerance_min, deviceFloat tolerance_max, const deviceFloat* polynomial_nodes, const deviceFloat* weights) -> void {
+auto SEM::Device::Meshes::estimate_error<Polynomial>(size_t n_elements, SEM::Device::Entities::Element2D_t* elements, deviceFloat tolerance_min, deviceFloat tolerance_max, const deviceFloat* polynomials, const deviceFloat* weights) -> void {
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
     for (size_t element_index = index; element_index < n_elements; element_index += stride) {
-        elements[element_index].estimate_p_error<Polynomial>(tolerance_min, tolerance_max, polynomial_nodes, weights);
+        elements[element_index].estimate_p_error<Polynomial>(tolerance_min, tolerance_max, polynomials, weights);
     }
 }
 

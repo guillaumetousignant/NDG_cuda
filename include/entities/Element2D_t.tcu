@@ -2,8 +2,9 @@
 
 template<typename Polynomial>
 __device__
-auto SEM::Device::Entities::Element2D_t::estimate_error(deviceFloat tolerance_min, deviceFloat tolerance_max, const deviceFloat* polynomial_nodes, const deviceFloat* weights) -> void {
+auto SEM::Device::Entities::Element2D_t::estimate_error(deviceFloat tolerance_min, deviceFloat tolerance_max, const deviceFloat* polynomials, const deviceFloat* weights) -> void {
     const int offset_1D = N_ * (N_ + 1) /2;
+    const size_t offset_2D = N_ * (N_ + 1) * (2 * N_ + 1) /6;
     const int n_points_least_squares = std::min(N_ + 1, SEM::Device::Constants::n_points_least_squares_max); // Number of points to use for thew least squares reduction, but don't go above N.
 
     refine_ = false;
@@ -19,10 +20,10 @@ auto SEM::Device::Entities::Element2D_t::estimate_error(deviceFloat tolerance_mi
             deviceFloat local_spectrum{0};
 
             for (int k = 0; k <= N_; ++k) {
-                const deviceFloat L_N_x = Polynomial::polynomial(i, polynomial_nodes[offset_1D + k]);
+                const deviceFloat L_N_x = polynomials[offset_2D + i * (N + 1) + k];
 
                 for (int l = 0; l <= N_; ++l) {
-                    const deviceFloat L_N_y = Polynomial::polynomial(p, polynomial_nodes[offset_1D + l]);
+                    const deviceFloat L_N_y = polynomials[offset_2D + p * (N + 1) + l];
 
                     local_spectrum += (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} *
                                       p_[k * (N_ + 1) + l] *
@@ -39,10 +40,10 @@ auto SEM::Device::Entities::Element2D_t::estimate_error(deviceFloat tolerance_mi
             deviceFloat local_spectrum{0};
 
             for (int k = 0; k <= N_; ++k) {
-                const deviceFloat L_N_x = Polynomial::polynomial(p, polynomial_nodes[offset_1D + k]);
+                const deviceFloat L_N_x = polynomials[offset_2D + p * (N + 1) + k];;
 
                 for (int l = 0; l <= N_; ++l) {
-                    const deviceFloat L_N_y = Polynomial::polynomial(j, polynomial_nodes[offset_1D + l]);
+                    const deviceFloat L_N_y = polynomials[offset_2D + j * (N + 1) + l];;
 
                     local_spectrum += (2 * j + 1) * (2 * p + 1) * deviceFloat{0.25} *
                                       p_[k * (N_ + 1) + l] *
@@ -78,10 +79,10 @@ auto SEM::Device::Entities::Element2D_t::estimate_error(deviceFloat tolerance_mi
             deviceFloat local_spectrum{0};
 
             for (int k = 0; k <= N_; ++k) {
-                const deviceFloat L_N_x = Polynomial::polynomial(i, polynomial_nodes[offset_1D + k]);
+                const deviceFloat L_N_x = polynomials[offset_2D + i * (N + 1) + k];
 
                 for (int l = 0; l <= N_; ++l) {
-                    const deviceFloat L_N_y = Polynomial::polynomial(p, polynomial_nodes[offset_1D + l]);
+                    const deviceFloat L_N_y = polynomials[offset_2D + p * (N + 1) + l];
 
                     local_spectrum += (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} *
                                       u_[k * (N_ + 1) + l] *
@@ -98,10 +99,10 @@ auto SEM::Device::Entities::Element2D_t::estimate_error(deviceFloat tolerance_mi
             deviceFloat local_spectrum{0};
 
             for (int k = 0; k <= N_; ++k) {
-                const deviceFloat L_N_x = Polynomial::polynomial(p, polynomial_nodes[offset_1D + k]);
+                const deviceFloat L_N_x = polynomials[offset_2D + p * (N + 1) + k];
 
                 for (int l = 0; l <= N_; ++l) {
-                    const deviceFloat L_N_y = Polynomial::polynomial(j, polynomial_nodes[offset_1D + l]);
+                    const deviceFloat L_N_y = polynomials[offset_2D + j * (N + 1) + l];
 
                     local_spectrum += (2 * j + 1) * (2 * p + 1) * deviceFloat{0.25} *
                                       u_[k * (N_ + 1) + l] *
@@ -137,10 +138,10 @@ auto SEM::Device::Entities::Element2D_t::estimate_error(deviceFloat tolerance_mi
             deviceFloat local_spectrum{0};
 
             for (int k = 0; k <= N_; ++k) {
-                const deviceFloat L_N_x = Polynomial::polynomial(i, polynomial_nodes[offset_1D + k]);
+                const deviceFloat L_N_x = polynomials[offset_2D + i * (N + 1) + k];
 
                 for (int l = 0; l <= N_; ++l) {
-                    const deviceFloat L_N_y = Polynomial::polynomial(p, polynomial_nodes[offset_1D + l]);
+                    const deviceFloat L_N_y = polynomials[offset_2D + p * (N + 1) + l];
 
                     local_spectrum += (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} *
                                       v_[k * (N_ + 1) + l] *
@@ -157,10 +158,10 @@ auto SEM::Device::Entities::Element2D_t::estimate_error(deviceFloat tolerance_mi
             deviceFloat local_spectrum{0};
 
             for (int k = 0; k <= N_; ++k) {
-                const deviceFloat L_N_x = Polynomial::polynomial(p, polynomial_nodes[offset_1D + k]);
+                const deviceFloat L_N_x = polynomials[offset_2D + p * (N + 1) + k];
 
                 for (int l = 0; l <= N_; ++l) {
-                    const deviceFloat L_N_y = Polynomial::polynomial(j, polynomial_nodes[offset_1D + l]);
+                    const deviceFloat L_N_y = polynomials[offset_2D + j * (N + 1) + l];
 
                     local_spectrum += (2 * j + 1) * (2 * p + 1) * deviceFloat{0.25} *
                                       v_[k * (N_ + 1) + l] *
@@ -189,7 +190,7 @@ auto SEM::Device::Entities::Element2D_t::estimate_error(deviceFloat tolerance_mi
 
 template<typename Polynomial>
 __device__
-auto SEM::Device::Entities::Element2D_t::estimate_p_error(deviceFloat tolerance_min, deviceFloat tolerance_max, const deviceFloat* polynomial_nodes, const deviceFloat* weights) -> void {
+auto SEM::Device::Entities::Element2D_t::estimate_p_error(deviceFloat tolerance_min, deviceFloat tolerance_max, const deviceFloat* polynomials, const deviceFloat* weights) -> void {
     const int offset_1D = N_ * (N_ + 1) /2;
     const int n_points_least_squares = std::min(N_ + 1, SEM::Device::Constants::n_points_least_squares_max); // Number of points to use for thew least squares reduction, but don't go above N.
 
@@ -203,10 +204,10 @@ auto SEM::Device::Entities::Element2D_t::estimate_p_error(deviceFloat tolerance_
             deviceFloat local_spectrum{0};
 
             for (int k = 0; k <= N_; ++k) {
-                const deviceFloat L_N_x = Polynomial::polynomial(i, polynomial_nodes[offset_1D + k]);
+                const deviceFloat L_N_x = polynomials[offset_2D + i * (N + 1) + k];
 
                 for (int l = 0; l <= N_; ++l) {
-                    const deviceFloat L_N_y = Polynomial::polynomial(p, polynomial_nodes[offset_1D + l]);
+                    const deviceFloat L_N_y = polynomials[offset_2D + p * (N + 1) + l];
 
                     local_spectrum += (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} *
                                       p_[k * (N_ + 1) + l] *
@@ -223,10 +224,10 @@ auto SEM::Device::Entities::Element2D_t::estimate_p_error(deviceFloat tolerance_
             deviceFloat local_spectrum{0};
 
             for (int k = 0; k <= N_; ++k) {
-                const deviceFloat L_N_x = Polynomial::polynomial(p, polynomial_nodes[offset_1D + k]);
+                const deviceFloat L_N_x = polynomials[offset_2D + p * (N + 1) + k];
 
                 for (int l = 0; l <= N_; ++l) {
-                    const deviceFloat L_N_y = Polynomial::polynomial(j, polynomial_nodes[offset_1D + l]);
+                    const deviceFloat L_N_y = polynomials[offset_2D + j * (N + 1) + l];
 
                     local_spectrum += (2 * j + 1) * (2 * p + 1) * deviceFloat{0.25} *
                                       p_[k * (N_ + 1) + l] *
