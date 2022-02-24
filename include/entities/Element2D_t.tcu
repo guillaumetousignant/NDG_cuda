@@ -32,14 +32,14 @@ auto SEM::Device::Entities::Element2D_t::estimate_error(deviceFloat tolerance_mi
         }
 
         // y direction
-        for (int j = 0; j < p; ++j) { // No need to include the last point here
+        for (int i = 0; i < p; ++i) { // No need to include the last point here
             deviceFloat local_spectrum{0};
 
             for (int k = 0; k <= N_; ++k) {
                 for (int l = 0; l <= N_; ++l) {
-                    local_spectrum += (2 * j + 1) * (2 * p + 1) * deviceFloat{0.25} *
+                    local_spectrum += (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} *
                                       p_[k * (N_ + 1) + l] *
-                                      polynomials[offset_2D + p * (N + 1) + k] * polynomials[offset_2D + j * (N + 1) + l] * 
+                                      polynomials[offset_2D + p * (N + 1) + k] * polynomials[offset_2D + i * (N + 1) + l] * 
                                       weights[offset_1D + k] * weights[offset_1D + l];
                 }
             }
@@ -83,14 +83,14 @@ auto SEM::Device::Entities::Element2D_t::estimate_error(deviceFloat tolerance_mi
         }
 
         // y direction
-        for (int j = 0; j < p; ++j) { // No need to include the last point here
+        for (int i = 0; i < p; ++i) { // No need to include the last point here
             deviceFloat local_spectrum{0};
 
             for (int k = 0; k <= N_; ++k) {
                 for (int l = 0; l <= N_; ++l) {
-                    local_spectrum += (2 * j + 1) * (2 * p + 1) * deviceFloat{0.25} *
+                    local_spectrum += (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} *
                                       u_[k * (N_ + 1) + l] *
-                                      polynomials[offset_2D + p * (N + 1) + k] * polynomials[offset_2D + j * (N + 1) + l] * 
+                                      polynomials[offset_2D + p * (N + 1) + k] * polynomials[offset_2D + i * (N + 1) + l] * 
                                       weights[offset_1D + k] * weights[offset_1D + l];
                 }
             }
@@ -134,14 +134,14 @@ auto SEM::Device::Entities::Element2D_t::estimate_error(deviceFloat tolerance_mi
         }
 
         // y direction
-        for (int j = 0; j < p; ++j) { // No need to include the last point here
+        for (int i = 0; i < p; ++i) { // No need to include the last point here
             deviceFloat local_spectrum{0};
 
             for (int k = 0; k <= N_; ++k) {
                 for (int l = 0; l <= N_; ++l) {
-                    local_spectrum += (2 * j + 1) * (2 * p + 1) * deviceFloat{0.25} *
+                    local_spectrum += (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} *
                                       v_[k * (N_ + 1) + l] *
-                                      polynomials[offset_2D + p * (N + 1) + k] * polynomials[offset_2D + j * (N + 1) + l] * 
+                                      polynomials[offset_2D + p * (N + 1) + k] * polynomials[offset_2D + i * (N + 1) + l] * 
                                       weights[offset_1D + k] * weights[offset_1D + l];
                 }
             }
@@ -192,14 +192,14 @@ auto SEM::Device::Entities::Element2D_t::estimate_p_error(deviceFloat tolerance_
         }
 
         // y direction
-        for (int j = 0; j < p; ++j) { // No need to include the last point here
+        for (int i = 0; i < p; ++i) { // No need to include the last point here
             deviceFloat local_spectrum{0};
 
             for (int k = 0; k <= N_; ++k) {
                 for (int l = 0; l <= N_; ++l) {
-                    local_spectrum += (2 * j + 1) * (2 * p + 1) * deviceFloat{0.25} *
+                    local_spectrum += (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} *
                                       p_[k * (N_ + 1) + l] *
-                                      polynomials[offset_2D + p * (N + 1) + k] * polynomials[offset_2D + j * (N + 1) + l] * 
+                                      polynomials[offset_2D + p * (N + 1) + k] * polynomials[offset_2D + i * (N + 1) + l] * 
                                       weights[offset_1D + k] * weights[offset_1D + l];
                 }
             }
