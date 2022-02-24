@@ -22,14 +22,9 @@ auto SEM::Device::Entities::Element2D_t::estimate_error(deviceFloat tolerance_mi
 
             for (int k = 0; k <= N_; ++k) {
                 for (int l = 0; l <= N_; ++l) {
-                    local_spectrum_x += (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} *
-                                        p_[k * (N_ + 1) + l] *
-                                        polynomials[offset_2D + i * (N + 1) + k] * polynomials[offset_2D + p * (N + 1) + l] * 
-                                        weights[offset_1D + k] * weights[offset_1D + l];
-                    local_spectrum_y += (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} *
-                                        p_[k * (N_ + 1) + l] *
-                                        polynomials[offset_2D + p * (N + 1) + k] * polynomials[offset_2D + i * (N + 1) + l] * 
-                                        weights[offset_1D + k] * weights[offset_1D + l];
+                    const deviceFloat p = (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} * p_[k * (N_ + 1) + l] * weights[offset_1D + k] * weights[offset_1D + l];
+                    local_spectrum_x += p * polynomials[offset_2D + i * (N + 1) + k] * polynomials[offset_2D + p * (N + 1) + l];
+                    local_spectrum_y += p * polynomials[offset_2D + p * (N + 1) + k] * polynomials[offset_2D + i * (N + 1) + l];
                 }
 
             }
@@ -63,14 +58,9 @@ auto SEM::Device::Entities::Element2D_t::estimate_error(deviceFloat tolerance_mi
 
             for (int k = 0; k <= N_; ++k) {
                 for (int l = 0; l <= N_; ++l) {
-                    local_spectrum_x += (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} *
-                                        u_[k * (N_ + 1) + l] *
-                                        polynomials[offset_2D + i * (N + 1) + k] * polynomials[offset_2D + p * (N + 1) + l] * 
-                                        weights[offset_1D + k] * weights[offset_1D + l];
-                    local_spectrum_y += (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} *
-                                        u_[k * (N_ + 1) + l] *
-                                        polynomials[offset_2D + p * (N + 1) + k] * polynomials[offset_2D + i * (N + 1) + l] * 
-                                        weights[offset_1D + k] * weights[offset_1D + l];
+                    const deviceFloat u = (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} * u_[k * (N_ + 1) + l] * weights[offset_1D + k] * weights[offset_1D + l];
+                    local_spectrum_x += u * polynomials[offset_2D + i * (N + 1) + k] * polynomials[offset_2D + p * (N + 1) + l];
+                    local_spectrum_y += u * polynomials[offset_2D + p * (N + 1) + k] * polynomials[offset_2D + i * (N + 1) + l];
                 }
 
             }
@@ -104,14 +94,9 @@ auto SEM::Device::Entities::Element2D_t::estimate_error(deviceFloat tolerance_mi
 
             for (int k = 0; k <= N_; ++k) {
                 for (int l = 0; l <= N_; ++l) {
-                    local_spectrum_x += (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} *
-                                        v_[k * (N_ + 1) + l] *
-                                        polynomials[offset_2D + i * (N + 1) + k] * polynomials[offset_2D + p * (N + 1) + l] * 
-                                        weights[offset_1D + k] * weights[offset_1D + l];
-                    local_spectrum_y += (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} *
-                                        v_[k * (N_ + 1) + l] *
-                                        polynomials[offset_2D + p * (N + 1) + k] * polynomials[offset_2D + i * (N + 1) + l] * 
-                                        weights[offset_1D + k] * weights[offset_1D + l];
+                    const deviceFloat v = (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} * v_[k * (N_ + 1) + l] * weights[offset_1D + k] * weights[offset_1D + l];
+                    local_spectrum_x += v * polynomials[offset_2D + i * (N + 1) + k] * polynomials[offset_2D + p * (N + 1) + l];
+                    local_spectrum_y += v * polynomials[offset_2D + p * (N + 1) + k] * polynomials[offset_2D + i * (N + 1) + l];
                 }
 
             }
@@ -152,14 +137,9 @@ auto SEM::Device::Entities::Element2D_t::estimate_p_error(deviceFloat tolerance_
 
             for (int k = 0; k <= N_; ++k) {
                 for (int l = 0; l <= N_; ++l) {
-                    local_spectrum_x += (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} *
-                                        p_[k * (N_ + 1) + l] *
-                                        polynomials[offset_2D + i * (N + 1) + k] * polynomials[offset_2D + p * (N + 1) + l] * 
-                                        weights[offset_1D + k] * weights[offset_1D + l];
-                    local_spectrum_y += (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} *
-                                        p_[k * (N_ + 1) + l] *
-                                        polynomials[offset_2D + p * (N + 1) + k] * polynomials[offset_2D + i * (N + 1) + l] * 
-                                        weights[offset_1D + k] * weights[offset_1D + l];
+                    const deviceFloat p = (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} * p_[k * (N_ + 1) + l] * weights[offset_1D + k] * weights[offset_1D + l];
+                    local_spectrum_x += p * polynomials[offset_2D + i * (N + 1) + k] * polynomials[offset_2D + p * (N + 1) + l];
+                    local_spectrum_y += p * polynomials[offset_2D + p * (N + 1) + k] * polynomials[offset_2D + i * (N + 1) + l];
                 }
 
             }
