@@ -40,10 +40,10 @@ auto SEM::Device::Entities::Element2D_t::estimate_error(deviceFloat tolerance_mi
             deviceFloat local_spectrum{0};
 
             for (int k = 0; k <= N_; ++k) {
-                const deviceFloat L_N_x = polynomials[offset_2D + p * (N + 1) + k];;
+                const deviceFloat L_N_x = polynomials[offset_2D + p * (N + 1) + k];
 
                 for (int l = 0; l <= N_; ++l) {
-                    const deviceFloat L_N_y = polynomials[offset_2D + j * (N + 1) + l];;
+                    const deviceFloat L_N_y = polynomials[offset_2D + j * (N + 1) + l];
 
                     local_spectrum += (2 * j + 1) * (2 * p + 1) * deviceFloat{0.25} *
                                       p_[k * (N_ + 1) + l] *
