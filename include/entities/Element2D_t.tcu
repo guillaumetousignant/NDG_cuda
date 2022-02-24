@@ -15,35 +15,25 @@ auto SEM::Device::Entities::Element2D_t::estimate_error(deviceFloat tolerance_mi
         spectrum_[node_index] = deviceFloat{0};
         const int p = N_ + node_index + 1 - n_points_least_squares;
 
-        // x direction
+        // x and y directions
         for (int i = 0; i <= p; ++i) {
-            deviceFloat local_spectrum{0};
+            deviceFloat local_spectrum_x{0};
+            deviceFloat local_spectrum_y{0};
 
             for (int k = 0; k <= N_; ++k) {
                 for (int l = 0; l <= N_; ++l) {
-                    local_spectrum += (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} *
-                                      p_[k * (N_ + 1) + l] *
-                                      polynomials[offset_2D + i * (N + 1) + k] * polynomials[offset_2D + p * (N + 1) + l] * 
-                                      weights[offset_1D + k] * weights[offset_1D + l];
+                    local_spectrum_x += (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} *
+                                        p_[k * (N_ + 1) + l] *
+                                        polynomials[offset_2D + i * (N + 1) + k] * polynomials[offset_2D + p * (N + 1) + l] * 
+                                        weights[offset_1D + k] * weights[offset_1D + l];
+                    local_spectrum_y += (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} *
+                                        p_[k * (N_ + 1) + l] *
+                                        polynomials[offset_2D + p * (N + 1) + k] * polynomials[offset_2D + i * (N + 1) + l] * 
+                                        weights[offset_1D + k] * weights[offset_1D + l];
                 }
 
             }
-            spectrum_[node_index] += std::abs(local_spectrum);
-        }
-
-        // y direction
-        for (int i = 0; i < p; ++i) { // No need to include the last point here
-            deviceFloat local_spectrum{0};
-
-            for (int k = 0; k <= N_; ++k) {
-                for (int l = 0; l <= N_; ++l) {
-                    local_spectrum += (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} *
-                                      p_[k * (N_ + 1) + l] *
-                                      polynomials[offset_2D + p * (N + 1) + k] * polynomials[offset_2D + i * (N + 1) + l] * 
-                                      weights[offset_1D + k] * weights[offset_1D + l];
-                }
-            }
-            spectrum_[node_index] += std::abs(local_spectrum);
+            spectrum_[node_index] += std::abs(local_spectrum_x) + std::abs(local_spectrum_y);
         }
     }
 
@@ -66,35 +56,25 @@ auto SEM::Device::Entities::Element2D_t::estimate_error(deviceFloat tolerance_mi
         spectrum_[node_index] = deviceFloat{0};
         const int p = N_ + node_index + 1 - n_points_least_squares;
 
-        // x direction
+        // x and y directions
         for (int i = 0; i <= p; ++i) {
-            deviceFloat local_spectrum{0};
+            deviceFloat local_spectrum_x{0};
+            deviceFloat local_spectrum_y{0};
 
             for (int k = 0; k <= N_; ++k) {
                 for (int l = 0; l <= N_; ++l) {
-                    local_spectrum += (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} *
-                                      u_[k * (N_ + 1) + l] *
-                                      polynomials[offset_2D + i * (N + 1) + k] * polynomials[offset_2D + p * (N + 1) + l] * 
-                                      weights[offset_1D + k] * weights[offset_1D + l];
+                    local_spectrum_x += (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} *
+                                        u_[k * (N_ + 1) + l] *
+                                        polynomials[offset_2D + i * (N + 1) + k] * polynomials[offset_2D + p * (N + 1) + l] * 
+                                        weights[offset_1D + k] * weights[offset_1D + l];
+                    local_spectrum_y += (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} *
+                                        u_[k * (N_ + 1) + l] *
+                                        polynomials[offset_2D + p * (N + 1) + k] * polynomials[offset_2D + i * (N + 1) + l] * 
+                                        weights[offset_1D + k] * weights[offset_1D + l];
                 }
 
             }
-            spectrum_[node_index] += std::abs(local_spectrum);
-        }
-
-        // y direction
-        for (int i = 0; i < p; ++i) { // No need to include the last point here
-            deviceFloat local_spectrum{0};
-
-            for (int k = 0; k <= N_; ++k) {
-                for (int l = 0; l <= N_; ++l) {
-                    local_spectrum += (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} *
-                                      u_[k * (N_ + 1) + l] *
-                                      polynomials[offset_2D + p * (N + 1) + k] * polynomials[offset_2D + i * (N + 1) + l] * 
-                                      weights[offset_1D + k] * weights[offset_1D + l];
-                }
-            }
-            spectrum_[node_index] += std::abs(local_spectrum);
+            spectrum_[node_index] += std::abs(local_spectrum_x) + std::abs(local_spectrum_y);
         }
     }
 
@@ -117,35 +97,25 @@ auto SEM::Device::Entities::Element2D_t::estimate_error(deviceFloat tolerance_mi
         spectrum_[node_index] = deviceFloat{0};
         const int p = N_ + node_index + 1 - n_points_least_squares;
 
-        // x direction
+        // x and y directions 
         for (int i = 0; i <= p; ++i) {
-            deviceFloat local_spectrum{0};
+            deviceFloat local_spectrum_x{0};
+            deviceFloat local_spectrum_y{0};
 
             for (int k = 0; k <= N_; ++k) {
                 for (int l = 0; l <= N_; ++l) {
-                    local_spectrum += (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} *
-                                      v_[k * (N_ + 1) + l] *
-                                      polynomials[offset_2D + i * (N + 1) + k] * polynomials[offset_2D + p * (N + 1) + l] * 
-                                      weights[offset_1D + k] * weights[offset_1D + l];
+                    local_spectrum_x += (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} *
+                                        v_[k * (N_ + 1) + l] *
+                                        polynomials[offset_2D + i * (N + 1) + k] * polynomials[offset_2D + p * (N + 1) + l] * 
+                                        weights[offset_1D + k] * weights[offset_1D + l];
+                    local_spectrum_y += (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} *
+                                        v_[k * (N_ + 1) + l] *
+                                        polynomials[offset_2D + p * (N + 1) + k] * polynomials[offset_2D + i * (N + 1) + l] * 
+                                        weights[offset_1D + k] * weights[offset_1D + l];
                 }
 
             }
-            spectrum_[node_index] += std::abs(local_spectrum);
-        }
-
-        // y direction
-        for (int i = 0; i < p; ++i) { // No need to include the last point here
-            deviceFloat local_spectrum{0};
-
-            for (int k = 0; k <= N_; ++k) {
-                for (int l = 0; l <= N_; ++l) {
-                    local_spectrum += (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} *
-                                      v_[k * (N_ + 1) + l] *
-                                      polynomials[offset_2D + p * (N + 1) + k] * polynomials[offset_2D + i * (N + 1) + l] * 
-                                      weights[offset_1D + k] * weights[offset_1D + l];
-                }
-            }
-            spectrum_[node_index] += std::abs(local_spectrum);
+            spectrum_[node_index] += std::abs(local_spectrum_x) + std::abs(local_spectrum_x);
         }
     }
 
@@ -175,35 +145,25 @@ auto SEM::Device::Entities::Element2D_t::estimate_p_error(deviceFloat tolerance_
         spectrum_[node_index] = deviceFloat{0};
         const int p = N_ + node_index + 1 - n_points_least_squares;
 
-        // x direction
+        // x and y directions
         for (int i = 0; i <= p; ++i) {
-            deviceFloat local_spectrum{0};
+            deviceFloat local_spectrum_x{0};
+            deviceFloat local_spectrum_y{0};
 
             for (int k = 0; k <= N_; ++k) {
                 for (int l = 0; l <= N_; ++l) {
-                    local_spectrum += (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} *
-                                      p_[k * (N_ + 1) + l] *
-                                      polynomials[offset_2D + i * (N + 1) + k] * polynomials[offset_2D + p * (N + 1) + l] * 
-                                      weights[offset_1D + k] * weights[offset_1D + l];
+                    local_spectrum_x += (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} *
+                                        p_[k * (N_ + 1) + l] *
+                                        polynomials[offset_2D + i * (N + 1) + k] * polynomials[offset_2D + p * (N + 1) + l] * 
+                                        weights[offset_1D + k] * weights[offset_1D + l];
+                    local_spectrum_y += (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} *
+                                        p_[k * (N_ + 1) + l] *
+                                        polynomials[offset_2D + p * (N + 1) + k] * polynomials[offset_2D + i * (N + 1) + l] * 
+                                        weights[offset_1D + k] * weights[offset_1D + l];
                 }
 
             }
-            spectrum_[node_index] += std::abs(local_spectrum);
-        }
-
-        // y direction
-        for (int i = 0; i < p; ++i) { // No need to include the last point here
-            deviceFloat local_spectrum{0};
-
-            for (int k = 0; k <= N_; ++k) {
-                for (int l = 0; l <= N_; ++l) {
-                    local_spectrum += (2 * i + 1) * (2 * p + 1) * deviceFloat{0.25} *
-                                      p_[k * (N_ + 1) + l] *
-                                      polynomials[offset_2D + p * (N + 1) + k] * polynomials[offset_2D + i * (N + 1) + l] * 
-                                      weights[offset_1D + k] * weights[offset_1D + l];
-                }
-            }
-            spectrum_[node_index] += std::abs(local_spectrum);
+            spectrum_[node_index] += std::abs(local_spectrum_x) + std::abs(local_spectrum_y);
         }
     }
 
