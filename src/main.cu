@@ -343,6 +343,7 @@ auto main(int argc, char* argv[]) -> int {
               << "s." << std::endl;
 
     cudaStreamDestroy(stream);
+    cudaDeviceReset();
     MPI_Finalize();
     return 0;
 }
