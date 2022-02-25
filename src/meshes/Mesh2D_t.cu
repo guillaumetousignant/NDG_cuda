@@ -2607,18 +2607,16 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
     global_element_offset_end_current[0] = n_elements_per_proc[0];
 
     size_t n_elements_global_new = n_elements_per_proc[0];
-    size_t n_elements_min = n_elements_per_proc[0];
     size_t n_elements_max = n_elements_per_proc[0];
     for (int i = 1; i < global_size; ++i) {
         global_element_offset_current[i] = global_element_offset_current[i - 1] + n_elements_per_proc[i - 1];
         global_element_offset_end_current[i] = global_element_offset_current[i] + n_elements_per_proc[i];
         n_elements_global_new += n_elements_per_proc[i];
-        n_elements_min = std::min(n_elements_min, n_elements_per_proc[i]);
         n_elements_max = std::max(n_elements_max, n_elements_per_proc[i]);
     }
 
     // If there is little imbalance, do nothing.
-    const deviceFloat load_imbalance = static_cast<deviceFloat>(n_elements_max)/static_cast<deviceFloat>(n_elements_min);
+    const deviceFloat load_imbalance = static_cast<deviceFloat>(n_elements_max) * static_cast<deviceFloat>(global_size) / static_cast<deviceFloat>(n_elements_global_new);
     if (load_imbalance < load_balancing_threshold_) {
         return;
     }
