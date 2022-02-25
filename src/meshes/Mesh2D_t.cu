@@ -5001,7 +5001,7 @@ auto SEM::Device::Meshes::estimate_error(size_t n_elements, Element2D_t* element
     const int stride = blockDim.x * gridDim.x;
 
     for (size_t element_index = index; element_index < n_elements; element_index += stride) {
-        elements[element_index].estimate_p_error<Polynomial>(tolerance_min, tolerance_max, polynomials);
+        elements[element_index].estimate_p_error(tolerance_min, tolerance_max, polynomials);
     }
 }
 
