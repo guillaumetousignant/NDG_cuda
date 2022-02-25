@@ -99,11 +99,9 @@ namespace SEM { namespace Device { namespace Entities {
             __device__
             auto interpolate_q_to_boundaries(const deviceFloat* lagrange_interpolant_minus, const deviceFloat* lagrange_interpolant_plus) -> void;
 
-            template<typename Polynomial>
             __device__
             auto estimate_error(deviceFloat tolerance_min, deviceFloat tolerance_max, const deviceFloat* polynomials) -> void;
 
-            template<typename Polynomial>
             __device__
             auto estimate_p_error(deviceFloat tolerance_min, deviceFloat tolerance_max, const deviceFloat* polynomials) -> void;
 
@@ -154,7 +152,5 @@ namespace SEM { namespace Device { namespace Entities {
             auto exponential_decay(int n_points_least_squares) -> std::array<deviceFloat, 2>;
     };
 }}}
-
-#include "entities/Element2D_t.tcu"
 
 #endif

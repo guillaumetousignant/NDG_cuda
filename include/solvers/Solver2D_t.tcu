@@ -75,7 +75,7 @@ auto SEM::Device::Solvers::Solver2D_t::solve(const SEM::Device::Entities::NDG_t<
                     bar.set_status_text("Writing solution");
                     bar.update(time/t_end);
                 }
-                mesh.estimate_error<Polynomial>(NDG.polynomials_);
+                mesh.estimate_error(NDG.polynomials_);
                 mesh.write_complete_data(time, NDG.nodes_, NDG.interpolation_matrices_, data_writer);
                 break;
             }
@@ -87,7 +87,7 @@ auto SEM::Device::Solvers::Solver2D_t::solve(const SEM::Device::Entities::NDG_t<
                 bar.update(time/t_end);
             }
 
-            mesh.estimate_error<Polynomial>(NDG.polynomials_);
+            mesh.estimate_error(NDG.polynomials_);
             mesh.adapt(NDG.N_max_, NDG.nodes_, NDG.barycentric_weights_);
         }
 
@@ -117,7 +117,7 @@ auto SEM::Device::Solvers::Solver2D_t::solve(const SEM::Device::Entities::NDG_t<
     }
 
     if (!did_write) {
-        mesh.estimate_error<Polynomial>(NDG.polynomials_);
+        mesh.estimate_error(NDG.polynomials_);
         if (global_rank == 0) {
             bar.set_status_text("Writing solution");
             bar.update(1.0);
@@ -200,7 +200,7 @@ auto SEM::Device::Solvers::Solver2D_t::pre_condition(const SEM::Device::Entities
                 bar.update(static_cast<deviceFloat>(timestep)/static_cast<deviceFloat>(n_adaptivity_steps * pre_condition_interval)); // CHECK change if adaptivity is spaced out another way
             }
 
-            mesh.estimate_error<Polynomial>(NDG.polynomials_);
+            mesh.estimate_error(NDG.polynomials_);
             mesh.adapt(NDG.N_max_, NDG.nodes_, NDG.barycentric_weights_);
             ++n_adaptivity;
         }
@@ -300,7 +300,7 @@ auto SEM::Device::Solvers::Solver2D_t::pre_condition_iterative(const SEM::Device
                 bar.update(static_cast<deviceFloat>(timestep)/static_cast<deviceFloat>(n_adaptivity_steps * pre_condition_interval)); // CHECK change if adaptivity is spaced out another way
             }
 
-            mesh.estimate_error<Polynomial>(NDG.polynomials_);
+            mesh.estimate_error(NDG.polynomials_);
             mesh.adapt(NDG.N_max_, NDG.nodes_, NDG.barycentric_weights_);
             ++n_adaptivity;
 

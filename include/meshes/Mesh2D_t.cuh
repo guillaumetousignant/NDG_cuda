@@ -168,7 +168,6 @@ namespace SEM { namespace Device { namespace Meshes {
             auto project_to_faces(const SEM::Device::Entities::device_vector<deviceFloat>& polynomial_nodes, const SEM::Device::Entities::device_vector<deviceFloat>& barycentric_weights) -> void;
             auto project_to_elements(const SEM::Device::Entities::device_vector<deviceFloat>& polynomial_nodes, const SEM::Device::Entities::device_vector<deviceFloat>& weights, const SEM::Device::Entities::device_vector<deviceFloat>& barycentric_weights) -> void;
             
-            template<typename Polynomial>
             auto estimate_error(const SEM::Device::Entities::device_vector<deviceFloat>& polynomials) -> void;
             
             auto print() const -> void;
