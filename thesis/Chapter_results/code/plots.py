@@ -144,7 +144,7 @@ gpu_colour = np.array([79, 193, 255])/255
 gpu_colour_dark = np.array([3, 125, 190])/255
 error_colour = np.array([197, 134, 192])/255
 error_colour_dark = np.array([168, 80, 161])/255
-solving_colour = np.array([215, 186, 215])/255
+solving_colour = np.array([215, 186, 125])/255
 pre_condition_colour = np.array([181, 206, 168])/255
 N_colour = np.array([78, 201, 176])/255
 data_size = 12
@@ -152,6 +152,7 @@ data_shape = "o"
 solving_shape = "X"
 pre_condition_shape = ">"
 ideal_style = "--"
+same_error_style = ":"
 
 # Strong scaling
 for i in range(N.shape[0]):
@@ -208,9 +209,10 @@ for i in range(adaptivity_interval.shape[0]):
     ax.grid()
 
     ax.semilogy(adaptivity_C[i, :], adaptivity_solving_t_iterative[i, :], color=solving_colour, linewidth=data_width, marker=solving_shape, markersize=data_size, label="solving time")
-    ax.semilogy(adaptivity_C[i, :], adaptivity_condition_t_iterative[i, :], color=pre_condition_colour, linewidth=data_width, marker=pre_condition_shape, markersize=data_size, label="pre-condition time")
+    ax.semilogy(adaptivity_C[i, 1:], adaptivity_condition_t_iterative[i, 1:], color=pre_condition_colour, linewidth=data_width, marker=pre_condition_shape, markersize=data_size, label="pre-condition time")
     ax.semilogy(adaptivity_C[i, :], adaptivity_t_iterative[i, :], color=gpu_colour, linewidth=data_width, marker=data_shape, markersize=data_size, label="total time")
-    ax.semilogy(adaptivity_baseline_C[i, :], [adaptivity_baseline_t[i], adaptivity_baseline_t[i]], color=gpu_colour, linewidth=data_width, linestyle=ideal_style, label="non-adaptive total time")
+    ax.semilogy(adaptivity_baseline_C[i, :], [adaptivity_baseline_t[i], adaptivity_baseline_t[i]], color=gpu_colour, linewidth=data_width, linestyle=ideal_style, label="non-adaptive fully refined total time")
+    ax.semilogy(adaptivity_baseline_C[i, :], [adaptivity_same_error_t[i], adaptivity_same_error_t[i]], color=gpu_colour, linewidth=data_width, linestyle=same_error_style, label="non-adaptive similar error total time")
 
     ax.legend()
     fig.tight_layout()
@@ -227,7 +229,8 @@ for i in range(adaptivity_interval.shape[0]):
 
     # For the legend entries from the other axes
     error_ax.semilogy(adaptivity_C[i, :], adaptivity_max_error_iterative[i, :], color=error_colour, linewidth=data_width, marker=data_shape, markersize=data_size, label="max error")
-    error_ax.semilogy(adaptivity_baseline_C[i, :], [adaptivity_baseline_max_error[i], adaptivity_baseline_max_error[i]], color=error_colour, linewidth=data_width, linestyle=ideal_style, label="non-adaptive max error")
+    error_ax.semilogy(adaptivity_baseline_C[i, :], [adaptivity_baseline_max_error[i], adaptivity_baseline_max_error[i]], color=error_colour, linewidth=data_width, linestyle=ideal_style, label="non-adaptive fully refined max error")
+    error_ax.semilogy(adaptivity_baseline_C[i, :], [adaptivity_same_error_max_error[i], adaptivity_same_error_max_error[i]], color=error_colour, linewidth=data_width, linestyle=same_error_style, label="non-adaptive similar error max error")
 
     error_ax.legend()
     error_fig.tight_layout()
