@@ -53,26 +53,43 @@ nodes_beluga_cpu_ideal_weak = nodes_beluga_cpu_weak[:, [0,-1]]
 nodes_beluga_gpu_ideal_weak = nodes_beluga_gpu_weak[:, [0,-1]]
 
 # Adaptivity efficiency
-adaptivity_interval = np.array([5, 20, 100, 500])
-adaptivity_N = np.array([4, 4, 4, 4])
-adaptivity_K = np.array([4 * 4, 4 * 4, 4 * 4, 4 * 4])
-adaptivity_s = np.array([5, 5, 5, 5])
-adaptivity_C = np.array([[0, 1, 2, 3],
-                         [0, 1, 2, 3],
-                         [0, 1, 2, 3],
-                         [0, 1, 2, 3]])
-adaptivity_t = np.array([[1291.83 + 0, 125.801 + 0.0882828, 618.956 + 0.268462, 159.691 + 0.640327],
-                         [925.343 + 0, 178.784 + 0.133373, 112.303 + 0.407997, 197.018 + 0.748684],
-                         [69.993 + 0, 135.805 + 0.279973, 33.7466 + 0.812055, 45.6049 + 1.70332],
-                         [0.283659 + 0, 0.913643 + 0.628911, 41.3044 + 1.42374, 68.5027 + 3.8267]])
-adaptivity_max_error = np.array([[7.6e-7, 3.6e-8, 7.4e-9, 1.6e-8],
-                                 [5.7e-6, 3.4e-8, 1.3e-8, 4.8e-9],
-                                 [2.3e-4, 1.4e-6, 2.7e-8, 1.9e-8],
-                                 [1.1e-3, 2.0e-5, 6.4e-7, 1.6e-6]])
+# Back to desktop results
+adaptivity_interval = np.array([5, 20, 100, 500, 5, 20, 100, 500])
+adaptivity_N = np.array([4, 4, 4, 4, 4, 4, 4, 4])
+adaptivity_K = np.array([4 * 4, 4 * 4, 4 * 4, 4 * 4, 4 * 4, 4 * 4, 4 * 4, 4 * 4])
+adaptivity_s = np.array([5, 5, 5, 5, 5, 5, 5, 5])
+adaptivity_C = np.array([[0, 1, 2, 3, 4, 5],
+                         [0, 1, 2, 3, 4, 5],
+                         [0, 1, 2, 3, 4, 5],
+                         [0, 1, 2, 3, 4, 5],
+                         [0, 1, 2, 3, 4, 5],
+                         [0, 1, 2, 3, 4, 5],
+                         [0, 1, 2, 3, 4, 5],
+                         [0, 1, 2, 3, 4, 5]])
+adaptivity_t = np.array([[756.998 + 0, 78.5987 + 0.109984, 376.426 + 0.246979, 71.308 + 0.573679, 120.742 + 1.01607, 151.535 + 1.61849],
+                         [402.506 + 0, 158.75 + 0.129859, 121.156 + 0.405687, 168.402 + 0.833624, 72.085 + 1.85428, 114.967 + 3.86756],
+                         [0.599613 + 0, 85.0527 + 0.376936, 33.4027 + 0.972618, 54.1339 + 2.71825, 87.9368 + 6.66742, 147.392 + 13.7539],
+                         [0.358333 + 0, 1.17821 + 1.23078, 1.14392 + 3.31111, 1.14803 + 5.39603, 1.14488 + 7.4745, 1.13517 + 9.56906],
+
+                         [756.998 + 0, 79.3406 + 0.0856078, 34.8423 + 0.178829, 33.2593 + 0.206234, 34.2067 + 0.241323, 33.837 + 0.286487],
+                         [402.506 + 0, 161.173 + 0.119764, 75.4176 + 0.338031, 106.632 + 0.5194, 107.869 + 0.833618, 107.174 + 1.10331],
+                         [0.599613 + 0, 85.0128 + 0.47911, 80.9539 + 0.798256, 39.3668 + 2.02763, 38.5888 + 3.48152, 38.4088 + 5.03281],
+                         [0.358333 + 0, 1.15364 + 1.2573, 3.19285 + 3.70869, 24.848 + 6.50839, 41.9107 + 12.1026, 54.8861 + 21.7693]])
+adaptivity_max_error = np.array([[2.9e-5, 1.3e-6, 4.8e-7, 5.9e-7, 6.5e-8, 6.5e-8],
+                                 [1.2e-4, 2.7e-6, 2.9e-7, 7.9e-8, 7.6e-8, 6.3e-8],
+                                 [9.3e-3, 5.8e-5, 3.1e-7, 2.6e-7, 5.7e-7, 6.4e-8],
+                                 [1.2e-2, 2.1e-3, 2.1e-3, 2.1e-3, 2.3e-3, 2.1e-3],
+
+                                 [2.9e-5, 1.3e-6, 7.1e-7, 6.7e-7, 6.7e-7, 6.7e-7],
+                                 [1.2e-4, 2.7e-6, 3.5e-7, 9.5e-8, 9.5e-8, 9.5e-8],
+                                 [9.3e-3, 5.8e-5, 2.9e-6, 4.6e-7, 4.6e-7, 4.6e-7],
+                                 [1.2e-2, 2.1e-3, 4.9e-5, 8.1e-5, 7.0e-7, 8.1e-7]])
 
 adaptivity_baseline_C = adaptivity_C[:, [0,-1]]
-adaptivity_baseline_t = np.array([4632.26, 4632.26, 4632.26, 4632.26])
-adaptivity_baseline_max_error = np.array([1.6e-11, 1.6e-11, 1.6e-11, 1.6e-11])
+adaptivity_baseline_t = np.array([29001.6, 29001.6, 29001.6, 29001.6, 29001.6, 29001.6, 29001.6, 29001.6])
+adaptivity_baseline_max_error = np.array([5.1e-9, 5.1e-9, 5.1e-9, 5.1e-9, 5.1e-9, 5.1e-9, 5.1e-9, 5.1e-9])
+adaptivity_same_error_t = np.array([143.326, 143.326, 143.326, 143.326, 143.326, 143.326, 143.326, 143.326])
+adaptivity_same_error_max_error = np.array([8.3e-8, 8.3e-8, 8.3e-8, 8.3e-8, 8.3e-8, 8.3e-8, 8.3e-8, 8.3e-8])
 
 # Load balancing efficiency interval
 load_balancing_interval_A = np.array([20, 20])                  # Adaptivity interval
@@ -182,8 +199,8 @@ for i in range(adaptivity_interval.shape[0]):
     fig.canvas.manager.set_window_title(title)
     ax.grid(axis='x')
 
-    ax.plot(adaptivity_C[i, :], adaptivity_t[i, :], color=gpu_colour, linewidth=data_width, marker=data_shape, markersize=data_size, label="GPU time")
-    ax.plot(adaptivity_baseline_C[i, :], [adaptivity_baseline_t[i], adaptivity_baseline_t[i]], color=gpu_colour, linewidth=data_width, linestyle=ideal_style, label="GPU non adaptive time")
+    ax.semilogy(adaptivity_C[i, :], adaptivity_t[i, :], color=gpu_colour, linewidth=data_width, marker=data_shape, markersize=data_size, label="GPU time")
+    ax.semilogy(adaptivity_baseline_C[i, :], [adaptivity_baseline_t[i], adaptivity_baseline_t[i]], color=gpu_colour, linewidth=data_width, linestyle=ideal_style, label="GPU non adaptive time")
 
     ax.set_ylim([0, 1.2 * max(max(adaptivity_t[i, :]), adaptivity_baseline_t[i])])
 
@@ -192,8 +209,8 @@ for i in range(adaptivity_interval.shape[0]):
     error_ax.tick_params(axis='y', labelcolor=error_colour_dark)
 
     # For the legend entries from the other axes
-    error_ax.plot([], [], color=gpu_colour, linewidth=data_width, marker=data_shape, markersize=data_size, label="GPU time")
-    error_ax.plot([], [], color=gpu_colour, linewidth=data_width, linestyle=ideal_style, label="GPU non adaptive time")
+    error_ax.semilogy([], [], color=gpu_colour, linewidth=data_width, marker=data_shape, markersize=data_size, label="GPU time")
+    error_ax.semilogy([], [], color=gpu_colour, linewidth=data_width, linestyle=ideal_style, label="GPU non adaptive time")
 
     error_ax.semilogy(adaptivity_C[i, :], adaptivity_max_error[i, :], color=error_colour, linewidth=data_width, marker=data_shape, markersize=data_size, label="GPU max error")
     error_ax.semilogy(adaptivity_baseline_C[i, :], [adaptivity_baseline_max_error[i], adaptivity_baseline_max_error[i]], color=error_colour, linewidth=data_width, linestyle=ideal_style, label="GPU non adaptive max error")
