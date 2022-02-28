@@ -5,23 +5,46 @@
 % GPUs
 % Load balancing
 
-The issues that this work aims to overcome are not new, and as such a lot of work has been perform
-to overcome them. This section highlights the current state of the domain, and where this work fits
-within it.
+The issues that this work aims to overcome are not new, and as such a lot of work has been performed
+to overcome them. This section highlights the current state of the art in this domain, and where
+this work fits within it.
 
-\section{Spectral Element Methods}\label{section:literature_review:sem}
+\section{Spectral Element Methods}\label{section:literature_review:sem}<
+
+In this work, we will use the \acrfull{acr:DG-SEM}, first described by Reed and
+Hill~\cite{Reed1973}. Many references are available nowadays on the method, such as textbooks by
+Warburton and Hesthaven~\cite{Hesthaven2007} or Kopriva~\cite{Kopriva2009}, which describes a suite
+of algorithms that can be used to assemble a full solver using this method. This method is used in a
+wide array of domains, including aerodynamics, nanophotonics~\cite{Busch2011} and water
+simulation~\cite{Gassner2016}.
 
 Large scale spectral element solvers have existed for quite a while now. One such solver is Nek5000,
-an open-source Navier Stokes spectral element solver that rune on \acrshortpl{acr:CPU}. It has been
-proven to scale well to above a million processors~\cite{Offermans2017}. Other solutions exist, such
-as the Nektar++~\cite{Cantwell2015} library. It is a spectral finite element library used to create
-purpose-built solvers for different kinds of problems.
+an open-source Navier Stokes spectral element solver that runs on \acrshortpl{acr:CPU}. It has been
+proven to scale well to above a million processors~\cite{Offermans2017}. This solver has been used
+to solve problems like simulation of micro-scale blood flow~\cite{Obabko2017}, \acrfull{acr:DNS} of
+flows in engines~\cite{Ameen2020}, and nearly exascale simulation of flows in nuclear
+reactors~\cite{Merzari2020}. Other solvers exist, such as the Nektar++~\cite{Cantwell2015} library.
+It is a spectral finite element library used to create purpose-built solvers for different kinds of
+problems. Example applications are aerodynamic \acrfull{acr:LES} of sport cars~\cite{Mengaldo2020},
+Formula One cars~\cite{Cantwell2015}, and \acrshort{acr:DNS} of flows over various airfoils.
 
 These are the kind of solid foundations we wish to build upon in this work. These solvers
-traditionally use \acrshortpl{acr:CPU} to compute their solutions. We wish to use
-\acrshortpl{acr:GPU}, so the methods will need to be ported to this new architecture.
+traditionally use \acrshortpl{acr:CPU} to compute their solutions. The next logical step is to
+perform these computations using \acrshortpl{acr:GPU} in order to increase their performance. These
+methods will need to be ported to this new architecture. Additionally, none of these solvers use
+\acrfull{acr:AMR}. This will have to be implemented in order to increase the efficiency of
+computations, using the limited processing ressources at our disposal where it counts most. This
+creates the double challenge of using \acrshortpl{acr:GPU} for high-order methods and adaptivity,
+which is especially challenging on \acrshortpl{acr:GPU} as they are more tailored for static
+workload. \Acrshortpl{acr:GPU} excel at solving very parallel problems where every core of the
+\acrshort{acr:GPU} executes the exact same computation on neatly organised data. \Acrshort{acr:AMR}
+is not a naturally parallel process, and the resulting meshes incur divergence in the execution on
+different cores. Nonetheless, if \Acrshort{acr:AMR} implemented correctly should decrease the
+execution time of the program while reducing ressource usage.
 
 \section{Graphics Processing Units}\label{section:literature_review:gpu}
+
+~\cite{Klockner2009}
 
 In recent years, the scientific computing world has started using \acrshortpl{acr:GPU} to perform
 computations. Some traditionally \acrshort{acr:CPU}-based commercial solvers were upgraded to run
