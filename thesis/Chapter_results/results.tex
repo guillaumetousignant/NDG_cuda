@@ -454,27 +454,46 @@ Max split level  \(S\). Where  \(K_p\) is the number of elements in process  \(p
 	\caption{Polynomial order influence: Iteration time with increasing polynomial order.}\label{fig:N_influence}
 \end{figure}
 
-\section{Complex Application}\label{section:results:complex_application}
+\section{Complex Case}\label{section:results:complex_application}
+
+\begin{figure}[H]
+	\centering
+	\subfloat[\( t = 0 s\)]
+	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/cloud_t0}\label{fig:cloud_p_t0}}
+	\hfill
+	\subfloat[\( t = 0.2 s\)]
+	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/cloud_t0_2}\label{fig:cloud_p_t0_2}}
+	\caption{Complex case: A wave goes through a cloud of high pressure. (a) Initial conditions (b) After the wave and cloud collide}\label{fig:cloud_p}
+\end{figure}
 
 \section{Complex Meshes}\label{section:results:complex_meshes}
-% Move to annex
 
 \begin{figure}[H]
 	\centering
 	\subfloat[Circular domain]
-	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/airfoil_mesh}\label{fig:complex_mesh_close}}
+	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/airfoil_mesh_far}\label{fig:complex_mesh_far}}
 	\hfill
 	\subfloat[Airfoil]
-	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/airfoil_mesh_close}\label{fig:complex_mesh_far}}
+	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/airfoil_mesh_near}\label{fig:complex_mesh_near}}
 	\caption{Complex mesh: An airfoil in an unstructured circular domain. (a) Complete domain (b) Up close}\label{fig:complex_mesh}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
+
 	\subfloat[Pressure]
-	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/airfoil_pressure_close_t1_6}\label{fig:complex_mesh_solution_close}}
+	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/airfoil_pressure_near_t1_5}\label{fig:complex_mesh_solution_close}}
 	\hfill
 	\subfloat[Pressure \(\sigma \)]
-	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/Airfoil 4}\label{fig:complex_mesh_solution_far}}
-	\caption{Complex mesh: A wave going over an airfoil. (a) Pressure (b) Pressure \(\sigma \), denoting if h-refinement or p-refinement would be chosen}\label{fig:complex_mesh_solution}
+	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/airfoil_pressure_sigma_near_t1_5}\label{fig:complex_mesh_solution_far}}
+	
+	\bigskip
+
+	\subfloat[Split level]
+	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/airfoil_split_level_t1_5}\label{fig:complex_mesh_split_level}}
+	\hfill
+	\subfloat[N]
+	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/airfoil_N_t1_5}\label{fig:complex_mesh_N}}
+
+	\caption{Complex mesh: A wave going over an airfoil. (a) Pressure (b) Pressure \(\sigma \), denoting if h-refinement or p-refinement would be chosen (c) Split level, denoting how many times elements have split (d) Polynomial order \(N\)}\label{fig:complex_mesh_solution}
 \end{figure}
