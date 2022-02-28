@@ -466,6 +466,36 @@ Max split level  \(S\). Where  \(K_p\) is the number of elements in process  \(p
 	\caption{Complex case: A wave goes through a cloud of high pressure. (a) Initial conditions (b) After the wave and cloud collide}\label{fig:cloud_p}
 \end{figure}
 
+\begin{figure}[H]
+	\centering
+	\subfloat[\( t = 0 s\)]
+	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/cloud_split_level_t0}\label{fig:cloud_s_t0}}
+	\hfill
+	\subfloat[\( t = 0.2 s\)]
+	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/cloud_split_level_t0_2}\label{fig:cloud_s_t0_2}}
+	\caption{Complex case split level: The elements split more where the cloud meets the wave. (a) Start of computation (b) After the wave and cloud collide}\label{fig:cloud_s}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\subfloat[\( t = 0 s\)]
+	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/cloud_N_t0}\label{fig:cloud_N_t0}}
+	\hfill
+	\subfloat[\( t = 0.2 s\)]
+	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/cloud_N_t0_2}\label{fig:cloud_N_t0_2}}
+	\caption{Complex case N:\@The polynomial order increases more at the center of the cloud and where cloud meets the wave. (a) Start of computation (b) After the wave and cloud collide}\label{fig:cloud_N}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\subfloat[\( t = 0 s\)]
+	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/cloud_rank_t0}\label{fig:cloud_rank_t0}}
+	\hfill
+	\subfloat[\( t = 0.2 s\)]
+	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/cloud_rank_t0_2}\label{fig:cloud_rank_t0_2}}
+	\caption{Complex case rank: As the mesh is refined load imbalance can occur, and elements are sent from one \acrshort{acr:GPU} to another when load balancing. (a) Start of computation (b) After the wave and cloud collide}\label{fig:cloud_rank}
+\end{figure}
+
 \section{Complex Meshes}\label{section:results:complex_meshes}
 
 \begin{figure}[H]
