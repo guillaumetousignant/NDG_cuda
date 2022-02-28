@@ -378,13 +378,34 @@ Max split level  \(S\). Where  \(K_p\) is the number of elements in process  \(p
 	\caption{Medium load imbalance test case split level: Split level, indicating how many times the elements have split, only the bottom right refines. (a) Complete domain (b) Area of interest}\label{fig:load_imbalance_case_medium_s}
 \end{figure}
 
+\begin{figure}[H]
+	\centering
+	\subfloat[Full domain]
+	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/problem_high_far}\label{fig:load_imbalance_case_high_p_far}}
+	\hfill
+	\subfloat[Detail]
+	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/problem_high_near}\label{fig:load_imbalance_case_high_p_near}}
+	\caption{High load imbalance test case pressure: A wave passes through a very big domain. (a) Complete domain (b) Area of interest}\label{fig:load_imbalance_case_high_p}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\subfloat[Full domain]
+	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/split_level_high_far}\label{fig:load_imbalance_case_high_s_far}}
+	\hfill
+	\subfloat[Detail]
+	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/split_level_high_near}\label{fig:load_imbalance_case_high_s_near}}
+	\caption{High load imbalance test case split level: Split level, indicating how many times the elements have split, only the bottom right refines. (a) Complete domain (b) Area of interest}\label{fig:load_imbalance_case_high_s}
+\end{figure}
+
 \begin{table}[H]
 	\centering
 	\begin{tabular}{ c c c c c c c }
-		Case & S & K & Max \(K_p\) & Min \(K_p\) & Load imbalance & Imbalance ratio \\
+		Case & S & K & Max \(K_p\) & \(w_{ideal}\) & Load imbalance \\
 		\midrule
-		Low & \(3\) & \(17752\) & \(2392\) & \(1024\) & \(2.34\) & \(2.16\) \\
-		High & \(5\) & \(26734\) & \(11374\) & \(1024\) & \(11.1\) & \(6.81\) \\
+		Low & \(3\) & \(17752\) & \(2392\) & \(1109.5\) & \(2.16\) \\
+		Medium & \(5\) & \(26734\) & \(11374\) & \(1670.875\) & \(6.81\) \\
+		High & \(7\) & \(70197\) & \(54837\) & \(4387.3125\) & \(12.50\) \\
 	\end{tabular}
 	\caption{Load imbalance cases.}\label{table:load_imbalance}
 \end{table}
@@ -401,6 +422,12 @@ Max split level  \(S\). Where  \(K_p\) is the number of elements in process  \(p
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_results/media/load_balancing_interval_N4_K16384_A20_P16_S5}
 	\caption{Load balancing efficiency interval test: Simulation time with adaptivity, load balancing and increasing load balancing interval. N = 4, K = 16384, adaptivity interval = 20, W = 16, max split level = 5}\label{fig:load_balancing_efficiency_interval_s5}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\includesvg[width=0.6\textwidth]{Chapter_results/media/load_balancing_interval_N4_K16384_A20_P16_S7}
+	\caption{Load balancing efficiency interval test: Simulation time with adaptivity, load balancing and increasing load balancing interval. N = 4, K = 16384, adaptivity interval = 20, W = 16, max split level = 7}\label{fig:load_balancing_efficiency_interval_s7}
 \end{figure}
 
 % Say that the interval depends on the problem size

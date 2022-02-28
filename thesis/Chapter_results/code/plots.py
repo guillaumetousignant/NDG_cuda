@@ -97,20 +97,22 @@ adaptivity_same_error_t = np.array([143.326, 143.326, 143.326, 143.326])
 adaptivity_same_error_max_error = np.array([8.3e-8, 8.3e-8, 8.3e-8, 8.3e-8])
 
 # Load balancing efficiency interval
-load_balancing_interval_A = np.array([20, 20])                  # Adaptivity interval
-load_balancing_interval_N = np.array([4, 4])                    # Initial N
-load_balancing_interval_K = np.array([128 * 128, 128 * 128])    # Initial number of elements
-load_balancing_interval_P = np.array([16, 16])                  # Number of processes
-load_balancing_interval_S = np.array([3, 5])                    # Max split level
-load_balancing_interval_max_N = np.array([12, 12])              # Max N
+load_balancing_interval_A = np.array([20, 20, 20])                      # Adaptivity interval
+load_balancing_interval_N = np.array([4, 4, 4])                         # Initial N
+load_balancing_interval_K = np.array([128 * 128, 128 * 128, 128 * 128]) # Initial number of elements
+load_balancing_interval_P = np.array([16, 16, 16])                      # Number of processes
+load_balancing_interval_S = np.array([3, 5, 7])                         # Max split level
+load_balancing_interval_max_N = np.array([12, 12, 12])                  # Max N
 
 load_balancing_interval_L = np.array([[20, 100, 200, 500, 1000],
+                                      [20, 100, 200, 500, 1000],
                                       [20, 100, 200, 500, 1000]]) # Load balancing interval
 load_balancing_interval_t = np.array([[346.838, 284.198, 266.794, 248.574, 254.721],
-                                      [2928.21, 2107.16, 1989.26, 1966.79, 2112.57]]) # Simulation time
+                                      [2928.21, 2107.16, 1989.26, 1966.79, 2112.57],
+                                      [0, 0, 0, 0, 24976.3]]) # Simulation time
 
 load_balancing_interval_baseline_L = load_balancing_interval_L[:, [0,-1]]
-load_balancing_interval_baseline_t = np.array([274.415, 4962.06])
+load_balancing_interval_baseline_t = np.array([274.415, 4962.06, 107196])
 
 # Load balancing efficiency threshold
 load_balancing_threshold_A = np.array([20, 20])                 # Adaptivity interval
