@@ -54,19 +54,28 @@ Fluent, boasting a \(2.9 \times \) speedup compared to the \acrshort{acr:CPU}-on
 Open-source solutions like OpenFOAM~\cite{Alonazi2015} have also been extended to work on hybrid
 \acrshort{acr:CPU} and \acrshort{acr:GPU} architectures. Another example is
 RapidCFD~\cite{SimFlow2020}, a collection of OpenFOAM solvers ported to Nvidia \acrshort{acr:CUDA}.
+These solvers see an improvement of up to \(2 \times \) and a parallel speedup of \(3 \times \)
+when using eight \acrshortpl{acr:GPU} instead of a single one.
 
 Some brand new solvers have been created for \acrshortpl{acr:GPU}, such as the AmgX solver, a
 distributed algebraic multigrid solver. This solver has been shown to have a \(2 \times \) to \(5
 \times \) speedup compared to a \acrshort{acr:CPU} implementation~\cite{Naumov2015}.
 
-In the realm of spectral methods, there have been a few advances using \acrshortpl{acr:GPU}.
-Notably, NekRS is a Navier Stokes solver designed to run on diverse hardware, including
-\acrshortpl{acr:CPU} and \acrshortpl{acr:GPU}~\cite{Fischer2021}. It is related to the traditional
-Nek5000 solver. It uses the OCCA~\cite{Medina2014}, a parallel programming language that provides
-code that can be compiled to different architectures, notably OpenMP \acrshort{acr:CPU} code,
-\acrshort{acr:CUDA} \acrshort{acr:GPU} code and OpenCL code. NekRS shows a parallel efficiency of
-\(80 \% \), and \(80 \% \) to \(90 \% \) of the realizable peak performance of \acrshort{acr:HPC}
-systems for large problems~\cite{Fischer2021}.
+In the realm of spectral methods, there have been a few advances using \acrshortpl{acr:GPU}. In
+2009, Klöckner et al.\ demonstrated a \acrshort{acr:DG-SEM} solver running on a consumer level
+\acrshort{acr:GPU} that demonstrated a \(50 \times \) speedup compared to the machine's
+\acrshort{acr:CPU}. The next year, Gödel et al.\ presented a \acrshort{acr:GPU}-accelerated discontinuous
+Galerkin solver for electric fields, capable of running on multiple \acrshortpl{acr:GPU} in
+parallel. The Nek5000 solver gained a \acrshort{acr:GPU} compatible branch for Nekbone, a simplified
+version of the program that implements its core solver.
+
+As purpose-build \acrshort{acr:GPU} solvers, NekRS is a Navier Stokes solver designed to run on
+diverse hardware, including \acrshortpl{acr:CPU} and \acrshortpl{acr:GPU}~\cite{Fischer2021}. It is
+related to the traditional Nek5000 solver. It uses the OCCA~\cite{Medina2014}, a parallel
+programming language that provides code that can be compiled to different architectures, notably
+OpenMP \acrshort{acr:CPU} code, \acrshort{acr:CUDA} \acrshort{acr:GPU} code and OpenCL code. NekRS
+shows a parallel efficiency of \(80 \% \), and \(80 \% \) to \(90 \% \) of the realizable peak
+performance of \acrshort{acr:HPC} systems for large problems~\cite{Fischer2021}.
 
 This indicates that \acrshort{acr:SEM} solvers can have very good performance on the
 \acrshort{acr:GPU} architecture. This gives a promising foundation for this work, as the core solver
