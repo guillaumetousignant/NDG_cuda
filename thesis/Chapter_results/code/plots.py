@@ -36,6 +36,11 @@ nodes_beluga_gpu_ideal = nodes_beluga_gpu[:, [0,-1]]
 times_beluga_cpu_ideal = np.stack((min_total_time_beluga_cpu/nodes_beluga_cpu_ideal[:, 0], min_total_time_beluga_cpu/nodes_beluga_cpu_ideal[:, -1]), axis=-1)
 times_beluga_gpu_ideal = np.stack((min_total_time_beluga_gpu/nodes_beluga_gpu_ideal[:, 0], min_total_time_beluga_gpu/nodes_beluga_gpu_ideal[:, -1]), axis=-1)
 
+node_strings_beluga_gpu = np.array([["¼", "½", "1", "2", "4", "8"],
+                                     ["¼", "½", "1", "2", "4", "8"],
+                                     ["¼", "½", "1", "2", "4", "8"],
+                                     ["¼", "½", "1", "2", "4", "8"]])
+
 # Weak scaling
 N_weak = np.array([4])
 K_weak = np.array([64 * 64])
@@ -51,6 +56,8 @@ min_total_time_beluga_gpu_weak = np.amin(times_beluga_gpu_weak, 1)
 
 nodes_beluga_cpu_ideal_weak = nodes_beluga_cpu_weak[:, [0,-1]]
 nodes_beluga_gpu_ideal_weak = nodes_beluga_gpu_weak[:, [0,-1]]
+
+node_strings_beluga_gpu_weak = np.array([["¼", "1", "4", "16"]])
 
 # Adaptivity efficiency
 # Back to desktop results
@@ -172,6 +179,8 @@ for i in range(N.shape[0]):
     ax.loglog(nodes_beluga_gpu[i, :], times_beluga_gpu[i, :], color=gpu_colour, linewidth=data_width, marker=data_shape, markersize=data_size, label="Beluga GPU time")
     ax.loglog(nodes_beluga_gpu_ideal[i, :], times_beluga_gpu_ideal[i, :], color=gpu_colour, linewidth=data_width, linestyle=ideal_style, label="Beluga ideal GPU time")
 
+    ax.set_xticks(nodes_beluga_gpu[i, :], node_strings_beluga_gpu[i, :])
+
     ax.legend()
     fig.tight_layout()
 
@@ -194,6 +203,8 @@ for i in range(N_weak.shape[0]):
     ax.semilogx(nodes_beluga_gpu_ideal_weak[i, :], [min_total_time_beluga_gpu_weak[i], min_total_time_beluga_gpu_weak[i]], color=gpu_colour, linewidth=data_width, linestyle=ideal_style, label="Beluga ideal GPU time")
 
     ax.set_ylim([0, 1.2 * max(max(times_beluga_cpu_weak[i, :]), max(times_beluga_gpu_weak[i, :]))])
+
+    ax.set_xticks(nodes_beluga_gpu_weak[i, :], node_strings_beluga_gpu_weak[i, :])
 
     ax.legend()
     fig.tight_layout()
