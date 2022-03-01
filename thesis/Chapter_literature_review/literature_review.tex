@@ -103,9 +103,10 @@ describes a tree-structured method that can be accessed and modified in parallel
 Some software solutions exist to integrate into existing code and implement \acrlong{acr:AMR}. The
 PARAMESH toolkit~\cite{MacNeice2000} is such an example. It indicates that it is possible to obtain
 speedups above the order of \( 10 \times \) for high refinement levels, when compared to using an
-uniformly refined mesh. It also enables users to work with the meshes it creates in parallel.
-
-~\cite{Burstedde2011} % p4est
+uniformly refined mesh. It also enables users to work with the meshes it creates in parallel. The
+p4est library~\cite{Burstedde2011} is another example, it provides parallel \acrshort{acr:AMR} to
+programs by implementing forest of octrees algorithms.It has been proven to scale well up to 220,000
+\acrshort{acr:CPU} cores.
 
 Traditional \acrshort{acr:CPU} algorithms are well understood, and full books have been written on
 the subject, such as by Plewa et al.~\cite{Plewa2005}. Support for \acrshort{acr:AMR} has even
