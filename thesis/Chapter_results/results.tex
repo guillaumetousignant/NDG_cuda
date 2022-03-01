@@ -86,9 +86,6 @@ needs refinement for optimal results.
 \end{figure}
 
 \section{Scaling Tests}\label{section:results:scaling_tests}
-% Scaling tests (strong and weak), N tests
-% CPU vs GPU
-% GPU loading
 
 Parallel scaling is an important aspect of the performance of a program. It describes how the
 execution time varies when more resources are assigned to the problem. This is an optimisation
@@ -271,8 +268,8 @@ about \(0.2\) with regards to the number of \acrshort{acr:CPU} cores.
 This section establishes the performance of the \acrlong{acr:AMR}. The problem from
 Section~\ref{section:results:test_case} is used, initially split into four elements in the \(x\) and
 \(y\) direction, for \(K = 16\). The initial polynomial order \(N\) of four. The system is allowed
-to refine up to a split level of three, meaning a cell can split three times and become one eighth
-the size of the original cell, and up to a polynomial order \(N\) of 12.
+to refine up to a split level of five, meaning a cell can split five times and become \(
+\frac{1}{32}\) the size of the original cell, and up to a polynomial order \(N\) of 16.
 
 \Acrlong{acr:AMR} is a costly process, as the \acrshort{acr:CPU} must reallocate arrays on the
 \acrshort{acr:GPU} for the different objects making up the mesh, and then schedule kernels to move
@@ -286,13 +283,18 @@ and~\ref{fig:adaptivity_efficiency_C500} show the results of refining the mesh e
 
 Secondly, the simulations are performed with an increasing number of refinement pre-conditioning
 steps as described in Section~\ref{section:adaptive_mesh_refinement:pre_conditioning}. The analysis
-ranges from no pre-conditioning step to three steps.
+ranges from no pre-conditioning step to five steps. The total simulation time is shown in blue. It
+is the sum of the time taken up by the pre-condition of the mesh, shown in green, and the
+computation time to solve the problem, shown in yellow. 
 
-We compare those simulation to a non-adaptive case, where the initial mesh is refined uniformly to
-the maximum level attained by the adaptive case. The mesh is split into 32 elements in the \(x\) and
-\(y\) dimensions, for  \(K = 1024\), with a polynomial order  \(N\) of 10. Both the simulation time
-and the error against the analytical solution are compared. The non-adaptive case is shown as a
-dotted line on the figures.
+We compare those simulation to two non-adaptive cases. In the first case, the initial mesh is fully
+refined uniformly up to the maximum level attained by the adaptive case. The mesh is split into 128
+elements in the \(x\) and \(y\) dimensions, for  \(K = 16384\), with a polynomial order  \(N\) of
+10. It is shown as a dashed line on the figures. The second non-adaptive case aims to obtain a
+maximum error similar to the adaptive case. The mesh is split into 32 elements in the \(x\) and
+\(y\) dimensions, for  \(K = 1024\), with a polynomial order  \(N\) of 10. It is shown as a dotted
+line on the figures. Both the simulation time and the error against the analytical solution are
+compared.
 
 \begin{figure}[H]
 	\centering
