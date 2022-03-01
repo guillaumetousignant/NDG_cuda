@@ -621,3 +621,36 @@ Road Car via Spectral/hp Element Methods},
    volume = {46},
    year = {2010},
 }
+
+@inproceedings{Peplinski2016,
+   abstract = {We discuss parallel performance of h-type Adaptive Mesh Refinement (AMR) developed for the high-order spectral element solver Nek5000 within CRESTA project. AMR is a desired feature of the future simulation software, as it gives possibility to increase the accuracy of numerical simulations at minimal computational cost by resolving particular region of the domain. At the same time it increases complexity of the communication pattern and introduces load imbalance, that can have negative effect on the code scalability. In this work we concentrate on the parallel performance of different tools required by AMR and the resulting algorithm limitations. Our implementation is based on available libraries for parallel mesh management (p4est) and partitioning (ParMetis) that provide necessary information for grid refinement/coarsening and redistribution performed within nonconforming version of Nek5000. For simplicity we consider advection-diffusion problem instead of the full Navies-Stokes equations and study both strong and weak scalability for the convected-cone problem. It is a synthetic test case allowing to test AMR with frequent dynamic mesh adjustments.},
+   author = {Adam Peplinski and Paul F Fischer and Philipp Schlatter},
+   city = {New York, NY, USA},
+   doi = {10.1145/2938615.2938620},
+   isbn = {9781450341226},
+   journal = {Proceedings of the Exascale Applications and Software Conference 2016},
+   keywords = {large-scale scientific computing,nonconforming methods,parallel adaptive mesh refinement,spectral elements},
+   publisher = {Association for Computing Machinery},
+   title = {Parallel Performance of H-Type Adaptive Mesh Refinement for Nek5000},
+   url = {https://doi.org/10.1145/2938615.2938620},
+   year = {2016},
+}
+
+@inproceedings{Offermans2019,
+   abstract = {When performing computational fluid dynamics (CFD) simulations of complex flows, the a priori knowledge of the flow physics and the location of the dominant flow features are usually unknown. For this reason, the development of adaptive remeshing techniques is crucial for large-scale computational problems. Some work has been made recently to provide Nek5000 with adaptive mesh refinement (AMR) capabilities in order to facilitate the generation of the grid and push forward the limit in terms of problem size and complexity [10].},
+   author = {Nicolas Offermans and Adam Peplinski and Oana Marin and P F Fischer and Philipp Schlatter},
+   city = {Cham},
+   editor = {Vincenzo
+and Fröhlich Jochen
+and Geurts Bernard J.
+and Kuerten Hans Salvetti Maria Vittoria
+and Armenio},
+   isbn = {978-3-030-04915-7},
+   journal = {Direct and Large-Eddy Simulation XI},
+   pages = {9-15},
+   publisher = {Springer International Publishing},
+   title = {Towards Adaptive Mesh Refinement for the Spectral Element Solver Nek5000},
+   year = {2019},
+}
+
+

@@ -9,7 +9,7 @@ The issues that this work aims to overcome are not new, and as such a lot of wor
 to overcome them. This section highlights the current state of the art in this domain, and where
 this work fits within it.
 
-\section{Spectral Element Methods}\label{section:literature_review:sem}<
+\section{Spectral Element Methods}\label{section:literature_review:sem}
 
 In this work, we will use the \acrfull{acr:DG-SEM}, first described by Reed and
 Hill~\cite{Reed1973}. Many references are available nowadays on the method, such as textbooks by
@@ -85,13 +85,18 @@ mesh resolution to capture fine detail in the solution makes the problem prohibi
 compute. The mesh can be refined beforehand in areas of the flow expected to need refinement, which
 is not always possible if these areas cannot be predicted in advance, change position in time, or
 are not easy to predict visually. We will therefore want to implement \acrlong{acr:AMR}, which is
-not available in any of those well-known solvers.
+not available in any of those well-known solvers. This is due to the fact that \acrlong{acr:AMR}
+does not map easily to the \acrshort{acr:GPU} architecture, as stated in
+Section~\ref{section:literature_review:sem}. 
 
 \section{Adaptive Mesh Refinement}\label{section:literature_review:amr}
 
 \Acrshort{acr:AMR} has been proved to speedup significantly 
 
 ~\cite{Plewa2005} % AMR book
+
+~\cite{Peplinski2016} % Nek5000 AMR h only
+~\cite{Offermans2019} % Nek5000 AMR
 
 % something about not being ideal for GPUs
 
