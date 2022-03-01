@@ -91,16 +91,50 @@ Section~\ref{section:literature_review:sem}.
 
 \section{Adaptive Mesh Refinement}\label{section:literature_review:amr}
 
-\Acrshort{acr:AMR} has been proved to speedup significantly 
+\Acrshort{acr:AMR} has been proved to speedup significantly the computation of fluid flow problems.
+Chalmers et al.\ report a \(3 \times \) speedup as well as an improved error when using
+\acrshort{acr:AMR}~\cite{Chalmers2019}. The processing time and memory saving will be especially
+welcome when considering that \acrshortpl{acr:GPU} have less memory than \acrshortpl{acr:CPU}.
 
-~\cite{Plewa2005} % AMR book
+\Acrshort{acr:AMR} implementations on \acrshortpl{acr:CPU} date from quite some time. Berger and
+Oliger~\cite{Berger1984} present such an implementation using overset grids, and
+Khokhlov~\cite{Khokhlov1998} describes a tree-structured method that can be accessed and modified in
+parallel.
 
-~\cite{Peplinski2016} % Nek5000 AMR h only
-~\cite{Offermans2019} % Nek5000 AMR
+Some software solutions exist to integrate into existing code and implement \acrlong{acr:AMR}. The
+PARAMESH toolkit~\cite{MacNeice2000} is such an example. It indicates that it is possible to obtain
+speedups above the order of \( 10 \times \) for high refinement levels, when compared to using an
+uniformly refined mesh. It also enables users to work with the meshes it creates in parallel.
 
-% something about not being ideal for GPUs
+Traditional \acrshort{acr:CPU} algorithms are well understood, and full books have been written on
+the subject, such as by Plewa et al.~\cite{Plewa2005}. Support for \acrshort{acr:AMR} has even
+started to be added to certain well-established solvers like Nek5000~\cite{Offermans2019}, where the
+parallel scaling of the method has been studied up to 32,768 \acrshort{acr:CPU}
+cores~\cite{Peplinski2016}. 
 
-~\cite{Schive2018} % GPU amr
+These are good results, indicating that if the challenges in implementing \acrshort{acr:AMR} on
+\acrshortpl{acr:GPU} are overcome, significant gains should be expected. These challenges are not
+small, as the non-conforming meshes produces by \acrshort{acr:AMR} increase divergence between
+\acrshort{acr:GPU} threads, can create load imbalance when the problem is solved in parallel and the
+mesh is not refined equally in each block. The refinement process itself is also not naturally
+parallel, therefore care should be taken when implementing it to have as many parts of the process
+executed in parallel on \acrshortpl{acr:GPU} as possible. Finally, adaptive meshes complicate the
+memory layout on \acrshortpl{acr:GPU}, which are more optimised to perform computations on static
+packed data.
+
+\Acrlong{acr:AMR} is not unique to fluid dynamics. 
+
+~\cite{Bryan2014} % amr astrophysics ENZO
+~\cite{Schive2010} % GPU amr astrophysics GAMER
+~\cite{Schive2018} % GPU amr astrophysics GAMER2
+
 ~\cite{Giuliani2019} % GPU amr gas dynamics
 
 \section{Dynamic Load Balancing}\label{section:literature_review:load_balancing}
+
+~\cite{Karypis1997} % METIS
+~\cite{Karypis1997P} % PARMETIS
+
+~\cite{MacNeice2000} % PARAMESH also uses peano-hilbert curves for load balancing
+~\cite{Peplinski2016} % they also use load imbalance tolerance to guide load balancing. They use
+                        % parmetis for partitioning

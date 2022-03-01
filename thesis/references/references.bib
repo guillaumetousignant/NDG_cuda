@@ -653,4 +653,73 @@ and Armenio},
    year = {2019},
 }
 
+@article{MacNeice2000,
+   abstract = {In this paper we describe a community toolkit which is designed to provide parallel support with adaptive mesh capability for a large and important class of computational models, those using structured, logically Cartesian meshes. The package of Fortran 90 subroutines, called PARAMESH, is designed to provide an application developer with an easy route to extend an existing serial code which uses a logically Cartesian structured mesh into a parallel code with adaptive mesh refinement. Alternatively, in its simplest use, and with minimal effort, it can operate as a domain decomposition tool for users who want to parallelize their serial codes, but who do not wish to use adaptivity. The package can provide them with an incremental evolutionary path for their code, converting it first to uniformly refined parallel code, and then later if they so desire, adding adaptivity.},
+   author = {Peter MacNeice and Kevin M Olson and Clark Mobarry and Rosalinda de Fainchtein and Charles Packer},
+   doi = {https://doi.org/10.1016/S0010-4655(99)00501-9},
+   issn = {0010-4655},
+   issue = {3},
+   journal = {Computer Physics Communications},
+   pages = {330-354},
+   title = {PARAMESH: A parallel adaptive mesh refinement community toolkit},
+   volume = {126},
+   url = {https://www.sciencedirect.com/science/article/pii/S0010465599005019},
+   year = {2000},
+}
 
+@article{Chalmers2019,
+   abstract = {We present a parallel hp-adaptive high order (spectral) discontinuous Galerkin method for approximation of the incompressible Navier-Stokes equations. The spatial discretization consists of equal-order polynomial approximations of the fluid velocity and pressure via discontinuous Galerkin spatial discretizations. For the nonlinear convective term we select the local Lax-Friedrichs flux, while for the divergence and gradient operators central fluxes are chosen. For the diffusive term, we use an interior penalty discontinuous Galerkin method to ensure stability and invertibility. The temporal discretization is an implicit-explicit Runge-Kutta method paired with a high-order splitting procedure to efficiently enforce the incompressibility condition at each time step. The compact stencil size, explicit time stepping of nonlinear terms, and inversion of sparse linear systems make the resulting method simple to parallelize while the local nature of the discontinuous Galerkin approximation makes hp-adaptive refinement natural to implement. We detail our implementation consisting of a tensor product basis of high order polynomials on quadrilateral elements, and implement hp-adaptivity using an inexpensive a posteriori error estimator to determine where refinement is necessary. p-Multigrid and pressure projection techniques are used to precondition the conjugate gradient linear solvers. We present several numerical tests to demonstrate the efficacy of the method, in particular in reducing the number of degrees of freedom needed and allocating computing resources to regions of sharp variation in transient incompressible Navier-Stokes flows.},
+   author = {N Chalmers and G Agbaglah and M Chrust and C Mavriplis},
+   doi = {https://doi.org/10.1016/j.jcpx.2019.100023},
+   issn = {2590-0552},
+   journal = {Journal of Computational Physics: X},
+   keywords = {Adaptive,Discontinuous Galerkin method,High-order,Incompressible flow,Navier-Stokes equations,Spectral element method},
+   pages = {100023},
+   title = {A parallel hp-adaptive high order discontinuous Galerkin method for the incompressible Navier-Stokes equations},
+   volume = {2},
+   url = {https://www.sciencedirect.com/science/article/pii/S2590055219300393},
+   year = {2019},
+}
+
+@article{Karypis1997,
+   author = {George Karypis and Vipin Kumar},
+   title = {METIS: A software package for partitioning unstructured graphs, partitioning meshes, and computing fill-reducing orderings of sparse matrices},
+   year = {1997},
+}
+
+@article{Karypis1997P,
+   author = {George Karypis and Kirk Schloegel and Vipin Kumar},
+   title = {Parmetis: Parallel graph partitioning and sparse matrix ordering library},
+   year = {1997},
+}
+
+@article{Bryan2014,
+   abstract = {This paper describes the open-source code Enzo, which uses block-structured adaptive mesh refinement to provide high spatial and temporal resolution for modeling astrophysical fluid flows. The code is Cartesian, can be run in one, two, and three dimensions, and supports a wide variety of physics including hydrodynamics, ideal and non-ideal magnetohydrodynamics, N-body dynamics (and, more broadly, self-gravity of fluids and particles), primordial gas chemistry, optically thin radiative cooling of primordial and metal-enriched plasmas (as well as some optically-thick cooling models), radiation transport, cosmological expansion, and models for star formation and feedback in a cosmological context. In addition to explaining the algorithms implemented, we present solutions for a wide range of test problems, demonstrate the code's parallel performance, and discuss the Enzo collaboration's code development methodology.},
+   author = {Greg L Bryan and Michael L Norman and Brian W OShea and Tom Abel and John H Wise and Matthew J Turk and Daniel R Reynolds and David C Collins and Peng Wang and Samuel W Skillman and Britton Smith and Robert P Harkness and James Bordner and Ji-hoon Kim and Michael Kuhlen and Hao Xu and Nathan Goldbaum and Cameron Hummels and Alexei G Kritsuk and Elizabeth Tasker and Stephen Skory and Christine M Simpson and Oliver Hahn and Jeffrey S Oishi and Geoffrey C So and Fen Zhao and Renyue Cen and Yuan Li},
+   doi = {10.1088/0067-0049/211/2/19},
+   issue = {2},
+   journal = {The Astrophysical Journal Supplement Series},
+   month = {3},
+   pages = {19},
+   publisher = {American Astronomical Society},
+   title = {ENZO: AN ADAPTIVE MESH REFINEMENT CODE FOR ASTROPHYSICS},
+   volume = {211},
+   url = {https://doi.org/10.1088/0067-0049/211/2/19},
+   year = {2014},
+}
+
+@article{Schive2010,
+   abstract = {We present the newly developed code, GPU-accelerated Adaptive-MEsh-Refinement code (GAMER), which adopts a novel approach in improving the performance of adaptive-mesh-refinement (AMR) astrophysical simulations by a large factor with the use of the graphic processing unit (GPU). The AMR implementation is based on a hierarchy of grid patches with an oct-tree data structure. We adopt a three-dimensional relaxing total variation diminishing scheme for the hydrodynamic solver and a multi-level relaxation scheme for the Poisson solver. Both solvers have been implemented in GPU, by which hundreds of patches can be advanced in parallel. The computational overhead associated with the data transfer between the CPU and GPU is carefully reduced by utilizing the capability of asynchronous memory copies in GPU, and the computing time of the ghost-zone values for each patch is diminished by overlapping it with the GPU computations. We demonstrate the accuracy of the code by performing several standard test problems in astrophysics. GAMER is a parallel code that can be run in a multi-GPU cluster system. We measure the performance of the code by performing purely baryonic cosmological simulations in different hardware implementations, in which detailed timing analyses provide comparison between the computations with and without GPU(s) acceleration. Maximum speed-up factors of 12.19 and 10.47 are demonstrated using one GPU with 40963 effective resolution and 16 GPUs with 81923 effective resolution, respectively.},
+   author = {Hsi-Yu Schive and Yu-Chih Tsai and Tzihong Chiueh},
+   doi = {10.1088/0067-0049/186/2/457},
+   issue = {2},
+   journal = {The Astrophysical Journal Supplement Series},
+   month = {2},
+   pages = {457-484},
+   publisher = {American Astronomical Society},
+   title = {GAMER
+: A GRAPHIC PROCESSING UNIT ACCELERATED ADAPTIVE-MESH-REFINEMENT CODE FOR ASTROPHYSICS},
+   volume = {186},
+   url = {https://doi.org/10.1088/0067-0049/186/2/457},
+   year = {2010},
+}
