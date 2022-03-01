@@ -269,7 +269,9 @@ This section establishes the performance of the \acrlong{acr:AMR}. The problem f
 Section~\ref{section:results:test_case} is used, initially split into four elements in the \(x\) and
 \(y\) direction, for \(K = 16\). The initial polynomial order \(N\) of four. The system is allowed
 to refine up to a split level of five, meaning a cell can split five times and become \(
-\frac{1}{32}\) the size of the original cell, and up to a polynomial order \(N\) of 16.
+\frac{1}{32}\) the size of the original cell, and up to a polynomial order \(N\) of 16. The error
+estimation threshold is set to \num{1e-6}, meaning it will refine elements whose estimated error is
+greater than that number.
 
 \Acrlong{acr:AMR} is a costly process, as the \acrshort{acr:CPU} must reallocate arrays on the
 \acrshort{acr:GPU} for the different objects making up the mesh, and then schedule kernels to move
