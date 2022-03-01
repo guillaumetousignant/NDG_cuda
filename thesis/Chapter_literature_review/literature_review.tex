@@ -162,6 +162,8 @@ the workload between the \acrshortpl{acr:GPU} to even out the computational load
 
 \section{Dynamic Load Balancing}\label{section:literature_review:load_balancing}
 
+% non-cfd uses
+
 Implementing dynamic load balancing starts by choosing a repartitioning scheme. Graph-based
 algorithms model a mesh as a group of nodes connected by edges, and try to partition the nodes while
 breaking as few edges as possible. These solutions can be slow to execute, but result in
@@ -174,12 +176,41 @@ in parallel on the \acrshort{acr:GPU}. These solvers permit partitioning a mesh 
 as well as repartitioning \acrshort{acr:AMR} meshes~\cite{Karypis1997P}. These libraries are widely
 used, notably by the Nek5000 \acrshort{acr:AMR} proposal~\cite{Peplinski2016}.
 
+Another repartitioning scheme hinges on splitting a one-dimensional list of elements to smaller
+segments, also called \acrfull{acr:CCP}. These algorithms are very fast, but the quality of their
+partitions depend on the characteristics of the mapping from multidimensional space to the
+one-dimensional list. One such mapping uses \acrfullpl{acr:SFC}. \Acrshortpl{acr:SFC} traverse a
+multidimensional domain in its entirety, assigning a one-dimensional index to elements. The
+Peano~\cite{Peano1890} and Hilbert~\cite{Hilbert1891} curves are examples of such curves.
+\Acrshortpl{acr:SFC} are also widely used as a repartitioning scheme, for example by the PARAMESH
+library~\cite{MacNeice2000} and the GAMER family of solvers~\cite{Schive2018}.
 
+In the domain of high-order methods, in 2021 He~\cite{He2021} created a \acrshort{acr:CPU}-based
+dynamic load balancing algorithm for a \acrshort{acr:DG-SEM} solver with
+\acrshort{acr:AMR}~\cite{He2021}, using the Hilbert curve backed by a hash map data structure. This
+implementation showed good scaling to 16,384 \acrshort{acr:CPU} cores, and a speedup between \(5
+\times \) and \(8 \times \) compared to a non load-balanced case.
 
-% cite Shiqi
+Dynamically load balancing tasks executing on \acrshortpl{acr:GPU} is more complicated than
+traditional \acrshort{acr:CPU} tasks. Due to the parallel execution of tasks on
+\acrshortpl{acr:GPU}, memory access patterns needed for optimal performance, and the higher cost of
+transferring data between \acrshortpl{acr:GPU}, the performance may not scale as expected when
+redistributing a workload. We want to leverage the increased processing power of
+\acrshortpl{acr:GPU}, therefore the load balancing algorithm should not only redistribute a
+\acrshort{acr:GPU} workload, but also be executed on the \acrshortpl{acr:GPU} in parallel as much as
+possible. Once again, this is a very dynamic and serial process that will have to be adapted the the
+\acrshort{acr:GPU} architecture.
 
+Dynamically load balancing tasks executing on \acrshortpl{acr:GPU} is an active area of research.
+Chen et al.~\cite{Chen2010} discuss a task-based algorithm for balancing molecular dynamics
+workloads on a single of multiple \acrshortpl{acr:GPU}. Their algorithm offers an up to \(2.5 \times
+\) speedup, and scales linearly up to four \acrshortpl{acr:GPU}. The load balancing itself executes
+serially on the \acrshort{acr:CPU}. Kijsipongse and U-ruekolan~\cite{Kijsipongse2012} propose an
+algorithm to load-balance K-Means clustering problems running on \acrshortpl{acr:GPU}.
 
-~\cite{MacNeice2000} % PARAMESH also uses peano-hilbert curves for load balancing
-~\cite{Peplinski2016} % they also use load imbalance tolerance to guide load balancing. They use
-                        % parmetis for partitioning
-~\cite{Schive2018} % gamer-2 also uses a hilbert curve
+We aim to implement a dynamic load balancing algorithm using a \acrshort{acr:CCP} using the Hilbert
+curve, for its speed of execution and good data locality. The data locality quality of the curve is
+well suited for use on \acrshortpl{acr:GPU}, as memory transfers resulting from large interfaces
+between \acrshortpl{acr:GPU} are even more expensive than on \acrshortpl{acr:CPU}. The algorithm
+will execute in parallel for multiple \acrshortpl{acr:GPU}, and aim to execute as much of the code
+as possible on the \acrshortpl{acr:GPU} themselves to accelerate the process.
