@@ -112,7 +112,7 @@ Traditional \acrshort{acr:CPU} algorithms are well understood, and full books ha
 the subject, such as by Plewa et al.~\cite{Plewa2005}. Support for \acrshort{acr:AMR} has even
 started to be added to certain well-established solvers like Nek5000~\cite{Offermans2019}, where the
 parallel scaling of the method has been studied up to 32,768 \acrshort{acr:CPU}
-cores~\cite{Peplinski2016}. 
+cores~\cite{Peplinski2016}. This particular implementation uses h-refinement only.
 
 These are good results, indicating that if the challenges in implementing \acrshort{acr:AMR} on
 \acrshortpl{acr:GPU} are overcome, significant gains should be expected. These challenges are not
@@ -164,10 +164,22 @@ the workload between the \acrshortpl{acr:GPU} to even out the computational load
 
 \section{Dynamic Load Balancing}\label{section:literature_review:load_balancing}
 
+Implementing dynamic load balancing starts by choosing a repartitioning scheme. Graph-based
+algorithms model a mesh as a group of nodes connected by edges, and try to partition the nodes while
+breaking as few edges as possible. These solutions can be slow to execute, but result in
+well-partitioned meshes. The METIS package~\cite{Karypis1997} implements such an algorithm. It
+executes serially, partitioning meshes using multiple levels of graphs. The ParMETIS
+library~\cite{Karypis1997P} implements a similar algorithm, and can work in parallel. A
+repartitioning working in parallel is highly desirable for this work, as each \acrshort{acr:GPU} is
+paired to a single \acrshort{acr:CPU} core. As much of the work as possible will have to be executed
+in parallel on the \acrshort{acr:GPU}. These solvers permit partitioning a mesh to multiple blocks
+as well as repartitioning \acrshort{acr:AMR} meshes~\cite{Karypis1997P}. These libraries are widely
+used, notably by the Nek5000 \acrshort{acr:AMR} proposal~\cite{Peplinski2016}.
+
+
+
 % cite Shiqi
 
-~\cite{Karypis1997} % METIS
-~\cite{Karypis1997P} % PARMETIS
 
 ~\cite{MacNeice2000} % PARAMESH also uses peano-hilbert curves for load balancing
 ~\cite{Peplinski2016} % they also use load imbalance tolerance to guide load balancing. They use
