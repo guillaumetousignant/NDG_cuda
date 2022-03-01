@@ -105,8 +105,8 @@ PARAMESH toolkit~\cite{MacNeice2000} is such an example. It indicates that it is
 speedups above the order of \( 10 \times \) for high refinement levels, when compared to using an
 uniformly refined mesh. It also enables users to work with the meshes it creates in parallel. The
 p4est library~\cite{Burstedde2011} is another example, it provides parallel \acrshort{acr:AMR} to
-programs by implementing forest of octrees algorithms.It has been proven to scale well up to 220,000
-\acrshort{acr:CPU} cores.
+programs by implementing forest of octrees algorithms. It has been proven to scale well up to
+220,000 \acrshort{acr:CPU} cores.
 
 Traditional \acrshort{acr:CPU} algorithms are well understood, and full books have been written on
 the subject, such as by Plewa et al.~\cite{Plewa2005}. Support for \acrshort{acr:AMR} has even
@@ -139,8 +139,13 @@ programs. Wang et al.~\cite{Wang2020} propose algorithm to accurately render tre
 Their method uses ray tracing and is computed on \acrshortpl{acr:CPU}, and can render data without
 having to interpolate it to a single refinement level.
 
-In the gas dynamics field,
-~\cite{Giuliani2019} % GPU amr gas dynamics
+In the high-order fluid dynamics field, Giuliani and Krivodonova propose an algorithm for
+\acrshort{acr:GPU}-based \acrlong{acr:AMR} for use with high-order methods gas
+dynamics~\cite{Giuliani2019}. They use triangular meshes, and implement an edge-colouring algorithm
+in order to avoid race conditions when computing fluxes. They show that \acrshort{acr:AMR} can be
+used to solve problems that are not possible to solve in reasonable time without refining the mesh
+locally, and that with a high order solver the time spent on \acrshort{acr:AMR} can be relatively
+low, in the order of 4\%.
 
 \section{Dynamic Load Balancing}\label{section:literature_review:load_balancing}
 
