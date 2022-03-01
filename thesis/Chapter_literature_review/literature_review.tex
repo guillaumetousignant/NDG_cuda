@@ -149,7 +149,18 @@ low, in the order of 4\%. This solver works on a single \acrshort{acr:GPU}, and 
 include dynamic load balancing to address the pitfalls of \acrshort{acr:AMR} on multiple
 \acrshortpl{acr:GPU}.
 
-We aim to
+We aim to implement \acrshort{acr:AMR} on our \acrshort{acr:DG-SEM} solver on \acrshortpl{acr:GPU}.
+The \acrshort{acr:AMR} should be fast to not dominate the execution time, therefore should be
+parallelised, run as much as possible on the \acrshort{acr:GPU}, and have a structure and resulting
+meshes compatible with the \acrshort{acr:GPU} architecture. We wish to target \acrshort{acr:HPC}
+platforms, therefore the code should have an additional parallel level. The program should be able
+to execute on multiple \acrshortpl{acr:GPU} and on multiple computers. This means that
+both the solver and the \acrshort{acr:AMR} modules should be able to execute in parallel on multiple
+mesh blocks. This adds an additional challenge, as the mesh is unlikely to be refined equally in all
+\acrshortpl{acr:GPU}. This is caused load imbalance, and will reduce the performance of the program
+as the less heavily loaded \acrshortpl{acr:GPU} will wait for the most heavily loaded
+\acrshort{acr:GPU} at each iteration. We will implement dynamic load balancing in order to rearrange
+the workload between the \acrshortpl{acr:GPU} to even out the computational load.
 
 \section{Dynamic Load Balancing}\label{section:literature_review:load_balancing}
 
