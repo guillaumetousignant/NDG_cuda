@@ -731,3 +731,16 @@ and Armenio},
    title = {CPU Ray Tracing of Tree-Based Adaptive Mesh Refinement Data},
    year = {2020},
 }
+
+@article{Burstedde2011,
+   abstract = { We present scalable algorithms for parallel adaptive mesh refinement and coarsening (AMR), partitioning, and 2:1 balancing on computational domains composed of multiple connected two-dimensional quadtrees or three-dimensional octrees, referred to as a forest of octrees. By distributing the union of octants from all octrees in parallel, we combine the high scalability proven previously for adaptive single-octree algorithms with the geometric flexibility that can be achieved by arbitrarily connected hexahedral macromeshes, in which each macroelement is the root of an adapted octree. A key concept of our approach is an encoding scheme of the interoctree connectivity that permits arbitrary relative orientations between octrees. Based on this encoding we develop interoctree transformations of octants. These form the basis for high-level parallel octree algorithms, which are designed to interact with an application code such as a numerical solver for partial differential equations. We have implemented and tested these algorithms in the p4est software library. We demonstrate the parallel scalability of p4est on its own and in combination with two geophysics codes. Using p4est we generate and adapt multioctree meshes with up to $5.1310^11$ octants on as many as 220,320 CPU cores and execute the 2:1 balance algorithm in less than 10 seconds per million octants per process. },
+   author = {Carsten Burstedde and Lucas C Wilcox and Omar Ghattas},
+   doi = {10.1137/100791634},
+   issue = {3},
+   journal = {SIAM Journal on Scientific Computing},
+   pages = {1103-1133},
+   title = {p4est: Scalable Algorithms for Parallel Adaptive Mesh Refinement on Forests of Octrees},
+   volume = {33},
+   url = {https://doi.org/10.1137/100791634},
+   year = {2011},
+}
