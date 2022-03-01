@@ -13,8 +13,9 @@ components are studied. First, the performance of the core spectral element meth
 \acrshortpl{acr:GPU}, with a comparison with the same code running on \acrshortpl{acr:CPU} is
 presented in Section~\ref{section:results:scaling_tests}. Then, the performance of the
 \acrlong{acr:AMR} is studied in Section~\ref{section:results:adaptivity_performance}. Dynamic load
-balancing is studied in Section~\ref{section:results:load_balancing_performance}. Finally, a more
-complex application is shown in Section~\ref{section:results:complex_application}
+balancing is studied in Section~\ref{section:results:load_balancing_performance}. Finally more
+complex applications are shown in Sections~\ref{section:results:complex_application}
+and~\ref{section:results:complex_meshes}.
 
 \section{Platforms}\label{section:results:platforms}
 
@@ -69,7 +70,14 @@ floating point numbers will execute at one sixteenth of the speed of compute-ori
 \acrshortpl{acr:GPU}, all other factors being equal.
 
 \section{Test Case}\label{section:results:test_case}
-% new case
+
+The test case used in this chapter is shown in Figure~\ref{fig:problem}. We solve the 2D wave
+equation from Section~\ref{section:spectral_element_method:equation} on a square domain of dimension
+1 in each dimension. A linear wave starts just outside of the domain, and traverses the domain
+diagonally. Figure~\ref{fig:problem} shows the pressure distribution at \(0.5 s\). The number of
+elements \( K \) varies depending on the problem, as does the polynomial order \( N \). This problem
+should help demonstrate key aspects of the program, as the solution is steeper near the wave and
+needs refinement for optimal results.
 
 \begin{figure}[H]
 	\centering
