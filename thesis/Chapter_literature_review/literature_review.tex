@@ -145,7 +145,11 @@ dynamics~\cite{Giuliani2019}. They use triangular meshes, and implement an edge-
 in order to avoid race conditions when computing fluxes. They show that \acrshort{acr:AMR} can be
 used to solve problems that are not possible to solve in reasonable time without refining the mesh
 locally, and that with a high order solver the time spent on \acrshort{acr:AMR} can be relatively
-low, in the order of 4\%.
+low, in the order of 4\%. This solver works on a single \acrshort{acr:GPU}, and as such does not
+include dynamic load balancing to address the pitfalls of \acrshort{acr:AMR} on multiple
+\acrshortpl{acr:GPU}.
+
+We aim to
 
 \section{Dynamic Load Balancing}\label{section:literature_review:load_balancing}
 
