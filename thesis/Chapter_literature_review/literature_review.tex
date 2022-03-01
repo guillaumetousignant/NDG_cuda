@@ -162,7 +162,16 @@ the workload between the \acrshortpl{acr:GPU} to even out the computational load
 
 \section{Dynamic Load Balancing}\label{section:literature_review:load_balancing}
 
-% non-cfd uses
+Load balancing is not uniquely a \acrshort{acr:CFD} issue. Many algorithms have been developed in
+varying domains to solve similar problems. For example, Willebeek-LeMair and
+Reeves~\cite{Willebeek1993} discuss different strategies to minimise the execution time of
+applications running in parallel on different computers when the computational load cannot be
+predicted. Cardellini et al.~\cite{Cardellini1999} describe load balancing algorithms for web
+servers that avoids overwhelming servers and aim to utilise the whole performances of a cluster. In
+1988, Kobayashi et al.~\cite{Kobayashi1988} described an algorithm to dynamically load balance a
+parallel ray-tracing system by subdividing the space into cubes, and dispatching them to a hierarchy
+of multiprocessors. This approach has been shown to produce better results than static load
+balancing by \(30 \% \) to \(50 \% \), and scale up to 1728 processors.
 
 Implementing dynamic load balancing starts by choosing a repartitioning scheme. Graph-based
 algorithms model a mesh as a group of nodes connected by edges, and try to partition the nodes while
