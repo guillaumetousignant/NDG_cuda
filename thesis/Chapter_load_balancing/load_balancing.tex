@@ -422,7 +422,17 @@ The ideal workload \(w_{ideal,p}\) of a worker is given by:
 	w_{ideal,p} = W \frac{c_p}{C}.
 \end{equation}
 
-\noindent
+The load imbalance \(L\) of the system is defined as the maximum of each worker's load imbalance
+\(l_p\). A worker's load imbalance is the ratio between its current workload and its ideal workload:
+
+\begin{equation}
+	l_{p} = \frac{w_p}{w_{ideal,p}},
+\end{equation}
+
+\begin{equation}
+	L = \max_{0 \leq p \leq P}{(l_{p})}.
+\end{equation}
+
 The new starting task \(i_{0, p}\) of the worker is given by the new total weight of the previous
 workers.
 
