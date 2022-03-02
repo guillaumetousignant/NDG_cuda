@@ -92,21 +92,21 @@ execution time varies when more resources are assigned to the problem. This is a
 problem, as each problem will have an optimal amount of resources dedicated to it. 
 
 A completely parallelisable program, often called embarrassingly parallel, should scale linearly
-with the amount of resources. The speedup \(S\) of a workload split between \(W\) workers should be
+with the amount of resources. The speedup \(S\) of a workload split between \(P\) workers should be
 equal to the number of workers in Equation~\ref{equ:scaling}. In this work, workers are a single
 \acrshort{acr:GPU} or a single \acrshort{acr:CPU} core for comparative tests.
 
 \begin{equation} \label{equ:scaling}
-	S = \frac{t_1}{t_W}
+	S = \frac{t_1}{t_P}
 \end{equation}
 
 Unfortunately, it is often not possible to make a program entirely parallel. In such cases, dividing
 a problem into more and more smaller tasks obeys the well-known Amdahl's law~\cite{Amdahl1967}, as
 seen in Equation~\ref{equ:strong_scaling}. It splits the program into a sequential part \(s\) and a
-parallel part \(p\), with only the parallel part scaling with the number of workers.
+parallel part \(l\), with only the parallel part scaling with the number of workers.
 
 \begin{equation} \label{equ:strong_scaling}
-	S = \frac{1}{s + \frac{p}{W}}
+	S = \frac{1}{s + \frac{l}{P}}
 \end{equation}
 
 This is called \textit{strong scaling}, where a fixed problem is solved using varying amount of
@@ -117,7 +117,7 @@ argues that modern highly parallel computers will be used to solve more complex 
 solving smaller problems faster. Such a scaling is described with Equation~\ref{equ:weak_scaling}.
 
 \begin{equation} \label{equ:weak_scaling}
-	S = s + p \times W
+	S = s + l \times P
 \end{equation}
 
 This is called \textit{weak scaling}. It describes solving a problem whose size increases with the
@@ -382,7 +382,7 @@ from a size of 1 to 100 in either dimension. The wave stays the same, effectivel
 the lower left corner during the program runtime. The program advances the solution to a simulation
 time of two seconds. The mesh is split into 128 elements in the \(x\) and \(y\) directions, for a
 total of \(K = 16384\) elements. The initial polynomial order is \(N = 4\). The problem is solved
-using four \acrshort{acr:GPU} nodes from the Narval supercomputer, for a total of 16
+using four \acrshort{acr:GPU} nodes from the Narval supercomputer, for a total of \(P = 16\)
 \acrshortpl{acr:GPU}. This initially amounts to 1024 elements per \acrshort{acr:GPU}. The mesh is
 refined every 20 timesteps. In order to prescribe a different load imbalance for different cases,
 they have a different maximum split level \(S\). This parameter controls how many times an element
@@ -457,6 +457,8 @@ order of \(N = 12\).
 % ADD add plot of the rank for S = 7
 
 % Describe table
+Table~\ref{table:load_imbalance} describes the load imbalance of the three cases. \(S\) is the
+maximum number of times an element can split, \(K\) is the number of elements in the mesh
 Where \(K_p\) is the number of elements in process \(p\).
 
 \begin{table}[H]
@@ -478,19 +480,19 @@ Where \(K_p\) is the number of elements in process \(p\).
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_results/media/load_balancing_interval_N4_K16384_A20_P16_S3}
-	\caption{Load balancing efficiency interval test: Simulation time with adaptivity, load balancing and increasing load balancing interval. N = 4, K = 16384, adaptivity interval = 20, W = 16, max split level = 3}\label{fig:load_balancing_efficiency_interval}
+	\caption{Load balancing efficiency interval test: Simulation time with adaptivity, load balancing and increasing load balancing interval. \(N = 4\), \(K_{initial} = 16384\), adaptivity interval = 20, \(P = 16\), \(S = 3\)}\label{fig:load_balancing_efficiency_interval}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_results/media/load_balancing_interval_N4_K16384_A20_P16_S5}
-	\caption{Load balancing efficiency interval test: Simulation time with adaptivity, load balancing and increasing load balancing interval. N = 4, K = 16384, adaptivity interval = 20, W = 16, max split level = 5}\label{fig:load_balancing_efficiency_interval_s5}
+	\caption{Load balancing efficiency interval test: Simulation time with adaptivity, load balancing and increasing load balancing interval. \(N = 4\), \(K_{initial} = 16384\), adaptivity interval = 20, \(P = 16\), \(S = 5\)}\label{fig:load_balancing_efficiency_interval_s5}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_results/media/load_balancing_interval_N4_K16384_A20_P16_S7}
-	\caption{Load balancing efficiency interval test: Simulation time with adaptivity, load balancing and increasing load balancing interval. N = 4, K = 16384, adaptivity interval = 20, W = 16, max split level = 7}\label{fig:load_balancing_efficiency_interval_s7}
+	\caption{Load balancing efficiency interval test: Simulation time with adaptivity, load balancing and increasing load balancing interval. \(N = 4\), \(K_{initial} = 16384\), adaptivity interval = 20, \(P = 16\), \(S = 7\)}\label{fig:load_balancing_efficiency_interval_s7}
 \end{figure}
 
 % Say that the interval depends on the problem size
@@ -500,13 +502,13 @@ Where \(K_p\) is the number of elements in process \(p\).
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_results/media/load_balancing_threshold_N4_K16384_A20_L20_P16_S3}
-	\caption{Load balancing efficiency threshold test: Simulation time with adaptivity, load balancing and increasing load balancing threshold. N = 4, K = 16384, adaptivity interval = 20, load balancing interval = 20, W = 16, max split level = 3}\label{fig:load_balancing_efficiency_threshold_s3}
+	\caption{Load balancing efficiency threshold test: Simulation time with adaptivity, load balancing and increasing load balancing threshold. \(N = 4\), \(K_{initial} = 16384\), adaptivity interval = 20, load balancing interval = 20, \(P = 16\), \(S = 3\)}\label{fig:load_balancing_efficiency_threshold_s3}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_results/media/load_balancing_threshold_N4_K16384_A20_L20_P16_S5}
-	\caption{Load balancing efficiency threshold test: Simulation time with adaptivity, load balancing and increasing load balancing threshold. N = 4, K = 16384, adaptivity interval = 20, load balancing interval = 20, W = 16, max split level = 5}\label{fig:load_balancing_efficiency_threshold_s5}
+	\caption{Load balancing efficiency threshold test: Simulation time with adaptivity, load balancing and increasing load balancing threshold. \(N = 4\), \(K_{initial} = 16384\), adaptivity interval = 20, load balancing interval = 20, \(P = 16\), \(S = 5\)}\label{fig:load_balancing_efficiency_threshold_s5}
 \end{figure}
 
 \subsection{Polynomial order influence}\label{subsection:results:load_balancing_performance:polynomial_order}
@@ -526,7 +528,7 @@ Where \(K_p\) is the number of elements in process \(p\).
 	\hfill
 	\subfloat[\( t = 0.2 s\)]
 	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/cloud_t0_2}\label{fig:cloud_p_t0_2}}
-	\caption{Complex case: A wave goes through a cloud of high pressure. (a) Initial conditions (b) After the wave and cloud collide}\label{fig:cloud_p}
+	\caption{Complex case: A wave goes through a cloud of high pressure. P = 16 (a) Initial conditions (b) After the wave and cloud collide}\label{fig:cloud_p}
 \end{figure}
 
 \begin{figure}[H]
@@ -536,7 +538,7 @@ Where \(K_p\) is the number of elements in process \(p\).
 	\hfill
 	\subfloat[\( t = 0.2 s\)]
 	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/cloud_split_level_t0_2}\label{fig:cloud_s_t0_2}}
-	\caption{Complex case split level: The elements split more where the cloud meets the wave. (a) Start of computation (b) After the wave and cloud collide}\label{fig:cloud_s}
+	\caption{Complex case split level: The elements split more where the cloud meets the wave. P = 16 (a) Start of computation (b) After the wave and cloud collide}\label{fig:cloud_s}
 \end{figure}
 
 \begin{figure}[H]
@@ -546,7 +548,7 @@ Where \(K_p\) is the number of elements in process \(p\).
 	\hfill
 	\subfloat[\( t = 0.2 s\)]
 	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/cloud_N_t0_2}\label{fig:cloud_N_t0_2}}
-	\caption{Complex case N:\@The polynomial order increases more at the center of the cloud and where cloud meets the wave. (a) Start of computation (b) After the wave and cloud collide}\label{fig:cloud_N}
+	\caption{Complex case N:\@The polynomial order increases more at the center of the cloud and where cloud meets the wave. P = 16 (a) Start of computation (b) After the wave and cloud collide}\label{fig:cloud_N}
 \end{figure}
 
 \begin{figure}[H]
@@ -556,7 +558,7 @@ Where \(K_p\) is the number of elements in process \(p\).
 	\hfill
 	\subfloat[\( t = 0.2 s\)]
 	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/cloud_rank_t0_2}\label{fig:cloud_rank_t0_2}}
-	\caption{Complex case rank: As the mesh is refined load imbalance can occur, and elements are sent from one \acrshort{acr:GPU} to another when load balancing. (a) Start of computation (b) After the wave and cloud collide}\label{fig:cloud_rank}
+	\caption{Complex case rank: As the mesh is refined load imbalance can occur, and elements are sent from one \acrshort{acr:GPU} to another when load balancing. P = 16 (a) Start of computation (b) After the wave and cloud collide}\label{fig:cloud_rank}
 \end{figure}
 
 \section{Complex Meshes}\label{section:results:complex_meshes}
@@ -592,5 +594,5 @@ Where \(K_p\) is the number of elements in process \(p\).
 	\subfloat[N]
 	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/airfoil_N_t1_5}\label{fig:complex_mesh_N}}
 
-	\caption{Complex mesh: A wave going over an airfoil. (a) Pressure (b) Pressure \(\sigma \), denoting if h-refinement or p-refinement would be chosen (c) Split level, denoting how many times elements have split (d) Polynomial order \(N\)}\label{fig:complex_mesh_solution}
+	\caption{Complex mesh: A wave going over an airfoil. P = 4 (a) Pressure (b) Pressure \(\sigma \), denoting if h-refinement or p-refinement would be chosen (c) Split level, denoting how many times elements have split (d) Polynomial order \(N\)}\label{fig:complex_mesh_solution}
 \end{figure}

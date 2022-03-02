@@ -391,13 +391,13 @@ curve is shown in Green to access the quality of the ordering.
 Now that the problem can be partitioned in one dimension, we can begin redistributing elements to
 level out the workload between the different worker \acrshortpl{acr:GPU}. We use \acrlong{acr:CCP},
 where a linear list of \(N\) tasks \(i\) have associated weights \(w_i\). This list of tasks is then
-split into \(K\) parts, equal to the number of workers \(k\). Each worker has a capacity \(c_k\),
-indicating the relative workload it can execute.
+split into \(P\) parts, equal to the number of workers \(P\). Each worker \(p\) has a capacity
+\(c_p\), indicating the relative workload it can execute.
 
-To repartition, each worker sums the total weight of the \(I_k\) tasks it contains, \(w_k\).
+To repartition, each worker sums the total weight of the \(I_p\) tasks it contains, \(w_p\).
 
 \begin{equation}
-	w_k = \sum_{i = 0}^{I}w_i
+	w_p = \sum_{i = 0}^{I_p}w_i
 \end{equation}
 
 \noindent
@@ -405,29 +405,29 @@ The total amount of work in the problem \(W\) is obtained by adding up the total
 worker.
 
 \begin{equation}
-	W = \sum_{k = 0}^{K}w_k
+	W = \sum_{p = 0}^{p}w_p
 \end{equation}
 
 \noindent
 Similarly, the total capacity of the system is summed.
 
 \begin{equation}
-	C = \sum_{k = 0}^{K}c_k
+	C = \sum_{p = 0}^{P}c_p
 \end{equation}
 
 \noindent
-The ideal workload \(w_{ideal,k}\) of a worker is given by:
+The ideal workload \(w_{ideal,p}\) of a worker is given by:
 
 \begin{equation}
-	w_{ideal,k} = W \frac{c_k}{C}.
+	w_{ideal,p} = W \frac{c_p}{C}.
 \end{equation}
 
 \noindent
-The new starting task \(i_{0, k}\) of the worker is given by the new total weight of the previous
+The new starting task \(i_{0, p}\) of the worker is given by the new total weight of the previous
 workers.
 
 \begin{equation}
-	i_{0, k} = \sum_{j = 0}^{k - 1}w_{ideal,j}
+	i_{0, p} = \sum_{j = 0}^{p - 1}w_{ideal,j}
 \end{equation}
 
 Tables~\ref{table:before_repartition} and~\ref{table:after_repartition} provide an example of
@@ -437,9 +437,9 @@ repartitioning between four workers using this method.
 	\begin{center}
 		\begin{tabular}{ | c | c | c | c | c | c | c | c | c | c | c | c | c | c | c | c | c | } 
 			\hline
-			worker \(k\) & \multicolumn{4}{c|}{\cellcolor{vs_lightgreen}0} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}1} & \multicolumn{4}{c|}{\cellcolor{vs_lightred}2} & \multicolumn{4}{c|}{\cellcolor{vs_lightplum}3}  \\
+			worker \(p\) & \multicolumn{4}{c|}{\cellcolor{vs_lightgreen}0} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}1} & \multicolumn{4}{c|}{\cellcolor{vs_lightred}2} & \multicolumn{4}{c|}{\cellcolor{vs_lightplum}3}  \\
 			\hline
-			capacity \(c_k\) & \multicolumn{4}{c|}{\cellcolor{vs_lightgreen}2} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}2} & \multicolumn{4}{c|}{\cellcolor{vs_lightred}1} & \multicolumn{4}{c|}{\cellcolor{vs_lightplum}1}  \\
+			capacity \(c_p\) & \multicolumn{4}{c|}{\cellcolor{vs_lightgreen}2} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}2} & \multicolumn{4}{c|}{\cellcolor{vs_lightred}1} & \multicolumn{4}{c|}{\cellcolor{vs_lightplum}1}  \\
 			\hline
 			global id & \cellcolor{vs_lightgreen}0 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}2 & \cellcolor{vs_lightgreen}3 & \cellcolor{vs_lightblue}4 & \cellcolor{vs_lightblue}5 & \cellcolor{vs_lightblue}6 & \cellcolor{vs_lightblue}7 & \cellcolor{vs_lightred}8 & \cellcolor{vs_lightred}9 & \cellcolor{vs_lightred}10 & \cellcolor{vs_lightred}11 & \cellcolor{vs_lightplum}12 & \cellcolor{vs_lightplum}13 & \cellcolor{vs_lightplum}14 & \cellcolor{vs_lightplum}15 \\ 
 			\hline
@@ -447,9 +447,9 @@ repartitioning between four workers using this method.
 			\hline
 			weight \(w_i\) & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightblue}2 & \cellcolor{vs_lightblue}2 & \cellcolor{vs_lightblue}3 & \cellcolor{vs_lightblue}2 & \cellcolor{vs_lightred}2 & \cellcolor{vs_lightred}1 & \cellcolor{vs_lightred}2 & \cellcolor{vs_lightred}1 & \cellcolor{vs_lightplum}1 & \cellcolor{vs_lightplum}1 & \cellcolor{vs_lightplum}2 & \cellcolor{vs_lightplum}1 \\ 
 			\hline
-			total weight \(w_k\) & \multicolumn{4}{c|}{\cellcolor{vs_lightgreen}4} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}9} & \multicolumn{4}{c|}{\cellcolor{vs_lightred}6} & \multicolumn{4}{c|}{\cellcolor{vs_lightplum}5} \\ 
+			total weight \(w_p\) & \multicolumn{4}{c|}{\cellcolor{vs_lightgreen}4} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}9} & \multicolumn{4}{c|}{\cellcolor{vs_lightred}6} & \multicolumn{4}{c|}{\cellcolor{vs_lightplum}5} \\ 
 			\hline
-			ideal weight \(w_{ideal,k}\) & \multicolumn{4}{c|}{\cellcolor{vs_lightgreen}8} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}8} & \multicolumn{4}{c|}{\cellcolor{vs_lightred}4} & \multicolumn{4}{c|}{\cellcolor{vs_lightplum}4} \\ 
+			ideal weight \(w_{ideal,p}\) & \multicolumn{4}{c|}{\cellcolor{vs_lightgreen}8} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}8} & \multicolumn{4}{c|}{\cellcolor{vs_lightred}4} & \multicolumn{4}{c|}{\cellcolor{vs_lightplum}4} \\ 
 			\hline
 		\end{tabular}
 	
@@ -463,9 +463,9 @@ We repartition the problem, so that the workers have a weight closer to their id
 	\begin{center}
 		\begin{tabular}{ | c | c | c | c | c | c | c | c | c | c | c | c | c | c | c | c | c | } 
 			\hline
-			worker \(k\) & \multicolumn{6}{c|}{\cellcolor{vs_lightgreen}0} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}1} & \multicolumn{3}{c|}{\cellcolor{vs_lightred}2} & \multicolumn{3}{c|}{\cellcolor{vs_lightplum}3}  \\
+			worker \(p\) & \multicolumn{6}{c|}{\cellcolor{vs_lightgreen}0} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}1} & \multicolumn{3}{c|}{\cellcolor{vs_lightred}2} & \multicolumn{3}{c|}{\cellcolor{vs_lightplum}3}  \\
 			\hline
-			capacity \(c_k\) & \multicolumn{6}{c|}{\cellcolor{vs_lightgreen}2} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}2} & \multicolumn{3}{c|}{\cellcolor{vs_lightred}1} & \multicolumn{3}{c|}{\cellcolor{vs_lightplum}1}  \\
+			capacity \(c_p\) & \multicolumn{6}{c|}{\cellcolor{vs_lightgreen}2} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}2} & \multicolumn{3}{c|}{\cellcolor{vs_lightred}1} & \multicolumn{3}{c|}{\cellcolor{vs_lightplum}1}  \\
 			\hline
 			global id & \cellcolor{vs_lightgreen}0 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}2 & \cellcolor{vs_lightgreen}3 & \cellcolor{vs_lightgreen}4 & \cellcolor{vs_lightgreen}5 & \cellcolor{vs_lightblue}6 & \cellcolor{vs_lightblue}7 & \cellcolor{vs_lightblue}8 & \cellcolor{vs_lightblue}9 & \cellcolor{vs_lightred}10 & \cellcolor{vs_lightred}11 & \cellcolor{vs_lightred}12 & \cellcolor{vs_lightplum}13 & \cellcolor{vs_lightplum}14 & \cellcolor{vs_lightplum}15 \\ 
 			\hline
@@ -473,9 +473,9 @@ We repartition the problem, so that the workers have a weight closer to their id
 			\hline
 			weight \(w_i\) & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}2 & \cellcolor{vs_lightgreen}2 & \cellcolor{vs_lightblue}3 & \cellcolor{vs_lightblue}2 & \cellcolor{vs_lightblue}2 & \cellcolor{vs_lightblue}1 & \cellcolor{vs_lightred}2 & \cellcolor{vs_lightred}1 & \cellcolor{vs_lightred}1 & \cellcolor{vs_lightplum}1 & \cellcolor{vs_lightplum}2 & \cellcolor{vs_lightplum}1 \\ 
 			\hline
-			total weight \(w_k\) & \multicolumn{6}{c|}{\cellcolor{vs_lightgreen}8} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}8} & \multicolumn{3}{c|}{\cellcolor{vs_lightred}4} & \multicolumn{3}{c|}{\cellcolor{vs_lightplum}4} \\ 
+			total weight \(w_p\) & \multicolumn{6}{c|}{\cellcolor{vs_lightgreen}8} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}8} & \multicolumn{3}{c|}{\cellcolor{vs_lightred}4} & \multicolumn{3}{c|}{\cellcolor{vs_lightplum}4} \\ 
 			\hline
-			ideal weight \(w_{ideal,k}\) & \multicolumn{6}{c|}{\cellcolor{vs_lightgreen}8} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}8} & \multicolumn{3}{c|}{\cellcolor{vs_lightred}4} & \multicolumn{3}{c|}{\cellcolor{vs_lightplum}4} \\ 
+			ideal weight \(w_{ideal,p}\) & \multicolumn{6}{c|}{\cellcolor{vs_lightgreen}8} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}8} & \multicolumn{3}{c|}{\cellcolor{vs_lightred}4} & \multicolumn{3}{c|}{\cellcolor{vs_lightplum}4} \\ 
 			\hline
 		\end{tabular}
 	
