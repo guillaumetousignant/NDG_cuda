@@ -291,10 +291,10 @@ We compare those simulation to two non-adaptive cases. In the first case, the in
 refined uniformly up to the maximum level attained by the adaptive cases. The mesh is split into 128
 elements in the \(x\) and \(y\) dimensions, for  \(K = 16384\), with a polynomial order  \(N\) of
 10. It is shown as a dashed line on the figures. The second non-adaptive case aims to obtain a
-maximum error similar to the adaptive case. The mesh is split into 32 elements in the \(x\) and
-\(y\) dimensions, for  \(K = 1024\), with a polynomial order  \(N\) of 10. It is shown as a dotted
-line on the figures. Both the simulation time and the error against the analytical solution are
-compared.
+maximum error similar to the adaptive case. The mesh refined uniformly to 32 elements in the \(x\)
+and \(y\) dimensions, for  \(K = 1024\), with a polynomial order  \(N\) of 10. It is shown as a
+dotted line on the figures. Both the simulation time and the error against the analytical solution
+are compared.
 
 \begin{figure}[H]
 	\centering
@@ -357,9 +357,19 @@ interval is increased to 100, as on Figure~\ref{fig:adaptivity_efficiency_C100_t
 adaptive solution with three to five pre-condition steps is around \(750 \times \) faster, at the
 expense of a worse error compared to the 50 adaptivity interval case.
 
-As for the similar maximum error case, shown with dotted lines, the results are closer.
+As for the similar maximum error non-adaptive case, shown with dotted lines, the results are closer.
+The case with an adaptivity interval of 20 on Figure~\ref{fig:adaptivity_efficiency_C20} was used to
+set the target error for that non-adaptive case. In this comparison, it can be observed that the
+adaptive case starting from a coarse mesh is able to reach a maximum error only 14\% greater than
+the non-adaptive case, while being 34\% faster. The other cases also attain the error estimation
+target of \num{1e-6} while being faster.
 
-% Something about non-adaptive cases being a best-case (lol) for GPUs
+It is to be noted that the non-adaptive cases are closer to being optimal for the \acrshort{acr:GPU}
+architecture. 
+% Something about non-adaptive cases being a best-case (lol) for GPUs. No branching and divergence,
+% cite non-conforming interfaces, N,same number of neighbours
+
+% Compare the different intervals and steps, select best and add wrap up plot
 
 \section{Dynamic Load Balancing Performance}\label{section:results:load_balancing_performance}
 % Runtime adaptive with and without load balancing
@@ -525,6 +535,10 @@ Max split level \(S\). Where \(K_p\) is the number of elements in process \(p\).
 \end{figure}
 
 \section{Complex Meshes}\label{section:results:complex_meshes}
+
+% explain case
+% explain what it shows
+% add profiling table
 
 \begin{figure}[H]
 	\centering
