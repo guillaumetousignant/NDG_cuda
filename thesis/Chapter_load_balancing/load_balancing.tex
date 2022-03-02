@@ -433,6 +433,13 @@ The load imbalance \(L\) of the system is defined as the maximum of each worker'
 	L = \max_{0 \leq p \leq P}{(l_{p})}.
 \end{equation}
 
+\noindent
+The parallel load efficiency \(E\) is the reciprocal of the load imbalance:
+
+\begin{equation}
+	E = \frac{1}{L}.
+\end{equation}
+
 The new starting task \(i_{0, p}\) of the worker is given by the new total weight of the previous
 workers.
 
@@ -620,6 +627,29 @@ the two processes.
 	{\includesvg[width=0.6\textwidth]{Chapter_load_balancing/media/mesh_1_after0_lb_legend}\label{fig:lb_after_1}}
 	\caption{Mesh after load balancing: The two blocks have an equal numbers of elements. (a) First process (b) Second process}\label{fig:lb_after}
 \end{figure}
+
+\section{Load Balancing Criteria}\label{section:load_balancing:criteria}
+
+Dynamic load balancing is a costly process, especially when using \acrshortpl{acr:GPU}. Transfers
+between \acrshortpl{acr:GPU} are expensive, as is reallocating memory for arrays that change size.
+Load balancing at every occasion would needlessly waste ressources than could be used to solve the
+program. A balance has to be established between having an optimal mesh for a longer part of the
+computation against load balancing less often and saving the load balancing processing time.
+
+Two approaches are studied in this work to alleviate this problem. The first approach is to load
+balance the mesh at an interval. If the mesh is not refined after each \acrshort{acr:AMR} step, but
+every few \acrshort{acr:AMR} steps, computation time can be saved on the load balancing routine. On
+the other hand, the mesh may be unbalanced between these steps. If a particularly large number of
+elements are refined at a time, a significant load imbalance can persist until the next load
+balancing step.
+
+The second approach is to set an acceptable load imbalance, under which the mesh will not be load
+balanced. After adapting, if the load imbalance \(L\) is below that threshold, the mesh will not be
+load balanced. This means that the mesh will only be load balanced when it is really needed. The
+disadvantage is that the load imbalance could stay slightly below that threshold indefinitely,
+leaving the program with a slightly non-optimal mesh for large parts of its runtime.
+
+The two approaches are compared in Section~\ref{section:results:load_balancing_performance}.
 
 \section{Implementation}\label{section:load_balancing:implementation}
 
