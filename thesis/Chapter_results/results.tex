@@ -288,7 +288,7 @@ is the sum of the time taken up by the pre-condition of the mesh, shown in green
 computation time to solve the problem, shown in yellow. 
 
 We compare those simulation to two non-adaptive cases. In the first case, the initial mesh is fully
-refined uniformly up to the maximum level attained by the adaptive case. The mesh is split into 128
+refined uniformly up to the maximum level attained by the adaptive cases. The mesh is split into 128
 elements in the \(x\) and \(y\) dimensions, for  \(K = 16384\), with a polynomial order  \(N\) of
 10. It is shown as a dashed line on the figures. The second non-adaptive case aims to obtain a
 maximum error similar to the adaptive case. The mesh is split into 32 elements in the \(x\) and
@@ -299,39 +299,39 @@ compared.
 \begin{figure}[H]
 	\centering
 	\subfloat[Solution time]
-	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_time_N4_K16_C5}}
+	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_time_N4_K16_C5}\label{fig:adaptivity_efficiency_C5_time}}
 	\subfloat[Maximum error]
-	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_C5}}
+	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_C5}\label{fig:adaptivity_efficiency_C5_error}}
 	\caption{Adaptivity efficiency: Simulation time and analytical error with adaptivity and increasing pre-processing steps. N = 4, K = 16, adaptivity interval = 5}\label{fig:adaptivity_efficiency_C5}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\subfloat[Solution time]
-	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_time_N4_K16_C20}}
+	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_time_N4_K16_C20}\label{fig:adaptivity_efficiency_C20_time}}
 	\hfill
 	\subfloat[Maximum error]
-	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_C20}}
+	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_C20}\label{fig:adaptivity_efficiency_C20_error}}
 	\caption{Adaptivity efficiency: Simulation time and analytical error with adaptivity and increasing pre-processing steps. N = 4, K = 16, adaptivity interval = 20}\label{fig:adaptivity_efficiency_C20}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\subfloat[Solution time]
-	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_time_N4_K16_C100}}
+	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_time_N4_K16_C100}\label{fig:adaptivity_efficiency_C100_time}}
 	\hfill
 	\subfloat[Maximum error]
-	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_C100}}
+	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_C100}\label{fig:adaptivity_efficiency_C100_error}}
 	\caption{Adaptivity efficiency: Simulation time and analytical error with adaptivity and increasing pre-processing steps. N = 4, K = 16, adaptivity interval = 100}\label{fig:adaptivity_efficiency_C100}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\subfloat[Solution time]
-	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_time_N4_K16_C500}}
+	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_time_N4_K16_C500}\label{fig:adaptivity_efficiency_C500_time}}
 	\hfill
 	\subfloat[Maximum error]
-	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_C500}}
+	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_C500}\label{fig:adaptivity_efficiency_C500_error}}
 	\caption{Adaptivity efficiency: Simulation time and analytical error with adaptivity and increasing pre-processing steps. N = 4, K = 16, adaptivity interval = 500}\label{fig:adaptivity_efficiency_C500}
 \end{figure}
 
@@ -340,13 +340,31 @@ Figures~\ref{fig:adaptivity_efficiency_C5},~\ref{fig:adaptivity_efficiency_C20},
 and~\ref{fig:adaptivity_efficiency_C500}, we can see that this is an optimisation problem, with
 tradeoffs between the simulation time and the error generated.
 
-In all cases, without pre-conditioning, increasing the adaptivity interval reduces the simulation
-time, but increases error. Even with 
+An important part of the error comes from the initial conditions being applied on too coarse a mesh.
+Even if the mesh is refined, this error propagates through the domain. Pre-conditioning, as
+described in Section~\ref{section:adaptive_mesh_refinement:pre_conditioning}, aims to alleviate this
+problem. Indeed, with enough pre-condition steps all cases converge to an acceptable error. Adding
+more pre-condition steps does not improve the results, as the error estimation threshold of
+\num{1e-6} is likely reached.
+
+It can be observed that the fully refined non-adaptive case, shown in dashed lines on
+Figures~\ref{fig:adaptivity_efficiency_C5},~\ref{fig:adaptivity_efficiency_C20},~\ref{fig:adaptivity_efficiency_C100}
+and~\ref{fig:adaptivity_efficiency_C500}, is prohibitively time consuming to compute. The solution
+is well resolved as shown on Figure~\ref{fig:adaptivity_efficiency_C20_error}, with the analytical
+solution error being \(19 \times \) smaller than the adaptive case. On the other hand, it takes
+\(271 \times \) as much time to compute. The difference is even more pronounced when the adaptivity
+interval is increased to 100, as on Figure~\ref{fig:adaptivity_efficiency_C100_time}, where the
+adaptive solution with three to five pre-condition steps is around \(750 \times \) faster, at the
+expense of a worse error compared to the 50 adaptivity interval case.
+
+As for the similar maximum error case, shown with dotted lines, the results are closer.
+
+% Something about non-adaptive cases being a best-case (lol) for GPUs
 
 \section{Dynamic Load Balancing Performance}\label{section:results:load_balancing_performance}
 % Runtime adaptive with and without load balancing
 
-Max split level  \(S\). Where  \(K_p\) is the number of elements in process  \(p\).
+Max split level \(S\). Where \(K_p\) is the number of elements in process \(p\).
 
 \begin{figure}[H]
 	\centering

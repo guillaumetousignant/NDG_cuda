@@ -147,6 +147,7 @@ save_path = Path(__file__).parent.parent / "media"
 save_path.mkdir(parents=True, exist_ok=True)
 
 data_width = 3
+data_width_small = 2
 ideal_width = 3
 cpu_colour = np.array([244, 71, 71])/255
 gpu_colour = np.array([79, 193, 255])/255
@@ -157,6 +158,7 @@ solving_colour = np.array([215, 186, 125])/255
 pre_condition_colour = np.array([181, 206, 168])/255
 N_colour = np.array([78, 201, 176])/255
 data_size = 12
+data_size_small = 8
 data_shape = "o"
 solving_shape = "X"
 pre_condition_shape = ">"
@@ -167,8 +169,8 @@ same_error_style = ":"
 for i in range(N.shape[0]):
     fig = plt.figure(figsize=(5, 4.5))
     ax = fig.add_subplot(1, 1, 1)
-    ax.set_xlabel("Number of nodes [-]")
-    ax.set_ylabel("Time [s]")
+    ax.set_xlabel("log(number of nodes) [-]")
+    ax.set_ylabel("log(time) [s]")
     title = f"Strong scaling, N = {N[i]} K = {K[i]} W = {W[i]}"
     fig.canvas.manager.set_window_title(title)
     ax.grid()
@@ -190,7 +192,7 @@ for i in range(N.shape[0]):
 for i in range(N_weak.shape[0]):
     fig = plt.figure(figsize=(5, 4.5))
     ax = fig.add_subplot(1, 1, 1)
-    ax.set_xlabel("Number of nodes [-]")
+    ax.set_xlabel("log(number of nodes) [-]")
     ax.set_ylabel("Time [s]")
     title = f"Weak scaling, N = {N_weak[i]} K = {K_weak[i]}/proc W = {W_weak[i]}"
     fig.canvas.manager.set_window_title(title)
@@ -216,14 +218,14 @@ for i in range(adaptivity_interval.shape[0]):
     fig = plt.figure(figsize=(5.5, 4.5))
     ax = fig.add_subplot(1, 1, 1)
     ax.set_xlabel("Number of pre-condition adaptivity steps [-]")
-    ax.set_ylabel("Time [s]")
+    ax.set_ylabel("log(time) [s]")
     title = f"Adaptivity performance time, N = {adaptivity_N[i]} K = {adaptivity_K[i]} A = {adaptivity_interval[i]}"
     fig.canvas.manager.set_window_title(title)
     ax.grid()
 
     ax.semilogy(adaptivity_C[i, :], adaptivity_solving_t_iterative[i, :], color=solving_colour, linewidth=data_width, marker=solving_shape, markersize=data_size, label="solving time")
     ax.semilogy(adaptivity_C[i, 1:], adaptivity_condition_t_iterative[i, 1:], color=pre_condition_colour, linewidth=data_width, marker=pre_condition_shape, markersize=data_size, label="pre-condition time")
-    ax.semilogy(adaptivity_C[i, :], adaptivity_t_iterative[i, :], color=gpu_colour, linewidth=data_width, marker=data_shape, markersize=data_size, label="total time")
+    ax.semilogy(adaptivity_C[i, :], adaptivity_t_iterative[i, :], color=gpu_colour, linewidth=data_width_small, marker=data_shape, markersize=data_size_small, label="total time")
     ax.semilogy(adaptivity_baseline_C[i, :], [adaptivity_baseline_t[i], adaptivity_baseline_t[i]], color=gpu_colour, linewidth=data_width, linestyle=ideal_style, label="non-adaptive fully refined total time")
     ax.semilogy(adaptivity_baseline_C[i, :], [adaptivity_same_error_t[i], adaptivity_same_error_t[i]], color=gpu_colour, linewidth=data_width, linestyle=same_error_style, label="non-adaptive similar error total time")
 
@@ -235,7 +237,7 @@ for i in range(adaptivity_interval.shape[0]):
     error_fig = plt.figure(figsize=(5.5, 4.5))
     error_ax = error_fig.add_subplot(1, 1, 1)
     error_ax.set_xlabel("Number of pre-condition adaptivity steps [-]")
-    error_ax.set_ylabel("Analytical solution error [-]")
+    error_ax.set_ylabel("log(analytical solution error) [-]")
     error_title = f"Adaptivity performance error, N = {adaptivity_N[i]} K = {adaptivity_K[i]} A = {adaptivity_interval[i]}"
     error_fig.canvas.manager.set_window_title(error_title)
     error_ax.grid()
