@@ -296,6 +296,8 @@ and \(y\) dimensions, for  \(K = 1024\), with a polynomial order  \(N\) of 10. I
 dotted line on the figures. Both the simulation time and the error against the analytical solution
 are compared.
 
+% say on what it was run
+
 \begin{figure}[H]
 	\centering
 	\subfloat[Solution time]
@@ -365,16 +367,32 @@ the non-adaptive case, while being 34\% faster. The other cases also attain the 
 target of \num{1e-6} while being faster.
 
 It is to be noted that the non-adaptive cases are closer to being optimal for the \acrshort{acr:GPU}
-architecture. 
+architecture. The
 % Something about non-adaptive cases being a best-case (lol) for GPUs. No branching and divergence,
-% cite non-conforming interfaces, N,same number of neighbours
+% cite non-conforming interfaces, N, same number of neighbours
 
 % Compare the different intervals and steps, select best and add wrap up plot
 
 \section{Dynamic Load Balancing Performance}\label{section:results:load_balancing_performance}
-% Runtime adaptive with and without load balancing
 
-Max split level \(S\). Where \(K_p\) is the number of elements in process \(p\).
+This section is dedicated to benchmarking the dynamic load balancing module of the program in
+adaptive cases where varying levels of load imbalance are generated. The sample problem is the same
+as described in Section~\ref{section:results:test_case}, except that the domain size is increased
+from a size of 1 to 100 in either dimension. The wave stays the same, effectively only staying in
+the lower left corner during the program runtime. The program advances the solution to a simulation
+time of two seconds. The mesh is split into 128 elements in the \(x\) and \(y\) directions, for a
+total of \(K = 16384\) elements. The initial polynomial order is \(N = 4\). The problem is solved
+using four \acrshort{acr:GPU} nodes from the Narval supercomputer, for a total of 16
+\acrshortpl{acr:GPU}. This initially amounts to 1024 elements per \acrshort{acr:GPU}. The mesh is
+refined every 20 timesteps. In order to prescribe a different load imbalance for different cases,
+they have a different maximum split level \(S\). This parameter controls how many times an element
+can h-refine. Three cases are presented, a low load imbalance case with \(S = 3\) shown in
+Figures~\ref{fig:load_imbalance_case_low_p} and~\ref{fig:load_imbalance_case_low_s}, a medium load
+imbalance case with \(S = 5\) shown in Figures~\ref{fig:load_imbalance_case_medium_p}
+and~\ref{fig:load_imbalance_case_medium_s}, and a high load imbalance case with \(S = 7\) shown in
+Figures~\ref{fig:load_imbalance_case_high_p} and~\ref{fig:load_imbalance_case_high_s}. The different
+cases are allowed to refine up to their respective maximum split level \(S\), and up to a polynomial
+order of \(N = 12\). 
 
 \begin{figure}[H]
 	\centering
@@ -436,6 +454,9 @@ Max split level \(S\). Where \(K_p\) is the number of elements in process \(p\).
 	\caption{High load imbalance test case split level: Split level, indicating how many times the elements have split, only the bottom right refines. (a) Complete domain (b) Area of interest}\label{fig:load_imbalance_case_high_s}
 \end{figure}
 
+% Describe table
+Where \(K_p\) is the number of elements in process \(p\).
+
 \begin{table}[H]
 	\centering
 	\begin{tabular}{ c c c c c c c }
@@ -447,6 +468,8 @@ Max split level \(S\). Where \(K_p\) is the number of elements in process \(p\).
 	\end{tabular}
 	\caption{Load imbalance cases.}\label{table:load_imbalance}
 \end{table}
+
+% Describe two strategies
 
 \subsection{Load balancing interval}\label{subsection:results:load_balancing_performance:interval}
 
