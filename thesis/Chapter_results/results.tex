@@ -491,7 +491,6 @@ order of \(N = 12\).
 	\caption{High load imbalance (\(S = 7\)) test case split level: Split level, indicating how many times the elements have split, only the bottom right refines. \(K_{initial} = 16384\), \(K_{final} = 54837\) (a) Complete domain (b) Area of interest}\label{fig:load_imbalance_case_high_s}
 \end{figure}
 
-% Describe table
 Table~\ref{table:load_imbalance} describes the load imbalance of the three cases. \(S\) is the
 maximum number of times an element can split, \(K\) is the number of elements in the mesh, \(K_p\)
 is the number of elements in process \(p\), \(w_{ideal}\) is the number of elements in a process if
@@ -511,62 +510,108 @@ Equation~\ref{equ:load_imbalance}.
 \end{table}
 
 We will compare two approaches to choose when to load balance the mesh, as described in
-Section~\ref{section:load_balancing:criteria}. 
-
-% Describe two strategies
-% say when is equivalent to load balancing every adaptivity
+Section~\ref{section:load_balancing:criteria}. We compare the three cases above with and without
+load balancing.
 
 \subsection{Load balancing interval}\label{subsection:results:load_balancing_performance:interval}
+
+We start by varying the load balancing interval for the three cases in
+Figures~\ref{fig:load_balancing_efficiency_interval},~\ref{fig:load_balancing_efficiency_interval_s5}
+and~\ref{fig:load_balancing_efficiency_interval_s7}. Since we refine the mesh every 20 time steps, a
+load balancing interval of 20 is equivalent to load balancing the mesh every time we refine it, up
+to every 50 times we refine for a load balancing interval of 1000. The dashed line represents the
+performance without load balancing.
 
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_results/media/load_balancing_interval_N4_K16384_A20_P16_S3}
-	\caption{Load balancing performance interval test: Simulation time with refinement, load balancing and increasing load balancing interval. \(N = 4\), \(K_{initial} = 16384\), refinement interval = 20, \(P = 16\), \(S = 3\)}\label{fig:load_balancing_efficiency_interval}
+	\caption{Low load imbalance load balancing performance interval test: Simulation time with refinement and load balancing while increasing load balancing interval. \(N = 4\), \(K_{initial} = 16384\), refinement interval = 20, \(P = 16\), \(S = 3\)}\label{fig:load_balancing_efficiency_interval}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_results/media/load_balancing_interval_N4_K16384_A20_P16_S5}
-	\caption{Load balancing performance interval test: Simulation time with refinement, load balancing and increasing load balancing interval. \(N = 4\), \(K_{initial} = 16384\), refinement interval = 20, \(P = 16\), \(S = 5\)}\label{fig:load_balancing_efficiency_interval_s5}
+	\caption{Medium imbalance load balancing performance interval test: Simulation time with refinement and load balancing while increasing load balancing interval. \(N = 4\), \(K_{initial} = 16384\), refinement interval = 20, \(P = 16\), \(S = 5\)}\label{fig:load_balancing_efficiency_interval_s5}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_results/media/load_balancing_interval_N4_K16384_A20_P16_S7}
-	\caption{Load balancing performance interval test: Simulation time with refinement, load balancing and increasing load balancing interval. \(N = 4\), \(K_{initial} = 16384\), refinement interval = 20, \(P = 16\), \(S = 7\)}\label{fig:load_balancing_efficiency_interval_s7}
+	\caption{High load imbalance load balancing performance interval test: Simulation time with refinement and load balancing while increasing load balancing interval. \(N = 4\), \(K_{initial} = 16384\), refinement interval = 20, \(P = 16\), \(S = 7\)}\label{fig:load_balancing_efficiency_interval_s7}
 \end{figure}
 
-% Say that the interval depends on the problem size
-
 \subsection{Load balancing threshold}\label{subsection:results:load_balancing_performance:threshold}
+
+We then use an allowable load imbalance threshold to choose when to perform load balancing, as
+described in Section~\ref{section:load_balancing:criteria}. This means we assess the load imbalance
+\(L\) of the mesh after each refinement step, and we only perform load balancing if it is above a
+certain threshold. We start with a threshold of \(1\), equivalent to load balancing after every
+refinement step no matter what, to \(2\), equivalent to load balancing only if a \acrshort{acr:GPU}
+has twice of more the amount it would have if the mesh was perfectly balanced. The same three load
+imbalance cases are shown in
+Figures~\ref{fig:load_balancing_efficiency_threshold_s3},~\ref{fig:load_balancing_efficiency_threshold_s5},
+and~\ref{fig:load_balancing_efficiency_threshold_s7}.
 
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_results/media/load_balancing_threshold_N4_K16384_A20_L20_P16_S3}
-	\caption{Load balancing performance threshold test: Simulation time with refinement, load balancing and increasing load balancing threshold. \(N = 4\), \(K_{initial} = 16384\), refinement interval = 20, load balancing interval = 20, \(P = 16\), \(S = 3\)}\label{fig:load_balancing_efficiency_threshold_s3}
+	\caption{Low load imbalance load balancing performance threshold test: Simulation time with refinement and load balancing while increasing load balancing threshold. \(N = 4\), \(K_{initial} = 16384\), refinement interval = 20, load balancing interval = 20, \(P = 16\), \(S = 3\)}\label{fig:load_balancing_efficiency_threshold_s3}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_results/media/load_balancing_threshold_N4_K16384_A20_L20_P16_S5}
-	\caption{Load balancing performance threshold test: Simulation time with refinement, load balancing and increasing load balancing threshold. \(N = 4\), \(K_{initial} = 16384\), refinement interval = 20, load balancing interval = 20, \(P = 16\), \(S = 5\)}\label{fig:load_balancing_efficiency_threshold_s5}
+	\caption{Medium load imbalance load balancing performance threshold test: Simulation time with refinement and load balancing while increasing load balancing threshold. \(N = 4\), \(K_{initial} = 16384\), refinement interval = 20, load balancing interval = 20, \(P = 16\), \(S = 5\)}\label{fig:load_balancing_efficiency_threshold_s5}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_results/media/load_balancing_threshold_N4_K16384_A20_L20_P16_S7}
-	\caption{Load balancing performance threshold test: Simulation time with refinement, load balancing and increasing load balancing threshold. \(N = 4\), \(K_{initial} = 16384\), refinement interval = 20, load balancing interval = 20, \(P = 16\), \(S = 7\)}\label{fig:load_balancing_efficiency_threshold_s7}
+	\caption{High load imbalance load balancing performance threshold test: Simulation time with refinement and load balancing while increasing load balancing threshold. \(N = 4\), \(K_{initial} = 16384\), refinement interval = 20, load balancing interval = 20, \(P = 16\), \(S = 7\)}\label{fig:load_balancing_efficiency_threshold_s7}
 \end{figure}
 
 \subsection{Overall load balancing performance}\label{subsection:results:load_balancing_performance:overall}
 
+From the results of Subsections~\ref{subsection:results:load_balancing_performance:interval}
+and~\ref{subsection:results:load_balancing_performance:threshold}, we observe that load balancing at
+every occasion incurs a significant performance penality, even performing worse than the non
+load-balanced case in the low load imbalance case, in
+Figures~\ref{fig:load_balancing_efficiency_interval}
+and~\ref{fig:load_balancing_efficiency_threshold_s3}. The two other cases also show worse
+performance with a low load balancing interval or load imbalance threshold. This is because the
+dynamic load balancing process is expensive, especially since we are using \acrshortpl{acr:GPU},
+because of the numerous data transfers and memory allocations performed. We must choose judiciously
+our load balancing strategy. 
+
+The performance increases as we space out load balancing, either by
+increasing the load balancing interval, or by increasing the load imbalance threshold, up to a
+point. Past that point, an interval of 1000 or a threshold of \(2\) in this case, the performance
+goes down due to the mesh being more imbalanced for longer periods of time.
+
+The load imbalance threshold strategy from
+Subsection~\ref{subsection:results:load_balancing_performance:threshold} gives better results, with
+the performance reaching its maximum much faster when increasing the threshold and staying high
+longer than the load balancing interval strategy from
+Subsection~\ref{subsection:results:load_balancing_performance:interval}. The load balancing interval
+is also case dependent, and must be adjusted according to the scale of the problem and how often it
+is refined. 
+
+For these reasons we chose the load imbalance threshold strategy with a load imbalance threshold of
+\(1.5\) to assess the overall dynamic load balancing performance in
+Figure~\ref{fig:load_balancing_efficiency}. It shows the speedup we get from load balancing the
+three problems. The \(x\) axis shows the load imbalance \(L\) of the problems if they are not load
+balanced.
+
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_results/media/load_balancing_threshold_N4_K16384_A20_L20_P16_T1.5}
-	\caption{Load balancing performance: Simulation time with refinement, load balancing and increasing load imbalance. \(N = 4\), \(K_{initial} = 16384\), refinement interval = 20, load balancing interval = 20, \(P = 16\), load balancing threshold = \(1.5\)}\label{fig:load_balancing_efficiency}
+	\caption{Load balancing performance: Simulation time with refinement and load balancing while increasing load imbalance. \(N = 4\), \(K_{initial} = 16384\), refinement interval = 20, load balancing interval = 20, \(P = 16\), load balancing threshold = \(1.5\)}\label{fig:load_balancing_efficiency}
 \end{figure}
 
 \subsection{Polynomial order influence}\label{subsection:results:load_balancing_performance:polynomial_order}
+
+Figure~\ref{fig:N_influence} shows a comparison of the iteration time in function of the polynomial
+order \(N\) of an uniformly refined mesh. This
 
 \begin{figure}[H]
 	\centering
