@@ -16,7 +16,7 @@ bandwidth.
 Solving fluid flows on a mesh is a parallel problem, as at most steps it is possible to compute the
 solution on the different elements making up the mesh in parallel. On the other hand, elements must
 exchange information at their interfaces at each time step, meaning careful synchronisation will be
-needed. Finally, the adaptive mesh refinement process detailed in
+needed. Finally, the \acrlong{acr:AMR} process detailed in
 Chapter~\ref{chapter:adaptive_mesh_refinement} and the dynamic load balancing process from
 Chapter~\ref{chapter:load_balancing} are not inherently parallel processes. A significant
 programming task then becomes necessary to break up these algorithms into parallel tasks to be run

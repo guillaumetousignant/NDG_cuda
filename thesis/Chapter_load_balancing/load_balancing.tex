@@ -644,7 +644,7 @@ elements are refined at a time, a significant load imbalance can persist until t
 balancing step.
 
 The second approach is to set an acceptable load imbalance, under which the mesh will not be load
-balanced. After adapting, if the load imbalance \(L\) is below that threshold, the mesh will not be
+balanced. After refining, if the load imbalance \(L\) is below that threshold, the mesh will not be
 load balanced. This means that the mesh will only be load balanced when it is really needed. The
 disadvantage is that the load imbalance could stay slightly below that threshold indefinitely,
 leaving the program with a slightly non-optimal mesh for large parts of its runtime.

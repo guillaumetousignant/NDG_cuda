@@ -114,7 +114,7 @@ the elements. These sit on the bold black lines in the figure above. This works 
 neighbouring elements have the same polynomial order and they completely share an edge. However,
 after p-refinement, interfaces can become functionally non-conforming, as seen with the horizontal
 interface in the figure above. The nodes do not match anymore since one element has more points than
-the other. After h-adapting, interfaces can become geometrically non-conforming, as seen with the
+the other. After h-refining, interfaces can become geometrically non-conforming, as seen with the
 topmost blue line in the figure above. The nodes do not match because one element edge is shorter
 than the other. Finally, interfaces can be both geometrically and functionally non-conforming, as
 seen with the bottom blue line in the figure above. We will have to find a way to connect those
@@ -686,16 +686,16 @@ elements store their estimated error \(\tau \) and their error refinement criter
 
 % Add reduction figure here
 
-We start by finding out the total number of h-adapting elements. A reduction~\cite{Harris2007} is
+We start by finding out the total number of h-refining elements. A reduction~\cite{Harris2007} is
 computed on the \acrshort{acr:GPU} on a per-block basis. In this reduction each thread examines the
-estimated error \(\tau \) of an element against a set threshold and marks it as adapting or not. If
-adapting, the error refinement criterion \(\sigma \) is read to mark it as h or p adapting. If
-h-adapting, the thread sets to 1 the value of an intermediate array at the thread's index within the
+estimated error \(\tau \) of an element against a set threshold and marks it as refining or not. If
+refining, the error refinement criterion \(\sigma \) is read to mark it as h or p refining. If
+h-refining, the thread sets to 1 the value of an intermediate array at the thread's index within the
 bock. Then, through a sequence of synchronisations and additions, the threads add up those values
 until the block total is known. The block total is then written to an output vector at the block's
 index within the mesh.
 
-Once this is done, the array with each block's total number of h-adapting elements is copied to the
+Once this is done, the array with each block's total number of h-refining elements is copied to the
 \acrshort{acr:CPU} and the total number of splitting elements is computed by adding all the values.
 It would be possible to launch this kernel again with fewer blocks on the resulting vector to reduce
 further to fewer values. This would not fill the \acrshort{acr:GPU}, and having the sum be defined
@@ -712,7 +712,7 @@ order beyond that of the face.
 
 % Add splitting elements index figure here
 
-If any element h-adapts, it will create more elements and the element vector will need to be
+If any element h-refines, it will create more elements and the element vector will need to be
 resized. A new vector is created in \acrshort{acr:GPU} memory by the \acrshort{acr:CPU} with the new
 increased size. A prefix sum vector is created for each block of threads, indicating how many
 elements have split before it. This tells threads where to put existing and new elements in the new
