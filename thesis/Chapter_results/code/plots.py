@@ -123,21 +123,25 @@ load_balancing_interval_baseline_L = load_balancing_interval_L[:, [0,-1]]
 load_balancing_interval_baseline_t = np.array([274.415, 4962.06, 107196])
 
 # Load balancing efficiency threshold
-load_balancing_threshold_A = np.array([20, 20])                 # Adaptivity interval
-load_balancing_threshold_L = np.array([20, 20])                 # Load balancing interval
-load_balancing_threshold_N = np.array([4, 4])                   # Initial N
-load_balancing_threshold_K = np.array([128 * 128, 128 * 128])   # Initial number of elements
-load_balancing_threshold_P = np.array([16, 16])                 # Number of processes
-load_balancing_threshold_S = np.array([3, 5])                   # Max split level
-load_balancing_threshold_max_N = np.array([12, 12])             # Max N
+load_balancing_threshold_A = np.array([20, 20, 20])                         # Adaptivity interval
+load_balancing_threshold_L = np.array([20, 20, 20])                         # Load balancing interval
+load_balancing_threshold_N = np.array([4, 4, 4])                            # Initial N
+load_balancing_threshold_K = np.array([128 * 128, 128 * 128, 128 * 128])    # Initial number of elements
+load_balancing_threshold_P = np.array([16, 16, 16])                         # Number of processes
+load_balancing_threshold_S = np.array([3, 5, 7])                            # Max split level
+load_balancing_threshold_I = np.array([2.16, 6.81, 12.50])                  # Load imbalance
+load_balancing_threshold_max_N = np.array([12, 12, 12])                     # Max N
 
 load_balancing_threshold_T = np.array([[1, 1.01, 1.1, 1.5, 2],
+                                       [1, 1.01, 1.1, 1.5, 2],
                                        [1, 1.01, 1.1, 1.5, 2]]) # Load balancing threshold
 load_balancing_threshold_t = np.array([[344.277, 295.591, 243.566, 241.076, 252.407],
-                                       [2925.25, 2248.53, 1869.24, 1865.98, 2043.47]]) # Simulation time
+                                       [2925.25, 2248.53, 1869.24, 1865.98, 2043.47],
+                                       [0, 0, 0, 24976.3, 0]]) # Simulation time
 
 load_balancing_threshold_baseline_T = load_balancing_threshold_T[:, [0,-1]]
-load_balancing_threshold_baseline_t = np.array([274.359, 4962.06])
+load_balancing_threshold_baseline_t = np.array([274.359, 4962.06, 107196])
+best_T = 3
 
 # N scaling
 N_scaling_N = np.array([6, 8, 10, 12])
@@ -257,8 +261,8 @@ amr_fig = plt.figure(figsize=(5.5, 4.5))
 amr_ax = amr_fig.add_subplot(1, 1, 1)
 amr_ax.set_xlabel("log(refinement interval) [-]")
 amr_ax.set_ylabel("log(time) [s]")
-title = f"Adaptivity performance time, N = {adaptivity_N[i]} K = {adaptivity_K[i]} C = {adaptivity_C[0][best_pre_condition]}"
-amr_fig.canvas.manager.set_window_title(title)
+amr_title = f"Adaptivity performance time, N = {adaptivity_N[0]} K = {adaptivity_K[0]} C = {adaptivity_C[0][best_pre_condition]}"
+amr_fig.canvas.manager.set_window_title(amr_title)
 amr_ax.grid()
 
 amr_ax.loglog(adaptivity_interval, adaptivity_solving_t_iterative[:, best_pre_condition], color=solving_colour, linewidth=data_width, marker=solving_shape, markersize=data_size, label="solving time")
@@ -271,14 +275,14 @@ amr_ax.set_xticks(adaptivity_interval, adaptivity_interval.astype(str))
 amr_ax.legend()
 amr_fig.tight_layout()
 
-amr_fig.savefig(save_path / f"adaptivity_time_N{adaptivity_N[i]}_K{adaptivity_K[i]}_C{adaptivity_C[0][best_pre_condition]}.svg", format='svg', transparent=True)
+amr_fig.savefig(save_path / f"adaptivity_time_N{adaptivity_N[0]}_K{adaptivity_K[0]}_C{adaptivity_C[0][best_pre_condition]}.svg", format='svg', transparent=True)
 
 amr_error_fig = plt.figure(figsize=(5.5, 4.5))
 amr_error_ax = amr_error_fig.add_subplot(1, 1, 1)
 amr_error_ax.set_xlabel("log(refinement interval) [-]")
 amr_error_ax.set_ylabel("log(analytical solution error) [-]")
-error_title = f"Adaptivity performance error, N = {adaptivity_N[i]} K = {adaptivity_K[i]} C = {adaptivity_C[0][best_pre_condition]}"
-amr_error_fig.canvas.manager.set_window_title(error_title)
+amr_error_title = f"Adaptivity performance error, N = {adaptivity_N[0]} K = {adaptivity_K[0]} C = {adaptivity_C[0][best_pre_condition]}"
+amr_error_fig.canvas.manager.set_window_title(amr_error_title)
 amr_error_ax.grid()
 
 # For the legend entries from the other axes
@@ -290,7 +294,7 @@ amr_error_ax.set_xticks(adaptivity_interval, adaptivity_interval.astype(str))
 amr_error_ax.legend()
 amr_error_fig.tight_layout()
 
-amr_error_fig.savefig(save_path / f"adaptivity_error_N{adaptivity_N[i]}_K{adaptivity_K[i]}_C{adaptivity_C[0][best_pre_condition]}.svg", format='svg', transparent=True)
+amr_error_fig.savefig(save_path / f"adaptivity_error_N{adaptivity_N[0]}_K{adaptivity_K[0]}_C{adaptivity_C[0][best_pre_condition]}.svg", format='svg', transparent=True)
 
 # Load balancing efficiency interval
 for i in range(load_balancing_interval_N.shape[0]):
@@ -331,6 +335,21 @@ for i in range(load_balancing_threshold_N.shape[0]):
     fig.tight_layout()
 
     fig.savefig(save_path / f"load_balancing_threshold_N{load_balancing_threshold_N[i]}_K{load_balancing_threshold_K[i]}_A{load_balancing_threshold_A[i]}_L{load_balancing_threshold_L[i]}_P{load_balancing_threshold_P[i]}_S{load_balancing_threshold_S[i]}.svg", format='svg', transparent=True)
+
+lb_fig = plt.figure(figsize=(5, 4.5))
+lb_ax = lb_fig.add_subplot(1, 1, 1)
+lb_ax.set_xlabel("log(load imbalance) [-]")
+lb_ax.set_ylabel("Speedup [-]")
+lb_title = f"Load balancing performance, threshold test, N = {load_balancing_threshold_N[0]} K = {load_balancing_threshold_K[0]} A = {load_balancing_threshold_A[0]} L = {load_balancing_threshold_L[0]} P = {load_balancing_threshold_P[0]} N_max = {load_balancing_threshold_max_N[0]} T = {load_balancing_threshold_T[0][best_T]}"
+lb_fig.canvas.manager.set_window_title(lb_title)
+lb_ax.grid()
+
+lb_ax.plot(load_balancing_threshold_I, load_balancing_threshold_baseline_t/load_balancing_threshold_t[:, best_T], color=gpu_colour, linewidth=data_width, marker=data_shape, markersize=data_size, label="Speedup")
+
+lb_ax.set_ylim([0, 1.2 * max(load_balancing_threshold_baseline_t/load_balancing_threshold_t[:, best_T])])
+lb_fig.tight_layout()
+
+lb_fig.savefig(save_path / f"load_balancing_threshold_N{load_balancing_threshold_N[0]}_K{load_balancing_threshold_K[0]}_A{load_balancing_threshold_A[0]}_L{load_balancing_threshold_L[0]}_P{load_balancing_threshold_P[0]}_T{load_balancing_threshold_T[0][best_T]}.svg", format='svg', transparent=True)
 
 # N scaling
 N_fig = plt.figure(figsize=(5, 4.5))

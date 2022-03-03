@@ -491,17 +491,17 @@ order of \(N = 12\).
 	\caption{High load imbalance (\(S = 7\)) test case split level: Split level, indicating how many times the elements have split, only the bottom right refines. \(K_{initial} = 16384\), \(K_{final} = 54837\) (a) Complete domain (b) Area of interest}\label{fig:load_imbalance_case_high_s}
 \end{figure}
 
-% ADD add plot of the rank for S = 7
-
 % Describe table
 Table~\ref{table:load_imbalance} describes the load imbalance of the three cases. \(S\) is the
-maximum number of times an element can split, \(K\) is the number of elements in the mesh
-Where \(K_p\) is the number of elements in process \(p\).
+maximum number of times an element can split, \(K\) is the number of elements in the mesh, \(K_p\)
+is the number of elements in process \(p\), \(w_{ideal}\) is the number of elements in a process if
+evenly distributer, and \(L\) is the load imbalance as described in
+Equation~\ref{equ:load_imbalance}.
 
 \begin{table}[H]
 	\centering
 	\begin{tabular}{ c c c c c c c }
-		Case & S & K & Max \(K_p\) & \(w_{ideal}\) & Load imbalance \\
+		Case & S & K & Max \(K_p\) & \(w_{ideal}\) & \(L\) \\
 		\midrule
 		Low & \(3\) & \(17752\) & \(2392\) & \(1109.5\) & \(2.16\) \\
 		Medium & \(5\) & \(26734\) & \(11374\) & \(1670.875\) & \(6.81\) \\
@@ -510,26 +510,30 @@ Where \(K_p\) is the number of elements in process \(p\).
 	\caption{Load imbalance cases.}\label{table:load_imbalance}
 \end{table}
 
+We will compare two approaches to choose when to load balance the mesh, as described in
+Section~\ref{section:load_balancing:criteria}. 
+
 % Describe two strategies
+% say when is equivalent to load balancing every adaptivity
 
 \subsection{Load balancing interval}\label{subsection:results:load_balancing_performance:interval}
 
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_results/media/load_balancing_interval_N4_K16384_A20_P16_S3}
-	\caption{Load balancing efficiency interval test: Simulation time with refinement, load balancing and increasing load balancing interval. \(N = 4\), \(K_{initial} = 16384\), refinement interval = 20, \(P = 16\), \(S = 3\)}\label{fig:load_balancing_efficiency_interval}
+	\caption{Load balancing performance interval test: Simulation time with refinement, load balancing and increasing load balancing interval. \(N = 4\), \(K_{initial} = 16384\), refinement interval = 20, \(P = 16\), \(S = 3\)}\label{fig:load_balancing_efficiency_interval}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_results/media/load_balancing_interval_N4_K16384_A20_P16_S5}
-	\caption{Load balancing efficiency interval test: Simulation time with refinement, load balancing and increasing load balancing interval. \(N = 4\), \(K_{initial} = 16384\), refinement interval = 20, \(P = 16\), \(S = 5\)}\label{fig:load_balancing_efficiency_interval_s5}
+	\caption{Load balancing performance interval test: Simulation time with refinement, load balancing and increasing load balancing interval. \(N = 4\), \(K_{initial} = 16384\), refinement interval = 20, \(P = 16\), \(S = 5\)}\label{fig:load_balancing_efficiency_interval_s5}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_results/media/load_balancing_interval_N4_K16384_A20_P16_S7}
-	\caption{Load balancing efficiency interval test: Simulation time with refinement, load balancing and increasing load balancing interval. \(N = 4\), \(K_{initial} = 16384\), refinement interval = 20, \(P = 16\), \(S = 7\)}\label{fig:load_balancing_efficiency_interval_s7}
+	\caption{Load balancing performance interval test: Simulation time with refinement, load balancing and increasing load balancing interval. \(N = 4\), \(K_{initial} = 16384\), refinement interval = 20, \(P = 16\), \(S = 7\)}\label{fig:load_balancing_efficiency_interval_s7}
 \end{figure}
 
 % Say that the interval depends on the problem size
@@ -539,13 +543,25 @@ Where \(K_p\) is the number of elements in process \(p\).
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_results/media/load_balancing_threshold_N4_K16384_A20_L20_P16_S3}
-	\caption{Load balancing efficiency threshold test: Simulation time with refinement, load balancing and increasing load balancing threshold. \(N = 4\), \(K_{initial} = 16384\), refinement interval = 20, load balancing interval = 20, \(P = 16\), \(S = 3\)}\label{fig:load_balancing_efficiency_threshold_s3}
+	\caption{Load balancing performance threshold test: Simulation time with refinement, load balancing and increasing load balancing threshold. \(N = 4\), \(K_{initial} = 16384\), refinement interval = 20, load balancing interval = 20, \(P = 16\), \(S = 3\)}\label{fig:load_balancing_efficiency_threshold_s3}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_results/media/load_balancing_threshold_N4_K16384_A20_L20_P16_S5}
-	\caption{Load balancing efficiency threshold test: Simulation time with refinement, load balancing and increasing load balancing threshold. \(N = 4\), \(K_{initial} = 16384\), refinement interval = 20, load balancing interval = 20, \(P = 16\), \(S = 5\)}\label{fig:load_balancing_efficiency_threshold_s5}
+	\caption{Load balancing performance threshold test: Simulation time with refinement, load balancing and increasing load balancing threshold. \(N = 4\), \(K_{initial} = 16384\), refinement interval = 20, load balancing interval = 20, \(P = 16\), \(S = 5\)}\label{fig:load_balancing_efficiency_threshold_s5}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\includesvg[width=0.6\textwidth]{Chapter_results/media/load_balancing_threshold_N4_K16384_A20_L20_P16_S7}
+	\caption{Load balancing performance threshold test: Simulation time with refinement, load balancing and increasing load balancing threshold. \(N = 4\), \(K_{initial} = 16384\), refinement interval = 20, load balancing interval = 20, \(P = 16\), \(S = 7\)}\label{fig:load_balancing_efficiency_threshold_s7}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\includesvg[width=0.6\textwidth]{Chapter_results/media/load_balancing_threshold_N4_K16384_A20_L20_P16_T1.5}
+	\caption{Load balancing performance: Simulation time with refinement, load balancing and increasing load imbalance. \(N = 4\), \(K_{initial} = 16384\), refinement interval = 20, load balancing interval = 20, \(P = 16\), load balancing threshold = \(1.5\)}\label{fig:load_balancing_efficiency}
 \end{figure}
 
 \subsection{Polynomial order influence}\label{subsection:results:load_balancing_performance:polynomial_order}
