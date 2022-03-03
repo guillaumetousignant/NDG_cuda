@@ -654,7 +654,13 @@ The projection operation from faces to elements is therefore:
 
 \section{Pre-conditioning}\label{section:adaptive_mesh_refinement:pre_conditioning}
 
-When initial conditions are applied to a coarse mesh, 
+When initial conditions are applied to a coarse mesh, some error is introduced to the problem. This
+error does not reduce with refinement, it simply propagates through the domain. To address this
+issue, we implement a simple pre-conditioning algorithm. The algorithm advances the solution in
+time, refines it, then sets the initial conditions again. This is an iterative process, and can be
+performed multiple times. This is what will be called pre-condition steps. The refinement interval
+dictates how many time steps are computed before refining and resetting the initial conditions. The
+performance of this algorithm is assessed in Section~\ref{section:results:adaptivity_performance}.
 
 \section{Implementation}\label{section:adaptive_mesh_refinement:implementation}
 
