@@ -380,11 +380,10 @@ for it, and with improvements to fit it better it could perform even better.
 Section~\ref{section:conclusion:future_work} discusses some improvements to make the program even
 better suited for the \acrshort{acr:GPU} architecture.
 
-% Compare the different intervals and steps, select best and add wrap up plot
 The optimal number of pre-processing steps seems to be four for this case, as the target error is
 reached with all refinement intervals. After this number of steps the solution doesn't change much
 as the error estimation target is likely reached. We use that number of steps to compare the
-different refinement intervals in Figure~\ref{fig:adaptivity_efficiency_C4}. 
+different refinement intervals in Figure~\ref{fig:adaptivity_efficiency_C4}.
 
 \begin{figure}[H]
 	\centering
@@ -395,6 +394,21 @@ different refinement intervals in Figure~\ref{fig:adaptivity_efficiency_C4}.
 	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_C4}\label{fig:adaptivity_efficiency_C`4'_error}}
 	\caption{\Acrlong{acr:AMR} performance: Simulation time and analytical error with four pre-processing steps and increasing refinement interval. N = 4, K = 16, S = 5, pre-processing steps = 4}\label{fig:adaptivity_efficiency_C4}
 \end{figure}
+
+Figure~\ref{fig:adaptivity_efficiency_C4} gives a good overview of the \acrshort{acr:AMR}
+performance. All refinement intervals attain the target error estimation of \num{1e-6}, and obtain a
+real maximum error under \num{1e-6} when compared to the analytical solution. 
+
+It is always faster to use \acrshort{acr:AMR} than to start with a uniform fully refined mesh, and
+it is faster to use it than a uniformly refined mesh that has the same maximal analytical solution
+error. The adaptive case can refine elements where they are most needed, saving performance.
+
+There is a balance to be made between refining often and spending more time in the costly
+\acrshort{acr:AMR} routine, and refining less often therefore using a less refined mesh for longer.
+Section~\ref{section:conclusion:future_work} discusses ideas for alternative approaches to sidestep
+this problem. In this case it seems optimal to perform \acrshort{acr:AMR} every 20 time steps to get
+the best error, while waiting 100 timesteps between refinements yields a faster runtime at the price
+of a worse error that stays below the error estimation threshold we set.
 
 \section{Dynamic Load Balancing Performance}\label{section:results:load_balancing_performance}
 
