@@ -166,7 +166,7 @@ Section~\ref{section:spectral_element_method:implementation}. As long as there a
 in the mesh to saturate the cores of the \acrshort{acr:GPU} with work, this part of the program
 should be efficient to run on the \acrshort{acr:GPU}.
 
-The adaptivity and load balancing algorithms shown in
+The \acrlong{acr:AMR} and dynamic load balancing algorithms shown in
 Chapters~\ref{chapter:adaptive_mesh_refinement} and~\ref{chapter:load_balancing} are not so easily
 parallelisable. These algorithms are sequential in nature, with many operations needing the result
 of previous ones to complete their calculations. In order to parallelise them, a few support

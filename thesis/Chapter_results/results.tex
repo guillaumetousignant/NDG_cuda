@@ -304,7 +304,7 @@ are compared.
 	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_time_N4_K16_C5}\label{fig:adaptivity_efficiency_C5_time}}
 	\subfloat[Maximum error]
 	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_C5}\label{fig:adaptivity_efficiency_C5_error}}
-	\caption{Adaptivity efficiency: Simulation time and analytical error with adaptivity and increasing pre-processing steps. N = 4, K = 16, adaptivity interval = 5}\label{fig:adaptivity_efficiency_C5}
+	\caption{\Acrlong{acr:AMR} performance: Simulation time and analytical error with refinement and increasing pre-processing steps. N = 4, K = 16, refinement interval = 5}\label{fig:adaptivity_efficiency_C5}
 \end{figure}
 
 \begin{figure}[H]
@@ -314,7 +314,7 @@ are compared.
 	\hfill
 	\subfloat[Maximum error]
 	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_C20}\label{fig:adaptivity_efficiency_C20_error}}
-	\caption{Adaptivity efficiency: Simulation time and analytical error with adaptivity and increasing pre-processing steps. N = 4, K = 16, adaptivity interval = 20}\label{fig:adaptivity_efficiency_C20}
+	\caption{\Acrlong{acr:AMR} performance: Simulation time and analytical error with refinement and increasing pre-processing steps. N = 4, K = 16, refinement interval = 20}\label{fig:adaptivity_efficiency_C20}
 \end{figure}
 
 \begin{figure}[H]
@@ -324,7 +324,7 @@ are compared.
 	\hfill
 	\subfloat[Maximum error]
 	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_C100}\label{fig:adaptivity_efficiency_C100_error}}
-	\caption{Adaptivity efficiency: Simulation time and analytical error with adaptivity and increasing pre-processing steps. N = 4, K = 16, adaptivity interval = 100}\label{fig:adaptivity_efficiency_C100}
+	\caption{\Acrlong{acr:AMR} performance: Simulation time and analytical error with refinement and increasing pre-processing steps. N = 4, K = 16, refinement interval = 100}\label{fig:adaptivity_efficiency_C100}
 \end{figure}
 
 \begin{figure}[H]
@@ -334,7 +334,7 @@ are compared.
 	\hfill
 	\subfloat[Maximum error]
 	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_C500}\label{fig:adaptivity_efficiency_C500_error}}
-	\caption{Adaptivity efficiency: Simulation time and analytical error with adaptivity and increasing pre-processing steps. N = 4, K = 16, adaptivity interval = 500}\label{fig:adaptivity_efficiency_C500}
+	\caption{\Acrlong{acr:AMR} performance: Simulation time and analytical error with refinement and increasing pre-processing steps. N = 4, K = 16, refinement interval = 500}\label{fig:adaptivity_efficiency_C500}
 \end{figure}
 
 From
@@ -354,13 +354,13 @@ Figures~\ref{fig:adaptivity_efficiency_C5},~\ref{fig:adaptivity_efficiency_C20},
 and~\ref{fig:adaptivity_efficiency_C500}, is prohibitively time consuming to compute. The solution
 is well resolved as shown on Figure~\ref{fig:adaptivity_efficiency_C20_error}, with the analytical
 solution error being \(19 \times \) smaller than the adaptive case. On the other hand, it takes
-\(271 \times \) as much time to compute. The difference is even more pronounced when the adaptivity
+\(271 \times \) as much time to compute. The difference is even more pronounced when the refinement
 interval is increased to 100, as on Figure~\ref{fig:adaptivity_efficiency_C100_time}, where the
 adaptive solution with three to five pre-condition steps is around \(750 \times \) faster, at the
-expense of a worse error compared to the 50 adaptivity interval case.
+expense of a worse error compared to the 50 refinement interval case.
 
 As for the similar maximum error non-adaptive case, shown with dotted lines, the results are closer.
-The case with an adaptivity interval of 20 on Figure~\ref{fig:adaptivity_efficiency_C20} was used to
+The case with an refinement interval of 20 on Figure~\ref{fig:adaptivity_efficiency_C20} was used to
 set the target error for that non-adaptive case. In this comparison, it can be observed that the
 adaptive case starting from a coarse mesh is able to reach a maximum error only 14\% greater than
 the non-adaptive case, while being 34\% faster. The other cases also attain the error estimation
@@ -480,19 +480,19 @@ Where \(K_p\) is the number of elements in process \(p\).
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_results/media/load_balancing_interval_N4_K16384_A20_P16_S3}
-	\caption{Load balancing efficiency interval test: Simulation time with adaptivity, load balancing and increasing load balancing interval. \(N = 4\), \(K_{initial} = 16384\), adaptivity interval = 20, \(P = 16\), \(S = 3\)}\label{fig:load_balancing_efficiency_interval}
+	\caption{Load balancing efficiency interval test: Simulation time with refinement, load balancing and increasing load balancing interval. \(N = 4\), \(K_{initial} = 16384\), refinement interval = 20, \(P = 16\), \(S = 3\)}\label{fig:load_balancing_efficiency_interval}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_results/media/load_balancing_interval_N4_K16384_A20_P16_S5}
-	\caption{Load balancing efficiency interval test: Simulation time with adaptivity, load balancing and increasing load balancing interval. \(N = 4\), \(K_{initial} = 16384\), adaptivity interval = 20, \(P = 16\), \(S = 5\)}\label{fig:load_balancing_efficiency_interval_s5}
+	\caption{Load balancing efficiency interval test: Simulation time with refinement, load balancing and increasing load balancing interval. \(N = 4\), \(K_{initial} = 16384\), refinement interval = 20, \(P = 16\), \(S = 5\)}\label{fig:load_balancing_efficiency_interval_s5}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_results/media/load_balancing_interval_N4_K16384_A20_P16_S7}
-	\caption{Load balancing efficiency interval test: Simulation time with adaptivity, load balancing and increasing load balancing interval. \(N = 4\), \(K_{initial} = 16384\), adaptivity interval = 20, \(P = 16\), \(S = 7\)}\label{fig:load_balancing_efficiency_interval_s7}
+	\caption{Load balancing efficiency interval test: Simulation time with refinement, load balancing and increasing load balancing interval. \(N = 4\), \(K_{initial} = 16384\), refinement interval = 20, \(P = 16\), \(S = 7\)}\label{fig:load_balancing_efficiency_interval_s7}
 \end{figure}
 
 % Say that the interval depends on the problem size
@@ -502,13 +502,13 @@ Where \(K_p\) is the number of elements in process \(p\).
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_results/media/load_balancing_threshold_N4_K16384_A20_L20_P16_S3}
-	\caption{Load balancing efficiency threshold test: Simulation time with adaptivity, load balancing and increasing load balancing threshold. \(N = 4\), \(K_{initial} = 16384\), adaptivity interval = 20, load balancing interval = 20, \(P = 16\), \(S = 3\)}\label{fig:load_balancing_efficiency_threshold_s3}
+	\caption{Load balancing efficiency threshold test: Simulation time with refinement, load balancing and increasing load balancing threshold. \(N = 4\), \(K_{initial} = 16384\), refinement interval = 20, load balancing interval = 20, \(P = 16\), \(S = 3\)}\label{fig:load_balancing_efficiency_threshold_s3}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_results/media/load_balancing_threshold_N4_K16384_A20_L20_P16_S5}
-	\caption{Load balancing efficiency threshold test: Simulation time with adaptivity, load balancing and increasing load balancing threshold. \(N = 4\), \(K_{initial} = 16384\), adaptivity interval = 20, load balancing interval = 20, \(P = 16\), \(S = 5\)}\label{fig:load_balancing_efficiency_threshold_s5}
+	\caption{Load balancing efficiency threshold test: Simulation time with refinement, load balancing and increasing load balancing threshold. \(N = 4\), \(K_{initial} = 16384\), refinement interval = 20, load balancing interval = 20, \(P = 16\), \(S = 5\)}\label{fig:load_balancing_efficiency_threshold_s5}
 \end{figure}
 
 \subsection{Polynomial order influence}\label{subsection:results:load_balancing_performance:polynomial_order}

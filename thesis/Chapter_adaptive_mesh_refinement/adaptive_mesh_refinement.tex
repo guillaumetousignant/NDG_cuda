@@ -43,7 +43,7 @@ This whole process must be executed in parallel and with as much as the work as 
 the \acrshort{acr:GPU}. \Acrshortpl{acr:GPU} are more efficient at working with fixed workloads
 where all threads of a block execute the same instruction. Refining the mesh moves memory around and
 can introduce additional branching if the elements have different polynomial orders or
-non-conforming interfaces. The adaptivity process itself is also hard to implement on
+non-conforming interfaces. The refinement process itself is also hard to implement on
 \acrshortpl{acr:GPU}, as elements must either move, change their polynomial order or split into
 multiple elements in parallel. If the different threads are not perfectly coordinated, they could do
 these operations on the same destination memory location, creating race conditions.
@@ -64,11 +64,11 @@ speedup incurred by parallelizing the program will be reduced. To improve this s
 refinement, a dynamic load balancing algorithm will be implemented in
 Chapter~\ref{chapter:load_balancing}.
 
-\section{Strategies}\label{section:adaptive_mesh_refinement:adaptivity_strategies}
+\section{Strategies}\label{section:adaptive_mesh_refinement:refinement_strategies}
 
-\subsection{p-adaptivity}\label{subsection:adaptive_mesh_refinement:adaptivity_strategies:p-adaptivity}
+\subsection{p-refinement}\label{subsection:adaptive_mesh_refinement:refinement_strategies:p-refinement}
 
-The first refinement strategy is p-adaptivity. When refining this way, elements increase their
+The first refinement strategy is p-refinement. When refining this way, elements increase their
 polynomial order to increase their resolution. The lower-order solution is projected to the
 higher-order collocation points. In this work, the polynomial order in increased in steps of 2, and
 is required to be identical in the x and y directions. 
@@ -76,12 +76,12 @@ is required to be identical in the x and y directions.
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_adaptive_mesh_refinement/media/p-adaptivity_N4_N6}
-	\caption{2D p-adaptivity: The element's polynomial order is increased from 4 to 6, with 5 to 7 collocation points respectively.}\label{fig:p-adaptivity}
+	\caption{2D p-refinement: The element's polynomial order is increased from 4 to 6, with 5 to 7 collocation points respectively.}\label{fig:p-refinement}
 \end{figure}
 
-\subsection{h-adaptivity}\label{subsection:adaptive_mesh_refinement:adaptivity_strategies:h-adaptivity}
+\subsection{h-refinement}\label{subsection:adaptive_mesh_refinement:refinement_strategies:h-refinement}
 
-The second refinement strategy is h-adaptivity\@. h-adaptivity splits single elements into several
+The second refinement strategy is h-refinement\@. h-refinement splits single elements into several
 elements occupying the same space. In this work we exclusively deal with quadrilaterals, and these
 elements split into four smaller elements when h-refining. The solution is projected from the
 initial big element to each of the four offspring elements.
@@ -89,30 +89,30 @@ initial big element to each of the four offspring elements.
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_adaptive_mesh_refinement/media/h-adaptivity_N4}
-	\caption{2D h-adaptivity: The element splits into 4 elements.}\label{fig:h-adaptivity}
+	\caption{2D h-refinement: The element splits into 4 elements.}\label{fig:h-refinement}
 \end{figure}
 
-\subsection{hp-adaptivity}\label{subsection:adaptive_mesh_refinement:adaptivity_strategies:hp-adaptivity}
+\subsection{hp-refinement}\label{subsection:adaptive_mesh_refinement:refinement_strategies:hp-refinement}
 
-In order to maximise computation efficiency, both p-adaptivity and h-adaptivity are used together.
-An hp-adaptive program uses either p-adaptivity or h-adaptivity on an element-by-element basis,
+In order to maximise computation efficiency, both p-refinement and h-refinement are used together.
+An hp-adaptive program uses either p-refinement or h-refinement on an element-by-element basis,
 depending on which is expected to reduce error the most. The choice between the two methods is
 detailed in Section~\ref{section:adaptive_mesh_refinement:refinement_criteria}.
 
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_adaptive_mesh_refinement/media/hp-adaptivity_N4_N6}
-	\caption{2D hp-adaptivity: Refinement of elements create non-conforming interfaces.}\label{fig:hp-adaptivity}
+	\caption{2D hp-refinement: Refinement of elements create non-conforming interfaces.}\label{fig:hp-refinement}
 \end{figure}
 
 Once the mesh has been refined, it is possible that the interfaces between elements become
 non-conforming. Each interface is made up of two element edges on either side of the interface,
-shown in bold black on Figure~\ref{fig:hp-adaptivity}, and a face, in blue. Recall from
+shown in bold black on Figure~\ref{fig:hp-refinement}, and a face, in blue. Recall from
 Chapter~\ref{chapter:spectral_element_method} that fluxes are computed between the elements from the
 extrapolated values of the solution on collocation points corresponding to the polynomial order of
 the elements. These sit on the bold black lines in the figure above. This works directly if two
 neighbouring elements have the same polynomial order and they completely share an edge. However,
-after p-adaptivity, interfaces can become functionally non-conforming, as seen with the horizontal
+after p-refinement, interfaces can become functionally non-conforming, as seen with the horizontal
 interface in the figure above. The nodes do not match anymore since one element has more points than
 the other. After h-adapting, interfaces can become geometrically non-conforming, as seen with the
 topmost blue line in the figure above. The nodes do not match because one element edge is shorter
@@ -322,7 +322,7 @@ The error estimator constants \(\sigma \) and \(C\) are computed from the 1D equ
 
 It is now possible to refine when the estimated error is past a certain threshold. We still need to
 choose one of the refinement strategies from
-Section~\ref{section:adaptive_mesh_refinement:adaptivity_strategies}.
+Section~\ref{section:adaptive_mesh_refinement:refinement_strategies}.
 Section~\ref{section:adaptive_mesh_refinement:refinement_criteria} describes a method to choose the
 most appropriate strategy using the error decay rate \(\sigma \) computed previously.
 
@@ -330,7 +330,7 @@ most appropriate strategy using the error decay rate \(\sigma \) computed previo
 
 Once we compute the error approximation on every element and know which elements we want to refine,
 we must choose how to refine them. Recall from
-Section~\ref{section:adaptive_mesh_refinement:adaptivity_strategies} that we can choose
+Section~\ref{section:adaptive_mesh_refinement:refinement_strategies} that we can choose
 p-refinement, increasing the polynomial order \(N\) of an element, or h-refinement, splitting the
 element in smaller elements to increase the total number of elements \(K\).
 
@@ -360,9 +360,9 @@ is not expected to reduce the truncation error much. This is often the case in n
 the solution.
 
 We choose the slope of the modes, \(\sigma \), as our error refinement criterion. If \(\sigma > 1\),
-adding polynomial modes is expected to reduce the error significantly, so we use p-adaptivity and
+adding polynomial modes is expected to reduce the error significantly, so we use p-refinement and
 increase the polynomial order \(N\) of the element. If \(\sigma \leqslant 1\), adding more modes is
-not predicted to reduce the error by much, therefore we use h-adaptivity and split the element into
+not predicted to reduce the error by much, therefore we use h-refinement and split the element into
 smaller elements, increasing \(K\).
 
 \section{The Mortar Element Method}\label{section:adaptive_mesh_refinement:mortar_element_method}
