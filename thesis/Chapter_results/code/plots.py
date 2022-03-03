@@ -102,7 +102,7 @@ adaptivity_baseline_t = np.array([29001.6, 29001.6, 29001.6, 29001.6])
 adaptivity_baseline_max_error = np.array([5.1e-9, 5.1e-9, 5.1e-9, 5.1e-9])
 adaptivity_same_error_t = np.array([143.326, 143.326, 143.326, 143.326])
 adaptivity_same_error_max_error = np.array([8.3e-8, 8.3e-8, 8.3e-8, 8.3e-8])
-best_pre_condition = 3
+best_pre_condition = 4
 
 # Load balancing efficiency interval
 load_balancing_interval_A = np.array([20, 20, 20])                      # Adaptivity interval
