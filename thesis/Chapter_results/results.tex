@@ -266,7 +266,7 @@ about \(0.2\) with regards to the number of \acrshort{acr:CPU} cores.
 This section establishes the performance of the \acrlong{acr:AMR}. The problem from
 Section~\ref{section:results:test_case} is used, initially split into four elements in the \(x\) and
 \(y\) direction, for \(K = 16\). The initial polynomial order \(N\) of four. The system is allowed
-to refine up to a split level of five, meaning a cell can split five times and become \(
+to refine up to a split level \(S\) of five, meaning a cell can split five times and become \(
 \frac{1}{32}\) the size of the original cell, and up to a polynomial order \(N\) of 16. The error
 estimation threshold is set to \num{1e-6}, meaning it will refine elements whose estimated error is
 greater than that number.
@@ -277,8 +277,8 @@ objects to the new arrays. We test here two strategies to reduce the performance
 \acrlong{acr:AMR}, while reducing error. 
 
 First, \acrlong{acr:AMR} will be performed at an interval.
-Figures~\ref{fig:adaptivity_efficiency_C5},~\ref{fig:adaptivity_efficiency_C20},~\ref{fig:adaptivity_efficiency_C100}
-and~\ref{fig:adaptivity_efficiency_C500} show the results of refining the mesh every 5, 20, 100 and
+Figures~\ref{fig:adaptivity_efficiency_A5},~\ref{fig:adaptivity_efficiency_A20},~\ref{fig:adaptivity_efficiency_A100}
+and~\ref{fig:adaptivity_efficiency_A500} show the results of refining the mesh every 5, 20, 100 and
 500 timesteps, respectively.
 
 Secondly, the simulations are performed with an increasing number of refinement pre-conditioning
@@ -301,45 +301,45 @@ are compared.
 \begin{figure}[H]
 	\centering
 	\subfloat[Solution time]
-	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_time_N4_K16_C5}\label{fig:adaptivity_efficiency_C5_time}}
+	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_time_N4_K16_A5}\label{fig:adaptivity_efficiency_A5_time}}
 	\subfloat[Maximum error]
-	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_C5}\label{fig:adaptivity_efficiency_C5_error}}
-	\caption{\Acrlong{acr:AMR} performance: Simulation time and analytical error with refinement and increasing pre-processing steps. N = 4, K = 16, refinement interval = 5}\label{fig:adaptivity_efficiency_C5}
+	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_A5}\label{fig:adaptivity_efficiency_A5_error}}
+	\caption{\Acrlong{acr:AMR} performance: Simulation time and analytical error with refinement and increasing pre-processing steps. N = 4, K = 16, S = 5, refinement interval = 5}\label{fig:adaptivity_efficiency_A5}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\subfloat[Solution time]
-	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_time_N4_K16_C20}\label{fig:adaptivity_efficiency_C20_time}}
+	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_time_N4_K16_A20}\label{fig:adaptivity_efficiency_A20_time}}
 	\hfill
 	\subfloat[Maximum error]
-	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_C20}\label{fig:adaptivity_efficiency_C20_error}}
-	\caption{\Acrlong{acr:AMR} performance: Simulation time and analytical error with refinement and increasing pre-processing steps. N = 4, K = 16, refinement interval = 20}\label{fig:adaptivity_efficiency_C20}
+	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_A20}\label{fig:adaptivity_efficiency_A20_error}}
+	\caption{\Acrlong{acr:AMR} performance: Simulation time and analytical error with refinement and increasing pre-processing steps. N = 4, K = 16, S = 5, refinement interval = 20}\label{fig:adaptivity_efficiency_A20}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\subfloat[Solution time]
-	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_time_N4_K16_C100}\label{fig:adaptivity_efficiency_C100_time}}
+	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_time_N4_K16_A100}\label{fig:adaptivity_efficiency_A100_time}}
 	\hfill
 	\subfloat[Maximum error]
-	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_C100}\label{fig:adaptivity_efficiency_C100_error}}
-	\caption{\Acrlong{acr:AMR} performance: Simulation time and analytical error with refinement and increasing pre-processing steps. N = 4, K = 16, refinement interval = 100}\label{fig:adaptivity_efficiency_C100}
+	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_A100}\label{fig:adaptivity_efficiency_A100_error}}
+	\caption{\Acrlong{acr:AMR} performance: Simulation time and analytical error with refinement and increasing pre-processing steps. N = 4, K = 16, S = 5, refinement interval = 100}\label{fig:adaptivity_efficiency_A100}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\subfloat[Solution time]
-	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_time_N4_K16_C500}\label{fig:adaptivity_efficiency_C500_time}}
+	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_time_N4_K16_A500}\label{fig:adaptivity_efficiency_A500_time}}
 	\hfill
 	\subfloat[Maximum error]
-	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_C500}\label{fig:adaptivity_efficiency_C500_error}}
-	\caption{\Acrlong{acr:AMR} performance: Simulation time and analytical error with refinement and increasing pre-processing steps. N = 4, K = 16, refinement interval = 500}\label{fig:adaptivity_efficiency_C500}
+	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_A500}\label{fig:adaptivity_efficiency_A500_error}}
+	\caption{\Acrlong{acr:AMR} performance: Simulation time and analytical error with refinement and increasing pre-processing steps. N = 4, K = 16, S = 5, refinement interval = 500}\label{fig:adaptivity_efficiency_A500}
 \end{figure}
 
 From
-Figures~\ref{fig:adaptivity_efficiency_C5},~\ref{fig:adaptivity_efficiency_C20},~\ref{fig:adaptivity_efficiency_C100}
-and~\ref{fig:adaptivity_efficiency_C500}, we can see that this is an optimisation problem, with
+Figures~\ref{fig:adaptivity_efficiency_A5},~\ref{fig:adaptivity_efficiency_A20},~\ref{fig:adaptivity_efficiency_A100}
+and~\ref{fig:adaptivity_efficiency_A500}, we can see that this is an optimisation problem, with
 tradeoffs between the simulation time and the error generated.
 
 An important part of the error comes from the initial conditions being applied on too coarse a mesh.
@@ -350,28 +350,49 @@ more pre-condition steps does not improve the results, as the error estimation t
 \num{1e-6} is likely reached.
 
 It can be observed that the fully refined non-adaptive case, shown in dashed lines on
-Figures~\ref{fig:adaptivity_efficiency_C5},~\ref{fig:adaptivity_efficiency_C20},~\ref{fig:adaptivity_efficiency_C100}
-and~\ref{fig:adaptivity_efficiency_C500}, is prohibitively time consuming to compute. The solution
-is well resolved as shown on Figure~\ref{fig:adaptivity_efficiency_C20_error}, with the analytical
+Figures~\ref{fig:adaptivity_efficiency_A5},~\ref{fig:adaptivity_efficiency_A20},~\ref{fig:adaptivity_efficiency_A100}
+and~\ref{fig:adaptivity_efficiency_A500}, is prohibitively time consuming to compute. The solution
+is well resolved as shown on Figure~\ref{fig:adaptivity_efficiency_A20_error}, with the analytical
 solution error being \(19 \times \) smaller than the adaptive case. On the other hand, it takes
 \(271 \times \) as much time to compute. The difference is even more pronounced when the refinement
-interval is increased to 100, as on Figure~\ref{fig:adaptivity_efficiency_C100_time}, where the
+interval is increased to 100, as on Figure~\ref{fig:adaptivity_efficiency_A100_time}, where the
 adaptive solution with three to five pre-condition steps is around \(750 \times \) faster, at the
 expense of a worse error compared to the 50 refinement interval case.
 
 As for the similar maximum error non-adaptive case, shown with dotted lines, the results are closer.
-The case with an refinement interval of 20 on Figure~\ref{fig:adaptivity_efficiency_C20} was used to
+The case with an refinement interval of 20 on Figure~\ref{fig:adaptivity_efficiency_A20} was used to
 set the target error for that non-adaptive case. In this comparison, it can be observed that the
 adaptive case starting from a coarse mesh is able to reach a maximum error only 14\% greater than
 the non-adaptive case, while being 34\% faster. The other cases also attain the error estimation
 target of \num{1e-6} while being faster.
 
 It is to be noted that the non-adaptive cases are closer to being optimal for the \acrshort{acr:GPU}
-architecture. The
-% Something about non-adaptive cases being a best-case (lol) for GPUs. No branching and divergence,
-% cite non-conforming interfaces, N, same number of neighbours
+architecture. The non-adaptive cases have less thread divergence than the adaptive case. There is a
+lot more branching in the adaptive case, with elements having a different polynomial order,
+non-conforming interfaces, and different numbers of neighbours. This increased divergence lowers the
+performance by having threads be predicated off while others execute an instruction. The memory
+access patterns of the non-adaptive cases are also better, as for example the different faces
+connecting to an element are closer in memory. Threads from a same warp accessing memory that is not
+contiguous must perform several memory fetches. The non-adaptive cases play to the strengths of the
+\acrshortpl{acr:GPU}, yet the adaptive case shows performance improvements. This means that
+\acrshort{acr:AMR} is worth it even if the \acrshort{acr:GPU} architecture is not perfectly suited
+for it, and with improvements to fit it better it could perform even better.
+Section~\ref{section:conclusion:future_work} discusses some improvements to make the program even
+better suited for the \acrshort{acr:GPU} architecture.
 
 % Compare the different intervals and steps, select best and add wrap up plot
+The optimal number of pre-processing steps seems to be three for this case. After this number of
+steps the solution doesn't change much as the error estimation target is likely reached.
+
+\begin{figure}[H]
+	\centering
+	\subfloat[Solution time]
+	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_time_N4_K16_C3}\label{fig:adaptivity_efficiency_C3_time}}
+	\hfill
+	\subfloat[Maximum error]
+	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_C3}\label{fig:adaptivity_efficiency_C3_error}}
+	\caption{\Acrlong{acr:AMR} performance: Simulation time and analytical error with 3 pre-processing steps and increasing refinement interval. N = 4, K = 16, S = 5, pre-processing steps = 3}\label{fig:adaptivity_efficiency_C3}
+\end{figure}
 
 \section{Dynamic Load Balancing Performance}\label{section:results:load_balancing_performance}
 

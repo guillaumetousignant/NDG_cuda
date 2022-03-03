@@ -102,6 +102,7 @@ adaptivity_baseline_t = np.array([29001.6, 29001.6, 29001.6, 29001.6])
 adaptivity_baseline_max_error = np.array([5.1e-9, 5.1e-9, 5.1e-9, 5.1e-9])
 adaptivity_same_error_t = np.array([143.326, 143.326, 143.326, 143.326])
 adaptivity_same_error_max_error = np.array([8.3e-8, 8.3e-8, 8.3e-8, 8.3e-8])
+best_pre_condition = 3
 
 # Load balancing efficiency interval
 load_balancing_interval_A = np.array([20, 20, 20])                      # Adaptivity interval
@@ -232,7 +233,7 @@ for i in range(adaptivity_interval.shape[0]):
     ax.legend()
     fig.tight_layout()
 
-    fig.savefig(save_path / f"adaptivity_time_N{adaptivity_N[i]}_K{adaptivity_K[i]}_C{adaptivity_interval[i]}.svg", format='svg', transparent=True)
+    fig.savefig(save_path / f"adaptivity_time_N{adaptivity_N[i]}_K{adaptivity_K[i]}_A{adaptivity_interval[i]}.svg", format='svg', transparent=True)
 
     error_fig = plt.figure(figsize=(5.5, 4.5))
     error_ax = error_fig.add_subplot(1, 1, 1)
@@ -250,7 +251,46 @@ for i in range(adaptivity_interval.shape[0]):
     error_ax.legend()
     error_fig.tight_layout()
 
-    error_fig.savefig(save_path / f"adaptivity_error_N{adaptivity_N[i]}_K{adaptivity_K[i]}_C{adaptivity_interval[i]}.svg", format='svg', transparent=True)
+    error_fig.savefig(save_path / f"adaptivity_error_N{adaptivity_N[i]}_K{adaptivity_K[i]}_A{adaptivity_interval[i]}.svg", format='svg', transparent=True)
+
+amr_fig = plt.figure(figsize=(5.5, 4.5))
+amr_ax = amr_fig.add_subplot(1, 1, 1)
+amr_ax.set_xlabel("log(refinement interval) [-]")
+amr_ax.set_ylabel("log(time) [s]")
+title = f"Adaptivity performance time, N = {adaptivity_N[i]} K = {adaptivity_K[i]} C = {adaptivity_C[0][best_pre_condition]}"
+amr_fig.canvas.manager.set_window_title(title)
+amr_ax.grid()
+
+amr_ax.loglog(adaptivity_interval, adaptivity_solving_t_iterative[:, best_pre_condition], color=solving_colour, linewidth=data_width, marker=solving_shape, markersize=data_size, label="solving time")
+amr_ax.loglog(adaptivity_interval, adaptivity_condition_t_iterative[:, best_pre_condition], color=pre_condition_colour, linewidth=data_width, marker=pre_condition_shape, markersize=data_size, label="pre-condition time")
+amr_ax.loglog(adaptivity_interval, adaptivity_t_iterative[:, best_pre_condition], color=gpu_colour, linewidth=data_width_small, marker=data_shape, markersize=data_size_small, label="total time")
+amr_ax.loglog(adaptivity_interval, adaptivity_baseline_t, color=gpu_colour, linewidth=data_width, linestyle=ideal_style, label="non-adaptive fully refined total time")
+amr_ax.loglog(adaptivity_interval, adaptivity_same_error_t, color=gpu_colour, linewidth=data_width, linestyle=same_error_style, label="non-adaptive similar error total time")
+
+amr_ax.set_xticks(adaptivity_interval, adaptivity_interval.astype(str))
+amr_ax.legend()
+amr_fig.tight_layout()
+
+amr_fig.savefig(save_path / f"adaptivity_time_N{adaptivity_N[i]}_K{adaptivity_K[i]}_C{adaptivity_C[0][best_pre_condition]}.svg", format='svg', transparent=True)
+
+amr_error_fig = plt.figure(figsize=(5.5, 4.5))
+amr_error_ax = amr_error_fig.add_subplot(1, 1, 1)
+amr_error_ax.set_xlabel("log(refinement interval) [-]")
+amr_error_ax.set_ylabel("log(analytical solution error) [-]")
+error_title = f"Adaptivity performance error, N = {adaptivity_N[i]} K = {adaptivity_K[i]} C = {adaptivity_C[0][best_pre_condition]}"
+amr_error_fig.canvas.manager.set_window_title(error_title)
+amr_error_ax.grid()
+
+# For the legend entries from the other axes
+amr_error_ax.loglog(adaptivity_interval, adaptivity_max_error_iterative[:, best_pre_condition], color=error_colour, linewidth=data_width, marker=data_shape, markersize=data_size, label="max error")
+amr_error_ax.loglog(adaptivity_interval, adaptivity_baseline_max_error, color=error_colour, linewidth=data_width, linestyle=ideal_style, label="non-adaptive fully refined max error")
+amr_error_ax.loglog(adaptivity_interval, adaptivity_same_error_max_error, color=error_colour, linewidth=data_width, linestyle=same_error_style, label="non-adaptive similar error max error")
+
+amr_error_ax.set_xticks(adaptivity_interval, adaptivity_interval.astype(str))
+amr_error_ax.legend()
+amr_error_fig.tight_layout()
+
+amr_error_fig.savefig(save_path / f"adaptivity_error_N{adaptivity_N[i]}_K{adaptivity_K[i]}_C{adaptivity_C[0][best_pre_condition]}.svg", format='svg', transparent=True)
 
 # Load balancing efficiency interval
 for i in range(load_balancing_interval_N.shape[0]):
