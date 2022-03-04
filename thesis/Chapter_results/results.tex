@@ -617,7 +617,10 @@ the problem.
 \subsection{Polynomial order influence}\label{subsection:results:load_balancing_performance:polynomial_order}
 
 Figure~\ref{fig:N_influence} shows a comparison of the iteration time in function of the polynomial
-order \(N\) of an uniformly refined mesh. This
+order \(N\) of an uniformly refined mesh. This shows how computing time scales on
+\acrshortpl{acr:GPU} with increasing \(N\), and could guide how elements should be weighted
+individually when performing load balancing, instead of being all weighted equally like they are in
+this work.
 
 \begin{figure}[H]
 	\centering
