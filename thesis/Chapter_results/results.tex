@@ -608,6 +608,12 @@ balanced.
 	\caption{Load balancing performance: Simulation time with refinement and load balancing while increasing load imbalance. \(N = 4\), \(K_{initial} = 16384\), refinement interval = 20, load balancing interval = 20, \(P = 16\), load balancing threshold = \(1.5\)}\label{fig:load_balancing_efficiency}
 \end{figure}
 
+Figure~\ref{fig:load_balancing_efficiency} shows that dynamic load balancing performs well, and is
+able to regain performance lost to load imbalance. In the high load imbalance case, with a load
+imbalance of \(L = 12.50\), dynamic load balancing can improve performance by \(4.3 \times \). It
+scale well with load imbalance, meaning it gives good results no matter the level of imbalance of
+the problem.
+
 \subsection{Polynomial order influence}\label{subsection:results:load_balancing_performance:polynomial_order}
 
 Figure~\ref{fig:N_influence} shows a comparison of the iteration time in function of the polynomial
