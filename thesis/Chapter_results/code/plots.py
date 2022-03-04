@@ -162,6 +162,7 @@ error_colour_dark = np.array([168, 80, 161])/255
 solving_colour = np.array([215, 186, 125])/255
 pre_condition_colour = np.array([181, 206, 168])/255
 N_colour = np.array([78, 201, 176])/255
+imbalance_colour = np.array([86, 156, 214])/255
 data_size = 12
 data_size_small = 8
 data_shape = "o"
@@ -344,7 +345,7 @@ lb_title = f"Load balancing performance, threshold test, N = {load_balancing_thr
 lb_fig.canvas.manager.set_window_title(lb_title)
 lb_ax.grid()
 
-lb_ax.plot(load_balancing_threshold_I, load_balancing_threshold_baseline_t/load_balancing_threshold_t[:, best_T], color=gpu_colour, linewidth=data_width, marker=data_shape, markersize=data_size, label="Speedup")
+lb_ax.plot(load_balancing_threshold_I, load_balancing_threshold_baseline_t/load_balancing_threshold_t[:, best_T], color=imbalance_colour, linewidth=data_width, marker=data_shape, markersize=data_size, label="Speedup")
 
 lb_ax.set_ylim([0, 1.2 * max(load_balancing_threshold_baseline_t/load_balancing_threshold_t[:, best_T])])
 lb_fig.tight_layout()
