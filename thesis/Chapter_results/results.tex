@@ -630,6 +630,19 @@ this work.
 
 \section{Complex Case}\label{section:results:complex_application}
 
+We now present a more complex case with all modules of the program enabled. Figure~\ref{fig:cloud_p}
+shows the pressure distribution at two times. The problem depicts a diagonal wave moving through a
+small circular ``cloud'' of higher pressure. The cloud expands and interacts with the wave. It is
+initially split into \(16\) elements in the \(x\) and \(y\) directions, for \(K = 256\) elements.
+The polynomial order of the elements is initially \(4\). It is computer in parallel on \(16\)
+\acrshortpl{acr:GPU}. The mesh is refined every \(50\) timesteps, and load balanced with a imbalance
+threshold of \(L = 1.1\). It is allowed to refine up to \(S = 3\) and \(N = 16\). Pre-conditioning
+was performed with three steps, which is why the \(t = 0 s\) mesh is already refined.
+Figure~\ref{fig:cloud_s} shows the split level \(S\) of the mesh, Figure~\ref{fig:cloud_N} shoes the
+polynomial order \(N\) of the mesh, and Figure~\ref{fig:cloud_rank} shows the rank of the elements.
+The rank indicates which of the \(16\) \acrshortpl{acr:GPU} is responsible for which part of the
+mesh, and how it changes with time as the mesh is load balanced.
+
 \begin{figure}[H]
 	\centering
 	\subfloat[\( t = 0 s\)]
@@ -647,7 +660,7 @@ this work.
 	\hfill
 	\subfloat[\( t = 0.2 s\)]
 	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/cloud_split_level_t0_2}\label{fig:cloud_s_t0_2}}
-	\caption{Complex case split level: The elements split more where the cloud meets the wave. P = 16 (a) Start of computation (b) After the wave and cloud collide}\label{fig:cloud_s}
+	\caption{Complex case h-refinement: The elements split more where the cloud meets the wave. P = 16 (a) Start of computation (b) After the wave and cloud collide}\label{fig:cloud_s}
 \end{figure}
 
 \begin{figure}[H]
@@ -657,7 +670,7 @@ this work.
 	\hfill
 	\subfloat[\( t = 0.2 s\)]
 	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/cloud_N_t0_2}\label{fig:cloud_N_t0_2}}
-	\caption{Complex case N:\@The polynomial order increases more at the center of the cloud and where cloud meets the wave. P = 16 (a) Start of computation (b) After the wave and cloud collide}\label{fig:cloud_N}
+	\caption{Complex case p-refinement: The polynomial order increases more at the center of the cloud and where cloud meets the wave. P = 16 (a) Start of computation (b) After the wave and cloud collide}\label{fig:cloud_N}
 \end{figure}
 
 \begin{figure}[H]
@@ -669,6 +682,17 @@ this work.
 	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/cloud_rank_t0_2}\label{fig:cloud_rank_t0_2}}
 	\caption{Complex case rank: As the mesh is refined load imbalance can occur, and elements are sent from one \acrshort{acr:GPU} to another when load balancing. P = 16 (a) Start of computation (b) After the wave and cloud collide}\label{fig:cloud_rank}
 \end{figure}
+
+These figures show that the pre-condition steps do a good job of refining the mesh to capture the
+initial conditions correctly in the \(t = 0 s\) figures. Afterwards, Figures~\ref{fig:cloud_s_t0_2}
+and~\ref{fig:cloud_N_t0_2} show that the mesh is refined along the movement of the linear wave and
+the expansion of the circular, and especially refined at their intersection. This indicates that the
+error estimation correctly identify the more difficult areas of the solution. As more elements are
+created at the intersection of both waves, load imbalance occurs. From
+Figures~\ref{fig:cloud_s_t0_2} and~\ref{fig:cloud_rank_t0}, we can observe that there are more
+h-refining elements around \acrshorts{acr:GPU} \(6\) and \(8\), which have load balanced by \(t =
+0.2 s\) in Figure~\ref{fig:cloud_rank_t0_2}. The elements are moved around by dynamic load
+balancing, while keeping good locality and limiting the surface area between \acrshortpl{acr:GPU}.
 
 \section{Complex Meshes}\label{section:results:complex_meshes}
 
@@ -703,5 +727,5 @@ this work.
 	\subfloat[N]
 	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/airfoil_N_t1_5}\label{fig:complex_mesh_N}}
 
-	\caption{Complex mesh: A wave going over an airfoil. P = 4 (a) Pressure (b) Pressure \(\sigma \), denoting if h-refinement or p-refinement would be chosen (c) Split level, denoting how many times elements have split (d) Polynomial order \(N\)}\label{fig:complex_mesh_solution}
+	\caption{Complex mesh: A wave going over an airfoil. P = 4 (a) Pressure (b) Pressure \(\sigma \), denoting if h-refinement or p-refinement would be chosen (c) h-refinement, the split level denotes how many times elements have split (d) p-refinement, polynomial order \(N\)}\label{fig:complex_mesh_solution}
 \end{figure}
