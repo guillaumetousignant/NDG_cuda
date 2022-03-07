@@ -13,7 +13,7 @@ to solving the equations governing those processes.
 Usage of \acrshort{acr:CFD} has been steadily rising in recent years~\cite{Slotnick2014}. It is easy
 to imagine why, when experimental results are so costly to obtain, and a theoretical approach is
 difficult to apply to complex cases. Nonetheless, \acrshort{acr:CFD} is not meant to replace those
-methods, but to be combined with them. Reducing the need to perform experiments, while comparing
+methods, but to be combined with them: reducing the need to perform experiments, while comparing
 results with those from actual experiments to verify and validate the numerical
 models~\cite{Stern2001}.
 
@@ -28,20 +28,22 @@ methods.
 Spectral methods are an answer to that need of more accurate numerical methods. Unlike traditional
 methods like finite differences methods, finite element methods and finite volume methods, spectral
 methods are high-order methods and converge exponentially fast. Such methods are used to solve
-complex flows, such as direct numerical simulation or turbulence~\cite{Cantwell2015} as shown in
-Figure~\ref{fig:intro_sem}. 
+complex flows, but are expensive and are only recently emerging from the research environment to
+tackle more and more complex problems from classical aerodynamics~\cite{Vadsola2021} to nuclear
+reactor flows~\cite{Merzari2017}, internal combustion~\cite{Wu2021}, ocean
+simulation~\cite{Molcard2002}, atmosphere simulation~\cite{Haidvogel1997}, and more. 
 
 \begin{figure}[H]
 	\centering
-	\includegraphics[width=0.8\textwidth]{Chapter_introduction/media/spectral_element_method}
-	\caption{Direct numerical simulation: Spectral methods have sufficient accuracy to model very complex flows (reprinted from~\cite{Cantwell2015}).}\label{fig:intro_sem}
+	\includegraphics[width=0.95\textwidth]{Chapter_introduction/media/spectral_element_method}
+	\caption{Direct numerical simulation: Spectral methods have sufficient accuracy to model very complex flows (reprinted from~\cite{Vadsola2021}).}\label{fig:intro_sem}
 \end{figure}
 
 Instead of modelling the solution as individual values at points, or a linear or quadratic function
 within a space subdivision, spectral methods represent a function as a truncated series:
 
 \begin{equation}
-	u(x) \approx u_N(x) = \sum_{n = 0}^{N} \widehat{u}_n \phi _n(x).
+	u(x) \approx u_N(x) = \sum_{n = 0}^{N} \widehat{u}_n \phi _n(x),
 \end{equation}
 
 \noindent
@@ -52,26 +54,27 @@ governing equations in integral form over the domain~\cite{Reed1973}, which is b
 elements. This method, in combination with the spectral approximation, will be used in this work. It
 is called the \textit{Galerkin spectral element method}. This method can be formulated both in
 \textit{continuous} and \textit{discontinuous} versions. Continuous methods decompose the domain
-into elements, within which the solution are represented as functions. These functions join at the
+into elements, within which the solution is represented as functions. These functions join at the
 element boundaries, making the method continuous. Discontinuous methods allow the solution to be
-discontinuous at element boundaries, using fluxes between elements to stabilise the scheme. It is
-the \textit{\acrfull{acr:DG-SEM}}. We will use this method, as it is easier to be made parallel. The
-fact that elements are independent and only connect through fluxes should map better to the
-\acrshort{acr:GPU} architecture, where the solution of all elements will be computed concurrently.
-It also simplifies refining the mesh by simplifying the usage of non-conforming interfaces. This
-method combines the accuracy and exponential convergence of spectral methods with the geometric
-flexibility of finite element methods. 
+discontinuous at element boundaries, using fluxes between elements to stabilise the scheme. We refer
+to these as the \textit{\acrfull{acr:DG-SEM}}. We will use this method, as it is easier to be made
+parallel. The fact that elements are independent and only connect through fluxes should map better
+to the \acrshort{acr:GPU} architecture, where the solution of all elements will be computed
+concurrently. It also simplifies mesh refinement by simplifying the usage of non-conforming
+interfaces. Both \acrshort{acr:SEM} methods, continuous or discontinuous, combines the accuracy and
+exponential convergence of spectral methods with the geometric flexibility of finite element
+methods. 
 
 % GPUs
-With the stagnation of traditional computer \textit{\acrfullpl{acr:CPU}} operating frequencies over
+With the stagnation of traditional computer \textit{\acrfull{acr:CPU}} operating frequencies over
 the last years~\cite{Parkhurst2006}, computer systems have evolved to use more parallel
 architectures. \Acrshortpl{acr:CPU} are now composed of several computing cores~\cite{Nayfeh1997}
 executing tasks together or in parallel, and contemporary \textit{\acrfull{acr:HPC}} platforms
 consist of several whole computers networked together executing tasks in parallel. Amidst those
 changes, an inherently parallel architecture has started to be used in scientific computing.
-\textit{\Acrfullpl{acr:GPU}} are computer chips that were initially used in computer graphics, a
-massively parallel workload. \Acrshortpl{acr:GPU} can now be programmed similarly to traditional
-\acrshortpl{acr:CPU}~\cite{Owens2008}, offering their thousands of simpler cores to many kids of
+\textit{\Acrfullpl{acr:GPU}} are computer chips that were initially used in computer graphics, for
+massively parallel workloads. \Acrshortpl{acr:GPU} can now be programmed similarly to traditional
+\acrshortpl{acr:CPU}~\cite{Owens2008}, offering their thousands of simpler cores to many kinds of
 computation. This architecture is optimised for maximal bandwidth, to process great amounts of data
 as fast as possible. Recently, these processors have been incorporated into \acrshort{acr:HPC}
 platforms~\cite{Fan2004}, enabling massively parallel workloads with theoretical processing power
@@ -83,12 +86,12 @@ much greater than that using traditional \acrshortpl{acr:CPU}.
 	\caption{\Acrshort{acr:GPU} architecture~\cite{Nvidia2021}: \Acrshortpl{acr:GPU} dedicate much more die space to computations (in green).}\label{fig:intro_gpu}
 \end{figure}
 
-We will use \acrshortpl{acr:GPU} for our computations in hope to increase the available processing
-power to solve complex problems. This will not come free, as \acrshort{acr:GPU} architectures are
-more optimised for static workloads executing the exact same code on all \acrshort{acr:GPU} cores.
-We use the \acrshort{acr:CUDA} parallel computing platform~\cite{Garland2008}, which enables
-programming \acrshortpl{acr:GPU} using the C++ language with some extensions, much like
-\acrshort{acr:CPU} programming.
+We will use \acrshortpl{acr:GPU} for our computations in the hope of increasing the available
+processing power to solve complex problems. This will not come easily, as \acrshort{acr:GPU}
+architectures are optimised for static workloads executing the exact same code on all
+\acrshort{acr:GPU} cores. We use the \acrshort{acr:CUDA} parallel computing
+platform~\cite{Garland2008}, which enables programming \acrshortpl{acr:GPU} using the C++ language
+with some extensions, much like \acrshort{acr:CPU} programming.
 
 % Adaptivity
 Even with highly accurate methods and the processing power of \acrshort{acr:GPU}-enabled
@@ -101,19 +104,21 @@ started over for every new problem. It is sometimes not possible to predict wher
 will be, such as when modeling chaotic turbulent flows. It is also possible that the mathematically
 important areas are not easy to identify. 
 
-\textit{\Acrfull{acr:AMR}} methods have been studied in order to solve this problem. These methods
+\textit{\Acrfull{acr:AMR}} methods have been developed in order to solve this problem. These methods
 aim to identify the areas of the mesh that need refinement, and refine those areas to obtain more
-accurate results while not wasting resources on areas of less interest. Berger and
-Oliger~\cite{Berger1984} describe a recursive method where refined grids can contain further refined
-grids. Another method by Khokhlov~\cite{Khokhlov1998} has reported a factor of 10 savings of both
-memory and computing time. We will use \acrlong{acr:AMR} to make more efficient use of the resources
-we have and to ease working with the more limited amount of memory of \acrshortpl{acr:GPU} compared
-to \acrshortpl{acr:CPU}.
+accurate results while not wasting resources on areas of less interest. Figure~\ref{fig:intro_amr}
+shows a problem that has been refined in order to better capture the bow shock around a spacecraft.
+Berger and Oliger~\cite{Berger1984} were among the first to describe a recursive method where
+refined grids can contain further refined grids. Another \acrshort{acr:AMR} method by
+Khokhlov~\cite{Khokhlov1998} has reported a factor of 10 savings of both memory and computing time.
+We will use \acrlong{acr:AMR} to make more efficient use of the resources we have and to ease
+working with the more limited amount of memory of \acrshortpl{acr:GPU} compared to
+\acrshortpl{acr:CPU}.
 
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.8\textwidth]{Chapter_introduction/media/adaptive_mesh_refinement}
-	\caption{\Acrlong{acr:AMR}: The mesh is more refined in important flow regions (reprinted from~\cite{Siemens2020}).}\label{fig:intro_amr}
+	\caption{\Acrlong{acr:AMR}: The mesh is more refined in certain flow regions to capture important features of the flow (reprinted from~\cite{Siemens2020}).}\label{fig:intro_amr}
 \end{figure}
 
 Two general approaches to \acrshort{acr:AMR} exist. Berger and Oliger~\cite{Berger1984} use
