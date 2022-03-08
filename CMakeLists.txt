@@ -16,7 +16,6 @@ else ()
     project(NDG_cuda VERSION 1.0.0 LANGUAGES CXX C)
 endif()
 
-#enable_language(CUDA) # Put this somewhere conditionally if CUDA is optional
 if (BUILD_GPU)
     include(CheckLanguage)
     check_language(CUDA)
