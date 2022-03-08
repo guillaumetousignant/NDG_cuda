@@ -125,7 +125,6 @@ if (BUILD_GPU)
 
     target_compile_features(SEM-CUDA PRIVATE cxx_std_17)
     if(NOT ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug"))
-        set_property(TARGET SEM PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
         set_property(TARGET SEM-CUDA PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
     endif()
     target_compile_options(SEM-CUDA PUBLIC "$<$<AND:$<COMPILE_LANGUAGE:CUDA>,$<OR:$<CONFIG:DEBUG>,$<CONFIG:RelWithDebInfo>>>:-lineinfo>")
