@@ -78,7 +78,7 @@ auto SEM::Device::Entities::Face2D_t::compute_geometry(const std::array<SEM::Dev
     normal_ = SEM::Device::Entities::Vec2<deviceFloat>(tangent_.y(), -tangent_.x());     
 
     const SEM::Device::Entities::Vec2<deviceFloat> left_element_tangent = element_nodes[0][1] - element_nodes[0][0];
-    const deviceFloat sign = std::copysign(static_cast<deviceFloat>(1), tangent_.dot(left_element_tangent)); // CHECK doesn't work for zero-length edges, if it is an issue do the thing with centres
+    const deviceFloat sign = std::copysign(deviceFloat{1}, tangent_.dot(left_element_tangent)); // CHECK doesn't work for zero-length edges, if it is an issue do the thing with centres
     normal_ *= sign;
     tangent_ *= sign;
 

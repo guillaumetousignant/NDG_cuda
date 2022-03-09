@@ -91,8 +91,9 @@ namespace SEM { namespace Host { namespace Entities {
             // Algorithm 61
             auto interpolate_q_to_boundaries(const std::vector<hostFloat>& lagrange_interpolant_minus, const std::vector<hostFloat>& lagrange_interpolant_plus) -> void;
 
-            template<typename Polynomial>
-            auto estimate_error(hostFloat tolerance_min, hostFloat tolerance_max, const std::vector<hostFloat>& polynomial_nodes, const std::vector<hostFloat>& weights) -> void;
+            auto estimate_error(hostFloat tolerance_min, hostFloat tolerance_max, const std::vector<hostFloat>& polynomials) -> void;
+            
+            auto estimate_p_error(hostFloat tolerance_min, hostFloat tolerance_max, const std::vector<hostFloat>& polynomials) -> void;
 
             // This is used when the elements have different points
             auto interpolate_from(const std::array<SEM::Host::Entities::Vec2<hostFloat>, 4>& points, const std::array<SEM::Host::Entities::Vec2<hostFloat>, 4>& points_other, const Element2D_t& other, const std::vector<std::vector<hostFloat>>& polynomial_nodes, const std::vector<std::vector<hostFloat>>& barycentric_weights) -> void;
@@ -125,7 +126,5 @@ namespace SEM { namespace Host { namespace Entities {
             auto exponential_decay(int n_points_least_squares) -> std::array<hostFloat, 2>;
     };
 }}}
-
-#include "entities/Element2D_t.tpp"
 
 #endif

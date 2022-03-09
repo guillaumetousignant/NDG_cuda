@@ -368,7 +368,7 @@ constexpr auto SEM::Host::Entities::Vec2<T>::almost_equal(const Vec2<T> &other) 
 
 template <class T>
 auto operator<<(std::ostream &output, const SEM::Host::Entities::Vec2<T> &v) -> std::ostream& {
-    std::cout << '[' << v[0] << ", " << v[1] << ']';
+    output << '[' << v[0] << ", " << v[1] << ']';
     return output;
 }
 

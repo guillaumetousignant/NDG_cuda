@@ -1,4 +1,5 @@
 #include <cmath>
+#include <limits>
 
 using SEM::Host::Entities::Vec2;
 
@@ -51,7 +52,7 @@ auto SEM::Host::inverse_quad_map(Vec2<T> global_coordinates, const std::array<Ve
     const T k0 = h.cross(e);
     
     // if edges are parallel, this is a linear equation
-    if(std::abs(k2) < 0.001) {
+    if(std::abs(k2) < std::numeric_limits<T>::min()) {
         const T u_denominator_x = e.x() * k1 - g.x() * k0;
         const T u_denominator_y = e.y() * k1 - g.y() * k0;
 

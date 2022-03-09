@@ -85,20 +85,20 @@ SEM::Host::Entities::Element2D_t::Element2D_t() :
 // Algorithm 61
 auto SEM::Host::Entities::Element2D_t::interpolate_to_boundaries(const std::vector<hostFloat>& lagrange_interpolant_minus, const std::vector<hostFloat>& lagrange_interpolant_plus) -> void {
     for (int i = 0; i <= N_; ++i) {
-        p_extrapolated_[0][i] = 0.0;
-        p_extrapolated_[2][N_ - i] = 0.0;
-        p_extrapolated_[1][i] = 0.0;
-        p_extrapolated_[3][N_ - i] = 0.0;
+        p_extrapolated_[0][i] = hostFloat{0};
+        p_extrapolated_[2][N_ - i] = hostFloat{0};
+        p_extrapolated_[1][i] = hostFloat{0};
+        p_extrapolated_[3][N_ - i] = hostFloat{0};
 
-        u_extrapolated_[0][i] = 0.0;
-        u_extrapolated_[2][N_ - i] = 0.0;
-        u_extrapolated_[1][i] = 0.0;
-        u_extrapolated_[3][N_ - i] = 0.0;
+        u_extrapolated_[0][i] = hostFloat{0};
+        u_extrapolated_[2][N_ - i] = hostFloat{0};
+        u_extrapolated_[1][i] = hostFloat{0};
+        u_extrapolated_[3][N_ - i] = hostFloat{0};
 
-        v_extrapolated_[0][i] = 0.0;
-        v_extrapolated_[2][N_ - i] = 0.0;
-        v_extrapolated_[1][i] = 0.0;
-        v_extrapolated_[3][N_ - i] = 0.0;
+        v_extrapolated_[0][i] = hostFloat{0};
+        v_extrapolated_[2][N_ - i] = hostFloat{0};
+        v_extrapolated_[1][i] = hostFloat{0};
+        v_extrapolated_[3][N_ - i] = hostFloat{0};
         
         // For the boundaries, the numbering increases from the first node to the second. 
         // Inside the element, the ksi and eta coordinates increase from left to right, bottom to top.
@@ -129,9 +129,196 @@ auto SEM::Host::Entities::Element2D_t::interpolate_q_to_boundaries(const std::ve
     printf("Warning, SEM::Host::Entities::Element2D_t::interpolate_q_to_boundaries is not implemented.\n");
 }
 
+auto SEM::Host::Entities::Element2D_t::estimate_error(hostFloat tolerance_min, hostFloat tolerance_max, const std::vector<hostFloat>& polynomials) -> void {
+    const int n_points_least_squares = std::min(N_ + 1, SEM::Host::Constants::n_points_least_squares_max); // Number of points to use for thew least squares reduction, but don't go above N.
+
+    refine_ = false;
+    coarsen_ = true;
+
+    // Pressure
+    for (int node_index = 0; node_index < n_points_least_squares; ++node_index) {
+        spectrum_[node_index] = hostFloat{0};
+        const hostFloat p = N_ + node_index + 1 - n_points_least_squares;
+
+        // x and y directions
+        for (int i = 0; i < p; ++i) {
+            hostFloat local_spectrum_x{0};
+            hostFloat local_spectrum_y{0};
+
+            for (int k = 0; k <= N_; ++k) {
+                for (int l = 0; l <= N_; ++l) {
+                    local_spectrum_x += p_[k * (N_ + 1) + l] * polynomials[i * (N_ + 1) + k] * polynomials[p * (N_ + 1) + l];
+                    local_spectrum_y += p_[k * (N_ + 1) + l] * polynomials[p * (N_ + 1) + k] * polynomials[i * (N_ + 1) + l];
+                }
+
+            }
+            spectrum_[node_index] += std::abs(local_spectrum_x) + std::abs(local_spectrum_y);
+        }
+
+        // Last point for x only
+        hostFloat local_spectrum_x{0};
+        for (int k = 0; k <= N_; ++k) {
+            for (int l = 0; l <= N_; ++l) {
+                local_spectrum_x += p_[k * (N_ + 1) + l] * polynomials[p * (N_ + 1) + k] * polynomials[p * (N_ + 1) + l];
+            }
+
+        }
+        spectrum_[node_index] += std::abs(local_spectrum_x);
+    }
+
+    const auto [C_p, sigma_p] = exponential_decay(n_points_least_squares);
+    p_sigma_ = sigma_p;
+
+    // Sum of error
+    p_error_ = std::sqrt(spectrum_[n_points_least_squares - 1] * spectrum_[n_points_least_squares - 1] // Why this part?
+                         + C_p * C_p * hostFloat{0.5} / sigma_p * std::exp(-2 * sigma_p * (N_ + 1)));
+
+    if(p_error_ > tolerance_min) {	// need refinement
+        refine_ = true;
+    }
+    if(p_error_ > tolerance_max) {	// need coarsening
+        coarsen_ = false;
+    }
+
+    // Velocity x
+    for (int node_index = 0; node_index < n_points_least_squares; ++node_index) {
+        spectrum_[node_index] = hostFloat{0};
+        const hostFloat p = N_ + node_index + 1 - n_points_least_squares;
+
+        // x and y directions
+        for (int i = 0; i < p; ++i) {
+            hostFloat local_spectrum_x{0};
+            hostFloat local_spectrum_y{0};
+
+            for (int k = 0; k <= N_; ++k) {
+                for (int l = 0; l <= N_; ++l) {
+                    local_spectrum_x += u_[k * (N_ + 1) + l] * polynomials[i * (N_ + 1) + k] * polynomials[p * (N_ + 1) + l];
+                    local_spectrum_y += u_[k * (N_ + 1) + l] * polynomials[p * (N_ + 1) + k] * polynomials[i * (N_ + 1) + l];
+                }
+
+            }
+            spectrum_[node_index] += std::abs(local_spectrum_x) + std::abs(local_spectrum_y);
+        }
+
+        // Last point for x only
+        hostFloat local_spectrum_x{0};
+        for (int k = 0; k <= N_; ++k) {
+            for (int l = 0; l <= N_; ++l) {
+                local_spectrum_x += u_[k * (N_ + 1) + l] * polynomials[p * (N_ + 1) + k] * polynomials[p * (N_ + 1) + l];
+            }
+
+        }
+        spectrum_[node_index] += std::abs(local_spectrum_x);
+    }
+
+    const auto [C_u, sigma_u] = exponential_decay(n_points_least_squares);
+    u_sigma_ = sigma_u;
+
+    // Sum of error
+    u_error_ = std::sqrt(spectrum_[n_points_least_squares - 1] * spectrum_[n_points_least_squares - 1] // Why this part?
+                         + C_u * C_u * hostFloat{0.5} / sigma_u * std::exp(-2 * sigma_u * (N_ + 1)));
+
+    if(u_error_ > tolerance_min) {	// need refinement
+        refine_ = true;
+    }
+    if(u_error_ > tolerance_max) {	// need coarsening
+        coarsen_ = false;
+    }
+
+    // Velocity y
+    for (int node_index = 0; node_index < n_points_least_squares; ++node_index) {
+        spectrum_[node_index] = hostFloat{0};
+        const hostFloat p = N_ + node_index + 1 - n_points_least_squares;
+
+        // x and y directions
+        for (int i = 0; i < p; ++i) {
+            hostFloat local_spectrum_x{0};
+            hostFloat local_spectrum_y{0};
+
+            for (int k = 0; k <= N_; ++k) {
+                for (int l = 0; l <= N_; ++l) {
+                    local_spectrum_x += v_[k * (N_ + 1) + l] * polynomials[i * (N_ + 1) + k] * polynomials[p * (N_ + 1) + l];
+                    local_spectrum_y += v_[k * (N_ + 1) + l] * polynomials[p * (N_ + 1) + k] * polynomials[i * (N_ + 1) + l];
+                }
+
+            }
+            spectrum_[node_index] += std::abs(local_spectrum_x) + std::abs(local_spectrum_y);
+        }
+
+        // Last point for x only
+        hostFloat local_spectrum_x{0};
+        for (int k = 0; k <= N_; ++k) {
+            for (int l = 0; l <= N_; ++l) {
+                local_spectrum_x += v_[k * (N_ + 1) + l] * polynomials[p * (N_ + 1) + k] * polynomials[p * (N_ + 1) + l];
+            }
+
+        }
+        spectrum_[node_index] += std::abs(local_spectrum_x);
+    }
+
+    const auto [C_v, sigma_v] = exponential_decay(n_points_least_squares);
+    v_sigma_ = sigma_v;
+
+    // Sum of error
+    v_error_ = std::sqrt(spectrum_[n_points_least_squares - 1] * spectrum_[n_points_least_squares - 1] // Why this part?
+                         + C_v * C_v * hostFloat{0.5} / sigma_v * std::exp(-2 * sigma_v * (N_ + 1)));
+
+    if(v_error_ > tolerance_min) {	// need refinement
+        refine_ = true;
+    }
+    if(v_error_ > tolerance_max) {	// need coarsening
+        coarsen_ = false;
+    }
+}
+
+auto SEM::Host::Entities::Element2D_t::estimate_p_error(hostFloat tolerance_min, hostFloat tolerance_max, const std::vector<hostFloat>& polynomials) -> void {
+    const int n_points_least_squares = std::min(N_ + 1, SEM::Host::Constants::n_points_least_squares_max); // Number of points to use for thew least squares reduction, but don't go above N.
+
+    // Pressure
+    for (int node_index = 0; node_index < n_points_least_squares; ++node_index) {
+        spectrum_[node_index] = hostFloat{0};
+        const hostFloat p = N_ + node_index + 1 - n_points_least_squares;
+
+        // x and y directions
+        for (int i = 0; i < p; ++i) {
+            hostFloat local_spectrum_x{0};
+            hostFloat local_spectrum_y{0};
+
+            for (int k = 0; k <= N_; ++k) {
+                for (int l = 0; l <= N_; ++l) {
+                    local_spectrum_x += p_[k * (N_ + 1) + l] * polynomials[i * (N_ + 1) + k] * polynomials[p * (N_ + 1) + l];
+                    local_spectrum_y += p_[k * (N_ + 1) + l] * polynomials[p * (N_ + 1) + k] * polynomials[i * (N_ + 1) + l];
+                }
+
+            }
+            spectrum_[node_index] += std::abs(local_spectrum_x) + std::abs(local_spectrum_y);
+        }
+
+        // Last point for x only
+        hostFloat local_spectrum_x{0};
+        for (int k = 0; k <= N_; ++k) {
+            for (int l = 0; l <= N_; ++l) {
+                local_spectrum_x += p_[k * (N_ + 1) + l] * polynomials[p * (N_ + 1) + k] * polynomials[p * (N_ + 1) + l];
+            }
+
+        }
+        spectrum_[node_index] += std::abs(local_spectrum_x);
+    }
+
+    const auto [C_p, sigma_p] = exponential_decay(n_points_least_squares);
+    p_sigma_ = sigma_p;
+
+    // Sum of error
+    p_error_ = std::sqrt(spectrum_[n_points_least_squares - 1] * spectrum_[n_points_least_squares - 1] // Why this part?
+                         + C_p * C_p * hostFloat{0.5} / sigma_p * std::exp(-2 * sigma_p * (N_ + 1)));
+
+    refine_ = p_error_ > tolerance_min; // need refinement
+    coarsen_ = p_error_ < tolerance_max; // need coarsening
+}
+
 auto SEM::Host::Entities::Element2D_t::exponential_decay(int n_points_least_squares) -> std::array<hostFloat, 2> {
-    hostFloat x_avg = 0.0;
-    hostFloat y_avg = 0.0;
+    hostFloat x_avg{0};
+    hostFloat y_avg{0};
 
     for (int i = 0; i < n_points_least_squares; ++i) {
         x_avg += N_ + i + 1 - n_points_least_squares;
@@ -141,8 +328,8 @@ auto SEM::Host::Entities::Element2D_t::exponential_decay(int n_points_least_squa
     x_avg /= n_points_least_squares;
     y_avg /= n_points_least_squares;
 
-    hostFloat numerator = 0.0;
-    hostFloat denominator = 0.0;
+    hostFloat numerator{0};
+    hostFloat denominator{0};
 
     for (int i = 0; i < n_points_least_squares; ++i) {
         const int p = N_ + i + 1 - n_points_least_squares;
@@ -185,13 +372,13 @@ auto SEM::Host::Entities::Element2D_t::interpolate_from(const std::array<Vec2<ho
             }
             // A row fits exactly
             else if (row_found != -1) {
-                hostFloat p_numerator = 0.0;
-                hostFloat u_numerator = 0.0;
-                hostFloat v_numerator = 0.0;
-                hostFloat G_p_numerator = 0.0;
-                hostFloat G_u_numerator = 0.0;
-                hostFloat G_v_numerator = 0.0;
-                hostFloat denominator = 0.0;
+                hostFloat p_numerator{0};
+                hostFloat u_numerator{0};
+                hostFloat v_numerator{0};
+                hostFloat G_p_numerator{0};
+                hostFloat G_u_numerator{0};
+                hostFloat G_v_numerator{0};
+                hostFloat denominator{0};
 
                 for (int m = 0; m <= other.N_; ++m) {
                     const hostFloat t = barycentric_weights[other.N_][m]/(local_coordinates_in_other.x() - polynomial_nodes[other.N_][m]);
@@ -213,13 +400,13 @@ auto SEM::Host::Entities::Element2D_t::interpolate_from(const std::array<Vec2<ho
             }
             // A column fits exactly
             else if (column_found != -1) {
-                hostFloat p_numerator = 0.0;
-                hostFloat u_numerator = 0.0;
-                hostFloat v_numerator = 0.0;
-                hostFloat G_p_numerator = 0.0;
-                hostFloat G_u_numerator = 0.0;
-                hostFloat G_v_numerator = 0.0;
-                hostFloat denominator = 0.0;
+                hostFloat p_numerator{0};
+                hostFloat u_numerator{0};
+                hostFloat v_numerator{0};
+                hostFloat G_p_numerator{0};
+                hostFloat G_u_numerator{0};
+                hostFloat G_v_numerator{0};
+                hostFloat denominator{0};
 
                 for (int n = 0; n <= other.N_; ++n) {
                     const hostFloat t = barycentric_weights[other.N_][n]/(local_coordinates_in_other.y() - polynomial_nodes[other.N_][n]);
@@ -241,15 +428,15 @@ auto SEM::Host::Entities::Element2D_t::interpolate_from(const std::array<Vec2<ho
             }
             // Complete interpolation
             else {
-                p_[i * (N_ + 1) + j] = 0;
-                u_[i * (N_ + 1) + j] = 0;
-                v_[i * (N_ + 1) + j] = 0;
-                G_p_[i * (N_ + 1) + j] = 0;
-                G_u_[i * (N_ + 1) + j] = 0;
-                G_v_[i * (N_ + 1) + j] = 0;
+                p_[i * (N_ + 1) + j] = hostFloat{0};
+                u_[i * (N_ + 1) + j] = hostFloat{0};
+                v_[i * (N_ + 1) + j] = hostFloat{0};
+                G_p_[i * (N_ + 1) + j] = hostFloat{0};
+                G_u_[i * (N_ + 1) + j] = hostFloat{0};
+                G_v_[i * (N_ + 1) + j] = hostFloat{0};
 
-                hostFloat denominator_x = 0.0;
-                hostFloat denominator_y = 0.0;
+                hostFloat denominator_x{0};
+                hostFloat denominator_y{0};
 
                 for (int k = 0; k <= other.N_; ++k) {
                     denominator_x += barycentric_weights[other.N_][k]/(local_coordinates_in_other.x() - polynomial_nodes[other.N_][k]);
@@ -302,13 +489,13 @@ auto SEM::Host::Entities::Element2D_t::interpolate_from(const SEM::Host::Entitie
             }
             // A row fits exactly
             else if (row_found != -1) {
-                hostFloat p_numerator = 0.0;
-                hostFloat u_numerator = 0.0;
-                hostFloat v_numerator = 0.0;
-                hostFloat G_p_numerator = 0.0;
-                hostFloat G_u_numerator = 0.0;
-                hostFloat G_v_numerator = 0.0;
-                hostFloat denominator = 0.0;
+                hostFloat p_numerator{0};
+                hostFloat u_numerator{0};
+                hostFloat v_numerator{0};
+                hostFloat G_p_numerator{0};
+                hostFloat G_u_numerator{0};
+                hostFloat G_v_numerator{0};
+                hostFloat denominator{0};
 
                 for (int m = 0; m <= other.N_; ++m) {
                     const hostFloat t = barycentric_weights[other.N_][m]/(local_coordinates_in_other.x() - polynomial_nodes[other.N_][m]);
@@ -330,13 +517,13 @@ auto SEM::Host::Entities::Element2D_t::interpolate_from(const SEM::Host::Entitie
             }
             // A column fits exactly
             else if (column_found != -1) {
-                hostFloat p_numerator = 0.0;
-                hostFloat u_numerator = 0.0;
-                hostFloat v_numerator = 0.0;
-                hostFloat G_p_numerator = 0.0;
-                hostFloat G_u_numerator = 0.0;
-                hostFloat G_v_numerator = 0.0;
-                hostFloat denominator = 0.0;
+                hostFloat p_numerator{0};
+                hostFloat u_numerator{0};
+                hostFloat v_numerator{0};
+                hostFloat G_p_numerator{0};
+                hostFloat G_u_numerator{0};
+                hostFloat G_v_numerator{0};
+                hostFloat denominator{0};
 
                 for (int n = 0; n <= other.N_; ++n) {
                     const hostFloat t = barycentric_weights[other.N_][n]/(local_coordinates_in_other.y() - polynomial_nodes[other.N_][n]);
@@ -358,15 +545,15 @@ auto SEM::Host::Entities::Element2D_t::interpolate_from(const SEM::Host::Entitie
             }
             // Complete interpolation
             else {
-                p_[i * (N_ + 1) + j] = 0;
-                u_[i * (N_ + 1) + j] = 0;
-                v_[i * (N_ + 1) + j] = 0;
-                G_p_[i * (N_ + 1) + j] = 0;
-                G_u_[i * (N_ + 1) + j] = 0;
-                G_v_[i * (N_ + 1) + j] = 0;
+                p_[i * (N_ + 1) + j] = hostFloat{0};
+                u_[i * (N_ + 1) + j] = hostFloat{0};
+                v_[i * (N_ + 1) + j] = hostFloat{0};
+                G_p_[i * (N_ + 1) + j] = hostFloat{0};
+                G_u_[i * (N_ + 1) + j] = hostFloat{0};
+                G_v_[i * (N_ + 1) + j] = hostFloat{0};
 
-                hostFloat denominator_x = 0.0;
-                hostFloat denominator_y = 0.0;
+                hostFloat denominator_x {0};
+                hostFloat denominator_y{0};
 
                 for (int k = 0; k <= other.N_; ++k) {
                     denominator_x += barycentric_weights[other.N_][k]/(local_coordinates_in_other.x() - polynomial_nodes[other.N_][k]);
@@ -402,9 +589,9 @@ auto SEM::Host::Entities::Element2D_t::interpolate_solution(size_t n_interpolati
             y[output_offset + i * n_interpolation_points + j] = global_coordinates.y();
 
             // Pressure, u, and v
-            p[output_offset + i * n_interpolation_points + j] = 0.0;
-            u[output_offset + i * n_interpolation_points + j] = 0.0;
-            v[output_offset + i * n_interpolation_points + j] = 0.0;
+            p[output_offset + i * n_interpolation_points + j] = hostFloat{0};
+            u[output_offset + i * n_interpolation_points + j] = hostFloat{0};
+            v[output_offset + i * n_interpolation_points + j] = hostFloat{0};
             for (int m = 0; m <= N_; ++m) {
                 for (int n = 0; n <= N_; ++n) {
                     p[output_offset + i * n_interpolation_points + j] += p_[m * (N_ + 1) + n] * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
@@ -427,15 +614,15 @@ auto SEM::Host::Entities::Element2D_t::interpolate_complete_solution(size_t n_in
             y[output_offset + i * n_interpolation_points + j] = global_coordinates.y();
 
             // Pressure, u, and v
-            p[output_offset + i * n_interpolation_points + j] = 0.0;
-            u[output_offset + i * n_interpolation_points + j] = 0.0;
-            v[output_offset + i * n_interpolation_points + j] = 0.0;
-            dp_dt[output_offset + i * n_interpolation_points + j] = 0.0;
-            du_dt[output_offset + i * n_interpolation_points + j] = 0.0;
-            dv_dt[output_offset + i * n_interpolation_points + j] = 0.0;
-            p_analytical_error[output_offset + i * n_interpolation_points + j] = 0.0;
-            u_analytical_error[output_offset + i * n_interpolation_points + j] = 0.0;
-            v_analytical_error[output_offset + i * n_interpolation_points + j] = 0.0;
+            p[output_offset + i * n_interpolation_points + j] = hostFloat{0};
+            u[output_offset + i * n_interpolation_points + j] = hostFloat{0};
+            v[output_offset + i * n_interpolation_points + j] = hostFloat{0};
+            dp_dt[output_offset + i * n_interpolation_points + j] = hostFloat{0};
+            du_dt[output_offset + i * n_interpolation_points + j] = hostFloat{0};
+            dv_dt[output_offset + i * n_interpolation_points + j] = hostFloat{0};
+            p_analytical_error[output_offset + i * n_interpolation_points + j] = hostFloat{0};
+            u_analytical_error[output_offset + i * n_interpolation_points + j] = hostFloat{0};
+            v_analytical_error[output_offset + i * n_interpolation_points + j] = hostFloat{0};
             for (int m = 0; m <= N_; ++m) {
                 for (int n = 0; n <= N_; ++n) {
                     p[output_offset + i * n_interpolation_points + j] += p_[m * (N_ + 1) + n] * interpolation_matrices[i * (N_ + 1) + m] * interpolation_matrices[j * (N_ + 1) + n];
@@ -566,10 +753,10 @@ auto SEM::Host::Entities::Element2D_t::compute_geometry(const std::array<Vec2<ho
             jacobian_[i * (N_ + 1) + j] = metrics[0].x() * metrics[1].y() - metrics[0].y() * metrics[1].x();
         }
 
-        const Vec2<hostFloat> coordinates_bottom {polynomial_nodes[i], -1};
-        const Vec2<hostFloat> coordinates_right  {1, polynomial_nodes[i]};
-        const Vec2<hostFloat> coordinates_top    {polynomial_nodes[i], 1};
-        const Vec2<hostFloat> coordinates_left   {-1, polynomial_nodes[i]};
+        const Vec2<hostFloat> coordinates_bottom {polynomial_nodes[i], hostFloat{-1}};
+        const Vec2<hostFloat> coordinates_right  {hostFloat{1}, polynomial_nodes[i]};
+        const Vec2<hostFloat> coordinates_top    {polynomial_nodes[i], hostFloat{1}};
+        const Vec2<hostFloat> coordinates_left   {hostFloat{-1}, polynomial_nodes[i]};
 
         const std::array<Vec2<hostFloat>, 2> metrics_bottom = SEM::Host::quad_metrics(coordinates_bottom, points);
         const std::array<Vec2<hostFloat>, 2> metrics_right  = SEM::Host::quad_metrics(coordinates_right, points);
@@ -591,7 +778,7 @@ auto SEM::Host::Entities::Element2D_t::compute_geometry(const std::array<Vec2<ho
 
 auto SEM::Host::Entities::Element2D_t::compute_boundary_geometry(const std::array<Vec2<hostFloat>, 4>& points, const std::vector<hostFloat>& polynomial_nodes) -> void {
     for (int i = 0; i <= N_; ++i) {
-        const Vec2<hostFloat> coordinates_bottom {polynomial_nodes[i], -1};
+        const Vec2<hostFloat> coordinates_bottom {polynomial_nodes[i], hostFloat{-1}};
 
         const std::array<Vec2<hostFloat>, 2> metrics_bottom = SEM::Host::quad_metrics(coordinates_bottom, points);
 
@@ -614,24 +801,27 @@ auto SEM::Host::Entities::Element2D_t::almost_equal(hostFloat x, hostFloat y) ->
 
 auto SEM::Host::Entities::Element2D_t::would_p_refine(int max_N) const -> bool {
     return refine_ 
-        && (p_sigma_ + u_sigma_ + v_sigma_)/3 >= static_cast<hostFloat>(1) 
+        && p_sigma_  >= hostFloat{1} 
         && N_ + 2 <= max_N;
 }
 
 auto SEM::Host::Entities::Element2D_t::would_h_refine(int max_split_level) const -> bool {
     return refine_ 
-        && (p_sigma_ + u_sigma_ + v_sigma_)/3 < static_cast<hostFloat>(1) 
+        && p_sigma_ < hostFloat{1} 
         && split_level_ < max_split_level;
 }
 
 SEM::Host::Entities::Element2D_t::Datatype::Datatype() {
-    constexpr int n = 3;
+    constexpr int n = 4;
 
-    constexpr std::array<int, n> lengths {1, 1, 1};
-    constexpr std::array<MPI_Aint, n> displacements {offsetof(SEM::Host::Entities::Element2D_t, status_), offsetof(SEM::Host::Entities::Element2D_t, rotation_), offsetof(SEM::Host::Entities::Element2D_t, split_level_)};
-    const std::array<MPI_Datatype, n> types {MPI_INT, MPI_INT, MPI_INT}; // Ok I could just send those as packed ints, but who knows if something will have to be added.
+    constexpr std::array<int, n> lengths {1, 1, 1, 1};
+    constexpr std::array<MPI_Aint, n> displacements {offsetof(SEM::Host::Entities::Element2D_t, N_), offsetof(SEM::Host::Entities::Element2D_t, status_), offsetof(SEM::Host::Entities::Element2D_t, rotation_), offsetof(SEM::Host::Entities::Element2D_t, split_level_)};
+    const std::array<MPI_Datatype, n> types {MPI_INT, MPI_INT, MPI_INT, MPI_INT}; // Ok I could just send those as packed ints, but who knows if something will have to be added.
     
-    MPI_Type_create_struct(n, lengths.data(), displacements.data(), types.data(), &datatype_);
+    MPI_Datatype tmp_type;
+
+    MPI_Type_create_struct(n, lengths.data(), displacements.data(), types.data(), &tmp_type);
+    MPI_Type_create_resized(tmp_type, 0, sizeof(SEM::Host::Entities::Element2D_t), &datatype_); // To be able to send arrays of elements
     MPI_Type_commit(&datatype_);
 }
 

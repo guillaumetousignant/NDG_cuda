@@ -26,7 +26,7 @@ using namespace SEM::Host::Hilbert;
 constexpr int CGIO_MAX_NAME_LENGTH = 33; // Includes the null terminator
 constexpr hostFloat pi = 3.14159265358979323846;
 
-SEM::Host::Meshes::Mesh2D_t::Mesh2D_t(std::filesystem::path filename, int initial_N, int maximum_N, size_t n_interpolation_points, int max_split_level, size_t adaptivity_interval, size_t load_balancing_interval, hostFloat tolerance_min, hostFloat tolerance_max, const std::vector<std::vector<hostFloat>>& polynomial_nodes) :       
+SEM::Host::Meshes::Mesh2D_t::Mesh2D_t(std::filesystem::path filename, int initial_N, int maximum_N, size_t n_interpolation_points, int max_split_level, size_t adaptivity_interval, size_t load_balancing_interval, hostFloat tolerance_min, hostFloat tolerance_max, hostFloat load_balancing_threshold,, const std::vector<std::vector<hostFloat>>& polynomial_nodes) :       
         initial_N_{initial_N},  
         maximum_N_{maximum_N},
         n_interpolation_points_{n_interpolation_points},
@@ -34,7 +34,8 @@ SEM::Host::Meshes::Mesh2D_t::Mesh2D_t(std::filesystem::path filename, int initia
         adaptivity_interval_{adaptivity_interval},
         load_balancing_interval_{load_balancing_interval},
         tolerance_min_{tolerance_min},
-        tolerance_max_{tolerance_max} {
+        tolerance_max_{tolerance_max},
+        load_balancing_threshold_{load_balancing_threshold} {
 
     std::string extension = filename.extension().string();
     SEM::to_lower(extension);
@@ -3048,6 +3049,12 @@ for (size_t element_index = 0; element_index < n_elements_; ++element_index) {
                 }
             }
         }
+    }
+}
+
+auto SEM::Host::Meshes::Mesh2D_t::estimate_error(const std::vector<std::vector<hostFloat>>& polynomials) -> void {
+    for (size_t element_index = 0; element_index < n_elements_; ++element_index) {
+        elements_[element_index].estimate_error(tolerance_min_, tolerance_max_, polynomials[elements_[element_index].N_]);
     }
 }
 

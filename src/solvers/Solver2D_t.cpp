@@ -19,7 +19,7 @@ SEM::Host::Solvers::Solver2D_t::Solver2D_t(hostFloat CFL, std::vector<hostFloat>
 auto SEM::Host::Solvers::Solver2D_t::get_delta_t(SEM::Host::Meshes::Mesh2D_t& mesh) const -> hostFloat {   
     hostFloat delta_t_min_local = std::numeric_limits<hostFloat>::infinity();
     for (int i = 0; i < mesh.n_elements_; ++i) {
-        delta_t_min_local = std::min(CFL_ * mesh.elements_[i].delta_xy_min_/(mesh.elements_[i].N_ * mesh.elements_[i].N_), delta_t_min_local);
+        delta_t_min_local = std::min(CFL_ * mesh.elements_[i].delta_xy_min_/(mesh.elements_[i].N_ * mesh.elements_[i].N_ * SEM::Host::Constants::c), delta_t_min_local);
     }
 
     hostFloat delta_t_min;

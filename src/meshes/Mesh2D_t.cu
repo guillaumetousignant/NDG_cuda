@@ -1301,7 +1301,8 @@ auto SEM::Device::Meshes::Mesh2D_t::build_faces(size_t n_elements_domain, size_t
                 for (size_t j = 1; j < element_to_face[i].size(); ++j) {
                     element_to_face[i][j] = static_cast<size_t>(-1);
                 }
-                std::swap(elements[i].nodes_[0], elements[i].nodes_[1]); // This is needed for "inside out" boundary elements, sometimes present in su2 meshes. The element array is not const anymore
+                std::swap(elements[i].nodes_[0], elements[i].nodes_[1]); // This is needed for "inside out" boundary elements, sometimes present in su2 meshes. 
+                                                                         // The element array is not const anymore. Should not create a race condition, as each boundary element should only have one face.
                 break;
             }
         }

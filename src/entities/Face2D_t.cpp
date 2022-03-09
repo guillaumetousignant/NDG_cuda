@@ -60,7 +60,7 @@ auto SEM::Host::Entities::Face2D_t::compute_geometry(const std::array<SEM::Host:
     normal_ = SEM::Host::Entities::Vec2<hostFloat>(tangent_.y(), -tangent_.x());     
 
     const SEM::Host::Entities::Vec2<hostFloat> left_element_tangent = element_nodes[0][1] - element_nodes[0][0];
-    const hostFloat sign = std::copysign(static_cast<hostFloat>(1), tangent_.dot(left_element_tangent)); // CHECK doesn't work for zero-length edges, if it is an issue do the thing with centres
+    const hostFloat sign = std::copysign(hostFloat{1}, tangent_.dot(left_element_tangent)); // CHECK doesn't work for zero-length edges, if it is an issue do the thing with centres
     normal_ *= sign;
     tangent_ *= sign;
 

@@ -20,7 +20,8 @@ SEM::Host::Entities::NDG_t<Polynomial>::NDG_t(int N_max, std::size_t n_interpola
         derivative_matrices_(N_max + 1),
         g_hat_derivative_matrices_(N_max + 1),
         derivative_matrices_hat_(N_max + 1),
-        interpolation_matrices_(N_max + 1) {
+        interpolation_matrices_(N_max + 1),
+        polynomials_(N_max + 1) {
 
     for(int N = 0; N <= N_max; ++N) {
         nodes_[N] = std::vector<hostFloat>(N + 1);
@@ -34,11 +35,13 @@ SEM::Host::Entities::NDG_t<Polynomial>::NDG_t(int N_max, std::size_t n_interpola
         g_hat_derivative_matrices_[N] = std::vector<hostFloat>(std::pow(N + 1, 2));
         derivative_matrices_hat_[N] = std::vector<hostFloat>(std::pow(N + 1, 2));
         interpolation_matrices_[N] = std::vector<hostFloat>((N + 1) * N_interpolation_points_);
+        polynomials_[N] = std::vector<hostFloat>(std::pow(N + 1, 2));
     }
 
     for(int N = 0; N <= N_max; ++N) {
         Polynomial::nodes_and_weights(N, nodes_[N], weights_[N]);
         calculate_barycentric_weights(N, nodes_[N], barycentric_weights_[N]);
+        calculate_polynomials(N, nodes_[N], weights_[N], polynomials_[N]);
         polynomial_derivative_matrices(N, nodes_[N], barycentric_weights_[N], derivative_matrices_[N]);
         create_interpolation_matrices(N, N_interpolation_points_, nodes_[N], barycentric_weights_[N], interpolation_matrices_[N]);
         lagrange_interpolating_polynomials(-1.0, N, nodes_[N], barycentric_weights_[N], lagrange_interpolant_left_[N]);
@@ -150,6 +153,18 @@ void SEM::Host::Entities::NDG_t<Polynomial>::print() {
             std::cout << '\t' << '\t';
             for (std::size_t j = 0; j <= N; ++j) {
                 std::cout << interpolation_matrices_[N][i * (N + 1) + j] << " ";
+            }
+            std::cout << std::endl;
+        }
+    }
+
+    std::cout << std::endl << "Polynomials: " << std::endl;
+    for (int N = 0; N <= N_max_; ++N) {
+        std::cout << '\t' << "N = " << N << ": " << std::endl;
+        for (int i = 0; i <= N; ++i) {
+            std::cout << '\t' << '\t';
+            for (int j = 0; j <= N; ++j) {
+                std::cout << polynomials_[N][i * (N + 1) + j] << " ";
             }
             std::cout << std::endl;
         }
@@ -305,6 +320,15 @@ void SEM::Host::Entities::NDG_t<Polynomial>::create_interpolation_matrices(int N
             for (int k = 0; k <= N; ++k) {
                 interpolation_matrices[j * (N + 1) + k] /= total;
             }
+        }
+    }
+}
+
+template<typename Polynomial>
+void SEM::Host::Entities::NDG_t<Polynomial>::calculate_polynomials(int N, const std::vector<hostFloat>& nodes, const std::vector<hostFloat>& weights, std::vector<hostFloat>& polynomials) {
+    for (int i = 0; i <= N; ++i) {
+        for (int j = 0; j <= N; ++j) {
+            polynomials[i * (N + 1) + j] = Polynomial::polynomial(i, nodes[j]) * weights[j] * (2 * i + 1) * hostFloat{0.5};
         }
     }
 }

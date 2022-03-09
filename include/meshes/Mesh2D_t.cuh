@@ -117,7 +117,6 @@ namespace SEM { namespace Device { namespace Meshes {
             constexpr static size_t mpi_load_balancing_origins_offset = mpi_load_balancing_incoming_offset + mpi_load_balancing_incoming_n_transfers;
             constexpr static size_t mpi_load_balancing_origins_n_transfers = 2;
 
-            
             // Counts
             size_t n_elements_global_;
             size_t n_elements_;

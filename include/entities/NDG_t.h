@@ -23,6 +23,7 @@ namespace SEM { namespace Host { namespace Entities {
             std::vector<std::vector<hostFloat>> g_hat_derivative_matrices_;
             std::vector<std::vector<hostFloat>> derivative_matrices_hat_;
             std::vector<std::vector<hostFloat>> interpolation_matrices_;
+            std::vector<std::vector<hostFloat>> polynomials_;
 
             void print();
 
@@ -61,6 +62,8 @@ namespace SEM { namespace Host { namespace Entities {
 
             // Will interpolate n_interpolation_points between -1 and 1
             static void create_interpolation_matrices(int N, std::size_t n_interpolation_points, const std::vector<hostFloat>& nodes, const std::vector<hostFloat>& barycentric_weights, std::vector<hostFloat>& interpolation_matrices);
+    
+            static void calculate_polynomials(int N, const std::vector<hostFloat>& nodes, const std::vector<hostFloat>& weights, std::vector<hostFloat>& polynomials);
     };
 }}}
 
