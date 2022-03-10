@@ -1090,14 +1090,14 @@ auto SEM::Device::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) ->
         host_interfaces_u_ = host_vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
         host_interfaces_v_ = host_vector<deviceFloat>(mpi_interfaces_origin.size() * (maximum_N_ + 1));
         host_interfaces_N_ = std::vector<int>(mpi_interfaces_origin.size());
-        host_interfaces_refine_ = host_vector<bool>(mpi_interfaces_origin.size());
-        host_interfaces_refine_without_splitting_ = host_vector<bool>(mpi_interfaces_origin.size());
+        host_interfaces_refine_ = std::make_unique<bool[]>(mpi_interfaces_origin.size());
+        host_interfaces_refine_without_splitting_ = std::make_unique<bool[]>(mpi_interfaces_origin.size());
         host_receiving_interfaces_p_ = host_vector<deviceFloat>(mpi_interfaces_destination.size() * (maximum_N_ + 1));
         host_receiving_interfaces_u_ = host_vector<deviceFloat>(mpi_interfaces_destination.size() * (maximum_N_ + 1));
         host_receiving_interfaces_v_ = host_vector<deviceFloat>(mpi_interfaces_destination.size() * (maximum_N_ + 1));
         host_receiving_interfaces_N_ = std::vector<int>(mpi_interfaces_destination.size());
-        host_receiving_interfaces_refine_ = host_vector<bool>(mpi_interfaces_destination.size());
-        host_receiving_interfaces_refine_without_splitting_ = host_vector<bool>(mpi_interfaces_destination.size());
+        host_receiving_interfaces_refine_ = std::make_unique<bool[]>(mpi_interfaces_destination.size());
+        host_receiving_interfaces_refine_without_splitting_ = std::make_unique<bool[]>(mpi_interfaces_destination.size());
 
         requests_ = std::vector<MPI_Request>(n_mpi_interfaces * 2 * mpi_boundaries_n_transfers);
         statuses_ = std::vector<MPI_Status>(requests_.size());
@@ -1930,7 +1930,7 @@ auto SEM::Device::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceF
             SEM::Device::Meshes::get_MPI_interfaces_N<<<mpi_interfaces_outgoing_numBlocks_, boundaries_blockSize_, 0, stream_>>>(mpi_interfaces_origin_.size(), N_max, elements_.data(), mpi_interfaces_origin_.data(), device_interfaces_N_.data());
 
             device_interfaces_N_.copy_to(host_interfaces_N_, stream_);
-            for (size_t mpi_interface_element_index = 0; mpi_interface_element_index < host_interfaces_refine_.size(); ++mpi_interface_element_index) {
+            for (size_t mpi_interface_element_index = 0; mpi_interface_element_index < mpi_interfaces_origin_.size(); ++mpi_interface_element_index) {
                 host_interfaces_refine_[mpi_interface_element_index] = false;
             }
             cudaStreamSynchronize(stream_);
@@ -1939,8 +1939,8 @@ auto SEM::Device::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceF
                 MPI_Isend(host_interfaces_N_.data() + mpi_interfaces_outgoing_offset_[i], mpi_interfaces_outgoing_size_[i], MPI_INT, mpi_interfaces_process_[i], mpi_adaptivity_split_offset * global_size * global_size + mpi_adaptivity_split_n_transfers * (global_size * global_rank + mpi_interfaces_process_[i]), MPI_COMM_WORLD, &requests_adaptivity_[mpi_adaptivity_split_n_transfers * (mpi_interfaces_process_.size() + i)]);
                 MPI_Irecv(host_receiving_interfaces_N_.data() + mpi_interfaces_incoming_offset_[i], mpi_interfaces_incoming_size_[i], MPI_INT, mpi_interfaces_process_[i], mpi_adaptivity_split_offset * global_size * global_size + mpi_adaptivity_split_n_transfers * (global_size * mpi_interfaces_process_[i] + global_rank), MPI_COMM_WORLD, &requests_adaptivity_[mpi_adaptivity_split_n_transfers * i]);
             
-                MPI_Isend(host_interfaces_refine_.data() + mpi_interfaces_outgoing_offset_[i], mpi_interfaces_outgoing_size_[i], MPI_C_BOOL, mpi_interfaces_process_[i], mpi_adaptivity_split_offset * global_size * global_size + mpi_adaptivity_split_n_transfers * (global_size * global_rank + mpi_interfaces_process_[i]) + 1, MPI_COMM_WORLD, &requests_adaptivity_[mpi_adaptivity_split_n_transfers * (mpi_interfaces_process_.size() + i) + 1]);
-                MPI_Irecv(host_receiving_interfaces_refine_.data() + mpi_interfaces_incoming_offset_[i], mpi_interfaces_incoming_size_[i], MPI_C_BOOL, mpi_interfaces_process_[i], mpi_adaptivity_split_offset * global_size * global_size + mpi_adaptivity_split_n_transfers * (global_size * mpi_interfaces_process_[i] + global_rank) + 1, MPI_COMM_WORLD, &requests_adaptivity_[mpi_adaptivity_split_n_transfers * i + 1]);
+                MPI_Isend(host_interfaces_refine_.get() + mpi_interfaces_outgoing_offset_[i], mpi_interfaces_outgoing_size_[i], MPI_C_BOOL, mpi_interfaces_process_[i], mpi_adaptivity_split_offset * global_size * global_size + mpi_adaptivity_split_n_transfers * (global_size * global_rank + mpi_interfaces_process_[i]) + 1, MPI_COMM_WORLD, &requests_adaptivity_[mpi_adaptivity_split_n_transfers * (mpi_interfaces_process_.size() + i) + 1]);
+                MPI_Irecv(host_receiving_interfaces_refine_.get() + mpi_interfaces_incoming_offset_[i], mpi_interfaces_incoming_size_[i], MPI_C_BOOL, mpi_interfaces_process_[i], mpi_adaptivity_split_offset * global_size * global_size + mpi_adaptivity_split_n_transfers * (global_size * mpi_interfaces_process_[i] + global_rank) + 1, MPI_COMM_WORLD, &requests_adaptivity_[mpi_adaptivity_split_n_transfers * i + 1]);
             }
 
             MPI_Waitall(mpi_adaptivity_split_n_transfers * mpi_interfaces_process_.size(), requests_adaptivity_.data(), statuses_adaptivity_.data());
@@ -2141,8 +2141,8 @@ auto SEM::Device::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceF
             host_receiving_interfaces_u_ = host_vector<deviceFloat>(mpi_interfaces_destination_.size() * (maximum_N_ + 1));
             host_receiving_interfaces_v_ = host_vector<deviceFloat>(mpi_interfaces_destination_.size() * (maximum_N_ + 1));
             host_receiving_interfaces_N_ = std::vector<int>(mpi_interfaces_destination_.size());
-            host_receiving_interfaces_refine_ = host_vector<bool>(mpi_interfaces_destination_.size());
-            host_receiving_interfaces_refine_without_splitting_ = host_vector<bool>(mpi_interfaces_destination_.size());
+            host_receiving_interfaces_refine_ = std::make_unique<bool[]>(mpi_interfaces_destination_.size());
+            host_receiving_interfaces_refine_without_splitting_ = std::make_unique<bool[]>(mpi_interfaces_destination_.size());
 
             // Transfer arrays
             host_mpi_interfaces_incoming_refine_array_ = std::vector<size_t>(mpi_interfaces_incoming_numBlocks_);
@@ -2195,8 +2195,8 @@ auto SEM::Device::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceF
             MPI_Isend(host_interfaces_N_.data() + mpi_interfaces_outgoing_offset_[i], mpi_interfaces_outgoing_size_[i], MPI_INT, mpi_interfaces_process_[i], mpi_adaptivity_split_offset * global_size * global_size + mpi_adaptivity_split_n_transfers * (global_size * global_rank + mpi_interfaces_process_[i]), MPI_COMM_WORLD, &requests_adaptivity_[mpi_adaptivity_split_n_transfers * (mpi_interfaces_process_.size() + i)]);
             MPI_Irecv(host_receiving_interfaces_N_.data() + mpi_interfaces_incoming_offset_[i], mpi_interfaces_incoming_size_[i], MPI_INT, mpi_interfaces_process_[i], mpi_adaptivity_split_offset * global_size * global_size + mpi_adaptivity_split_n_transfers * (global_size * mpi_interfaces_process_[i] + global_rank), MPI_COMM_WORLD, &requests_adaptivity_[mpi_adaptivity_split_n_transfers * i]);
         
-            MPI_Isend(host_interfaces_refine_.data() + mpi_interfaces_outgoing_offset_[i], mpi_interfaces_outgoing_size_[i], MPI_C_BOOL, mpi_interfaces_process_[i], mpi_adaptivity_split_offset * global_size * global_size + mpi_adaptivity_split_n_transfers * (global_size * global_rank + mpi_interfaces_process_[i]) + 1, MPI_COMM_WORLD, &requests_adaptivity_[mpi_adaptivity_split_n_transfers * (mpi_interfaces_process_.size() + i) + 1]);
-            MPI_Irecv(host_receiving_interfaces_refine_.data() + mpi_interfaces_incoming_offset_[i], mpi_interfaces_incoming_size_[i], MPI_C_BOOL, mpi_interfaces_process_[i], mpi_adaptivity_split_offset * global_size * global_size + mpi_adaptivity_split_n_transfers * (global_size * mpi_interfaces_process_[i] + global_rank) + 1, MPI_COMM_WORLD, &requests_adaptivity_[mpi_adaptivity_split_n_transfers * i + 1]);
+            MPI_Isend(host_interfaces_refine_.get() + mpi_interfaces_outgoing_offset_[i], mpi_interfaces_outgoing_size_[i], MPI_C_BOOL, mpi_interfaces_process_[i], mpi_adaptivity_split_offset * global_size * global_size + mpi_adaptivity_split_n_transfers * (global_size * global_rank + mpi_interfaces_process_[i]) + 1, MPI_COMM_WORLD, &requests_adaptivity_[mpi_adaptivity_split_n_transfers * (mpi_interfaces_process_.size() + i) + 1]);
+            MPI_Irecv(host_receiving_interfaces_refine_.get() + mpi_interfaces_incoming_offset_[i], mpi_interfaces_incoming_size_[i], MPI_C_BOOL, mpi_interfaces_process_[i], mpi_adaptivity_split_offset * global_size * global_size + mpi_adaptivity_split_n_transfers * (global_size * mpi_interfaces_process_[i] + global_rank) + 1, MPI_COMM_WORLD, &requests_adaptivity_[mpi_adaptivity_split_n_transfers * i + 1]);
         }
 
         MPI_Waitall(mpi_adaptivity_split_n_transfers * mpi_interfaces_process_.size(), requests_adaptivity_.data(), statuses_adaptivity_.data());
@@ -2476,15 +2476,15 @@ auto SEM::Device::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceF
     host_interfaces_u_ = host_vector<deviceFloat>(mpi_interfaces_origin_.size() * (maximum_N_ + 1));
     host_interfaces_v_ = host_vector<deviceFloat>(mpi_interfaces_origin_.size() * (maximum_N_ + 1));
     host_interfaces_N_ = std::vector<int>(mpi_interfaces_origin_.size());
-    host_interfaces_refine_ = host_vector<bool>(mpi_interfaces_origin_.size());
-    host_interfaces_refine_without_splitting_ = host_vector<bool>(mpi_interfaces_origin_.size());
+    host_interfaces_refine_ = std::make_unique<bool[]>(mpi_interfaces_origin_.size());
+    host_interfaces_refine_without_splitting_ = std::make_unique<bool[]>(mpi_interfaces_origin_.size());
 
     host_receiving_interfaces_p_ = host_vector<deviceFloat>(mpi_interfaces_destination_.size() * (maximum_N_ + 1));
     host_receiving_interfaces_u_ = host_vector<deviceFloat>(mpi_interfaces_destination_.size() * (maximum_N_ + 1));
     host_receiving_interfaces_v_ = host_vector<deviceFloat>(mpi_interfaces_destination_.size() * (maximum_N_ + 1));
     host_receiving_interfaces_N_ = std::vector<int>(mpi_interfaces_destination_.size());
-    host_receiving_interfaces_refine_ = host_vector<bool>(mpi_interfaces_destination_.size());
-    host_receiving_interfaces_refine_without_splitting_ = host_vector<bool>(mpi_interfaces_destination_.size());
+    host_receiving_interfaces_refine_ = std::make_unique<bool[]>(mpi_interfaces_destination_.size());
+    host_receiving_interfaces_refine_without_splitting_ = std::make_unique<bool[]>(mpi_interfaces_destination_.size());
 
     device_vector<deviceFloat> new_device_interfaces_p(mpi_interfaces_origin_.size() * (maximum_N_ + 1), stream_);
     device_vector<deviceFloat> new_device_interfaces_u(mpi_interfaces_origin_.size() * (maximum_N_ + 1), stream_);
@@ -4260,15 +4260,15 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
         host_interfaces_u_ = host_vector<deviceFloat>(mpi_interfaces_origin_.size() * (maximum_N_ + 1));
         host_interfaces_v_ = host_vector<deviceFloat>(mpi_interfaces_origin_.size() * (maximum_N_ + 1));
         host_interfaces_N_ = std::vector<int>(mpi_interfaces_origin_.size());
-        host_interfaces_refine_ = host_vector<bool>(mpi_interfaces_origin_.size());
-        host_interfaces_refine_without_splitting_ = host_vector<bool>(mpi_interfaces_origin_.size());
+        host_interfaces_refine_ = std::make_unique<bool[]>(mpi_interfaces_origin_.size());
+        host_interfaces_refine_without_splitting_ = std::make_unique<bool[]>(mpi_interfaces_origin_.size());
 
         host_receiving_interfaces_p_ = host_vector<deviceFloat>(mpi_interfaces_destination_.size() * (maximum_N_ + 1));
         host_receiving_interfaces_u_ = host_vector<deviceFloat>(mpi_interfaces_destination_.size() * (maximum_N_ + 1));
         host_receiving_interfaces_v_ = host_vector<deviceFloat>(mpi_interfaces_destination_.size() * (maximum_N_ + 1));
         host_receiving_interfaces_N_ = std::vector<int>(mpi_interfaces_destination_.size());
-        host_receiving_interfaces_refine_ = host_vector<bool>(mpi_interfaces_destination_.size());
-        host_receiving_interfaces_refine_without_splitting_ = host_vector<bool>(mpi_interfaces_destination_.size());
+        host_receiving_interfaces_refine_ = std::make_unique<bool[]>(mpi_interfaces_destination_.size());
+        host_receiving_interfaces_refine_without_splitting_ = std::make_unique<bool[]>(mpi_interfaces_destination_.size());
 
         device_vector<deviceFloat> new_device_interfaces_p(mpi_interfaces_origin_.size() * (maximum_N_ + 1), stream_);
         device_vector<deviceFloat> new_device_interfaces_u(mpi_interfaces_origin_.size() * (maximum_N_ + 1), stream_);
@@ -4560,8 +4560,8 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
         device_vector<bool> new_device_interfaces_refine(new_mpi_interfaces_origin.size(), stream_);
         device_interfaces_refine_ = std::move(new_device_interfaces_refine);
         host_interfaces_N_ = std::vector<int>(new_mpi_interfaces_origin.size());
-        host_interfaces_refine_ = host_vector<bool>(new_mpi_interfaces_origin.size());
-        host_interfaces_refine_without_splitting_ = host_vector<bool>(new_mpi_interfaces_origin.size());
+        host_interfaces_refine_ = std::make_unique<bool[]>(new_mpi_interfaces_origin.size());
+        host_interfaces_refine_without_splitting_ = std::make_unique<bool[]>(new_mpi_interfaces_origin.size());
         device_vector<bool> new_device_interfaces_refine_without_splitting(new_mpi_interfaces_origin.size(), stream_);
         device_interfaces_refine_without_splitting_ = std::move(new_device_interfaces_refine_without_splitting);
 

@@ -299,6 +299,30 @@ auto SEM::Device::Entities::device_vector<T>::copy_to(device_vector<T>& other, c
 }
 
 template <typename T>
+__host__
+auto SEM::Device::Entities::device_vector<T>::copy_from(const std::unique_ptr<T[]>& other) -> void {
+    cudaMemcpy(data_, other.get(), size_ * sizeof(T), cudaMemcpyHostToDevice); // Apparently slower than using a kernel
+}
+
+template <typename T>
+__host__
+auto SEM::Device::Entities::device_vector<T>::copy_from(const std::unique_ptr<T[]>& other, const cudaStream_t& stream) -> void {
+    cudaMemcpyAsync(data_, other.get(), size_ * sizeof(T), cudaMemcpyHostToDevice, stream); // Apparently slower than using a kernel
+}
+
+template <typename T>
+__host__
+auto SEM::Device::Entities::device_vector<T>::copy_to(std::unique_ptr<T[]>& other) const -> void {
+    cudaMemcpy(other.get(), data_, size_ * sizeof(T), cudaMemcpyDeviceToHost); // Apparently slower than using a kernel
+}
+
+template <typename T>
+__host__
+auto SEM::Device::Entities::device_vector<T>::copy_to(std::unique_ptr<T[]>& other, const cudaStream_t& stream) const -> void {
+    cudaMemcpyAsync(other.get(), data_, size_ * sizeof(T), cudaMemcpyDeviceToHost, stream); // Apparently slower than using a kernel
+}
+
+template <typename T>
 __host__ __device__
 auto SEM::Device::Entities::device_vector<T>::clear() -> void {
     if (data_ != nullptr) {

@@ -13,6 +13,7 @@
 #include <mpi.h>
 #include <utility>
 #include <filesystem>
+#include <memory>
 
 namespace SEM { namespace Host { namespace Meshes {
     class Mesh2D_t {
@@ -53,11 +54,11 @@ namespace SEM { namespace Host { namespace Meshes {
             std::vector<hostFloat> receiving_interfaces_u_;
             std::vector<hostFloat> receiving_interfaces_v_;
             std::vector<int> receiving_interfaces_N_;
-            std::vector<unsigned int> interfaces_refine_;
-            std::vector<unsigned int> receiving_interfaces_refine_;
-            std::vector<unsigned int> receiving_interfaces_refine_without_splitting_;
-            std::vector<unsigned int> receiving_interfaces_creating_node_;
-            std::vector<unsigned int> interfaces_refine_without_splitting_;
+            std::unique_ptr<bool[]> interfaces_refine_;
+            std::unique_ptr<bool[]> receiving_interfaces_refine_;
+            std::unique_ptr<bool[]> receiving_interfaces_refine_without_splitting_;
+            std::unique_ptr<bool[]> receiving_interfaces_creating_node_;
+            std::unique_ptr<bool[]> interfaces_refine_without_splitting_;
 
             // Output
             std::vector<hostFloat> x_output_;
@@ -172,7 +173,7 @@ namespace SEM { namespace Host { namespace Meshes {
 
     auto put_MPI_interfaces(size_t n_MPI_interface_elements, SEM::Host::Entities::Element2D_t* elements, const size_t* MPI_interfaces_destination, int maximum_N, const hostFloat* p, const hostFloat* u, const hostFloat* v) -> void;
 
-    auto adjust_MPI_incoming_interfaces(size_t n_MPI_interface_elements, size_t nodes_offset, SEM::Host::Entities::Element2D_t* elements, const SEM::Host::Entities::Face2D_t* faces, const size_t* MPI_interfaces_destination, const int* N, const SEM::Host::Entities::Vec2<hostFloat>* nodes, const bool* refine, const bool* refine_without_splitting, const bool* creating_node, const size_t* creating_node_block_offsets, const std::vector<std::vector<hostFloat>>& polynomial_nodes) -> void;
+    auto adjust_MPI_incoming_interfaces(size_t n_MPI_interface_elements, size_t nodes_offset, SEM::Host::Entities::Element2D_t* elements, const SEM::Host::Entities::Face2D_t* faces, const size_t* MPI_interfaces_destination, const int* N, SEM::Host::Entities::Vec2<hostFloat>* nodes, const bool* refine, const bool* refine_without_splitting, const bool* creating_node, const std::vector<std::vector<hostFloat>>& polynomial_nodes) -> void;
     
     auto p_adapt(size_t n_elements, SEM::Host::Entities::Element2D_t* elements, int N_max, const SEM::Host::Entities::Vec2<hostFloat>* nodes, const std::vector<std::vector<hostFloat>>& polynomial_nodes, const std::vector<std::vector<hostFloat>>& barycentric_weights) -> void;
     
@@ -192,7 +193,7 @@ namespace SEM { namespace Host { namespace Meshes {
 
     auto copy_interfaces_error(size_t n_local_interfaces, SEM::Host::Entities::Element2D_t* elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_origin_side, const size_t* local_interfaces_destination) -> void;
     
-    auto copy_mpi_interfaces_error(size_t n_MPI_interface_elements, SEM::Host::Entities::Element2D_t* elements, const SEM::Host::Entities::Face2D_t* faces, const SEM::Host::Entities::Vec2<hostFloat>* nodes, const size_t* MPI_interfaces_destination, const int* N, const unsigned int* elements_splitting, bool* elements_refining_without_splitting, bool* elements_creating_node) -> void;
+    auto copy_mpi_interfaces_error(size_t n_MPI_interface_elements, SEM::Host::Entities::Element2D_t* elements, const SEM::Host::Entities::Face2D_t* faces, const SEM::Host::Entities::Vec2<hostFloat>* nodes, const size_t* MPI_interfaces_destination, const int* N, const bool* elements_splitting, bool* elements_refining_without_splitting, bool* elements_creating_node) -> void;
 
     auto split_boundaries(size_t n_boundaries, size_t n_faces, size_t n_nodes, size_t n_splitting_elements, size_t offset, SEM::Host::Entities::Element2D_t* elements, SEM::Host::Entities::Element2D_t* new_elements, const size_t* boundaries, size_t* new_boundaries, const SEM::Host::Entities::Face2D_t* faces, const SEM::Host::Entities::Vec2<hostFloat>* nodes, const std::vector<std::vector<hostFloat>>& polynomial_nodes, size_t* elements_new_indices) -> void;
 

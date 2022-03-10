@@ -2,6 +2,7 @@
 #define NDG_ENTITIES_DEVICE_VECTOR_CUH
 
 #include <vector>
+#include <memory>
 #include "entities/host_vector.cuh"
 #include "entities/Element2D_t.cuh"
 #include "entities/Face2D_t.cuh"
@@ -158,6 +159,18 @@ namespace SEM { namespace Device { namespace Entities {
 
             __host__
             auto copy_to(device_vector<T>& device_vector, const cudaStream_t& stream) const -> void;
+
+            __host__
+            auto copy_from(const std::unique_ptr<T[]>& smart_ptr) -> void;
+
+            __host__
+            auto copy_from(const std::unique_ptr<T[]>& smart_ptr, const cudaStream_t& stream) -> void;
+
+            __host__
+            auto copy_to(std::unique_ptr<T[]>& smart_ptr) const -> void;
+
+            __host__
+            auto copy_to(std::unique_ptr<T[]>& smart_ptr, const cudaStream_t& stream) const -> void;
 
             __host__ __device__
             auto clear() -> void;
