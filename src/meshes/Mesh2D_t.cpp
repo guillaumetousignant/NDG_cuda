@@ -51,15 +51,354 @@ SEM::Host::Meshes::Mesh2D_t::Mesh2D_t(std::filesystem::path filename, int initia
         exit(14);
     }
 
-    compute_element_geometry(n_elements_, elements_.data(), nodes_.data(), polynomial_nodes);
-    compute_boundary_geometry(n_elements_, elements_.size(), elements_.data(), nodes_.data(), polynomial_nodes);
-    compute_element_status(n_elements_, elements_.data(), nodes_.data());
-    compute_face_geometry(faces_.size(), faces_.data(), elements_.data(), nodes_.data());
+    compute_element_geometry(n_elements_, elements_, nodes_, polynomial_nodes);
+    compute_boundary_geometry(n_elements_, elements_, nodes_, polynomial_nodes);
+    compute_element_status(n_elements_, elements_, nodes_);
+    compute_face_geometry(faces_, elements_, nodes_);
 }
 
 auto SEM::Host::Meshes::Mesh2D_t::read_su2(std::filesystem::path filename) -> void {
-    std::cerr << "Error: SU2 meshes not implemented yet. Exiting." << std::endl;
-    exit(15);
+    std::string line;
+    std::string token;
+    size_t value;
+
+    std::ifstream meshfile(filename);
+    if (!meshfile.is_open()) {
+        std::cerr << "Error: file '" << filename << "' could not be opened. Exiting." << std::endl;
+        exit(69);
+    }
+
+    do {
+        std::getline(meshfile, line);  
+    }
+    while (line.empty());
+
+    std::istringstream liness(line);
+    liness >> token;
+    liness >> value;
+    if (token != "NDIME=") {
+        std::cerr << "Error: first token should be 'NDIME=', found '" << token << "'. Exiting." << std::endl;
+        exit(70);
+    }
+
+    if (value != 2) {
+        std::cerr << "Error: program only works for 2 dimensions, found '" << value << "'. Exiting." << std::endl;
+        exit(71);
+    }
+
+    std::vector<std::array<size_t, 4>> elements;
+    std::vector<std::array<size_t, 2>> wall;
+    std::vector<std::array<size_t, 2>> symmetry;
+    std::vector<std::array<size_t, 2>> inflow;
+    std::vector<std::array<size_t, 2>> outflow;
+
+    while (!meshfile.eof()) {
+        do {
+            std::getline(meshfile, line);  
+        }
+        while (line.empty() && !meshfile.eof());
+
+        std::istringstream liness(line);
+        liness >> token;
+        std::transform(token.begin(), token.end(), token.begin(),
+            [](unsigned char c){ return std::toupper(c); });
+
+        if (token == "NPOIN=") {
+            liness >> value;
+            nodes_ = std::vector<Vec2<hostFloat>>(value);
+
+            for (size_t i = 0; i < nodes_.size(); ++i) {
+                std::getline(meshfile, line);
+                std::istringstream liness2(line);
+                liness2 >> nodes_[i].x() >> nodes_[i].y();
+            }
+        }
+        else if (token == "NELEM=") {
+            liness >> value;
+            elements = std::vector<std::array<size_t, 4>>(value);
+
+            for (size_t i = 0; i < elements.size(); ++i) {
+                std::getline(meshfile, line);
+                std::istringstream liness2(line);
+                liness2 >> token;
+                if (token == "9") {
+                    liness2 >> elements[i][0] >> elements[i][1] >> elements[i][2] >> elements[i][3];
+                }
+                else {
+                    std::cerr << "Error: expected token '9', found '" << token << "'. Exiting." << std::endl;
+                    exit(73);
+                }
+            }
+        }
+        else if (token == "NMARK=") {
+            size_t n_markers;
+            liness >> n_markers;
+
+            size_t n_wall = 0;
+            size_t n_symmetry = 0;
+            size_t n_inflow = 0;
+            size_t n_outflow = 0;
+
+            for (size_t i = 0; i < n_markers; ++i) {
+                std::string type;
+                do {
+                    std::getline(meshfile, line);
+                    if (!line.empty()) {
+                        std::istringstream liness(line);
+                        liness >> token;
+                        liness >> type;
+                    }   
+                }
+                while (token != "MARKER_TAG=");
+                std::transform(type.begin(), type.end(), type.begin(),
+                    [](unsigned char c){ return std::tolower(c); });
+
+                if (type == "farfield") {
+                    do {
+                        std::getline(meshfile, line);
+                        if (!line.empty()) {
+                            std::istringstream liness(line);
+                            liness >> token;
+                            liness >> value;
+                        }   
+                    }
+                    while (token != "MARKER_ELEMS=");
+
+                    n_outflow += value;
+                    outflow.reserve(n_outflow);
+
+                    for (size_t j = 0; j < value; ++j) {
+
+                        std::getline(meshfile, line);
+                        std::istringstream liness6(line);
+
+                        liness6 >> token;
+                        if (token != "3") {
+                            std::cerr << "Error: expected token '3', found '" << token << "'. Exiting." << std::endl;
+                            exit(75);
+                        }
+
+                        size_t val0, val1;
+                        liness6 >> val0 >> val1;
+                        outflow.push_back({val0, val1});
+                    }
+                }
+                else if (type == "wall" || type == "airfoil") {
+                    do {
+                        std::getline(meshfile, line);
+                        if (!line.empty()) {
+                            std::istringstream liness(line);
+                            liness >> token;
+                            liness >> value;
+                        }   
+                    }
+                    while (token != "MARKER_ELEMS=");
+
+                    n_wall += value;
+                    wall.reserve(n_wall);
+
+                    for (size_t j = 0; j < value; ++j) {
+
+                        std::getline(meshfile, line);
+                        std::istringstream liness6(line);
+
+                        liness6 >> token;
+                        if (token != "3") {
+                            std::cerr << "Error: expected token '3', found '" << token << "'. Exiting." << std::endl;
+                            exit(75);
+                        }
+
+                        size_t val0, val1;
+                        liness6 >> val0 >> val1;
+                        wall.push_back({val0, val1});
+                    }
+                }
+                else if (type == "inlet") {
+                    do {
+                        std::getline(meshfile, line);
+                        if (!line.empty()) {
+                            std::istringstream liness(line);
+                            liness >> token;
+                            liness >> value;
+                        }   
+                    }
+                    while (token != "MARKER_ELEMS=");
+
+                    n_inflow += value;
+                    inflow.reserve(n_inflow);
+
+                    for (size_t j = 0; j < value; ++j) {
+
+                        std::getline(meshfile, line);
+                        std::istringstream liness6(line);
+
+                        liness6 >> token;
+                        if (token != "3") {
+                            std::cerr << "Error: expected token '3', found '" << token << "'. Exiting." << std::endl;
+                            exit(75);
+                        }
+
+                        size_t val0, val1;
+                        liness6 >> val0 >> val1;
+                        inflow.push_back({val0, val1});
+                    }
+                }
+                else if (type == "symmetry") {
+                    do {
+                        std::getline(meshfile, line);
+                        if (!line.empty()) {
+                            std::istringstream liness(line);
+                            liness >> token;
+                            liness >> value;
+                        }   
+                    }
+                    while (token != "MARKER_ELEMS=");
+
+                    n_symmetry += value;
+                    symmetry.reserve(n_symmetry);
+
+                    for (size_t j = 0; j < value; ++j) {
+
+                        std::getline(meshfile, line);
+                        std::istringstream liness6(line);
+
+                        liness6 >> token;
+                        if (token != "3") {
+                            std::cerr << "Error: expected token '3', found '" << token << "'. Exiting." << std::endl;
+                            exit(75);
+                        }
+
+                        size_t val0, val1;
+                        liness6 >> val0 >> val1;
+                        symmetry.push_back({val0, val1});
+                    }
+                }
+                else {
+                    std::cerr << "Error: expected marker tag 'farfield', 'wall', 'symmetry' or 'inlet', found '" << type << "'. Exiting." << std::endl;
+                    exit(74);
+                }
+            }
+        }
+        else {
+            if (!meshfile.eof()) {
+                std::cerr << "Error: expected marker 'NPOIN=', 'NELEM=' or 'NMARK=', found '" << token << "'. Exiting." << std::endl;
+                exit(72);
+            }
+        }
+    }
+
+    meshfile.close();
+
+    // Building elements
+    const size_t n_elements_domain = elements.size();
+    const size_t n_elements_ghost = wall.size() + symmetry.size() + inflow.size() + outflow.size();
+    const size_t n_elements = n_elements_domain + n_elements_ghost;
+
+    elements_ = std::vector<Element2D_t>(n_elements);
+    for (size_t i = 0; i < elements.size(); ++i) {
+        Element2D_t& element = elements_[i];
+        element.N_ = initial_N_;
+        element.nodes_ = elements[i];       
+    }
+
+    for (size_t i = 0; i < wall.size(); ++i) {
+        Element2D_t& element = elements_[n_elements_domain + i];
+        element.N_ = initial_N_;
+        element.nodes_ = {wall[i][0],
+                          wall[i][1],
+                          wall[i][1],
+                          wall[i][0]};
+        element.status_ = Hilbert::Status::A; // This is not a random status, when splitting the first two elements are 0 and 1, which is needed for boundaries
+        element.rotation_ = 0;
+    }
+
+    for (size_t i = 0; i < symmetry.size(); ++i) {
+        Element2D_t& element = elements_[n_elements_domain + wall.size() + i];
+        element.N_ = initial_N_;
+        element.nodes_ = {symmetry[i][0],
+                          symmetry[i][1],
+                          symmetry[i][1],
+                          symmetry[i][0]};
+        element.status_ = Hilbert::Status::A; // This is not a random status, when splitting the first two elements are 0 and 1, which is needed for boundaries
+        element.rotation_ = 0;
+    }
+
+    for (size_t i = 0; i < inflow.size(); ++i) {
+        Element2D_t& element = elements_[n_elements_domain + wall.size() + symmetry.size() + i];
+        element.N_ = initial_N_;
+        element.nodes_ = {inflow[i][0],
+                          inflow[i][1],
+                          inflow[i][1],
+                          inflow[i][0]};
+        element.status_ = Hilbert::Status::A; // This is not a random status, when splitting the first two elements are 0 and 1, which is needed for boundaries
+        element.rotation_ = 0;
+    }
+
+    for (size_t i = 0; i < outflow.size(); ++i) {
+        Element2D_t& element = elements_[n_elements_domain + wall.size() + symmetry.size() + inflow.size() + i];
+        element.N_ = initial_N_;
+        element.nodes_ = {outflow[i][0],
+                          outflow[i][1],
+                          outflow[i][1],
+                          outflow[i][0]};
+        element.status_ = Hilbert::Status::A; // This is not a random status, when splitting the first two elements are 0 and 1, which is needed for boundaries
+        element.rotation_ = 0;
+    }
+
+    // Computing nodes to elements
+    const std::vector<std::vector<size_t>> node_to_element = build_node_to_element(nodes_.size(), elements_);
+
+    // Computing element to elements
+    const std::vector<std::vector<size_t>> element_to_element = build_element_to_element(elements_, node_to_element);
+
+    // Computing faces and filling element faces
+    auto [host_faces, node_to_face, element_to_face] = build_faces(n_elements_domain, nodes_.size(), initial_N_, elements_);
+    faces_ = std::move(host_faces);
+
+    // Building boundaries
+    wall_boundaries_ = std::vector<size_t>(wall.size());
+    symmetry_boundaries_ = std::vector<size_t>(symmetry.size());
+    inflow_boundaries_ = std::vector<size_t>(inflow.size());
+    outflow_boundaries_ = std::vector<size_t>(outflow.size());
+
+    for (size_t i = 0; i < wall_boundaries_.size(); ++i) {
+        wall_boundaries_[i] = n_elements_domain + i;
+    }
+
+    for (size_t i = 0; i < symmetry_boundaries_.size(); ++i) {
+        symmetry_boundaries_[i] = n_elements_domain + wall_boundaries_.size() + i;
+    }
+
+    for (size_t i = 0; i < inflow_boundaries_.size(); ++i) {
+        inflow_boundaries_[i] = n_elements_domain + wall_boundaries_.size() + symmetry_boundaries_.size() + i;
+    }
+
+    for (size_t i = 0; i < outflow_boundaries_.size(); ++i) {
+        outflow_boundaries_[i] = n_elements_domain + wall_boundaries_.size() + symmetry_boundaries_.size() + inflow_boundaries_.size() + i;
+    }
+
+    // No self-interfaces
+    
+    // No mpi interfaces
+
+    // Setting sizes
+    n_elements_ = n_elements_domain;
+    global_element_offset_ = 0;
+    n_elements_global_ = n_elements_;
+
+    allocate_element_storage(n_elements_, elements_);
+    allocate_boundary_storage(n_elements_, elements_);
+    allocate_face_storage(faces_);
+
+    fill_element_faces(n_elements_, elements_, element_to_face);
+    fill_boundary_element_faces(n_elements_, elements_, element_to_face);
+
+    // Allocating output arrays
+    x_output_ = std::vector<hostFloat>(n_elements_ * std::pow(n_interpolation_points_, 2));
+    y_output_ = std::vector<hostFloat>(n_elements_ * std::pow(n_interpolation_points_, 2));
+    p_output_ = std::vector<hostFloat>(n_elements_ * std::pow(n_interpolation_points_, 2));
+    u_output_ = std::vector<hostFloat>(n_elements_ * std::pow(n_interpolation_points_, 2));
+    v_output_ = std::vector<hostFloat>(n_elements_ * std::pow(n_interpolation_points_, 2));
 }
 
 auto SEM::Host::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> void {
@@ -363,12 +702,9 @@ auto SEM::Host::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> v
 
     // Computing faces and filling element faces
     auto [host_faces, node_to_face, element_to_face] = build_faces(n_elements_domain, n_nodes, initial_N_, elements_);
-
-    // Transferring onto the GPU
     faces_ = std::move(host_faces);
 
     // Building boundaries
-
     for (int i = 0; i < n_boundaries; ++i) {
         switch (boundary_types[i]) {
             case BCType_t::BCWall:
@@ -646,11 +982,14 @@ auto SEM::Host::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> v
         receiving_interfaces_v_ = std::vector<hostFloat>(mpi_interfaces_destination.size() * (maximum_N_ + 1));
         receiving_interfaces_N_ = std::vector<int>(mpi_interfaces_destination.size());
         receiving_interfaces_refine_ = std::vector<unsigned int>(mpi_interfaces_destination.size());
+        receiving_interfaces_refine_without_splitting_ = std::vector<unsigned int>(mpi_interfaces_destination.size());
+        receiving_interfaces_creating_node_ = std::vector<unsigned int>(mpi_interfaces_destination.size());
+        interfaces_refine_without_splitting_ = std::vector<unsigned int>(mpi_interfaces_origin_.size());
 
-        requests_ = std::vector<MPI_Request>(n_mpi_interfaces * 6);
-        statuses_ = std::vector<MPI_Status>(n_mpi_interfaces * 6);
-        requests_adaptivity_ = std::vector<MPI_Request>(n_mpi_interfaces * 4);
-        statuses_adaptivity_ = std::vector<MPI_Status>(n_mpi_interfaces * 4);
+        requests_ = std::vector<MPI_Request>(n_mpi_interfaces * 2 * mpi_boundaries_n_transfers);
+        statuses_ = std::vector<MPI_Status>(requests_.size());
+        requests_adaptivity_ = std::vector<MPI_Request>(n_mpi_interfaces * 2 * mpi_adaptivity_split_n_transfers);
+        statuses_adaptivity_ = std::vector<MPI_Status>(requests_adaptivity_.size());
     }
 
     // Setting sizes
@@ -671,13 +1010,12 @@ auto SEM::Host::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) -> v
     }
     n_elements_global_ = n_elements_global;
 
-    allocate_element_storage(n_elements_, elements_.data());
-    allocate_boundary_storage(n_elements_, elements_.size(), elements_.data());
-    allocate_face_storage(faces_.size(), faces_.data());
+    allocate_element_storage(n_elements_, elements_);
+    allocate_boundary_storage(n_elements_, elements_);
+    allocate_face_storage(faces_);
 
-    std::vector<std::array<size_t, 4>> device_element_to_face(element_to_face);
-    fill_element_faces(n_elements_, elements_.data(), device_element_to_face.data());
-    fill_boundary_element_faces(n_elements_, elements_.size(), elements_.data(), device_element_to_face.data());
+    fill_element_faces(n_elements_, elements_, element_to_face);
+    fill_boundary_element_faces(n_elements_, elements_, element_to_face);
 
     // Allocating output arrays
     x_output_ = std::vector<hostFloat>(n_elements_ * std::pow(n_interpolation_points_, 2));
@@ -696,7 +1034,7 @@ auto SEM::Host::Meshes::Mesh2D_t::build_node_to_element(size_t n_nodes, const st
 
     for (size_t j = 0; j < elements.size(); ++j) {
         for (auto node_index: elements[j].nodes_) {
-            if (std::find(node_to_element[node_index].begin(), node_to_element[node_index].end(), j) == node_to_element[node_index].end()) { // This will be slower, but is needed because boundaries have 4 sides and not 2. Remove when variable geometry elements are added.
+            if (std::find(node_to_element[node_index].begin(), node_to_element[node_index].end(), j) == node_to_element[node_index].end()) { // CHECK This will be slower, but is needed because boundaries have 4 sides and not 2. Remove when variable geometry elements are added.
                 node_to_element[node_index].push_back(j);
             }
         }
@@ -747,7 +1085,7 @@ auto SEM::Host::Meshes::Mesh2D_t::build_element_to_element(const std::vector<Ele
     return element_to_element;
 }
 
-auto SEM::Host::Meshes::Mesh2D_t::build_faces(size_t n_elements_domain, size_t n_nodes, int initial_N, const std::vector<Element2D_t>& elements) -> std::tuple<std::vector<Face2D_t>, std::vector<std::vector<size_t>>, std::vector<std::array<size_t, 4>>> {
+auto SEM::Host::Meshes::Mesh2D_t::build_faces(size_t n_elements_domain, size_t n_nodes, int initial_N, std::vector<Element2D_t>& elements) -> std::tuple<std::vector<Face2D_t>, std::vector<std::vector<size_t>>, std::vector<std::array<size_t, 4>>> {
     size_t total_edges = 0;
     for (const auto& element: elements) {
         total_edges += element.nodes_.size();
@@ -802,6 +1140,17 @@ auto SEM::Host::Meshes::Mesh2D_t::build_faces(size_t n_elements_domain, size_t n
                 }
                 break;
             }
+            if ((faces[face_index].nodes_[0] == nodes[0]) && (faces[face_index].nodes_[1] == nodes[1])) {
+                faces[face_index].elements_[1] = i;
+                faces[face_index].elements_side_[1] = 0;
+                element_to_face[i][0] = face_index;
+                for (size_t j = 1; j < element_to_face[i].size(); ++j) {
+                    element_to_face[i][j] = static_cast<size_t>(-1);
+                }
+                std::swap(elements[i].nodes_[0], elements[i].nodes_[1]); // This is needed for "inside out" boundary elements, sometimes present in su2 meshes. 
+                                                                         // The element array is not const anymore. Should not create a race condition, as each boundary element should only have one face.
+                break;
+            }
         }
     }
 
@@ -835,99 +1184,6 @@ auto SEM::Host::Meshes::Mesh2D_t::initial_conditions(const std::vector<std::vect
                 element.G_v_[i * (element.N_ + 1) + j] = 0;
             }
         }
-    }
-}
-
-auto SEM::Host::Meshes::print_element_faces(size_t n_elements, const Element2D_t* elements) -> void {
-    for (size_t element_index = 0; element_index < n_elements; ++element_index) {
-        const Element2D_t& element = elements[element_index];
-
-        constexpr size_t max_string_size = 100;
-        char faces_string[4][max_string_size + 1]; // CHECK this only works for quadrilaterals
-
-        faces_string[0][0] = '\0';
-        faces_string[1][0] = '\0';
-        faces_string[2][0] = '\0';
-        faces_string[3][0] = '\0';
-
-        for (size_t j = 0; j < element.faces_.size(); ++j) {
-            for (size_t i = 0; i < element.faces_[j].size(); ++i) {
-                size_t current_size = max_string_size + 1;
-                for (size_t k = 0; k < max_string_size + 1; ++k) {
-                    if (faces_string[j][k] == '\0') {
-                        current_size = k;
-                        break;
-                    }
-                }
-
-                size_t face_index =  element.faces_[j][i];
-                size_t number_size = 1;
-                while (face_index/static_cast<size_t>(std::pow(10, number_size)) > 0) {
-                    ++number_size;
-                }
-
-                faces_string[j][current_size] = ' ';
-                size_t exponent = number_size - 1;
-                size_t remainder = face_index;
-                for (size_t k = 0; k < number_size; ++k) {
-                    const size_t number = remainder/static_cast<size_t>(std::pow(10, exponent));
-                    if (current_size + k + 1 < max_string_size) {
-                        faces_string[j][current_size + k + 1] = static_cast<char>(number) + '0';
-                    }
-                    remainder -= number * static_cast<size_t>(std::pow(10, exponent));
-                    --exponent;
-                }
-
-                faces_string[j][std::min(current_size + number_size + 1, max_string_size)] = '\0';
-            }
-        }
-
-
-        printf("\tElement %llu has:\n\t\tBottom faces:%s\n\t\tRight faces:%s\n\t\tTop faces:%s\n\t\tLeft faces:%s\n", static_cast<unsigned long long>(element_index), faces_string[0], faces_string[1], faces_string[2], faces_string[3]);
-    }
-}
-
-auto SEM::Host::Meshes::print_boundary_element_faces(size_t n_domain_elements, size_t n_total_elements, const Element2D_t* elements) -> void {
-    for (size_t element_index = n_domain_elements; element_index < n_total_elements; ++element_index) {
-        const Element2D_t& element = elements[element_index];
-
-        constexpr size_t max_string_size = 100;
-        char faces_string[max_string_size + 1];
-
-        faces_string[0] = '\0';
-
-        for (size_t i = 0; i < element.faces_[0].size(); ++i) {
-            size_t current_size = max_string_size + 1;
-            for (size_t k = 0; k < max_string_size + 1; ++k) {
-                if (faces_string[k] == '\0') {
-                    current_size = k;
-                    break;
-                }
-            }
-
-            size_t face_index =  element.faces_[0][i];
-            size_t number_size = 1;
-            while (face_index/static_cast<size_t>(std::pow(10, number_size)) > 0) {
-                ++number_size;
-            }
-
-            faces_string[current_size] = ' ';
-            size_t exponent = number_size - 1;
-            size_t remainder = face_index;
-            for (size_t k = 0; k < number_size; ++k) {
-                const size_t number = remainder/static_cast<size_t>(std::pow(10, exponent));
-                if (current_size + k + 1 < max_string_size) {
-                    faces_string[current_size + k + 1] = static_cast<char>(number) + '0';
-                }
-                remainder -= number * static_cast<size_t>(std::pow(10, exponent));
-                --exponent;
-            }
-
-            faces_string[std::min(current_size + number_size + 1, max_string_size)] = '\0';
-        }
-
-
-        printf("\tElement %llu has:\n\t\tFaces:%s\n", static_cast<unsigned long long>(element_index), faces_string);
     }
 }
 
@@ -1051,7 +1307,7 @@ auto SEM::Host::Meshes::Mesh2D_t::print() const -> void {
     }
 
     std::cout <<  "MPI interfaces:" << std::endl;
-    for (size_t j = 0; j < mpi_interfaces_outgoing_size_.size(); ++j) {
+    for (size_t j = 0; j < mpi_interfaces_process_.size(); ++j) {
         std::cout << '\t' << "MPI interface to process " << mpi_interfaces_process_[j] << " of outgoing size " << mpi_interfaces_outgoing_size_[j] << ", incoming size " << mpi_interfaces_incoming_size_[j] << ", outgoing offset " << mpi_interfaces_outgoing_offset_[j] << " and incoming offset " << mpi_interfaces_incoming_offset_[j] << ":" << std::endl;
         std::cout << '\t' << '\t' << "Outgoing element and element side:" << std::endl;
         for (size_t i = 0; i < mpi_interfaces_outgoing_size_[j]; ++i) {
@@ -1084,10 +1340,234 @@ auto SEM::Host::Meshes::Mesh2D_t::print() const -> void {
     }
 
     std::cout << std::endl <<  "Element faces:" << std::endl;
-    SEM::Host::Meshes::print_element_faces(n_elements_, elements_.data());
-    SEM::Host::Meshes::print_boundary_element_faces(n_elements_, elements_.size(), elements_.data());
+    for (size_t element_index = 0; element_index < n_elements_; ++element_index) {
+        const Element2D_t& element = elements_[element_index];
+        std::cout << '\t' << "Element " << element_index << " has:"; // CHECK only works for quadrilaterals
+        std::cout << std::endl << '\t' << '\t' << "Bottom faces: "; 
+        for (auto face_index : element.faces_[0]) {
+            std::cout << face_index << " ";
+        }
+        std::cout << std::endl << '\t' << '\t' << "Right faces: ";
+        for (auto face_index : element.faces_[1]) {
+            std::cout << face_index << " ";
+        }
+        std::cout << std::endl << '\t' << '\t' << "Top faces: ";
+        for (auto face_index : element.faces_[2]) {
+            std::cout << face_index << " ";
+        }
+        std::cout << std::endl << '\t' << '\t' << "Left faces: ";
+        for (auto face_index : element.faces_[3]) {
+            std::cout << face_index << " ";
+        }
+        std::cout << std::endl;
+    }
+
+    for (size_t element_index = n_elements_; element_index < elements_.size(); ++element_index) {
+        const Element2D_t& element = elements_[element_index];
+        std::cout << '\t' << "Element " << element_index << " has:" << std::endl << '\t' << "Faces: "; // CHECK only works for quadrilaterals
+        for (auto face_index : element.faces_[0]) {
+            std::cout << face_index << " ";
+        }
+        std::cout << std::endl;
+    }
 
     std::cout << std::endl;
+}
+
+auto SEM::Host::Meshes::Mesh2D_t::print_to_file(std::filesystem::path filename) const -> void {
+    if (filename.has_parent_path()) {
+        fs::create_directory(filename.parent_path());
+    }
+    std::ofstream meshfile(filename);
+    if (!meshfile.is_open()) {
+        std::cerr << "Error: file '" << filename << "' could not be opened. Exiting." << std::endl;
+        exit(78);
+    }
+
+    meshfile << "N elements: " << n_elements_ << std::endl;
+    meshfile << "N elements and ghosts: " << elements_.size() << std::endl;
+    meshfile << "N faces: " << faces_.size() << std::endl;
+    meshfile << "N nodes: " << nodes_.size() << std::endl;
+    meshfile << "N wall boundaries: " << wall_boundaries_.size() << std::endl;
+    meshfile << "N symmetry boundaries: " << symmetry_boundaries_.size() << std::endl;
+    meshfile << "N inflow boundaries: " << inflow_boundaries_.size() << std::endl;
+    meshfile << "N outflow boundaries: " << outflow_boundaries_.size() << std::endl;
+    meshfile << "N interfaces: " << interfaces_origin_.size() << std::endl;
+    meshfile << "N mpi incoming interfaces: " << mpi_interfaces_destination_.size() << std::endl;
+    meshfile << "N mpi outgoing interfaces: " << mpi_interfaces_origin_.size() << std::endl;
+    meshfile << "Initial N: " << initial_N_ << std::endl;
+
+    meshfile << std::endl <<  "Connectivity" << std::endl;
+    meshfile << '\t' <<  "Nodes:" << std::endl;
+    for (size_t i = 0; i < nodes_.size(); ++i) {
+        meshfile << '\t' << '\t' << "node " << std::setw(6) << i << " : " << std::setw(6) << nodes_[i] << std::endl;
+    }
+
+    meshfile << std::endl << '\t' <<  "Element nodes:" << std::endl;
+    for (size_t i = 0; i < elements_.size(); ++i) {
+        meshfile << '\t' << '\t' << "element " << std::setw(6) << i << " : ";
+        for (auto node_index : elements_[i].nodes_) {
+            meshfile << std::setw(6) << node_index << " ";
+        }
+        meshfile << std::endl;
+    }
+
+    meshfile << std::endl << '\t' <<  "Face nodes:" << std::endl;
+    for (size_t i = 0; i < faces_.size(); ++i) {
+        meshfile << '\t' << '\t' << "face " << std::setw(6) << i << " : ";
+        for (auto node_index : faces_[i].nodes_) {
+            meshfile << std::setw(6) << node_index << " ";
+        }
+        meshfile << std::endl;
+    }
+
+    meshfile << std::endl << '\t' <<  "Face elements:" << std::endl;
+    for (size_t i = 0; i < faces_.size(); ++i) {
+        meshfile << '\t' << '\t' << "face " << std::setw(6) << i << " : ";
+        for (auto element_index : faces_[i].elements_) {
+            meshfile << std::setw(6) << element_index << " ";
+        }
+        meshfile << std::endl;
+    }
+
+    meshfile << std::endl << '\t' <<  "Face elements side:" << std::endl;
+    for (size_t i = 0; i < faces_.size(); ++i) {
+        meshfile << '\t' << '\t' << "face " << std::setw(6) << i << " : ";
+        for (auto side_index : faces_[i].elements_side_) {
+            meshfile << side_index << " ";
+        }
+        meshfile << std::endl;
+    }
+
+    meshfile << std::endl <<  "Geometry" << std::endl;
+    meshfile << '\t' <<  "Element Hilbert status:" << std::endl;
+    constexpr std::array<char, 4> status_letter {'H', 'A', 'R', 'B'};
+    for (size_t i = 0; i < elements_.size(); ++i) {
+        meshfile << '\t' << '\t' << "element " << std::setw(6) << i << " : " << status_letter[elements_[i].status_] << std::endl;
+    }
+
+    meshfile << std::endl << '\t' <<  "Element rotation:" << std::endl;
+    for (size_t i = 0; i < elements_.size(); ++i) {
+        meshfile << '\t' << '\t' << "element " << std::setw(6) << i << " : " << elements_[i].rotation_ << std::endl;
+    }
+
+    meshfile << std::endl << '\t' <<  "Element min length:" << std::endl;
+    for (size_t i = 0; i < elements_.size(); ++i) {
+        meshfile << '\t' << '\t' << "element " << std::setw(6) << i << " : " << elements_[i].delta_xy_min_ << std::endl;
+    }
+
+    meshfile << std::endl << '\t' <<  "Element N:" << std::endl;
+    for (size_t i = 0; i < elements_.size(); ++i) {
+        meshfile << '\t' << '\t' << "element " << std::setw(6) << i << " : " << elements_[i].N_ << std::endl;
+    }
+    
+    meshfile << std::endl << '\t' <<  "Face N:" << std::endl;
+    for (size_t i = 0; i < faces_.size(); ++i) {
+        meshfile << '\t' << '\t' << "face " << std::setw(6) << i << " : " << faces_[i].N_ << std::endl;
+    }
+
+    meshfile << std::endl << '\t' <<  "Face length:" << std::endl;
+    for (size_t i = 0; i < faces_.size(); ++i) {
+        meshfile << '\t' << '\t' << "face " << std::setw(6) << i << " : " << faces_[i].length_ << std::endl;
+    }
+
+    meshfile << std::endl << '\t' <<  "Face normal:" << std::endl;
+    for (size_t i = 0; i < faces_.size(); ++i) {
+        meshfile << '\t' << '\t' << "face " << std::setw(6) << i << " : " << faces_[i].normal_ << std::endl;
+    }
+
+    meshfile << std::endl << '\t' <<  "Face tangent:" << std::endl;
+    for (size_t i = 0; i < faces_.size(); ++i) {
+        meshfile << '\t' << '\t' << "face " << std::setw(6) << i << " : " << faces_[i].tangent_ << std::endl;
+    }
+
+    meshfile << std::endl << '\t' <<  "Face offset:" << std::endl;
+    for (size_t i = 0; i < faces_.size(); ++i) {
+        meshfile << '\t' << '\t' << "face " << std::setw(6) << i << " : " << std::setw(6) << faces_[i].offset_[0] << " " << std::setw(6) << faces_[i].offset_[1] << std::endl;
+    }
+
+    meshfile << std::endl << '\t' <<  "Face scale:" << std::endl;
+    for (size_t i = 0; i < faces_.size(); ++i) {
+        meshfile << '\t' << '\t' << "face " << std::setw(6) << i << " : " << std::setw(6) << faces_[i].scale_[0] << " " << std::setw(6) << faces_[i].scale_[1] << std::endl;
+    }
+
+    meshfile << std::endl << '\t' <<  "Face refine:" << std::endl;
+    for (size_t i = 0; i < faces_.size(); ++i) {
+        meshfile << '\t' << '\t' << "face " << std::setw(6) << i << " : " << faces_[i].refine_ << std::endl;
+    }
+
+    meshfile << std::endl <<  "Interfaces" << std::endl;
+    meshfile << '\t' <<  "Interface destination, origin and origin side:" << std::endl;
+    for (size_t i = 0; i < interfaces_origin_.size(); ++i) {
+        meshfile << '\t' << '\t' << "interface " << std::setw(6) << i << " : " << std::setw(6) << interfaces_destination_[i] << " " << std::setw(6) << interfaces_origin_[i] << " " << std::setw(6) << interfaces_origin_side_[i] << std::endl;
+    }
+
+    meshfile <<  "MPI interfaces:" << std::endl;
+    for (size_t j = 0; j < mpi_interfaces_process_.size(); ++j) {
+        meshfile << '\t' << "MPI interface to process " << mpi_interfaces_process_[j] << " of outgoing size " << mpi_interfaces_outgoing_size_[j] << ", incoming size " << mpi_interfaces_incoming_size_[j] << ", outgoing offset " << mpi_interfaces_outgoing_offset_[j] << " and incoming offset " << mpi_interfaces_incoming_offset_[j] << ":" << std::endl;
+        meshfile << '\t' << '\t' << "Outgoing element and element side:" << std::endl;
+        for (size_t i = 0; i < mpi_interfaces_outgoing_size_[j]; ++i) {
+            meshfile << '\t' << '\t' << '\t' << "mpi interface " << std::setw(6) << i << " : " << std::setw(6) << mpi_interfaces_origin_[mpi_interfaces_outgoing_offset_[j] + i] << " " << std::setw(6) << mpi_interfaces_origin_side_[mpi_interfaces_outgoing_offset_[j] + i] << std::endl;
+        }
+        meshfile << '\t' << '\t' << "Incoming element:" << std::endl;
+        for (size_t i = 0; i < mpi_interfaces_incoming_size_[j]; ++i) {
+            meshfile << '\t' << '\t' << '\t' << "mpi interface " << std::setw(6) << i << " : " << std::setw(6) << mpi_interfaces_destination_[mpi_interfaces_incoming_offset_[j] + i] << std::endl;
+        }
+    }
+
+    meshfile << std::endl << '\t' <<  "Wall boundaries:" << std::endl;
+    for (size_t i = 0; i < wall_boundaries_.size(); ++i) {
+        meshfile << '\t' << '\t' << "wall " << std::setw(6) << i << " : " << std::setw(6) << wall_boundaries_[i] << std::endl;
+    }
+
+    meshfile << std::endl << '\t' <<  "Symmetry boundaries:" << std::endl;
+    for (size_t i = 0; i < symmetry_boundaries_.size(); ++i) {
+        meshfile << '\t' << '\t' << "symmetry " << std::setw(6) << i << " : " << std::setw(6) << symmetry_boundaries_[i] << std::endl;
+    }
+
+    meshfile << std::endl << '\t' <<  "Inflow boundaries:" << std::endl;
+    for (size_t i = 0; i < inflow_boundaries_.size(); ++i) {
+        meshfile << '\t' << '\t' << "inflow " << std::setw(6) << i << " : " << std::setw(6) << inflow_boundaries_[i] << std::endl;
+    }
+
+    meshfile << std::endl << '\t' <<  "Outflow boundaries:" << std::endl;
+    for (size_t i = 0; i < outflow_boundaries_.size(); ++i) {
+        meshfile << '\t' << '\t' << "outflow " << std::setw(6) << i << " : " << std::setw(6) << outflow_boundaries_[i] << std::endl;
+    }
+
+    meshfile << std::endl <<  "Element faces:" << std::endl;
+    for (size_t element_index = 0; element_index < n_elements_; ++element_index) {
+        const Element2D_t& element = elements_[element_index];
+        meshfile << '\t' << "Element " << element_index << " has:"; // CHECK only works for quadrilaterals
+        meshfile << std::endl << '\t' << '\t' << "Bottom faces: "; 
+        for (auto face_index : element.faces_[0]) {
+            meshfile << face_index << " ";
+        }
+        meshfile << std::endl << '\t' << '\t' << "Right faces: ";
+        for (auto face_index : element.faces_[1]) {
+            meshfile << face_index << " ";
+        }
+        meshfile << std::endl << '\t' << '\t' << "Top faces: ";
+        for (auto face_index : element.faces_[2]) {
+            meshfile << face_index << " ";
+        }
+        meshfile << std::endl << '\t' << '\t' << "Left faces: ";
+        for (auto face_index : element.faces_[3]) {
+            meshfile << face_index << " ";
+        }
+        meshfile << std::endl;
+    }
+    
+    for (size_t element_index = n_elements_; element_index < elements_.size(); ++element_index) {
+        const Element2D_t& element = elements_[element_index];
+        meshfile << '\t' << "Element " << element_index << " has:" << std::endl << '\t' << "Faces: "; // CHECK only works for quadrilaterals
+        for (auto face_index : element.faces_[0]) {
+            meshfile << face_index << " ";
+        }
+        meshfile << std::endl;
+    }
+
+    meshfile.close();
 }
 
 auto SEM::Host::Meshes::Mesh2D_t::write_data(hostFloat time, const std::vector<std::vector<hostFloat>>& interpolation_matrices, const SEM::Helpers::DataWriter_t& data_writer) -> void {
@@ -3058,19 +3538,19 @@ auto SEM::Host::Meshes::Mesh2D_t::estimate_error(const std::vector<std::vector<h
     }
 }
 
-auto SEM::Host::Meshes::allocate_element_storage(size_t n_elements, Element2D_t* elements) -> void {
+auto SEM::Host::Meshes::allocate_element_storage(size_t n_elements, std::vector<Element2D_t>& elements) -> void {
     for (size_t element_index = 0; element_index < n_elements; ++element_index) {
         elements[element_index].allocate_storage();
     }
 }
 
-auto SEM::Host::Meshes::allocate_boundary_storage(size_t n_domain_elements, size_t n_total_elements, Element2D_t* elements) -> void {
-    for (size_t element_index = n_domain_elements; element_index < n_total_elements; ++element_index ) {
+auto SEM::Host::Meshes::allocate_boundary_storage(size_t n_domain_elements, std::vector<Element2D_t>& elements) -> void {
+    for (size_t element_index = n_domain_elements; element_index < elements.size(); ++element_index ) {
         elements[element_index].allocate_boundary_storage();
     }
 }
 
-auto SEM::Host::Meshes::compute_element_geometry(size_t n_elements, Element2D_t* elements, const Vec2<hostFloat>* nodes, const std::vector<std::vector<hostFloat>>& polynomial_nodes) -> void {
+auto SEM::Host::Meshes::compute_element_geometry(size_t n_elements, std::vector<Element2D_t>& elements, const std::vector<Vec2<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& polynomial_nodes) -> void {
     for (size_t element_index = 0; element_index < n_elements; ++element_index) {
         const std::array<Vec2<hostFloat>, 4> points {nodes[elements[element_index].nodes_[0]],
                                                        nodes[elements[element_index].nodes_[1]],
@@ -3080,8 +3560,8 @@ auto SEM::Host::Meshes::compute_element_geometry(size_t n_elements, Element2D_t*
     }
 }
 
-auto SEM::Host::Meshes::compute_boundary_geometry(size_t n_domain_elements, size_t n_total_elements, Element2D_t* elements, const Vec2<hostFloat>* nodes, const std::vector<std::vector<hostFloat>>& polynomial_nodes) -> void {
-    for (size_t element_index = n_domain_elements; element_index < n_total_elements; ++element_index) {
+auto SEM::Host::Meshes::compute_boundary_geometry(size_t n_domain_elements, std::vector<Element2D_t>& elements, const std::vector<Vec2<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& polynomial_nodes) -> void {
+    for (size_t element_index = n_domain_elements; element_index < elements.size(); ++element_index) {
         const std::array<Vec2<hostFloat>, 4> points {nodes[elements[element_index].nodes_[0]],
                                                        nodes[elements[element_index].nodes_[1]],
                                                        nodes[elements[element_index].nodes_[2]],
@@ -3090,7 +3570,7 @@ auto SEM::Host::Meshes::compute_boundary_geometry(size_t n_domain_elements, size
     }
 }
 
-auto SEM::Host::Meshes::compute_element_status(size_t n_elements, Element2D_t* elements, const Vec2<hostFloat>* nodes) -> void {
+auto SEM::Host::Meshes::compute_element_status(size_t n_elements, std::vector<Element2D_t>& elements, const std::vector<Vec2<hostFloat>>& nodes) -> void {
     constexpr std::array<hostFloat, 4> targets {-3*pi/4, -pi/4, pi/4, 3*pi/4};
 
     for (size_t element_index = 0; element_index < n_elements; ++element_index) {
@@ -3213,13 +3693,13 @@ auto SEM::Host::Meshes::compute_element_status(size_t n_elements, Element2D_t* e
     }
 }
 
-auto SEM::Host::Meshes::allocate_face_storage(size_t n_faces, Face2D_t* faces) -> void {
-    for (size_t face_index = 0; face_index < n_faces; ++face_index) {
-        faces[face_index].allocate_storage();
+auto SEM::Host::Meshes::allocate_face_storage(std::vector<Face2D_t>& faces) -> void {
+    for (auto& face: faces) {
+        face.allocate_storage();
     }
 }
 
-auto SEM::Host::Meshes::fill_element_faces(size_t n_elements, Element2D_t* elements, const std::array<size_t, 4>* element_to_face) -> void {
+auto SEM::Host::Meshes::fill_element_faces(size_t n_elements, std::vector<Element2D_t>& elements, const std::vector<std::array<size_t, 4>>& element_to_face) -> void {
     for (size_t element_index = 0; element_index < n_elements; ++element_index) {
         for (size_t j = 0; j < elements[element_index].faces_.size(); ++j) {
             elements[element_index].faces_[j][0] = element_to_face[element_index][j];
@@ -3227,15 +3707,14 @@ auto SEM::Host::Meshes::fill_element_faces(size_t n_elements, Element2D_t* eleme
     }
 }
 
-auto SEM::Host::Meshes::fill_boundary_element_faces(size_t n_domain_elements, size_t n_total_elements, Element2D_t* elements, const std::array<size_t, 4>* element_to_face) -> void {
-    for (size_t element_index = n_domain_elements; element_index < n_total_elements; ++element_index) {
+auto SEM::Host::Meshes::fill_boundary_element_faces(size_t n_domain_elements, std::vector<Element2D_t>& elements, const std::vector<std::array<size_t, 4>>& element_to_face) -> void {
+    for (size_t element_index = n_domain_elements; element_index < elements.size(); ++element_index) {
         elements[element_index].faces_[0][0] = element_to_face[element_index][0];
     }
 }
 
-auto SEM::Host::Meshes::compute_face_geometry(size_t n_faces, Face2D_t* faces, const Element2D_t* elements, const Vec2<hostFloat>* nodes) -> void {
-    for (size_t face_index = 0; face_index < n_faces; ++face_index) {
-        Face2D_t& face = faces[face_index];
+auto SEM::Host::Meshes::compute_face_geometry(std::vector<Face2D_t>& faces, const std::vector<Element2D_t>& elements, const std::vector<Vec2<hostFloat>>& nodes) -> void {
+    for (auto& face: faces) {
         const std::array<Vec2<hostFloat>, 2> face_nodes {nodes[face.nodes_[0]], nodes[face.nodes_[1]]};
 
         const size_t element_L_index = face.elements_[0];
@@ -3255,7 +3734,7 @@ auto SEM::Host::Meshes::compute_face_geometry(size_t n_faces, Face2D_t* faces, c
             element_R.center_
         };
 
-        faces[face_index].compute_geometry(elements_centres, face_nodes, elements_nodes);
+        face.compute_geometry(elements_centres, face_nodes, elements_nodes);
     }
 }
 

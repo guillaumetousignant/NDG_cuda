@@ -55,9 +55,9 @@ namespace SEM { namespace Host { namespace Meshes {
             std::vector<int> receiving_interfaces_N_;
             std::vector<unsigned int> interfaces_refine_;
             std::vector<unsigned int> receiving_interfaces_refine_;
-            std::vector<bool> receiving_interfaces_refine_without_splitting_;
-            std::vector<bool> receiving_interfaces_creating_node_;
-            std::vector<bool> interfaces_refine_without_splitting_;
+            std::vector<unsigned int> receiving_interfaces_refine_without_splitting_;
+            std::vector<unsigned int> receiving_interfaces_creating_node_;
+            std::vector<unsigned int> interfaces_refine_without_splitting_;
 
             // Output
             std::vector<hostFloat> x_output_;
@@ -136,23 +136,23 @@ namespace SEM { namespace Host { namespace Meshes {
             static auto build_faces(size_t n_elements_domain, size_t n_nodes, int initial_N, std::vector<SEM::Host::Entities::Element2D_t>& elements) -> std::tuple<std::vector<SEM::Host::Entities::Face2D_t>, std::vector<std::vector<size_t>>, std::vector<std::array<size_t, 4>>>;
     };
 
-    auto allocate_element_storage(size_t n_elements, SEM::Host::Entities::Element2D_t* elements) -> void;
+    auto allocate_element_storage(size_t n_elements, std::vector<SEM::Host::Entities::Element2D_t>& elements) -> void;
 
-    auto allocate_boundary_storage(size_t n_domain_elements, size_t n_total_elements, SEM::Host::Entities::Element2D_t* elements) -> void;
+    auto allocate_boundary_storage(size_t n_domain_elements, std::vector<SEM::Host::Entities::Element2D_t>& elements) -> void;
 
-    auto compute_element_geometry(size_t n_elements, SEM::Host::Entities::Element2D_t* elements, const SEM::Host::Entities::Vec2<hostFloat>* nodes, const std::vector<std::vector<hostFloat>>& polynomial_nodes) -> void;
+    auto compute_element_geometry(size_t n_elements, std::vector<SEM::Host::Entities::Element2D_t>& elements, const std::vector<SEM::Host::Entities::Vec2<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& polynomial_nodes) -> void;
     
-    auto compute_boundary_geometry(size_t n_domain_elements, size_t n_total_elements, SEM::Host::Entities::Element2D_t* elements, const SEM::Host::Entities::Vec2<hostFloat>* nodes, const std::vector<std::vector<hostFloat>>& polynomial_nodes) -> void;
+    auto compute_boundary_geometry(size_t n_domain_elements, std::vector<SEM::Host::Entities::Element2D_t>& elements, const std::vector<SEM::Host::Entities::Vec2<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& polynomial_nodes) -> void;
 
-    auto compute_element_status(size_t n_elements, SEM::Host::Entities::Element2D_t* elements, const SEM::Host::Entities::Vec2<hostFloat>* nodes) -> void;
+    auto compute_element_status(size_t n_elements, std::vector<SEM::Host::Entities::Element2D_t>& elements, const std::vector<SEM::Host::Entities::Vec2<hostFloat>>& nodes) -> void;
     
-    auto allocate_face_storage(size_t n_faces, SEM::Host::Entities::Face2D_t* faces) -> void;
+    auto allocate_face_storage(std::vector<SEM::Host::Entities::Face2D_t>& faces) -> void;
 
-    auto fill_element_faces(size_t n_elements, SEM::Host::Entities::Element2D_t* elements, const std::array<size_t, 4>* element_to_face) -> void;
+    auto fill_element_faces(size_t n_elements, std::vector<SEM::Host::Entities::Element2D_t>& elements, const std::vector<std::array<size_t, 4>> element_to_face) -> void;
 
-    auto fill_boundary_element_faces(size_t n_domain_elements, size_t n_total_elements, SEM::Host::Entities::Element2D_t* elements, const std::array<size_t, 4>* element_to_face) -> void;
+    auto fill_boundary_element_faces(size_t n_domain_elements, std::vector<SEM::Host::Entities::Element2D_t>& elements, const std::vector<std::array<size_t, 4>>& element_to_face) -> void;
 
-    auto compute_face_geometry(size_t n_faces, SEM::Host::Entities::Face2D_t* faces, const SEM::Host::Entities::Element2D_t* elements, const SEM::Host::Entities::Vec2<hostFloat>* nodes) -> void;
+    auto compute_face_geometry(std::vector<SEM::Host::Entities::Face2D_t>& faces, const std::vector<SEM::Host::Entities::Element2D_t>& elements, const std::vector<SEM::Host::Entities::Vec2<hostFloat>>& nodes) -> void;
 
     auto compute_wall_boundaries(size_t n_wall_boundaries, SEM::Host::Entities::Element2D_t* elements, const size_t* wall_boundaries, const SEM::Host::Entities::Face2D_t* faces, const std::vector<std::vector<hostFloat>>& polynomial_nodes, const std::vector<std::vector<hostFloat>>& weights, const std::vector<std::vector<hostFloat>>& barycentric_weights) -> void;
 
@@ -213,10 +213,6 @@ namespace SEM { namespace Host { namespace Meshes {
     auto move_boundaries(size_t n_boundaries, size_t offset, SEM::Host::Entities::Element2D_t* elements, SEM::Host::Entities::Element2D_t* new_elements, size_t* boundaries, const SEM::Host::Entities::Face2D_t* faces, size_t* elements_new_indices) -> void;
 
     auto move_interfaces(size_t n_local_interfaces, size_t offset, SEM::Host::Entities::Element2D_t* elements, SEM::Host::Entities::Element2D_t* new_elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_destination, size_t* elements_new_indices) -> void;
-
-    auto print_element_faces(size_t n_elements, const SEM::Host::Entities::Element2D_t* elements) -> void;
-
-    auto print_boundary_element_faces(size_t n_domain_elements, size_t n_total_elements, const SEM::Host::Entities::Element2D_t* elements) -> void;
 
     auto get_transfer_solution(size_t n_elements, const SEM::Host::Entities::Element2D_t* elements, int maximum_N, const SEM::Host::Entities::Vec2<hostFloat>* nodes, hostFloat* solution, size_t* n_neighbours, hostFloat* element_nodes) -> void;
     
