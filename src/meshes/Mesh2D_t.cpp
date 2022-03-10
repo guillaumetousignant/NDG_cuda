@@ -2235,8 +2235,6 @@ auto SEM::Host::Meshes::Mesh2D_t::load_balance(const std::vector<std::vector<hos
     int global_size;
     MPI_Comm_size(MPI_COMM_WORLD, &global_size);
 
-    std::cout << "Process " << global_rank << " load balancing" << std::endl;
-
     std::vector<size_t> n_elements_per_proc(global_size);
 
     const MPI_Datatype size_t_data_type = (sizeof(size_t) == sizeof(unsigned long long)) ? MPI_UNSIGNED_LONG_LONG : (sizeof(size_t) == sizeof(unsigned long)) ? MPI_UNSIGNED_LONG : MPI_UNSIGNED; // CHECK this is a bad way of doing this
