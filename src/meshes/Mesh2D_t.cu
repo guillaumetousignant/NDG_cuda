@@ -2637,10 +2637,10 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
         global_element_offset_end_new[i] = (i + 1) * n_elements_div + std::min(i + 1, n_elements_mod);
         n_elements_new[i] = global_element_offset_end_new[i] - global_element_offset_new[i];
 
-        n_elements_send_left[i] = (global_element_offset_new[i] > global_element_offset_current[i]) ? std::min(global_element_offset_new[i] - global_element_offset_current[i], n_elements_per_proc[i]) : 0; // CHECK what if more elements have to be moved than the number of elements in the proc?
-        n_elements_recv_left[i] = (global_element_offset_current[i] > global_element_offset_new[i]) ? std::min(global_element_offset_current[i] - global_element_offset_new[i], n_elements_new[i]) : 0;
-        n_elements_send_right[i] = (global_element_offset_end_current[i] > global_element_offset_end_new[i]) ? std::min(global_element_offset_end_current[i] - global_element_offset_end_new[i], n_elements_per_proc[i]) : 0;
-        n_elements_recv_right[i] = (global_element_offset_end_new[i] > global_element_offset_end_current[i]) ? std::min(global_element_offset_end_new[i] - global_element_offset_end_current[i], n_elements_new[i]) : 0;
+        n_elements_send_left[i] = (global_element_offset_new[i] > global_element_offset_current[i]) ? std::min(global_element_offset_new[i] - global_element_offset_current[i], n_elements_per_proc[i]) : size_t{0}; // CHECK what if more elements have to be moved than the number of elements in the proc?
+        n_elements_recv_left[i] = (global_element_offset_current[i] > global_element_offset_new[i]) ? std::min(global_element_offset_current[i] - global_element_offset_new[i], n_elements_new[i]) : size_t{0};
+        n_elements_send_right[i] = (global_element_offset_end_current[i] > global_element_offset_end_new[i]) ? std::min(global_element_offset_end_current[i] - global_element_offset_end_new[i], n_elements_per_proc[i]) : size_t{0};
+        n_elements_recv_right[i] = (global_element_offset_end_new[i] > global_element_offset_end_current[i]) ? std::min(global_element_offset_end_new[i] - global_element_offset_end_current[i], n_elements_new[i]) : size_t{0};
     }
 
     if (n_elements_send_left[global_rank] + n_elements_recv_left[global_rank] + n_elements_send_right[global_rank] + n_elements_recv_right[global_rank] > 0) {
@@ -4896,8 +4896,8 @@ auto SEM::Device::Meshes::compute_face_geometry(size_t n_faces, Face2D_t* faces,
         const size_t element_R_index = face.elements_[1];
         const size_t element_L_side = face.elements_side_[0];
         const size_t element_R_side = face.elements_side_[1];
-        const size_t element_L_next_side = (element_L_side + 1 < elements[element_L_index].nodes_.size()) ? element_L_side + 1 : 0;
-        const size_t element_R_next_side = (element_R_side + 1 < elements[element_R_index].nodes_.size()) ? element_R_side + 1 : 0;
+        const size_t element_L_next_side = (element_L_side + 1 < elements[element_L_index].nodes_.size()) ? element_L_side + 1 : size_t{0};
+        const size_t element_R_next_side = (element_R_side + 1 < elements[element_R_index].nodes_.size()) ? element_R_side + 1 : size_t{0};
         const Element2D_t& element_L = elements[element_L_index];
         const Element2D_t& element_R = elements[element_R_index];
         const std::array<std::array<Vec2<deviceFloat>, 2>, 2> elements_nodes {
@@ -5724,7 +5724,7 @@ auto SEM::Device::Meshes::get_MPI_interfaces_adaptivity(size_t n_MPI_interface_e
             }
 
             const size_t side = MPI_interfaces_origin_side[i];
-            const size_t next_side = (side + 1 < element.faces_.size()) ? side + 1 : 0;
+            const size_t next_side = (side + 1 < element.faces_.size()) ? side + 1 : size_t{0};
             const Vec2<deviceFloat> new_node = (nodes[element.nodes_[side]] + nodes[element.nodes_[next_side]])/2;
 
             std::array<size_t, 2> n_side_faces {0, 0};
@@ -5765,18 +5765,18 @@ auto SEM::Device::Meshes::get_MPI_interfaces_adaptivity(size_t n_MPI_interface_e
 
                             // CHECK this projection is different than the one used for splitting, maybe wrong
                             // The face is within the first element
-                            if ((C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1) 
-                                && D_proj[0] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())
-                                || (D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
-                                && C_proj[0] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())) {
+                            if ((C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() <= deviceFloat{1} 
+                                && D_proj[0] >= deviceFloat{0} + std::numeric_limits<deviceFloat>::epsilon())
+                                || (D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() <= deviceFloat{1}
+                                && C_proj[0] >= deviceFloat{0} + std::numeric_limits<deviceFloat>::epsilon())) {
 
                                 ++n_side_faces[0];
                             }
                             // The face is within the second element
-                            if ((C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
-                                && D_proj[1] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())
-                                || (D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
-                                && C_proj[1] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())) {
+                            if ((C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() <= deviceFloat{1}
+                                && D_proj[1] >= deviceFloat{0} + std::numeric_limits<deviceFloat>::epsilon())
+                                || (D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() <= deviceFloat{1}
+                                && C_proj[1] >= deviceFloat{0} + std::numeric_limits<deviceFloat>::epsilon())) {
 
                                 ++n_side_faces[1];
                             }
@@ -5880,18 +5880,18 @@ auto SEM::Device::Meshes::adjust_MPI_incoming_interfaces(size_t n_MPI_interface_
 
                 // CHECK this projection is different than the one used for splitting, maybe wrong
                 // The face is within the first element
-                if ((C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1) 
-                    && D_proj[0] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())
-                    || (D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
-                    && C_proj[0] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())) {
+                if ((C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() <= deviceFloat{1} 
+                    && D_proj[0] >= deviceFloat{0} + std::numeric_limits<deviceFloat>::epsilon())
+                    || (D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() <= deviceFloat{1}
+                    && C_proj[0] >= deviceFloat{0} + std::numeric_limits<deviceFloat>::epsilon())) {
 
                     ++n_side_faces[0];
                 }
                 // The face is within the second element
-                if ((C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
-                    && D_proj[1] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())
-                    || (D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
-                    && C_proj[1] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())) {
+                if ((C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() <= deviceFloat{1}
+                    && D_proj[1] >= deviceFloat{0} + std::numeric_limits<deviceFloat>::epsilon())
+                    || (D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() <= deviceFloat{1}
+                    && C_proj[1] >= deviceFloat{0} + std::numeric_limits<deviceFloat>::epsilon())) {
 
                     ++n_side_faces[1];
                 }
@@ -6147,7 +6147,7 @@ auto SEM::Device::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_n
 
             for (size_t side_index = 0; side_index < element.nodes_.size(); ++side_index) {
                 const size_t previous_side_index = (side_index > 0) ? side_index - 1 : element.nodes_.size() - 1;
-                const size_t next_side_index = (side_index + 1 < element.nodes_.size()) ? side_index + 1 : 0;
+                const size_t next_side_index = (side_index + 1 < element.nodes_.size()) ? side_index + 1 : size_t{0};
                 const size_t opposite_side_index = (side_index + 2 < element.nodes_.size()) ? side_index + 2 : side_index + 2 - element.nodes_.size();
 
                 const std::array<size_t, 2> side_element_indices {element_index + child_order[side_index], element_index + child_order[next_side_index]};
@@ -6200,18 +6200,18 @@ auto SEM::Device::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_n
                             const deviceFloat E_proj = AE.dot(AB) * AB_dot_inv;
     
                             // The first half of the face is within the element
-                            if (C_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                                && C_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                                && D_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                                && D_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                            if (C_proj + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                                && C_proj <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                                && D_proj + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                                && D_proj <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
         
                                 ++n_side_faces;
                             }
                             // The second half of the face is within the element
-                            if (D_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                                && D_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                                && E_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                                && E_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                            if (D_proj + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                                && D_proj <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                                && E_proj + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                                && E_proj <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
         
                                 ++n_side_faces;
                             }
@@ -6224,10 +6224,10 @@ auto SEM::Device::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_n
                             const deviceFloat D_proj = AD.dot(AB) * AB_dot_inv;
     
                             // The face is within the element
-                            if (C_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                                && C_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                                && D_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                                && D_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                            if (C_proj + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                                && C_proj <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                                && D_proj + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                                && D_proj <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
         
                                 ++n_side_faces;
                             }
@@ -6258,19 +6258,19 @@ auto SEM::Device::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_n
                             const deviceFloat E_proj = AE.dot(AB) * AB_dot_inv;
     
                             // The first half of the face is within the element
-                            if (C_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                                && C_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                                && D_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                                && D_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                            if (C_proj + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                                && C_proj <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                                && D_proj + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                                && D_proj <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
         
                                 new_element_faces[side_index][new_element_side_face_index] = face_index;
                                 ++new_element_side_face_index;
                             }
                             // The second half of the face is within the element
-                            if (D_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                                && D_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                                && E_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                                && E_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                            if (D_proj + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                                && D_proj <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                                && E_proj + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                                && E_proj <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
         
                                 new_element_faces[side_index][new_element_side_face_index] = splitting_face_index;
                                 ++new_element_side_face_index;
@@ -6284,10 +6284,10 @@ auto SEM::Device::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_n
                             const deviceFloat D_proj = AD.dot(AB) * AB_dot_inv;
     
                             // The face is within the element
-                            if (C_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                                && C_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                                && D_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                                && D_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                            if (C_proj + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                                && C_proj <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                                && D_proj + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                                && D_proj <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
         
                                 new_element_faces[side_index][new_element_side_face_index] = face_index;
                                 ++new_element_side_face_index;
@@ -6335,18 +6335,18 @@ auto SEM::Device::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_n
                             const deviceFloat E_proj = AE.dot(AB) * AB_dot_inv;
     
                             // The first half of the face is within the element
-                            if (C_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                                && C_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                                && D_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                                && D_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                            if (C_proj + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                                && C_proj <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                                && D_proj + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                                && D_proj <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
         
                                 ++n_side_faces;
                             }
                             // The second half of the face is within the element
-                            if (D_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                                && D_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                                && E_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                                && E_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                            if (D_proj + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                                && D_proj <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                                && E_proj + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                                && E_proj <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
         
                                 ++n_side_faces;
                             }
@@ -6359,10 +6359,10 @@ auto SEM::Device::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_n
                             const deviceFloat D_proj = AD.dot(AB) * AB_dot_inv;
     
                             // The face is within the element
-                            if (C_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                                && C_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                                && D_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                                && D_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                            if (C_proj + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                                && C_proj <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                                && D_proj + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                                && D_proj <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
         
                                 ++n_side_faces;
                             }
@@ -6393,19 +6393,19 @@ auto SEM::Device::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_n
                             const deviceFloat E_proj = AE.dot(AB) * AB_dot_inv;
     
                             // The first half of the face is within the element
-                            if (C_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                                && C_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                                && D_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                                && D_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                            if (C_proj + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                                && C_proj <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                                && D_proj + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                                && D_proj <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
         
                                 new_element_faces[previous_side_index][new_element_side_face_index] = face_index;
                                 ++new_element_side_face_index;
                             }
                             // The second half of the face is within the element
-                            if (D_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                                && D_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                                && E_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                                && E_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                            if (D_proj + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                                && D_proj <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                                && E_proj + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                                && E_proj <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
         
                                 new_element_faces[previous_side_index][new_element_side_face_index] = splitting_face_index;
                                 ++new_element_side_face_index;
@@ -6419,10 +6419,10 @@ auto SEM::Device::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_n
                             const deviceFloat D_proj = AD.dot(AB) * AB_dot_inv;
     
                             // The face is within the element
-                            if (C_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                                && C_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                                && D_proj + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                                && D_proj <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                            if (C_proj + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                                && C_proj <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                                && D_proj + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                                && D_proj <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
         
                                 new_element_faces[previous_side_index][new_element_side_face_index] = face_index;
                                 ++new_element_side_face_index;
@@ -6451,7 +6451,7 @@ auto SEM::Device::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_n
             }
 
             for (size_t side_index = 0; side_index < element.nodes_.size(); ++side_index) {
-                const size_t next_side_index = (side_index + 1 < element.nodes_.size()) ? side_index + 1 : 0;
+                const size_t next_side_index = (side_index + 1 < element.nodes_.size()) ? side_index + 1 : size_t{0};
                 const Vec2<deviceFloat> new_node = (nodes[element.nodes_[side_index]] + nodes[element.nodes_[next_side_index]])/2;
                 const std::array<Vec2<deviceFloat>, 2> face_nodes {
                     new_node,
@@ -6587,8 +6587,8 @@ auto SEM::Device::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_s
         new_faces[face_index].clear_storage();
 
         if (face.refine_) {
-            const size_t element_L_next_side_index = (element_L_side_index + 1 < element_L.nodes_.size()) ? element_L_side_index + 1 : 0;
-            const size_t element_R_next_side_index = (element_R_side_index + 1 < element_R.nodes_.size()) ? element_R_side_index + 1 : 0;
+            const size_t element_L_next_side_index = (element_L_side_index + 1 < element_L.nodes_.size()) ? element_L_side_index + 1 : size_t{0};
+            const size_t element_R_next_side_index = (element_R_side_index + 1 < element_R.nodes_.size()) ? element_R_side_index + 1 : size_t{0};
 
             size_t new_node_index = n_nodes + n_splitting_elements + faces_block_offsets[block_id];
             size_t new_face_index = n_faces + 4 * n_splitting_elements + faces_block_offsets[block_id];
@@ -6639,10 +6639,10 @@ auto SEM::Device::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_s
                 const std::array<deviceFloat, 2> E_proj {AE[0].dot(AB[0]) * AB_dot_inv[0], AE[1].dot(AB[1]) * AB_dot_inv[1]};
 
                 // The first face is within the first element
-                if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                    && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                    && C_proj[0] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                    && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                    && D_proj[0] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
 
                     const size_t previous_side_index = (element_L_side_index > 0) ? element_L_side_index - 1 : element_L.nodes_.size() - 1;
                     const Vec2<deviceFloat> previous_new_element_node = (element_nodes[0] + nodes[element_L.nodes_[previous_side_index]])/2;
@@ -6652,10 +6652,10 @@ auto SEM::Device::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_s
                     elements_nodes[0][0] = {element_nodes[0], new_element_node};
                 }
                 // The second face is within the first element
-                if (D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                    && E_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && E_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                if (D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                    && D_proj[0] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                    && E_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                    && E_proj[0] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
 
                     const size_t previous_side_index = (element_L_side_index > 0) ? element_L_side_index - 1 : element_L.nodes_.size() - 1;
                     const Vec2<deviceFloat> previous_new_element_node = (element_nodes[0] + nodes[element_L.nodes_[previous_side_index]])/2;
@@ -6665,10 +6665,10 @@ auto SEM::Device::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_s
                     elements_nodes[1][0] = {element_nodes[0], new_element_node};
                 }
                 // The first face is within the second element
-                if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                    && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                    && C_proj[1] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                    && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                    && D_proj[1] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
 
                     const size_t opposite_side_index = (element_L_side_index + 2 < element_L.nodes_.size()) ? element_L_side_index + 2 : element_L_side_index + 2 - element_L.nodes_.size();
                     const Vec2<deviceFloat> opposite_new_element_node = (element_nodes[1] + nodes[element_L.nodes_[opposite_side_index]])/2;
@@ -6678,10 +6678,10 @@ auto SEM::Device::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_s
                     elements_nodes[0][0] = {new_element_node, element_nodes[1]};
                 }
                 // The second face is within the second element
-                if (D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                    && E_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && E_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                if (D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                    && D_proj[1] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                    && E_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                    && E_proj[1] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
 
                     const size_t opposite_side_index = (element_L_side_index + 2 < element_L.nodes_.size()) ? element_L_side_index + 2 : element_L_side_index + 2 - element_L.nodes_.size();
                     const Vec2<deviceFloat> opposite_new_element_node = (element_nodes[1] + nodes[element_L.nodes_[opposite_side_index]])/2;
@@ -6709,10 +6709,10 @@ auto SEM::Device::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_s
                 const std::array<deviceFloat, 2> E_proj {AE[0].dot(AB[0]) * AB_dot_inv[0], AE[1].dot(AB[1]) * AB_dot_inv[1]};
                 
                 // The first face is within the first element
-                if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                    && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                    && C_proj[0] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                    && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                    && D_proj[0] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
 
                     const size_t previous_side_index = (element_R_side_index > 0) ? element_R_side_index - 1 : element_R.nodes_.size() - 1;
                     const Vec2<deviceFloat> previous_new_element_node = (element_nodes[0] + nodes[element_R.nodes_[previous_side_index]])/2;
@@ -6722,10 +6722,10 @@ auto SEM::Device::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_s
                     elements_nodes[0][1] = {element_nodes[0], new_element_node};
                 }
                 // The second face is within the first element
-                if (D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                    && E_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && E_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                if (D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                    && D_proj[0] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                    && E_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                    && E_proj[0] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
 
                     const size_t previous_side_index = (element_R_side_index > 0) ? element_R_side_index - 1 : element_R.nodes_.size() - 1;
                     const Vec2<deviceFloat> previous_new_element_node = (element_nodes[0] + nodes[element_R.nodes_[previous_side_index]])/2;
@@ -6735,10 +6735,10 @@ auto SEM::Device::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_s
                     elements_nodes[1][1] = {element_nodes[0], new_element_node};
                 }
                 // The first face is within the second element
-                if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                    && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                    && C_proj[1] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                    && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                    && D_proj[1] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
 
                     const size_t opposite_side_index = (element_R_side_index + 2 < element_R.nodes_.size()) ? element_R_side_index + 2 : element_R_side_index + 2 - element_R.nodes_.size();
                     const Vec2<deviceFloat> opposite_new_element_node = (element_nodes[1] + nodes[element_R.nodes_[opposite_side_index]])/2;
@@ -6748,10 +6748,10 @@ auto SEM::Device::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_s
                     elements_nodes[0][1] = {new_element_node, element_nodes[1]};
                 }
                 // The second face is within the second element
-                if (D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                    && E_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && E_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                if (D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                    && D_proj[1] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                    && E_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                    && E_proj[1] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
 
                     const size_t opposite_side_index = (element_R_side_index + 2 < element_R.nodes_.size()) ? element_R_side_index + 2 : element_R_side_index + 2 - element_R.nodes_.size();
                     const Vec2<deviceFloat> opposite_new_element_node = (element_nodes[1] + nodes[element_R.nodes_[opposite_side_index]])/2;
@@ -6785,8 +6785,8 @@ auto SEM::Device::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_s
 
             std::array<size_t, 2> face_new_element_indices = {element_L_new_index, element_R_new_index};
             if (element_L.would_h_refine(max_split_level) || element_R.would_h_refine(max_split_level)) {
-                const size_t element_L_next_side_index = (element_L_side_index + 1 < element_L.nodes_.size()) ? element_L_side_index + 1 : 0;
-                const size_t element_R_next_side_index = (element_R_side_index + 1 < element_R.nodes_.size()) ? element_R_side_index + 1 : 0;
+                const size_t element_L_next_side_index = (element_L_side_index + 1 < element_L.nodes_.size()) ? element_L_side_index + 1 : size_t{0};
+                const size_t element_R_next_side_index = (element_R_side_index + 1 < element_R.nodes_.size()) ? element_R_side_index + 1 : size_t{0};
 
                 std::array<Vec2<deviceFloat>, 2> elements_centres {element_L.center_, element_R.center_};
                 const std::array<Vec2<deviceFloat>, 2> face_nodes {nodes[face.nodes_[0]], nodes[face.nodes_[1]]};
@@ -6811,10 +6811,10 @@ auto SEM::Device::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_s
                     const std::array<deviceFloat, 2> D_proj {AD[0].dot(AB[0]) * AB_dot_inv[0], AD[1].dot(AB[1]) * AB_dot_inv[1]};
 
                     // The face is within the first element
-                    if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                        && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                        && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                        && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                    if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                        && C_proj[0] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                        && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                        && D_proj[0] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
 
                         face_new_element_indices[0] += child_order_L[element_L_side_index];
                         element_geometry_nodes[0] = {element_nodes[0], new_element_node};
@@ -6824,10 +6824,10 @@ auto SEM::Device::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_s
                         elements_centres[0] = (element_nodes[0] + new_element_node + element_L.center_ + previous_new_element_node)/4; // CHECK only works on quadrilaterals
                     }
                     // The face is within the second element
-                    if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                        && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                        && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                        && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                    if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                        && C_proj[1] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                        && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                        && D_proj[1] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
 
                         face_new_element_indices[0] += child_order_L[element_L_next_side_index];
                         element_geometry_nodes[0] = {new_element_node, element_nodes[1]};
@@ -6854,10 +6854,10 @@ auto SEM::Device::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_s
                     const std::array<deviceFloat, 2> D_proj {AD[0].dot(AB[0]) * AB_dot_inv[0], AD[1].dot(AB[1]) * AB_dot_inv[1]};
 
                     // The face is within the first element
-                    if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                        && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                        && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                        && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                    if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                        && C_proj[0] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                        && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                        && D_proj[0] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
 
                         face_new_element_indices[1] += child_order_R[element_R_side_index];
                         element_geometry_nodes[1] = {element_nodes[0], new_element_node};
@@ -6867,10 +6867,10 @@ auto SEM::Device::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_s
                         elements_centres[1] = (element_nodes[0] + new_element_node + element_R.center_ + previous_new_element_node)/4; // CHECK only works on quadrilaterals
                     }
                     // The face is within the second element
-                    if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                        && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                        && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                        && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                    if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                        && C_proj[1] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                        && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                        && D_proj[1] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
 
                         face_new_element_indices[1] += child_order_R[element_R_next_side_index];
                         element_geometry_nodes[1] = {new_element_node, element_nodes[1]};
@@ -7045,18 +7045,18 @@ auto SEM::Device::Meshes::copy_mpi_interfaces_error(size_t n_MPI_interface_eleme
 
                 // CHECK this projection is different than the one used for splitting, maybe wrong
                 // The face is within the first element
-                if ((C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1) 
-                    && D_proj[0] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())
-                    || (D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
-                    && C_proj[0] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())) {
+                if ((C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() <= deviceFloat{1} 
+                    && D_proj[0] >= deviceFloat{0} + std::numeric_limits<deviceFloat>::epsilon())
+                    || (D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() <= deviceFloat{1}
+                    && C_proj[0] >= deviceFloat{0} + std::numeric_limits<deviceFloat>::epsilon())) {
 
                     ++n_side_faces[0];
                 }
                 // The face is within the second element
-                if ((C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
-                    && D_proj[1] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())
-                    || (D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
-                    && C_proj[1] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())) {
+                if ((C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() <= deviceFloat{1}
+                    && D_proj[1] >= deviceFloat{0} + std::numeric_limits<deviceFloat>::epsilon())
+                    || (D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() <= deviceFloat{1}
+                    && C_proj[1] >= deviceFloat{0} + std::numeric_limits<deviceFloat>::epsilon())) {
 
                     ++n_side_faces[1];
                 }
@@ -7236,7 +7236,7 @@ auto SEM::Device::Meshes::split_interfaces(size_t n_local_interfaces, size_t n_f
         elements_new_indices[destination_element_index] = new_element_index;
 
         if (source_element.would_h_refine(max_split_level)) {
-            const size_t source_element_next_side = (source_element_side + 1 < source_element.nodes_.size()) ? source_element_side + 1 : 0;
+            const size_t source_element_next_side = (source_element_side + 1 < source_element.nodes_.size()) ? source_element_side + 1 : size_t{0};
             const std::array<size_t, 4> child_order = Hilbert::child_order(source_element.status_, source_element.rotation_);
 
             new_local_interfaces_origin[new_interface_index]     = source_element_new_index + child_order[source_element_side];
@@ -7378,34 +7378,34 @@ auto SEM::Device::Meshes::split_interfaces(size_t n_local_interfaces, size_t n_f
                         };
 
                         // The first half of the face is within the first element
-                        if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                            && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                        if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && C_proj[0] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                            && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && D_proj[0] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
     
                             ++n_side_faces[0];
                         }
                         // The first half of the face is within the second element
-                        if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                            && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                        if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && C_proj[1] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                            && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && D_proj[1] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
     
                             ++n_side_faces[1];
                         }
                         // The second half of the face is within the first element
-                        if (D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                            && E_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && E_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                        if (D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && D_proj[0] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                            && E_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && E_proj[0] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
     
                             ++n_side_faces[0];
                         }
                         // The second half of the face is within the second element
-                        if (D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                            && E_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && E_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                        if (D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && D_proj[1] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                            && E_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && E_proj[1] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
     
                             ++n_side_faces[1];
                         }
@@ -7430,18 +7430,18 @@ auto SEM::Device::Meshes::split_interfaces(size_t n_local_interfaces, size_t n_f
                         };
 
                         // The face is within the first element
-                        if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                            && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                        if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && C_proj[0] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                            && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && D_proj[0] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
     
                             ++n_side_faces[0];
                         }
                         // The face is within the second element
-                        if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                            && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                        if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && C_proj[1] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                            && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && D_proj[1] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
     
                             ++n_side_faces[1];
                         }
@@ -7491,37 +7491,37 @@ auto SEM::Device::Meshes::split_interfaces(size_t n_local_interfaces, size_t n_f
                         };
 
                         // The first half of the face is within the first element
-                        if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                            && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                        if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && C_proj[0] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                            && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && D_proj[0] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
     
                             new_elements[new_element_index].faces_[0][new_element_side_face_index[0]] = face_index;
                             ++new_element_side_face_index[0];
                         }
                         // The first half of the face is within the second element
-                        if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                            && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                        if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && C_proj[1] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                            && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && D_proj[1] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
     
                             new_elements[new_element_index + 1].faces_[0][new_element_side_face_index[1]] = face_index;
                             ++new_element_side_face_index[1];
                         }
                         // The second half of the face is within the first element
-                        if (D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                            && E_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && E_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                        if (D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && D_proj[0] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                            && E_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && E_proj[0] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
     
                             new_elements[new_element_index].faces_[0][new_element_side_face_index[0]] = splitting_face_index;
                             ++new_element_side_face_index[0];
                         }
                         // The second half of the face is within the second element
-                        if (D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                            && E_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && E_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                        if (D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && D_proj[1] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                            && E_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && E_proj[1] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
     
                             new_elements[new_element_index + 1].faces_[0][new_element_side_face_index[1]] = splitting_face_index;
                             ++new_element_side_face_index[1];
@@ -7547,19 +7547,19 @@ auto SEM::Device::Meshes::split_interfaces(size_t n_local_interfaces, size_t n_f
                         };
 
                         // The face is within the first element
-                        if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                            && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                        if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && C_proj[0] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                            && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && D_proj[0] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
     
                             new_elements[new_element_index].faces_[0][new_element_side_face_index[0]] = face_index;
                             ++new_element_side_face_index[0];
                         }
                         // The face is within the second element
-                        if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                            && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                        if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && C_proj[1] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                            && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && D_proj[1] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
     
                             new_elements[new_element_index + 1].faces_[0][new_element_side_face_index[1]] = face_index;
                             ++new_element_side_face_index[1];
@@ -7666,7 +7666,7 @@ auto SEM::Device::Meshes::split_mpi_outgoing_interfaces(size_t n_MPI_interface_e
             }
 
             const size_t side = mpi_interfaces_origin_side[i];
-            const size_t next_side = (side + 1 < origin_element.faces_.size()) ? side + 1 : 0;
+            const size_t next_side = (side + 1 < origin_element.faces_.size()) ? side + 1 : size_t{0};
             const Vec2<deviceFloat> new_node = (nodes[origin_element.nodes_[side]] + nodes[origin_element.nodes_[next_side]])/2;
 
             std::array<size_t, 2> n_side_faces {0, 0};
@@ -7708,19 +7708,19 @@ auto SEM::Device::Meshes::split_mpi_outgoing_interfaces(size_t n_MPI_interface_e
 
                             // CHECK this projection is different than the one used for splitting, maybe wrong
                             // The face is within the first element
-                            if ((C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1) 
-                                && D_proj[0] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())
-                                || (D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
-                                && C_proj[0] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())) {
+                            if ((C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() <= deviceFloat{1} 
+                                && D_proj[0] >= deviceFloat{0} + std::numeric_limits<deviceFloat>::epsilon())
+                                || (D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() <= deviceFloat{1}
+                                && C_proj[0] >= deviceFloat{0} + std::numeric_limits<deviceFloat>::epsilon())) {
 
                                 ++n_side_faces[0];
                                 found_face = true;
                             }
                             // The face is within the second element
-                            if ((C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
-                                && D_proj[1] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())
-                                || (D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
-                                && C_proj[1] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())) {
+                            if ((C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() <= deviceFloat{1}
+                                && D_proj[1] >= deviceFloat{0} + std::numeric_limits<deviceFloat>::epsilon())
+                                || (D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() <= deviceFloat{1}
+                                && C_proj[1] >= deviceFloat{0} + std::numeric_limits<deviceFloat>::epsilon())) {
 
                                 ++n_side_faces[1];
                                 found_face = true;
@@ -7745,7 +7745,7 @@ auto SEM::Device::Meshes::split_mpi_outgoing_interfaces(size_t n_MPI_interface_e
             }
         }
         else if (elements_splitting[i]) {
-            const size_t next_side_index = (mpi_interfaces_origin_side[i] + 1 < origin_element.nodes_.size()) ? mpi_interfaces_origin_side[i] + 1 : 0;
+            const size_t next_side_index = (mpi_interfaces_origin_side[i] + 1 < origin_element.nodes_.size()) ? mpi_interfaces_origin_side[i] + 1 : size_t{0};
             const std::array<size_t, 4> child_order = Hilbert::child_order(origin_element.status_, origin_element.rotation_);
 
             new_mpi_interfaces_origin[new_mpi_interface_index]     = origin_element_new_index + child_order[mpi_interfaces_origin_side[i]];
@@ -7865,19 +7865,19 @@ auto SEM::Device::Meshes::split_mpi_incoming_interfaces(size_t n_MPI_interface_e
 
                 // CHECK this projection is different than the one used for splitting, maybe wrong
                 // The face is within the first element
-                if ((C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1) 
-                    && D_proj[0] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())
-                    || (D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
-                    && C_proj[0] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())) {
+                if ((C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() <= deviceFloat{1} 
+                    && D_proj[0] >= deviceFloat{0} + std::numeric_limits<deviceFloat>::epsilon())
+                    || (D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() <= deviceFloat{1}
+                    && C_proj[0] >= deviceFloat{0} + std::numeric_limits<deviceFloat>::epsilon())) {
 
                     ++n_side_faces[0];
                     break; // We can break here because we know only one side has faces, so this is it
                 }
                 // The face is within the second element
-                if ((C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
-                    && D_proj[1] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())
-                    || (D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() <= static_cast<deviceFloat>(1)
-                    && C_proj[1] >= static_cast<deviceFloat>(0) + std::numeric_limits<deviceFloat>::epsilon())) {
+                if ((C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() <= deviceFloat{1}
+                    && D_proj[1] >= deviceFloat{0} + std::numeric_limits<deviceFloat>::epsilon())
+                    || (D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() <= deviceFloat{1}
+                    && C_proj[1] >= deviceFloat{0} + std::numeric_limits<deviceFloat>::epsilon())) {
 
                     ++n_side_faces[1];
                     break; // We can break here because we know only one side has faces, so this is it
@@ -8101,34 +8101,34 @@ auto SEM::Device::Meshes::split_mpi_incoming_interfaces(size_t n_MPI_interface_e
                         };
 
                         // The first half of the face is within the first element
-                        if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                            && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                        if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && C_proj[0] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                            && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && D_proj[0] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
     
                             ++n_side_faces[0];
                         }
                         // The first half of the face is within the second element
-                        if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                            && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                        if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && C_proj[1] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                            && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && D_proj[1] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
     
                             ++n_side_faces[1];
                         }
                         // The second half of the face is within the first element
-                        if (D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                            && E_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && E_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                        if (D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && D_proj[0] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                            && E_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && E_proj[0] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
     
                             ++n_side_faces[0];
                         }
                         // The second half of the face is within the second element
-                        if (D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                            && E_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && E_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                        if (D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && D_proj[1] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                            && E_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && E_proj[1] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
     
                             ++n_side_faces[1];
                         }
@@ -8153,18 +8153,18 @@ auto SEM::Device::Meshes::split_mpi_incoming_interfaces(size_t n_MPI_interface_e
                         };
 
                         // The face is within the first element
-                        if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                            && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                        if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && C_proj[0] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                            && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && D_proj[0] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
     
                             ++n_side_faces[0];
                         }
                         // The face is within the second element
-                        if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                            && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                        if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && C_proj[1] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                            && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && D_proj[1] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
     
                             ++n_side_faces[1];
                         }
@@ -8214,37 +8214,37 @@ auto SEM::Device::Meshes::split_mpi_incoming_interfaces(size_t n_MPI_interface_e
                         };
 
                         // The first half of the face is within the first element
-                        if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                            && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                        if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && C_proj[0] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                            && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && D_proj[0] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
     
                             new_elements[new_element_index].faces_[0][new_element_side_face_index[0]] = face_index;
                             ++new_element_side_face_index[0];
                         }
                         // The first half of the face is within the second element
-                        if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                            && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                        if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && C_proj[1] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                            && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && D_proj[1] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
     
                             new_elements[new_element_index + 1].faces_[0][new_element_side_face_index[1]] = face_index;
                             ++new_element_side_face_index[1];
                         }
                         // The second half of the face is within the first element
-                        if (D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                            && E_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && E_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                        if (D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && D_proj[0] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                            && E_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && E_proj[0] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
     
                             new_elements[new_element_index].faces_[0][new_element_side_face_index[0]] = splitting_face_index;
                             ++new_element_side_face_index[0];
                         }
                         // The second half of the face is within the second element
-                        if (D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                            && E_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && E_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                        if (D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && D_proj[1] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                            && E_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && E_proj[1] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
     
                             new_elements[new_element_index + 1].faces_[0][new_element_side_face_index[1]] = splitting_face_index;
                             ++new_element_side_face_index[1];
@@ -8270,19 +8270,19 @@ auto SEM::Device::Meshes::split_mpi_incoming_interfaces(size_t n_MPI_interface_e
                         };
 
                         // The face is within the first element
-                        if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                            && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                        if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && C_proj[0] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                            && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && D_proj[0] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
     
                             new_elements[new_element_index].faces_[0][new_element_side_face_index[0]] = face_index;
                             ++new_element_side_face_index[0];
                         }
                         // The face is within the second element
-                        if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                            && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                            && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                        if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && C_proj[1] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                            && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                            && D_proj[1] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
     
                             new_elements[new_element_index + 1].faces_[0][new_element_side_face_index[1]] = face_index;
                             ++new_element_side_face_index[1];
@@ -8424,8 +8424,8 @@ auto SEM::Device::Meshes::adjust_faces_neighbours(size_t n_faces, Face2D_t* face
         }
 
         if (element_L.would_h_refine(max_split_level) || element_R.would_h_refine(max_split_level)) {
-            const size_t element_L_next_side_index = (element_L_side_index + 1 < element_L.nodes_.size()) ? element_L_side_index + 1 : 0;
-            const size_t element_R_next_side_index = (element_R_side_index + 1 < element_R.nodes_.size()) ? element_R_side_index + 1 : 0;
+            const size_t element_L_next_side_index = (element_L_side_index + 1 < element_L.nodes_.size()) ? element_L_side_index + 1 : size_t{0};
+            const size_t element_R_next_side_index = (element_R_side_index + 1 < element_R.nodes_.size()) ? element_R_side_index + 1 : size_t{0};
 
             std::array<Vec2<deviceFloat>, 2> elements_centres {element_L.center_, element_R.center_};
             const std::array<Vec2<deviceFloat>, 2> face_nodes {nodes[face.nodes_[0]], nodes[face.nodes_[1]]};
@@ -8455,10 +8455,10 @@ auto SEM::Device::Meshes::adjust_faces_neighbours(size_t n_faces, Face2D_t* face
                 const std::array<deviceFloat, 2> D_proj {AD[0].dot(AB[0]) * AB_dot_inv[0], AD[1].dot(AB[1]) * AB_dot_inv[1]};
 
                 // The face is within the first element
-                if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                    && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                    && C_proj[0] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                    && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                    && D_proj[0] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
 
                     face_new_element_indices[0] += child_order_L[element_L_side_index];
                     element_geometry_nodes[0] = {element_nodes[0], new_element_node};
@@ -8468,10 +8468,10 @@ auto SEM::Device::Meshes::adjust_faces_neighbours(size_t n_faces, Face2D_t* face
 
                 }
                 // The face is within the second element
-                if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                    && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                    && C_proj[1] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                    && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                    && D_proj[1] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
 
                     face_new_element_indices[0] += child_order_L[element_L_next_side_index];
                     element_geometry_nodes[0] = {new_element_node, element_nodes[1]};
@@ -8503,10 +8503,10 @@ auto SEM::Device::Meshes::adjust_faces_neighbours(size_t n_faces, Face2D_t* face
                 const std::array<deviceFloat, 2> D_proj {AD[0].dot(AB[0]) * AB_dot_inv[0], AD[1].dot(AB[1]) * AB_dot_inv[1]};
 
                 // The face is within the first element
-                if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && C_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                    && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && D_proj[0] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                if (C_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                    && C_proj[0] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                    && D_proj[0] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                    && D_proj[0] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
 
                     face_new_element_indices[1] += child_order_R[element_R_side_index];
                     element_geometry_nodes[1] = {element_nodes[0], new_element_node};
@@ -8515,10 +8515,10 @@ auto SEM::Device::Meshes::adjust_faces_neighbours(size_t n_faces, Face2D_t* face
                     elements_centres[1] = (element_nodes[0] + new_element_node + element_centre + nodes[element_R.nodes_[previous_side_index]])/4; // CHECK only works on quadrilaterals
                 }
                 // The face is within the second element
-                if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && C_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()
-                    && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= static_cast<deviceFloat>(0) 
-                    && D_proj[1] <= static_cast<deviceFloat>(1) + std::numeric_limits<deviceFloat>::epsilon()) {
+                if (C_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                    && C_proj[1] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()
+                    && D_proj[1] + std::numeric_limits<deviceFloat>::epsilon() >= deviceFloat{0} 
+                    && D_proj[1] <= deviceFloat{1} + std::numeric_limits<deviceFloat>::epsilon()) {
 
                     face_new_element_indices[1] += child_order_R[element_R_next_side_index];
                     element_geometry_nodes[1] = {new_element_node, element_nodes[1]};
@@ -8718,8 +8718,8 @@ auto SEM::Device::Meshes::fill_received_elements_faces(
                         || (neighbour_element_index >= n_domain_elements - n_elements_recv_right && neighbour_element_index >= element_index)) { 
                     
                     // We create
-                    const size_t next_side = (j + 1 < element.nodes_.size()) ? j + 1 : 0;
-                    const size_t neighbour_next_side = (neighbour_side + 1 < neighbour_element.nodes_.size()) ? neighbour_side + 1 : 0;
+                    const size_t next_side = (j + 1 < element.nodes_.size()) ? j + 1 : size_t{0};
+                    const size_t neighbour_next_side = (neighbour_side + 1 < neighbour_element.nodes_.size()) ? neighbour_side + 1 : size_t{0};
 
                     const int face_N = std::max(element.N_, neighbour_element.N_);
                     const std::array<std::array<size_t, 2>, 2> node_indices {
