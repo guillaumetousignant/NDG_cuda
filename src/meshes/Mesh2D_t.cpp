@@ -1904,27 +1904,39 @@ auto SEM::Host::Meshes::Mesh2D_t::adapt(int N_max, const std::vector<std::vector
     }
 
     // Sending and receiving splitting elements on MPI interfaces
+    size_t n_splitting_mpi_interface_incoming_elements = 0;
+    size_t n_mpi_interface_new_nodes = 0;
+    size_t n_splitting_mpi_interface_outgoing_elements = 0;
     if (!mpi_interfaces_origin_.empty()) {
         int global_rank;
         MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
         int global_size;
         MPI_Comm_size(MPI_COMM_WORLD, &global_size);
         
-        SEM::Host::Meshes::get_MPI_interfaces_adaptivity(mpi_interfaces_origin_.size(), elements_.data(), mpi_interfaces_origin_.data(), interfaces_N_.data(), interfaces_refine_.get(), max_split_level_, N_max);
+        SEM::Host::Meshes::get_MPI_interfaces_adaptivity(mpi_interfaces_origin_.size(), n_elements_, mpi_interfaces_process_.size(), elements_.data(), faces_.data(), nodes_.data(), mpi_interfaces_origin_.data(), mpi_interfaces_origin_side_.data(), mpi_interfaces_destination_.data(), mpi_interfaces_process_.data(), mpi_interfaces_outgoing_size_.data(), mpi_interfaces_incoming_size_.data(), mpi_interfaces_incoming_offset_.data(), interfaces_N_.data(), interfaces_refine_.get(), interfaces_refine_without_splitting_.get(), max_split_level_, N_max);
 
         for (size_t i = 0; i < mpi_interfaces_process_.size(); ++i) {
-            MPI_Isend(interfaces_N_.data() + mpi_interfaces_outgoing_offset_[i], mpi_interfaces_outgoing_size_[i], MPI_INT, mpi_interfaces_process_[i], 3 * global_size * global_size + 2 * (global_size * global_rank + mpi_interfaces_process_[i]), MPI_COMM_WORLD, &requests_adaptivity_[2 * (mpi_interfaces_process_.size() + i)]);
-            MPI_Irecv(receiving_interfaces_N_.data() + mpi_interfaces_incoming_offset_[i], mpi_interfaces_incoming_size_[i], MPI_INT, mpi_interfaces_process_[i], 3 * global_size * global_size + 2 * (global_size * mpi_interfaces_process_[i] + global_rank), MPI_COMM_WORLD, &requests_adaptivity_[2 * i]);
+            MPI_Isend(interfaces_N_.data() + mpi_interfaces_outgoing_offset_[i], mpi_interfaces_outgoing_size_[i], MPI_INT, mpi_interfaces_process_[i], mpi_adaptivity_split_offset * global_size * global_size + mpi_adaptivity_split_n_transfers * (global_size * global_rank + mpi_interfaces_process_[i]), MPI_COMM_WORLD, &requests_adaptivity_[mpi_adaptivity_split_n_transfers * (mpi_interfaces_process_.size() + i)]);
+            MPI_Irecv(receiving_interfaces_N_.data() + mpi_interfaces_incoming_offset_[i], mpi_interfaces_incoming_size_[i], MPI_INT, mpi_interfaces_process_[i], mpi_adaptivity_split_offset * global_size * global_size + mpi_adaptivity_split_n_transfers * (global_size * mpi_interfaces_process_[i] + global_rank), MPI_COMM_WORLD, &requests_adaptivity_[mpi_adaptivity_split_n_transfers * i]);
         
-            MPI_Isend(interfaces_refine_.get() + mpi_interfaces_outgoing_offset_[i], mpi_interfaces_outgoing_size_[i], MPI_C_BOOL, mpi_interfaces_process_[i], 3 * global_size * global_size + 2 * (global_size * global_rank + mpi_interfaces_process_[i]) + 1, MPI_COMM_WORLD, &requests_adaptivity_[2 * (mpi_interfaces_process_.size() + i) + 1]);
-            MPI_Irecv(receiving_interfaces_refine_.get() + mpi_interfaces_incoming_offset_[i], mpi_interfaces_incoming_size_[i], MPI_C_BOOL, mpi_interfaces_process_[i], 3 * global_size * global_size + 2 * (global_size * mpi_interfaces_process_[i] + global_rank) + 1, MPI_COMM_WORLD, &requests_adaptivity_[2 * i + 1]);
+            MPI_Isend(interfaces_refine_.get() + mpi_interfaces_outgoing_offset_[i], mpi_interfaces_outgoing_size_[i], MPI_C_BOOL, mpi_interfaces_process_[i], mpi_adaptivity_split_offset * global_size * global_size + mpi_adaptivity_split_n_transfers * (global_size * global_rank + mpi_interfaces_process_[i]) + 1, MPI_COMM_WORLD, &requests_adaptivity_[mpi_adaptivity_split_n_transfers * (mpi_interfaces_process_.size() + i) + 1]);
+            MPI_Irecv(receiving_interfaces_refine_.get() + mpi_interfaces_incoming_offset_[i], mpi_interfaces_incoming_size_[i], MPI_C_BOOL, mpi_interfaces_process_[i], mpi_adaptivity_split_offset * global_size * global_size + mpi_adaptivity_split_n_transfers * (global_size * mpi_interfaces_process_[i] + global_rank) + 1, MPI_COMM_WORLD, &requests_adaptivity_[mpi_adaptivity_split_n_transfers * i + 1]);
         }
 
-        MPI_Waitall(2 * mpi_interfaces_process_.size(), requests_adaptivity_.data(), statuses_adaptivity_.data());
+        MPI_Waitall(mpi_adaptivity_split_n_transfers * mpi_interfaces_process_.size(), requests_adaptivity_.data(), statuses_adaptivity_.data());
 
-        SEM::Host::Meshes::copy_mpi_interfaces_error(mpi_interfaces_destination_.size(), elements_.data(), faces_.data(), nodes_.data(), mpi_interfaces_destination_.data(), receiving_interfaces_N_.data(), receiving_interfaces_refine_.get());
+        SEM::Host::Meshes::copy_mpi_interfaces_error(mpi_interfaces_destination_.size(), elements_.data(), faces_.data(), nodes_.data(), mpi_interfaces_destination_.data(), receiving_interfaces_N_.data(), receiving_interfaces_refine_.get(), receiving_interfaces_refine_without_splitting_.get(), receiving_interfaces_creating_node_.get());
 
-        MPI_Waitall(2 * mpi_interfaces_process_.size(), requests_adaptivity_.data() + 2 * mpi_interfaces_process_.size(), statuses_adaptivity_.data() + 2 * mpi_interfaces_process_.size());
+        for (int i = 0; i < mpi_interfaces_destination_.size(); ++i) {
+            n_splitting_mpi_interface_incoming_elements += receiving_interfaces_refine_[i] && !receiving_interfaces_refine_without_splitting_[i];
+            n_mpi_interface_new_nodes += receiving_interfaces_creating_node_[i];
+        }
+
+        for (int i = 0; i < mpi_interfaces_origin_.size(); ++i) {
+            n_splitting_mpi_interface_outgoing_elements += interfaces_refine_[i] && !interfaces_refine_without_splitting_[i];
+        }
+
+        MPI_Waitall(mpi_adaptivity_split_n_transfers * mpi_interfaces_process_.size(), requests_adaptivity_.data() + mpi_adaptivity_split_n_transfers * mpi_interfaces_process_.size(), statuses_adaptivity_.data() + mpi_adaptivity_split_n_transfers * mpi_interfaces_process_.size());
     }
 
     SEM::Host::Meshes::find_nodes(n_elements_, elements_.data(), faces_.data(), nodes_.data(), max_split_level_);
@@ -1945,13 +1957,124 @@ auto SEM::Host::Meshes::Mesh2D_t::adapt(int N_max, const std::vector<std::vector
     }
 
     size_t n_splitting_faces = 0;
-    for (int i = 0; i < faces_.size(); ++i) {
-        if (elements_[faces_[i].elements_[0]].additional_nodes_[faces_[i].elements_side_[0]] || elements_[faces_[i].elements_[1]].additional_nodes_[faces_[i].elements_side_[1]]) {
-            faces_[i].refine_ = true;
-            ++n_splitting_faces;
+    for (auto& face: faces_) {
+        face.refine_ = false;
+        if (elements_[face.elements_[0]].additional_nodes_[face.elements_side_[0]]) {
+            const Element2D_t& element = elements_[face.elements_[0]];
+            const size_t element_side = face.elements_side_[0];
+            const size_t element_next_side = (element_side + 1 < element.nodes_.size()) ? element_side + 1 : size_t{0};
+            
+            const Vec2<hostFloat> new_node = (nodes_[element.nodes_[element_side]] + nodes_[element.nodes_[element_next_side]])/2;
+
+            std::array<bool, 2> side_face {false, false};
+            const std::array<Vec2<hostFloat>, 2> AB {
+                new_node - nodes_[element.nodes_[element_side]],
+                nodes_[element.nodes_[element_next_side]] - new_node
+            };
+
+            const std::array<hostFloat, 2> AB_dot_inv {
+                1/AB[0].dot(AB[0]),
+                1/AB[1].dot(AB[1])
+            };
+            
+            const std::array<Vec2<hostFloat>, 2> AC {
+                nodes_[face.nodes_[0]] - nodes_[element.nodes_[element_side]],
+                nodes_[face.nodes_[0]] - new_node
+            };
+            const std::array<Vec2<hostFloat>, 2> AD {
+                nodes_[face.nodes_[1]] - nodes_[element.nodes_[element_side]],
+                nodes_[face.nodes_[1]] - new_node
+            };
+
+            const std::array<hostFloat, 2> C_proj {
+                AC[0].dot(AB[0]) * AB_dot_inv[0],
+                AC[1].dot(AB[1]) * AB_dot_inv[1]
+            };
+            const std::array<hostFloat, 2> D_proj {
+                AD[0].dot(AB[0]) * AB_dot_inv[0],
+                AD[1].dot(AB[1]) * AB_dot_inv[1]
+            };
+
+            // CHECK this projection is different than the one used for splitting, maybe wrong
+            // The face is within the first element
+            if ((C_proj[0] + std::numeric_limits<hostFloat>::epsilon() <= hostFloat{1} 
+                && D_proj[0] >= hostFloat{0} + std::numeric_limits<hostFloat>::epsilon())
+                || (D_proj[0] + std::numeric_limits<hostFloat>::epsilon() <= hostFloat{1}
+                && C_proj[0] >= hostFloat{0} + std::numeric_limits<hostFloat>::epsilon())) {
+
+                side_face[0] = true;
+            }
+            // The face is within the second element
+            if ((C_proj[1] + std::numeric_limits<hostFloat>::epsilon() <= hostFloat{1}
+                && D_proj[1] >= hostFloat{0} + std::numeric_limits<hostFloat>::epsilon())
+                || (D_proj[1] + std::numeric_limits<hostFloat>::epsilon() <= hostFloat{1}
+                && C_proj[1] >= hostFloat{0} + std::numeric_limits<hostFloat>::epsilon())) {
+
+                side_face[1] = true;
+            }
+            
+            if (side_face[0] && side_face[1]) {
+                face.refine_ = true;
+                ++n_splitting_faces;
+            }
         }
-        else {
-            faces_[i].refine_ = false;
+        else if (elements_[face.elements_[1]].additional_nodes_[face.elements_side_[1]] && !face.refine_) {
+            const Element2D_t& element = elements_[face.elements_[1]];
+            const size_t element_side = face.elements_side_[1];
+            const size_t element_next_side = (element_side + 1 < element.nodes_.size()) ? element_side + 1 : size_t{0};
+
+            const Vec2<hostFloat> new_node = (nodes_[element.nodes_[element_side]] + nodes_[element.nodes_[element_next_side]])/2;
+
+            std::array<bool, 2> side_face {false, false};
+            const std::array<Vec2<hostFloat>, 2> AB {
+                new_node - nodes_[element.nodes_[element_side]],
+                nodes_[element.nodes_[element_next_side]] - new_node
+            };
+
+            const std::array<hostFloat, 2> AB_dot_inv {
+                1/AB[0].dot(AB[0]),
+                1/AB[1].dot(AB[1])
+            };
+
+            const std::array<Vec2<hostFloat>, 2> AC {
+                nodes_[face.nodes_[0]] - nodes_[element.nodes_[element_side]],
+                nodes_[face.nodes_[0]] - new_node
+            };
+            const std::array<Vec2<hostFloat>, 2> AD {
+                nodes_[face.nodes_[1]] - nodes_[element.nodes_[element_side]],
+                nodes_[face.nodes_[1]] - new_node
+            };
+
+            const std::array<hostFloat, 2> C_proj {
+                AC[0].dot(AB[0]) * AB_dot_inv[0],
+                AC[1].dot(AB[1]) * AB_dot_inv[1]
+            };
+            const std::array<hostFloat, 2> D_proj {
+                AD[0].dot(AB[0]) * AB_dot_inv[0],
+                AD[1].dot(AB[1]) * AB_dot_inv[1]
+            };
+
+            // CHECK this projection is different than the one used for splitting, maybe wrong
+            // The face is within the first element
+            if ((C_proj[0] + std::numeric_limits<hostFloat>::epsilon() <= hostFloat{1} 
+                && D_proj[0] >= hostFloat{0} + std::numeric_limits<hostFloat>::epsilon())
+                || (D_proj[0] + std::numeric_limits<hostFloat>::epsilon() <= hostFloat{1}
+                && C_proj[0] >= hostFloat{0} + std::numeric_limits<hostFloat>::epsilon())) {
+
+                side_face[0] = true;
+            }
+            // The face is within the second element
+            if ((C_proj[1] + std::numeric_limits<hostFloat>::epsilon() <= hostFloat{1}
+                && D_proj[1] >= hostFloat{0} + std::numeric_limits<hostFloat>::epsilon())
+                || (D_proj[1] + std::numeric_limits<hostFloat>::epsilon() <= hostFloat{1}
+                && C_proj[1] >= hostFloat{0} + std::numeric_limits<hostFloat>::epsilon())) {
+
+                side_face[1] = true;
+            }
+
+        if (side_face[0] && side_face[1]) {
+            face.refine_ = true;
+            ++n_splitting_faces;
         }
     }
 
@@ -1989,19 +2112,9 @@ auto SEM::Host::Meshes::Mesh2D_t::adapt(int N_max, const std::vector<std::vector
         n_splitting_interface_elements += elements_[interface_element_index].would_h_refine(max_split_level_);
     }
 
-    size_t n_splitting_mpi_interface_outgoing_elements = 0;
-    for (size_t i = 0; i < mpi_interfaces_origin_.size(); ++i) {
-        n_splitting_mpi_interface_outgoing_elements += interfaces_refine_[i];
-    }
-
-    size_t n_splitting_mpi_interface_incoming_elements = 0;
-    for (size_t i = 0; i < mpi_interfaces_destination_.size(); ++i) {
-        n_splitting_mpi_interface_incoming_elements += receiving_interfaces_refine_[i];
-    }
-
     // New arrays
     std::vector<Element2D_t> new_elements(elements_.size() + 3 * n_splitting_elements + n_splitting_wall_boundaries + n_splitting_symmetry_boundaries + n_splitting_inflow_boundaries + n_splitting_outflow_boundaries + n_splitting_interface_elements + n_splitting_mpi_interface_incoming_elements);
-    std::vector<Vec2<hostFloat>> new_nodes(nodes_.size() + n_splitting_elements + n_splitting_faces);
+    nodes_.resize(nodes_.size() + n_splitting_elements + n_splitting_faces + n_mpi_interface_new_nodes);
     std::vector<Face2D_t> new_faces(faces_.size() + 4 * n_splitting_elements + n_splitting_faces);
 
     std::vector<size_t> new_wall_boundaries(wall_boundaries_.size() + n_splitting_wall_boundaries);
@@ -2019,41 +2132,36 @@ auto SEM::Host::Meshes::Mesh2D_t::adapt(int N_max, const std::vector<std::vector
 
     std::vector<size_t> elements_new_indices(elements_.size());
 
-    for (size_t i = 0; i < nodes_.size(); ++i) {
-        new_nodes[i] = nodes_[i];
-    }
-
     // Creating new entities and moving ond ones, adjusting as needed
-    SEM::Host::Meshes::hp_adapt(n_elements_, faces_.size(), nodes_.size(), n_splitting_elements, elements_.data(), new_elements.data(), faces_.data(), new_faces.data(), max_split_level_, N_max, new_nodes.data(), polynomial_nodes, barycentric_weights, elements_new_indices.data());
+    SEM::Host::Meshes::hp_adapt(n_elements_, faces_.size(), nodes_.size(), n_splitting_elements, elements_.data(), new_elements.data(), faces_.data(), new_faces.data(), max_split_level_, N_max, nodes_.data(), polynomial_nodes, barycentric_weights, elements_new_indices.data());
     
     if (!wall_boundaries_.empty()) {
-        SEM::Host::Meshes::split_boundaries(wall_boundaries_.size(), faces_.size(), nodes_.size(), n_splitting_elements, n_elements_ + 3 * n_splitting_elements, elements_.data(), new_elements.data(), wall_boundaries_.data(), new_wall_boundaries.data(), faces_.data(), new_nodes.data(), polynomial_nodes, elements_new_indices.data());
+        SEM::Host::Meshes::split_boundaries(wall_boundaries_.size(), faces_.size(), nodes_.size(), n_splitting_elements, n_elements_ + 3 * n_splitting_elements, elements_.data(), new_elements.data(), wall_boundaries_.data(), new_wall_boundaries.data(), faces_.data(), nodes_.data(), polynomial_nodes, elements_new_indices.data());
     }
     if (!symmetry_boundaries_.empty()) {
-        SEM::Host::Meshes::split_boundaries(symmetry_boundaries_.size(), faces_.size(), nodes_.size(), n_splitting_elements, n_elements_ + 3 * n_splitting_elements + wall_boundaries_.size() + n_splitting_wall_boundaries, elements_.data(), new_elements.data(), symmetry_boundaries_.data(), new_symmetry_boundaries.data(), faces_.data(), new_nodes.data(), polynomial_nodes, elements_new_indices.data());
+        SEM::Host::Meshes::split_boundaries(symmetry_boundaries_.size(), faces_.size(), nodes_.size(), n_splitting_elements, n_elements_ + 3 * n_splitting_elements + wall_boundaries_.size() + n_splitting_wall_boundaries, elements_.data(), new_elements.data(), symmetry_boundaries_.data(), new_symmetry_boundaries.data(), faces_.data(), nodes_.data(), polynomial_nodes, elements_new_indices.data());
     }
     if (!inflow_boundaries_.empty()) {
-        SEM::Host::Meshes::split_boundaries(inflow_boundaries_.size(), faces_.size(), nodes_.size(), n_splitting_elements, n_elements_ + 3 * n_splitting_elements + wall_boundaries_.size() + n_splitting_wall_boundaries + symmetry_boundaries_.size() + n_splitting_symmetry_boundaries, elements_.data(), new_elements.data(), inflow_boundaries_.data(), new_inflow_boundaries.data(), faces_.data(), new_nodes.data(), polynomial_nodes, elements_new_indices.data());
+        SEM::Host::Meshes::split_boundaries(inflow_boundaries_.size(), faces_.size(), nodes_.size(), n_splitting_elements, n_elements_ + 3 * n_splitting_elements + wall_boundaries_.size() + n_splitting_wall_boundaries + symmetry_boundaries_.size() + n_splitting_symmetry_boundaries, elements_.data(), new_elements.data(), inflow_boundaries_.data(), new_inflow_boundaries.data(), faces_.data(), nodes_.data(), polynomial_nodes, elements_new_indices.data());
     }
     if (!outflow_boundaries_.empty()) {
-        SEM::Host::Meshes::split_boundaries(outflow_boundaries_.size(), faces_.size(), nodes_.size(), n_splitting_elements, n_elements_ + 3 * n_splitting_elements + wall_boundaries_.size() + n_splitting_wall_boundaries + symmetry_boundaries_.size() + n_splitting_symmetry_boundaries + inflow_boundaries_.size() + n_splitting_inflow_boundaries, elements_.data(), new_elements.data(), outflow_boundaries_.data(), new_outflow_boundaries.data(), faces_.data(), new_nodes.data(), polynomial_nodes, elements_new_indices.data());
+        SEM::Host::Meshes::split_boundaries(outflow_boundaries_.size(), faces_.size(), nodes_.size(), n_splitting_elements, n_elements_ + 3 * n_splitting_elements + wall_boundaries_.size() + n_splitting_wall_boundaries + symmetry_boundaries_.size() + n_splitting_symmetry_boundaries + inflow_boundaries_.size() + n_splitting_inflow_boundaries, elements_.data(), new_elements.data(), outflow_boundaries_.data(), new_outflow_boundaries.data(), faces_.data(), nodes_.data(), polynomial_nodes, elements_new_indices.data());
     }
 
     if (!interfaces_origin_.empty()) {
-        SEM::Host::Meshes::split_interfaces(interfaces_origin_.size(), faces_.size(), nodes_.size(), n_splitting_elements, n_elements_ + 3 * n_splitting_elements + wall_boundaries_.size() + n_splitting_wall_boundaries + symmetry_boundaries_.size() + n_splitting_symmetry_boundaries + inflow_boundaries_.size() + n_splitting_inflow_boundaries + outflow_boundaries_.size() + n_splitting_outflow_boundaries, elements_.data(), new_elements.data(), interfaces_origin_.data(), interfaces_origin_side_.data(), interfaces_destination_.data(), new_interfaces_origin.data(), new_interfaces_origin_side.data(), new_interfaces_destination.data(), faces_.data(), new_nodes.data(), max_split_level_, N_max, polynomial_nodes, elements_new_indices.data());
+        SEM::Host::Meshes::split_interfaces(interfaces_origin_.size(), faces_.size(), nodes_.size(), n_splitting_elements, n_elements_ + 3 * n_splitting_elements + wall_boundaries_.size() + n_splitting_wall_boundaries + symmetry_boundaries_.size() + n_splitting_symmetry_boundaries + inflow_boundaries_.size() + n_splitting_inflow_boundaries + outflow_boundaries_.size() + n_splitting_outflow_boundaries, elements_.data(), new_elements.data(), interfaces_origin_.data(), interfaces_origin_side_.data(), interfaces_destination_.data(), new_interfaces_origin.data(), new_interfaces_origin_side.data(), new_interfaces_destination.data(), faces_.data(), nodes_.data(), max_split_level_, N_max, polynomial_nodes, elements_new_indices.data());
     }
 
-    if (!mpi_interfaces_origin_.empty()) {       
-        SEM::Host::Meshes::split_mpi_outgoing_interfaces(mpi_interfaces_origin_.size(), elements_.data(), mpi_interfaces_origin_.data(), mpi_interfaces_origin_side_.data(), new_mpi_interfaces_origin.data(), new_mpi_interfaces_origin_side.data(), max_split_level_);
-        SEM::Host::Meshes::split_mpi_incoming_interfaces(mpi_interfaces_destination_.size(), faces_.size(), nodes_.size(), n_splitting_elements, n_elements_ + 3 * n_splitting_elements + wall_boundaries_.size() + n_splitting_wall_boundaries + symmetry_boundaries_.size() + n_splitting_symmetry_boundaries + inflow_boundaries_.size() + n_splitting_inflow_boundaries + outflow_boundaries_.size() + n_splitting_outflow_boundaries + interfaces_origin_.size() + n_splitting_interface_elements, elements_.data(), new_elements.data(), mpi_interfaces_destination_.data(), new_mpi_interfaces_destination.data(), faces_.data(), new_nodes.data(), polynomial_nodes, receiving_interfaces_N_.data(), receiving_interfaces_refine_.get(), elements_new_indices.data());
+    if (!mpi_interfaces_process_.empty()) {       
+        SEM::Host::Meshes::split_mpi_outgoing_interfaces(mpi_interfaces_origin_.size(), n_elements_, mpi_interfaces_process_.size(), elements_.data(), faces_.data(), nodes_.data(), mpi_interfaces_origin_.data(), mpi_interfaces_origin_side_.data(), mpi_interfaces_destination_.data(), new_mpi_interfaces_origin.data(), new_mpi_interfaces_origin_side.data(), mpi_interfaces_process_.data(), mpi_interfaces_outgoing_size_.data(), mpi_interfaces_incoming_size_.data(), mpi_interfaces_incoming_offset_.data(), interfaces_refine_.get(), interfaces_refine_without_splitting_.get(), max_split_level_);
+        SEM::Host::Meshes::split_mpi_incoming_interfaces(mpi_interfaces_destination_.size(), faces_.size(), nodes_.size(), n_splitting_elements, n_splitting_faces, n_elements_ + 3 * n_splitting_elements + wall_boundaries_.size() + n_splitting_wall_boundaries + symmetry_boundaries_.size() + n_splitting_symmetry_boundaries + inflow_boundaries_.size() + n_splitting_inflow_boundaries + outflow_boundaries_.size() + n_splitting_outflow_boundaries + interfaces_origin_.size() + n_splitting_interface_elements, elements_.data(), new_elements.data(), mpi_interfaces_destination_.data(), new_mpi_interfaces_destination.data(), faces_.data(), nodes_.data(), polynomial_nodes, receiving_interfaces_N_.data(), receiving_interfaces_refine_.get(), receiving_interfaces_refine_without_splitting_.get(), receiving_interfaces_creating_node_.get(), elements_new_indices.data());
     }
 
-    SEM::Host::Meshes::split_faces(faces_.size(), nodes_.size(), n_splitting_elements, faces_.data(), new_faces.data(), elements_.data(), new_nodes.data(), max_split_level_, N_max, elements_new_indices.data());
+    SEM::Host::Meshes::split_faces(faces_.size(), nodes_.size(), n_splitting_elements, faces_.data(), new_faces.data(), elements_.data(), nodes_.data(), max_split_level_, N_max, elements_new_indices.data());
 
     // Swapping out the old arrays for the new ones
     elements_ = std::move(new_elements);
     faces_ = std::move(new_faces);
-    nodes_ = std::move(new_nodes);
 
     wall_boundaries_ = std::move(new_wall_boundaries);
     symmetry_boundaries_ = std::move(new_symmetry_boundaries);
@@ -2071,25 +2179,25 @@ auto SEM::Host::Meshes::Mesh2D_t::adapt(int N_max, const std::vector<std::vector
     // Updating quantities
     if (!mpi_interfaces_origin_.empty()) {
         size_t interface_offset = 0;
-        for (size_t interface_index = 0; interface_index < mpi_interfaces_incoming_size_.size(); ++interface_index) {
+        for (size_t i = 0; i < mpi_interfaces_incoming_size_.size(); ++i) {
             size_t splitting_incoming_elements = 0;
-            for (size_t interface_element_index = 0; interface_element_index < mpi_interfaces_incoming_size_[interface_index]; ++interface_element_index) {
-                splitting_incoming_elements += receiving_interfaces_refine_[mpi_interfaces_incoming_offset_[interface_index] + interface_element_index];
+            for (size_t j = 0; j < mpi_interfaces_incoming_size_[i]; ++j) {
+                splitting_incoming_elements += receiving_interfaces_refine_[mpi_interfaces_incoming_offset_[i] + j] && !receiving_interfaces_refine_without_splitting_[mpi_interfaces_incoming_offset_[i] + j];
             }
-            mpi_interfaces_incoming_offset_[interface_index] = interface_offset;
-            mpi_interfaces_incoming_size_[interface_index] += splitting_incoming_elements;
-            interface_offset += mpi_interfaces_incoming_size_[interface_index];
+            mpi_interfaces_incoming_offset_[i] = interface_offset;
+            mpi_interfaces_incoming_size_[i] += splitting_incoming_elements;
+            interface_offset += mpi_interfaces_incoming_size_[i];
         }
 
         interface_offset = 0;
-        for (size_t interface_index = 0; interface_index < mpi_interfaces_outgoing_size_.size(); ++interface_index) {
+        for (size_t i = 0; i < mpi_interfaces_outgoing_size_.size(); ++i) {
             size_t splitting_incoming_elements = 0;
-            for (size_t interface_element_index = 0; interface_element_index < mpi_interfaces_outgoing_size_[interface_index]; ++interface_element_index) {
-                splitting_incoming_elements += interfaces_refine_[mpi_interfaces_outgoing_offset_[interface_index] + interface_element_index];
+            for (size_t j = 0; j < mpi_interfaces_outgoing_size_[i]; ++j) {
+                splitting_incoming_elements += interfaces_refine_[mpi_interfaces_outgoing_offset_[i] + j] && !interfaces_refine_without_splitting_[mpi_interfaces_outgoing_offset_[i] + j];
             }
-            mpi_interfaces_outgoing_offset_[interface_index] = interface_offset;
-            mpi_interfaces_outgoing_size_[interface_index] += splitting_incoming_elements;
-            interface_offset += mpi_interfaces_outgoing_size_[interface_index];
+            mpi_interfaces_outgoing_offset_[i] = interface_offset;
+            mpi_interfaces_outgoing_size_[i] += splitting_incoming_elements;
+            interface_offset += mpi_interfaces_outgoing_size_[i];
         }
     }
 
@@ -2108,12 +2216,15 @@ auto SEM::Host::Meshes::Mesh2D_t::adapt(int N_max, const std::vector<std::vector
     interfaces_v_ = std::vector<hostFloat>(mpi_interfaces_origin_.size() * (maximum_N_ + 1));
     interfaces_N_ = std::vector<int>(mpi_interfaces_origin_.size());
     interfaces_refine_ = std::make_unique<bool[]>(mpi_interfaces_origin_.size());
+    interfaces_refine_without_splitting_ = std::make_unique<bool[]>(mpi_interfaces_origin_.size());
 
     receiving_interfaces_p_ = std::vector<hostFloat>(mpi_interfaces_destination_.size() * (maximum_N_ + 1));
     receiving_interfaces_u_ = std::vector<hostFloat>(mpi_interfaces_destination_.size() * (maximum_N_ + 1));
     receiving_interfaces_v_ = std::vector<hostFloat>(mpi_interfaces_destination_.size() * (maximum_N_ + 1));
     receiving_interfaces_N_ = std::vector<int>(mpi_interfaces_destination_.size());
     receiving_interfaces_refine_ = std::make_unique<bool[]>(mpi_interfaces_destination_.size());
+    receiving_interfaces_refine_without_splitting_ = std::make_unique<bool[]>(mpi_interfaces_destination_.size());
+    receiving_interfaces_creating_node_ = std::make_unique<bool[]>(mpi_interfaces_destination_.size());
 }
 
 auto SEM::Host::Meshes::Mesh2D_t::load_balance(const std::vector<std::vector<hostFloat>>& polynomial_nodes) -> void {
@@ -4320,12 +4431,125 @@ auto SEM::Host::Meshes::get_MPI_interfaces_N(size_t n_MPI_interface_elements, in
     }
 }
 
-auto SEM::Host::Meshes::get_MPI_interfaces_adaptivity(size_t n_MPI_interface_elements, const Element2D_t* elements, const size_t* MPI_interfaces_origin, int* N, unsigned int* elements_splitting, int max_split_level, int N_max) -> void {
+auto SEM::Host::Meshes::get_MPI_interfaces_adaptivity(
+        size_t n_MPI_interface_elements, 
+        size_t n_domain_elements, 
+        size_t n_processes, 
+        const Element2D_t* elements, 
+        const Face2D_t* faces, 
+        const Vec2<hostFloat>* nodes, 
+        const size_t* MPI_interfaces_origin, 
+        const size_t* MPI_interfaces_origin_side, 
+        const size_t* MPI_interfaces_destination, 
+        const int* MPI_process, 
+        const size_t* origin_process_size, 
+        const size_t* destination_process_size, 
+        const size_t* destination_process_offset, 
+        int* N, 
+        bool* elements_splitting, 
+        bool* elements_refining_without_splitting, 
+        int max_split_level, 
+        int N_max) -> void {
+    
     for (size_t interface_index = 0; interface_index < n_MPI_interface_elements; ++interface_index) {
         const size_t element_index = MPI_interfaces_origin[interface_index];
 
         N[interface_index] = elements[element_index].N_ + 2 * elements[element_index].would_p_refine(N_max);
         elements_splitting[interface_index] = elements[MPI_interfaces_origin[interface_index]].would_h_refine(max_split_level);
+    }
+
+    for (size_t i = =; i < n_MPI_interface_elements; ++i) {
+        const size_t element_index = MPI_interfaces_origin[i];
+        const Element2D_t& element = elements[element_index];
+
+        N[i] = element.N_ + 2 * element.would_p_refine(N_max);
+        elements_splitting[i] = element.would_h_refine(max_split_level);
+
+        elements_refining_without_splitting[i] = false;
+        if (elements_splitting[i]) {
+            size_t process_offset = 0;
+            size_t process_index = static_cast<size_t>(-1);
+            int process = -1;
+            for (size_t j = 0; j < n_processes; ++j) {
+                process_offset += origin_process_size[j];
+                if (process_offset > i) {
+                    process = MPI_process[j];
+                    process_index = j;
+                    break;
+                }
+            }
+            if (process == -1) {
+                printf("Error: MPI origin element %llu, index %llu, cannot be found with mpi_interfaces_outgoing_size_. Results are undefined.\n", i, element_index);
+            }
+
+            const size_t side = MPI_interfaces_origin_side[i];
+            const size_t next_side = (side + 1 < element.faces_.size()) ? side + 1 : size_t{0};
+            const Vec2<hostFloat> new_node = (nodes[element.nodes_[side]] + nodes[element.nodes_[next_side]])/2;
+
+            std::array<size_t, 2> n_side_faces {0, 0};
+            const std::array<Vec2<hostFloat>, 2> AB {
+                new_node - nodes[element.nodes_[side]],
+                nodes[element.nodes_[next_side]] - new_node
+            };
+
+            const std::array<hostFloat, 2> AB_dot_inv {
+                1/AB[0].dot(AB[0]),
+                1/AB[1].dot(AB[1])
+            };
+
+            for (size_t j = 0; j < element.faces_[side].size(); ++j) {
+                const Face2D_t& face = faces[element.faces_[side][j]];
+                const size_t face_side = face.elements_[0] == element_index;
+                const size_t other_element_index = face.elements_[face_side];
+                if (other_element_index >= n_domain_elements) {
+                    for (size_t k = destination_process_offset[process_index]; k < destination_process_offset[process_index] + destination_process_size[process_index]; ++k) {
+                        if (MPI_interfaces_destination[k] == other_element_index) {
+                            const std::array<Vec2<hostFloat>, 2> AC {
+                                nodes[face.nodes_[0]] - nodes[element.nodes_[side]],
+                                nodes[face.nodes_[0]] - new_node
+                            };
+                            const std::array<Vec2<hostFloat>, 2> AD {
+                                nodes[face.nodes_[1]] - nodes[element.nodes_[side]],
+                                nodes[face.nodes_[1]] - new_node
+                            };
+
+                            const std::array<hostFloat, 2> C_proj {
+                                AC[0].dot(AB[0]) * AB_dot_inv[0],
+                                AC[1].dot(AB[1]) * AB_dot_inv[1]
+                            };
+                            const std::array<hostFloat, 2> D_proj {
+                                AD[0].dot(AB[0]) * AB_dot_inv[0],
+                                AD[1].dot(AB[1]) * AB_dot_inv[1]
+                            };
+
+                            // CHECK this projection is different than the one used for splitting, maybe wrong
+                            // The face is within the first element
+                            if ((C_proj[0] + std::numeric_limits<hostFloat>::epsilon() <= hostFloat{1} 
+                                && D_proj[0] >= hostFloat{0} + std::numeric_limits<hostFloat>::epsilon())
+                                || (D_proj[0] + std::numeric_limits<hostFloat>::epsilon() <= hostFloat{1}
+                                && C_proj[0] >= hostFloat{0} + std::numeric_limits<hostFloat>::epsilon())) {
+
+                                ++n_side_faces[0];
+                            }
+                            // The face is within the second element
+                            if ((C_proj[1] + std::numeric_limits<hostFloat>::epsilon() <= hostFloat{1}
+                                && D_proj[1] >= hostFloat{0} + std::numeric_limits<hostFloat>::epsilon())
+                                || (D_proj[1] + std::numeric_limits<hostFloat>::epsilon() <= hostFloat{1}
+                                && C_proj[1] >= hostFloat{0} + std::numeric_limits<hostFloat>::epsilon())) {
+
+                                ++n_side_faces[1];
+                            }
+
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (n_side_faces[0] == 0 || n_side_faces[1] == 0) {
+                elements_refining_without_splitting[i] = true;
+            }
+        }
     }
 }
 
@@ -5427,42 +5651,126 @@ auto SEM::Host::Meshes::copy_interfaces_error(size_t n_local_interfaces, Element
     }
 }
 
-auto SEM::Host::Meshes::copy_mpi_interfaces_error(size_t n_MPI_interface_elements, Element2D_t* elements, const Face2D_t* faces, const Vec2<hostFloat>* nodes, const size_t* MPI_interfaces_destination, const int* N, const bool* elements_splitting) -> void {
-    for (size_t interface_index = 0; interface_index < n_MPI_interface_elements; ++interface_index) {
-        Element2D_t& element = elements[MPI_interfaces_destination[interface_index]];
+auto SEM::Host::Meshes::copy_mpi_interfaces_error(
+        size_t n_MPI_interface_elements, 
+        Element2D_t* elements, 
+        const Face2D_t* faces, 
+        const Vec2<hostFloat>* nodes, 
+        const size_t* MPI_interfaces_destination, 
+        const int* N, 
+        const bool* elements_splitting, 
+        bool* elements_refining_without_splitting, 
+        bool* elements_creating_node) -> void {
+    
+    for (size_t i = 0; i < n_MPI_interface_elements; ++i) {
+        Element2D_t& element = elements[MPI_interfaces_destination[i]];
 
-        if (elements_splitting[interface_index]) {
-            element.refine_ = true;
-            element.coarsen_ = false;
-            element.p_sigma_ = 0; // CHECK this is not relative to the cutoff, but it should stay above this
-            element.u_sigma_ = 0;
-            element.v_sigma_ = 0;
-            
+        if (elements_splitting[i]) {            
             const std::array<Vec2<hostFloat>, 2> side_nodes = {nodes[element.nodes_[0]], nodes[element.nodes_[1]]};
             const Vec2<hostFloat> new_node = (side_nodes[0] + side_nodes[1])/2;
 
             // Here we check if the new node already exists
             element.additional_nodes_[0] = true;
-            for (size_t face_index = 0; face_index < element.faces_[0].size(); ++face_index) {
-                const Face2D_t& face = faces[element.faces_[0][face_index]];
+            elements_creating_node[i] = true;
+            for (auto face_index: element.faces_) {
+                const Face2D_t& face = faces[face_index];
                 if (nodes[face.nodes_[0]].almost_equal(new_node) || nodes[face.nodes_[1]].almost_equal(new_node)) {
                     element.additional_nodes_[0] = false;
+                    elements_creating_node[i] = false;
                     break;
                 }
             }
+            if (element.additional_nodes_[0]) {
+                for (auto face_index: element.faces_[0].size()) {
+                    const Face2D_t& face = faces[face_index];
+                    if (((nodes[face.nodes_[0]] + nodes[face.nodes_[1]])/2).almost_equal(new_node)) {
+                        elements_creating_node[i] = false;
+                        break;
+                    }
+                }
+            }
+
+            std::array<size_t, 2> n_side_faces {0, 0};
+            const std::array<Vec2<hostFloat>, 2> AB {
+                new_node - side_nodes[0],
+                side_nodes[1] - new_node
+            };
+
+            const std::array<hostFloat, 2> AB_dot_inv {
+                1/AB[0].dot(AB[0]),
+                1/AB[1].dot(AB[1])
+            };
+            for (size_t side_face_index = 0; side_face_index < element.faces_[0].size(); ++side_face_index) {
+                const size_t face_index = element.faces_[0][side_face_index];
+                const Face2D_t& face = faces[face_index];
+                
+                const std::array<Vec2<hostFloat>, 2> AC {
+                    nodes[face.nodes_[0]] - side_nodes[0],
+                    nodes[face.nodes_[0]] - new_node
+                };
+                const std::array<Vec2<hostFloat>, 2> AD {
+                    nodes[face.nodes_[1]] - side_nodes[0],
+                    nodes[face.nodes_[1]] - new_node
+                };
+
+                const std::array<hostFloat, 2> C_proj {
+                    AC[0].dot(AB[0]) * AB_dot_inv[0],
+                    AC[1].dot(AB[1]) * AB_dot_inv[1]
+                };
+                const std::array<hostFloat, 2> D_proj {
+                    AD[0].dot(AB[0]) * AB_dot_inv[0],
+                    AD[1].dot(AB[1]) * AB_dot_inv[1]
+                };
+
+                // CHECK this projection is different than the one used for splitting, maybe wrong
+                // The face is within the first element
+                if ((C_proj[0] + std::numeric_limits<hostFloat>::epsilon() <= hostFloat{1} 
+                    && D_proj[0] >= hostFloat{0} + std::numeric_limits<hostFloat>::epsilon())
+                    || (D_proj[0] + std::numeric_limits<hostFloat>::epsilon() <= hostFloat{1}
+                    && C_proj[0] >= hostFloat{0} + std::numeric_limits<hostFloat>::epsilon())) {
+
+                    ++n_side_faces[0];
+                }
+                // The face is within the second element
+                if ((C_proj[1] + std::numeric_limits<hostFloat>::epsilon() <= hostFloat{1}
+                    && D_proj[1] >= hostFloat{0} + std::numeric_limits<hostFloat>::epsilon())
+                    || (D_proj[1] + std::numeric_limits<hostFloat>::epsilon() <= hostFloat{1}
+                    && C_proj[1] >= hostFloat{0} + std::numeric_limits<hostFloat>::epsilon())) {
+
+                    ++n_side_faces[1];
+                }
+            }
+
+            if (n_side_faces[0] == 0 || n_side_faces[1] == 0) {
+                elements_refining_without_splitting[i] = true;
+                element.refine_ = false;
+                element.coarsen_ = false;
+            }
+            else  {
+                elements_refining_without_splitting[i] = false;
+                element.refine_ = true;
+                element.coarsen_ = false;
+                element.p_sigma_ = 0; // CHECK this is not relative to the cutoff, but it should stay above this
+                element.u_sigma_ = 0;
+                element.v_sigma_ = 0;
+            }
         }
-        else if (element.N_ < N[interface_index]) {
+        else if (element.N_ < N[i]) {
             element.refine_ = true;
             element.coarsen_ = false;
-            element.p_sigma_ = 1000; // CHECK this is not relative to the cutoff, but it should stay below this
-            element.u_sigma_ = 1000;
-            element.v_sigma_ = 1000;
+            element.p_sigma_ = hostFloat{1000}; // CHECK this is not relative to the cutoff, but it should stay below this
+            element.u_sigma_ = hostFloat{1000};
+            element.v_sigma_ = hostFloat{1000};
             element.additional_nodes_[0] = false;
+            elements_refining_without_splitting[i] = false;
+            elements_creating_node[i] = false;
         }
         else {
             element.refine_ = false;
             element.coarsen_ = false;
             element.additional_nodes_[0] = false;
+            elements_refining_without_splitting[i] = false;
+            elements_creating_node[i] = false;
         }
     }
 }
@@ -5959,30 +6267,144 @@ auto SEM::Host::Meshes::split_interfaces(size_t n_local_interfaces, size_t n_fac
     }
 }
 
-auto SEM::Host::Meshes::split_mpi_outgoing_interfaces(size_t n_MPI_interface_elements, const Element2D_t* elements, const size_t* mpi_interfaces_origin, const size_t* mpi_interfaces_origin_side, size_t* new_mpi_interfaces_origin, size_t* new_mpi_interfaces_origin_side, int max_split_level) -> void {
-    for (size_t mpi_interface_index = 0; mpi_interface_index < n_MPI_interface_elements; ++mpi_interface_index) {
-        const size_t origin_element_index = mpi_interfaces_origin[mpi_interface_index];
+auto SEM::Host::Meshes::split_mpi_outgoing_interfaces(
+        size_t n_MPI_interface_elements, 
+        size_t n_domain_elements, 
+        size_t n_processes, 
+        const Element2D_t* elements, 
+        const Face2D_t* faces, 
+        const Vec2<hostFloat>* nodes, 
+        const size_t* mpi_interfaces_origin, 
+        const size_t* mpi_interfaces_origin_side, 
+        const size_t* MPI_interfaces_destination, 
+        size_t* new_mpi_interfaces_origin, 
+        size_t* new_mpi_interfaces_origin_side, 
+        const int* MPI_process, 
+        const size_t* origin_process_size, 
+        const size_t* destination_process_size, 
+        const size_t* destination_process_offset, 
+        const bool* elements_splitting, 
+        const bool* elements_refining_without_splitting, 
+        int max_split_level) -> void {
+    
+    for (size_t i = 0; i < n_MPI_interface_elements; ++i) {
+        const size_t origin_element_index = mpi_interfaces_origin[i];
         const Element2D_t& origin_element = elements[origin_element_index];
 
-        size_t new_mpi_interface_index = mpi_interface_index;
-        for (size_t j = 0; j < mpi_interface_index; ++j) {
-            new_mpi_interface_index += elements[mpi_interfaces_origin[j]].would_h_refine(max_split_level);
+        size_t new_mpi_interface_index = i;
+        for (size_t j = 0; j < i; ++j) {
+            new_mpi_interface_index += elements_splitting[j] && !elements_refining_without_splitting[j];
         }
 
-        new_mpi_interfaces_origin_side[new_mpi_interface_index] = mpi_interfaces_origin_side[mpi_interface_index];
+        new_mpi_interfaces_origin_side[new_mpi_interface_index] = mpi_interfaces_origin_side[i];
 
         size_t origin_element_new_index = origin_element_index;
         for (size_t j = 0; j < origin_element_index; ++j) {
             origin_element_new_index += 3 * elements[j].would_h_refine(max_split_level);
         }
 
-        if (origin_element.would_h_refine(max_split_level)) {
-            const size_t next_side_index = (mpi_interfaces_origin_side[mpi_interface_index] + 1 < origin_element.nodes_.size()) ? mpi_interfaces_origin_side[mpi_interface_index] + 1 : size_t{0};
+        if (elements_refining_without_splitting[i] && elements_splitting[i]) {
+            size_t process_offset = 0;
+            size_t process_index = static_cast<size_t>(-1);
+            int process = -1;
+            for (size_t j = 0; j < n_processes; ++j) {
+                process_offset += origin_process_size[j];
+                if (process_offset > i) {
+                    process = MPI_process[j];
+                    process_index = j;
+                    break;
+                }
+            }
+            if (process == -1) {
+                printf("Error: MPI origin element %llu, index %llu, cannot be found with mpi_interfaces_outgoing_size_. Results are undefined.\n", i, origin_element_index);
+            }
+
+            const size_t side = mpi_interfaces_origin_side[i];
+            const size_t next_side = (side + 1 < origin_element.faces_.size()) ? side + 1 : size_t{0};
+            const Vec2<hostFloat> new_node = (nodes[origin_element.nodes_[side]] + nodes[origin_element.nodes_[next_side]])/2;
+
+            std::array<size_t, 2> n_side_faces {0, 0};
+            const std::array<Vec2<hostFloat>, 2> AB {
+                new_node - nodes[origin_element.nodes_[side]],
+                nodes[origin_element.nodes_[next_side]] - new_node
+            };
+
+            const std::array<hostFloat, 2> AB_dot_inv {
+                1/AB[0].dot(AB[0]),
+                1/AB[1].dot(AB[1])
+            };
+
+            for (size_t j = 0; j < origin_element.faces_[side].size(); ++j) {
+                const Face2D_t& face = faces[origin_element.faces_[side][j]];
+                const size_t face_side = face.elements_[0] == origin_element_index;
+                const size_t other_element_index = face.elements_[face_side];
+                bool found_face = false;
+                if (other_element_index >= n_domain_elements) {
+                    for (size_t k = destination_process_offset[process_index]; k < destination_process_offset[process_index] + destination_process_size[process_index]; ++k) {
+                        if (MPI_interfaces_destination[k] == other_element_index) {
+                            const std::array<Vec2<hostFloat>, 2> AC {
+                                nodes[face.nodes_[0]] - nodes[origin_element.nodes_[side]],
+                                nodes[face.nodes_[0]] - new_node
+                            };
+                            const std::array<Vec2<hostFloat>, 2> AD {
+                                nodes[face.nodes_[1]] - nodes[origin_element.nodes_[side]],
+                                nodes[face.nodes_[1]] - new_node
+                            };
+
+                            const std::array<hostFloat, 2> C_proj {
+                                AC[0].dot(AB[0]) * AB_dot_inv[0],
+                                AC[1].dot(AB[1]) * AB_dot_inv[1]
+                            };
+                            const std::array<hostFloat, 2> D_proj {
+                                AD[0].dot(AB[0]) * AB_dot_inv[0],
+                                AD[1].dot(AB[1]) * AB_dot_inv[1]
+                            };
+
+                            // CHECK this projection is different than the one used for splitting, maybe wrong
+                            // The face is within the first element
+                            if ((C_proj[0] + std::numeric_limits<hostFloat>::epsilon() <= hostFloat{1} 
+                                && D_proj[0] >= hostFloat{0} + std::numeric_limits<hostFloat>::epsilon())
+                                || (D_proj[0] + std::numeric_limits<hostFloat>::epsilon() <= hostFloat{1}
+                                && C_proj[0] >= hostFloat{0} + std::numeric_limits<hostFloat>::epsilon())) {
+
+                                ++n_side_faces[0];
+                                found_face = true;
+                            }
+                            // The face is within the second element
+                            if ((C_proj[1] + std::numeric_limits<hostFloat>::epsilon() <= hostFloat{1}
+                                && D_proj[1] >= hostFloat{0} + std::numeric_limits<hostFloat>::epsilon())
+                                || (D_proj[1] + std::numeric_limits<hostFloat>::epsilon() <= hostFloat{1}
+                                && C_proj[1] >= hostFloat{0} + std::numeric_limits<hostFloat>::epsilon())) {
+
+                                ++n_side_faces[1];
+                                found_face = true;
+                            }
+
+                            break;
+                        }
+                    }
+                    if (found_face) {
+                        break;
+                    }
+                }
+            }
+
             const std::array<size_t, 4> child_order = Hilbert::child_order(origin_element.status_, origin_element.rotation_);
 
-            new_mpi_interfaces_origin[new_mpi_interface_index]     = origin_element_new_index + child_order[mpi_interfaces_origin_side[mpi_interface_index]];
+            if (n_side_faces[0] > 0) {
+                new_mpi_interfaces_origin[new_mpi_interface_index] = origin_element_new_index + child_order[side];
+            }
+            else {
+                new_mpi_interfaces_origin[new_mpi_interface_index] = origin_element_new_index + child_order[next_side];
+            }
+        }
+        else if (elements_splitting[i]) {
+            const size_t next_side_index = (mpi_interfaces_origin_side[i] + 1 < origin_element.nodes_.size()) ? mpi_interfaces_origin_side[i] + 1 : size_t{0};
+            const std::array<size_t, 4> child_order = Hilbert::child_order(origin_element.status_, origin_element.rotation_);
+
+            new_mpi_interfaces_origin[new_mpi_interface_index]     = origin_element_new_index + child_order[mpi_interfaces_origin_side[i]];
             new_mpi_interfaces_origin[new_mpi_interface_index + 1] = origin_element_new_index + child_order[next_side_index];
-            new_mpi_interfaces_origin_side[new_mpi_interface_index + 1] = mpi_interfaces_origin_side[mpi_interface_index];
+            new_mpi_interfaces_origin_side[new_mpi_interface_index + 1] = mpi_interfaces_origin_side[i];
         }
         else {
             new_mpi_interfaces_origin[new_mpi_interface_index] = origin_element_new_index;
@@ -5990,7 +6412,26 @@ auto SEM::Host::Meshes::split_mpi_outgoing_interfaces(size_t n_MPI_interface_ele
     }
 }
 
-auto SEM::Host::Meshes::split_mpi_incoming_interfaces(size_t n_MPI_interface_elements, size_t n_faces, size_t n_nodes, size_t n_splitting_elements, size_t n_splitting_faces, size_t offset, Element2D_t* elements, Element2D_t* new_elements, const size_t* mpi_interfaces_destination, size_t* new_mpi_interfaces_destination, const Face2D_t* faces, const Vec2<hostFloat>* nodes, const std::vector<std::vector<hostFloat>>& polynomial_nodes, const int* N, const bool* elements_splitting, const bool* elements_refining_without_splitting, const bool* elements_creating_node, size_t* elements_new_indices) -> void {
+auto SEM::Host::Meshes::split_mpi_incoming_interfaces(
+        size_t n_MPI_interface_elements, 
+        size_t n_faces, 
+        size_t n_nodes, 
+        size_t n_splitting_elements, 
+        size_t n_splitting_faces, 
+        size_t offset, 
+        Element2D_t* elements, 
+        Element2D_t* new_elements, 
+        const size_t* mpi_interfaces_destination, 
+        size_t* new_mpi_interfaces_destination, 
+        const Face2D_t* faces,
+        const Vec2<hostFloat>* nodes, 
+        const std::vector<std::vector<hostFloat>>& polynomial_nodes, 
+        const int* N, 
+        const bool* elements_splitting, 
+        const bool* elements_refining_without_splitting, 
+        const bool* elements_creating_node, 
+        size_t* elements_new_indices) -> void {
+
     for (size_t i = 0; i < n_MPI_interface_elements; ++i) {
         const size_t destination_element_index = mpi_interfaces_destination[i];
         Element2D_t& destination_element = elements[destination_element_index];
@@ -6010,8 +6451,8 @@ auto SEM::Host::Meshes::split_mpi_incoming_interfaces(size_t n_MPI_interface_ele
             size_t new_node_index = static_cast<size_t>(-1);
 
             if (elements_creating_node[i]) {
-                new_node_index = n_nodes + n_splitting_elements + n_splitting_faces + creating_node_block_offsets[block_id];
-                for (size_t j = i - thread_id; j < i; ++j) {
+                new_node_index = n_nodes + n_splitting_elements + n_splitting_faces;
+                for (size_t j = 0; j < i; ++j) {
                     new_node_index += elements_creating_node[j];
                 }
                 nodes[new_node_index] = new_node;
@@ -6088,19 +6529,19 @@ auto SEM::Host::Meshes::split_mpi_incoming_interfaces(size_t n_MPI_interface_ele
 
                 // CHECK this projection is different than the one used for splitting, maybe wrong
                 // The face is within the first element
-                if ((C_proj[0] + std::numeric_limits<hostFloat>::epsilon() <= static_cast<hostFloat>(1) 
-                    && D_proj[0] >= static_cast<hostFloat>(0) + std::numeric_limits<hostFloat>::epsilon())
-                    || (D_proj[0] + std::numeric_limits<hostFloat>::epsilon() <= static_cast<hostFloat>(1)
-                    && C_proj[0] >= static_cast<hostFloat>(0) + std::numeric_limits<hostFloat>::epsilon())) {
+                if ((C_proj[0] + std::numeric_limits<hostFloat>::epsilon() <= hostFloat{1} 
+                    && D_proj[0] >= hostFloat{0} + std::numeric_limits<hostFloat>::epsilon())
+                    || (D_proj[0] + std::numeric_limits<hostFloat>::epsilon() <= hostFloat{1}
+                    && C_proj[0] >= hostFloat{0} + std::numeric_limits<hostFloat>::epsilon())) {
 
                     ++n_side_faces[0];
                     break; // We can break here because we know only one side has faces, so this is it
                 }
                 // The face is within the second element
-                if ((C_proj[1] + std::numeric_limits<hostFloat>::epsilon() <= static_cast<hostFloat>(1)
-                    && D_proj[1] >= static_cast<hostFloat>(0) + std::numeric_limits<hostFloat>::epsilon())
-                    || (D_proj[1] + std::numeric_limits<hostFloat>::epsilon() <= static_cast<hostFloat>(1)
-                    && C_proj[1] >= static_cast<hostFloat>(0) + std::numeric_limits<hostFloat>::epsilon())) {
+                if ((C_proj[1] + std::numeric_limits<hostFloat>::epsilon() <= hostFloat{1}
+                    && D_proj[1] >= hostFloat{0} + std::numeric_limits<hostFloat>::epsilon())
+                    || (D_proj[1] + std::numeric_limits<hostFloat>::epsilon() <= hostFloat{1}
+                    && C_proj[1] >= hostFloat{0} + std::numeric_limits<hostFloat>::epsilon())) {
 
                     ++n_side_faces[1];
                     break; // We can break here because we know only one side has faces, so this is it
@@ -6160,7 +6601,7 @@ auto SEM::Host::Meshes::split_mpi_incoming_interfaces(size_t n_MPI_interface_ele
             
             ++destination_element.split_level_;
             
-            destination_element.compute_boundary_geometry(points, polynomial_nodes);
+            destination_element.compute_boundary_geometry(points, polynomial_nodes[destination_element.N_]);
 
             new_elements[new_element_index] = std::move(destination_element);
         }
@@ -6190,6 +6631,7 @@ auto SEM::Host::Meshes::split_mpi_incoming_interfaces(size_t n_MPI_interface_ele
                 if (face_index == static_cast<size_t>(-1)) {
                     printf("Error: Boundary element %llu, index %llu, splits to single element and can't find its node. Results are undefined.\n", i, mpi_interfaces_destination[i]);
                 }
+
                 new_node_index = n_nodes + n_splitting_elements;
                 for (size_t j = 0; j < face_index; ++j) {
                     new_node_index += faces[j].refine_;
@@ -6242,13 +6684,13 @@ auto SEM::Host::Meshes::split_mpi_incoming_interfaces(size_t n_MPI_interface_ele
                                                            new_node,
                                                            new_node,
                                                            nodes[new_elements[new_element_index].nodes_[3]]};
-            new_elements[new_element_index].compute_boundary_geometry(points, polynomial_nodes[new_elements[new_element_index].N_]);
+            new_elements[new_element_index].compute_boundary_geometry(points, polynomial_nodes[N[i]]);
 
             const std::array<Vec2<hostFloat>, 4> points_2 {new_node,
                                                              nodes[new_elements[new_element_index + 1].nodes_[1]],
                                                              nodes[new_elements[new_element_index + 1].nodes_[2]],
                                                              new_node};
-            new_elements[new_element_index + 1].compute_boundary_geometry(points_2, polynomial_nodes[new_elements[new_element_index].N_]);
+            new_elements[new_element_index + 1].compute_boundary_geometry(points_2, polynomial_nodes[N[i]]);
 
             if (destination_element.additional_nodes_[0] && !elements_creating_node[i]) { // Is this always the case, having only one face?
                 const size_t face_index = destination_element.faces_[0][0];
@@ -6390,6 +6832,7 @@ auto SEM::Host::Meshes::split_mpi_incoming_interfaces(size_t n_MPI_interface_ele
                     const size_t face_index = destination_element.faces_[0][side_face_index];
                     const Face2D_t& face = faces[face_index];
                     if (face.refine_) {
+
                         size_t splitting_face_index = n_faces + 4 * n_splitting_elements;
                         for (size_t j = 0; j < face_index; ++j) {
                             splitting_face_index += faces[j].refine_;

@@ -7079,9 +7079,9 @@ auto SEM::Device::Meshes::copy_mpi_interfaces_error(size_t n_MPI_interface_eleme
         else if (element.N_ < N[i]) {
             element.refine_ = true;
             element.coarsen_ = false;
-            element.p_sigma_ = 1000; // CHECK this is not relative to the cutoff, but it should stay below this
-            element.u_sigma_ = 1000;
-            element.v_sigma_ = 1000;
+            element.p_sigma_ = deviceFloat{1000}; // CHECK this is not relative to the cutoff, but it should stay below this
+            element.u_sigma_ = deviceFloat{1000};
+            element.v_sigma_ = deviceFloat{1000};
             element.additional_nodes_[0] = false;
             elements_refining_without_splitting[i] = false;
             elements_creating_node[i] = false;
