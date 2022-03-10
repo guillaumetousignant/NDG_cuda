@@ -2073,9 +2073,10 @@ auto SEM::Host::Meshes::Mesh2D_t::adapt(int N_max, const std::vector<std::vector
                 side_face[1] = true;
             }
 
-        if (side_face[0] && side_face[1]) {
-            face.refine_ = true;
-            ++n_splitting_faces;
+            if (side_face[0] && side_face[1]) {
+                face.refine_ = true;
+                ++n_splitting_faces;
+            }
         }
     }
 
