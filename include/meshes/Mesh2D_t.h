@@ -229,7 +229,7 @@ namespace SEM { namespace Host { namespace Meshes {
     
     auto get_interface_processes(size_t n_mpi_interfaces, size_t n_mpi_interfaces_incoming, const SEM::Host::Entities::Element2D_t* elements, const SEM::Host::Entities::Face2D_t* faces, const size_t* mpi_interfaces_origin, const size_t* mpi_interfaces_origin_side, const size_t* mpi_interfaces_destination, const int* mpi_interfaces_new_process_incoming, const size_t* process_offsets, int* processes) -> void;
     
-    auto find_received_nodes(std::vector<bool>& missing_nodes, std::vector<bool>& missing_received_nodes, size_t n_nodes, const SEM::Host::Entities::Vec2<hostFloat>* nodes, const hostFloat* received_nodes, size_t* received_nodes_indices, size_t* received_node_received_indices) -> void;
+    auto find_received_nodes(size_t n_nodes, const SEM::Host::Entities::Vec2<hostFloat>* nodes, const hostFloat* received_nodes, std::vector<bool>& missing_nodes, std::vector<bool>& missing_received_nodes, size_t* received_nodes_indices, size_t* received_node_received_indices) -> void;
 
     auto add_new_received_nodes(const std::vector<bool>& missing_nodes, const std::vector<bool>& missing_received_nodes, size_t n_nodes, SEM::Host::Entities::Vec2<hostFloat>* nodes, const hostFloat* received_nodes, size_t* received_nodes_indices, const size_t* received_node_received_indices, const size_t* received_nodes_block_offsets) -> void;
 

@@ -2344,6 +2344,9 @@ auto SEM::Host::Meshes::Mesh2D_t::load_balance(const std::vector<std::vector<hos
         std::vector<hostFloat> nodes_arrays_send_right(8 * n_elements_send_right[global_rank]); // CHECK this only works on quadrilaterals
         std::vector<int> destination_process_send_left(n_elements_send_left[global_rank]);
         std::vector<int> destination_process_send_right(n_elements_send_right[global_rank]);
+        std::vector<size_t> destination_local_index_send_left(n_elements_send_left[global_rank]);
+        std::vector<size_t> destination_local_index_send_right(n_elements_send_right[global_rank]);
+
 
         // Finding out where to send elements
         for (size_t i = 0; i < n_elements_send_left[global_rank]; ++i) {
@@ -2353,6 +2356,7 @@ auto SEM::Host::Meshes::Mesh2D_t::load_balance(const std::vector<std::vector<hos
             for (int process_index = 0; process_index < global_size; ++process_index) {
                 if (element_global_index >= global_element_offset_new[process_index] && element_global_index < global_element_offset_end_new[process_index]) {
                     destination_process_send_left[i] = process_index;
+                    destination_local_index_send_left[i] = element_global_index - global_element_offset_new[process_index];
                     break;
                 }
             }
@@ -2370,6 +2374,7 @@ auto SEM::Host::Meshes::Mesh2D_t::load_balance(const std::vector<std::vector<hos
             for (int process_index = 0; process_index < global_size; ++process_index) {
                 if (element_global_index >= global_element_offset_new[process_index] && element_global_index < global_element_offset_end_new[process_index]) {
                     destination_process_send_right[i] = process_index;
+                    destination_local_index_send_right[i] = element_global_index - global_element_offset_new[process_index];
                     break;
                 }
             }
@@ -2426,32 +2431,75 @@ auto SEM::Host::Meshes::Mesh2D_t::load_balance(const std::vector<std::vector<hos
 
         std::vector<size_t> neighbours_arrays_send_left(n_neighbours_send_total_left);
         std::vector<size_t> neighbours_arrays_send_right(n_neighbours_send_total_right);
+        std::vector<hostFloat> neighbours_nodes_arrays_send_left(4 * n_neighbours_send_total_left);
+        std::vector<hostFloat> neighbours_nodes_arrays_send_right(4 * n_neighbours_send_total_right);
         std::vector<int> neighbours_proc_arrays_send_left(n_neighbours_send_total_left);
         std::vector<int> neighbours_proc_arrays_send_right(n_neighbours_send_total_right);
         std::vector<size_t> neighbours_side_arrays_send_left(n_neighbours_send_total_left);
         std::vector<size_t> neighbours_side_arrays_send_right(n_neighbours_send_total_right);
+        std::vector<int> neighbours_N_arrays_send_left(n_neighbours_send_total_left);
+        std::vector<int> neighbours_N_arrays_send_right(n_neighbours_send_total_right);
         std::vector<size_t> process_n_neighbours_send_left(n_send_processes_left, 0);
         std::vector<size_t> process_n_neighbours_send_right(n_send_processes_right, 0);
+        std::vector<int> destination_processes_left(n_send_processes_left);        
+        std::vector<int> destination_processes_right(n_send_processes_right);
+        std::vector<size_t> process_offset_send_left(n_send_processes_left, 0);
+        std::vector<size_t> process_offset_send_right(n_send_processes_right, 0);
+        std::vector<size_t> process_size_send_left(n_send_processes_left, 0);
+        std::vector<size_t> process_size_send_right(n_send_processes_right, 0);
+        std::vector<size_t> process_neighbour_offset_send_left(n_send_processes_left, 0);
+        std::vector<size_t> process_neighbour_offset_send_right(n_send_processes_right, 0);
 
-        std::vector<MPI_Request> mpi_interfaces_send_requests(n_mpi_transfers_per_send * (n_send_processes_left + n_send_processes_right));
-
+        // Fetching data to send
+        std::vector<size_t> neighbour_offsets_send_left(n_elements_send_left[global_rank], 0);
         if (n_elements_send_left[global_rank] > 0) {
-            std::vector<size_t> neighbour_offsets(n_elements_send_left[global_rank], 0);
             size_t n_neighbours_total = 0;
             for (size_t i = 0; i < n_elements_send_left[global_rank]; ++i) {
-                neighbour_offsets[i] = n_neighbours_total;
+                neighbour_offsets_send_left[i] = n_neighbours_total;
                 n_neighbours_total += n_neighbours_arrays_send_left[4 * i] + n_neighbours_arrays_send_left[4 * i + 1] + n_neighbours_arrays_send_left[4 * i + 2] + n_neighbours_arrays_send_left[4 * i + 3];
             }
 
-            SEM::Host::Meshes::get_neighbours(n_elements_send_left[global_rank], 0, n_elements_per_proc[global_rank], wall_boundaries_.size(), symmetry_boundaries_.size(), inflow_boundaries_.size(), outflow_boundaries_.size(), interfaces_origin_.size(), mpi_interfaces_destination_.size(), global_rank, global_size, elements_.data(), faces_.data(), wall_boundaries_.data(), symmetry_boundaries_.data(), inflow_boundaries_.data(), outflow_boundaries_.data(), interfaces_destination_.data(), interfaces_origin_.data(), mpi_interfaces_destination_.data(), mpi_interfaces_new_process_incoming.data(), mpi_interfaces_new_local_index_incoming.data(), mpi_interfaces_new_side_incoming.data(), neighbour_offsets.data(), n_elements_send_left.data(), n_elements_recv_left.data(), n_elements_send_right.data(), n_elements_recv_right.data(), global_element_offset_current.data(), global_element_offset_new.data(), global_element_offset_end_new.data(), neighbours_arrays_send_left.data(), neighbours_proc_arrays_send_left.data(), neighbours_side_arrays_send_left.data());
+            SEM::Host::Meshes::get_neighbours(
+                n_elements_send_left[global_rank], 
+                0, 
+                n_elements_per_proc[global_rank], 
+                wall_boundaries_.size(), 
+                symmetry_boundaries_.size(), 
+                inflow_boundaries_.size(), 
+                outflow_boundaries_.size(), 
+                interfaces_origin_.size(), 
+                mpi_interfaces_destination_.size(), 
+                global_rank, 
+                global_size, 
+                elements_.data(), 
+                faces_.data(), 
+                nodes_.data(), 
+                wall_boundaries_.data(),
+                symmetry_boundaries_.data(), 
+                inflow_boundaries_.data(), 
+                outflow_boundaries_.data(), 
+                interfaces_destination_.data(), 
+                interfaces_origin_.data(), 
+                mpi_interfaces_destination_.data(), 
+                mpi_interfaces_new_process_incoming.data(), 
+                mpi_interfaces_new_local_index_incoming.data(), 
+                mpi_interfaces_new_side_incoming.data(), 
+                neighbour_offsets_send_left.data(), 
+                n_elements_recv_left.data(), 
+                n_elements_send_left.data(), 
+                n_elements_recv_right.data(), 
+                n_elements_send_right.data(),
+                global_element_offset_current.data(), 
+                global_element_offset_new.data(), 
+                global_element_offset_end_new.data(), 
+                neighbours_arrays_send_left.data(), 
+                neighbours_nodes_arrays_send_left.data(), 
+                neighbours_proc_arrays_send_left.data(), 
+                neighbours_side_arrays_send_left.data(), 
+                neighbours_N_arrays_send_left.data());
 
-            // Compute the global indices of the elements using global_element_offset_current, and where they are going
-            std::vector<int> destination_processes(n_send_processes_left);
-            std::vector<size_t> process_offset(n_send_processes_left, 0);
-            std::vector<size_t> process_size(n_send_processes_left, 0);
-            std::vector<size_t> process_neighbour_offset(n_send_processes_left, 0);
             if (n_send_processes_left > 0) {
-                destination_processes[0] = destination_process_send_left[0];
+                destination_processes_left[0] = destination_process_send_left[0];
             }
 
             size_t process_index = 0;
@@ -2459,55 +2507,70 @@ auto SEM::Host::Meshes::Mesh2D_t::load_balance(const std::vector<std::vector<hos
             size_t process_current_neighbour_offset = 0;
             for (size_t i = 0; i < n_elements_send_left[global_rank]; ++i) {
                 const int send_rank = destination_process_send_left[i];
-                if (send_rank != destination_processes[process_index]) {
+                if (send_rank != destination_processes_left[process_index]) {
                     process_current_neighbour_offset += process_n_neighbours_send_left[process_index];
-                    process_current_offset += process_size[process_index];
+                    process_current_offset += process_size_send_left[process_index];
                     ++process_index;
-                    process_offset[process_index] = process_current_offset;
-                    destination_processes[process_index] = send_rank;
-                    process_neighbour_offset[process_index] = process_current_neighbour_offset;
+                    process_offset_send_left[process_index] = process_current_offset;
+                    destination_processes_left[process_index] = send_rank;
+                    process_neighbour_offset_send_left[process_index] = process_current_neighbour_offset;
                 }
 
-                ++process_size[process_index];
+                ++process_size_send_left[process_index];
                 process_n_neighbours_send_left[process_index] += n_neighbours_arrays_send_left[4 * i] + n_neighbours_arrays_send_left[4 * i + 1] + n_neighbours_arrays_send_left[4 * i + 2] + n_neighbours_arrays_send_left[4 * i + 3];
-            }
-
-            for (size_t i = 0; i < destination_processes.size(); ++i) {
-                // Neighbours
-                MPI_Isend(&process_n_neighbours_send_left[i], 1, size_t_data_type, destination_processes[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]), MPI_COMM_WORLD, &mpi_interfaces_send_requests[n_mpi_transfers_per_send * i]);
-                MPI_Isend(n_neighbours_arrays_send_left.data() + 4 * process_offset[i], 4 * process_size[i], size_t_data_type, destination_processes[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 1, MPI_COMM_WORLD, &mpi_interfaces_send_requests[n_mpi_transfers_per_send * i + 1]);
-                MPI_Isend(neighbours_arrays_send_left.data() + process_neighbour_offset[i], process_n_neighbours_send_left[i], size_t_data_type, destination_processes[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 2, MPI_COMM_WORLD, &mpi_interfaces_send_requests[n_mpi_transfers_per_send * i + 2]);
-                MPI_Isend(neighbours_proc_arrays_send_left.data() + process_neighbour_offset[i], process_n_neighbours_send_left[i], MPI_INT, destination_processes[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 3, MPI_COMM_WORLD, &mpi_interfaces_send_requests[n_mpi_transfers_per_send * i + 3]);
-                MPI_Isend(neighbours_side_arrays_send_left.data() + process_neighbour_offset[i], process_n_neighbours_send_left[i], size_t_data_type, destination_processes[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 7, MPI_COMM_WORLD, &mpi_interfaces_send_requests[n_mpi_transfers_per_send * i + 7]);
-
-                // Nodes
-                MPI_Isend(nodes_arrays_send_left.data() + 8 * process_offset[i], 8 * process_size[i], float_data_type, destination_processes[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 4, MPI_COMM_WORLD, &mpi_interfaces_send_requests[n_mpi_transfers_per_send * i + 4]);
-
-                // Solution
-                MPI_Isend(solution_arrays_send_left.data() + 3 * (maximum_N_ + 1) * (maximum_N_ + 1) * process_offset[i], 3 * (maximum_N_ + 1) * (maximum_N_ + 1) * process_size[i], float_data_type, destination_processes[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 5, MPI_COMM_WORLD, &mpi_interfaces_send_requests[n_mpi_transfers_per_send * i + 5]);
-
-                // Elements
-                MPI_Isend(elements_send_left.data() + process_offset[i], process_size[i], element_data_type.data(), destination_processes[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 6, MPI_COMM_WORLD, &mpi_interfaces_send_requests[n_mpi_transfers_per_send * i + 6]);
             }
         }       
 
+        std::vector<size_t> neighbour_offsets_send_right(n_elements_send_right[global_rank], 0);
         if (n_elements_send_right[global_rank] > 0) {
-            std::vector<size_t> neighbour_offsets(n_elements_send_right[global_rank], 0);
             size_t n_neighbours_total = 0;
             for (size_t i = 0; i < n_elements_send_right[global_rank]; ++i) {
-                neighbour_offsets[i] = n_neighbours_total;
+                neighbour_offsets_send_right[i] = n_neighbours_total;
                 n_neighbours_total += n_neighbours_arrays_send_right[4 * i] + n_neighbours_arrays_send_right[4 * i + 1] + n_neighbours_arrays_send_right[4 * i + 2] + n_neighbours_arrays_send_right[4 * i + 3];
             }
 
-            SEM::Host::Meshes::get_neighbours(n_elements_send_right[global_rank], n_elements_per_proc[global_rank] - n_elements_send_right[global_rank], n_elements_per_proc[global_rank], wall_boundaries_.size(), symmetry_boundaries_.size(), inflow_boundaries_.size(), outflow_boundaries_.size(), interfaces_origin_.size(), mpi_interfaces_destination_.size(), global_rank, global_size, elements_.data(), faces_.data(), wall_boundaries_.data(), symmetry_boundaries_.data(), inflow_boundaries_.data(), outflow_boundaries_.data(), interfaces_destination_.data(), interfaces_origin_.data(), mpi_interfaces_destination_.data(), mpi_interfaces_new_process_incoming.data(), mpi_interfaces_new_local_index_incoming.data(), mpi_interfaces_new_side_incoming.data(), neighbour_offsets.data(), n_elements_send_left.data(), n_elements_recv_left.data(), n_elements_send_right.data(), n_elements_recv_right.data(), global_element_offset_current.data(), global_element_offset_new.data(), global_element_offset_end_new.data(), neighbours_arrays_send_right.data(), neighbours_proc_arrays_send_right.data(), neighbours_side_arrays_send_right.data());
+            SEM::Host::Meshes::get_neighbours(
+                n_elements_send_right[global_rank], 
+                n_elements_per_proc[global_rank] - n_elements_send_right[global_rank], 
+                n_elements_per_proc[global_rank], 
+                wall_boundaries_.size(), 
+                symmetry_boundaries_.size(), 
+                inflow_boundaries_.size(), 
+                outflow_boundaries_.size(), 
+                interfaces_origin_.size(), 
+                mpi_interfaces_destination_.size(), 
+                global_rank, 
+                global_size, 
+                elements_.data(), 
+                faces_.data(), 
+                nodes_.data(), 
+                wall_boundaries_.data(), 
+                symmetry_boundaries_.data(), 
+                inflow_boundaries_.data(), 
+                outflow_boundaries_.data(), 
+                interfaces_destination_.data(), 
+                interfaces_origin_.data(), 
+                mpi_interfaces_destination_.data(), 
+                mpi_interfaces_new_process_incoming.data(), 
+                mpi_interfaces_new_local_index_incoming.data(), 
+                mpi_interfaces_new_side_incoming.data(), 
+                neighbour_offsets_send_right.data(), 
+                n_elements_recv_left.data(), 
+                n_elements_send_left.data(), 
+                n_elements_recv_right.data(), 
+                n_elements_send_right.data(), 
+                global_element_offset_current.data(), 
+                global_element_offset_new.data(), 
+                global_element_offset_end_new.data(), 
+                neighbours_arrays_send_right.data(), 
+                neighbours_nodes_arrays_send_right.data(), 
+                neighbours_proc_arrays_send_right.data(), 
+                neighbours_side_arrays_send_right.data(), 
+                neighbours_N_arrays_send_right.data());
 
             // Compute the global indices of the elements using global_element_offset_end_current, and where they are going
-            std::vector<int> destination_processes(n_send_processes_right);
-            std::vector<size_t> process_offset(n_send_processes_right, 0);
-            std::vector<size_t> process_size(n_send_processes_right, 0);
-            std::vector<size_t> process_neighbour_offset(n_send_processes_right, 0);
             if (n_send_processes_right > 0) {
-                destination_processes[0] = destination_process_send_right[0];
+                destination_processes_right[0] = destination_process_send_right[0];
             }
 
             size_t process_index = 0;
@@ -2515,38 +2578,21 @@ auto SEM::Host::Meshes::Mesh2D_t::load_balance(const std::vector<std::vector<hos
             size_t process_current_neighbour_offset = 0;
             for (size_t i = 0; i < n_elements_send_right[global_rank]; ++i) {
                 const int send_rank = destination_process_send_right[i];
-                if (send_rank != destination_processes[process_index]) {
+                if (send_rank != destination_processes_right[process_index]) {
                     process_current_neighbour_offset += process_n_neighbours_send_right[process_index];
-                    process_current_offset += process_size[process_index];
+                    process_current_offset += process_size_send_right[process_index];
                     ++process_index;
-                    process_offset[process_index] = process_current_offset;
-                    destination_processes[process_index] = send_rank;
-                    process_neighbour_offset[process_index] = process_current_neighbour_offset;
+                    process_offset_send_right[process_index] = process_current_offset;
+                    destination_processes_right[process_index] = send_rank;
+                    process_neighbour_offset_send_right[process_index] = process_current_neighbour_offset;
                 }
 
-                ++process_size[process_index];
+                ++process_size_send_right[process_index];
                 process_n_neighbours_send_right[process_index] += n_neighbours_arrays_send_right[4 * i] + n_neighbours_arrays_send_right[4 * i + 1] + n_neighbours_arrays_send_right[4 * i + 2] + n_neighbours_arrays_send_right[4 * i + 3];
-            }
-
-            for (size_t i = 0; i < destination_processes.size(); ++i) {
-                // Neighbours
-                MPI_Isend(&process_n_neighbours_send_right[i], 1, size_t_data_type, destination_processes[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]), MPI_COMM_WORLD, &mpi_interfaces_send_requests[n_mpi_transfers_per_send * (i + n_send_processes_left)]);
-                MPI_Isend(n_neighbours_arrays_send_right.data() + 4 * process_offset[i], 4 * process_size[i], size_t_data_type, destination_processes[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 1, MPI_COMM_WORLD, &mpi_interfaces_send_requests[n_mpi_transfers_per_send * (i + n_send_processes_left) + 1]);
-                MPI_Isend(neighbours_arrays_send_right.data() + process_neighbour_offset[i], process_n_neighbours_send_right[i], size_t_data_type, destination_processes[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 2, MPI_COMM_WORLD, &mpi_interfaces_send_requests[n_mpi_transfers_per_send * (i + n_send_processes_left) + 2]);
-                MPI_Isend(neighbours_proc_arrays_send_right.data() + process_neighbour_offset[i], process_n_neighbours_send_right[i], MPI_INT, destination_processes[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 3, MPI_COMM_WORLD, &mpi_interfaces_send_requests[n_mpi_transfers_per_send * (i + n_send_processes_left) + 3]);
-                MPI_Isend(neighbours_side_arrays_send_right.data() + process_neighbour_offset[i], process_n_neighbours_send_right[i], size_t_data_type, destination_processes[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 7, MPI_COMM_WORLD, &mpi_interfaces_send_requests[n_mpi_transfers_per_send * (i + n_send_processes_left) + 7]);
-
-                // Nodes
-                MPI_Isend(nodes_arrays_send_right.data() + 8 * process_offset[i], 8 * process_size[i], float_data_type, destination_processes[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 4, MPI_COMM_WORLD, &mpi_interfaces_send_requests[n_mpi_transfers_per_send * (i + n_send_processes_left) + 4]);
-
-                // Solution
-                MPI_Isend(solution_arrays_send_right.data() + 3 * (maximum_N_ + 1) * (maximum_N_ + 1) * process_offset[i], 3 * (maximum_N_ + 1) * (maximum_N_ + 1) * process_size[i], float_data_type, destination_processes[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 5, MPI_COMM_WORLD, &mpi_interfaces_send_requests[n_mpi_transfers_per_send * (i + n_send_processes_left) + 5]);
-
-                // Elements
-                MPI_Isend(elements_send_right.data() + process_offset[i], process_size[i], element_data_type.data(), destination_processes[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * global_rank + destination_processes[i]) + 6, MPI_COMM_WORLD, &mpi_interfaces_send_requests[n_mpi_transfers_per_send * (i + n_send_processes_left) + 6]);
             }
         }
 
+        // Setting up receive buffers
         std::vector<Element2D_t> elements_recv_left(n_elements_recv_left[global_rank]);
         std::vector<Element2D_t> elements_recv_right(n_elements_recv_right[global_rank]);
         std::vector<size_t> n_neighbours_arrays_recv_left(4 * n_elements_recv_left[global_rank]);
@@ -2563,18 +2609,18 @@ auto SEM::Host::Meshes::Mesh2D_t::load_balance(const std::vector<std::vector<hos
         if (n_elements_recv_left[global_rank] > 0) {
             // Compute the global indices of the elements using global_element_offset_new, and where they are coming from
             for (size_t i = 0; i < n_elements_recv_left[global_rank]; ++i) {
-                const size_t global_element_indice_recv = global_element_offset_new[global_rank] + i;
+                const size_t global_element_indices_recv = global_element_offset_new[global_rank] + i;
 
                 bool missing = true;
                 for (int j = 0; j < global_size; ++j) {
-                    if (global_element_indice_recv >= global_element_offset_current[j] && global_element_indice_recv < global_element_offset_end_current[j]) {
+                    if (global_element_indices_recv >= global_element_offset_current[j] && global_element_indices_recv < global_element_offset_end_current[j]) {
                         origin_process_recv_left[i] = j;
                         missing = false;
                         break;
                     }
                 }
                 if (missing) {
-                    std::cerr << "Error: Process " << global_rank << " should receive element with global index " << global_element_indice_recv << " as its left received element #" << i << ", but the element is not within any process' range. Exiting." << std::endl;
+                    std::cerr << "Error: Process " << global_rank << " should receive element with global index " << global_element_indices_recv << " as its left received element #" << i << ", but the element is not within any process' range. Exiting." << std::endl;
                     exit(54);
                 }
             }
@@ -2591,18 +2637,18 @@ auto SEM::Host::Meshes::Mesh2D_t::load_balance(const std::vector<std::vector<hos
         if (n_elements_recv_right[global_rank] > 0) {
             // Compute the global indices of the elements using global_element_offset_new, and where they are coming from
             for (size_t i = 0; i < n_elements_recv_right[global_rank]; ++i) {
-                const size_t global_element_indice_recv = global_element_offset_end_new[global_rank] - n_elements_recv_right[global_rank] + i;
+                const size_t global_element_indices_recv = global_element_offset_end_new[global_rank] - n_elements_recv_right[global_rank] + i;
 
                 bool missing = true;
                 for (int j = 0; j < global_size; ++j) {
-                    if (global_element_indice_recv >= global_element_offset_current[j] && global_element_indice_recv < global_element_offset_end_current[j]) {
+                    if (global_element_indices_recv >= global_element_offset_current[j] && global_element_indices_recv < global_element_offset_end_current[j]) {
                         origin_process_recv_right[i] = j;
                         missing = false;
                         break;
                     }
                 }
                 if (missing) {
-                    std::cerr << "Error: Process " << global_rank << " should receive element with global index " << global_element_indice_recv << " as its right received element #" << i << ", but the element is not within any process' range. Exiting." << std::endl;
+                    std::cerr << "Error: Process " << global_rank << " should receive element with global index " << global_element_indices_recv << " as its right received element #" << i << ", but the element is not within any process' range. Exiting." << std::endl;
                     exit(55);
                 }
             }
@@ -2618,16 +2664,15 @@ auto SEM::Host::Meshes::Mesh2D_t::load_balance(const std::vector<std::vector<hos
 
         std::vector<int> origin_processes_left = std::vector<int>(n_recv_processes_left);
         std::vector<int> origin_processes_right = std::vector<int>(n_recv_processes_right);
-
-        std::vector<MPI_Request> n_neighbours_recv_requests(origin_processes_left.size() + origin_processes_right.size());
-        std::vector<MPI_Request> mpi_interfaces_recv_requests((n_mpi_transfers_per_send - 1) * (origin_processes_left.size() + origin_processes_right.size()));
+        std::vector<size_t> process_offset_left(origin_processes_left.size(), 0);            
+        std::vector<size_t> process_offset_right(origin_processes_right.size(), 0);
+        std::vector<size_t> process_size_left(origin_processes_left.size(), 0);
+        std::vector<size_t> process_size_right(origin_processes_right.size(), 0);
 
         std::vector<size_t> process_n_neighbours_recv_left(origin_processes_left.size(), 0);
         std::vector<size_t> process_n_neighbours_recv_right(origin_processes_right.size(), 0);
 
         if (n_elements_recv_left[global_rank] > 0) {
-            std::vector<size_t> process_offset(origin_processes_left.size(), 0);
-            std::vector<size_t> process_size(origin_processes_left.size(), 0);
             if (origin_processes_left.size() > 0) {
                 origin_processes_left[0] = origin_process_recv_left[0];
             }
@@ -2637,34 +2682,17 @@ auto SEM::Host::Meshes::Mesh2D_t::load_balance(const std::vector<std::vector<hos
             for (size_t i = 0; i < n_elements_recv_left[global_rank]; ++i) {
                 const int recv_rank = origin_process_recv_left[i];
                 if (recv_rank != origin_processes_left[process_index]) {
-                    process_current_offset += process_size[process_index];
+                    process_current_offset += process_size_left[process_index];
                     ++process_index;
-                    process_offset[process_index] = process_current_offset;
+                    process_offset_left[process_index] = process_current_offset;
                     origin_processes_left[process_index] = recv_rank;
                 }
 
-                ++process_size[process_index];
-            }
-
-            for (size_t i = 0; i < origin_processes_left.size(); ++i) {
-                // Neighbours
-                MPI_Irecv(&process_n_neighbours_recv_left[i], 1, size_t_data_type, origin_processes_left[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank), MPI_COMM_WORLD, &n_neighbours_recv_requests[i]);
-                MPI_Irecv(n_neighbours_arrays_recv_left.data() + 4 * process_offset[i], 4 * process_size[i], size_t_data_type, origin_processes_left[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank) + 1, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * i]);
-
-                // Nodes
-                MPI_Irecv(nodes_arrays_recv.data() + 8 * process_offset[i], 8 * process_size[i], float_data_type, origin_processes_left[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank) + 4, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * i + 1]);
-
-                // Solution
-                MPI_Irecv(solution_arrays_recv_left.data() + 3 * (maximum_N_ + 1) * (maximum_N_ + 1) * process_offset[i], 3 * (maximum_N_ + 1) * (maximum_N_ + 1) * process_size[i], float_data_type, origin_processes_left[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank) + 5, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * i + 2]);
-
-                // Elements
-                MPI_Irecv(elements_recv_left.data() + process_offset[i], process_size[i], element_data_type.data(), origin_processes_left[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank) + 6, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * i + 3]);
+                ++process_size_left[process_index];
             }
         }
 
         if (n_elements_recv_right[global_rank] > 0) {
-            std::vector<size_t> process_offset(origin_processes_right.size(), 0);
-            std::vector<size_t> process_size(origin_processes_right.size(), 0);
             if (origin_processes_right.size() > 0) {
                 origin_processes_right[0] = origin_process_recv_right[0];
             }
@@ -2674,86 +2702,181 @@ auto SEM::Host::Meshes::Mesh2D_t::load_balance(const std::vector<std::vector<hos
             for (size_t i = 0; i < n_elements_recv_right[global_rank]; ++i) {
                 const int recv_rank = origin_process_recv_right[i];
                 if (recv_rank != origin_processes_right[process_index]) {
-                    process_current_offset += process_size[process_index];
+                    process_current_offset += process_size_right[process_index];
                     ++process_index;
-                    process_offset[process_index] = process_current_offset;
+                    process_offset_right[process_index] = process_current_offset;
                     origin_processes_right[process_index] = recv_rank;
                 }
 
-                ++process_size[process_index];
-            }
-
-            for (size_t i = 0; i < origin_processes_right.size(); ++i) {
-                // Neighbours
-                MPI_Irecv(&process_n_neighbours_recv_right[i], 1, size_t_data_type, origin_processes_right[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank), MPI_COMM_WORLD, &n_neighbours_recv_requests[origin_processes_left.size() + i]);
-                MPI_Irecv(n_neighbours_arrays_recv_right.data() + 4 * process_offset[i], 4 * process_size[i], size_t_data_type, origin_processes_right[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 1, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * (i + origin_processes_left.size())]);
-
-                // Nodes
-                MPI_Irecv(nodes_arrays_recv.data() + 8 * (process_offset[i] + n_elements_recv_left[global_rank]), 8 * process_size[i], float_data_type, origin_processes_right[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 4, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * (i + origin_processes_left.size()) + 1]);
-
-                // Solution
-                MPI_Irecv(solution_arrays_recv_right.data() + 3 * (maximum_N_ + 1) * (maximum_N_ + 1) * n_elements_recv_left[global_rank] + 3 * (maximum_N_ + 1) * (maximum_N_ + 1) * process_offset[i], 3 * (maximum_N_ + 1) * (maximum_N_ + 1) * process_size[i], float_data_type, origin_processes_right[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 5, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * (i + origin_processes_left.size()) + 2]);
-
-                // Elements
-                MPI_Irecv(elements_recv_right.data() + process_offset[i], process_size[i], element_data_type.data(), origin_processes_right[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 6, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * (i + origin_processes_left.size()) + 3]);
+                ++process_size_right[process_index];
             }
         }
 
-        std::vector<MPI_Status> n_neighbours_recv_statuses(n_neighbours_recv_requests.size());
-        MPI_Waitall(n_neighbours_recv_requests.size(), n_neighbours_recv_requests.data(), n_neighbours_recv_statuses.data());
+        // Sending n neighbours
+        std::vector<MPI_Request> mpi_interfaces_n_neighbours_requests(mpi_load_balancing_n_neighbours_n_transfers * (destination_processes_left.size() + destination_processes_right.size() + origin_processes_left.size() + origin_processes_right.size()));
+        
+        for (size_t i = 0; i < destination_processes_left.size(); ++i) {
+            MPI_Isend(&process_n_neighbours_send_left[i], 1, size_t_data_type, destination_processes_left[i], mpi_load_balancing_n_neighbours_offset * global_size * global_size + mpi_load_balancing_n_neighbours_n_transfers * (global_size * global_rank + destination_processes_left[i]), MPI_COMM_WORLD, &mpi_interfaces_n_neighbours_requests[mpi_load_balancing_n_neighbours_n_transfers * (origin_processes_left.size() + origin_processes_right.size() + i)]);
+        }
+
+        for (size_t i = 0; i < destination_processes_right.size(); ++i) {
+            MPI_Isend(&process_n_neighbours_send_right[i], 1, size_t_data_type, destination_processes_right[i], mpi_load_balancing_n_neighbours_offset * global_size * global_size + mpi_load_balancing_n_neighbours_n_transfers * (global_size * global_rank + destination_processes_right[i]), MPI_COMM_WORLD, &mpi_interfaces_n_neighbours_requests[mpi_load_balancing_n_neighbours_n_transfers * (origin_processes_left.size() + origin_processes_right.size() + destination_processes_left.size() + i)]);
+        }
+
+        // Receiving n neighbours
+        for (size_t i = 0; i < origin_processes_left.size(); ++i) {
+            MPI_Irecv(&process_n_neighbours_recv_left[i], 1, size_t_data_type, origin_processes_left[i], mpi_load_balancing_n_neighbours_offset * global_size * global_size + mpi_load_balancing_n_neighbours_n_transfers * (global_size * origin_processes_left[i] + global_rank), MPI_COMM_WORLD, &mpi_interfaces_n_neighbours_requests[mpi_load_balancing_n_neighbours_n_transfers * i]);
+        }
+
+        for (size_t i = 0; i < origin_processes_right.size(); ++i) {
+            MPI_Irecv(&process_n_neighbours_recv_right[i], 1, size_t_data_type, origin_processes_right[i], mpi_load_balancing_n_neighbours_offset * global_size * global_size + mpi_load_balancing_n_neighbours_n_transfers * (global_size * origin_processes_right[i] + global_rank), MPI_COMM_WORLD, &mpi_interfaces_n_neighbours_requests[mpi_load_balancing_n_neighbours_n_transfers * (origin_processes_left.size() + i)]);
+        }
+
+        std::vector<MPI_Status> mpi_interfaces_n_neighbours_statuses(mpi_interfaces_n_neighbours_requests.size());
+        MPI_Waitall(mpi_interfaces_n_neighbours_requests.size(), mpi_interfaces_n_neighbours_requests.data(), mpi_interfaces_n_neighbours_statuses.data());
 
         size_t n_neighbours_recv_total_left = 0;
         size_t n_neighbours_recv_total_right = 0;
         std::vector<size_t> process_neighbour_offset_left(origin_processes_left.size());
         std::vector<size_t> process_neighbour_offset_right(origin_processes_right.size());
         
-        if (n_elements_recv_left[global_rank] > 0) {
-            for (size_t i = 0; i < origin_processes_left.size(); ++i) {
-                process_neighbour_offset_left[i] = n_neighbours_recv_total_left;
-                n_neighbours_recv_total_left += process_n_neighbours_recv_left[i];
-            }
+        for (size_t i = 0; i < origin_processes_left.size(); ++i) {
+            process_neighbour_offset_left[i] = n_neighbours_recv_total_left;
+            n_neighbours_recv_total_left += process_n_neighbours_recv_left[i];
         }
 
-        if (n_elements_recv_right[global_rank] > 0) {
-            std::vector<size_t> process_neighbour_offset_right(origin_processes_right.size());
-            for (size_t i = 0; i < origin_processes_right.size(); ++i) {
-                process_neighbour_offset_right[i] = n_neighbours_recv_total_right;
-                n_neighbours_recv_total_right += process_n_neighbours_recv_right[i];
-            }
+        for (size_t i = 0; i < origin_processes_right.size(); ++i) {
+            process_neighbour_offset_right[i] = n_neighbours_recv_total_right;
+            n_neighbours_recv_total_right += process_n_neighbours_recv_right[i];
         }
 
         std::vector<size_t> neighbours_arrays_recv(n_neighbours_recv_total_left + n_neighbours_recv_total_right);
+        std::vector<hostFloat> neighbours_nodes_arrays_recv(4 * neighbours_arrays_recv.size());
         std::vector<int> neighbours_proc_arrays_recv(neighbours_arrays_recv.size());
         std::vector<size_t> neighbours_side_arrays_recv(neighbours_arrays_recv.size());
+        std::vector<int> neighbours_N_arrays_recv(neighbours_arrays_recv.size());
 
-        if (n_elements_recv_left[global_rank] > 0) {
-            for (size_t i = 0; i < origin_processes_left.size(); ++i) {
-                // Neighbours
-                MPI_Irecv(neighbours_arrays_recv.data() + process_neighbour_offset_left[i], process_n_neighbours_recv_left[i], size_t_data_type, origin_processes_left[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank) + 2, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * i + 4]);
-                MPI_Irecv(neighbours_proc_arrays_recv.data() + process_neighbour_offset_left[i], process_n_neighbours_recv_left[i], MPI_INT, origin_processes_left[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank) + 3, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * i + 5]);
-                MPI_Irecv(neighbours_side_arrays_recv.data() + process_neighbour_offset_left[i], process_n_neighbours_recv_left[i], size_t_data_type, origin_processes_left[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_left[i] + global_rank) + 7, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * i + 6]);
-            }
+        // Sending data
+        std::vector<MPI_Request> mpi_interfaces_solution_requests(mpi_load_balancing_solution_n_transfers * (destination_processes_left.size() + destination_processes_right.size() + origin_processes_left.size() + origin_processes_right.size()));
+        
+        for (size_t i = 0; i < destination_processes_left.size(); ++i) {
+            // Neighbours
+            MPI_Isend(n_neighbours_arrays_send_left.data() + 4 * process_offset_send_left[i], 4 * process_size_send_left[i], size_t_data_type, destination_processes_left[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes_left[i]), MPI_COMM_WORLD, &mpi_interfaces_solution_requests[mpi_load_balancing_solution_n_transfers * (i + origin_processes_left.size() + origin_processes_right.size())]);
+            MPI_Isend(neighbours_arrays_send_left.data() + process_neighbour_offset_send_left[i], process_n_neighbours_send_left[i], size_t_data_type, destination_processes_left[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes_left[i]) + 1, MPI_COMM_WORLD, &mpi_interfaces_solution_requests[mpi_load_balancing_solution_n_transfers * (i + origin_processes_left.size() + origin_processes_right.size()) + 1]);
+            MPI_Isend(neighbours_nodes_arrays_send_left.data() + 4 * process_neighbour_offset_send_left[i], 4 * process_n_neighbours_send_left[i], float_data_type, destination_processes_left[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes_left[i]) + 7, MPI_COMM_WORLD, &mpi_interfaces_solution_requests[mpi_load_balancing_solution_n_transfers * (i + origin_processes_left.size() + origin_processes_right.size()) + 7]);
+            MPI_Isend(neighbours_proc_arrays_send_left.data() + process_neighbour_offset_send_left[i], process_n_neighbours_send_left[i], MPI_INT, destination_processes_left[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes_left[i]) + 2, MPI_COMM_WORLD, &mpi_interfaces_solution_requests[mpi_load_balancing_solution_n_transfers * (i + origin_processes_left.size() + origin_processes_right.size()) + 2]);
+            MPI_Isend(neighbours_side_arrays_send_left.data() + process_neighbour_offset_send_left[i], process_n_neighbours_send_left[i], size_t_data_type, destination_processes_left[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes_left[i]) + 6, MPI_COMM_WORLD, &mpi_interfaces_solution_requests[mpi_load_balancing_solution_n_transfers * (i + origin_processes_left.size() + origin_processes_right.size()) + 6]);
+            MPI_Isend(neighbours_N_arrays_send_left.data() + process_neighbour_offset_send_left[i], process_n_neighbours_send_left[i], MPI_INT, destination_processes_left[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes_left[i]) + 8, MPI_COMM_WORLD, &mpi_interfaces_solution_requests[mpi_load_balancing_solution_n_transfers * (i + origin_processes_left.size() + origin_processes_right.size()) + 8]);
+
+            // Nodes
+            MPI_Isend(nodes_arrays_send_left.data() + 8 * process_offset_send_left[i], 8 * process_size_send_left[i], float_data_type, destination_processes_left[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes_left[i]) + 3, MPI_COMM_WORLD, &mpi_interfaces_solution_requests[mpi_load_balancing_solution_n_transfers * (i + origin_processes_left.size() + origin_processes_right.size()) + 3]);
+
+            // Solution
+            MPI_Isend(solution_arrays_send_left.data() + 3 * (maximum_N_ + 1) * (maximum_N_ + 1) * process_offset_send_left[i], 3 * (maximum_N_ + 1) * (maximum_N_ + 1) * process_size_send_left[i], float_data_type, destination_processes_left[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes_left[i]) + 4, MPI_COMM_WORLD, &mpi_interfaces_solution_requests[mpi_load_balancing_solution_n_transfers * (i + origin_processes_left.size() + origin_processes_right.size()) + 4]);
+
+            // Elements
+            MPI_Isend(elements_send_left.data() + process_offset_send_left[i], process_size_send_left[i], element_data_type.data(), destination_processes_left[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes_left[i]) + 5, MPI_COMM_WORLD, &mpi_interfaces_solution_requests[mpi_load_balancing_solution_n_transfers * (i + origin_processes_left.size() + origin_processes_right.size()) + 5]);
         }
 
-        if (n_elements_recv_right[global_rank] > 0) {
-            for (size_t i = 0; i < origin_processes_right.size(); ++i) {
-                // Neighbours
-                MPI_Irecv(neighbours_arrays_recv.data() + n_neighbours_recv_total_left + process_neighbour_offset_right[i], process_n_neighbours_recv_right[i], size_t_data_type, origin_processes_right[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 2, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * (origin_processes_left.size() + i) + 4]);
-                MPI_Irecv(neighbours_proc_arrays_recv.data() + n_neighbours_recv_total_left + process_neighbour_offset_right[i], process_n_neighbours_recv_right[i], MPI_INT, origin_processes_right[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 3, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * (origin_processes_left.size() + i) + 5]);
-                MPI_Irecv(neighbours_side_arrays_recv.data() + n_neighbours_recv_total_left + process_neighbour_offset_right[i], process_n_neighbours_recv_right[i], size_t_data_type, origin_processes_right[i], 8 * global_size * global_size + n_mpi_transfers_per_send * (global_size * origin_processes_right[i] + global_rank) + 7, MPI_COMM_WORLD, &mpi_interfaces_recv_requests[(n_mpi_transfers_per_send - 1) * (origin_processes_left.size() + i) + 6]);
-            }
+        for (size_t i = 0; i < destination_processes_right.size(); ++i) {
+            // Neighbours
+            MPI_Isend(n_neighbours_arrays_send_right.data() + 4 * process_offset_send_right[i], 4 * process_size_send_right[i], size_t_data_type, destination_processes_right[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes_right[i]), MPI_COMM_WORLD, &mpi_interfaces_solution_requests[mpi_load_balancing_solution_n_transfers * (i + origin_processes_left.size() + origin_processes_right.size() + destination_processes_left.size())]);
+            MPI_Isend(neighbours_arrays_send_right.data() + process_neighbour_offset_send_right[i], process_n_neighbours_send_right[i], size_t_data_type, destination_processes_right[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes_right[i]) + 1, MPI_COMM_WORLD, &mpi_interfaces_solution_requests[mpi_load_balancing_solution_n_transfers * (i + origin_processes_left.size() + origin_processes_right.size() + destination_processes_left.size()) + 1]);
+            MPI_Isend(neighbours_nodes_arrays_send_right.data() + 4 * process_neighbour_offset_send_right[i], 4 * process_n_neighbours_send_right[i], float_data_type, destination_processes_right[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes_right[i]) + 7, MPI_COMM_WORLD, &mpi_interfaces_solution_requests[mpi_load_balancing_solution_n_transfers * (i + origin_processes_left.size() + origin_processes_right.size() + destination_processes_left.size()) + 7]);
+            MPI_Isend(neighbours_proc_arrays_send_right.data() + process_neighbour_offset_send_right[i], process_n_neighbours_send_right[i], MPI_INT, destination_processes_right[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes_right[i]) + 2, MPI_COMM_WORLD, &mpi_interfaces_solution_requests[mpi_load_balancing_solution_n_transfers * (i + origin_processes_left.size() + origin_processes_right.size() + destination_processes_left.size()) + 2]);
+            MPI_Isend(neighbours_side_arrays_send_right.data() + process_neighbour_offset_send_right[i], process_n_neighbours_send_right[i], size_t_data_type, destination_processes_right[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes_right[i]) + 6, MPI_COMM_WORLD, &mpi_interfaces_solution_requests[mpi_load_balancing_solution_n_transfers * (i + origin_processes_left.size() + origin_processes_right.size() + destination_processes_left.size()) + 6]);
+            MPI_Isend(neighbours_N_arrays_send_right.data() + process_neighbour_offset_send_right[i], process_n_neighbours_send_right[i], MPI_INT, destination_processes_right[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes_right[i]) + 8, MPI_COMM_WORLD, &mpi_interfaces_solution_requests[mpi_load_balancing_solution_n_transfers * (i + origin_processes_left.size() + origin_processes_right.size() + destination_processes_left.size()) + 8]);
+
+            // Nodes
+            MPI_Isend(nodes_arrays_send_right.data() + 8 * process_offset_send_right[i], 8 * process_size_send_right[i], float_data_type, destination_processes_right[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes_right[i]) + 3, MPI_COMM_WORLD, &mpi_interfaces_solution_requests[mpi_load_balancing_solution_n_transfers * (i + origin_processes_left.size() + origin_processes_right.size() + destination_processes_left.size()) + 3]);
+
+            // Solution
+            MPI_Isend(solution_arrays_send_right.data() + 3 * (maximum_N_ + 1) * (maximum_N_ + 1) * process_offset_send_right[i], 3 * (maximum_N_ + 1) * (maximum_N_ + 1) * process_size_send_right[i], float_data_type, destination_processes_right[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes_right[i]) + 4, MPI_COMM_WORLD, &mpi_interfaces_solution_requests[mpi_load_balancing_solution_n_transfers * (i + origin_processes_left.size() + origin_processes_right.size() + destination_processes_left.size()) + 4]);
+
+            // Elements
+            MPI_Isend(elements_send_right.data() + process_offset_send_right[i], process_size_send_right[i], element_data_type.data(), destination_processes_right[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * global_rank + destination_processes_right[i]) + 5, MPI_COMM_WORLD, &mpi_interfaces_solution_requests[mpi_load_balancing_solution_n_transfers * (i + origin_processes_left.size() + origin_processes_right.size() + destination_processes_left.size()) + 5]);
         }
 
-        std::vector<MPI_Status> mpi_interfaces_recv_statuses(mpi_interfaces_recv_requests.size());
-        MPI_Waitall(mpi_interfaces_recv_requests.size(), mpi_interfaces_recv_requests.data(), mpi_interfaces_recv_statuses.data());
+        // Receiving data
+        for (size_t i = 0; i < origin_processes_left.size(); ++i) {
+            // Neighbours
+            MPI_Irecv(n_neighbours_arrays_recv_left.data() + 4 * process_offset_left[i], 4 * process_size_left[i], size_t_data_type, origin_processes_left[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_left[i] + global_rank), MPI_COMM_WORLD, &mpi_interfaces_solution_requests[mpi_load_balancing_solution_n_transfers * i]);
+
+            // Nodes
+            MPI_Irecv(nodes_arrays_recv.data() + 8 * process_offset_left[i], 8 * process_size_left[i], float_data_type, origin_processes_left[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_left[i] + global_rank) + 3, MPI_COMM_WORLD, &mpi_interfaces_solution_requests[mpi_load_balancing_solution_n_transfers * i + 1]);
+
+            // Solution
+            MPI_Irecv(solution_arrays_recv_left.data() + 3 * (maximum_N_ + 1) * (maximum_N_ + 1) * process_offset_left[i], 3 * (maximum_N_ + 1) * (maximum_N_ + 1) * process_size_left[i], float_data_type, origin_processes_left[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_left[i] + global_rank) + 4, MPI_COMM_WORLD, &mpi_interfaces_solution_requests[mpi_load_balancing_solution_n_transfers * i + 2]);
+
+            // Elements
+            MPI_Irecv(elements_recv_left.data() + process_offset_left[i], process_size_left[i], element_data_type.data(), origin_processes_left[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_left[i] + global_rank) + 5, MPI_COMM_WORLD, &mpi_interfaces_solution_requests[mpi_load_balancing_solution_n_transfers * i + 3]);
+        
+            // Neighbours
+            MPI_Irecv(neighbours_arrays_recv.data() + process_neighbour_offset_left[i], process_n_neighbours_recv_left[i], size_t_data_type, origin_processes_left[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_left[i] + global_rank) + 1, MPI_COMM_WORLD, &mpi_interfaces_solution_requests[mpi_load_balancing_solution_n_transfers * i + 4]);
+            MPI_Irecv(neighbours_nodes_arrays_recv.data() + 4 * process_neighbour_offset_left[i], 4 * process_n_neighbours_recv_left[i], float_data_type, origin_processes_left[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_left[i] + global_rank) + 7, MPI_COMM_WORLD, &mpi_interfaces_solution_requests[mpi_load_balancing_solution_n_transfers * i + 7]);
+            MPI_Irecv(neighbours_proc_arrays_recv.data() + process_neighbour_offset_left[i], process_n_neighbours_recv_left[i], MPI_INT, origin_processes_left[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_left[i] + global_rank) + 2, MPI_COMM_WORLD, &mpi_interfaces_solution_requests[mpi_load_balancing_solution_n_transfers * i + 5]);
+            MPI_Irecv(neighbours_side_arrays_recv.data() + process_neighbour_offset_left[i], process_n_neighbours_recv_left[i], size_t_data_type, origin_processes_left[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_left[i] + global_rank) + 6, MPI_COMM_WORLD, &mpi_interfaces_solution_requests[mpi_load_balancing_solution_n_transfers * i + 6]);
+            MPI_Irecv(neighbours_N_arrays_recv.data() + process_neighbour_offset_left[i], process_n_neighbours_recv_left[i], MPI_INT, origin_processes_left[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_left[i] + global_rank) + 8, MPI_COMM_WORLD, &mpi_interfaces_solution_requests[mpi_load_balancing_solution_n_transfers * i + 8]);
+        }
+
+        for (size_t i = 0; i < origin_processes_right.size(); ++i) {
+            // Neighbours
+            MPI_Irecv(n_neighbours_arrays_recv_right.data() + 4 * process_offset_right[i], 4 * process_size_right[i], size_t_data_type, origin_processes_right[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_right[i] + global_rank), MPI_COMM_WORLD, &mpi_interfaces_solution_requests[mpi_load_balancing_solution_n_transfers * (i + origin_processes_left.size())]);
+
+            // Nodes
+            MPI_Irecv(nodes_arrays_recv.data() + 8 * (process_offset_right[i] + n_elements_recv_left[global_rank]), 8 * process_size_right[i], float_data_type, origin_processes_right[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_right[i] + global_rank) + 3, MPI_COMM_WORLD, &mpi_interfaces_solution_requests[mpi_load_balancing_solution_n_transfers * (i + origin_processes_left.size()) + 1]);
+
+            // Solution
+            MPI_Irecv(solution_arrays_recv_right.data() + 3 * (maximum_N_ + 1) * (maximum_N_ + 1) * process_offset_right[i], 3 * (maximum_N_ + 1) * (maximum_N_ + 1) * process_size_right[i], float_data_type, origin_processes_right[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_right[i] + global_rank) + 4, MPI_COMM_WORLD, &mpi_interfaces_solution_requests[mpi_load_balancing_solution_n_transfers * (i + origin_processes_left.size()) + 2]);
+
+            // Elements
+            MPI_Irecv(elements_recv_right.data() + process_offset_right[i], process_size_right[i], element_data_type.data(), origin_processes_right[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_right[i] + global_rank) + 5, MPI_COMM_WORLD, &mpi_interfaces_solution_requests[mpi_load_balancing_solution_n_transfers * (i + origin_processes_left.size()) + 3]);
+        
+            // Neighbours
+            MPI_Irecv(neighbours_arrays_recv.data() + n_neighbours_recv_total_left + process_neighbour_offset_right[i], process_n_neighbours_recv_right[i], size_t_data_type, origin_processes_right[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_right[i] + global_rank) + 1, MPI_COMM_WORLD, &mpi_interfaces_solution_requests[mpi_load_balancing_solution_n_transfers * (origin_processes_left.size() + i) + 4]);
+            MPI_Irecv(neighbours_nodes_arrays_recv.data() + 4 * (n_neighbours_recv_total_left + process_neighbour_offset_right[i]), 4 * process_n_neighbours_recv_right[i], float_data_type, origin_processes_right[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_right[i] + global_rank) + 7, MPI_COMM_WORLD, &mpi_interfaces_solution_requests[mpi_load_balancing_solution_n_transfers * (origin_processes_left.size() + i) + 7]);
+            MPI_Irecv(neighbours_proc_arrays_recv.data() + n_neighbours_recv_total_left + process_neighbour_offset_right[i], process_n_neighbours_recv_right[i], MPI_INT, origin_processes_right[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_right[i] + global_rank) + 2, MPI_COMM_WORLD, &mpi_interfaces_solution_requests[mpi_load_balancing_solution_n_transfers * (origin_processes_left.size() + i) + 5]);
+            MPI_Irecv(neighbours_side_arrays_recv.data() + n_neighbours_recv_total_left + process_neighbour_offset_right[i], process_n_neighbours_recv_right[i], size_t_data_type, origin_processes_right[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_right[i] + global_rank) + 6, MPI_COMM_WORLD, &mpi_interfaces_solution_requests[mpi_load_balancing_solution_n_transfers * (origin_processes_left.size() + i) + 6]);
+            MPI_Irecv(neighbours_N_arrays_recv.data() + n_neighbours_recv_total_left + process_neighbour_offset_right[i], process_n_neighbours_recv_right[i], MPI_INT, origin_processes_right[i], mpi_load_balancing_solution_offset * global_size * global_size + mpi_load_balancing_solution_n_transfers * (global_size * origin_processes_right[i] + global_rank) + 8, MPI_COMM_WORLD, &mpi_interfaces_solution_requests[mpi_load_balancing_solution_n_transfers * (origin_processes_left.size() + i) + 8]);
+        }
+
+        std::vector<MPI_Status> mpi_interfaces_solution_statuses(mpi_interfaces_solution_requests.size());
+        MPI_Waitall(mpi_interfaces_solution_requests.size(), mpi_interfaces_solution_requests.data(), mpi_interfaces_solution_statuses.data());
+
+        std::vector<size_t> neighbour_offsets_left(n_elements_recv_left[global_rank], 0);
+        std::vector<size_t> neighbour_offsets_right(n_elements_recv_right[global_rank], 0);
+
+        size_t neighbours_index = 0;
+        for (size_t i = 0; i < n_elements_recv_left[global_rank]; ++i) {
+            neighbour_offsets_left[i] = neighbours_index;
+            neighbours_index += n_neighbours_arrays_recv_left[4 * i] + n_neighbours_arrays_recv_left[4 * i + 1] + n_neighbours_arrays_recv_left[4 * i + 2] + n_neighbours_arrays_recv_left[4 * i + 3];
+        }
+
+        for (size_t i = 0; i < n_elements_recv_right[global_rank]; ++i) {
+            neighbour_offsets_right[i] = neighbours_index;
+            neighbours_index += n_neighbours_arrays_recv_right[4 * i] + n_neighbours_arrays_recv_right[4 * i + 1] + n_neighbours_arrays_recv_right[4 * i + 2] + n_neighbours_arrays_recv_right[4 * i + 3];
+        }
     
         // Now everything is received
         // We can do something about the nodes
         std::vector<size_t> received_node_indices(4 * (n_elements_recv_left[global_rank] + n_elements_recv_right[global_rank]));
+        std::vector<size_t> received_neighbour_node_indices(2 * neighbours_arrays_recv.size());
         if (n_elements_recv_left[global_rank] + n_elements_recv_right[global_rank] > 0) {
+            // Elements received nodes
+            std::vector<bool> missing_nodes(received_node_indices.size());
             std::vector<bool> missing_received_nodes(received_node_indices.size());
+            std::vector<size_t> received_node_received_indices(received_node_indices.size()); // Worst naming convention ever, these are nodes that have been found in other received nodes
 
-            SEM::Host::Meshes::find_received_nodes(missing_received_nodes, nodes_.size(), nodes_.data(), nodes_arrays_recv.data(), received_node_indices.data());
+            SEM::Host::Meshes::find_received_nodes(nodes_.size(), nodes_.data(), nodes_arrays_recv.data(), missing_nodes, missing_received_nodes, received_node_indices.data(), received_node_received_indices.data());
+
+
+
+
+
+
+
+
+
 
             size_t n_missing_received_nodes = 0;
             for (auto i : missing_received_nodes) {
@@ -7277,53 +7400,70 @@ auto SEM::Host::Meshes::fill_received_elements(size_t n_elements, Element2D_t* e
     }
 }
 
-auto SEM::Host::Meshes::get_neighbours(size_t n_elements_send, 
-                                 size_t start_index, 
-                                 size_t n_domain_elements, 
-                                 size_t n_wall_boundaries, 
-                                 size_t n_symmetry_boundaries, 
-                                 size_t n_inflow_boundaries, 
-                                 size_t n_outflow_boundaries,
-                                 size_t n_local_interfaces, 
-                                 size_t n_MPI_interface_elements_receiving, 
-                                 int rank, 
-                                 int n_procs,
-                                 const Element2D_t* elements, 
-                                 const Face2D_t* faces, 
-                                 const size_t* wall_boundaries, 
-                                 const size_t* symmetry_boundaries, 
-                                 const size_t* inflow_boundaries, 
-                                 const size_t* outflow_boundaries,
-                                 const size_t* interfaces_destination, 
-                                 const size_t* interfaces_origin, 
-                                 const size_t* mpi_interfaces_destination, 
-                                 const int* mpi_interfaces_process, 
-                                 const size_t* mpi_interfaces_local_indices,
-                                 const size_t* mpi_interfaces_side, 
-                                 const size_t* offsets, 
-                                 const size_t* n_elements_received_left, 
-                                 const size_t* n_elements_sent_left, 
-                                 const size_t* n_elements_received_right, 
-                                 const size_t* n_elements_sent_right, 
-                                 const size_t* global_element_offset,
-                                 const size_t* global_element_offset_new, 
-                                 const size_t* global_element_offset_end_new,
-                                 size_t* neighbours, 
-                                 int* neighbours_proc,
-                                 size_t* neighbours_side) -> void {
+auto SEM::Host::Meshes::get_neighbours(
+        size_t n_elements_send, 
+        size_t start_index, 
+        size_t n_domain_elements_old, 
+        size_t n_wall_boundaries, 
+        size_t n_symmetry_boundaries, 
+        size_t n_inflow_boundaries, 
+        size_t n_outflow_boundaries, 
+        size_t n_local_interfaces, 
+        size_t n_MPI_interface_elements_receiving, 
+        int rank, 
+        int n_procs, 
+        const Element2D_t* elements, 
+        const Face2D_t* faces, 
+        const Vec2<hostFloat>* nodes, 
+        const size_t* wall_boundaries, 
+        const size_t* symmetry_boundaries, 
+        const size_t* inflow_boundaries, 
+        const size_t* outflow_boundaries, 
+        const size_t* interfaces_destination, 
+        const size_t* interfaces_origin, 
+        const size_t* mpi_interfaces_destination, 
+        const int* mpi_interfaces_process, 
+        const size_t* mpi_interfaces_local_indices, 
+        const size_t* mpi_interfaces_side, 
+        const size_t* offsets, 
+        const size_t* n_elements_received_left, 
+        const size_t* n_elements_sent_left, 
+        const size_t* n_elements_received_right, 
+        const size_t* n_elements_sent_right, 
+        const size_t* global_element_offset, 
+        const size_t* global_element_offset_new, 
+        const size_t* global_element_offset_end_new, 
+        size_t* neighbours, 
+        hostFloat* neighbours_nodes, 
+        int* neighbours_proc, 
+        size_t* neighbours_side, 
+        int* neighbours_N) -> void {
 
-    for (size_t element_index = 0; element_index < n_elements_send; ++element_index) {
-        const Element2D_t& element = elements[element_index + start_index];
-        size_t element_offset = offsets[element_index];
+    for (size_t i = 0; i < n_elements_send; ++i) {
+        const size_t element_index = i + start_index;
+        const Element2D_t& element = elements[element_index];
+        size_t element_offset = offsets[i];
         for (size_t side_index = 0; side_index < element.faces_.size(); ++side_index) {
             for (size_t side_face_index = 0; side_face_index < element.faces_[side_index].size(); ++side_face_index) {
                 const size_t face_index = element.faces_[side_index][side_face_index];
                 const Face2D_t& face = faces[face_index];
-                const size_t face_side_index = face.elements_[0] == element_index + start_index;
+                const size_t face_side_index = face.elements_[0] == element_index;
                 const size_t other_element_index = face.elements_[face_side_index];
+                const Element2D_t& other_element = elements[other_element_index];
 
-                if (other_element_index < n_domain_elements) {
-                    if (other_element_index < n_elements_sent_left[rank] || other_element_index >= n_domain_elements - n_elements_sent_right[rank]) {
+                const std::array<size_t, 2> neighbour_node_indices {
+                    other_element.nodes_[face.elements_side_[face_side_index]],
+                    other_element.nodes_[(face.elements_side_[face_side_index] + 1 < other_element.nodes_.size()) ? face.elements_side_[face_side_index] + 1 : 0],
+                };
+                neighbours_nodes[4 * element_offset]     = nodes[neighbour_node_indices[0]].x();
+                neighbours_nodes[4 * element_offset + 1] = nodes[neighbour_node_indices[0]].y();
+                neighbours_nodes[4 * element_offset + 2] = nodes[neighbour_node_indices[1]].x();
+                neighbours_nodes[4 * element_offset + 3] = nodes[neighbour_node_indices[1]].y();
+
+                neighbours_N[element_offset] = other_element.N_;
+
+                if (other_element_index < n_domain_elements_old) {
+                    if (other_element_index < n_elements_sent_left[rank] || other_element_index >= n_domain_elements_old - n_elements_sent_right[rank]) {
                         const size_t element_global_index = other_element_index + global_element_offset[rank];
                         neighbours_proc[element_offset] = -1;
 
@@ -7331,12 +7471,13 @@ auto SEM::Host::Meshes::get_neighbours(size_t n_elements_send,
                             if (element_global_index >= global_element_offset_new[process_index] && element_global_index < global_element_offset_end_new[process_index]) {
                                 neighbours[element_offset] = element_global_index - global_element_offset_new[process_index];
                                 neighbours_proc[element_offset] = process_index;
+
                                 break;
                             }
                         }
 
                         if (neighbours_proc[element_offset] == -1) {
-                            std::cerr << "Error: Element " << element_index + start_index << ", side " << side_index << ", face " << side_face_index << " with index " << face_index << " has other sent element " << element_global_index << " but it is not found in any process. Exiting." << std::endl;
+                            std::cerr << "Error: Element " << element_index << ", side " << side_index << ", face " << side_face_index << " with index " << face_index << " has other sent element " << element_global_index << " but it is not found in any process. Exiting." << std::endl;
                             exit(65);
                         }
                     }
@@ -7350,30 +7491,31 @@ auto SEM::Host::Meshes::get_neighbours(size_t n_elements_send,
                     // It could also be a boundary condition
                     // This is a nightmare
                     bool missing = true;
-                    for (size_t i = 0; i < n_local_interfaces; ++i) {
-                        if (interfaces_destination[i] == other_element_index) {
-                            if (interfaces_origin[i] < n_elements_sent_left[rank] || interfaces_origin[i] >= n_domain_elements - n_elements_sent_right[rank]) {
-                                const size_t element_global_index = interfaces_origin[i] + global_element_offset[rank];
+                    for (size_t j = 0; j < n_local_interfaces; ++j) {
+                        if (interfaces_destination[j] == other_element_index) {
+                            if (interfaces_origin[j] < n_elements_sent_left[rank] || interfaces_origin[j] >= n_domain_elements_old - n_elements_sent_right[rank]) {
+                                const size_t element_global_index = interfaces_origin[j] + global_element_offset[rank];
                                 neighbours_proc[element_offset] = -1;
 
                                 for (int process_index = 0; process_index < n_procs; ++process_index) {
                                     if (element_global_index >= global_element_offset_new[process_index] && element_global_index < global_element_offset_end_new[process_index]) {
                                         neighbours[element_offset] = element_global_index - global_element_offset_new[process_index];
                                         neighbours_proc[element_offset] = process_index;
+
                                         break;
                                     }
                                 }
 
                                 if (neighbours_proc[element_offset] == -1) {
-                                    std::cerr << "Error: Element " << element_index + start_index << ", side " << side_index << ", face " << side_face_index << " with index " << face_index << " has other local sent element " << element_global_index << " but it is not found in any process. Exiting." << std::endl;
+                                    std::cerr << "Error: Element " << element_index << ", side " << side_index << ", face " << side_face_index << " with index " << face_index << " has other local sent element " << element_global_index << " but it is not found in any process. Exiting." << std::endl;
                                     exit(66);
                                 }
                             }
                             else {
-                                neighbours[element_offset] = interfaces_origin[i] + n_elements_received_left[rank] - n_elements_sent_left[rank];
+                                neighbours[element_offset] = interfaces_origin[j] + n_elements_received_left[rank] - n_elements_sent_left[rank];
                                 neighbours_proc[element_offset] = rank;
                             }
-                            neighbours_side[element_offset] = mpi_interfaces_side[i];
+                            neighbours_side[element_offset] = mpi_interfaces_side[j];
 
                             missing = false;
                             break;
@@ -7381,11 +7523,11 @@ auto SEM::Host::Meshes::get_neighbours(size_t n_elements_send,
                     }
 
                     if (missing) {
-                        for (size_t i = 0; i < n_MPI_interface_elements_receiving; ++i) {
-                            if (mpi_interfaces_destination[i] == other_element_index) {
-                                neighbours[element_offset] = mpi_interfaces_local_indices[i];
-                                neighbours_proc[element_offset] = mpi_interfaces_process[i];
-                                neighbours_side[element_offset] = mpi_interfaces_side[i];
+                        for (size_t j = 0; j < n_MPI_interface_elements_receiving; ++j) {
+                            if (mpi_interfaces_destination[j] == other_element_index) {
+                                neighbours[element_offset] = mpi_interfaces_local_indices[j];
+                                neighbours_proc[element_offset] = mpi_interfaces_process[j];
+                                neighbours_side[element_offset] = mpi_interfaces_side[j];
     
                                 missing = false;
                                 break;
@@ -7393,8 +7535,8 @@ auto SEM::Host::Meshes::get_neighbours(size_t n_elements_send,
                         }
 
                         if (missing) {
-                            for (size_t i = 0; i < n_wall_boundaries; ++i) {
-                                if (wall_boundaries[i] == other_element_index) {
+                            for (size_t j = 0; j < n_wall_boundaries; ++j) {
+                                if (wall_boundaries[j] == other_element_index) {
                                     neighbours[element_offset] = static_cast<size_t>(-1);
                                     neighbours_proc[element_offset] = SEM::Host::Meshes::Mesh2D_t::boundary_type::wall;
                                     neighbours_side[element_offset] = static_cast<size_t>(-1);
@@ -7405,8 +7547,8 @@ auto SEM::Host::Meshes::get_neighbours(size_t n_elements_send,
                             }
 
                             if (missing) {
-                                for (size_t i = 0; i < n_symmetry_boundaries; ++i) {
-                                    if (symmetry_boundaries[i] == other_element_index) {
+                                for (size_t j = 0; j < n_symmetry_boundaries; ++j) {
+                                    if (symmetry_boundaries[j] == other_element_index) {
                                         neighbours[element_offset] = static_cast<size_t>(-1);
                                         neighbours_proc[element_offset] = SEM::Host::Meshes::Mesh2D_t::boundary_type::symmetry;
                                         neighbours_side[element_offset] = static_cast<size_t>(-1);
@@ -7417,8 +7559,8 @@ auto SEM::Host::Meshes::get_neighbours(size_t n_elements_send,
                                 }
     
                                 if (missing) {
-                                    for (size_t i = 0; i < n_inflow_boundaries; ++i) {
-                                        if (inflow_boundaries[i] == other_element_index) {
+                                    for (size_t j = 0; j < n_inflow_boundaries; ++j) {
+                                        if (inflow_boundaries[j] == other_element_index) {
                                             neighbours[element_offset] = static_cast<size_t>(-1);
                                             neighbours_proc[element_offset] = SEM::Host::Meshes::Mesh2D_t::boundary_type::inflow;
                                             neighbours_side[element_offset] = static_cast<size_t>(-1);
@@ -7429,8 +7571,8 @@ auto SEM::Host::Meshes::get_neighbours(size_t n_elements_send,
                                     }
         
                                     if (missing) {
-                                        for (size_t i = 0; i < n_outflow_boundaries; ++i) {
-                                            if (outflow_boundaries[i] == other_element_index) {
+                                        for (size_t j = 0; j < n_outflow_boundaries; ++j) {
+                                            if (outflow_boundaries[j] == other_element_index) {
                                                 neighbours[element_offset] = static_cast<size_t>(-1);
                                                 neighbours_proc[element_offset] = SEM::Host::Meshes::Mesh2D_t::boundary_type::outflow;
                                                 neighbours_side[element_offset] = static_cast<size_t>(-1);
@@ -7441,7 +7583,7 @@ auto SEM::Host::Meshes::get_neighbours(size_t n_elements_send,
                                         }
             
                                         if (missing) {
-                                            printf("Error: Element %llu is not part of local or mpi interfaces, or boundaries. Results are undefined.\n", static_cast<unsigned long long>(other_element_index));
+                                            printf("Error: Element %llu is not part of local or mpi interfaces, or boundaries. Results are undefined.\n", other_element_index);
                                         }
                                     }
                                 }
@@ -7625,16 +7767,28 @@ auto SEM::Host::Meshes::get_interface_processes(size_t n_mpi_interfaces, size_t 
     }
 }
 
-auto SEM::Host::Meshes::find_received_nodes(std::vector<bool>& missing_received_nodes, size_t n_nodes, const Vec2<hostFloat>* nodes, const hostFloat* received_nodes, size_t* received_nodes_indices) -> void {
+auto SEM::Host::Meshes::find_received_nodes(size_t n_nodes, const Vec2<hostFloat>* nodes, const hostFloat* received_nodes, std::vector<bool>& missing_nodes, std::vector<bool>& missing_received_nodes, size_t* received_nodes_indices, size_t* received_node_received_indices) -> void {
     for (size_t i = 0; i < missing_received_nodes.size(); ++i) {
         const Vec2<hostFloat> received_node(received_nodes[2 * i], received_nodes[2 * i + 1]);
-        missing_received_nodes[i] = true;
+        missing_nodes[i] = true;
+        missing_received_nodes[i] = false;
 
         for (size_t j = 0; j < n_nodes; ++j) {
             if (received_node.almost_equal(nodes[j])) {
-                missing_received_nodes[i] = false;
+                missing_nodes[i] = false;
                 received_nodes_indices[i] = j;
                 break;
+            }
+        }
+
+        if (missing_nodes[i]) {
+            for (size_t j = 0; j < i; ++j) {
+                if (received_node.almost_equal(Vec2<hostFloat>(received_nodes[2 * j], received_nodes[2 * j + 1]))) {
+                    missing_nodes[i] = false;
+                    missing_received_nodes[i] = true;
+                    received_node_received_indices[i] = j;
+                    break;
+                }
             }
         }
     }
