@@ -231,11 +231,11 @@ namespace SEM { namespace Host { namespace Meshes {
     
     auto find_received_nodes(size_t n_nodes, const SEM::Host::Entities::Vec2<hostFloat>* nodes, const hostFloat* received_nodes, std::vector<bool>& missing_nodes, std::vector<bool>& missing_received_nodes, size_t* received_nodes_indices, size_t* received_node_received_indices) -> void;
 
-    auto add_new_received_nodes(const std::vector<bool>& missing_nodes, const std::vector<bool>& missing_received_nodes, size_t n_nodes, SEM::Host::Entities::Vec2<hostFloat>* nodes, const hostFloat* received_nodes, size_t* received_nodes_indices, const size_t* received_node_received_indices, const size_t* received_nodes_block_offsets) -> void;
+    auto add_new_received_nodes(size_t n_nodes, SEM::Host::Entities::Vec2<hostFloat>* nodes, const hostFloat* received_nodes, const std::vector<bool>& missing_nodes, const std::vector<bool>& missing_received_nodes, size_t* received_nodes_indices, const size_t* received_node_received_indices) -> void;
 
-    auto find_received_neighbour_nodes(size_t n_received_neighbour_nodes, size_t n_received_nodes, size_t n_nodes, const SEM::Host::Entities::Vec2<hostFloat>* nodes, const hostFloat* received_neighbour_nodes, const hostFloat* received_nodes, bool* missing_neighbour_nodes, bool* missing_received_neighbour_nodes, size_t* received_neighbour_nodes_indices, size_t* received_neighbour_node_received_indices) -> void;
+    auto find_received_neighbour_nodes(size_t n_received_nodes, size_t n_nodes, const SEM::Host::Entities::Vec2<hostFloat>* nodes, const hostFloat* received_neighbour_nodes, const hostFloat* received_nodes, std::vector<bool>& missing_neighbour_nodes,std::vector<bool>& missing_received_neighbour_nodes, size_t* received_neighbour_nodes_indices, size_t* received_neighbour_node_received_indices) -> void;
   
-    auto add_new_received_neighbour_nodes(size_t n_received_neighbour_nodes, size_t n_received_nodes, size_t n_nodes, SEM::Host::Entities::Vec2<hostFloat>* nodes, const hostFloat* received_neighbour_nodes, const bool* missing_neighbour_nodes, const bool* missing_nodes, const bool* missing_received_neighbour_nodes, size_t* received_neighbour_nodes_indices, const size_t* received_neighbour_node_received_indices, const size_t* received_neighbour_nodes_block_offsets, const size_t* received_nodes_block_offsets) -> void;
+    auto add_new_received_neighbour_nodes(size_t n_nodes, SEM::Host::Entities::Vec2<hostFloat>* nodes, const hostFloat* received_neighbour_nodes, const std::vector<bool>& missing_neighbour_nodes, const std::vector<bool>& missing_nodes, const std::vector<bool>& missing_received_neighbour_nodes, size_t* received_neighbour_nodes_indices, const size_t* received_neighbour_node_received_indices) -> void;
 
     auto find_faces_to_delete(size_t n_domain_elements, size_t n_elements_send_left, size_t n_elements_send_right, const SEM::Host::Entities::Face2D_t* faces, std::vector<bool>& faces_to_delete) -> void;
 

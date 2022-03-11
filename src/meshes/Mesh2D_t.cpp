@@ -2869,27 +2869,27 @@ auto SEM::Host::Meshes::Mesh2D_t::load_balance(const std::vector<std::vector<hos
 
             SEM::Host::Meshes::find_received_nodes(nodes_.size(), nodes_.data(), nodes_arrays_recv.data(), missing_nodes, missing_received_nodes, received_node_indices.data(), received_node_received_indices.data());
 
+            // Neighbours received nodes
+            std::vector<bool> missing_neighbour_nodes(received_neighbour_node_indices.size());
+            std::vector<bool> missing_received_neighbour_nodes(received_neighbour_node_indices.size());
+            std::vector<size_t> received_neighbour_node_received_indices(received_neighbour_node_indices.size()); // Worst naming convention ever, these are nodes that have been found in other received nodes
 
-
-
-
-
-
-
-
+            SEM::Host::Meshes::find_received_neighbour_nodes(missing_nodes.size(), nodes_.size(), nodes_.data(), neighbours_nodes_arrays_recv.data(), nodes_arrays_recv.data(), missing_neighbour_nodes, missing_received_neighbour_nodes, received_neighbour_node_indices.data(), received_neighbour_node_received_indices.data());
 
             size_t n_missing_received_nodes = 0;
-            for (auto i : missing_received_nodes) {
+            for (auto i : missing_nodes) {
                 n_missing_received_nodes += i;
             }
 
-            std::vector<Vec2<hostFloat>> new_nodes(nodes_.size() + n_missing_received_nodes);
-            for (size_t i = 0; i < nodes_.size(); ++i) {
-                new_nodes[i] = nodes_[i];
+            for (auto i : missing_neighbour_nodes) {
+                n_missing_received_nodes += i;
             }
-            SEM::Host::Meshes::add_new_received_nodes(missing_received_nodes, nodes_.size(), new_nodes.data(), nodes_arrays_recv.data(), received_node_indices.data());
+
+            const size_t old_n_nodes = nodes_.size();
+            nodes_.resize(nodes_.size() + n_missing_received_nodes);
+            SEM::Host::Meshes::add_new_received_nodes(old_n_nodes, nodes_.data(), nodes_arrays_recv.data(), missing_nodes, missing_received_nodes, received_node_indices.data(), received_node_received_indices.data());
         
-            nodes_ = std::move(new_nodes);
+            SEM::Host::Meshes::add_new_received_neighbour_nodes(old_n_nodes, nodes_.data(), neighbours_nodes_arrays_recv.data(), missing_neighbour_nodes, missing_nodes, missing_received_neighbour_nodes, received_neighbour_node_indices.data(), received_neighbour_node_received_indices.data());
         }
         // Now something similar for neighbours?
 
@@ -7794,16 +7794,127 @@ auto SEM::Host::Meshes::find_received_nodes(size_t n_nodes, const Vec2<hostFloat
     }
 }
 
-auto SEM::Host::Meshes::add_new_received_nodes(const std::vector<bool>& missing_received_nodes, size_t n_nodes, Vec2<hostFloat>* nodes, const hostFloat* received_nodes, size_t* received_nodes_indices) -> void {
-    for (size_t i = 0; i < missing_received_nodes.size(); ++i) {
-        if (missing_received_nodes[i]) {
-            size_t new_received_index = n_nodes;
-            for (size_t j = 0; j < i; ++j) {
-                new_received_index += missing_received_nodes[j];
+auto SEM::Host::Meshes::add_new_received_nodes(
+        size_t n_nodes, 
+        Vec2<hostFloat>* nodes, 
+        const hostFloat* received_nodes, 
+        const std::vector<bool>& missing_nodes, 
+        const std::vector<bool>& missing_received_nodes, 
+        size_t* received_nodes_indices, 
+        const size_t* received_node_received_indices) -> void {
+    
+    for (size_t i = 0; i < n_received_nodes; ++i) {
+        if (missing_nodes[i]) {
+            size_t new_received_index = n_nodes + received_nodes_block_offsets[block_id];
+            for (size_t j = i - thread_id; j < i; ++j) {
+                new_received_index += missing_nodes[j];
             }
 
             nodes[new_received_index] = Vec2<hostFloat>(received_nodes[2 * i], received_nodes[2 * i + 1]);
             received_nodes_indices[i] = new_received_index;
+        }
+        else if (missing_received_nodes[i]) {
+            size_t new_received_index = n_nodes;
+            for (size_t j = 0; j < received_node_received_indices[i]; ++j) {
+                new_received_index += missing_nodes[j];
+            }
+
+            received_nodes_indices[i] = new_received_index;
+        }
+    }
+}
+
+auto SEM::Host::Meshes::find_received_neighbour_nodes(
+        size_t n_received_nodes, 
+        size_t n_nodes, 
+        const Vec2<hostFloat>* nodes, 
+        const hostFloat* received_neighbour_nodes, 
+        const hostFloat* received_nodes, 
+        std::vector<bool>& missing_neighbour_nodes,
+        std::vector<bool>& missing_received_neighbour_nodes, 
+        size_t* received_neighbour_nodes_indices, 
+        size_t* received_neighbour_node_received_indices) -> void {
+
+    for (size_t i = 0; i < missing_neighbour_nodes.size(); ++if) {
+        const Vec2<hostFloat> received_neighbour_node(received_neighbour_nodes[2 * i], received_neighbour_nodes[2 * i + 1]);
+        missing_neighbour_nodes[i] = true;
+        missing_received_neighbour_nodes[i] = false;
+
+        for (size_t j = 0; j < n_nodes; ++j) {
+            if (received_neighbour_node.almost_equal(nodes[j])) {
+                missing_neighbour_nodes[i] = false;
+                received_neighbour_nodes_indices[i] = j;
+                break;
+            }
+        }
+
+        if (missing_neighbour_nodes[i]) {
+            for (size_t j = 0; j < n_received_nodes; ++j) {
+                if (received_neighbour_node.almost_equal(Vec2<hostFloat>(received_nodes[2 * j], received_nodes[2 * j + 1]))) {
+                    missing_neighbour_nodes[i] = false;
+                    missing_received_neighbour_nodes[i] = true;
+                    received_neighbour_node_received_indices[i] = j;
+                    break;
+                }
+            }
+        }
+
+        if (missing_neighbour_nodes[i]) {
+            for (size_t j = 0; j < i; ++j) {
+                if (received_neighbour_node.almost_equal(Vec2<hostFloat>(received_neighbour_nodes[2 * j], received_neighbour_nodes[2 * j + 1]))) {
+                    missing_neighbour_nodes[i] = false;
+                    missing_received_neighbour_nodes[i] = true;
+                    received_neighbour_node_received_indices[i] = n_received_nodes + j;
+                    break;
+                }
+            }
+        }
+    }
+}
+
+auto SEM::Host::Meshes::add_new_received_neighbour_nodes(
+        size_t n_nodes, 
+        Vec2<hostFloat>* nodes, 
+        const hostFloat* received_neighbour_nodes, 
+        const std::vector<bool>& missing_neighbour_nodes, 
+        const std::vector<bool>& missing_nodes, 
+        const std::vector<bool>& missing_received_neighbour_nodes, 
+        size_t* received_neighbour_nodes_indices, 
+        const size_t* received_neighbour_node_received_indices) -> void {
+
+    for (size_t i = 0; i < missing_neighbour_nodes.size(); i += stride) {
+        if (missing_neighbour_nodes[i]) {
+            size_t new_received_index = n_nodes;
+            for (size_t j = 0; j < i; ++j) {
+                new_received_index += missing_neighbour_nodes[j];
+            }
+
+            nodes[new_received_index] = Vec2<deviceFloat>(received_neighbour_nodes[2 * i], received_neighbour_nodes[2 * i + 1]);
+            received_neighbour_nodes_indices[i] = new_received_index;
+        }
+        else if (missing_received_neighbour_nodes[i]) {
+            if (received_neighbour_node_received_indices[i] < n_received_nodes) {
+                const int received_block = received_neighbour_node_received_indices[i]/blockDim.x;
+                const int received_thread = received_neighbour_node_received_indices[i]%blockDim.x;
+
+                size_t new_received_index = n_nodes;
+                for (size_t j = 0; j < received_neighbour_node_received_indices[i]; ++j) {
+                    new_received_index += missing_nodes[j];
+                }
+
+                received_neighbour_nodes_indices[i] = new_received_index;
+            }
+            else {
+                const int received_block = (received_neighbour_node_received_indices[i] - n_received_nodes)/blockDim.x;
+                const int received_thread = (received_neighbour_node_received_indices[i] - n_received_nodes)%blockDim.x;
+
+                size_t new_received_index = n_nodes;
+                for (size_t j = 0; j < received_neighbour_node_received_indices[i] - n_received_nodes; ++j) {
+                    new_received_index += missing_neighbour_nodes[j];
+                }
+
+                received_neighbour_nodes_indices[i] = new_received_index;
+            }
         }
     }
 }
