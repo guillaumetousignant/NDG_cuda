@@ -2895,69 +2895,84 @@ auto SEM::Host::Meshes::Mesh2D_t::load_balance(const std::vector<std::vector<hos
 
         // Faces
         // Faces to add
-        size_t n_faces_to_add = 0;
+        size_t n_faces_to_add_recv_left = 0;
         size_t neighbour_index = 0;
-        if (n_elements_recv_left[global_rank] > 0) {
-            for (size_t i = 0; i < n_elements_recv_left[global_rank]; ++i) {
-                const size_t element_index = i;
-                for (size_t j = 0; j < 4; ++j) {
-                    for (size_t k = 0; k < n_neighbours_arrays_recv_left[4 * i + j]; ++k) {
-                        const int neighbour_process = neighbours_proc_arrays_recv[neighbour_index];
-                        const size_t neighbour_element_index = neighbours_arrays_recv[neighbour_index];
-                        ++neighbour_index;
+        std::vector<size_t> face_offsets_left(n_elements_recv_left[global_rank]);
+        for (size_t i = 0; i < n_elements_recv_left[global_rank]; ++i) {
+            const size_t element_index = i;
+            face_offsets_left[i] = n_faces_to_add_recv_left;
+            for (size_t j = 0; j < 4; ++j) {
+                const size_t side_n_neighbours = n_neighbours_arrays_recv_left[4 * i + j];
+                for (size_t k = 0; k < n_neighbours_arrays_recv_left[4 * i + j]; ++k) {
+                    const int neighbour_process = neighbours_proc_arrays_recv[neighbour_index + k];
+                    const size_t neighbour_element_index = neighbours_arrays_recv[neighbour_index + k];
 
-                        if (neighbour_process != global_rank
-                                || neighbours_arrays_recv[i] < n_elements_recv_left[global_rank] && element_index < neighbour_element_index
-                                || neighbours_arrays_recv[i] > n_elements_new[global_rank] - n_elements_recv_right[global_rank] && element_index < neighbour_element_index) {
-
-                            ++n_faces_to_add;
-                        }
+                    if (neighbour_process != global_rank
+                            || neighbour_element_index < n_elements_recv_left[global_rank] && neighbour_element_index >= element_index
+                            || neighbour_element_index >= n_elements_new[global_rank] - n_elements_recv_right[global_rank] && neighbour_element_index >= element_index) {
+                        
+                        ++n_faces_to_add_recv_left;
                     }
                 }
+                neighbour_index += side_n_neighbours;
             }
         }
+        size_t n_faces_to_add_recv_right = 0;
         neighbour_index = n_neighbours_recv_total_left; // Maybe error check here? should already be there
-        if (n_elements_recv_right[global_rank] > 0) {
-            for (size_t i = 0; i < n_elements_recv_right[global_rank]; ++i) {
-                const size_t element_index = n_elements_new[global_rank] + 1 - n_elements_recv_right[global_rank] + i;
-                for (size_t j = 0; j < 4; ++j) {
-                    for (size_t k = 0; k < n_neighbours_arrays_recv_right[4 * i + j]; ++k) {
-                        const int neighbour_process = neighbours_proc_arrays_recv[neighbour_index];
-                        const size_t neighbour_element_index = neighbours_arrays_recv[neighbour_index];
-                        ++neighbour_index;
+        std::vector<size_t> face_offsets_right(n_elements_recv_right[global_rank]);
+        for (size_t i = 0; i < n_elements_recv_right[global_rank]; ++i) {
+            const size_t element_index = n_elements_new[global_rank] + 1 - n_elements_recv_right[global_rank] + i;
+            face_offsets_right[i] = n_faces_to_add_recv_left + n_faces_to_add_recv_right;
+            for (size_t j = 0; j < 4; ++j) {
+                const size_t side_n_neighbours = n_neighbours_arrays_recv_right[4 * i + j];
+                for (size_t k = 0; k < side_n_neighbours; ++k) {
+                    const int neighbour_process = neighbours_proc_arrays_recv[neighbour_index + k];
+                    const size_t neighbour_element_index = neighbours_arrays_recv[neighbour_index + k];
 
-                        if (neighbour_process != global_rank
-                                || neighbours_arrays_recv[i] < n_elements_recv_left[global_rank] && element_index < neighbour_element_index
-                                || neighbours_arrays_recv[i] > n_elements_new[global_rank] - n_elements_recv_right[global_rank] && element_index < neighbour_element_index) {
+                    if (neighbour_process != global_rank
+                            || neighbour_element_index < n_elements_recv_left[global_rank] && neighbour_element_index >= element_index
+                            || neighbour_element_index >= n_elements_new[global_rank] - n_elements_recv_right[global_rank] && neighbour_element_index >= element_index) {
 
-                            ++n_faces_to_add;
-                        }
+                        ++n_faces_to_add_recv_right;
                     }
                 }
+                neighbour_index += side_n_neighbours;
             }
         }
+        const size_t n_faces_to_add = n_faces_to_add_recv_left + n_faces_to_add_recv_right;
 
-        std::vector<Face2D_t> new_faces;
-
-        // Faces to delete
+         // Faces to delete
+        std::vector<bool> faces_to_delete(faces_.size());
         size_t n_faces_to_delete = 0;
         if (n_elements_send_left[global_rank] + n_elements_send_right[global_rank] > 0) {
-            std::vector<bool> faces_to_delete(faces_.size());
             SEM::Host::Meshes::find_faces_to_delete(n_elements_, n_elements_send_left[global_rank], n_elements_send_right[global_rank], faces_.data(), faces_to_delete);
 
             for (auto i : faces_to_delete) {
                 n_faces_to_delete += i;
             }
-
-            new_faces = std::vector<Face2D_t>(faces_.size() + n_faces_to_add - n_faces_to_delete);
-
-            SEM::Host::Meshes::move_required_faces(faces_.data(), new_faces.data(), elements_.data(), faces_to_delete);
         }
         else {
-            new_faces = std::vector<Face2D_t>(faces_.size() + n_faces_to_add);
-
-            SEM::Host::Meshes::move_faces(faces_.size(), faces_.data(), new_faces.data());
+            SEM::Host::Meshes::no_faces_to_delete(faces_to_delete);
         }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
 
         // Boundary elements
         // Boundary elements to add
@@ -7932,6 +7947,12 @@ auto SEM::Host::Meshes::find_faces_to_delete(size_t n_domain_elements, size_t n_
         };
 
         faces_to_delete[i] = elements_leaving[0] && elements_leaving[1] || elements_leaving[0] && boundary_elements[1] || elements_leaving[1] && boundary_elements[2];
+    }
+}
+
+auto SEM::Host::Meshes::no_faces_to_delete(std::vector<bool>& faces_to_delete) -> void {
+    for (auto& i : faces_to_delete) {
+        i = false;
     }
 }
 
