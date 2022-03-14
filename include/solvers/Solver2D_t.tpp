@@ -1,5 +1,5 @@
 #include "helpers/ProgressBar_t.h"
-#include "helpers/constants.cuh"
+#include "helpers/constants.h"
 #define NOMINMAX
 #include "helpers/termcolor.hpp"
 
@@ -199,7 +199,7 @@ auto SEM::Host::Solvers::Solver2D_t::pre_condition(const SEM::Host::Entities::ND
         if (timestep % pre_condition_interval == 0) {
             if (global_rank == 0) {
                 bar.set_status_text("Adapting");
-                static_cast<hostFloat>(timestep)/static_cast<hostFloat>(n_adaptivity_steps * pre_condition_interval)); // CHECK change if adaptivity is spaced out another way
+                bar.update(static_cast<hostFloat>(timestep)/static_cast<hostFloat>(n_adaptivity_steps * pre_condition_interval)); // CHECK change if adaptivity is spaced out another way
             }
 
             mesh.estimate_error(NDG.polynomials_);
@@ -300,7 +300,7 @@ auto SEM::Host::Solvers::Solver2D_t::pre_condition_iterative(const SEM::Host::En
         if (timestep % pre_condition_interval == 0) {
             if (global_rank == 0) {
                 bar.set_status_text("Adapting");
-                static_cast<hostFloat>(timestep)/static_cast<hostFloat>(n_adaptivity_steps * pre_condition_interval)); // CHECK change if adaptivity is spaced out another way
+                bar.update(static_cast<hostFloat>(timestep)/static_cast<hostFloat>(n_adaptivity_steps * pre_condition_interval)); // CHECK change if adaptivity is spaced out another way
             }
 
             mesh.estimate_error(NDG.polynomials_);

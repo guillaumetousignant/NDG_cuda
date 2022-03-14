@@ -1085,7 +1085,13 @@ auto SEM::Host::Meshes::Mesh2D_t::build_element_to_element(const std::vector<Ele
     return element_to_element;
 }
 
-auto SEM::Host::Meshes::Mesh2D_t::build_faces(size_t n_elements_domain, size_t n_nodes, int initial_N, std::vector<Element2D_t>& elements) -> std::tuple<std::vector<Face2D_t>, std::vector<std::vector<size_t>>, std::vector<std::array<size_t, 4>>> {
+auto SEM::Host::Meshes::Mesh2D_t::build_faces(
+        size_t n_elements_domain, 
+        size_t n_nodes, 
+        int initial_N, 
+        std::vector<Element2D_t>& elements
+        ) -> std::tuple<std::vector<Face2D_t>, std::vector<std::vector<size_t>>, std::vector<std::array<size_t, 4>>> {
+    
     size_t total_edges = 0;
     for (const auto& element: elements) {
         total_edges += element.nodes_.size();
@@ -1643,11 +1649,6 @@ auto SEM::Host::Meshes::Mesh2D_t::adapt(int N_max, const std::vector<std::vector
             }
 
             MPI_Waitall(mpi_adaptivity_split_n_transfers * mpi_interfaces_process_.size(), requests_adaptivity_.data() + mpi_adaptivity_split_n_transfers * mpi_interfaces_process_.size(), statuses_adaptivity_.data() + mpi_adaptivity_split_n_transfers * mpi_interfaces_process_.size());
-        }
-
-        size_t n_splitting_mpi_interface_incoming_elements = 0;
-        for (size_t i = 0; i < mpi_interfaces_destination_.size(); ++i) {
-            n_splitting_mpi_interface_incoming_elements += receiving_interfaces_refine_[i];
         }
 
         if (n_splitting_mpi_interface_incoming_elements == 0) {
@@ -3705,15 +3706,16 @@ auto SEM::Host::Meshes::Mesh2D_t::boundary_conditions(hostFloat t, const std::ve
 
         SEM::Host::Meshes::get_MPI_interfaces(mpi_interfaces_origin_.size(), elements_.data(), mpi_interfaces_origin_.data(), mpi_interfaces_origin_side_.data(), maximum_N_, interfaces_p_.data(), interfaces_u_.data(), interfaces_v_.data());
         
+        constexpr MPI_Datatype float_data_type = (sizeof(deviceFloat) == sizeof(float)) ? MPI_FLOAT : MPI_DOUBLE;
         for (size_t i = 0; i < mpi_interfaces_process_.size(); ++i) {
-            MPI_Isend(host_interfaces_p_.data() + mpi_interfaces_outgoing_offset_[i] * (maximum_N_ + 1), mpi_interfaces_outgoing_size_[i] * (maximum_N_ + 1), float_data_type, mpi_interfaces_process_[i], mpi_boundaries_offset * global_size * global_size + mpi_boundaries_n_transfers * (global_size * global_rank + mpi_interfaces_process_[i]), MPI_COMM_WORLD, &requests_[mpi_boundaries_n_transfers * (mpi_interfaces_process_.size() + i)]);
-            MPI_Irecv(host_receiving_interfaces_p_.data() + mpi_interfaces_incoming_offset_[i] * (maximum_N_ + 1), mpi_interfaces_incoming_size_[i] * (maximum_N_ + 1), float_data_type, mpi_interfaces_process_[i], mpi_boundaries_offset * global_size * global_size + mpi_boundaries_n_transfers * (global_size * mpi_interfaces_process_[i] + global_rank), MPI_COMM_WORLD, &requests_[mpi_boundaries_n_transfers * i]);
+            MPI_Isend(interfaces_p_.data() + mpi_interfaces_outgoing_offset_[i] * (maximum_N_ + 1), mpi_interfaces_outgoing_size_[i] * (maximum_N_ + 1), float_data_type, mpi_interfaces_process_[i], mpi_boundaries_offset * global_size * global_size + mpi_boundaries_n_transfers * (global_size * global_rank + mpi_interfaces_process_[i]), MPI_COMM_WORLD, &requests_[mpi_boundaries_n_transfers * (mpi_interfaces_process_.size() + i)]);
+            MPI_Irecv(receiving_interfaces_p_.data() + mpi_interfaces_incoming_offset_[i] * (maximum_N_ + 1), mpi_interfaces_incoming_size_[i] * (maximum_N_ + 1), float_data_type, mpi_interfaces_process_[i], mpi_boundaries_offset * global_size * global_size + mpi_boundaries_n_transfers * (global_size * mpi_interfaces_process_[i] + global_rank), MPI_COMM_WORLD, &requests_[mpi_boundaries_n_transfers * i]);
 
-            MPI_Isend(host_interfaces_u_.data() + mpi_interfaces_outgoing_offset_[i] * (maximum_N_ + 1), mpi_interfaces_outgoing_size_[i] * (maximum_N_ + 1), float_data_type, mpi_interfaces_process_[i], mpi_boundaries_offset * global_size * global_size + mpi_boundaries_n_transfers * (global_size * global_rank + mpi_interfaces_process_[i]) + 1, MPI_COMM_WORLD, &requests_[mpi_boundaries_n_transfers * (mpi_interfaces_process_.size() + i) + 1]);
-            MPI_Irecv(host_receiving_interfaces_u_.data() + mpi_interfaces_incoming_offset_[i] * (maximum_N_ + 1), mpi_interfaces_incoming_size_[i] * (maximum_N_ + 1), float_data_type, mpi_interfaces_process_[i], mpi_boundaries_offset * global_size * global_size + mpi_boundaries_n_transfers * (global_size * mpi_interfaces_process_[i] + global_rank) + 1, MPI_COMM_WORLD, &requests_[mpi_boundaries_n_transfers * i + 1]);
+            MPI_Isend(interfaces_u_.data() + mpi_interfaces_outgoing_offset_[i] * (maximum_N_ + 1), mpi_interfaces_outgoing_size_[i] * (maximum_N_ + 1), float_data_type, mpi_interfaces_process_[i], mpi_boundaries_offset * global_size * global_size + mpi_boundaries_n_transfers * (global_size * global_rank + mpi_interfaces_process_[i]) + 1, MPI_COMM_WORLD, &requests_[mpi_boundaries_n_transfers * (mpi_interfaces_process_.size() + i) + 1]);
+            MPI_Irecv(receiving_interfaces_u_.data() + mpi_interfaces_incoming_offset_[i] * (maximum_N_ + 1), mpi_interfaces_incoming_size_[i] * (maximum_N_ + 1), float_data_type, mpi_interfaces_process_[i], mpi_boundaries_offset * global_size * global_size + mpi_boundaries_n_transfers * (global_size * mpi_interfaces_process_[i] + global_rank) + 1, MPI_COMM_WORLD, &requests_[mpi_boundaries_n_transfers * i + 1]);
 
-            MPI_Isend(host_interfaces_v_.data() + mpi_interfaces_outgoing_offset_[i] * (maximum_N_ + 1), mpi_interfaces_outgoing_size_[i] * (maximum_N_ + 1), float_data_type, mpi_interfaces_process_[i], mpi_boundaries_offset * global_size * global_size + mpi_boundaries_n_transfers * (global_size * global_rank + mpi_interfaces_process_[i]) + 2, MPI_COMM_WORLD, &requests_[mpi_boundaries_n_transfers * (mpi_interfaces_process_.size() + i) + 2]);
-            MPI_Irecv(host_receiving_interfaces_v_.data() + mpi_interfaces_incoming_offset_[i] * (maximum_N_ + 1), mpi_interfaces_incoming_size_[i] * (maximum_N_ + 1), float_data_type, mpi_interfaces_process_[i], mpi_boundaries_offset * global_size * global_size + mpi_boundaries_n_transfers * (global_size * mpi_interfaces_process_[i] + global_rank) + 2, MPI_COMM_WORLD, &requests_[mpi_boundaries_n_transfers * i + 2]);
+            MPI_Isend(interfaces_v_.data() + mpi_interfaces_outgoing_offset_[i] * (maximum_N_ + 1), mpi_interfaces_outgoing_size_[i] * (maximum_N_ + 1), float_data_type, mpi_interfaces_process_[i], mpi_boundaries_offset * global_size * global_size + mpi_boundaries_n_transfers * (global_size * global_rank + mpi_interfaces_process_[i]) + 2, MPI_COMM_WORLD, &requests_[mpi_boundaries_n_transfers * (mpi_interfaces_process_.size() + i) + 2]);
+            MPI_Irecv(receiving_interfaces_v_.data() + mpi_interfaces_incoming_offset_[i] * (maximum_N_ + 1), mpi_interfaces_incoming_size_[i] * (maximum_N_ + 1), float_data_type, mpi_interfaces_process_[i], mpi_boundaries_offset * global_size * global_size + mpi_boundaries_n_transfers * (global_size * mpi_interfaces_process_[i] + global_rank) + 2, MPI_COMM_WORLD, &requests_[mpi_boundaries_n_transfers * i + 2]);
         }
 
         MPI_Waitall(mpi_boundaries_n_transfers * mpi_interfaces_process_.size(), requests_.data(), statuses_.data());
@@ -4200,7 +4202,7 @@ auto SEM::Host::Meshes::compute_wall_boundaries(size_t n_wall_boundaries, Elemen
                 for (int k = 0; k <= element.N_; ++k) {
                     const Vec2<hostFloat> neighbour_velocity {neighbour.u_extrapolated_[neighbour_side][neighbour.N_ - k], neighbour.v_extrapolated_[neighbour_side][neighbour.N_ - k]};
                     const Vec2<hostFloat> local_velocity {-neighbour_velocity.dot(face.normal_), neighbour_velocity.dot(face.tangent_)};
-                    //local_velocity.x() = (2 * neighbour.p_extrapolated_[neighbour_side][neighbour.N_ - k] + SEM::Device::Constants::c * local_velocity.x()) / SEM::Device::Constants::c;
+                    //local_velocity.x() = (2 * neighbour.p_extrapolated_[neighbour_side][neighbour.N_ - k] + SEM::Host::Constants::c * local_velocity.x()) / SEM::Host::Constants::c;
                 
                     element.p_extrapolated_[0][k] = neighbour.p_extrapolated_[neighbour_side][neighbour.N_ - k];
                     element.u_extrapolated_[0][k] = normal_inv.dot(local_velocity);
@@ -4246,7 +4248,7 @@ auto SEM::Host::Meshes::compute_wall_boundaries(size_t n_wall_boundaries, Elemen
                 for (int k = 0; k <= element.N_; ++k) {
                     const Vec2<hostFloat> neighbour_velocity {element.u_extrapolated_[0][k], element.v_extrapolated_[0][k]};
                     const Vec2<hostFloat> local_velocity {-neighbour_velocity.dot(face.normal_), neighbour_velocity.dot(face.tangent_)};
-                    //local_velocity.x() = (2 * element.p_extrapolated_[0][k] + SEM::Device::Constants::c * local_velocity.x()) / SEM::Device::Constants::c;
+                    //local_velocity.x() = (2 * element.p_extrapolated_[0][k] + SEM::Host::Constants::c * local_velocity.x()) / SEM::Host::Constants::c;
                 
                     //element.p_extrapolated_[0][k] = element.p_extrapolated_[0][k]; // Does nothing
                     element.u_extrapolated_[0][k] = normal_inv.dot(local_velocity);
@@ -4305,7 +4307,7 @@ auto SEM::Host::Meshes::compute_wall_boundaries(size_t n_wall_boundaries, Elemen
             for (int k = 0; k <= element.N_; ++k) {
                 const Vec2<hostFloat> neighbour_velocity {element.u_extrapolated_[0][k], element.v_extrapolated_[0][k]};
                 const Vec2<hostFloat> local_velocity {-neighbour_velocity.dot(face.normal_), neighbour_velocity.dot(face.tangent_)};
-                //local_velocity.x() = (2 * element.p_extrapolated_[0][k] + SEM::Device::Constants::c * local_velocity.x()) / SEM::Device::Constants::c;
+                //local_velocity.x() = (2 * element.p_extrapolated_[0][k] + SEM::Host::Constants::c * local_velocity.x()) / SEM::Host::Constants::c;
             
                 //element.p_extrapolated_[0][k] = element.p_extrapolated_[0][k]; // Does nothing
                 element.u_extrapolated_[0][k] = normal_inv.dot(local_velocity);
@@ -4621,7 +4623,7 @@ auto SEM::Host::Meshes::get_MPI_interfaces_adaptivity(
         int max_split_level, 
         int N_max) -> void {
 
-    for (size_t i = =; i < n_MPI_interface_elements; ++i) {
+    for (size_t i = 0; i < n_MPI_interface_elements; ++i) {
         const size_t element_index = MPI_interfaces_origin[i];
         const Element2D_t& element = elements[element_index];
 
@@ -4988,7 +4990,7 @@ auto SEM::Host::Meshes::hp_adapt(
         size_t n_splitting_elements, 
         Element2D_t* elements, 
         Element2D_t* new_elements, 
-        Face2D_t* faces, 
+        const Face2D_t* faces, 
         Face2D_t* new_faces, 
         int max_split_level, 
         int N_max, 
@@ -5874,7 +5876,7 @@ auto SEM::Host::Meshes::copy_mpi_interfaces_error(
             // Here we check if the new node already exists
             element.additional_nodes_[0] = true;
             elements_creating_node[i] = true;
-            for (auto face_index: element.faces_) {
+            for (auto face_index: element.faces_[0]) {
                 const Face2D_t& face = faces[face_index];
                 if (nodes[face.nodes_[0]].almost_equal(new_node) || nodes[face.nodes_[1]].almost_equal(new_node)) {
                     element.additional_nodes_[0] = false;
@@ -5883,7 +5885,7 @@ auto SEM::Host::Meshes::copy_mpi_interfaces_error(
                 }
             }
             if (element.additional_nodes_[0]) {
-                for (auto face_index: element.faces_[0].size()) {
+                for (auto face_index: element.faces_[0]) {
                     const Face2D_t& face = faces[face_index];
                     if (((nodes[face.nodes_[0]] + nodes[face.nodes_[1]])/2).almost_equal(new_node)) {
                         elements_creating_node[i] = false;
@@ -6626,7 +6628,7 @@ auto SEM::Host::Meshes::split_mpi_incoming_interfaces(
         const size_t* mpi_interfaces_destination, 
         size_t* new_mpi_interfaces_destination, 
         const Face2D_t* faces,
-        const Vec2<hostFloat>* nodes, 
+        Vec2<hostFloat>* nodes, 
         const std::vector<std::vector<hostFloat>>& polynomial_nodes, 
         const int* N, 
         const bool* elements_splitting, 
@@ -7403,12 +7405,13 @@ auto SEM::Host::Meshes::move_boundaries(
 
 auto SEM::Host::Meshes::move_interfaces(
         size_t n_local_interfaces, 
+        size_t offset,
         Element2D_t* elements, 
         Element2D_t* new_elements, 
         const size_t* local_interfaces_origin, 
         const size_t* local_interfaces_destination, 
         size_t* elements_new_indices) -> void {
-    
+
     for (size_t interface_index = 0; interface_index < n_local_interfaces; ++interface_index) {
         const size_t destination_element_index = local_interfaces_destination[interface_index];
         const Element2D_t& source_element = elements[local_interfaces_origin[interface_index]];
@@ -8094,10 +8097,10 @@ auto SEM::Host::Meshes::add_new_received_nodes(
         size_t* received_nodes_indices, 
         const size_t* received_node_received_indices) -> void {
     
-    for (size_t i = 0; i < n_received_nodes; ++i) {
+    for (size_t i = 0; i < missing_nodes.size(); ++i) {
         if (missing_nodes[i]) {
-            size_t new_received_index = n_nodes + received_nodes_block_offsets[block_id];
-            for (size_t j = i - thread_id; j < i; ++j) {
+            size_t new_received_index = n_nodes;
+            for (size_t j = 0; j < i; ++j) {
                 new_received_index += missing_nodes[j];
             }
 
@@ -8126,7 +8129,7 @@ auto SEM::Host::Meshes::find_received_neighbour_nodes(
         size_t* received_neighbour_nodes_indices, 
         size_t* received_neighbour_node_received_indices) -> void {
 
-    for (size_t i = 0; i < missing_neighbour_nodes.size(); ++if) {
+    for (size_t i = 0; i < missing_neighbour_nodes.size(); ++i) {
         const Vec2<hostFloat> received_neighbour_node(received_neighbour_nodes[2 * i], received_neighbour_nodes[2 * i + 1]);
         missing_neighbour_nodes[i] = true;
         missing_received_neighbour_nodes[i] = false;
