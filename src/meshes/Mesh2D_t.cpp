@@ -2957,6 +2957,7 @@ auto SEM::Host::Meshes::Mesh2D_t::load_balance(const std::vector<std::vector<hos
 
 
 
+        // CHECK up to here for CPU version
 
 
 
@@ -2972,7 +2973,6 @@ auto SEM::Host::Meshes::Mesh2D_t::load_balance(const std::vector<std::vector<hos
 
 
 
-        
 
         // Boundary elements
         // Boundary elements to add
