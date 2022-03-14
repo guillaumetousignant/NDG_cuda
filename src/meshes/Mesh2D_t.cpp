@@ -2145,6 +2145,7 @@ auto SEM::Host::Meshes::Mesh2D_t::adapt(
 
     // New arrays
     std::vector<Element2D_t> new_elements(elements_.size() + 3 * n_splitting_elements + n_splitting_wall_boundaries + n_splitting_symmetry_boundaries + n_splitting_inflow_boundaries + n_splitting_outflow_boundaries + n_splitting_interface_elements + n_splitting_mpi_interface_incoming_elements);
+    const size_t old_n_nodes = nodes_.size();
     nodes_.resize(nodes_.size() + n_splitting_elements + n_splitting_faces + n_mpi_interface_new_nodes);
     std::vector<Face2D_t> new_faces(faces_.size() + 4 * n_splitting_elements + n_splitting_faces);
 
@@ -2164,7 +2165,7 @@ auto SEM::Host::Meshes::Mesh2D_t::adapt(
     std::vector<size_t> elements_new_indices(elements_.size());
 
     // Creating new entities and moving ond ones, adjusting as needed
-    SEM::Host::Meshes::hp_adapt(n_elements_, faces_.size(), nodes_.size(), n_splitting_elements, elements_.data(), new_elements.data(), faces_.data(), new_faces.data(), max_split_level_, N_max, nodes_.data(), polynomial_nodes, barycentric_weights, elements_new_indices.data());
+    SEM::Host::Meshes::hp_adapt(n_elements_, faces_.size(), old_n_nodes, n_splitting_elements, elements_.data(), new_elements.data(), faces_.data(), new_faces.data(), max_split_level_, N_max, nodes_.data(), polynomial_nodes, barycentric_weights, elements_new_indices.data());
     
     if (!wall_boundaries_.empty()) {
         SEM::Host::Meshes::split_boundaries(wall_boundaries_.size(), faces_.size(), nodes_.size(), n_splitting_elements, n_elements_ + 3 * n_splitting_elements, elements_.data(), new_elements.data(), wall_boundaries_.data(), new_wall_boundaries.data(), faces_.data(), nodes_.data(), polynomial_nodes, elements_new_indices.data());
@@ -2188,7 +2189,7 @@ auto SEM::Host::Meshes::Mesh2D_t::adapt(
         SEM::Host::Meshes::split_mpi_incoming_interfaces(mpi_interfaces_destination_.size(), faces_.size(), nodes_.size(), n_splitting_elements, n_splitting_faces, n_elements_ + 3 * n_splitting_elements + wall_boundaries_.size() + n_splitting_wall_boundaries + symmetry_boundaries_.size() + n_splitting_symmetry_boundaries + inflow_boundaries_.size() + n_splitting_inflow_boundaries + outflow_boundaries_.size() + n_splitting_outflow_boundaries + interfaces_origin_.size() + n_splitting_interface_elements, elements_.data(), new_elements.data(), mpi_interfaces_destination_.data(), new_mpi_interfaces_destination.data(), faces_.data(), nodes_.data(), polynomial_nodes, receiving_interfaces_N_.data(), receiving_interfaces_refine_.get(), receiving_interfaces_refine_without_splitting_.get(), receiving_interfaces_creating_node_.get(), elements_new_indices.data());
     }
 
-    SEM::Host::Meshes::split_faces(faces_.size(), nodes_.size(), n_splitting_elements, faces_.data(), new_faces.data(), elements_.data(), nodes_.data(), max_split_level_, N_max, elements_new_indices.data());
+    SEM::Host::Meshes::split_faces(faces_.size(), old_n_nodes, n_splitting_elements, faces_.data(), new_faces.data(), elements_.data(), nodes_.data(), max_split_level_, N_max, elements_new_indices.data());
 
     // Swapping out the old arrays for the new ones
     elements_ = std::move(new_elements);
