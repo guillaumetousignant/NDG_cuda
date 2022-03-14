@@ -3987,7 +3987,7 @@ auto SEM::Host::Meshes::Mesh2D_t::project_to_elements(
 
 auto SEM::Host::Meshes::Mesh2D_t::estimate_error(const std::vector<std::vector<hostFloat>>& polynomials) -> void {
     for (size_t element_index = 0; element_index < n_elements_; ++element_index) {
-        elements_[element_index].estimate_error(tolerance_min_, tolerance_max_, polynomials[elements_[element_index].N_]);
+        elements_[element_index].estimate_p_error(tolerance_min_, tolerance_max_, polynomials[elements_[element_index].N_]);
     }
 }
 
