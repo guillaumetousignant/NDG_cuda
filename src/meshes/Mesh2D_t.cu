@@ -29,17 +29,29 @@ using namespace SEM::Device::Hilbert;
 constexpr int CGIO_MAX_NAME_LENGTH = 33; // Includes the null terminator
 constexpr deviceFloat pi = 3.14159265358979323846;
 
-SEM::Device::Meshes::Mesh2D_t::Mesh2D_t(std::filesystem::path filename, int initial_N, int maximum_N, size_t n_interpolation_points, int max_split_level, size_t adaptivity_interval, size_t load_balancing_interval, deviceFloat tolerance_min, deviceFloat tolerance_max, deviceFloat load_balancing_threshold, const device_vector<deviceFloat>& polynomial_nodes, const cudaStream_t &stream) :       
-        initial_N_{initial_N},  
-        maximum_N_{maximum_N},
-        n_interpolation_points_{n_interpolation_points},
-        max_split_level_{max_split_level},
-        adaptivity_interval_{adaptivity_interval},
-        load_balancing_interval_{load_balancing_interval},
-        tolerance_min_{tolerance_min},
-        tolerance_max_{tolerance_max},
-        load_balancing_threshold_{load_balancing_threshold},
-        stream_{stream} {
+SEM::Device::Meshes::Mesh2D_t::Mesh2D_t(
+        std::filesystem::path filename, 
+        int initial_N, 
+        int maximum_N, 
+        size_t n_interpolation_points, 
+        int max_split_level, 
+        size_t adaptivity_interval, 
+        size_t load_balancing_interval, 
+        deviceFloat tolerance_min, 
+        deviceFloat tolerance_max, 
+        deviceFloat load_balancing_threshold, 
+        const device_vector<deviceFloat>& polynomial_nodes, 
+        const cudaStream_t &stream) :       
+            initial_N_{initial_N},  
+            maximum_N_{maximum_N},
+            n_interpolation_points_{n_interpolation_points},
+            max_split_level_{max_split_level},
+            adaptivity_interval_{adaptivity_interval},
+            load_balancing_interval_{load_balancing_interval},
+            tolerance_min_{tolerance_min},
+            tolerance_max_{tolerance_max},
+            load_balancing_threshold_{load_balancing_threshold},
+            stream_{stream} {
 
     std::string extension = filename.extension().string();
     SEM::to_lower(extension);
@@ -1183,7 +1195,10 @@ auto SEM::Device::Meshes::Mesh2D_t::read_cgns(std::filesystem::path filename) ->
     #endif
 }
 
-auto SEM::Device::Meshes::Mesh2D_t::build_node_to_element(size_t n_nodes, const std::vector<Element2D_t>& elements) -> std::vector<std::vector<size_t>> {
+auto SEM::Device::Meshes::Mesh2D_t::build_node_to_element(
+        size_t n_nodes, 
+        const std::vector<Element2D_t>& elements) -> std::vector<std::vector<size_t>> {
+    
     std::vector<std::vector<size_t>> node_to_element(n_nodes);
 
     for (size_t j = 0; j < elements.size(); ++j) {
@@ -1197,7 +1212,11 @@ auto SEM::Device::Meshes::Mesh2D_t::build_node_to_element(size_t n_nodes, const 
     return node_to_element;
 }
 
-auto SEM::Device::Meshes::Mesh2D_t::build_element_to_element(const std::vector<Element2D_t>& elements, const std::vector<std::vector<size_t>>& node_to_element) -> std::vector<std::vector<size_t>> {
+auto SEM::Device::Meshes::Mesh2D_t::build_element_to_element(
+        const std::vector<Element2D_t>& elements, 
+        const std::vector<std::vector<size_t>>& node_to_element
+        ) -> std::vector<std::vector<size_t>> {
+
     std::vector<std::vector<size_t>> element_to_element(elements.size());
 
     for (size_t i = 0; i < elements.size(); ++i) {
@@ -1239,7 +1258,13 @@ auto SEM::Device::Meshes::Mesh2D_t::build_element_to_element(const std::vector<E
     return element_to_element;
 }
 
-auto SEM::Device::Meshes::Mesh2D_t::build_faces(size_t n_elements_domain, size_t n_nodes, int initial_N, std::vector<Element2D_t>& elements) -> std::tuple<std::vector<Face2D_t>, std::vector<std::vector<size_t>>, std::vector<std::array<size_t, 4>>> {
+auto SEM::Device::Meshes::Mesh2D_t::build_faces(
+        size_t n_elements_domain, 
+        size_t n_nodes, 
+        int initial_N, 
+        std::vector<Element2D_t>& elements
+        ) -> std::tuple<std::vector<Face2D_t>, std::vector<std::vector<size_t>>, std::vector<std::array<size_t, 4>>> {
+
     size_t total_edges = 0;
     for (const auto& element: elements) {
         total_edges += element.nodes_.size();
@@ -1320,7 +1345,10 @@ auto SEM::Device::Meshes::Mesh2D_t::initial_conditions(const device_vector<devic
 }
 
 __global__
-auto SEM::Device::Meshes::print_element_faces(size_t n_elements, const Element2D_t* elements) -> void {
+auto SEM::Device::Meshes::print_element_faces(
+        size_t n_elements, 
+        const Element2D_t* elements) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     
@@ -1373,7 +1401,11 @@ auto SEM::Device::Meshes::print_element_faces(size_t n_elements, const Element2D
 }
 
 __global__
-auto SEM::Device::Meshes::print_boundary_element_faces(size_t n_domain_elements, size_t n_total_elements, const Element2D_t* elements) -> void {
+auto SEM::Device::Meshes::print_boundary_element_faces(
+        size_t n_domain_elements, 
+        size_t n_total_elements, 
+        const Element2D_t* elements) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     
@@ -1802,7 +1834,11 @@ auto SEM::Device::Meshes::Mesh2D_t::print_to_file(std::filesystem::path filename
     meshfile.close();
 }
 
-auto SEM::Device::Meshes::Mesh2D_t::write_data(deviceFloat time, const device_vector<deviceFloat>& interpolation_matrices, const SEM::Helpers::DataWriter_t& data_writer) -> void {
+auto SEM::Device::Meshes::Mesh2D_t::write_data(
+        deviceFloat time, 
+        const device_vector<deviceFloat>& interpolation_matrices, 
+        const SEM::Helpers::DataWriter_t& data_writer) -> void {
+
     SEM::Device::Meshes::get_solution<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, n_interpolation_points_, elements_.data(), nodes_.data(), interpolation_matrices.data(), x_output_device_.data(), y_output_device_.data(), p_output_device_.data(), u_output_device_.data(), v_output_device_.data());
     
     x_output_device_.copy_to(x_output_host_, stream_);
@@ -1815,7 +1851,12 @@ auto SEM::Device::Meshes::Mesh2D_t::write_data(deviceFloat time, const device_ve
     data_writer.write_data(n_interpolation_points_, n_elements_, time, x_output_host_, y_output_host_, p_output_host_, u_output_host_, v_output_host_);
 }
 
-auto SEM::Device::Meshes::Mesh2D_t::write_complete_data(deviceFloat time, const device_vector<deviceFloat>& polynomial_nodes, const device_vector<deviceFloat>& interpolation_matrices, const SEM::Helpers::DataWriter_t& data_writer) -> void {
+auto SEM::Device::Meshes::Mesh2D_t::write_complete_data(
+        deviceFloat time, 
+        const device_vector<deviceFloat>& polynomial_nodes, 
+        const device_vector<deviceFloat>& interpolation_matrices, 
+        const SEM::Helpers::DataWriter_t& data_writer) -> void {
+    
     device_vector<deviceFloat> dp_dt(n_elements_ * n_interpolation_points_ * n_interpolation_points_, stream_);
     device_vector<deviceFloat> du_dt(n_elements_ * n_interpolation_points_ * n_interpolation_points_, stream_);
     device_vector<deviceFloat> dv_dt(n_elements_ * n_interpolation_points_ * n_interpolation_points_, stream_);
@@ -1907,7 +1948,11 @@ auto SEM::Device::Meshes::Mesh2D_t::write_complete_data(deviceFloat time, const 
     rotation.clear(stream_);
 }
 
-auto SEM::Device::Meshes::Mesh2D_t::adapt(int N_max, const device_vector<deviceFloat>& polynomial_nodes, const device_vector<deviceFloat>& barycentric_weights) -> void {
+auto SEM::Device::Meshes::Mesh2D_t::adapt(
+        int N_max, 
+        const device_vector<deviceFloat>& polynomial_nodes, 
+        const device_vector<deviceFloat>& barycentric_weights) -> void {
+    
     SEM::Device::Meshes::reduce_refine_2D<elements_blockSize_/2><<<elements_numBlocks_, elements_blockSize_/2, 0, stream_>>>(n_elements_, max_split_level_, elements_.data(), device_refine_array_.data());
     device_refine_array_.copy_to(host_refine_array_, stream_);
     cudaStreamSynchronize(stream_);
@@ -4595,7 +4640,12 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
     global_element_offset_ = global_element_offset_new[global_rank];
 }
 
-auto SEM::Device::Meshes::Mesh2D_t::boundary_conditions(deviceFloat t, const device_vector<deviceFloat>& polynomial_nodes, const device_vector<deviceFloat>& weights, const device_vector<deviceFloat>& barycentric_weights) -> void {
+auto SEM::Device::Meshes::Mesh2D_t::boundary_conditions(
+        deviceFloat t, 
+        const device_vector<deviceFloat>& polynomial_nodes, 
+        const device_vector<deviceFloat>& weights, 
+        const device_vector<deviceFloat>& barycentric_weights) -> void {
+    
     // Boundary conditions
     if (!wall_boundaries_.empty()) {
         SEM::Device::Meshes::compute_wall_boundaries<<<wall_boundaries_numBlocks_, boundaries_blockSize_, 0, stream_>>>(wall_boundaries_.size(), elements_.data(), wall_boundaries_.data(), faces_.data(), polynomial_nodes.data(), weights.data(), barycentric_weights.data());
@@ -4663,15 +4713,25 @@ auto SEM::Device::Meshes::Mesh2D_t::almost_equal(deviceFloat x, deviceFloat y) -
         || std::abs(x-y) < std::numeric_limits<deviceFloat>::min();
 }
 
-auto SEM::Device::Meshes::Mesh2D_t::interpolate_to_boundaries(const device_vector<deviceFloat>& lagrange_interpolant_left, const device_vector<deviceFloat>& lagrange_interpolant_right) -> void {
+auto SEM::Device::Meshes::Mesh2D_t::interpolate_to_boundaries(
+        const device_vector<deviceFloat>& lagrange_interpolant_left, 
+        const device_vector<deviceFloat>& lagrange_interpolant_right) -> void {
+
     SEM::Device::Meshes::interpolate_to_boundaries<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, elements_.data(), lagrange_interpolant_left.data(), lagrange_interpolant_right.data());
 }
 
-auto SEM::Device::Meshes::Mesh2D_t::project_to_faces(const device_vector<deviceFloat>& polynomial_nodes, const device_vector<deviceFloat>& barycentric_weights) -> void {
+auto SEM::Device::Meshes::Mesh2D_t::project_to_faces(
+        const device_vector<deviceFloat>& polynomial_nodes, 
+        const device_vector<deviceFloat>& barycentric_weights) -> void {
+
     SEM::Device::Meshes::project_to_faces<<<faces_numBlocks_, faces_blockSize_, 0, stream_>>>(faces_.size(), faces_.data(), elements_.data(), polynomial_nodes.data(), barycentric_weights.data());
 }
 
-auto SEM::Device::Meshes::Mesh2D_t::project_to_elements(const device_vector<deviceFloat>& polynomial_nodes, const device_vector<deviceFloat>& weights, const device_vector<deviceFloat>& barycentric_weights) -> void {
+auto SEM::Device::Meshes::Mesh2D_t::project_to_elements(
+        const device_vector<deviceFloat>& polynomial_nodes, 
+        const device_vector<deviceFloat>& weights,
+         const device_vector<deviceFloat>& barycentric_weights) -> void {
+
     SEM::Device::Meshes::project_to_elements<<<elements_numBlocks_, elements_blockSize_, 0, stream_>>>(n_elements_, faces_.data(), elements_.data(), polynomial_nodes.data(), weights.data(), barycentric_weights.data());
 }
 
@@ -4690,7 +4750,11 @@ auto SEM::Device::Meshes::allocate_element_storage(size_t n_elements, Element2D_
 }
 
 __global__
-auto SEM::Device::Meshes::allocate_boundary_storage(size_t n_domain_elements, size_t n_total_elements, Element2D_t* elements) -> void {
+auto SEM::Device::Meshes::allocate_boundary_storage(
+        size_t n_domain_elements, 
+        size_t n_total_elements, 
+        Element2D_t* elements) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -4700,7 +4764,12 @@ auto SEM::Device::Meshes::allocate_boundary_storage(size_t n_domain_elements, si
 }
 
 __global__
-auto SEM::Device::Meshes::compute_element_geometry(size_t n_elements, Element2D_t* elements, const Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes) -> void {
+auto SEM::Device::Meshes::compute_element_geometry(
+        size_t n_elements, 
+        Element2D_t* elements, 
+        const Vec2<deviceFloat>* nodes, 
+        const deviceFloat* polynomial_nodes) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -4714,7 +4783,13 @@ auto SEM::Device::Meshes::compute_element_geometry(size_t n_elements, Element2D_
 }
 
 __global__
-auto SEM::Device::Meshes::compute_boundary_geometry(size_t n_domain_elements, size_t n_total_elements, Element2D_t* elements, const Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes) -> void {
+auto SEM::Device::Meshes::compute_boundary_geometry(
+        size_t n_domain_elements, 
+        size_t n_total_elements, 
+        Element2D_t* elements, 
+        const Vec2<deviceFloat>* nodes, 
+        const deviceFloat* polynomial_nodes) -> void {
+    
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -4728,7 +4803,11 @@ auto SEM::Device::Meshes::compute_boundary_geometry(size_t n_domain_elements, si
 }
 
 __global__
-auto SEM::Device::Meshes::compute_element_status(size_t n_elements, Element2D_t* elements, const Vec2<deviceFloat>* nodes) -> void {
+auto SEM::Device::Meshes::compute_element_status(
+        size_t n_elements, 
+        Element2D_t* elements, 
+        const Vec2<deviceFloat>* nodes) -> void {
+    
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     constexpr std::array<deviceFloat, 4> targets {-3*pi/4, -pi/4, pi/4, 3*pi/4};
@@ -4862,7 +4941,11 @@ auto SEM::Device::Meshes::allocate_face_storage(size_t n_faces, Face2D_t* faces)
 }
 
 __global__
-auto SEM::Device::Meshes::fill_element_faces(size_t n_elements, Element2D_t* elements, const std::array<size_t, 4>* element_to_face) -> void {
+auto SEM::Device::Meshes::fill_element_faces(
+        size_t n_elements, 
+        Element2D_t* elements, 
+        const std::array<size_t, 4>* element_to_face) -> void {
+    
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -4874,7 +4957,12 @@ auto SEM::Device::Meshes::fill_element_faces(size_t n_elements, Element2D_t* ele
 }
 
 __global__
-auto SEM::Device::Meshes::fill_boundary_element_faces(size_t n_domain_elements, size_t n_total_elements, Element2D_t* elements, const std::array<size_t, 4>* element_to_face) -> void {
+auto SEM::Device::Meshes::fill_boundary_element_faces(
+        size_t n_domain_elements, 
+        size_t n_total_elements, 
+        Element2D_t* elements, 
+        const std::array<size_t, 4>* element_to_face) -> void {
+    
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -4884,7 +4972,12 @@ auto SEM::Device::Meshes::fill_boundary_element_faces(size_t n_domain_elements, 
 }
 
 __global__
-auto SEM::Device::Meshes::compute_face_geometry(size_t n_faces, Face2D_t* faces, const Element2D_t* elements, const Vec2<deviceFloat>* nodes) -> void {
+auto SEM::Device::Meshes::compute_face_geometry(
+        size_t n_faces, 
+        Face2D_t* faces, 
+        const Element2D_t* elements, 
+        const Vec2<deviceFloat>* nodes) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -4914,7 +5007,12 @@ auto SEM::Device::Meshes::compute_face_geometry(size_t n_faces, Face2D_t* faces,
 }
 
 __global__
-auto SEM::Device::Meshes::initial_conditions_2D(size_t n_elements, Element2D_t* elements, const Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes) -> void {
+auto SEM::Device::Meshes::initial_conditions_2D(
+        size_t n_elements, 
+        Element2D_t* elements, 
+        const Vec2<deviceFloat>* nodes, 
+        const deviceFloat* polynomial_nodes) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -4945,7 +5043,18 @@ auto SEM::Device::Meshes::initial_conditions_2D(size_t n_elements, Element2D_t* 
 }
 
 __global__
-auto SEM::Device::Meshes::get_solution(size_t n_elements, size_t n_interpolation_points, const Element2D_t* elements, const Vec2<deviceFloat>* nodes, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v) -> void {
+auto SEM::Device::Meshes::get_solution(
+        size_t n_elements, 
+        size_t n_interpolation_points, 
+        const Element2D_t* elements, 
+        const Vec2<deviceFloat>* nodes, 
+        const deviceFloat* interpolation_matrices, 
+        deviceFloat* x, 
+        deviceFloat* y, 
+        deviceFloat* p, 
+        deviceFloat* u, 
+        deviceFloat* v) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -4964,7 +5073,38 @@ auto SEM::Device::Meshes::get_solution(size_t n_elements, size_t n_interpolation
 }
 
 __global__
-auto SEM::Device::Meshes::get_complete_solution(size_t n_elements, size_t n_interpolation_points, deviceFloat time, const Element2D_t* elements, const Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* interpolation_matrices, deviceFloat* x, deviceFloat* y, deviceFloat* p, deviceFloat* u, deviceFloat* v, int* N, deviceFloat* dp_dt, deviceFloat* du_dt, deviceFloat* dv_dt, deviceFloat* p_error, deviceFloat* u_error, deviceFloat* v_error, deviceFloat* p_sigma, deviceFloat* u_sigma, deviceFloat* v_sigma, int* refine, int* coarsen, int* split_level, deviceFloat* p_analytical_error, deviceFloat* u_analytical_error, deviceFloat* v_analytical_error, int* status, int* rotation) -> void {
+auto SEM::Device::Meshes::get_complete_solution(
+        size_t n_elements, 
+        size_t n_interpolation_points, 
+        deviceFloat time, 
+        const Element2D_t* elements, 
+        const Vec2<deviceFloat>* nodes, 
+        const deviceFloat* polynomial_nodes, 
+        const deviceFloat* interpolation_matrices, 
+        deviceFloat* x, 
+        deviceFloat* y, 
+        deviceFloat* p, 
+        deviceFloat* u, 
+        deviceFloat* v, 
+        int* N, 
+        deviceFloat* dp_dt, 
+        deviceFloat* du_dt, 
+        deviceFloat* dv_dt, 
+        deviceFloat* p_error, 
+        deviceFloat* u_error, 
+        deviceFloat* v_error, 
+        deviceFloat* p_sigma, 
+        deviceFloat* u_sigma, 
+        deviceFloat* v_sigma, 
+        int* refine, 
+        int* coarsen, 
+        int* split_level, 
+        deviceFloat* p_analytical_error, 
+        deviceFloat* u_analytical_error, 
+        deviceFloat* v_analytical_error, 
+        int* status, 
+        int* rotation) -> void {
+    
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -4995,7 +5135,13 @@ auto SEM::Device::Meshes::get_complete_solution(size_t n_elements, size_t n_inte
 }
 
 __global__
-auto SEM::Device::Meshes::estimate_error(size_t n_elements, Element2D_t* elements, deviceFloat tolerance_min, deviceFloat tolerance_max, const deviceFloat* polynomials) -> void {
+auto SEM::Device::Meshes::estimate_error(
+        size_t n_elements, 
+        Element2D_t* elements, 
+        deviceFloat tolerance_min, 
+        deviceFloat tolerance_max, 
+        const deviceFloat* polynomials) -> void {
+    
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -5005,7 +5151,12 @@ auto SEM::Device::Meshes::estimate_error(size_t n_elements, Element2D_t* element
 }
 
 __global__
-auto SEM::Device::Meshes::interpolate_to_boundaries(size_t n_elements, Element2D_t* elements, const deviceFloat* lagrange_interpolant_minus, const deviceFloat* lagrange_interpolant_plus) -> void {
+auto SEM::Device::Meshes::interpolate_to_boundaries(
+        size_t n_elements, 
+        Element2D_t* elements, 
+        const deviceFloat* lagrange_interpolant_minus, 
+        const deviceFloat* lagrange_interpolant_plus) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -5015,7 +5166,13 @@ auto SEM::Device::Meshes::interpolate_to_boundaries(size_t n_elements, Element2D
 }
 
 __global__
-auto SEM::Device::Meshes::project_to_faces(size_t n_faces, Face2D_t* faces, const Element2D_t* elements, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void {
+auto SEM::Device::Meshes::project_to_faces(
+        size_t n_faces, 
+        Face2D_t* faces, 
+        const Element2D_t* elements, 
+        const deviceFloat* polynomial_nodes, 
+        const deviceFloat* barycentric_weights) -> void {
+    
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -5114,7 +5271,14 @@ auto SEM::Device::Meshes::project_to_faces(size_t n_faces, Face2D_t* faces, cons
 }
 
 __global__
-auto SEM::Device::Meshes::project_to_elements(size_t n_elements, const Face2D_t* faces, Element2D_t* elements, const deviceFloat* polynomial_nodes, const deviceFloat* weights, const deviceFloat* barycentric_weights) -> void {
+auto SEM::Device::Meshes::project_to_elements(
+        size_t n_elements, 
+        const Face2D_t* faces, 
+        Element2D_t* elements, 
+        const deviceFloat* polynomial_nodes, 
+        const deviceFloat* weights,
+         const deviceFloat* barycentric_weights) -> void {
+    
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -5230,7 +5394,15 @@ auto SEM::Device::Meshes::project_to_elements(size_t n_elements, const Face2D_t*
 }
 
 __global__
-auto SEM::Device::Meshes::compute_wall_boundaries(size_t n_wall_boundaries, Element2D_t* elements, const size_t* wall_boundaries, const Face2D_t* faces, const deviceFloat* polynomial_nodes, const deviceFloat* weights, const deviceFloat* barycentric_weights) -> void {
+auto SEM::Device::Meshes::compute_wall_boundaries(
+        size_t n_wall_boundaries, 
+        Element2D_t* elements, 
+        const size_t* wall_boundaries, 
+        const Face2D_t* faces, 
+        const deviceFloat* polynomial_nodes, 
+        const deviceFloat* weights, 
+        const deviceFloat* barycentric_weights) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -5372,7 +5544,15 @@ auto SEM::Device::Meshes::compute_wall_boundaries(size_t n_wall_boundaries, Elem
 }
 
 __global__
-auto SEM::Device::Meshes::compute_symmetry_boundaries(size_t n_symmetry_boundaries, Element2D_t* elements, const size_t* symmetry_boundaries, const Face2D_t* faces, const deviceFloat* polynomial_nodes, const deviceFloat* weights, const deviceFloat* barycentric_weights) -> void {
+auto SEM::Device::Meshes::compute_symmetry_boundaries(
+        size_t n_symmetry_boundaries, 
+        Element2D_t* elements, 
+        const size_t* symmetry_boundaries, 
+        const Face2D_t* faces, 
+        const deviceFloat* polynomial_nodes, 
+        const deviceFloat* weights, 
+        const deviceFloat* barycentric_weights) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -5511,7 +5691,15 @@ auto SEM::Device::Meshes::compute_symmetry_boundaries(size_t n_symmetry_boundari
 }
 
 __global__
-auto SEM::Device::Meshes::compute_inflow_boundaries(size_t n_inflow_boundaries, Element2D_t* elements, const size_t* inflow_boundaries, const Face2D_t* faces, deviceFloat t, const Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes) -> void {
+auto SEM::Device::Meshes::compute_inflow_boundaries(
+        size_t n_inflow_boundaries, 
+        Element2D_t* elements, 
+        const size_t* inflow_boundaries, 
+        const Face2D_t* faces, 
+        deviceFloat t, 
+        const Vec2<deviceFloat>* nodes, 
+        const deviceFloat* polynomial_nodes) -> void {
+    
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -5534,7 +5722,15 @@ auto SEM::Device::Meshes::compute_inflow_boundaries(size_t n_inflow_boundaries, 
 }
 
 __global__
-auto SEM::Device::Meshes::compute_outflow_boundaries(size_t n_outflow_boundaries, Element2D_t* elements, const size_t* outflow_boundaries, const Face2D_t* faces, const deviceFloat* polynomial_nodes, const deviceFloat* weights, const deviceFloat* barycentric_weights) -> void {
+auto SEM::Device::Meshes::compute_outflow_boundaries(
+        size_t n_outflow_boundaries, 
+        Element2D_t* elements, 
+        const size_t* outflow_boundaries, 
+        const Face2D_t* faces, 
+        const deviceFloat* polynomial_nodes, 
+        const deviceFloat* weights, 
+        const deviceFloat* barycentric_weights) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -5647,7 +5843,13 @@ auto SEM::Device::Meshes::compute_outflow_boundaries(size_t n_outflow_boundaries
 }
 
 __global__
-auto SEM::Device::Meshes::local_interfaces(size_t n_local_interfaces, Element2D_t* elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_origin_side, const size_t* local_interfaces_destination) -> void {
+auto SEM::Device::Meshes::local_interfaces(
+        size_t n_local_interfaces, 
+        Element2D_t* elements, 
+        const size_t* local_interfaces_origin, 
+        const size_t* local_interfaces_origin_side, 
+        const size_t* local_interfaces_destination) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -5665,7 +5867,16 @@ auto SEM::Device::Meshes::local_interfaces(size_t n_local_interfaces, Element2D_
 }
 
 __global__
-auto SEM::Device::Meshes::get_MPI_interfaces(size_t n_MPI_interface_elements, const Element2D_t* elements, const size_t* MPI_interfaces_origin, const size_t* MPI_interfaces_origin_side, int maximum_N, deviceFloat* p, deviceFloat* u, deviceFloat* v) -> void {
+auto SEM::Device::Meshes::get_MPI_interfaces(
+        size_t n_MPI_interface_elements, 
+        const Element2D_t* elements, 
+        const size_t* MPI_interfaces_origin,
+        const size_t* MPI_interfaces_origin_side, 
+        int maximum_N, 
+        deviceFloat* p, 
+        deviceFloat* u, 
+        deviceFloat* v) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -5683,7 +5894,12 @@ auto SEM::Device::Meshes::get_MPI_interfaces(size_t n_MPI_interface_elements, co
 }
 
 __global__
-auto SEM::Device::Meshes::get_MPI_interfaces_N(size_t n_MPI_interface_elements, int N_max, const Element2D_t* elements, const size_t* MPI_interfaces_origin, int* N) -> void {
+auto SEM::Device::Meshes::get_MPI_interfaces_N(
+        size_t n_MPI_interface_elements, 
+        int N_max, 
+        const Element2D_t* elements, 
+        const size_t* MPI_interfaces_origin, int* N) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -5695,7 +5911,26 @@ auto SEM::Device::Meshes::get_MPI_interfaces_N(size_t n_MPI_interface_elements, 
 }
 
 __global__
-auto SEM::Device::Meshes::get_MPI_interfaces_adaptivity(size_t n_MPI_interface_elements, size_t n_domain_elements, size_t n_processes, const Element2D_t* elements, const Face2D_t* faces, const Vec2<deviceFloat>* nodes, const size_t* MPI_interfaces_origin, const size_t* MPI_interfaces_origin_side, const size_t* MPI_interfaces_destination, const int* MPI_process, const size_t* origin_process_size, const size_t* destination_process_size, const size_t* destination_process_offset, int* N, bool* elements_splitting, bool* elements_refining_without_splitting, int max_split_level, int N_max) -> void {
+auto SEM::Device::Meshes::get_MPI_interfaces_adaptivity(
+        size_t n_MPI_interface_elements, 
+        size_t n_domain_elements, 
+        size_t n_processes, 
+        const Element2D_t* elements, 
+        const Face2D_t* faces, 
+        const Vec2<deviceFloat>* nodes, 
+        const size_t* MPI_interfaces_origin, 
+        const size_t* MPI_interfaces_origin_side, 
+        const size_t* MPI_interfaces_destination, 
+        const int* MPI_process, 
+        const size_t* origin_process_size, 
+        const size_t* destination_process_size, 
+        const size_t* destination_process_offset, 
+        int* N, 
+        bool* elements_splitting, 
+        bool* elements_refining_without_splitting, 
+        int max_split_level, 
+        int N_max) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -5795,7 +6030,15 @@ auto SEM::Device::Meshes::get_MPI_interfaces_adaptivity(size_t n_MPI_interface_e
 }
 
 __global__
-auto SEM::Device::Meshes::put_MPI_interfaces(size_t n_MPI_interface_elements, Element2D_t* elements, const size_t* MPI_interfaces_destination, int maximum_N, const deviceFloat* p, const deviceFloat* u, const deviceFloat* v) -> void {
+auto SEM::Device::Meshes::put_MPI_interfaces(
+        size_t n_MPI_interface_elements, 
+        Element2D_t* elements, 
+        const size_t* MPI_interfaces_destination, 
+        int maximum_N, 
+        const deviceFloat* p, 
+        const deviceFloat* u, 
+        const deviceFloat* v) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -5812,7 +6055,20 @@ auto SEM::Device::Meshes::put_MPI_interfaces(size_t n_MPI_interface_elements, El
 }
 
 __global__
-auto SEM::Device::Meshes::adjust_MPI_incoming_interfaces(size_t n_MPI_interface_elements, size_t nodes_offset, Element2D_t* elements, const Face2D_t* faces, const size_t* MPI_interfaces_destination, const int* N, Vec2<deviceFloat>* nodes, const bool* refine, const bool* refine_without_splitting, const bool* creating_node, const size_t* creating_node_block_offsets, const deviceFloat* polynomial_nodes) -> void {
+auto SEM::Device::Meshes::adjust_MPI_incoming_interfaces(
+        size_t n_MPI_interface_elements, 
+        size_t nodes_offset, 
+        Element2D_t* elements, 
+        const Face2D_t* faces, 
+        const size_t* MPI_interfaces_destination, 
+        const int* N, 
+        Vec2<deviceFloat>* nodes, 
+        const bool* refine, 
+        const bool* refine_without_splitting, 
+        const bool* creating_node, 
+        const size_t* creating_node_block_offsets, 
+        const deviceFloat* polynomial_nodes) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     const int thread_id = threadIdx.x;
@@ -5927,7 +6183,14 @@ auto SEM::Device::Meshes::adjust_MPI_incoming_interfaces(size_t n_MPI_interface_
 }
 
 __global__
-auto SEM::Device::Meshes::p_adapt(size_t n_elements, Element2D_t* elements, int N_max, const Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights) -> void {
+auto SEM::Device::Meshes::p_adapt(
+        size_t n_elements, 
+        Element2D_t* elements, 
+        int N_max, 
+        const Vec2<deviceFloat>* nodes, 
+        const deviceFloat* polynomial_nodes, 
+        const deviceFloat* barycentric_weights) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     
@@ -5949,7 +6212,16 @@ auto SEM::Device::Meshes::p_adapt(size_t n_elements, Element2D_t* elements, int 
 }
 
 __global__
-auto SEM::Device::Meshes::p_adapt_move(size_t n_elements, Element2D_t* elements, Element2D_t* new_elements, int N_max, const Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights, size_t* elements_new_indices) -> void {
+auto SEM::Device::Meshes::p_adapt_move(
+        size_t n_elements, 
+        Element2D_t* elements, 
+        Element2D_t* new_elements, 
+        int N_max, 
+        const Vec2<deviceFloat>* nodes, 
+        const deviceFloat* polynomial_nodes, 
+        const deviceFloat* barycentric_weights, 
+        size_t* elements_new_indices) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     
@@ -5975,7 +6247,22 @@ auto SEM::Device::Meshes::p_adapt_move(size_t n_elements, Element2D_t* elements,
 }
 
 __global__
-auto SEM::Device::Meshes::p_adapt_split_faces(size_t n_elements, size_t n_faces, size_t n_nodes, size_t n_splitting_elements, Element2D_t* elements, Element2D_t* new_elements, const Face2D_t* faces, int N_max, const Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights, const size_t* faces_block_offsets, int faces_blockSize, size_t* elements_new_indices) -> void {
+auto SEM::Device::Meshes::p_adapt_split_faces(
+        size_t n_elements, 
+        size_t n_faces, 
+        size_t n_nodes, 
+        size_t n_splitting_elements, 
+        Element2D_t* elements, 
+        Element2D_t* new_elements, 
+        const Face2D_t* faces, 
+        int N_max, 
+        const Vec2<deviceFloat>* nodes, 
+        const deviceFloat* polynomial_nodes, 
+        const deviceFloat* barycentric_weights, 
+        const size_t* faces_block_offsets, 
+        int faces_blockSize, 
+        size_t* elements_new_indices) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     
@@ -6078,7 +6365,25 @@ auto SEM::Device::Meshes::p_adapt_split_faces(size_t n_elements, size_t n_faces,
 }
 
 __global__
-auto SEM::Device::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_nodes, size_t n_splitting_elements, Element2D_t* elements, Element2D_t* new_elements, const Face2D_t* faces, Face2D_t* new_faces, const size_t* block_offsets, const size_t* faces_block_offsets, int max_split_level, int N_max, Vec2<deviceFloat>* nodes, const deviceFloat* polynomial_nodes, const deviceFloat* barycentric_weights, int faces_blockSize, size_t* elements_new_indices) -> void {
+auto SEM::Device::Meshes::hp_adapt(
+        size_t n_elements, 
+        size_t n_faces, 
+        size_t n_nodes, 
+        size_t n_splitting_elements, 
+        Element2D_t* elements, 
+        Element2D_t* new_elements, 
+        const Face2D_t* faces, 
+        Face2D_t* new_faces, 
+        const size_t* block_offsets, 
+        const size_t* faces_block_offsets, 
+        int max_split_level, 
+        int N_max, 
+        Vec2<deviceFloat>* nodes, 
+        const deviceFloat* polynomial_nodes, 
+        const deviceFloat* barycentric_weights, 
+        int faces_blockSize, 
+        size_t* elements_new_indices) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     const int thread_id = threadIdx.x;
@@ -6567,7 +6872,19 @@ auto SEM::Device::Meshes::hp_adapt(size_t n_elements, size_t n_faces, size_t n_n
 }
 
 __global__
-auto SEM::Device::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_splitting_elements, Face2D_t* faces, Face2D_t* new_faces, const Element2D_t* elements, Vec2<deviceFloat>* nodes, const size_t* faces_block_offsets, int max_split_level, int N_max, const size_t* elements_new_indices) -> void {
+auto SEM::Device::Meshes::split_faces(
+        size_t n_faces, 
+        size_t n_nodes, 
+        size_t n_splitting_elements, 
+        Face2D_t* faces, 
+        Face2D_t* new_faces, 
+        const Element2D_t* elements, 
+        Vec2<deviceFloat>* nodes, 
+        const size_t* faces_block_offsets, 
+        int max_split_level, 
+        int N_max, 
+        const size_t* elements_new_indices) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     const int thread_id = threadIdx.x;
@@ -6892,7 +7209,13 @@ auto SEM::Device::Meshes::split_faces(size_t n_faces, size_t n_nodes, size_t n_s
 }
 
 __global__
-auto SEM::Device::Meshes::find_nodes(size_t n_elements, Element2D_t* elements, const Face2D_t* faces, const Vec2<deviceFloat>* nodes, int max_split_level) -> void {
+auto SEM::Device::Meshes::find_nodes(
+        size_t n_elements, 
+        Element2D_t* elements, 
+        const Face2D_t* faces, 
+        const Vec2<deviceFloat>* nodes, 
+        int max_split_level) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     
@@ -6919,7 +7242,10 @@ auto SEM::Device::Meshes::find_nodes(size_t n_elements, Element2D_t* elements, c
 }
 
 __global__
-auto SEM::Device::Meshes::no_new_nodes(size_t n_elements, Element2D_t* elements) -> void {
+auto SEM::Device::Meshes::no_new_nodes(
+        size_t n_elements, 
+        Element2D_t* elements) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     
@@ -6929,7 +7255,12 @@ auto SEM::Device::Meshes::no_new_nodes(size_t n_elements, Element2D_t* elements)
 }
 
 __global__
-auto SEM::Device::Meshes::copy_boundaries_error(size_t n_boundaries, Element2D_t* elements, const size_t* boundaries, const Face2D_t* faces) -> void {
+auto SEM::Device::Meshes::copy_boundaries_error(
+        size_t n_boundaries, 
+        Element2D_t* elements, 
+        const size_t* boundaries, 
+        const Face2D_t* faces) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -6957,7 +7288,13 @@ auto SEM::Device::Meshes::copy_boundaries_error(size_t n_boundaries, Element2D_t
 }
 
 __global__
-auto SEM::Device::Meshes::copy_interfaces_error(size_t n_local_interfaces, Element2D_t* elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_origin_side, const size_t* local_interfaces_destination) -> void {
+auto SEM::Device::Meshes::copy_interfaces_error(
+        size_t n_local_interfaces, 
+        Element2D_t* elements, 
+        const size_t* local_interfaces_origin, 
+        const size_t* local_interfaces_origin_side,
+        const size_t* local_interfaces_destination) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -6979,7 +7316,17 @@ auto SEM::Device::Meshes::copy_interfaces_error(size_t n_local_interfaces, Eleme
 }
 
 __global__
-auto SEM::Device::Meshes::copy_mpi_interfaces_error(size_t n_MPI_interface_elements, Element2D_t* elements, const Face2D_t* faces, const Vec2<deviceFloat>* nodes, const size_t* MPI_interfaces_destination, const int* N, const bool* elements_splitting, bool* elements_refining_without_splitting, bool* elements_creating_node) -> void {
+auto SEM::Device::Meshes::copy_mpi_interfaces_error(
+        size_t n_MPI_interface_elements, 
+        Element2D_t* elements, 
+        const Face2D_t* faces, 
+        const Vec2<deviceFloat>* nodes, 
+        const size_t* MPI_interfaces_destination, 
+        const int* N, 
+        const bool* elements_splitting, 
+        bool* elements_refining_without_splitting, 
+        bool* elements_creating_node) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -7098,7 +7445,24 @@ auto SEM::Device::Meshes::copy_mpi_interfaces_error(size_t n_MPI_interface_eleme
 
 
 __global__
-auto SEM::Device::Meshes::split_boundaries(size_t n_boundaries, size_t n_faces, size_t n_nodes, size_t n_splitting_elements, size_t offset, Element2D_t* elements, Element2D_t* new_elements, const size_t* boundaries, size_t* new_boundaries, const Face2D_t* faces, const Vec2<deviceFloat>* nodes, const size_t* faces_block_offsets, const size_t* boundary_block_offsets, const deviceFloat* polynomial_nodes, int faces_blockSize, size_t* elements_new_indices) -> void {
+auto SEM::Device::Meshes::split_boundaries(
+        size_t n_boundaries, 
+        size_t n_faces, 
+        size_t n_nodes, 
+        size_t n_splitting_elements, 
+        size_t offset, 
+        Element2D_t* elements, 
+        Element2D_t* new_elements, 
+        const size_t* boundaries, 
+        size_t* new_boundaries, 
+        const Face2D_t* faces, 
+        const Vec2<deviceFloat>* nodes, 
+        const size_t* faces_block_offsets, 
+        const size_t* boundary_block_offsets, 
+        const deviceFloat* polynomial_nodes, 
+        int faces_blockSize, 
+        size_t* elements_new_indices) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     const int thread_id = threadIdx.x;
@@ -7206,7 +7570,32 @@ auto SEM::Device::Meshes::split_boundaries(size_t n_boundaries, size_t n_faces, 
 }
 
 __global__
-auto SEM::Device::Meshes::split_interfaces(size_t n_local_interfaces, size_t n_faces, size_t n_nodes, size_t n_splitting_elements, size_t offset, Element2D_t* elements, Element2D_t* new_elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_origin_side, const size_t* local_interfaces_destination, size_t* new_local_interfaces_origin, size_t* new_local_interfaces_origin_side, size_t* new_local_interfaces_destination, const Face2D_t* faces, const Vec2<deviceFloat>* nodes, const size_t* block_offsets, const size_t* faces_block_offsets, const size_t* interface_block_offsets, int max_split_level, int N_max, const deviceFloat* polynomial_nodes, int elements_blockSize, int faces_blockSize, size_t* elements_new_indices) -> void {
+auto SEM::Device::Meshes::split_interfaces(
+        size_t n_local_interfaces, 
+        size_t n_faces, 
+        size_t n_nodes, 
+        size_t n_splitting_elements, 
+        size_t offset, 
+        Element2D_t* elements, 
+        Element2D_t* new_elements, 
+        const size_t* local_interfaces_origin, 
+        const size_t* local_interfaces_origin_side, 
+        const size_t* local_interfaces_destination, 
+        size_t* new_local_interfaces_origin, 
+        size_t* new_local_interfaces_origin_side, 
+        size_t* new_local_interfaces_destination, 
+        const Face2D_t* faces, 
+        const Vec2<deviceFloat>* nodes, 
+        const size_t* block_offsets, 
+        const size_t* faces_block_offsets, 
+        const size_t* interface_block_offsets, 
+        int max_split_level, 
+        int N_max, 
+        const deviceFloat* polynomial_nodes, 
+        int elements_blockSize, 
+        int faces_blockSize, 
+        size_t* elements_new_indices) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     const int thread_id = threadIdx.x;
@@ -7624,7 +8013,29 @@ auto SEM::Device::Meshes::split_interfaces(size_t n_local_interfaces, size_t n_f
 }
 
 __global__
-auto SEM::Device::Meshes::split_mpi_outgoing_interfaces(size_t n_MPI_interface_elements, size_t n_domain_elements, size_t n_processes, const Element2D_t* elements, const Face2D_t* faces, const Vec2<deviceFloat>* nodes, const size_t* mpi_interfaces_origin, const size_t* mpi_interfaces_origin_side, const size_t* MPI_interfaces_destination, size_t* new_mpi_interfaces_origin, size_t* new_mpi_interfaces_origin_side, const int* MPI_process, const size_t* origin_process_size, const size_t* destination_process_size, const size_t* destination_process_offset, const bool* elements_splitting, const bool* elements_refining_without_splitting, const size_t* mpi_interface_block_offsets, int max_split_level, const size_t* block_offsets, int elements_blockSize) -> void {
+auto SEM::Device::Meshes::split_mpi_outgoing_interfaces(
+        size_t n_MPI_interface_elements, 
+        size_t n_domain_elements, 
+        size_t n_processes, 
+        const Element2D_t* elements, 
+        const Face2D_t* faces, 
+        const Vec2<deviceFloat>* nodes, 
+        const size_t* mpi_interfaces_origin, 
+        const size_t* mpi_interfaces_origin_side, 
+        const size_t* MPI_interfaces_destination, 
+        size_t* new_mpi_interfaces_origin, 
+        size_t* new_mpi_interfaces_origin_side, 
+        const int* MPI_process, 
+        const size_t* origin_process_size, 
+        const size_t* destination_process_size, 
+        const size_t* destination_process_offset, 
+        const bool* elements_splitting, 
+        const bool* elements_refining_without_splitting, 
+        const size_t* mpi_interface_block_offsets, 
+        int max_split_level, 
+        const size_t* block_offsets, 
+        int elements_blockSize) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     const int thread_id = threadIdx.x;
@@ -7759,7 +8170,30 @@ auto SEM::Device::Meshes::split_mpi_outgoing_interfaces(size_t n_MPI_interface_e
 }
 
 __global__
-auto SEM::Device::Meshes::split_mpi_incoming_interfaces(size_t n_MPI_interface_elements, size_t n_faces, size_t n_nodes, size_t n_splitting_elements, size_t n_splitting_faces, size_t offset, Element2D_t* elements, Element2D_t* new_elements, const size_t* mpi_interfaces_destination, size_t* new_mpi_interfaces_destination, const Face2D_t* faces, Vec2<deviceFloat>* nodes, const size_t* faces_block_offsets, const size_t* mpi_interface_block_offsets, const deviceFloat* polynomial_nodes, int faces_blockSize, const int* N, const bool* elements_splitting, const bool* elements_refining_without_splitting, const bool* elements_creating_node, const size_t* creating_node_block_offsets, size_t* elements_new_indices) -> void {
+auto SEM::Device::Meshes::split_mpi_incoming_interfaces(
+        size_t n_MPI_interface_elements, 
+        size_t n_faces, 
+        size_t n_nodes, 
+        size_t n_splitting_elements, 
+        size_t n_splitting_faces, 
+        size_t offset, 
+        Element2D_t* elements, 
+        Element2D_t* new_elements, 
+        const size_t* mpi_interfaces_destination, 
+        size_t* new_mpi_interfaces_destination, 
+        const Face2D_t* faces, 
+        Vec2<deviceFloat>* nodes, 
+        const size_t* faces_block_offsets,
+        const size_t* mpi_interface_block_offsets, 
+        const deviceFloat* polynomial_nodes, 
+        int faces_blockSize, 
+        const int* N, 
+        const bool* elements_splitting, 
+        const bool* elements_refining_without_splitting, 
+        const bool* elements_creating_node, 
+        const size_t* creating_node_block_offsets, 
+        size_t* elements_new_indices) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     const int thread_id = threadIdx.x;
@@ -8345,7 +8779,12 @@ auto SEM::Device::Meshes::split_mpi_incoming_interfaces(size_t n_MPI_interface_e
 }
 
 __global__
-auto SEM::Device::Meshes::adjust_boundaries(size_t n_boundaries, Element2D_t* elements, const size_t* boundaries, const Face2D_t* faces) -> void {
+auto SEM::Device::Meshes::adjust_boundaries(
+        size_t n_boundaries, 
+        Element2D_t* elements, 
+        const size_t* boundaries, 
+        const Face2D_t* faces) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -8368,7 +8807,12 @@ auto SEM::Device::Meshes::adjust_boundaries(size_t n_boundaries, Element2D_t* el
 }
 
 __global__
-auto SEM::Device::Meshes::adjust_interfaces(size_t n_local_interfaces, Element2D_t* elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_destination) -> void {
+auto SEM::Device::Meshes::adjust_interfaces(
+        size_t n_local_interfaces, 
+        Element2D_t* elements, 
+        const size_t* local_interfaces_origin, 
+        const size_t* local_interfaces_destination) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -8383,7 +8827,11 @@ auto SEM::Device::Meshes::adjust_interfaces(size_t n_local_interfaces, Element2D
 }
 
 __global__
-auto SEM::Device::Meshes::adjust_faces(size_t n_faces, Face2D_t* faces, const Element2D_t* elements) -> void {
+auto SEM::Device::Meshes::adjust_faces(
+        size_t n_faces, 
+        Face2D_t* faces, 
+        const Element2D_t* elements) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -8401,7 +8849,15 @@ auto SEM::Device::Meshes::adjust_faces(size_t n_faces, Face2D_t* faces, const El
 }
 
 __global__
-auto SEM::Device::Meshes::adjust_faces_neighbours(size_t n_faces, Face2D_t* faces, const Element2D_t* elements, const Vec2<deviceFloat>* nodes, int max_split_level, int N_max, const size_t* elements_new_indices) -> void {
+auto SEM::Device::Meshes::adjust_faces_neighbours(
+        size_t n_faces, 
+        Face2D_t* faces, 
+        const Element2D_t* elements, 
+        const Vec2<deviceFloat>* nodes, 
+        int max_split_level, 
+        int N_max, 
+        const size_t* elements_new_indices) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -8536,7 +8992,15 @@ auto SEM::Device::Meshes::adjust_faces_neighbours(size_t n_faces, Face2D_t* face
 }
 
 __global__
-auto SEM::Device::Meshes::move_boundaries(size_t n_boundaries, size_t offset, Element2D_t* elements, Element2D_t* new_elements, size_t* boundaries, const Face2D_t* faces, size_t* elements_new_indices) -> void {
+auto SEM::Device::Meshes::move_boundaries(
+        size_t n_boundaries, 
+        size_t offset, 
+        Element2D_t* elements, 
+        Element2D_t* new_elements, 
+        size_t* boundaries, 
+        const Face2D_t* faces, 
+        size_t* elements_new_indices) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -8566,7 +9030,15 @@ auto SEM::Device::Meshes::move_boundaries(size_t n_boundaries, size_t offset, El
 }
 
 __global__
-auto SEM::Device::Meshes::move_interfaces(size_t n_local_interfaces, size_t offset, Element2D_t* elements, Element2D_t* new_elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_destination, size_t* elements_new_indices) -> void {
+auto SEM::Device::Meshes::move_interfaces(
+        size_t n_local_interfaces, 
+        size_t offset, 
+        Element2D_t* elements, 
+        Element2D_t* new_elements, 
+        const size_t* local_interfaces_origin, 
+        const size_t* local_interfaces_destination, 
+        size_t* elements_new_indices) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -8587,7 +9059,15 @@ auto SEM::Device::Meshes::move_interfaces(size_t n_local_interfaces, size_t offs
 }
 
 __global__
-auto SEM::Device::Meshes::get_transfer_solution(size_t n_elements, const Element2D_t* elements, int maximum_N, const Vec2<deviceFloat>* nodes, deviceFloat* solution, size_t* n_neighbours, deviceFloat* element_nodes) -> void {
+auto SEM::Device::Meshes::get_transfer_solution(
+        size_t n_elements, 
+        const Element2D_t* elements, 
+        int maximum_N, 
+        const Vec2<deviceFloat>* nodes, 
+        deviceFloat* solution, 
+        size_t* n_neighbours, 
+        deviceFloat* element_nodes) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -9042,7 +9522,16 @@ auto SEM::Device::Meshes::get_neighbours(size_t n_elements_send,
 }
 
 __global__
-auto SEM::Device::Meshes::move_elements(size_t n_elements_move, size_t n_elements_send_left, size_t n_elements_recv_left, Element2D_t* elements, Element2D_t* new_elements, const bool* faces_to_delete, const size_t* faces_to_delete_block_offsets, int faces_blockSize) -> void {
+auto SEM::Device::Meshes::move_elements(
+        size_t n_elements_move, 
+        size_t n_elements_send_left, 
+        size_t n_elements_recv_left, 
+        Element2D_t* elements, 
+        Element2D_t* new_elements, 
+        const bool* faces_to_delete, 
+        const size_t* faces_to_delete_block_offsets, 
+        int faces_blockSize) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -9077,7 +9566,17 @@ auto SEM::Device::Meshes::move_elements(size_t n_elements_move, size_t n_element
 }
 
 __global__
-auto SEM::Device::Meshes::get_interface_n_processes(size_t n_mpi_interfaces, size_t n_mpi_interfaces_incoming, const Element2D_t* elements, const Face2D_t* faces, const size_t* mpi_interfaces_origin, const size_t* mpi_interfaces_origin_side, const size_t* mpi_interfaces_destination, const int* mpi_interfaces_new_process_incoming, size_t* n_processes) -> void {
+auto SEM::Device::Meshes::get_interface_n_processes(
+        size_t n_mpi_interfaces, 
+        size_t n_mpi_interfaces_incoming, 
+        const Element2D_t* elements, 
+        const Face2D_t* faces, 
+        const size_t* mpi_interfaces_origin,
+        const size_t* mpi_interfaces_origin_side, 
+        const size_t* mpi_interfaces_destination, 
+        const int* mpi_interfaces_new_process_incoming, 
+        size_t* n_processes) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -9156,7 +9655,18 @@ auto SEM::Device::Meshes::get_interface_n_processes(size_t n_mpi_interfaces, siz
 }
 
 __global__
-auto SEM::Device::Meshes::get_interface_processes(size_t n_mpi_interfaces, size_t n_mpi_interfaces_incoming, const Element2D_t* elements, const Face2D_t* faces, const size_t* mpi_interfaces_origin, const size_t* mpi_interfaces_origin_side, const size_t* mpi_interfaces_destination, const int* mpi_interfaces_new_process_incoming, const size_t* process_offsets, int* processes) -> void {
+auto SEM::Device::Meshes::get_interface_processes(
+        size_t n_mpi_interfaces, 
+        size_t n_mpi_interfaces_incoming, 
+        const Element2D_t* elements, 
+        const Face2D_t* faces, 
+        const size_t* mpi_interfaces_origin, 
+        const size_t* mpi_interfaces_origin_side, 
+        const size_t* mpi_interfaces_destination, 
+        const int* mpi_interfaces_new_process_incoming, 
+        const size_t* process_offsets, 
+        int* processes) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -9237,7 +9747,16 @@ auto SEM::Device::Meshes::get_interface_processes(size_t n_mpi_interfaces, size_
 }
 
 __global__
-auto SEM::Device::Meshes::find_received_nodes(size_t n_received_nodes, size_t n_nodes, const Vec2<deviceFloat>* nodes, const deviceFloat* received_nodes, bool* missing_nodes, bool* missing_received_nodes, size_t* received_nodes_indices, size_t* received_node_received_indices) -> void {
+auto SEM::Device::Meshes::find_received_nodes(
+        size_t n_received_nodes, 
+        size_t n_nodes, 
+        const Vec2<deviceFloat>* nodes, 
+        const deviceFloat* received_nodes, 
+        bool* missing_nodes, 
+        bool* missing_received_nodes, 
+        size_t* received_nodes_indices, 
+        size_t* received_node_received_indices) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -9268,7 +9787,17 @@ auto SEM::Device::Meshes::find_received_nodes(size_t n_received_nodes, size_t n_
 }
 
 __global__
-auto SEM::Device::Meshes::add_new_received_nodes(size_t n_received_nodes, size_t n_nodes, Vec2<deviceFloat>* nodes, const deviceFloat* received_nodes, const bool* missing_nodes, const bool* missing_received_nodes, size_t* received_nodes_indices, const size_t* received_node_received_indices, const size_t* received_nodes_block_offsets) -> void {
+auto SEM::Device::Meshes::add_new_received_nodes(
+        size_t n_received_nodes, 
+        size_t n_nodes, 
+        Vec2<deviceFloat>* nodes, 
+        const deviceFloat* received_nodes, 
+        const bool* missing_nodes, 
+        const bool* missing_received_nodes, 
+        size_t* received_nodes_indices, 
+        const size_t* received_node_received_indices, 
+        const size_t* received_nodes_block_offsets) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     const int thread_id = threadIdx.x;
@@ -9299,7 +9828,18 @@ auto SEM::Device::Meshes::add_new_received_nodes(size_t n_received_nodes, size_t
 }
 
 __global__
-auto SEM::Device::Meshes::find_received_neighbour_nodes(size_t n_received_neighbour_nodes, size_t n_received_nodes, size_t n_nodes, const Vec2<deviceFloat>* nodes, const deviceFloat* received_neighbour_nodes, const deviceFloat* received_nodes, bool* missing_neighbour_nodes, bool* missing_received_neighbour_nodes, size_t* received_neighbour_nodes_indices, size_t* received_neighbour_node_received_indices) -> void {
+auto SEM::Device::Meshes::find_received_neighbour_nodes(
+        size_t n_received_neighbour_nodes, 
+        size_t n_received_nodes, 
+        size_t n_nodes, 
+        const Vec2<deviceFloat>* nodes, 
+        const deviceFloat* received_neighbour_nodes, 
+        const deviceFloat* received_nodes, 
+        bool* missing_neighbour_nodes, 
+        bool* missing_received_neighbour_nodes, 
+        size_t* received_neighbour_nodes_indices, 
+        size_t* received_neighbour_node_received_indices) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -9341,7 +9881,20 @@ auto SEM::Device::Meshes::find_received_neighbour_nodes(size_t n_received_neighb
 }
 
 __global__
-auto SEM::Device::Meshes::add_new_received_neighbour_nodes(size_t n_received_neighbour_nodes, size_t n_received_nodes, size_t n_nodes, Vec2<deviceFloat>* nodes, const deviceFloat* received_neighbour_nodes, const bool* missing_neighbour_nodes, const bool* missing_nodes, const bool* missing_received_neighbour_nodes, size_t* received_neighbour_nodes_indices, const size_t* received_neighbour_node_received_indices, const size_t* received_neighbour_nodes_block_offsets, const size_t* received_nodes_block_offsets) -> void {
+auto SEM::Device::Meshes::add_new_received_neighbour_nodes(
+        size_t n_received_neighbour_nodes, 
+        size_t n_received_nodes, 
+        size_t n_nodes, 
+        Vec2<deviceFloat>* nodes, 
+        const deviceFloat* received_neighbour_nodes, 
+        const bool* missing_neighbour_nodes, 
+        const bool* missing_nodes, 
+        const bool* missing_received_neighbour_nodes, 
+        size_t* received_neighbour_nodes_indices, 
+        const size_t* received_neighbour_node_received_indices, 
+        const size_t* received_neighbour_nodes_block_offsets, 
+        const size_t* received_nodes_block_offsets) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     const int thread_id = threadIdx.x;
@@ -9385,7 +9938,14 @@ auto SEM::Device::Meshes::add_new_received_neighbour_nodes(size_t n_received_nei
 }
 
 __global__
-auto SEM::Device::Meshes::find_faces_to_delete(size_t n_faces, size_t n_domain_elements, size_t n_elements_send_left, size_t n_elements_send_right, const Face2D_t* faces, bool* faces_to_delete) -> void {
+auto SEM::Device::Meshes::find_faces_to_delete(
+        size_t n_faces, 
+        size_t n_domain_elements, 
+        size_t n_elements_send_left, 
+        size_t n_elements_send_right, 
+        const Face2D_t* faces, 
+        bool* faces_to_delete) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -9405,7 +9965,10 @@ auto SEM::Device::Meshes::find_faces_to_delete(size_t n_faces, size_t n_domain_e
 }
 
 __global__
-auto SEM::Device::Meshes::no_faces_to_delete(size_t n_faces, bool* faces_to_delete) -> void {
+auto SEM::Device::Meshes::no_faces_to_delete(
+        size_t n_faces, 
+        bool* faces_to_delete) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -9415,7 +9978,24 @@ auto SEM::Device::Meshes::no_faces_to_delete(size_t n_faces, bool* faces_to_dele
 }
 
 __global__
-auto SEM::Device::Meshes::move_faces(size_t n_faces, size_t n_domain_elements, size_t new_n_domain_elements, size_t n_elements_recv_left, size_t n_elements_recv_right, size_t n_mpi_destinations, int rank, Face2D_t* faces, Face2D_t* new_faces, const bool* boundary_elements_to_delete, const size_t* boundary_elements_to_delete_block_offsets, int boundary_blockSize, const size_t* mpi_interfaces_destination, const int* mpi_interfaces_new_process_incoming, const size_t* mpi_interfaces_new_local_index_incoming, const size_t* mpi_interfaces_new_side_incoming) -> void {
+auto SEM::Device::Meshes::move_faces(
+        size_t n_faces, 
+        size_t n_domain_elements, 
+        size_t new_n_domain_elements, 
+        size_t n_elements_recv_left, 
+        size_t n_elements_recv_right, 
+        size_t n_mpi_destinations, 
+        int rank, 
+        Face2D_t* faces, 
+        Face2D_t* new_faces, 
+        const bool* boundary_elements_to_delete, 
+        const size_t* boundary_elements_to_delete_block_offsets, 
+        int boundary_blockSize, 
+        const size_t* mpi_interfaces_destination, 
+        const int* mpi_interfaces_new_process_incoming, 
+        const size_t* mpi_interfaces_new_local_index_incoming, 
+        const size_t* mpi_interfaces_new_side_incoming) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -9659,7 +10239,16 @@ auto SEM::Device::Meshes::move_required_faces(
 }
 
 __global__
-auto SEM::Device::Meshes::find_boundary_elements_to_delete(size_t n_boundary_elements, size_t n_domain_elements, size_t n_elements_send_left, size_t n_elements_send_right, const Element2D_t* elements, const Face2D_t* faces, bool* boundary_elements_to_delete, const bool* faces_to_delete) -> void {
+auto SEM::Device::Meshes::find_boundary_elements_to_delete(
+        size_t n_boundary_elements, 
+        size_t n_domain_elements, 
+        size_t n_elements_send_left, 
+        size_t n_elements_send_right, 
+        const Element2D_t* elements, 
+        const Face2D_t* faces, 
+        bool* boundary_elements_to_delete, 
+        const bool* faces_to_delete) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -9686,7 +10275,14 @@ auto SEM::Device::Meshes::find_boundary_elements_to_delete(size_t n_boundary_ele
 }
 
 __global__
-auto SEM::Device::Meshes::find_mpi_interface_elements_to_delete(size_t n_mpi_interface_elements, size_t n_domain_elements, int rank, const size_t* mpi_interfaces_destination, const int* mpi_interfaces_new_process_incoming, bool* boundary_elements_to_delete) -> void {
+auto SEM::Device::Meshes::find_mpi_interface_elements_to_delete(
+        size_t n_mpi_interface_elements, 
+        size_t n_domain_elements, 
+        int rank, 
+        const size_t* mpi_interfaces_destination, 
+        const int* mpi_interfaces_new_process_incoming, 
+        bool* boundary_elements_to_delete) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -9698,7 +10294,20 @@ auto SEM::Device::Meshes::find_mpi_interface_elements_to_delete(size_t n_mpi_int
 }
 
 __global__
-auto SEM::Device::Meshes::find_mpi_interface_elements_to_keep(size_t n_mpi_destinations, size_t n_neighbours, int rank, size_t n_domain_elements, const int* neighbour_procs, const size_t* neighbour_indices, const size_t* neighbour_sides, const int* mpi_destination_procs, const size_t* mpi_destination_local_indices, const size_t* mpi_destination_sides, const size_t* mpi_interfaces_destination, bool* boundary_elements_to_delete) -> void {
+auto SEM::Device::Meshes::find_mpi_interface_elements_to_keep(
+        size_t n_mpi_destinations, 
+        size_t n_neighbours, 
+        int rank, 
+        size_t n_domain_elements, 
+        const int* neighbour_procs, 
+        const size_t* neighbour_indices, 
+        const size_t* neighbour_sides,
+        const int* mpi_destination_procs, 
+        const size_t* mpi_destination_local_indices, 
+        const size_t* mpi_destination_sides, 
+        const size_t* mpi_interfaces_destination, 
+        bool* boundary_elements_to_delete) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -9725,7 +10334,18 @@ auto SEM::Device::Meshes::find_mpi_interface_elements_to_keep(size_t n_mpi_desti
 }
 
 __global__
-auto SEM::Device::Meshes::move_boundary_elements(size_t n_boundary_elements, size_t n_domain_elements, size_t new_n_domain_elements, Element2D_t* elements, Element2D_t* new_elements, const bool* boundary_elements_to_delete, const size_t* boundary_elements_to_delete_block_offsets, const bool* faces_to_delete, const size_t* faces_to_delete_block_offsets, int faces_blockSize) -> void {
+auto SEM::Device::Meshes::move_boundary_elements(
+        size_t n_boundary_elements, 
+        size_t n_domain_elements, 
+        size_t new_n_domain_elements, 
+        Element2D_t* elements, 
+        Element2D_t* new_elements, 
+        const bool* boundary_elements_to_delete, 
+        const size_t* boundary_elements_to_delete_block_offsets, 
+        const bool* faces_to_delete, 
+        const size_t* faces_to_delete_block_offsets, 
+        int faces_blockSize) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     const int thread_id = threadIdx.x;
@@ -9779,7 +10399,13 @@ auto SEM::Device::Meshes::move_boundary_elements(size_t n_boundary_elements, siz
 }
 
 __global__
-auto SEM::Device::Meshes::find_boundaries_to_delete(size_t n_boundary_elements, size_t n_domain_elements, const size_t* boundary, const bool* boundary_elements_to_delete, bool* boundaries_to_delete) -> void {
+auto SEM::Device::Meshes::find_boundaries_to_delete(
+        size_t n_boundary_elements, 
+        size_t n_domain_elements, 
+        const size_t* boundary, 
+        const bool* boundary_elements_to_delete, 
+        bool* boundaries_to_delete) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -9796,7 +10422,16 @@ auto SEM::Device::Meshes::find_boundaries_to_delete(size_t n_boundary_elements, 
 }
 
 __global__
-auto SEM::Device::Meshes::move_all_boundaries(size_t n_boundary_elements, size_t n_domain_elements, size_t new_n_domain_elements, const size_t* boundary, size_t* new_boundary, const bool* boundary_elements_to_delete, const size_t* boundary_elements_block_offsets, int boundary_elements_blockSize) -> void {
+auto SEM::Device::Meshes::move_all_boundaries(
+        size_t n_boundary_elements, 
+        size_t n_domain_elements, 
+        size_t new_n_domain_elements, 
+        const size_t* boundary, 
+        size_t* new_boundary, 
+        const bool* boundary_elements_to_delete, 
+        const size_t* boundary_elements_block_offsets, 
+        int boundary_elements_blockSize) -> void {
+
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
 
@@ -9815,7 +10450,18 @@ auto SEM::Device::Meshes::move_all_boundaries(size_t n_boundary_elements, size_t
 }
 
 __global__
-auto SEM::Device::Meshes::move_required_boundaries(size_t n_boundary_elements, size_t n_domain_elements, size_t new_n_domain_elements, const size_t* boundary, size_t* new_boundary, const bool* boundaries_to_delete, const size_t* boundaries_to_delete_block_offsets, const bool* boundary_elements_to_delete, const size_t* boundary_elements_block_offsets, int boundary_elements_blockSize) -> void {
+auto SEM::Device::Meshes::move_required_boundaries(
+        size_t n_boundary_elements, 
+        size_t n_domain_elements, 
+        size_t new_n_domain_elements, 
+        const size_t* boundary, 
+        size_t* new_boundary, 
+        const bool* boundaries_to_delete, 
+        const size_t* boundaries_to_delete_block_offsets, 
+        const bool* boundary_elements_to_delete, 
+        const size_t* boundary_elements_block_offsets, 
+        int boundary_elements_blockSize) -> void {
+            
     const int index = blockIdx.x * blockDim.x + threadIdx.x;
     const int stride = blockDim.x * gridDim.x;
     const int thread_id = threadIdx.x;

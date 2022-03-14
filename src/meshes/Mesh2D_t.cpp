@@ -26,16 +26,27 @@ using namespace SEM::Host::Hilbert;
 constexpr int CGIO_MAX_NAME_LENGTH = 33; // Includes the null terminator
 constexpr hostFloat pi = 3.14159265358979323846;
 
-SEM::Host::Meshes::Mesh2D_t::Mesh2D_t(std::filesystem::path filename, int initial_N, int maximum_N, size_t n_interpolation_points, int max_split_level, size_t adaptivity_interval, size_t load_balancing_interval, hostFloat tolerance_min, hostFloat tolerance_max, hostFloat load_balancing_threshold, const std::vector<std::vector<hostFloat>>& polynomial_nodes) :       
-        initial_N_{initial_N},  
-        maximum_N_{maximum_N},
-        n_interpolation_points_{n_interpolation_points},
-        max_split_level_{max_split_level},
-        adaptivity_interval_{adaptivity_interval},
-        load_balancing_interval_{load_balancing_interval},
-        tolerance_min_{tolerance_min},
-        tolerance_max_{tolerance_max},
-        load_balancing_threshold_{load_balancing_threshold} {
+SEM::Host::Meshes::Mesh2D_t::Mesh2D_t(
+        std::filesystem::path filename, 
+        int initial_N, 
+        int maximum_N, 
+        size_t n_interpolation_points, 
+        int max_split_level, 
+        size_t adaptivity_interval, 
+        size_t load_balancing_interval, 
+        hostFloat tolerance_min, 
+        hostFloat tolerance_max, 
+        hostFloat load_balancing_threshold, 
+        const std::vector<std::vector<hostFloat>>& polynomial_nodes) :       
+            initial_N_{initial_N},  
+            maximum_N_{maximum_N},
+            n_interpolation_points_{n_interpolation_points},
+            max_split_level_{max_split_level},
+            adaptivity_interval_{adaptivity_interval},
+            load_balancing_interval_{load_balancing_interval},
+            tolerance_min_{tolerance_min},
+            tolerance_max_{tolerance_max},
+            load_balancing_threshold_{load_balancing_threshold} {
 
     std::string extension = filename.extension().string();
     SEM::to_lower(extension);
@@ -1043,7 +1054,11 @@ auto SEM::Host::Meshes::Mesh2D_t::build_node_to_element(size_t n_nodes, const st
     return node_to_element;
 }
 
-auto SEM::Host::Meshes::Mesh2D_t::build_element_to_element(const std::vector<Element2D_t>& elements, const std::vector<std::vector<size_t>>& node_to_element) -> std::vector<std::vector<size_t>> {
+auto SEM::Host::Meshes::Mesh2D_t::build_element_to_element(
+        const std::vector<Element2D_t>& elements, 
+        const std::vector<std::vector<size_t>>& node_to_element
+        ) -> std::vector<std::vector<size_t>> {
+    
     std::vector<std::vector<size_t>> element_to_element(elements.size());
 
     for (size_t i = 0; i < elements.size(); ++i) {
@@ -1576,13 +1591,22 @@ auto SEM::Host::Meshes::Mesh2D_t::print_to_file(std::filesystem::path filename) 
     meshfile.close();
 }
 
-auto SEM::Host::Meshes::Mesh2D_t::write_data(hostFloat time, const std::vector<std::vector<hostFloat>>& interpolation_matrices, const SEM::Helpers::DataWriter_t& data_writer) -> void {
+auto SEM::Host::Meshes::Mesh2D_t::write_data(
+        hostFloat time, 
+        const std::vector<std::vector<hostFloat>>& interpolation_matrices, 
+        const SEM::Helpers::DataWriter_t& data_writer) -> void {
+    
     get_solution(interpolation_matrices);
 
     data_writer.write_data(n_interpolation_points_, n_elements_, time, x_output_, y_output_, p_output_, u_output_, v_output_);
 }
 
-auto SEM::Host::Meshes::Mesh2D_t::write_complete_data(hostFloat time, const std::vector<std::vector<hostFloat>>& polynomial_nodes, const std::vector<std::vector<hostFloat>>& interpolation_matrices, const SEM::Helpers::DataWriter_t& data_writer) -> void {
+auto SEM::Host::Meshes::Mesh2D_t::write_complete_data(
+        hostFloat time, 
+        const std::vector<std::vector<hostFloat>>& polynomial_nodes, 
+        const std::vector<std::vector<hostFloat>>& interpolation_matrices, 
+        const SEM::Helpers::DataWriter_t& data_writer) -> void {
+    
     std::vector<hostFloat> dp_dt(n_elements_ * n_interpolation_points_ * n_interpolation_points_);
     std::vector<hostFloat> du_dt(n_elements_ * n_interpolation_points_ * n_interpolation_points_);
     std::vector<hostFloat> dv_dt(n_elements_ * n_interpolation_points_ * n_interpolation_points_);
@@ -1610,7 +1634,11 @@ auto SEM::Host::Meshes::Mesh2D_t::write_complete_data(hostFloat time, const std:
     data_writer.write_complete_data(n_interpolation_points_, n_elements_, time, global_rank, x_output_, y_output_, p_output_, u_output_, v_output_, N, dp_dt, du_dt, dv_dt, p_error, u_error, v_error, p_sigma, u_sigma, v_sigma, refine, coarsen, split_level, p_analytical_error, u_analytical_error, v_analytical_error, status, rotation);
 }
 
-auto SEM::Host::Meshes::Mesh2D_t::adapt(int N_max, const std::vector<std::vector<hostFloat>>& polynomial_nodes, const std::vector<std::vector<hostFloat>>& barycentric_weights) -> void {
+auto SEM::Host::Meshes::Mesh2D_t::adapt(
+        int N_max, 
+        const std::vector<std::vector<hostFloat>>& polynomial_nodes, 
+        const std::vector<std::vector<hostFloat>>& barycentric_weights) -> void {
+    
     size_t n_splitting_elements = 0;
     for (int i = 0; i < n_elements_; ++i) {
         n_splitting_elements += elements_[i].would_h_refine(max_split_level_);
@@ -3678,7 +3706,12 @@ auto SEM::Host::Meshes::Mesh2D_t::load_balance(const std::vector<std::vector<hos
     // Adjust boundaries etc, maybe send new index and process to everyone?
 }
 
-auto SEM::Host::Meshes::Mesh2D_t::boundary_conditions(hostFloat t, const std::vector<std::vector<hostFloat>>& polynomial_nodes, const std::vector<std::vector<hostFloat>>& weights, const std::vector<std::vector<hostFloat>>& barycentric_weights) -> void {
+auto SEM::Host::Meshes::Mesh2D_t::boundary_conditions(
+        hostFloat t, 
+        const std::vector<std::vector<hostFloat>>& polynomial_nodes, 
+        const std::vector<std::vector<hostFloat>>& weights, 
+        const std::vector<std::vector<hostFloat>>& barycentric_weights) -> void {
+    
     // Boundary conditions
     if (!wall_boundaries_.empty()) {
         SEM::Host::Meshes::compute_wall_boundaries(wall_boundaries_.size(), elements_.data(), wall_boundaries_.data(), faces_.data(), polynomial_nodes, weights, barycentric_weights);
@@ -3736,13 +3769,19 @@ auto SEM::Host::Meshes::Mesh2D_t::almost_equal(hostFloat x, hostFloat y) -> bool
         || std::abs(x-y) < std::numeric_limits<hostFloat>::min();
 }
 
-auto SEM::Host::Meshes::Mesh2D_t::interpolate_to_boundaries(const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right) -> void {
+auto SEM::Host::Meshes::Mesh2D_t::interpolate_to_boundaries(
+        const std::vector<std::vector<hostFloat>>& lagrange_interpolant_left, 
+        const std::vector<std::vector<hostFloat>>& lagrange_interpolant_right) -> void {
+    
     for (size_t element_index = 0; element_index < n_elements_; ++element_index) {
         elements_[element_index].interpolate_to_boundaries(lagrange_interpolant_left[elements_[element_index].N_], lagrange_interpolant_right[elements_[element_index].N_]);
     }
 }
 
-auto SEM::Host::Meshes::Mesh2D_t::project_to_faces(const std::vector<std::vector<hostFloat>>& polynomial_nodes, const std::vector<std::vector<hostFloat>>& barycentric_weights) -> void {
+auto SEM::Host::Meshes::Mesh2D_t::project_to_faces(
+        const std::vector<std::vector<hostFloat>>& polynomial_nodes, 
+        const std::vector<std::vector<hostFloat>>& barycentric_weights) -> void {
+    
     for (size_t face_index = 0; face_index < faces_.size(); ++face_index) {
         Face2D_t& face = faces_[face_index];
 
@@ -3831,8 +3870,12 @@ auto SEM::Host::Meshes::Mesh2D_t::project_to_faces(const std::vector<std::vector
     }
 }
 
-auto SEM::Host::Meshes::Mesh2D_t::project_to_elements(const std::vector<std::vector<hostFloat>>& polynomial_nodes, const std::vector<std::vector<hostFloat>>& weights, const std::vector<std::vector<hostFloat>>& barycentric_weights) -> void {
-for (size_t element_index = 0; element_index < n_elements_; ++element_index) {
+auto SEM::Host::Meshes::Mesh2D_t::project_to_elements(
+        const std::vector<std::vector<hostFloat>>& polynomial_nodes, 
+        const std::vector<std::vector<hostFloat>>& weights, 
+        const std::vector<std::vector<hostFloat>>& barycentric_weights) -> void {
+    
+    for (size_t element_index = 0; element_index < n_elements_; ++element_index) {
         Element2D_t& element = elements_[element_index];
 
         for (size_t side_index = 0; side_index < element.faces_.size(); ++side_index) {
@@ -3958,7 +4001,11 @@ auto SEM::Host::Meshes::allocate_boundary_storage(size_t n_domain_elements, std:
     }
 }
 
-auto SEM::Host::Meshes::compute_element_geometry(size_t n_elements, std::vector<Element2D_t>& elements, const std::vector<Vec2<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& polynomial_nodes) -> void {
+auto SEM::Host::Meshes::compute_element_geometry(
+        size_t n_elements, std::vector<Element2D_t>& elements, 
+        const std::vector<Vec2<hostFloat>>& nodes, 
+        const std::vector<std::vector<hostFloat>>& polynomial_nodes) -> void {
+    
     for (size_t element_index = 0; element_index < n_elements; ++element_index) {
         const std::array<Vec2<hostFloat>, 4> points {nodes[elements[element_index].nodes_[0]],
                                                        nodes[elements[element_index].nodes_[1]],
@@ -3968,7 +4015,12 @@ auto SEM::Host::Meshes::compute_element_geometry(size_t n_elements, std::vector<
     }
 }
 
-auto SEM::Host::Meshes::compute_boundary_geometry(size_t n_domain_elements, std::vector<Element2D_t>& elements, const std::vector<Vec2<hostFloat>>& nodes, const std::vector<std::vector<hostFloat>>& polynomial_nodes) -> void {
+auto SEM::Host::Meshes::compute_boundary_geometry(
+        size_t n_domain_elements, 
+        std::vector<Element2D_t>& elements, 
+        const std::vector<Vec2<hostFloat>>& nodes, 
+        const std::vector<std::vector<hostFloat>>& polynomial_nodes) -> void {
+    
     for (size_t element_index = n_domain_elements; element_index < elements.size(); ++element_index) {
         const std::array<Vec2<hostFloat>, 4> points {nodes[elements[element_index].nodes_[0]],
                                                        nodes[elements[element_index].nodes_[1]],
@@ -3978,7 +4030,11 @@ auto SEM::Host::Meshes::compute_boundary_geometry(size_t n_domain_elements, std:
     }
 }
 
-auto SEM::Host::Meshes::compute_element_status(size_t n_elements, std::vector<Element2D_t>& elements, const std::vector<Vec2<hostFloat>>& nodes) -> void {
+auto SEM::Host::Meshes::compute_element_status(
+        size_t n_elements, 
+        std::vector<Element2D_t>& elements, 
+        const std::vector<Vec2<hostFloat>>& nodes) -> void {
+    
     constexpr std::array<hostFloat, 4> targets {-3*pi/4, -pi/4, pi/4, 3*pi/4};
 
     for (size_t element_index = 0; element_index < n_elements; ++element_index) {
@@ -4105,7 +4161,11 @@ auto SEM::Host::Meshes::allocate_face_storage(std::vector<Face2D_t>& faces) -> v
     }
 }
 
-auto SEM::Host::Meshes::fill_element_faces(size_t n_elements, std::vector<Element2D_t>& elements, const std::vector<std::array<size_t, 4>>& element_to_face) -> void {
+auto SEM::Host::Meshes::fill_element_faces(
+        size_t n_elements, 
+        std::vector<Element2D_t>& elements, 
+        const std::vector<std::array<size_t, 4>>& element_to_face) -> void {
+    
     for (size_t element_index = 0; element_index < n_elements; ++element_index) {
         for (size_t j = 0; j < elements[element_index].faces_.size(); ++j) {
             elements[element_index].faces_[j][0] = element_to_face[element_index][j];
@@ -4113,13 +4173,21 @@ auto SEM::Host::Meshes::fill_element_faces(size_t n_elements, std::vector<Elemen
     }
 }
 
-auto SEM::Host::Meshes::fill_boundary_element_faces(size_t n_domain_elements, std::vector<Element2D_t>& elements, const std::vector<std::array<size_t, 4>>& element_to_face) -> void {
+auto SEM::Host::Meshes::fill_boundary_element_faces(
+        size_t n_domain_elements, 
+        std::vector<Element2D_t>& elements, 
+        const std::vector<std::array<size_t, 4>>& element_to_face) -> void {
+    
     for (size_t element_index = n_domain_elements; element_index < elements.size(); ++element_index) {
         elements[element_index].faces_[0][0] = element_to_face[element_index][0];
     }
 }
 
-auto SEM::Host::Meshes::compute_face_geometry(std::vector<Face2D_t>& faces, const std::vector<Element2D_t>& elements, const std::vector<Vec2<hostFloat>>& nodes) -> void {
+auto SEM::Host::Meshes::compute_face_geometry(
+        std::vector<Face2D_t>& faces, 
+        const std::vector<Element2D_t>& elements, 
+        const std::vector<Vec2<hostFloat>>& nodes) -> void {
+    
     for (auto& face: faces) {
         const std::array<Vec2<hostFloat>, 2> face_nodes {nodes[face.nodes_[0]], nodes[face.nodes_[1]]};
 
@@ -4145,7 +4213,6 @@ auto SEM::Host::Meshes::compute_face_geometry(std::vector<Face2D_t>& faces, cons
 }
 
 auto SEM::Host::Meshes::Mesh2D_t::get_solution(const std::vector<std::vector<hostFloat>>& interpolation_matrices) -> void {
-
     for (size_t element_index = 0; element_index < n_elements_; ++element_index) {
         const Element2D_t& element = elements_[element_index];
         const size_t offset_interp_2D = element_index * n_interpolation_points_ * n_interpolation_points_;
@@ -4159,7 +4226,28 @@ auto SEM::Host::Meshes::Mesh2D_t::get_solution(const std::vector<std::vector<hos
     }
 }
 
-auto SEM::Host::Meshes::Mesh2D_t::get_complete_solution(hostFloat time, const std::vector<std::vector<hostFloat>>& polynomial_nodes, const std::vector<std::vector<hostFloat>>& interpolation_matrices, std::vector<int>& N, std::vector<hostFloat>& dp_dt, std::vector<hostFloat>& du_dt, std::vector<hostFloat>& dv_dt, std::vector<hostFloat>& p_error, std::vector<hostFloat>& u_error, std::vector<hostFloat>& v_error, std::vector<hostFloat>& p_sigma, std::vector<hostFloat>& u_sigma, std::vector<hostFloat>& v_sigma, std::vector<int>& refine, std::vector<int>& coarsen, std::vector<int>& split_level, std::vector<hostFloat>& p_analytical_error, std::vector<hostFloat>& u_analytical_error, std::vector<hostFloat>& v_analytical_error, std::vector<int>& status, std::vector<int>& rotation) -> void {
+auto SEM::Host::Meshes::Mesh2D_t::get_complete_solution(
+        hostFloat time, 
+        const std::vector<std::vector<hostFloat>>& polynomial_nodes, 
+        const std::vector<std::vector<hostFloat>>& interpolation_matrices, 
+        std::vector<int>& N, 
+        std::vector<hostFloat>& dp_dt, 
+        std::vector<hostFloat>& du_dt, 
+        std::vector<hostFloat>& dv_dt, 
+        std::vector<hostFloat>& p_error, 
+        std::vector<hostFloat>& u_error, 
+        std::vector<hostFloat>& v_error, 
+        std::vector<hostFloat>& p_sigma, 
+        std::vector<hostFloat>& u_sigma, 
+        std::vector<hostFloat>& v_sigma, 
+        std::vector<int>& refine, 
+        std::vector<int>& coarsen, 
+        std::vector<int>& split_level, 
+        std::vector<hostFloat>& p_analytical_error, 
+        std::vector<hostFloat>& u_analytical_error, 
+        std::vector<hostFloat>& v_analytical_error, 
+        std::vector<int>& status, std::vector<int>& rotation) -> void {
+    
     for (size_t element_index = 0; element_index < n_elements_; ++element_index) {
         const Element2D_t& element = elements_[element_index];
         const size_t offset_interp_2D = element_index * n_interpolation_points_ * n_interpolation_points_;
@@ -4185,7 +4273,15 @@ auto SEM::Host::Meshes::Mesh2D_t::get_complete_solution(hostFloat time, const st
     }
 }
 
-auto SEM::Host::Meshes::compute_wall_boundaries(size_t n_wall_boundaries, Element2D_t* elements, const size_t* wall_boundaries, const Face2D_t* faces, const std::vector<std::vector<hostFloat>>& polynomial_nodes, const std::vector<std::vector<hostFloat>>& weights, const std::vector<std::vector<hostFloat>>& barycentric_weights) -> void {
+auto SEM::Host::Meshes::compute_wall_boundaries(
+        size_t n_wall_boundaries, 
+        Element2D_t* elements, 
+        const size_t* wall_boundaries, 
+        const Face2D_t* faces, 
+        const std::vector<std::vector<hostFloat>>& polynomial_nodes, 
+        const std::vector<std::vector<hostFloat>>& weights, 
+        const std::vector<std::vector<hostFloat>>& barycentric_weights) -> void {
+    
     for (size_t boundary_index = 0; boundary_index < n_wall_boundaries; ++boundary_index) {
         const size_t element_index = wall_boundaries[boundary_index];
         Element2D_t& element = elements[element_index];
@@ -4317,7 +4413,15 @@ auto SEM::Host::Meshes::compute_wall_boundaries(size_t n_wall_boundaries, Elemen
     }
 }
 
-auto SEM::Host::Meshes::compute_symmetry_boundaries(size_t n_symmetry_boundaries, Element2D_t* elements, const size_t* symmetry_boundaries, const Face2D_t* faces, const std::vector<std::vector<hostFloat>>& polynomial_nodes, const std::vector<std::vector<hostFloat>>& weights, const std::vector<std::vector<hostFloat>>& barycentric_weights) -> void {
+auto SEM::Host::Meshes::compute_symmetry_boundaries(
+        size_t n_symmetry_boundaries, 
+        Element2D_t* elements, 
+        const size_t* symmetry_boundaries, 
+        const Face2D_t* faces, 
+        const std::vector<std::vector<hostFloat>>& polynomial_nodes, 
+        const std::vector<std::vector<hostFloat>>& weights, 
+        const std::vector<std::vector<hostFloat>>& barycentric_weights) -> void {
+    
     for (size_t boundary_index = 0; boundary_index < n_symmetry_boundaries; ++boundary_index) {
         const size_t element_index = symmetry_boundaries[boundary_index];
         Element2D_t& element = elements[element_index];
@@ -4446,7 +4550,15 @@ auto SEM::Host::Meshes::compute_symmetry_boundaries(size_t n_symmetry_boundaries
     }
 }
 
-auto SEM::Host::Meshes::compute_inflow_boundaries(size_t n_inflow_boundaries, Element2D_t* elements, const size_t* inflow_boundaries, const Face2D_t* faces, hostFloat t, const Vec2<hostFloat>* nodes, const std::vector<std::vector<hostFloat>>& polynomial_nodes) -> void {
+auto SEM::Host::Meshes::compute_inflow_boundaries(
+        size_t n_inflow_boundaries, 
+        Element2D_t* elements, 
+        const size_t* inflow_boundaries, 
+        const Face2D_t* faces, 
+        hostFloat t, 
+        const Vec2<hostFloat>* nodes, 
+        const std::vector<std::vector<hostFloat>>& polynomial_nodes) -> void {
+    
     for (size_t boundary_index = 0; boundary_index < n_inflow_boundaries; ++boundary_index) {
         Element2D_t& element = elements[inflow_boundaries[boundary_index]];
         const std::array<Vec2<hostFloat>, 2> points{nodes[element.nodes_[0]], nodes[element.nodes_[1]]};
@@ -4464,7 +4576,15 @@ auto SEM::Host::Meshes::compute_inflow_boundaries(size_t n_inflow_boundaries, El
     }
 }
 
-auto SEM::Host::Meshes::compute_outflow_boundaries(size_t n_outflow_boundaries, Element2D_t* elements, const size_t* outflow_boundaries, const Face2D_t* faces, const std::vector<std::vector<hostFloat>>& polynomial_nodes, const std::vector<std::vector<hostFloat>>& weights, const std::vector<std::vector<hostFloat>>& barycentric_weights) -> void {
+auto SEM::Host::Meshes::compute_outflow_boundaries(
+        size_t n_outflow_boundaries, 
+        Element2D_t* elements, 
+        const size_t* outflow_boundaries, 
+        const Face2D_t* faces, 
+        const std::vector<std::vector<hostFloat>>& polynomial_nodes, 
+        const std::vector<std::vector<hostFloat>>& weights, 
+        const std::vector<std::vector<hostFloat>>& barycentric_weights) -> void {
+    
     for (size_t boundary_index = 0; boundary_index < n_outflow_boundaries; ++boundary_index) {
         const size_t element_index = outflow_boundaries[boundary_index];
         Element2D_t& element = elements[element_index];
@@ -4567,7 +4687,13 @@ auto SEM::Host::Meshes::compute_outflow_boundaries(size_t n_outflow_boundaries, 
     }
 }
 
-auto SEM::Host::Meshes::local_interfaces(size_t n_local_interfaces, Element2D_t* elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_origin_side, const size_t* local_interfaces_destination) -> void {
+auto SEM::Host::Meshes::local_interfaces(
+        size_t n_local_interfaces, 
+        Element2D_t* elements, 
+        const size_t* local_interfaces_origin, 
+        const size_t* local_interfaces_origin_side, 
+        const size_t* local_interfaces_destination) -> void {
+    
     for (size_t interface_index = 0; interface_index < n_local_interfaces; ++interface_index) {
         const Element2D_t& source_element = elements[local_interfaces_origin[interface_index]];
         Element2D_t& destination_element = elements[local_interfaces_destination[interface_index]];
@@ -4581,7 +4707,16 @@ auto SEM::Host::Meshes::local_interfaces(size_t n_local_interfaces, Element2D_t*
     }
 }
 
-auto SEM::Host::Meshes::get_MPI_interfaces(size_t n_MPI_interface_elements, const Element2D_t* elements, const size_t* MPI_interfaces_origin, const size_t* MPI_interfaces_origin_side, int maximum_N, hostFloat* p, hostFloat* u, hostFloat* v) -> void {
+auto SEM::Host::Meshes::get_MPI_interfaces(
+        size_t n_MPI_interface_elements, 
+        const Element2D_t* elements, 
+        const size_t* MPI_interfaces_origin, 
+        const size_t* MPI_interfaces_origin_side, 
+        int maximum_N, 
+        hostFloat* p, 
+        hostFloat* u, 
+        hostFloat* v) -> void {
+    
     for (size_t interface_index = 0; interface_index < n_MPI_interface_elements; ++interface_index) {
         const Element2D_t& source_element = elements[MPI_interfaces_origin[interface_index]];
         const size_t element_side = MPI_interfaces_origin_side[interface_index];
@@ -4595,7 +4730,13 @@ auto SEM::Host::Meshes::get_MPI_interfaces(size_t n_MPI_interface_elements, cons
     }
 }
 
-auto SEM::Host::Meshes::get_MPI_interfaces_N(size_t n_MPI_interface_elements, int N_max, const Element2D_t* elements, const size_t* MPI_interfaces_origin, int* N) -> void {
+auto SEM::Host::Meshes::get_MPI_interfaces_N(
+        size_t n_MPI_interface_elements, 
+        int N_max, 
+        const Element2D_t* elements, 
+        const size_t* MPI_interfaces_origin, 
+        int* N) -> void {
+    
     for (size_t interface_index = 0; interface_index < n_MPI_interface_elements; ++interface_index) {
         const size_t element_index = MPI_interfaces_origin[interface_index];
         
@@ -4718,7 +4859,15 @@ auto SEM::Host::Meshes::get_MPI_interfaces_adaptivity(
     }
 }
 
-auto SEM::Host::Meshes::put_MPI_interfaces(size_t n_MPI_interface_elements, Element2D_t* elements, const size_t* MPI_interfaces_destination, int maximum_N, const hostFloat* p, const hostFloat* u, const hostFloat* v) -> void {
+auto SEM::Host::Meshes::put_MPI_interfaces(
+        size_t n_MPI_interface_elements, 
+        Element2D_t* elements, 
+        const size_t* MPI_interfaces_destination, 
+        int maximum_N, 
+        const hostFloat* p, 
+        const hostFloat* u, 
+        const hostFloat* v) -> void {
+    
     for (size_t interface_index = 0; interface_index < n_MPI_interface_elements; ++interface_index) {
         Element2D_t& destination_element = elements[MPI_interfaces_destination[interface_index]];
         const size_t boundary_offset = interface_index * (maximum_N + 1);
@@ -4852,7 +5001,14 @@ auto SEM::Host::Meshes::adjust_MPI_incoming_interfaces(
     }
 }
 
-auto SEM::Host::Meshes::p_adapt(size_t n_elements, Element2D_t* elements, int N_max, const Vec2<hostFloat>* nodes, const std::vector<std::vector<hostFloat>>& polynomial_nodes, const std::vector<std::vector<hostFloat>>& barycentric_weights) -> void {
+auto SEM::Host::Meshes::p_adapt(
+        size_t n_elements, 
+        Element2D_t* elements, 
+        int N_max, 
+        const Vec2<hostFloat>* nodes, 
+        const std::vector<std::vector<hostFloat>>& polynomial_nodes, 
+        const std::vector<std::vector<hostFloat>>& barycentric_weights) -> void {
+    
     for (size_t i = 0; i < n_elements; ++i) {
         if (elements[i].would_p_refine(N_max)) {
             Element2D_t new_element(elements[i].N_ + 2, elements[i].split_level_, elements[i].status_, elements[i].rotation_, elements[i].faces_, elements[i].nodes_);
@@ -4870,7 +5026,16 @@ auto SEM::Host::Meshes::p_adapt(size_t n_elements, Element2D_t* elements, int N_
     }
 }
 
-auto SEM::Host::Meshes::p_adapt_move(size_t n_elements, Element2D_t* elements, Element2D_t* new_elements, int N_max, const Vec2<hostFloat>* nodes, const std::vector<std::vector<hostFloat>>& polynomial_nodes, const std::vector<std::vector<hostFloat>>& barycentric_weights, size_t* elements_new_indices) -> void {
+auto SEM::Host::Meshes::p_adapt_move(
+        size_t n_elements, 
+        Element2D_t* elements, 
+        Element2D_t* new_elements, 
+        int N_max, 
+        const Vec2<hostFloat>* nodes, 
+        const std::vector<std::vector<hostFloat>>& polynomial_nodes, 
+        const std::vector<std::vector<hostFloat>>& barycentric_weights, 
+        size_t* elements_new_indices) -> void {
+    
     for (size_t i = 0; i < n_elements; ++i) {
         elements_new_indices[i] = i;
 
@@ -4891,7 +5056,20 @@ auto SEM::Host::Meshes::p_adapt_move(size_t n_elements, Element2D_t* elements, E
     }
 }
 
-auto SEM::Host::Meshes::p_adapt_split_faces(size_t n_elements, size_t n_faces, size_t n_nodes, size_t n_splitting_elements, Element2D_t* elements, Element2D_t* new_elements, const Face2D_t* faces, int N_max, const Vec2<hostFloat>* nodes, const std::vector<std::vector<hostFloat>>& polynomial_nodes, const std::vector<std::vector<hostFloat>>& barycentric_weights, size_t* elements_new_indices) -> void {
+auto SEM::Host::Meshes::p_adapt_split_faces(
+        size_t n_elements, 
+        size_t n_faces, 
+        size_t n_nodes, 
+        size_t n_splitting_elements, 
+        Element2D_t* elements, 
+        Element2D_t* new_elements, 
+        const Face2D_t* faces, 
+        int N_max, 
+        const Vec2<hostFloat>* nodes, 
+        const std::vector<std::vector<hostFloat>>& polynomial_nodes, 
+        const std::vector<std::vector<hostFloat>>& barycentric_weights, 
+        size_t* elements_new_indices) -> void {
+    
     for (size_t element_index = 0; element_index < n_elements; ++element_index) {
         Element2D_t& element = elements[element_index];
         elements_new_indices[element_index] = element_index;
@@ -5784,7 +5962,13 @@ auto SEM::Host::Meshes::split_faces(
     }
 }
 
-auto SEM::Host::Meshes::find_nodes(size_t n_elements, Element2D_t* elements, const Face2D_t* faces, const Vec2<hostFloat>* nodes, int max_split_level) -> void {
+auto SEM::Host::Meshes::find_nodes(
+        size_t n_elements, 
+        Element2D_t* elements, 
+        const Face2D_t* faces, 
+        const Vec2<hostFloat>* nodes, 
+        int max_split_level) -> void {
+    
     for (size_t i = 0; i < n_elements; ++i) {
         Element2D_t& element = elements[i];
         element.additional_nodes_ = {false, false, false, false};
@@ -5807,13 +5991,21 @@ auto SEM::Host::Meshes::find_nodes(size_t n_elements, Element2D_t* elements, con
     }
 }
 
-auto SEM::Host::Meshes::no_new_nodes(size_t n_elements, Element2D_t* elements) -> void {
+auto SEM::Host::Meshes::no_new_nodes(
+        size_t n_elements, 
+        Element2D_t* elements) -> void {
+    
     for (size_t i = 0; i < n_elements; ++i) {
         elements[i].additional_nodes_ = {false, false, false, false};
     }
 }
 
-auto SEM::Host::Meshes::copy_boundaries_error(size_t n_boundaries, Element2D_t* elements, const size_t* boundaries, const Face2D_t* faces) -> void {
+auto SEM::Host::Meshes::copy_boundaries_error(
+        size_t n_boundaries, 
+        Element2D_t* elements, 
+        const size_t* boundaries, 
+        const Face2D_t* faces) -> void {
+    
     for (size_t boundary_index = 0; boundary_index < n_boundaries; ++boundary_index) {
         const size_t destination_element_index = boundaries[boundary_index];
         Element2D_t& destination_element = elements[destination_element_index];
@@ -5837,7 +6029,13 @@ auto SEM::Host::Meshes::copy_boundaries_error(size_t n_boundaries, Element2D_t* 
     }
 }
 
-auto SEM::Host::Meshes::copy_interfaces_error(size_t n_local_interfaces, Element2D_t* elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_origin_side, const size_t* local_interfaces_destination) -> void {
+auto SEM::Host::Meshes::copy_interfaces_error(
+        size_t n_local_interfaces, 
+        Element2D_t* elements, 
+        const size_t* local_interfaces_origin, 
+        const size_t* local_interfaces_origin_side, 
+        const size_t* local_interfaces_destination) -> void {
+    
     for (size_t interface_index = 0; interface_index < n_local_interfaces; ++interface_index) {
         const Element2D_t& source_element = elements[local_interfaces_origin[interface_index]];
         Element2D_t& destination_element = elements[local_interfaces_destination[interface_index]];
@@ -5979,7 +6177,21 @@ auto SEM::Host::Meshes::copy_mpi_interfaces_error(
     }
 }
 
-auto SEM::Host::Meshes::split_boundaries(size_t n_boundaries, size_t n_faces, size_t n_nodes, size_t n_splitting_elements, size_t offset, Element2D_t* elements, Element2D_t* new_elements, const size_t* boundaries, size_t* new_boundaries, const Face2D_t* faces, const Vec2<hostFloat>* nodes, const std::vector<std::vector<hostFloat>>& polynomial_nodes, size_t* elements_new_indices) -> void {
+auto SEM::Host::Meshes::split_boundaries(
+        size_t n_boundaries, 
+        size_t n_faces, 
+        size_t n_nodes, 
+        size_t n_splitting_elements, 
+        size_t offset, 
+        Element2D_t* elements, 
+        Element2D_t* new_elements, 
+        const size_t* boundaries, 
+        size_t* new_boundaries, 
+        const Face2D_t* faces, 
+        const Vec2<hostFloat>* nodes, 
+        const std::vector<std::vector<hostFloat>>& polynomial_nodes, 
+        size_t* elements_new_indices) -> void {
+    
     for (size_t boundary_index = 0; boundary_index < n_boundaries; ++boundary_index) {
         const size_t element_index = boundaries[boundary_index];
         Element2D_t& destination_element = elements[element_index];
@@ -6076,7 +6288,27 @@ auto SEM::Host::Meshes::split_boundaries(size_t n_boundaries, size_t n_faces, si
     }
 }
 
-auto SEM::Host::Meshes::split_interfaces(size_t n_local_interfaces, size_t n_faces, size_t n_nodes, size_t n_splitting_elements, size_t offset, Element2D_t* elements, Element2D_t* new_elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_origin_side, const size_t* local_interfaces_destination, size_t* new_local_interfaces_origin, size_t* new_local_interfaces_origin_side, size_t* new_local_interfaces_destination, const Face2D_t* faces, const Vec2<hostFloat>* nodes, int max_split_level, int N_max, const std::vector<std::vector<hostFloat>>& polynomial_nodes, size_t* elements_new_indices) -> void {
+auto SEM::Host::Meshes::split_interfaces(
+        size_t n_local_interfaces, 
+        size_t n_faces, 
+        size_t n_nodes, 
+        size_t n_splitting_elements, 
+        size_t offset, 
+        Element2D_t* elements, 
+        Element2D_t* new_elements, 
+        const size_t* local_interfaces_origin, 
+        const size_t* local_interfaces_origin_side, 
+        const size_t* local_interfaces_destination, 
+        size_t* new_local_interfaces_origin, 
+        size_t* new_local_interfaces_origin_side, 
+        size_t* new_local_interfaces_destination, 
+        const Face2D_t* faces, 
+        const Vec2<hostFloat>* nodes, 
+        int max_split_level, 
+        int N_max, 
+        const std::vector<std::vector<hostFloat>>& polynomial_nodes, 
+        size_t* elements_new_indices) -> void {
+    
     for (size_t interface_index = 0; interface_index < n_local_interfaces; ++interface_index) {
         const size_t source_element_index = local_interfaces_origin[interface_index];
         const size_t destination_element_index = local_interfaces_destination[interface_index];
@@ -7195,7 +7427,12 @@ auto SEM::Host::Meshes::split_mpi_incoming_interfaces(
     }
 }
 
-auto SEM::Host::Meshes::adjust_boundaries(size_t n_boundaries, Element2D_t* elements, const size_t* boundaries, const Face2D_t* faces) -> void {
+auto SEM::Host::Meshes::adjust_boundaries(
+        size_t n_boundaries, 
+        Element2D_t* elements, 
+        const size_t* boundaries, 
+        const Face2D_t* faces) -> void {
+    
     for (size_t boundary_index = 0; boundary_index < n_boundaries; ++boundary_index) {
         Element2D_t& destination_element = elements[boundaries[boundary_index]];
         int N_element = destination_element.N_;
@@ -7214,7 +7451,12 @@ auto SEM::Host::Meshes::adjust_boundaries(size_t n_boundaries, Element2D_t* elem
     }
 }
 
-auto SEM::Host::Meshes::adjust_interfaces(size_t n_local_interfaces, Element2D_t* elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_destination) -> void {
+auto SEM::Host::Meshes::adjust_interfaces(
+        size_t n_local_interfaces, 
+        Element2D_t* elements, 
+        const size_t* local_interfaces_origin, 
+        const size_t* local_interfaces_destination) -> void {
+    
     for (size_t interface_index = 0; interface_index < n_local_interfaces; ++interface_index) {
         const Element2D_t& source_element = elements[local_interfaces_origin[interface_index]];
         Element2D_t& destination_element = elements[local_interfaces_destination[interface_index]];
@@ -7225,7 +7467,11 @@ auto SEM::Host::Meshes::adjust_interfaces(size_t n_local_interfaces, Element2D_t
     }
 }
 
-auto SEM::Host::Meshes::adjust_faces(size_t n_faces, Face2D_t* faces, const Element2D_t* elements) -> void {
+auto SEM::Host::Meshes::adjust_faces(
+        size_t n_faces, 
+        Face2D_t* faces, 
+        const Element2D_t* elements) -> void {
+    
     for (size_t face_index = 0; face_index < n_faces; ++face_index) {
         Face2D_t& face = faces[face_index];
         const Element2D_t& element_L = elements[face.elements_[0]];
@@ -7239,7 +7485,15 @@ auto SEM::Host::Meshes::adjust_faces(size_t n_faces, Face2D_t* faces, const Elem
     }
 }
 
-auto SEM::Host::Meshes::adjust_faces_neighbours(size_t n_faces, Face2D_t* faces, const Element2D_t* elements, const Vec2<hostFloat>* nodes, int max_split_level, int N_max, const size_t* elements_new_indices) -> void {
+auto SEM::Host::Meshes::adjust_faces_neighbours(
+        size_t n_faces, 
+        Face2D_t* faces, 
+        const Element2D_t* elements, 
+        const Vec2<hostFloat>* nodes, 
+        int max_split_level, 
+        int N_max, 
+        const size_t* elements_new_indices) -> void {
+    
     for (size_t face_index = 0; face_index < n_faces; ++face_index) {
         Face2D_t& face = faces[face_index];
         const size_t element_L_index = face.elements_[0];
@@ -7427,7 +7681,15 @@ auto SEM::Host::Meshes::move_interfaces(
     }
 }
 
-auto SEM::Host::Meshes::get_transfer_solution(size_t n_elements, const Element2D_t* elements, int maximum_N, const Vec2<hostFloat>* nodes, hostFloat* solution, size_t* n_neighbours, hostFloat* element_nodes) -> void {
+auto SEM::Host::Meshes::get_transfer_solution(
+        size_t n_elements, 
+        const Element2D_t* elements, 
+        int maximum_N, 
+        const Vec2<hostFloat>* nodes, 
+        hostFloat* solution, 
+        size_t* n_neighbours, 
+        hostFloat* element_nodes) -> void {
+    
     for (size_t element_index = 0; element_index < n_elements; ++element_index) {
         const size_t p_offset =  3 * element_index      * std::pow(maximum_N + 1, 2);
         const size_t u_offset = (3 * element_index + 1) * std::pow(maximum_N + 1, 2);
@@ -7901,7 +8163,17 @@ auto SEM::Host::Meshes::move_elements(
     }
 }
 
-auto SEM::Host::Meshes::get_interface_n_processes(size_t n_mpi_interfaces, size_t n_mpi_interfaces_incoming, const Element2D_t* elements, const Face2D_t* faces, const size_t* mpi_interfaces_origin, const size_t* mpi_interfaces_origin_side, const size_t* mpi_interfaces_destination, const int* mpi_interfaces_new_process_incoming, size_t* n_processes) -> void {
+auto SEM::Host::Meshes::get_interface_n_processes(
+        size_t n_mpi_interfaces, 
+        size_t n_mpi_interfaces_incoming, 
+        const Element2D_t* elements, 
+        const Face2D_t* faces, 
+        const size_t* mpi_interfaces_origin, 
+        const size_t* mpi_interfaces_origin_side, 
+        const size_t* mpi_interfaces_destination, 
+        const int* mpi_interfaces_new_process_incoming, 
+        size_t* n_processes) -> void {
+    
     for (size_t interface_index = 0; interface_index < n_mpi_interfaces; ++interface_index) {
         const size_t origin_element_index = mpi_interfaces_origin[interface_index];
         const Element2D_t& origin_element = elements[origin_element_index];
@@ -7976,7 +8248,18 @@ auto SEM::Host::Meshes::get_interface_n_processes(size_t n_mpi_interfaces, size_
     }
 }
 
-auto SEM::Host::Meshes::get_interface_processes(size_t n_mpi_interfaces, size_t n_mpi_interfaces_incoming, const Element2D_t* elements, const Face2D_t* faces, const size_t* mpi_interfaces_origin, const size_t* mpi_interfaces_origin_side, const size_t* mpi_interfaces_destination, const int* mpi_interfaces_new_process_incoming, const size_t* process_offsets, int* processes) -> void {
+auto SEM::Host::Meshes::get_interface_processes(
+        size_t n_mpi_interfaces, 
+        size_t n_mpi_interfaces_incoming, 
+        const Element2D_t* elements, 
+        const Face2D_t* faces, 
+        const size_t* mpi_interfaces_origin, 
+        const size_t* mpi_interfaces_origin_side, 
+        const size_t* mpi_interfaces_destination, 
+        const int* mpi_interfaces_new_process_incoming, 
+        const size_t* process_offsets, 
+        int* processes) -> void {
+    
     for (size_t interface_index = 0; interface_index < n_mpi_interfaces; ++interface_index) {
         const size_t origin_element_index = mpi_interfaces_origin[interface_index];
         const Element2D_t& origin_element = elements[origin_element_index];
@@ -8497,7 +8780,14 @@ auto SEM::Host::Meshes::find_boundary_elements_to_delete(
     }
 }
 
-auto SEM::Host::Meshes::find_mpi_interface_elements_to_delete(size_t n_mpi_interface_elements, size_t n_domain_elements, int rank, const size_t* mpi_interfaces_destination, const int* mpi_interfaces_new_process_incoming, std::vector<bool>& boundary_elements_to_delete) -> void {
+auto SEM::Host::Meshes::find_mpi_interface_elements_to_delete(
+        size_t n_mpi_interface_elements, 
+        size_t n_domain_elements, 
+        int rank, 
+        const size_t* mpi_interfaces_destination, 
+        const int* mpi_interfaces_new_process_incoming, 
+        std::vector<bool>& boundary_elements_to_delete) -> void {
+    
     for (size_t i = 0; i < n_mpi_interface_elements; ++i) {
         if (mpi_interfaces_new_process_incoming[i] == rank) {
             boundary_elements_to_delete[mpi_interfaces_destination[i] - n_domain_elements] = true;
@@ -8592,7 +8882,12 @@ auto SEM::Host::Meshes::move_boundary_elements(
     }
 }
 
-auto SEM::Host::Meshes::find_boundaries_to_delete(const std::vector<size_t>& boundary, size_t n_domain_elements, const std::vector<bool>& boundary_elements_to_delete, std::vector<bool>& boundaries_to_delete) -> void {
+auto SEM::Host::Meshes::find_boundaries_to_delete(
+        const std::vector<size_t>& boundary, 
+        size_t n_domain_elements, 
+        const std::vector<bool>& boundary_elements_to_delete, 
+        std::vector<bool>& boundaries_to_delete) -> void {
+    
     for (size_t i = 0; i < boundary.size(); ++i) {
         const size_t boundary_element_index = boundary[i] - n_domain_elements;
 
@@ -8605,7 +8900,13 @@ auto SEM::Host::Meshes::find_boundaries_to_delete(const std::vector<size_t>& bou
     }
 }
 
-auto SEM::Host::Meshes::move_all_boundaries(size_t n_domain_elements, size_t new_n_domain_elements, const std::vector<size_t>& boundary, std::vector<size_t>& new_boundary, const std::vector<bool>& boundary_elements_to_delete) -> void {
+auto SEM::Host::Meshes::move_all_boundaries(
+        size_t n_domain_elements, 
+        size_t new_n_domain_elements, 
+        const std::vector<size_t>& boundary, 
+        std::vector<size_t>& new_boundary, 
+        const std::vector<bool>& boundary_elements_to_delete) -> void {
+    
     for (size_t i = 0; i < boundary.size(); ++i) {
         const size_t boundary_element_index = boundary[i] - n_domain_elements;
 
@@ -8618,7 +8919,14 @@ auto SEM::Host::Meshes::move_all_boundaries(size_t n_domain_elements, size_t new
     }
 }
 
-auto SEM::Host::Meshes::move_required_boundaries(size_t n_domain_elements, size_t new_n_domain_elements, const std::vector<size_t>& boundary, std::vector<size_t>& new_boundary, const std::vector<bool>& boundaries_to_delete, const std::vector<bool>& boundary_elements_to_delete) -> void {
+auto SEM::Host::Meshes::move_required_boundaries(
+        size_t n_domain_elements, 
+        size_t new_n_domain_elements, 
+        const std::vector<size_t>& boundary, 
+        std::vector<size_t>& new_boundary, 
+        const std::vector<bool>& boundaries_to_delete, 
+        const std::vector<bool>& boundary_elements_to_delete) -> void {
+    
     for (size_t i = 0; i < boundary.size(); ++i) {
         if (!boundaries_to_delete[i]) {
             size_t new_boundary_index = i;
