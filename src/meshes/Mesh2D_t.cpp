@@ -1874,9 +1874,10 @@ auto SEM::Host::Meshes::Mesh2D_t::adapt(
             else {
                 std::vector<Face2D_t> new_faces(faces_.size() + n_splitting_faces);
 
+                const size_t old_n_nodes = nodes_.size();
                 nodes_.resize(nodes_.size() + n_splitting_faces + n_mpi_interface_new_nodes);
 
-                SEM::Host::Meshes::p_adapt_split_faces(n_elements_, faces_.size(), nodes_.size(), n_splitting_elements, elements_.data(), new_elements.data(), faces_.data(), N_max, nodes_.data(), polynomial_nodes, barycentric_weights, elements_new_indices.data());
+                SEM::Host::Meshes::p_adapt_split_faces(n_elements_, faces_.size(), old_n_nodes, n_splitting_elements, elements_.data(), new_elements.data(), faces_.data(), N_max, nodes_.data(), polynomial_nodes, barycentric_weights, elements_new_indices.data());
 
                 if (!wall_boundaries_.empty()) {
                     SEM::Host::Meshes::move_boundaries(wall_boundaries_.size(), n_elements_, elements_.data(), new_elements.data(), wall_boundaries_.data(), faces_.data(), elements_new_indices.data());
@@ -1895,9 +1896,9 @@ auto SEM::Host::Meshes::Mesh2D_t::adapt(
                 }
 
                 // MPI
-                SEM::Host::Meshes::split_mpi_incoming_interfaces(mpi_interfaces_destination_.size(), faces_.size(), nodes_.size(), n_splitting_elements, n_splitting_faces, n_elements_ + wall_boundaries_.size() + symmetry_boundaries_.size() + inflow_boundaries_.size() + outflow_boundaries_.size() + interfaces_origin_.size(), elements_.data(), new_elements.data(), mpi_interfaces_destination_.data(), new_mpi_interfaces_destination.data(), faces_.data(), nodes_.data(), polynomial_nodes, receiving_interfaces_N_.data(), receiving_interfaces_refine_.get(), receiving_interfaces_refine_without_splitting_.get(), receiving_interfaces_creating_node_.get(), elements_new_indices.data());
+                SEM::Host::Meshes::split_mpi_incoming_interfaces(mpi_interfaces_destination_.size(), faces_.size(), old_n_nodes, n_splitting_elements, n_splitting_faces, n_elements_ + wall_boundaries_.size() + symmetry_boundaries_.size() + inflow_boundaries_.size() + outflow_boundaries_.size() + interfaces_origin_.size(), elements_.data(), new_elements.data(), mpi_interfaces_destination_.data(), new_mpi_interfaces_destination.data(), faces_.data(), nodes_.data(), polynomial_nodes, receiving_interfaces_N_.data(), receiving_interfaces_refine_.get(), receiving_interfaces_refine_without_splitting_.get(), receiving_interfaces_creating_node_.get(), elements_new_indices.data());
 
-                SEM::Host::Meshes::split_faces(faces_.size(), nodes_.size(), n_splitting_elements, faces_.data(), new_faces.data(), elements_.data(), nodes_.data(), max_split_level_, N_max, elements_new_indices.data());
+                SEM::Host::Meshes::split_faces(faces_.size(), old_n_nodes, n_splitting_elements, faces_.data(), new_faces.data(), elements_.data(), nodes_.data(), max_split_level_, N_max, elements_new_indices.data());
 
                 faces_ = std::move(new_faces);
             }
@@ -2168,25 +2169,25 @@ auto SEM::Host::Meshes::Mesh2D_t::adapt(
     SEM::Host::Meshes::hp_adapt(n_elements_, faces_.size(), old_n_nodes, n_splitting_elements, elements_.data(), new_elements.data(), faces_.data(), new_faces.data(), max_split_level_, N_max, nodes_.data(), polynomial_nodes, barycentric_weights, elements_new_indices.data());
     
     if (!wall_boundaries_.empty()) {
-        SEM::Host::Meshes::split_boundaries(wall_boundaries_.size(), faces_.size(), nodes_.size(), n_splitting_elements, n_elements_ + 3 * n_splitting_elements, elements_.data(), new_elements.data(), wall_boundaries_.data(), new_wall_boundaries.data(), faces_.data(), nodes_.data(), polynomial_nodes, elements_new_indices.data());
+        SEM::Host::Meshes::split_boundaries(wall_boundaries_.size(), faces_.size(), old_n_nodes, n_splitting_elements, n_elements_ + 3 * n_splitting_elements, elements_.data(), new_elements.data(), wall_boundaries_.data(), new_wall_boundaries.data(), faces_.data(), nodes_.data(), polynomial_nodes, elements_new_indices.data());
     }
     if (!symmetry_boundaries_.empty()) {
-        SEM::Host::Meshes::split_boundaries(symmetry_boundaries_.size(), faces_.size(), nodes_.size(), n_splitting_elements, n_elements_ + 3 * n_splitting_elements + wall_boundaries_.size() + n_splitting_wall_boundaries, elements_.data(), new_elements.data(), symmetry_boundaries_.data(), new_symmetry_boundaries.data(), faces_.data(), nodes_.data(), polynomial_nodes, elements_new_indices.data());
+        SEM::Host::Meshes::split_boundaries(symmetry_boundaries_.size(), faces_.size(), old_n_nodes, n_splitting_elements, n_elements_ + 3 * n_splitting_elements + wall_boundaries_.size() + n_splitting_wall_boundaries, elements_.data(), new_elements.data(), symmetry_boundaries_.data(), new_symmetry_boundaries.data(), faces_.data(), nodes_.data(), polynomial_nodes, elements_new_indices.data());
     }
     if (!inflow_boundaries_.empty()) {
-        SEM::Host::Meshes::split_boundaries(inflow_boundaries_.size(), faces_.size(), nodes_.size(), n_splitting_elements, n_elements_ + 3 * n_splitting_elements + wall_boundaries_.size() + n_splitting_wall_boundaries + symmetry_boundaries_.size() + n_splitting_symmetry_boundaries, elements_.data(), new_elements.data(), inflow_boundaries_.data(), new_inflow_boundaries.data(), faces_.data(), nodes_.data(), polynomial_nodes, elements_new_indices.data());
+        SEM::Host::Meshes::split_boundaries(inflow_boundaries_.size(), faces_.size(), old_n_nodes, n_splitting_elements, n_elements_ + 3 * n_splitting_elements + wall_boundaries_.size() + n_splitting_wall_boundaries + symmetry_boundaries_.size() + n_splitting_symmetry_boundaries, elements_.data(), new_elements.data(), inflow_boundaries_.data(), new_inflow_boundaries.data(), faces_.data(), nodes_.data(), polynomial_nodes, elements_new_indices.data());
     }
     if (!outflow_boundaries_.empty()) {
-        SEM::Host::Meshes::split_boundaries(outflow_boundaries_.size(), faces_.size(), nodes_.size(), n_splitting_elements, n_elements_ + 3 * n_splitting_elements + wall_boundaries_.size() + n_splitting_wall_boundaries + symmetry_boundaries_.size() + n_splitting_symmetry_boundaries + inflow_boundaries_.size() + n_splitting_inflow_boundaries, elements_.data(), new_elements.data(), outflow_boundaries_.data(), new_outflow_boundaries.data(), faces_.data(), nodes_.data(), polynomial_nodes, elements_new_indices.data());
+        SEM::Host::Meshes::split_boundaries(outflow_boundaries_.size(), faces_.size(), old_n_nodes, n_splitting_elements, n_elements_ + 3 * n_splitting_elements + wall_boundaries_.size() + n_splitting_wall_boundaries + symmetry_boundaries_.size() + n_splitting_symmetry_boundaries + inflow_boundaries_.size() + n_splitting_inflow_boundaries, elements_.data(), new_elements.data(), outflow_boundaries_.data(), new_outflow_boundaries.data(), faces_.data(), nodes_.data(), polynomial_nodes, elements_new_indices.data());
     }
 
     if (!interfaces_origin_.empty()) {
-        SEM::Host::Meshes::split_interfaces(interfaces_origin_.size(), faces_.size(), nodes_.size(), n_splitting_elements, n_elements_ + 3 * n_splitting_elements + wall_boundaries_.size() + n_splitting_wall_boundaries + symmetry_boundaries_.size() + n_splitting_symmetry_boundaries + inflow_boundaries_.size() + n_splitting_inflow_boundaries + outflow_boundaries_.size() + n_splitting_outflow_boundaries, elements_.data(), new_elements.data(), interfaces_origin_.data(), interfaces_origin_side_.data(), interfaces_destination_.data(), new_interfaces_origin.data(), new_interfaces_origin_side.data(), new_interfaces_destination.data(), faces_.data(), nodes_.data(), max_split_level_, N_max, polynomial_nodes, elements_new_indices.data());
+        SEM::Host::Meshes::split_interfaces(interfaces_origin_.size(), faces_.size(), old_n_nodes, n_splitting_elements, n_elements_ + 3 * n_splitting_elements + wall_boundaries_.size() + n_splitting_wall_boundaries + symmetry_boundaries_.size() + n_splitting_symmetry_boundaries + inflow_boundaries_.size() + n_splitting_inflow_boundaries + outflow_boundaries_.size() + n_splitting_outflow_boundaries, elements_.data(), new_elements.data(), interfaces_origin_.data(), interfaces_origin_side_.data(), interfaces_destination_.data(), new_interfaces_origin.data(), new_interfaces_origin_side.data(), new_interfaces_destination.data(), faces_.data(), nodes_.data(), max_split_level_, N_max, polynomial_nodes, elements_new_indices.data());
     }
 
     if (!mpi_interfaces_process_.empty()) {       
         SEM::Host::Meshes::split_mpi_outgoing_interfaces(mpi_interfaces_origin_.size(), n_elements_, mpi_interfaces_process_.size(), elements_.data(), faces_.data(), nodes_.data(), mpi_interfaces_origin_.data(), mpi_interfaces_origin_side_.data(), mpi_interfaces_destination_.data(), new_mpi_interfaces_origin.data(), new_mpi_interfaces_origin_side.data(), mpi_interfaces_process_.data(), mpi_interfaces_outgoing_size_.data(), mpi_interfaces_incoming_size_.data(), mpi_interfaces_incoming_offset_.data(), interfaces_refine_.get(), interfaces_refine_without_splitting_.get(), max_split_level_);
-        SEM::Host::Meshes::split_mpi_incoming_interfaces(mpi_interfaces_destination_.size(), faces_.size(), nodes_.size(), n_splitting_elements, n_splitting_faces, n_elements_ + 3 * n_splitting_elements + wall_boundaries_.size() + n_splitting_wall_boundaries + symmetry_boundaries_.size() + n_splitting_symmetry_boundaries + inflow_boundaries_.size() + n_splitting_inflow_boundaries + outflow_boundaries_.size() + n_splitting_outflow_boundaries + interfaces_origin_.size() + n_splitting_interface_elements, elements_.data(), new_elements.data(), mpi_interfaces_destination_.data(), new_mpi_interfaces_destination.data(), faces_.data(), nodes_.data(), polynomial_nodes, receiving_interfaces_N_.data(), receiving_interfaces_refine_.get(), receiving_interfaces_refine_without_splitting_.get(), receiving_interfaces_creating_node_.get(), elements_new_indices.data());
+        SEM::Host::Meshes::split_mpi_incoming_interfaces(mpi_interfaces_destination_.size(), faces_.size(), old_n_nodes, n_splitting_elements, n_splitting_faces, n_elements_ + 3 * n_splitting_elements + wall_boundaries_.size() + n_splitting_wall_boundaries + symmetry_boundaries_.size() + n_splitting_symmetry_boundaries + inflow_boundaries_.size() + n_splitting_inflow_boundaries + outflow_boundaries_.size() + n_splitting_outflow_boundaries + interfaces_origin_.size() + n_splitting_interface_elements, elements_.data(), new_elements.data(), mpi_interfaces_destination_.data(), new_mpi_interfaces_destination.data(), faces_.data(), nodes_.data(), polynomial_nodes, receiving_interfaces_N_.data(), receiving_interfaces_refine_.get(), receiving_interfaces_refine_without_splitting_.get(), receiving_interfaces_creating_node_.get(), elements_new_indices.data());
     }
 
     SEM::Host::Meshes::split_faces(faces_.size(), old_n_nodes, n_splitting_elements, faces_.data(), new_faces.data(), elements_.data(), nodes_.data(), max_split_level_, N_max, elements_new_indices.data());
