@@ -9131,10 +9131,10 @@ auto SEM::Device::Meshes::fill_received_elements(
         element.nodes_[2] = received_node_indices[neighbours_offset + 2];
         element.nodes_[3] = received_node_indices[neighbours_offset + 3];
 
-        for (int i = 0; i < std::pow(element.N_ + 1, 2); ++i) {
-            element.p_[i] = solution[p_offset + i];
-            element.u_[i] = solution[u_offset + i];
-            element.v_[i] = solution[v_offset + i];
+        for (int j = 0; j < std::pow(element.N_ + 1, 2); ++j) {
+            element.p_[j] = solution[p_offset + j];
+            element.u_[j] = solution[u_offset + j];
+            element.v_[j] = solution[v_offset + j];
         }
 
         const std::array<Vec2<deviceFloat>, 4> received_element_nodes {
