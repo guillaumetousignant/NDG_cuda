@@ -8516,8 +8516,8 @@ auto SEM::Host::Meshes::find_faces_to_delete(
 }
 
 auto SEM::Host::Meshes::no_faces_to_delete(std::vector<bool>& faces_to_delete) -> void {
-    for (auto& i : faces_to_delete) {
-        i = false;
+    for (size_t i = 0; i < faces_to_delete.size(); ++i) {
+        faces_to_delete[i] = false;
     }
 }
 
