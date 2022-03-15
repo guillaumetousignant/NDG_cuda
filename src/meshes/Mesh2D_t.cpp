@@ -2911,7 +2911,7 @@ auto SEM::Host::Meshes::Mesh2D_t::load_balance(const std::vector<std::vector<hos
             for (auto i : missing_nodes) {
                 n_missing_received_nodes += i;
             }
-
+            const size_t n_created_received_nodes = n_missing_received_nodes;
             for (auto i : missing_neighbour_nodes) {
                 n_missing_received_nodes += i;
             }
@@ -2920,7 +2920,7 @@ auto SEM::Host::Meshes::Mesh2D_t::load_balance(const std::vector<std::vector<hos
             nodes_.resize(nodes_.size() + n_missing_received_nodes);
             SEM::Host::Meshes::add_new_received_nodes(old_n_nodes, nodes_.data(), nodes_arrays_recv.data(), missing_nodes, missing_received_nodes, received_node_indices.data(), received_node_received_indices.data());
         
-            SEM::Host::Meshes::add_new_received_neighbour_nodes(old_n_nodes, nodes_.data(), neighbours_nodes_arrays_recv.data(), missing_neighbour_nodes, missing_nodes, missing_received_neighbour_nodes, received_neighbour_node_indices.data(), received_neighbour_node_received_indices.data());
+            SEM::Host::Meshes::add_new_received_neighbour_nodes(old_n_nodes, n_created_received_nodes, nodes_.data(), neighbours_nodes_arrays_recv.data(), missing_neighbour_nodes, missing_nodes, missing_received_neighbour_nodes, received_neighbour_node_indices.data(), received_neighbour_node_received_indices.data());
         }
         // Now something similar for neighbours?
 
@@ -3351,7 +3351,7 @@ auto SEM::Host::Meshes::Mesh2D_t::load_balance(const std::vector<std::vector<hos
 
         if (n_elements_recv_right[global_rank] > 0) {
             // Now we must store these elements
-            for (size_t i = 0; i < n_elements_recv_left[global_rank]; ++i) {
+            for (size_t i = 0; i < n_elements_recv_right[global_rank]; ++i) {
                 new_elements[n_elements_new[global_rank] - n_elements_recv_right[global_rank] + i] = std::move(elements_recv_right[i]);
             }
             
@@ -8453,6 +8453,7 @@ auto SEM::Host::Meshes::find_received_neighbour_nodes(
 
 auto SEM::Host::Meshes::add_new_received_neighbour_nodes(
         size_t n_nodes, 
+        size_t n_received_created_nodes,
         Vec2<hostFloat>* nodes, 
         const hostFloat* received_neighbour_nodes, 
         const std::vector<bool>& missing_neighbour_nodes, 
@@ -8463,7 +8464,7 @@ auto SEM::Host::Meshes::add_new_received_neighbour_nodes(
 
     for (size_t i = 0; i < missing_neighbour_nodes.size(); ++i) {
         if (missing_neighbour_nodes[i]) {
-            size_t new_received_index = n_nodes;
+            size_t new_received_index = n_nodes + n_received_created_nodes;
             for (size_t j = 0; j < i; ++j) {
                 new_received_index += missing_neighbour_nodes[j];
             }
@@ -8481,7 +8482,7 @@ auto SEM::Host::Meshes::add_new_received_neighbour_nodes(
                 received_neighbour_nodes_indices[i] = new_received_index;
             }
             else {
-                size_t new_received_index = n_nodes;
+                size_t new_received_index = n_nodes + n_received_created_nodes;
                 for (size_t j = 0; j < received_neighbour_node_received_indices[i] - missing_nodes.size(); ++j) {
                     new_received_index += missing_neighbour_nodes[j];
                 }
