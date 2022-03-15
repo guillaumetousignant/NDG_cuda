@@ -1672,7 +1672,7 @@ auto SEM::Host::Meshes::Mesh2D_t::adapt(
             SEM::Host::Meshes::copy_mpi_interfaces_error(mpi_interfaces_destination_.size(), elements_.data(), faces_.data(), nodes_.data(), mpi_interfaces_destination_.data(), receiving_interfaces_N_.data(), receiving_interfaces_refine_.get(), receiving_interfaces_refine_without_splitting_.get(), receiving_interfaces_creating_node_.get());
     
             for (int i = 0; i < mpi_interfaces_destination_.size(); ++i) {
-                n_splitting_mpi_interface_incoming_elements += receiving_interfaces_refine_[i];
+                n_splitting_mpi_interface_incoming_elements += receiving_interfaces_refine_[i] && !receiving_interfaces_refine_without_splitting_[i];
                 n_mpi_interface_new_nodes += receiving_interfaces_creating_node_[i];
             }
 
