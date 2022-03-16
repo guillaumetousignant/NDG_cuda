@@ -1,4 +1,4 @@
-# cuda_test
+# NDG_cuda
 
 [![GitHub license](https://img.shields.io/github/license/guillaumetousignant/NDG_cuda.svg)](https://github.com/guillaumetousignant/NDG_cuda/blob/master/LICENSE) [![GitHub release](https://img.shields.io/github/release-pre/guillaumetousignant/NDG_cuda.svg)](https://GitHub.com/guillaumetousignant/NDG_cuda/releases/) [![Documentation Status](https://readthedocs.org/projects/another-path-tracer/badge/?version=latest)](https://ndg-cuda.readthedocs.io/en/latest/?badge=latest) [![build-ubuntu Actions Status](https://github.com/guillaumetousignant/NDG_cuda/workflows/Ubuntu/badge.svg)](https://github.com/guillaumetousignant/NDG_cuda/actions) [![build-windows Actions Status](https://github.com/guillaumetousignant/NDG_cuda/workflows/Windows/badge.svg)](https://github.com/guillaumetousignant/NDG_cuda/actions)
 
@@ -20,12 +20,11 @@ Dependencies:
 - CGNS
 - VTK
 
-To build without cgns, add `-DUSE_CGNS=OFF` to cmake call.  
+To build without cgns and HDF5, add `-DUSE_CGNS=OFF` to cmake call.  
 
 To build tests, add `-DBUILD_TESTING=ON` to cmake call. Then:
 
 ```bash
-make unit_tests
 ctest
 ```
 
