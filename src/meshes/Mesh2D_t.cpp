@@ -6058,7 +6058,7 @@ auto SEM::Host::Meshes::copy_interfaces_error(
 auto SEM::Host::Meshes::copy_mpi_interfaces_error(
         size_t n_MPI_interface_elements, 
         Element2D_t* elements, 
-        const Face2D_t* faces, 
+        Face2D_t* faces, 
         const Vec2<hostFloat>* nodes, 
         const size_t* MPI_interfaces_destination, 
         const int* N, 
@@ -6149,6 +6149,36 @@ auto SEM::Host::Meshes::copy_mpi_interfaces_error(
                 elements_refining_without_splitting[i] = true;
                 element.refine_ = false;
                 element.coarsen_ = false;
+
+                // This is needed because faces won't compute their geometry again if an mpi element refines without splitting, as would_h_refine returns false
+                // CHECK this is sketchy. Creates a race condition if two MPI interface elements link to the same face. 
+                // Geometry fails if it is another ghost element.
+                for (size_t side_face_index = 0; side_face_index < element.faces_[0].size(); ++side_face_index) {
+                    const size_t face_index = element.faces_[0][side_face_index];
+                    Face2D_t& face = faces[face_index];
+
+                    const size_t other_element_face_side_index = face.elements_[0] == MPI_interfaces_destination[i];
+                    const size_t other_element_index = face.elements_[other_element_face_side_index];
+                    const Element2D_t& other_element = elements[other_element_index];
+                    const size_t other_element_side_index = face.elements_side_[other_element_face_side_index];
+                    const size_t other_element_next_side_index = (other_element_side_index + 1 < other_element.nodes_.size()) ? other_element_side_index + 1 : size_t{0};
+
+                    Vec2<hostFloat> other_element_centre {0};
+                    for (size_t element_side_index = 0; element_side_index < other_element.nodes_.size(); ++element_side_index) {
+                        other_element_centre += nodes[other_element.nodes_[element_side_index]];
+                    }
+                    other_element_centre /= other_element.nodes_.size();
+
+                    const std::array<Vec2<hostFloat>, 2> this_element_nodes = (n_side_faces[0] == 0) ? std::array<Vec2<hostFloat>, 2>{new_node, side_nodes[1]} : std::array<Vec2<hostFloat>, 2>{side_nodes[0], new_node};
+                    const std::array<Vec2<hostFloat>, 2> other_element_nodes {nodes[other_element.nodes_[other_element_side_index]], nodes[other_element.nodes_[other_element_next_side_index]]};
+
+                    const Vec2<hostFloat> this_element_centre = (this_element_nodes[0] + this_element_nodes[1])/2;
+                    const std::array<Vec2<hostFloat>, 2> elements_centres = (other_element_face_side_index == 0) ? std::array<Vec2<hostFloat>, 2>{other_element_centre, this_element_centre} : std::array<Vec2<hostFloat>, 2>{this_element_centre, other_element_centre};
+                    
+                    std::array<std::array<Vec2<hostFloat>, 2>, 2> element_geometry_nodes = (other_element_face_side_index == 0) ? std::array<std::array<Vec2<hostFloat>, 2>, 2>{other_element_nodes, this_element_nodes} : std::array<std::array<Vec2<hostFloat>, 2>, 2>{this_element_nodes, other_element_nodes};
+
+                    face.compute_geometry(elements_centres, {nodes[face.nodes_[0]], nodes[face.nodes_[1]]}, element_geometry_nodes);
+                }
             }
             else  {
                 elements_refining_without_splitting[i] = false;

@@ -193,7 +193,7 @@ namespace SEM { namespace Host { namespace Meshes {
 
     auto copy_interfaces_error(size_t n_local_interfaces, SEM::Host::Entities::Element2D_t* elements, const size_t* local_interfaces_origin, const size_t* local_interfaces_origin_side, const size_t* local_interfaces_destination) -> void;
     
-    auto copy_mpi_interfaces_error(size_t n_MPI_interface_elements, SEM::Host::Entities::Element2D_t* elements, const SEM::Host::Entities::Face2D_t* faces, const SEM::Host::Entities::Vec2<hostFloat>* nodes, const size_t* MPI_interfaces_destination, const int* N, const bool* elements_splitting, bool* elements_refining_without_splitting, bool* elements_creating_node) -> void;
+    auto copy_mpi_interfaces_error(size_t n_MPI_interface_elements, SEM::Host::Entities::Element2D_t* elements, SEM::Host::Entities::Face2D_t* faces, const SEM::Host::Entities::Vec2<hostFloat>* nodes, const size_t* MPI_interfaces_destination, const int* N, const bool* elements_splitting, bool* elements_refining_without_splitting, bool* elements_creating_node) -> void;
 
     auto split_boundaries(size_t n_boundaries, size_t n_faces, size_t n_nodes, size_t n_splitting_elements, size_t offset, SEM::Host::Entities::Element2D_t* elements, SEM::Host::Entities::Element2D_t* new_elements, const size_t* boundaries, size_t* new_boundaries, const SEM::Host::Entities::Face2D_t* faces, const SEM::Host::Entities::Vec2<hostFloat>* nodes, const std::vector<std::vector<hostFloat>>& polynomial_nodes, size_t* elements_new_indices) -> void;
 
