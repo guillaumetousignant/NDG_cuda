@@ -430,13 +430,16 @@ copying, at which point we can use the \acrshort{acr:CPU} array. To finish up, w
 			double* pressure_gpu = nullptr;
 
 			cudaMallocAsync(&pressure_gpu, length * sizeof(double), stream);
-			cudaMemcpyAsync(pressure_gpu, pressure_cpu, length * sizeof(double), cudaMemcpyHostToDevice, stream);
+			cudaMemcpyAsync(pressure_gpu, pressure_cpu, length * sizeof(double), 
+                cudaMemcpyHostToDevice, stream);
 
 			const numBlocks = 10;
 			const blockSize = 100;
-			perform_gpu_computations<<<numBlocks, blockSize, 0, stream>>>(length, pressure_gpu);
+			perform_gpu_computations<<<numBlocks, blockSize, 0, stream>>>(
+				length, pressure_gpu);
 			
-			cudaMemcpyAsync(pressure_cpu, pressure_gpu, length * sizeof(double), cudaMemcpyDeviceToHost, stream);
+			cudaMemcpyAsync(pressure_cpu, pressure_gpu, length * sizeof(double), 
+                cudaMemcpyDeviceToHost, stream);
 			cudaStreamSynchronize(stream);
 
 			display_cpu_results(length, pressure_cpu);
@@ -466,7 +469,8 @@ Algorithm~\ref{alg:cuda_memory} using this new type.
 
 			const numBlocks = 10;
 			const blockSize = 100;
-			perform_gpu_computations<<<numBlocks, blockSize, 0, stream>>>(pressure_gpu.size(), pressure_gpu.data());
+			perform_gpu_computations<<<numBlocks, blockSize, 0, stream>>>(
+				pressure_gpu.size(), pressure_gpu.data());
 			
 			pressure_gpu.copy_to(pressure_cpu, stream);
 			cudaStreamSynchronize(stream);
@@ -557,45 +561,67 @@ several of the optimisations from~\cite{Harris2007}.
 
 \begin{algorithm}[H]
     \begin{cuda}
-		template <unsigned int blockSize>
-		__device__ 
-		auto warp_reduce_delta_t_2D(volatile deviceFloat *sdata, unsigned int tid) -> void {
-			if (blockSize >= 32) sdata[tid] = std::min(sdata[tid], sdata[tid + 16]);
-			if (blockSize >= 16) sdata[tid] = std::min(sdata[tid], sdata[tid + 8]);
-			if (blockSize >= 8) sdata[tid] = std::min(sdata[tid], sdata[tid + 4]);
-			if (blockSize >= 4) sdata[tid] = std::min(sdata[tid], sdata[tid + 2]);
-			if (blockSize >= 2) sdata[tid] = std::min(sdata[tid], sdata[tid + 1]);
-		}
+        template <unsigned int blockSize>
+        __device__ 
+        auto warp_reduce_delta_t_2D(volatile deviceFloat *sdata, unsigned int tid) -> void {
+            if (blockSize >= 32) sdata[tid] = std::min(sdata[tid], sdata[tid + 16]);
+            if (blockSize >= 16) sdata[tid] = std::min(sdata[tid], sdata[tid + 8]);
+            if (blockSize >= 8) sdata[tid] = std::min(sdata[tid], sdata[tid + 4]);
+            if (blockSize >= 4) sdata[tid] = std::min(sdata[tid], sdata[tid + 2]);
+            if (blockSize >= 2) sdata[tid] = std::min(sdata[tid], sdata[tid + 1]);
+        }
 
-		template <unsigned int blockSize>
-		__global__ 
-		auto reduce_wave_delta_t(deviceFloat CFL, size_t N_elements, const Element2D_t* elements, deviceFloat *g_odata) -> void {
-			__shared__ deviceFloat sdata[(blockSize >= 64) ? blockSize: blockSize+blockSize/2];
-			unsigned int tid = threadIdx.x;
-			size_t i = blockIdx.x*(blockSize*2) + tid;
-			unsigned int gridSize = blockSize*2*gridDim.x;
-			sdata[tid] = std::numeric_limits<deviceFloat>::infinity();
+        template <unsigned int blockSize>
+        __global__ 
+        auto reduce_wave_delta_t(
+                deviceFloat CFL, 
+                size_t N_elements, 
+                const Element2D_t* elements, 
+                deviceFloat *g_odata) -> void {
 
-			while (i < N_elements) { 
-				deviceFloat delta_t_wave = CFL * elements[i].delta_xy_min_/(elements[i].N_ * elements[i].N_ * Constants::c);
+            __shared__ deviceFloat sdata[(blockSize >= 64) ? blockSize: blockSize+blockSize/2];
+            unsigned int tid = threadIdx.x;
+            size_t i = blockIdx.x*(blockSize*2) + tid;
+            unsigned int gridSize = blockSize*2*gridDim.x;
+            sdata[tid] = std::numeric_limits<deviceFloat>::infinity();
 
-				if (i+blockSize < N_elements) {
-					delta_t_wave = std::min(delta_t_wave, CFL * elements[i+blockSize].delta_xy_min_/(elements[i+blockSize].N_ * elements[i+blockSize].N_ * Constants::c));
-				}
+            while (i < N_elements) { 
+                deviceFloat delta_t_wave = 
+                CFL * elements[i].delta_xy_min_
+                    /(elements[i].N_ * elements[i].N_ * Constants::c);
 
-				sdata[tid] = std::min(sdata[tid], delta_t_wave); 
-				i += gridSize; 
-			}
-			__syncthreads();
+                if (i+blockSize < N_elements) {
+                    delta_t_wave = std::min(
+                        delta_t_wave, 
+                        CFL * elements[i+blockSize].delta_xy_min_
+                            /(elements[i+blockSize].N_ * elements[i+blockSize].N_ * Constants::c));
+                }
 
-			if (blockSize >= 1024) { if (tid < 512) { sdata[tid] = std::min(sdata[tid], sdata[tid + 512]); } __syncthreads(); }
-			if (blockSize >= 512) { if (tid < 256) { sdata[tid] = std::min(sdata[tid], sdata[tid + 256]); } __syncthreads(); }
-			if (blockSize >= 256) { if (tid < 128) { sdata[tid] = std::min(sdata[tid], sdata[tid + 128]); } __syncthreads(); }
-			if (blockSize >= 128) { if (tid < 64) { sdata[tid] = std::min(sdata[tid], sdata[tid + 64]); } __syncthreads(); }
+                sdata[tid] = std::min(sdata[tid], delta_t_wave); 
+                i += gridSize; 
+            }
+            __syncthreads();
 
-			if (tid < 32) warp_reduce_delta_t_2D<blockSize>(sdata, tid);
-			if (tid == 0) g_odata[blockIdx.x] = sdata[0];
-		}\end{cuda}
+            if (blockSize >= 1024) { 
+                if (tid < 512) { sdata[tid] = std::min(sdata[tid], sdata[tid + 512]); } 
+                __syncthreads(); 
+            }
+        	if (blockSize >= 512) { 
+                if (tid < 256) { sdata[tid] = std::min(sdata[tid], sdata[tid + 256]); } 
+                __syncthreads(); 
+            }
+            if (blockSize >= 256) { 
+                if (tid < 128) { sdata[tid] = std::min(sdata[tid], sdata[tid + 128]); }
+                __syncthreads(); 
+            }
+            if (blockSize >= 128) { 
+                if (tid < 64) { sdata[tid] = std::min(sdata[tid], sdata[tid + 64]); } 
+                __syncthreads(); 
+            }
+
+            if (tid < 32) warp_reduce_delta_t_2D<blockSize>(sdata, tid);
+            if (tid == 0) g_odata[blockIdx.x] = sdata[0];
+        }\end{cuda}
 \caption{\textbf{reduce\_wave\_delta\_t:} Computations are performed in parallel on the \acrshort{acr:GPU}.}\label{alg:reduce_wave_delta_t}
 \end{algorithm}
 
@@ -631,37 +657,61 @@ data members of the mesh object.
 
 \begin{algorithm}[H]
     \begin{cuda}
-		auto boundary_conditions() -> void {
-			int global_rank;
-			MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
-			int global_size;
-			MPI_Comm_size(MPI_COMM_WORLD, &global_size);
+        auto boundary_conditions() -> void {
+        	int global_rank;
+        	MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
+        	int global_size;
+        	MPI_Comm_size(MPI_COMM_WORLD, &global_size);
 
-			get_MPI_interfaces<<<mpi_outgoing_numBlocks_, mpi_blockSize_, 0, stream_>>>(mpi_origin_.size(), elements_.data(), mpi_origin_.data(), mpi_origin_side_.data(), max_N_, device_p_.data(), device_u_.data(), device_v_.data());
+        	get_MPI_interfaces<<<mpi_outgoing_numBlocks_, mpi_blockSize_, 0, stream_>>>(
+        		mpi_origin_.size(), elements_.data(), 
+        		mpi_origin_.data(), mpi_origin_side_.data(), max_N_, 
+                device_p_.data(), device_u_.data(), device_v_.data());
 
-			device_p_.copy_to(host_p_, stream_);
-			device_u_.copy_to(host_u_, stream_);
-			device_v_.copy_to(host_v_, stream_);
-			cudaStreamSynchronize(stream_);
+        	device_p_.copy_to(host_p_, stream_);
+        	device_u_.copy_to(host_u_, stream_);
+        	device_v_.copy_to(host_v_, stream_);
+        	cudaStreamSynchronize(stream_);
 			
-			for (size_t i = 0; i < mpi_process_.size(); ++i) {
-				MPI_Isend(host_p_.data() + mpi_outgoing_offset_[i] * (max_N_ + 1), mpi_outgoing_size_[i] * (max_N_ + 1), MPI_DOUBLE, mpi_process_[i], /*[...]*/);
-				MPI_Irecv(host_receiving_p_.data() + mpi_incoming_offset_[i] * (max_N_ + 1), mpi_incoming_size_[i] * (max_N_ + 1), MPI_DOUBLE, mpi_process_[i], /*[...]*/);
+        	for (size_t i = 0; i < mpi_process_.size(); ++i) {
+        		MPI_Isend(
+                    host_p_.data() + mpi_outgoing_offset_[i] * (max_N_ + 1), 
+                    mpi_outgoing_size_[i] * (max_N_ + 1), 
+                    MPI_DOUBLE, mpi_process_[i], /*[...]*/);
+        		MPI_Irecv(
+                    host_receiving_p_.data() + mpi_incoming_offset_[i] * (max_N_ + 1), 
+                    mpi_incoming_size_[i] * (max_N_ + 1), 
+                    MPI_DOUBLE, mpi_process_[i], /*[...]*/);
 
-				MPI_Isend(host_u_.data() + mpi_outgoing_offset_[i] * (max_N_ + 1), mpi_outgoing_size_[i] * (max_N_ + 1), MPI_DOUBLE, mpi_process_[i], /*[...]*/);
-				MPI_Irecv(host_receiving_u_.data() + mpi_incoming_offset_[i] * (max_N_ + 1), mpi_incoming_size_[i] * (max_N_ + 1), MPI_DOUBLE, mpi_process_[i], /*[...]*/);
+        		MPI_Isend(
+                    host_u_.data() + mpi_outgoing_offset_[i] * (max_N_ + 1), 
+                    mpi_outgoing_size_[i] * (max_N_ + 1), 
+                    MPI_DOUBLE, mpi_process_[i], /*[...]*/);
+        		MPI_Irecv(
+                    host_receiving_u_.data() + mpi_incoming_offset_[i] * (max_N_ + 1), 
+                    mpi_incoming_size_[i] * (max_N_ + 1), 
+                    MPI_DOUBLE, mpi_process_[i], /*[...]*/);
 
-				MPI_Isend(host_v_.data() + mpi_outgoing_offset_[i] * (max_N_ + 1), mpi_outgoing_size_[i] * (max_N_ + 1), MPI_DOUBLE, mpi_process_[i], /*[...]*/);
-				MPI_Irecv(host_receiving_v_.data() + mpi_incoming_offset_[i] * (max_N_ + 1), mpi_incoming_size_[i] * (max_N_ + 1), MPI_DOUBLE, mpi_process_[i], /*[...]*/);
-			}
+        		MPI_Isend(
+                    host_v_.data() + mpi_outgoing_offset_[i] * (max_N_ + 1), 
+                    mpi_outgoing_size_[i] * (max_N_ + 1), 
+                    MPI_DOUBLE, mpi_process_[i], /*[...]*/);
+        		MPI_Irecv(
+                    host_receiving_v_.data() + mpi_incoming_offset_[i] * (max_N_ + 1), 
+                    mpi_incoming_size_[i] * (max_N_ + 1), 
+                    MPI_DOUBLE, mpi_process_[i], /*[...]*/);
+        	}
 
-			MPI_Waitall(6 * mpi_process_.size(), requests_.data(), statuses_.data());
+        	MPI_Waitall(6 * mpi_process_.size(), requests_.data(), statuses_.data());
 
-			device_receiving_p_.copy_from(host_receiving_p_, stream_);
-			device_receiving_u_.copy_from(host_receiving_u_, stream_);
-			device_receiving_v_.copy_from(host_receiving_v_, stream_);
+        	device_receiving_p_.copy_from(host_receiving_p_, stream_);
+        	device_receiving_u_.copy_from(host_receiving_u_, stream_);
+        	device_receiving_v_.copy_from(host_receiving_v_, stream_);
 
-			put_MPI_interfaces<<<mpi_incoming_numBlocks_, mpi_blockSize_, 0, stream_>>>(mpi_destination_.size(), elements_.data(), mpi_destination_.data(), max_N_, device_receiving_p_.data(), device_receiving_u_.data(), device_receiving_v_.data());
-		}\end{cuda}
+        	put_MPI_interfaces<<<mpi_incoming_numBlocks_, mpi_blockSize_, 0, stream_>>>(
+        		mpi_destination_.size(), elements_.data(), 
+        		mpi_destination_.data(), max_N_, 
+        		device_receiving_p_.data(), device_receiving_u_.data(), device_receiving_v_.data());
+        }\end{cuda}
 \caption{\textbf{boundary\_conditions:} The solution of elements on either side of the interface between \acrshortpl{acr:GPU} is transferred.}\label{alg:boundary_conditions}
 \end{algorithm}
