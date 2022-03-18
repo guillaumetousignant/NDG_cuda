@@ -208,18 +208,29 @@ well partitioned meshes, but can be slower to execute than other techniques and 
 topology of the entire mesh to partition it, which can be a problem on parallel systems where the
 problem should be split between the different workers.
 
-A different approach is \acrfull{acr:SFC} based repartitioning schemes. These schemes
-reduce multidimensional problems to one dimension by mapping elements to a single curve going
-through the entire domain\cite{Peano1890}. The elements can then be indexed in 1D, and repartitioned
-by splitting that line into segments of equal size. \Acrshortpl{acr:SFC} are very fast to generate,
-which is especially relevant to this work as the repartitioning will be performed often, while the
-computation is underway. Some curves, like the \textit{Hilbert curve}~\cite{Hilbert1891}, have a
-very good locality. This will help reduce the size of inter-block boundaries. This can improve the
+A different approach is \acrfull{acr:SFC} based repartitioning schemes. These schemes reduce
+multidimensional problems to one dimension by mapping elements to a single curve going through the
+entire domain\cite{Peano1890}. The elements can then be indexed in 1D, and repartitioned by
+splitting that line into segments of equal size. \Acrshortpl{acr:SFC} are very fast to generate,
+which is especially relevant to this work as the repartitioning will be performed often while the
+computation is underway. Some curves, like the \textit{Hilbert curve}~\cite{Hilbert1891}, retain a
+very good locality, which will help reduce the size of inter-block boundaries. This can improve the
 performance of the program by reducing the amount of communication between \acrshortpl{acr:GPU}. In
 this work, we will implement a \acrshort{acr:SFC} based repartitioning scheme using the Hilbert
 curve in order to perform dynamic load balancing.
 
 % Problem
+In summary, we want to solve complex problems with high accuracy. We will need a high resolution
+numerical method, more processing power than traditional \acrshort{acr:CPU} programming methods
+possess, and a way to use that increased processing power as efficiently as possible. 
+
+We propose using the \acrlong{acr:DG-SEM} as a very accurate numerical method. We will perform the
+computations on \acrlongpl{acr:GPU} to access their great amount of parallel processing power. We
+will use this increased amount of computing power more efficiently by performing \acrlong{acr:AMR}
+to use more ressources where needed, and less elsewhere. We will finally add dynamic load balancing
+to keep the parallel efficiency of the program as high as possible while the topology changes. This
+tackles the main challenges necessary to keep advancing \acrshort{acr:CFD}.
+
 In order to showcase these techniques, we will solve a sample problem using the 2D wave equation:
 
 \begin{gather}
@@ -228,21 +239,16 @@ In order to showcase these techniques, we will solve a sample problem using the 
 	v_t = -p_y.
 \end{gather}
 
-In summary, we use the \acrlong{acr:DG-SEM} as a very accurate numerical method. We perform the
-computations on \acrlongpl{acr:GPU} to access their great amount of parallel processing power. We
-use this increased amount of computing power more efficiently by performing \acrlong{acr:AMR} to use
-more ressources where needed, and less elsewhere. We finally add dynamic load balancing to keep the
-parallel efficiency of the program as high as possible while the topology changes. This tackles the
-main challenges necessary to keep advancing \acrshort{acr:CFD}.
-
 % Structure
 The structure of this thesis will follow these main concepts.
-Chapter~\ref{chapter:literature_review} discusses the current state of the domain.
-Chapter~\ref{chapter:graphics_processing_units} presents the \acrshort{acr:GPU} architecture ans its
-application to this work. In Chapter~\ref{chapter:spectral_element_method}, we present the
-\acrshort{acr:DG-SEM} and the derivation used for the sample problem. Then,
-Chapter~\ref{chapter:adaptive_mesh_refinement} explains the \acrshort{acr:AMR} process. Dynamic load
-balancing is then described in Chapter~\ref{chapter:load_balancing}. The performance of the program,
-as wall as several comparisons of the impart of the different features using \acrshort{acr:HPC}
-systems are presented in Chapter~\ref{chapter:results}. We conclude with
-Chapter~\ref{chapter:conclusion}, and present ideas for future work.
+Chapter~\ref{chapter:literature_review} discusses the current state of the art of the domain.
+Chapter~\ref{chapter:graphics_processing_units} presents the \acrshort{acr:GPU} architecture and how
+we tackle implementing our algorithms to that special architecture. In
+Chapter~\ref{chapter:spectral_element_method}, we present the \acrshort{acr:DG-SEM} and the
+derivation used for the sample problem. Then, Chapter~\ref{chapter:adaptive_mesh_refinement}
+explains our proposed algorithm for parallel \acrshort{acr:AMR} on \acrshortpl{acr:GPU}. We then
+present a solution to perform dynamic load balancing and the challenges of a dynamic mesh structure
+in Chapter~\ref{chapter:load_balancing}. The performance of the program, as well as several
+comparisons of the impact of the different features using \acrshort{acr:HPC} systems are presented
+in Chapter~\ref{chapter:results}. We conclude with Chapter~\ref{chapter:conclusion}, and present
+ideas for future work.
