@@ -1,0 +1,18 @@
+TabSize = 4
+
+CmdLine
+{
+    -wall
+    -n22
+    -n30
+    -n44
+    -n8
+    -n36
+    -e16
+    -q
+}
+
+# Exclude these environments from syntax checking
+VerbEnvir { verbatim comment listing verbatimtab rawhtml errexam picture texdraw
+    filecontents pgfpicture tikzpicture minted lstlisting IPA cuda 
+}

@@ -815,9 +815,7 @@ following stage run three times, where \(m\) is the stage number.
 	\end{split}
 \end{equation}
 
-The following table lists the coefficients \(a_m\), \(b_m\) and \(g_m\). The algorithm used by the
-program to advance the simulation in time is described in
-Subsection~\ref{subsection:spectral_element_method:implementation:time}. 
+The following table lists the coefficients \(a_m\), \(b_m\) and \(g_m\).
 
 \begin{table}[H]
 	\centering
@@ -861,14 +859,32 @@ element. The global timestep will be chosen as the minimum timestep of all eleme
 \end{equation}
 
 \section{Implementation}\label{section:spectral_element_method:implementation}
-% Talk about the flux computation, possible race conditions
 
 \subsection{Fluxes}\label{subsection:spectral_element_method:implementation:fluxes}
+
+Algorithm~\ref{alg:wave_fluxes} shows how fluxes are computed on the \acrshort{acr:GPU}. This
+function is a good exemple of measures that have to be taken in order to avoid race condition when
+performing computations in parallel on \acrshortpl{acr:GPU}. In most of the program, we parallelise
+over elements, with each thread performing computations on elements. When computing fluxes, both
+elements on either side of a face add their contribution to the face. In addition, an element can
+have multiple faces on each side, a side effect of the non-conforming interfaces from
+Section~\ref{section:adaptive_mesh_refinement:mortar_element_method}. If we parallelise over
+elements, race conditions will occur when multiple elements try to add their contribution to the
+same face at the same time. It is then possible that the contribution of some elements is ignored,
+as it is overwritten by another element. This is not a problem for serial or multi-process single
+threaded \acrshort{acr:CPU} programs.
+
+To remedy this, we parallelise over faces for the flux computation. Earlier computations, also
+parallelised over faces, project the boundary solution of both elements to two solution arrays, left
+and right, in the face objects. The flux computation can then compute the fluxes and store it in a
+single flux solution array in the face objects. Afterwards, we will be able to once again
+parallelise on elements to project these fluxes back to the elements, and continue the normal
+execution of the program.
 
 \begin{algorithm}[H]
     \begin{cuda}
         __global__
-        auto SEM::Device::Solvers::calculate_wave_fluxes(size_t N_faces, Face2D_t* faces) -> void {
+        auto calculate_wave_fluxes(size_t N_faces, Face2D_t* faces) -> void {
             const int index = blockIdx.x * blockDim.x + threadIdx.x;
             const int stride = blockDim.x * gridDim.x;
 
@@ -891,5 +907,3 @@ element. The global timestep will be chosen as the minimum timestep of all eleme
         }\end{cuda}
 \caption{\textbf{calculate\_wave\_fluxes:} Riemann solver for the wave equation fluxes.}\label{alg:wave_fluxes}
 \end{algorithm}
-
-\subsection{Time integration}\label{subsection:spectral_element_method:implementation:time}

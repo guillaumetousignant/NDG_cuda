@@ -560,7 +560,6 @@ several of the optimisations from~\cite{Harris2007}.
 		template <unsigned int blockSize>
 		__device__ 
 		auto warp_reduce_delta_t_2D(volatile deviceFloat *sdata, unsigned int tid) -> void {
-			if (blockSize >= 64) sdata[tid] = std::min(sdata[tid], sdata[tid + 32]);
 			if (blockSize >= 32) sdata[tid] = std::min(sdata[tid], sdata[tid + 16]);
 			if (blockSize >= 16) sdata[tid] = std::min(sdata[tid], sdata[tid + 8]);
 			if (blockSize >= 8) sdata[tid] = std::min(sdata[tid], sdata[tid + 4]);
@@ -589,9 +588,6 @@ several of the optimisations from~\cite{Harris2007}.
 			}
 			__syncthreads();
 
-			if (blockSize >= 8192) { if (tid < 4096) { sdata[tid] = std::min(sdata[tid], sdata[tid + 4096]); } __syncthreads(); }
-			if (blockSize >= 4096) { if (tid < 2048) { sdata[tid] = std::min(sdata[tid], sdata[tid + 2048]); } __syncthreads(); }
-			if (blockSize >= 2048) { if (tid < 1024) { sdata[tid] = std::min(sdata[tid], sdata[tid + 1024]); } __syncthreads(); }
 			if (blockSize >= 1024) { if (tid < 512) { sdata[tid] = std::min(sdata[tid], sdata[tid + 512]); } __syncthreads(); }
 			if (blockSize >= 512) { if (tid < 256) { sdata[tid] = std::min(sdata[tid], sdata[tid + 256]); } __syncthreads(); }
 			if (blockSize >= 256) { if (tid < 128) { sdata[tid] = std::min(sdata[tid], sdata[tid + 128]); } __syncthreads(); }
@@ -641,33 +637,31 @@ data members of the mesh object.
 			int global_size;
 			MPI_Comm_size(MPI_COMM_WORLD, &global_size);
 
-			get_MPI_interfaces<<<mpi_outgoing_numBlocks_, mpi_blockSize_, 0, stream_>>>(mpi_origin_.size(), elements_.data(), mpi_origin_.data(), mpi_origin_side_.data(), maximum_N_, device_p_.data(), device_u_.data(), device_v_.data());
+			get_MPI_interfaces<<<mpi_outgoing_numBlocks_, mpi_blockSize_, 0, stream_>>>(mpi_origin_.size(), elements_.data(), mpi_origin_.data(), mpi_origin_side_.data(), max_N_, device_p_.data(), device_u_.data(), device_v_.data());
 
 			device_p_.copy_to(host_p_, stream_);
 			device_u_.copy_to(host_u_, stream_);
 			device_v_.copy_to(host_v_, stream_);
 			cudaStreamSynchronize(stream_);
 			
-			for (size_t i = 0; i < mpi_interfaces_process_.size(); ++i) {
-				MPI_Isend(host_p_.data() + mpi_interfaces_outgoing_offset_[i] * (maximum_N_ + 1), mpi_interfaces_outgoing_size_[i] * (maximum_N_ + 1), MPI_DOUBLE, mpi_interfaces_process_[i], mpi_boundaries_offset * global_size * global_size + 3 * (global_size * global_rank + mpi_interfaces_process_[i]), MPI_COMM_WORLD, &requests_[3 * (mpi_interfaces_process_.size() + i)]);
-				MPI_Irecv(host_receiving_p_.data() + mpi_interfaces_incoming_offset_[i] * (maximum_N_ + 1), mpi_interfaces_incoming_size_[i] * (maximum_N_ + 1), MPI_DOUBLE, mpi_interfaces_process_[i], mpi_boundaries_offset * global_size * global_size + 3 * (global_size * mpi_interfaces_process_[i] + global_rank), MPI_COMM_WORLD, &requests_[3 * i]);
+			for (size_t i = 0; i < mpi_process_.size(); ++i) {
+				MPI_Isend(host_p_.data() + mpi_outgoing_offset_[i] * (max_N_ + 1), mpi_outgoing_size_[i] * (max_N_ + 1), MPI_DOUBLE, mpi_process_[i], /*[...]*/);
+				MPI_Irecv(host_receiving_p_.data() + mpi_incoming_offset_[i] * (max_N_ + 1), mpi_incoming_size_[i] * (max_N_ + 1), MPI_DOUBLE, mpi_process_[i], /*[...]*/);
 
-				MPI_Isend(host_u_.data() + mpi_interfaces_outgoing_offset_[i] * (maximum_N_ + 1), mpi_interfaces_outgoing_size_[i] * (maximum_N_ + 1), MPI_DOUBLE, mpi_interfaces_process_[i], mpi_boundaries_offset * global_size * global_size + 3 * (global_size * global_rank + mpi_interfaces_process_[i]) + 1, MPI_COMM_WORLD, &requests_[3 * (mpi_interfaces_process_.size() + i) + 1]);
-				MPI_Irecv(host_receiving_u_.data() + mpi_interfaces_incoming_offset_[i] * (maximum_N_ + 1), mpi_interfaces_incoming_size_[i] * (maximum_N_ + 1), MPI_DOUBLE, mpi_interfaces_process_[i], mpi_boundaries_offset * global_size * global_size + 3 * (global_size * mpi_interfaces_process_[i] + global_rank) + 1, MPI_COMM_WORLD, &requests_[3 * i + 1]);
+				MPI_Isend(host_u_.data() + mpi_outgoing_offset_[i] * (max_N_ + 1), mpi_outgoing_size_[i] * (max_N_ + 1), MPI_DOUBLE, mpi_process_[i], /*[...]*/);
+				MPI_Irecv(host_receiving_u_.data() + mpi_incoming_offset_[i] * (max_N_ + 1), mpi_incoming_size_[i] * (max_N_ + 1), MPI_DOUBLE, mpi_process_[i], /*[...]*/);
 
-				MPI_Isend(host_v_.data() + mpi_interfaces_outgoing_offset_[i] * (maximum_N_ + 1), mpi_interfaces_outgoing_size_[i] * (maximum_N_ + 1), MPI_DOUBLE, mpi_interfaces_process_[i], mpi_boundaries_offset * global_size * global_size + 3 * (global_size * global_rank + mpi_interfaces_process_[i]) + 2, MPI_COMM_WORLD, &requests_[3 * (mpi_interfaces_process_.size() + i) + 2]);
-				MPI_Irecv(host_receiving_v_.data() + mpi_interfaces_incoming_offset_[i] * (maximum_N_ + 1), mpi_interfaces_incoming_size_[i] * (maximum_N_ + 1), MPI_DOUBLE, mpi_interfaces_process_[i], mpi_boundaries_offset * global_size * global_size + 3 * (global_size * mpi_interfaces_process_[i] + global_rank) + 2, MPI_COMM_WORLD, &requests_[3 * i + 2]);
+				MPI_Isend(host_v_.data() + mpi_outgoing_offset_[i] * (max_N_ + 1), mpi_outgoing_size_[i] * (max_N_ + 1), MPI_DOUBLE, mpi_process_[i], /*[...]*/);
+				MPI_Irecv(host_receiving_v_.data() + mpi_incoming_offset_[i] * (max_N_ + 1), mpi_incoming_size_[i] * (max_N_ + 1), MPI_DOUBLE, mpi_process_[i], /*[...]*/);
 			}
 
-			MPI_Waitall(3 * mpi_interfaces_process_.size(), requests_.data(), statuses_.data());
+			MPI_Waitall(6 * mpi_process_.size(), requests_.data(), statuses_.data());
 
 			device_receiving_p_.copy_from(host_receiving_p_, stream_);
 			device_receiving_u_.copy_from(host_receiving_u_, stream_);
 			device_receiving_v_.copy_from(host_receiving_v_, stream_);
 
-			put_MPI_interfaces<<<mpi_incoming_numBlocks_, mpi_blockSize_, 0, stream_>>>(mpi_destination_.size(), elements_.data(), mpi_destination_.data(), maximum_N_, device_receiving_p_.data(), device_receiving_u_.data(), device_receiving_v_.data());
-
-			MPI_Waitall(3 * mpi_interfaces_process_.size(), requests_.data() + 3 * mpi_interfaces_process_.size(), statuses_.data() + 3 * mpi_interfaces_process_.size());
+			put_MPI_interfaces<<<mpi_incoming_numBlocks_, mpi_blockSize_, 0, stream_>>>(mpi_destination_.size(), elements_.data(), mpi_destination_.data(), max_N_, device_receiving_p_.data(), device_receiving_u_.data(), device_receiving_v_.data());
 		}\end{cuda}
 \caption{\textbf{boundary\_conditions:} The solution of elements on either side of the interface between \acrshortpl{acr:GPU} is transferred.}\label{alg:boundary_conditions}
 \end{algorithm}
