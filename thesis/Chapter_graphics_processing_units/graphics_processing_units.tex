@@ -387,7 +387,153 @@ programming patterns closer to those used for \acrshort{acr:CPU} programming.
 \section{Implementation}\label{section:graphics_processing_units:implementation}
 % Talk about reduce operations, data transfers for boundaries
 
+\subsection{Memory transfers}\label{subsection:graphics_processing_units:implementation:memory}
+
+\Acrshort{acr:GPU} memory is separate from \acrshort{acr:CPU} memory. In this work, two ways are
+used to allocate memory on the \acrshortpl{acr:GPU}; memory allocated using the \acrshort{acr:CUDA}
+runtime from the \acrshort{acr:CPU}, and memory allocated in the \acrshort{acr:GPU} dynamic heap
+directly from the \acrshort{acr:GPU}.
+
+Memory allocated by the \acrshort{acr:CUDA} runtime can be transferred directly to and from the
+\acrshort{acr:GPU}. We use it to manage arrays of high-level objects, such as elements, faces, and
+nodes. These allocations and transfers can be performed asynchronously using execution
+\textit{streams}. When using streams, operations are queued by the \acrshort{acr:CPU} for
+asynchronous execution on the \acrshort{acr:GPU}. The \acrshort{acr:CPU} is then free to continue
+executing the program. The \acrshort{acr:CPU} will only wait for the \acrshort{acr:GPU} to finish
+execution if a non-asynchronous function is added to the stream, or we issue an explicit
+synchronisation instruction such as \textit{cudaStreamSynchronize}. The \acrshort{acr:CPU} will then
+wait until all operations enqueued on the stream are completed on the \acrshort{acr:GPU}. The
+results can then be used on the \acrshort{acr:CPU}.
+
+Algorithm~\ref{alg:cuda_memory} shows how we would use that kind of memory. After creating our
+execution stream, we allocate and fill an array of pressure on the \acrshort{acr:CPU} as usual. We
+then allocate an array on the \acrshort{acr:GPU}, and copy the data from the \acrshort{acr:CPU}
+array to it. We can then perform computations on the \acrshort{acr:GPU} using that array with the
+\textit{perform\_gpu\_computations} kernel. Kernels are explained in
+Subsection~\ref{subsection:graphics_processing_units:implementation:kernels}. We can then copy back
+the data from the \acrshort{acr:GPU} array to the \acrshort{acr:CPU} array using
+\textit{cudaMemcpyAsync}. We synchronise with the execution stream to ensure the data has finished
+copying, at which point we can use the \acrshort{acr:CPU} array. To finish up, we deallocate the
+\acrshort{acr:CPU} array, the \acrshort{acr:GPU} array, and the execution stream.
+
+\begin{algorithm}[H]
+    \begin{cuda}
+		auto main(int argc, char* argv[]) -> int {
+			cudaStream_t stream;
+			cudaStreamCreate(&stream); 
+
+			const size_t length = 1000;
+			double* pressure_cpu = new double[length];
+			for (size_t i = 0; i < length; ++i){
+				pressure_cpu[i] = 1.0;
+			}
+			double* pressure_gpu = nullptr;
+
+			cudaMallocAsync(&pressure_gpu, length * sizeof(double), stream);
+			cudaMemcpyAsync(pressure_gpu, pressure_cpu, length * sizeof(double), cudaMemcpyHostToDevice, stream);
+
+			const numBlocks = 10;
+			const blockSize = 100;
+			perform_gpu_computations<<<numBlocks, blockSize, 0, stream>>>(length, pressure_gpu);
+			
+			cudaMemcpyAsync(pressure_cpu, pressure_gpu, length * sizeof(double), cudaMemcpyDeviceToHost, stream);
+			cudaStreamSynchronize(stream);
+
+			display_cpu_results(length, pressure_cpu);
+
+			delete[] pressure_cpu;
+			cudaFreeAsync(pressure_gpu, stream);
+			cudaStreamDestroy(stream);
+			return 0;
+		}\end{cuda}
+\caption{\textbf{cuda\_memory:} An array of pressure is allocated on the \acrshort{acr:CPU}, then transferred back and forth to the \acrshort{acr:GPU}.}\label{alg:cuda_memory}
+\end{algorithm}
+
+As dealing with pointers directly can become error-prone with larger programs, we encapsulate that
+behaviour into a vector type. Algorithm~\ref{alg:device_vector} shows a simplified version of
+Algorithm~\ref{alg:cuda_memory} using this new type.
+
+\begin{algorithm}[H]
+    \begin{cuda}
+		using SEM::Device::Entities::device_vector;
+
+		auto main(int argc, char* argv[]) -> int {
+			cudaStream_t stream;
+			cudaStreamCreate(&stream); 
+
+			std::vector<double> pressure_cpu(1000, 1.0);
+			device_vector<double> pressure_gpu(pressure_cpu, stream);
+
+			const numBlocks = 10;
+			const blockSize = 100;
+			perform_gpu_computations<<<numBlocks, blockSize, 0, stream>>>(pressure_gpu.size(), pressure_gpu.data());
+			
+			pressure_gpu.copy_to(pressure_cpu, stream);
+			cudaStreamSynchronize(stream);
+
+			display_cpu_results(pressure_cpu);
+
+			cudaStreamDestroy(stream);
+			return 0;
+		}\end{cuda}
+\caption{\textbf{device\_vector:} A vector of pressure is allocated on the \acrshort{acr:CPU}, then transferred back and forth to the \acrshort{acr:GPU}.}\label{alg:device_vector}
+\end{algorithm}
+
+Memory allocated in the \acrshort{acr:GPU} dynamic heap from the \acrshort{acr:GPU} is allocated
+like normal memory on the \acrshort{acr:CPU} using the \textit{new} or \textit{malloc} functions,
+but by the \acrshort{acr:GPU} inside \acrshort{acr:GPU} functions like kernels. We encapsulate these
+operations into \textit{cuda\_vector}, another vector type similar to that of
+Algorithm~\ref{alg:device_vector}.
+
+Memory from \acrshort{acr:GPU} heap cannot be transferred directly to the \acrshort{acr:CPU} using
+\acrshort{acr:CUDA} functions like \textit{cudaMemcpyAsync}, as heap memory is not mapped to the
+\acrshort{acr:CUDA} runtime. To transfer data from that kind of memory, we must copy it to a
+\acrshort{acr:CUDA} runtime allocated array on the using a kernel.
+
+We use heap memory for dynamic data structures living on the \acrshort{acr:GPU} that the
+\acrshort{acr:CPU} does not need to use, like the variably-sized solution arrays of individual
+elements and faces, and the variably-sized lists of faces connected to an element's sides.
+
 \subsection{Kernels}\label{subsection:graphics_processing_units:implementation:kernels}
+
+Functions launched from regular \acrshort{acr:CPU} code and executing on the \acrshort{acr:GPU} are
+called \textit{kernels}. Once a kernel is launched it is queued to be asynchronously executed on the
+\acrshort{acr:GPU}. The \acrshort{acr:CPU} is then free to continue executing instructions. These
+kernels, like memory transfers, are enqueued using execution streams.
+
+Algorithms~\ref{alg:cuda_memory} and~\ref{alg:device_vector} show a kernel being launched, with an
+array of pressure and its size as arguments. Two other interesting elements are the
+\textit{numBlocks} and \textit{blockSize} parameters. These two parameters are used between angled
+brackets \textit{<<< >>>} to configure the kernel launch. They represent the number of blocks of
+threads and the number of threads in a block, respectively. As described in
+Subsection~\ref{subsection:graphics_processing_units:architecture:programming_model}, this dictates
+how the kernel is executed in parallel.
+
+Algorithm~\ref{alg:perform_gpu_computations} shows the anatomy of a kernel, as well as a device
+function. Kernels are annotated with \textbf{\_ \_global\_ \_}, and device functions with
+\textbf{\_ \_device\_ \_}. Device functions are regular functions compiled to be called from the
+\acrshort{acr:GPU}. The topology of the parallel work grid is stored in the \textit{gridDim} and
+\textit{blockDim} variables, and the various indices of the threads are stored in the
+\textit{blockIdx} and \textit{threadIdx} variables.
+
+\begin{algorithm}[H]
+    \begin{cuda}
+		__device__ 
+		auto get_pressure(double p, size_t i) -> double {
+			return std::pow(p, i);
+		}
+
+		__global__
+		auto perform_gpu_computations(size_t n, double* pressure) -> void {
+			const int index = blockIdx.x * blockDim.x + threadIdx.x;
+			const int stride = blockDim.x * gridDim.x;
+
+			for (size_t i = index; i < n; i += stride) {
+				pressure[i] = get_pressure(pressure[i], i);
+			}
+		}\end{cuda}
+\caption{\textbf{perform\_gpu\_computations:} Computations are performed in parallel on the \acrshort{acr:GPU}.}\label{alg:perform_gpu_computations}
+\end{algorithm}
 
 \subsection{Reductions}\label{subsection:graphics_processing_units:implementation:reductions}
 
@@ -405,6 +551,123 @@ step size. This data is only available on the \acrshort{acr:GPU}.
 
 An implementation must saturate the \acrshort{acr:GPU} with work as much as possible: blindly
 looping one thread over the whole mesh will only use one of the approximately five thousand cores of
-the \acrshort{acr:GPU}, for one thousandth of the speed. 
+the \acrshort{acr:GPU}, for one thousandth of the speed. Algorithm~\ref{alg:reduce_wave_delta_t}
+shows how the \(\Delta t\) is computed in parallel over all the elements of a mesh. It implements
+several of the optimisations from~\cite{Harris2007}.
+
+\begin{algorithm}[H]
+    \begin{cuda}
+		template <unsigned int blockSize>
+		__device__ 
+		auto warp_reduce_delta_t_2D(volatile deviceFloat *sdata, unsigned int tid) -> void {
+			if (blockSize >= 64) sdata[tid] = std::min(sdata[tid], sdata[tid + 32]);
+			if (blockSize >= 32) sdata[tid] = std::min(sdata[tid], sdata[tid + 16]);
+			if (blockSize >= 16) sdata[tid] = std::min(sdata[tid], sdata[tid + 8]);
+			if (blockSize >= 8) sdata[tid] = std::min(sdata[tid], sdata[tid + 4]);
+			if (blockSize >= 4) sdata[tid] = std::min(sdata[tid], sdata[tid + 2]);
+			if (blockSize >= 2) sdata[tid] = std::min(sdata[tid], sdata[tid + 1]);
+		}
+
+		template <unsigned int blockSize>
+		__global__ 
+		auto reduce_wave_delta_t(deviceFloat CFL, size_t N_elements, const Element2D_t* elements, deviceFloat *g_odata) -> void {
+			__shared__ deviceFloat sdata[(blockSize >= 64) ? blockSize: blockSize+blockSize/2];
+			unsigned int tid = threadIdx.x;
+			size_t i = blockIdx.x*(blockSize*2) + tid;
+			unsigned int gridSize = blockSize*2*gridDim.x;
+			sdata[tid] = std::numeric_limits<deviceFloat>::infinity();
+
+			while (i < N_elements) { 
+				deviceFloat delta_t_wave = CFL * elements[i].delta_xy_min_/(elements[i].N_ * elements[i].N_ * Constants::c);
+
+				if (i+blockSize < N_elements) {
+					delta_t_wave = std::min(delta_t_wave, CFL * elements[i+blockSize].delta_xy_min_/(elements[i+blockSize].N_ * elements[i+blockSize].N_ * Constants::c));
+				}
+
+				sdata[tid] = std::min(sdata[tid], delta_t_wave); 
+				i += gridSize; 
+			}
+			__syncthreads();
+
+			if (blockSize >= 8192) { if (tid < 4096) { sdata[tid] = std::min(sdata[tid], sdata[tid + 4096]); } __syncthreads(); }
+			if (blockSize >= 4096) { if (tid < 2048) { sdata[tid] = std::min(sdata[tid], sdata[tid + 2048]); } __syncthreads(); }
+			if (blockSize >= 2048) { if (tid < 1024) { sdata[tid] = std::min(sdata[tid], sdata[tid + 1024]); } __syncthreads(); }
+			if (blockSize >= 1024) { if (tid < 512) { sdata[tid] = std::min(sdata[tid], sdata[tid + 512]); } __syncthreads(); }
+			if (blockSize >= 512) { if (tid < 256) { sdata[tid] = std::min(sdata[tid], sdata[tid + 256]); } __syncthreads(); }
+			if (blockSize >= 256) { if (tid < 128) { sdata[tid] = std::min(sdata[tid], sdata[tid + 128]); } __syncthreads(); }
+			if (blockSize >= 128) { if (tid < 64) { sdata[tid] = std::min(sdata[tid], sdata[tid + 64]); } __syncthreads(); }
+
+			if (tid < 32) warp_reduce_delta_t_2D<blockSize>(sdata, tid);
+			if (tid == 0) g_odata[blockIdx.x] = sdata[0];
+		}\end{cuda}
+\caption{\textbf{reduce\_wave\_delta\_t:} Computations are performed in parallel on the \acrshort{acr:GPU}.}\label{alg:reduce_wave_delta_t}
+\end{algorithm}
+
+Algorithm~\ref{alg:reduce_wave_delta_t} implements several advanced \acrshort{acr:CUDA} features not
+discussed previously. The gist of it is that the threads from a block allocate a working array
+\textit{sdata} in shared memory. That memory is local to a block of threads, and cannot be accessed
+within other blocks. The threads the perform several reduction steps, where threads take the minimum
+of two values with fewer and fewer threads active. Once there are \(32\) threads left, a warp
+reduction function is called. This is necessary to remove branching within a warp. All threads will
+execute these instructions, with threads that are not needed operating on useless data. Once this
+done, the first thread copies the result into the output array \textit{g\_odata}. There will be one
+result per block of threads, the final step of the reduction will be performed on the
+\acrshort{acr:CPU}. The function is templated on the size of the thread blocks. All the apparent
+branching based on \textit{blockSize} will disappear when compiled, as the code is generated for a
+specific \textit{blockSize}.
 
 \subsection{MPI transfers}\label{subsection:graphics_processing_units:implementation:mpi_transfers}
+
+The fact that the solution data resides on the \acrshort{acr:GPU} complicates transfers between the
+different parallel workers. This is because only \acrshortpl{acr:CPU} can communicate with each
+other over \acrshort{acr:MPI}. Solution data therefore needs to be fetched from the
+\acrshort{acr:GPU} to the \acrshort{acr:CPU}, transferred between \acrshortpl{acr:CPU}, the
+transferred from the receiving \acrshort{acr:CPU} to its \acrshort{acr:GPU}. This is compounded by
+the fact that elements can have a different polynomial order \(N\) which changes the size of their
+solution arrays, and that these solution arrays are stored in \acrshort{acr:GPU} heap memory.
+
+Algorithm~\ref{alg:boundary_conditions} displays a simplified version of the \acrshort{acr:MPI}
+transfers necessary each time step to update the solution at boundaries between
+\acrshortpl{acr:GPU}. This increased cost compared to traditional \acrshort{acr:CPU} versions of
+these algorithms highlight the need to minimise the surface area between \acrshortpl{acr:GPU}, as
+described in Chapter~\ref{chapter:load_balancing}. Note that variables ending with an underscore are
+data members of the mesh object.
+
+\begin{algorithm}[H]
+    \begin{cuda}
+		auto boundary_conditions() -> void {
+			int global_rank;
+			MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
+			int global_size;
+			MPI_Comm_size(MPI_COMM_WORLD, &global_size);
+
+			get_MPI_interfaces<<<mpi_outgoing_numBlocks_, mpi_blockSize_, 0, stream_>>>(mpi_origin_.size(), elements_.data(), mpi_origin_.data(), mpi_origin_side_.data(), maximum_N_, device_p_.data(), device_u_.data(), device_v_.data());
+
+			device_p_.copy_to(host_p_, stream_);
+			device_u_.copy_to(host_u_, stream_);
+			device_v_.copy_to(host_v_, stream_);
+			cudaStreamSynchronize(stream_);
+			
+			for (size_t i = 0; i < mpi_interfaces_process_.size(); ++i) {
+				MPI_Isend(host_p_.data() + mpi_interfaces_outgoing_offset_[i] * (maximum_N_ + 1), mpi_interfaces_outgoing_size_[i] * (maximum_N_ + 1), MPI_DOUBLE, mpi_interfaces_process_[i], mpi_boundaries_offset * global_size * global_size + 3 * (global_size * global_rank + mpi_interfaces_process_[i]), MPI_COMM_WORLD, &requests_[3 * (mpi_interfaces_process_.size() + i)]);
+				MPI_Irecv(host_receiving_p_.data() + mpi_interfaces_incoming_offset_[i] * (maximum_N_ + 1), mpi_interfaces_incoming_size_[i] * (maximum_N_ + 1), MPI_DOUBLE, mpi_interfaces_process_[i], mpi_boundaries_offset * global_size * global_size + 3 * (global_size * mpi_interfaces_process_[i] + global_rank), MPI_COMM_WORLD, &requests_[3 * i]);
+
+				MPI_Isend(host_u_.data() + mpi_interfaces_outgoing_offset_[i] * (maximum_N_ + 1), mpi_interfaces_outgoing_size_[i] * (maximum_N_ + 1), MPI_DOUBLE, mpi_interfaces_process_[i], mpi_boundaries_offset * global_size * global_size + 3 * (global_size * global_rank + mpi_interfaces_process_[i]) + 1, MPI_COMM_WORLD, &requests_[3 * (mpi_interfaces_process_.size() + i) + 1]);
+				MPI_Irecv(host_receiving_u_.data() + mpi_interfaces_incoming_offset_[i] * (maximum_N_ + 1), mpi_interfaces_incoming_size_[i] * (maximum_N_ + 1), MPI_DOUBLE, mpi_interfaces_process_[i], mpi_boundaries_offset * global_size * global_size + 3 * (global_size * mpi_interfaces_process_[i] + global_rank) + 1, MPI_COMM_WORLD, &requests_[3 * i + 1]);
+
+				MPI_Isend(host_v_.data() + mpi_interfaces_outgoing_offset_[i] * (maximum_N_ + 1), mpi_interfaces_outgoing_size_[i] * (maximum_N_ + 1), MPI_DOUBLE, mpi_interfaces_process_[i], mpi_boundaries_offset * global_size * global_size + 3 * (global_size * global_rank + mpi_interfaces_process_[i]) + 2, MPI_COMM_WORLD, &requests_[3 * (mpi_interfaces_process_.size() + i) + 2]);
+				MPI_Irecv(host_receiving_v_.data() + mpi_interfaces_incoming_offset_[i] * (maximum_N_ + 1), mpi_interfaces_incoming_size_[i] * (maximum_N_ + 1), MPI_DOUBLE, mpi_interfaces_process_[i], mpi_boundaries_offset * global_size * global_size + 3 * (global_size * mpi_interfaces_process_[i] + global_rank) + 2, MPI_COMM_WORLD, &requests_[3 * i + 2]);
+			}
+
+			MPI_Waitall(3 * mpi_interfaces_process_.size(), requests_.data(), statuses_.data());
+
+			device_receiving_p_.copy_from(host_receiving_p_, stream_);
+			device_receiving_u_.copy_from(host_receiving_u_, stream_);
+			device_receiving_v_.copy_from(host_receiving_v_, stream_);
+
+			put_MPI_interfaces<<<mpi_incoming_numBlocks_, mpi_blockSize_, 0, stream_>>>(mpi_destination_.size(), elements_.data(), mpi_destination_.data(), maximum_N_, device_receiving_p_.data(), device_receiving_u_.data(), device_receiving_v_.data());
+
+			MPI_Waitall(3 * mpi_interfaces_process_.size(), requests_.data() + 3 * mpi_interfaces_process_.size(), statuses_.data() + 3 * mpi_interfaces_process_.size());
+		}\end{cuda}
+\caption{\textbf{boundary\_conditions:} The solution of elements on either side of the interface between \acrshortpl{acr:GPU} is transferred.}\label{alg:boundary_conditions}
+\end{algorithm}
