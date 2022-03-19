@@ -344,6 +344,7 @@ auto main(int argc, char* argv[]) -> int {
 
     cudaStreamDestroy(stream);
     cudaDeviceReset();
+    MPI_Comm_free(node_communicator);
     MPI_Finalize();
     return 0;
 }
