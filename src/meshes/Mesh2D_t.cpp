@@ -50,6 +50,11 @@ SEM::Host::Meshes::Mesh2D_t::Mesh2D_t(
             load_balancing_threshold_{load_balancing_threshold},
             worker_weights_{worker_weights} {
 
+    total_weight_ = hostFloat{0};
+    for (const auto weight : worker_weights_) {
+        total_weight_ += weight;
+    }
+
     std::string extension = filename.extension().string();
     SEM::to_lower(extension);
 

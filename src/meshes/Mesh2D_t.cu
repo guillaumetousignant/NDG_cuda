@@ -55,6 +55,11 @@ SEM::Device::Meshes::Mesh2D_t::Mesh2D_t(
             worker_weights_{worker_weights},
             stream_{stream} {
 
+    total_weight_ = deviceFloat{0};
+    for (const auto weight : worker_weights_) {
+        total_weight_ += weight;
+    }
+
     std::string extension = filename.extension().string();
     SEM::to_lower(extension);
 

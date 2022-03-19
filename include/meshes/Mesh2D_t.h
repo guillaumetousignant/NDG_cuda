@@ -100,6 +100,7 @@ namespace SEM { namespace Host { namespace Meshes {
             hostFloat tolerance_max_;
             hostFloat load_balancing_threshold_;
             std::vector<hostFloat> worker_weights_;
+            hostFloat total_weight_;
 
             auto read_su2(std::filesystem::path filename) -> void;
             auto read_cgns(std::filesystem::path filename) -> void;

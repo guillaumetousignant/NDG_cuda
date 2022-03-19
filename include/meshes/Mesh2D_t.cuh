@@ -134,6 +134,7 @@ namespace SEM { namespace Device { namespace Meshes {
             deviceFloat tolerance_max_;
             deviceFloat load_balancing_threshold_;
             std::vector<deviceFloat> worker_weights_;
+            deviceFloat total_weight_;
 
             // GPU transfer arrays
             SEM::Device::Entities::device_vector<deviceFloat> device_delta_t_array_;
