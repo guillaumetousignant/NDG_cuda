@@ -41,6 +41,7 @@ SEM::Device::Meshes::Mesh2D_t::Mesh2D_t(
         deviceFloat tolerance_max, 
         deviceFloat load_balancing_threshold, 
         const device_vector<deviceFloat>& polynomial_nodes, 
+        std::vector<deviceFloat> worker_weights,
         const cudaStream_t &stream) :       
             initial_N_{initial_N},  
             maximum_N_{maximum_N},
@@ -51,6 +52,7 @@ SEM::Device::Meshes::Mesh2D_t::Mesh2D_t(
             tolerance_min_{tolerance_min},
             tolerance_max_{tolerance_max},
             load_balancing_threshold_{load_balancing_threshold},
+            worker_weights_{worker_weights},
             stream_{stream} {
 
     std::string extension = filename.extension().string();

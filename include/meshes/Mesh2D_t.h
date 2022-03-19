@@ -18,7 +18,7 @@
 namespace SEM { namespace Host { namespace Meshes {
     class Mesh2D_t {
         public:
-            Mesh2D_t(std::filesystem::path filename, int initial_N, int maximum_N, size_t n_interpolation_points, int max_split_level, size_t adaptivity_interval, size_t load_balancing_interval, hostFloat tolerance_min, hostFloat tolerance_max, hostFloat load_balancing_threshold, const std::vector<std::vector<hostFloat>>& polynomial_nodes);
+            Mesh2D_t(std::filesystem::path filename, int initial_N, int maximum_N, size_t n_interpolation_points, int max_split_level, size_t adaptivity_interval, size_t load_balancing_interval, hostFloat tolerance_min, hostFloat tolerance_max, hostFloat load_balancing_threshold, const std::vector<std::vector<hostFloat>>& polynomial_nodes, std::vector<hostFloat> worker_weights);
 
             // Geometry
             std::vector<SEM::Host::Entities::Vec2<hostFloat>> nodes_;
@@ -99,6 +99,7 @@ namespace SEM { namespace Host { namespace Meshes {
             hostFloat tolerance_min_;
             hostFloat tolerance_max_;
             hostFloat load_balancing_threshold_;
+            std::vector<hostFloat> worker_weights_;
 
             auto read_su2(std::filesystem::path filename) -> void;
             auto read_cgns(std::filesystem::path filename) -> void;

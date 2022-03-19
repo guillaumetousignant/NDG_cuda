@@ -223,8 +223,9 @@ auto main(int argc, char* argv[]) -> int {
     }
     auto t_start_init = std::chrono::high_resolution_clock::now();
 
+    std::vector<hostFloat> worker_weights(global_size, 1);
     SEM::Host::Entities::NDG_t<SEM::Host::Polynomials::LegendrePolynomial_t> NDG(N_max, n_interpolation_points);
-    SEM::Host::Meshes::Mesh2D_t mesh(mesh_file, N_initial, N_max, n_interpolation_points, max_splits, adaptivity_interval, load_balancing_interval, tolerance_min, tolerance_max, load_balancing_threshold, NDG.nodes_);
+    SEM::Host::Meshes::Mesh2D_t mesh(mesh_file, N_initial, N_max, n_interpolation_points, max_splits, adaptivity_interval, load_balancing_interval, tolerance_min, tolerance_max, load_balancing_threshold, NDG.nodes_, std::move(worker_weights));
     SEM::Host::Solvers::Solver2D_t solver(CFL, output_times, viscosity);
     SEM::Helpers::DataWriter_t data_writer(output_file);
     mesh.initial_conditions(NDG.nodes_);

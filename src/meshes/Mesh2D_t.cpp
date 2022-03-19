@@ -37,7 +37,8 @@ SEM::Host::Meshes::Mesh2D_t::Mesh2D_t(
         hostFloat tolerance_min, 
         hostFloat tolerance_max, 
         hostFloat load_balancing_threshold, 
-        const std::vector<std::vector<hostFloat>>& polynomial_nodes) :       
+        const std::vector<std::vector<hostFloat>>& polynomial_nodes,
+        std::vector<hostFloat> worker_weights) :       
             initial_N_{initial_N},  
             maximum_N_{maximum_N},
             n_interpolation_points_{n_interpolation_points},
@@ -46,7 +47,8 @@ SEM::Host::Meshes::Mesh2D_t::Mesh2D_t(
             load_balancing_interval_{load_balancing_interval},
             tolerance_min_{tolerance_min},
             tolerance_max_{tolerance_max},
-            load_balancing_threshold_{load_balancing_threshold} {
+            load_balancing_threshold_{load_balancing_threshold},
+            worker_weights_{worker_weights} {
 
     std::string extension = filename.extension().string();
     SEM::to_lower(extension);

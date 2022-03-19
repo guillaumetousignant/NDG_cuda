@@ -1,6 +1,4 @@
-if (BUILD_CPU)
-    add_library(SEM "")
-endif()
+add_library(SEM "")
 if (BUILD_GPU)
     add_library(SEM-CUDA "")
 endif()
@@ -37,72 +35,72 @@ if (USE_CGNS)
 endif()
 
 # Targets
-if (BUILD_CPU)
-    target_include_directories(SEM PUBLIC 
-        $<INSTALL_INTERFACE:include/SEM/>    
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/>)
+target_include_directories(SEM PUBLIC 
+    $<INSTALL_INTERFACE:include/SEM/>    
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/>)
 
-    target_compile_features(SEM PRIVATE cxx_std_17)
-    if(NOT ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug"))
-        set_property(TARGET SEM PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
-    endif()
+target_compile_features(SEM PRIVATE cxx_std_17)
+if(NOT ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug"))
+    set_property(TARGET SEM PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
+endif()
 
+target_link_libraries(SEM PUBLIC 
+                        MPI::MPI_CXX
+                        ${VTK_LIBRARIES})
+
+if (USE_CGNS)
     target_link_libraries(SEM PUBLIC 
-                            MPI::MPI_CXX
-                            ${VTK_LIBRARIES})
-    
-    if (USE_CGNS)
-        target_link_libraries(SEM PUBLIC 
-                                CGNS::CGNS
-                                hdf5::hdf5-static)
-        target_compile_definitions(SEM PUBLIC NDG_USE_CGNS)
-    endif()
+                            CGNS::CGNS
+                            hdf5::hdf5-static)
+    target_compile_definitions(SEM PUBLIC NDG_USE_CGNS)
+endif()
 
-    vtk_module_autoinit(TARGETS SEM
-                            MODULES ${VTK_LIBRARIES})
+vtk_module_autoinit(TARGETS SEM
+                        MODULES ${VTK_LIBRARIES})
 
-    # Installation stuff
-    install(TARGETS SEM 
-        EXPORT SEM-targets
-        DESTINATION lib)
+# Installation stuff
+install(TARGETS SEM 
+    EXPORT SEM-targets
+    DESTINATION lib)
 
-    install(EXPORT SEM-targets
-        FILE
-            SEMTargets.cmake
-        NAMESPACE
-            SEM::
-        DESTINATION
-            lib/cmake/SEM
-    )
+install(EXPORT SEM-targets
+    FILE
+        SEMTargets.cmake
+    NAMESPACE
+        SEM::
+    DESTINATION
+        lib/cmake/SEM
+)
 
-    #Create a ConfigVersion.cmake file
-    include(CMakePackageConfigHelpers)
-    write_basic_package_version_file(
-        ${CMAKE_CURRENT_BINARY_DIR}/SEMConfigVersion.cmake
-        VERSION ${PROJECT_VERSION}
-        COMPATIBILITY AnyNewerVersion
-    )
+#Create a ConfigVersion.cmake file
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+    ${CMAKE_CURRENT_BINARY_DIR}/SEMConfigVersion.cmake
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY AnyNewerVersion
+)
 
-    configure_package_config_file(${PROJECT_SOURCE_DIR}/cmake/SEMConfig.cmake.in
-        ${CMAKE_CURRENT_BINARY_DIR}/SEMConfig.cmake
-        INSTALL_DESTINATION lib/cmake/SEM
-    )
+configure_package_config_file(${PROJECT_SOURCE_DIR}/cmake/SEMConfig.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/SEMConfig.cmake
+    INSTALL_DESTINATION lib/cmake/SEM
+)
 
-    #Install the config, configversion and custom find modules
-    install(FILES
-        ${CMAKE_CURRENT_BINARY_DIR}/SEMConfig.cmake
-        ${CMAKE_CURRENT_BINARY_DIR}/SEMConfigVersion.cmake
-        DESTINATION lib/cmake/SEM
-    )
+#Install the config, configversion and custom find modules
+install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/SEMConfig.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/SEMConfigVersion.cmake
+    DESTINATION lib/cmake/SEM
+)
 
-    export(EXPORT SEM-targets
-        FILE ${CMAKE_CURRENT_BINARY_DIR}/SEMTargets.cmake
-        NAMESPACE SEM::
-    )
+export(EXPORT SEM-targets
+    FILE ${CMAKE_CURRENT_BINARY_DIR}/SEMTargets.cmake
+    NAMESPACE SEM::
+)
 
-    #Register package in user's package registry
-    export(PACKAGE SEM)
+#Register package in user's package registry
+export(PACKAGE SEM)
 
+if (BUILD_CPU)
     add_executable(NDG_host 
         main.cpp)
 
@@ -189,7 +187,9 @@ if (BUILD_GPU)
     add_executable(NDG 
         main.cu)
 
-    target_link_libraries(NDG PRIVATE SEM-CUDA)
+    target_link_libraries(NDG PRIVATE 
+                            SEM-CUDA 
+                            SEM)
     set_target_properties(NDG PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
     target_compile_features(NDG PRIVATE cxx_std_17)
     if(NOT ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug"))

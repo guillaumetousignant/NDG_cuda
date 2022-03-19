@@ -1,11 +1,9 @@
-if (BUILD_CPU)
-    target_sources(SEM
-        PRIVATE
-            Hilbert.cpp
-            Hilbert_splitting.cpp
-            Utilities.cpp
-    )
-endif()
+target_sources(SEM
+    PRIVATE
+        Hilbert.cpp
+        Hilbert_splitting.cpp
+        Utilities.cpp
+)
 if (BUILD_GPU)
     target_sources(SEM-CUDA
         PRIVATE

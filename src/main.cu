@@ -2,9 +2,13 @@
 #include "helpers/InputParser_t.h"
 #include "helpers/DataWriter_t.h"
 #include "entities/NDG_t.cuh"
+#include "entities/NDG_t.h"
 #include "meshes/Mesh2D_t.cuh"
+#include "meshes/Mesh2D_t.h"
 #include "solvers/Solver2D_t.cuh"
+#include "solvers/Solver2D_t.h"
 #include "polynomials/LegendrePolynomial_t.cuh"
+#include "polynomials/LegendrePolynomial_t.h"
 #include "functions/Utilities.h"
 #define NOMINMAX
 #include "helpers/termcolor.hpp"
@@ -133,6 +137,39 @@ auto get_pre_condition_algorithm(const SEM::Helpers::InputParser_t& input_parser
     else {
         return PreConditionAlgorithm::Sequential;
     }
+
+}
+auto get_workers(const SEM::Helpers::InputParser_t& input_parser, int n_devices, int n_workers) -> std::tuple<int, int> {
+    const std::string input_n_gpu = input_parser.getCmdOption("--n_gpu");
+    const std::string input_n_cpu = input_parser.getCmdOption("--n_cpu");
+
+    if (input_n_gpu.empty() && input_n_cpu.empty()) {
+        return std::make_tuple(n_devices, n_workers - n_devices);
+    }
+    else if (!input_n_gpu.empty() && input_n_cpu.empty()) {
+        std::stringstream ss(input_n_gpu);
+        int n_gpu;
+        ss >> n_gpu;
+
+        return std::make_tuple(n_gpu, n_workers - n_gpu);
+    }
+    else if (input_n_gpu.empty() && !input_n_cpu.empty()) {
+        std::stringstream ss(input_n_cpu);
+        int n_cpu;
+        ss >> n_cpu;
+
+        return std::make_tuple(n_workers - n_cpu, n_cpu);
+    }
+    else {
+        std::stringstream ss(input_n_gpu);
+        int n_gpu;
+        ss >> n_gpu;
+        std::stringstream sss(input_n_cpu);
+        int n_cpu;
+        sss >> n_cpu;
+
+        return std::make_tuple(n_gpu, n_cpu);
+    }
 }
 
 auto main(int argc, char* argv[]) -> int {
@@ -167,6 +204,10 @@ auto main(int argc, char* argv[]) -> int {
         std::cout << '\t' << "--pre_condition"              << '\t' << "number of adaptivity steps to run before starting the computation, 0 to disable (default: 0)" << std::endl;
         std::cout << '\t' << "--pre_condition_interval"     << '\t' << "number of iterations between adapting the mesh for pre-conditioning, 0 to disable (default: adaptivity_interval)" << std::endl;
         std::cout << '\t' << "--pre_condition_algorithm {iterative,sequential,none}" << '\t' << "algorithm to use for pre-conditioning (default: sequential)" << std::endl;
+        std::cout << '\t' << "--gpu_weight"                 << '\t' << "relative weight of GPU workers (default: 16)" << std::endl;
+        std::cout << '\t' << "--cpu_weight"                 << '\t' << "relative weight of CPU workers (default: 1)" << std::endl;
+        std::cout << '\t' << "--n_gpu"                      << '\t' << "number of GPU workers per node (default: number of GPUs)" << std::endl;
+        std::cout << '\t' << "--n_cpu"                      << '\t' << "number of CPU workers per node (default: number of workers - n_gpu)" << std::endl;
         std::cout << '\t' << "-v, --version"                << '\t' << "show program's version number and exit" << std::endl;
         exit(0);
     }
@@ -196,6 +237,8 @@ auto main(int argc, char* argv[]) -> int {
     const size_t pre_condition_steps = input_parser.getCmdOptionOr("--pre_condition", std::size_t{0});
     const size_t pre_condition_interval = input_parser.getCmdOptionOr("--pre_condition_interval", adaptivity_interval);
     const PreConditionAlgorithm pre_condition_algorithm = get_pre_condition_algorithm(input_parser);
+    const deviceFloat gpu_weight = input_parser.getCmdOptionOr("--gpu_weight", deviceFloat{16});
+    const deviceFloat cpu_weight = input_parser.getCmdOptionOr("--cpu_weight", deviceFloat{1});
 
     // Error checking
     if (N_initial > N_max) {
@@ -255,96 +298,173 @@ auto main(int argc, char* argv[]) -> int {
         }
     }
 
-    const int n_proc_per_gpu = (local_size + deviceCount - 1)/deviceCount;
-    const int device = local_rank/n_proc_per_gpu;
-    const int device_rank = local_rank%n_proc_per_gpu;
-    const int device_size = (device == deviceCount - 1) ? n_proc_per_gpu + local_size - n_proc_per_gpu * deviceCount : n_proc_per_gpu;
+    const auto [n_gpu_workers, n_cpu_workers] = get_workers(input_parser, deviceCount, local_size);
 
-    cudaSetDevice(device);
-
-    cudaDeviceProp deviceProp;
-    cudaGetDeviceProperties(&deviceProp, device);
-    const size_t memory_amount = deviceProp.totalGlobalMem * memory_fraction / device_size;
-    const cudaError_t code = cudaDeviceSetLimit(cudaLimitMallocHeapSize, memory_amount);
-    if (code != cudaSuccess) {
-        std::cerr << "GPU memory request failed: " << cudaGetErrorString(code) << std::endl;
-        exit(1);
-    }
-    size_t device_heap_limit = 0;
-    cudaDeviceGetLimit(&device_heap_limit, cudaLimitMallocHeapSize);
-
-    cudaStream_t stream;
-    cudaStreamCreate(&stream); 
-    std::cout << "Process with global id " << global_rank + 1 << "/" << global_size << " on node " << node_rank + 1 << "/" << node_size << " and local id " << local_rank + 1 << "/" << local_size << " picked GPU " << device + 1 << "/" << deviceCount << " with stream " << device_rank + 1 << "/" << device_size << ", requested " << memory_amount <<  " bytes and got " << device_heap_limit << " bytes." << std::endl;
-
-    if (global_rank == 0) {
-        std::cout << "CFL is: " << CFL << std::endl;
+    if (n_gpu_workers + n_cpu_workers != local_size) {
+        std::cerr << "Error: Number of GPU workers (" << n_gpu_workers << ") and number of CPU workers (" << n_cpu_workers << ") is different from node size (" << local_size << "). Exiting." << std::endl;
+        exit(80);
     }
 
-    // Initialisation
-    if (global_rank == 0) {
-        std::cout << termcolor::bold << termcolor::blue;
-        std::cout << "Initialising" << std::endl;
-        std::cout << termcolor::reset;
-    }
-    auto t_start_init = std::chrono::high_resolution_clock::now();
+    constexpr MPI_Datatype float_data_type = (sizeof(deviceFloat) == sizeof(float)) ? MPI_FLOAT : MPI_DOUBLE;
+    std::vector<deviceFloat> worker_weights(global_size);
+    if (local_rank < n_gpu_workers) {
+        MPI_Allgather(&gpu_weight, 1, float_data_type, worker_weights.data(), 1, float_data_type, MPI_COMM_WORLD);
 
-    SEM::Device::Entities::NDG_t<SEM::Device::Polynomials::LegendrePolynomial_t> NDG(N_max, n_interpolation_points, stream);
-    SEM::Device::Meshes::Mesh2D_t mesh(mesh_file, N_initial, N_max, n_interpolation_points, max_splits, adaptivity_interval, load_balancing_interval, tolerance_min, tolerance_max, load_balancing_threshold, NDG.nodes_, stream);
-    SEM::Device::Solvers::Solver2D_t solver(CFL, output_times, viscosity);
-    SEM::Helpers::DataWriter_t data_writer(output_file);
-    mesh.initial_conditions(NDG.nodes_);
-    cudaStreamSynchronize(stream);
+        const int n_proc_per_gpu = (n_gpu_workers + deviceCount - 1)/deviceCount;
+        const int device = local_rank/n_proc_per_gpu;
+        const int device_rank = local_rank%n_proc_per_gpu;
+        const int device_size = (device == deviceCount - 1) ? n_proc_per_gpu + n_gpu_workers - n_proc_per_gpu * deviceCount : n_proc_per_gpu;
 
-    auto t_end_init = std::chrono::high_resolution_clock::now();
-    std::cout << "Process " << global_rank << " GPU initialisation time: " 
-              << std::chrono::duration<double, std::milli>(t_end_init - t_start_init).count()/1000.0 
-              << "s." << std::endl;
+        cudaSetDevice(device);
 
-    // Pre-condition
-    if (pre_condition_steps > 0 && pre_condition_interval > 0 && pre_condition_algorithm != PreConditionAlgorithm::None) {
+        cudaDeviceProp deviceProp;
+        cudaGetDeviceProperties(&deviceProp, device);
+        const size_t memory_amount = deviceProp.totalGlobalMem * memory_fraction / device_size;
+        const cudaError_t code = cudaDeviceSetLimit(cudaLimitMallocHeapSize, memory_amount);
+        if (code != cudaSuccess) {
+            std::cerr << "Error: GPU memory request failed: " << cudaGetErrorString(code) << std::endl;
+            exit(1);
+        }
+        size_t device_heap_limit = 0;
+        cudaDeviceGetLimit(&device_heap_limit, cudaLimitMallocHeapSize);
+
+        cudaStream_t stream;
+        cudaStreamCreate(&stream); 
+        std::cout << "Process with global id " << global_rank + 1 << "/" << global_size << " on node " << node_rank + 1 << "/" << node_size << " and local id " << local_rank + 1 << "/" << local_size << " picked GPU " << device + 1 << "/" << deviceCount << " with stream " << device_rank + 1 << "/" << device_size << ", requested " << memory_amount <<  " bytes and got " << device_heap_limit << " bytes." << std::endl;
+
         if (global_rank == 0) {
-            std::cout << termcolor::bold << termcolor::green;
-            std::cout << "Pre-conditioning" << std::endl;
+            std::cout << "CFL is: " << CFL << std::endl;
+        }
+
+        // Initialisation
+        if (global_rank == 0) {
+            std::cout << termcolor::bold << termcolor::blue;
+            std::cout << "Initialising" << std::endl;
             std::cout << termcolor::reset;
         }
-        auto t_start_pre = std::chrono::high_resolution_clock::now();
+        auto t_start_init = std::chrono::high_resolution_clock::now();
 
-        if (pre_condition_algorithm == PreConditionAlgorithm::Iterative) {
-            solver.pre_condition_iterative(NDG, mesh, pre_condition_steps, pre_condition_interval);
-        }
-        else if (pre_condition_algorithm == PreConditionAlgorithm::Sequential) {
-            solver.pre_condition(NDG, mesh, pre_condition_steps, pre_condition_interval);
-        }
+        SEM::Device::Entities::NDG_t<SEM::Device::Polynomials::LegendrePolynomial_t> NDG(N_max, n_interpolation_points, stream);
+        SEM::Device::Meshes::Mesh2D_t mesh(mesh_file, N_initial, N_max, n_interpolation_points, max_splits, adaptivity_interval, load_balancing_interval, tolerance_min, tolerance_max, load_balancing_threshold, NDG.nodes_, std::move(worker_weights), stream);
+        SEM::Device::Solvers::Solver2D_t solver(CFL, output_times, viscosity);
+        SEM::Helpers::DataWriter_t data_writer(output_file);
+        mesh.initial_conditions(NDG.nodes_);
         cudaStreamSynchronize(stream);
 
-        auto t_end_pre = std::chrono::high_resolution_clock::now();
-        std::cout << "Process " << global_rank << " GPU pre-condition time: " 
-                  << std::chrono::duration<double, std::milli>(t_end_pre - t_start_pre).count()/1000.0 
-                  << "s." << std::endl;
+        auto t_end_init = std::chrono::high_resolution_clock::now();
+        std::cout << "Process " << global_rank << " GPU initialisation time: " 
+                << std::chrono::duration<double, std::milli>(t_end_init - t_start_init).count()/1000.0 
+                << "s." << std::endl;
+
+        // Pre-condition
+        if (pre_condition_steps > 0 && pre_condition_interval > 0 && pre_condition_algorithm != PreConditionAlgorithm::None) {
+            if (global_rank == 0) {
+                std::cout << termcolor::bold << termcolor::green;
+                std::cout << "Pre-conditioning" << std::endl;
+                std::cout << termcolor::reset;
+            }
+            auto t_start_pre = std::chrono::high_resolution_clock::now();
+
+            if (pre_condition_algorithm == PreConditionAlgorithm::Iterative) {
+                solver.pre_condition_iterative(NDG, mesh, pre_condition_steps, pre_condition_interval);
+            }
+            else if (pre_condition_algorithm == PreConditionAlgorithm::Sequential) {
+                solver.pre_condition(NDG, mesh, pre_condition_steps, pre_condition_interval);
+            }
+            cudaStreamSynchronize(stream);
+
+            auto t_end_pre = std::chrono::high_resolution_clock::now();
+            std::cout << "Process " << global_rank << " GPU pre-condition time: " 
+                    << std::chrono::duration<double, std::milli>(t_end_pre - t_start_pre).count()/1000.0 
+                    << "s." << std::endl;
+        }
+
+        // Computation
+        if (global_rank == 0) {
+            std::cout << termcolor::bold << termcolor::yellow;
+            std::cout << "Solving" << std::endl;
+            std::cout << termcolor::reset;
+        }
+        auto t_start = std::chrono::high_resolution_clock::now();
+
+        solver.solve(NDG, mesh, data_writer);
+
+        // Wait for GPU to finish for timing
+        cudaStreamSynchronize(stream);
+
+        auto t_end = std::chrono::high_resolution_clock::now();
+        std::cout << "Process " << global_rank << " GPU computation time: " 
+                << std::chrono::duration<double, std::milli>(t_end - t_start).count()/1000.0 
+                << "s." << std::endl;
+
+        cudaStreamDestroy(stream);
+        cudaDeviceReset();
+    }
+    else {
+        MPI_Allgather(&cpu_weight, 1, float_data_type, worker_weights.data(), 1, float_data_type, MPI_COMM_WORLD);
+
+        if (global_rank == 0) {
+            std::cout << "CFL is: " << CFL << std::endl;
+        }
+
+        // Initialisation
+        if (global_rank == 0) {
+            std::cout << termcolor::bold << termcolor::blue;
+            std::cout << "Initialising" << std::endl;
+            std::cout << termcolor::reset;
+        }
+        auto t_start_init = std::chrono::high_resolution_clock::now();
+
+        SEM::Host::Entities::NDG_t<SEM::Host::Polynomials::LegendrePolynomial_t> NDG(N_max, n_interpolation_points);
+        SEM::Host::Meshes::Mesh2D_t mesh(mesh_file, N_initial, N_max, n_interpolation_points, max_splits, adaptivity_interval, load_balancing_interval, tolerance_min, tolerance_max, load_balancing_threshold, NDG.nodes_, std::move(worker_weights));
+        SEM::Host::Solvers::Solver2D_t solver(CFL, output_times, viscosity);
+        SEM::Helpers::DataWriter_t data_writer(output_file);
+        mesh.initial_conditions(NDG.nodes_);
+
+        auto t_end_init = std::chrono::high_resolution_clock::now();
+        std::cout << "Process " << global_rank << " CPU initialisation time: " 
+                << std::chrono::duration<double, std::milli>(t_end_init - t_start_init).count()/1000.0 
+                << "s." << std::endl;
+
+        // Pre-condition
+        if (pre_condition_steps > 0 && pre_condition_interval > 0 && pre_condition_algorithm != PreConditionAlgorithm::None) {
+            if (global_rank == 0) {
+                std::cout << termcolor::bold << termcolor::green;
+                std::cout << "Pre-conditioning" << std::endl;
+                std::cout << termcolor::reset;
+            }
+            auto t_start_pre = std::chrono::high_resolution_clock::now();
+
+            if (pre_condition_algorithm == PreConditionAlgorithm::Iterative) {
+                solver.pre_condition_iterative(NDG, mesh, pre_condition_steps, pre_condition_interval);
+            }
+            else if (pre_condition_algorithm == PreConditionAlgorithm::Sequential) {
+                solver.pre_condition(NDG, mesh, pre_condition_steps, pre_condition_interval);
+            }
+
+            auto t_end_pre = std::chrono::high_resolution_clock::now();
+            std::cout << "Process " << global_rank << " CPU pre-condition time: " 
+                    << std::chrono::duration<double, std::milli>(t_end_pre - t_start_pre).count()/1000.0 
+                    << "s." << std::endl;
+        }
+
+        // Computation
+        if (global_rank == 0) {
+            std::cout << termcolor::bold << termcolor::yellow;
+            std::cout << "Solving" << std::endl;
+            std::cout << termcolor::reset;
+        }
+        auto t_start = std::chrono::high_resolution_clock::now();
+
+        solver.solve(NDG, mesh, data_writer);
+
+        auto t_end = std::chrono::high_resolution_clock::now();
+        std::cout << "Process " << global_rank << " CPU computation time: " 
+                << std::chrono::duration<double, std::milli>(t_end - t_start).count()/1000.0 
+                << "s." << std::endl;
     }
 
-    // Computation
-    if (global_rank == 0) {
-        std::cout << termcolor::bold << termcolor::yellow;
-        std::cout << "Solving" << std::endl;
-        std::cout << termcolor::reset;
-    }
-    auto t_start = std::chrono::high_resolution_clock::now();
-
-    solver.solve(NDG, mesh, data_writer);
-
-    // Wait for GPU to finish for timing
-    cudaStreamSynchronize(stream);
-
-    auto t_end = std::chrono::high_resolution_clock::now();
-    std::cout << "Process " << global_rank << " GPU computation time: " 
-              << std::chrono::duration<double, std::milli>(t_end - t_start).count()/1000.0 
-              << "s." << std::endl;
-
-    cudaStreamDestroy(stream);
-    cudaDeviceReset();
-    MPI_Comm_free(node_communicator);
+    MPI_Comm_free(&node_communicator);
     MPI_Finalize();
     return 0;
 }
