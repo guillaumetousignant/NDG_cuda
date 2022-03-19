@@ -2660,36 +2660,49 @@ auto SEM::Device::Meshes::Mesh2D_t::load_balance(const device_vector<deviceFloat
     global_element_offset_end_current[0] = n_elements_per_proc[0];
 
     size_t n_elements_global_new = n_elements_per_proc[0];
-    size_t n_elements_max = n_elements_per_proc[0];
     for (int i = 1; i < global_size; ++i) {
         global_element_offset_current[i] = global_element_offset_current[i - 1] + n_elements_per_proc[i - 1];
         global_element_offset_end_current[i] = global_element_offset_current[i] + n_elements_per_proc[i];
         n_elements_global_new += n_elements_per_proc[i];
-        n_elements_max = std::max(n_elements_max, n_elements_per_proc[i]);
+    }
+
+    deviceFloat max_load_imbalance = n_elements_per_proc[0] * total_weight_/(n_elements_global_new * worker_weights_[0]);
+    for (int i = 1; i < global_size; ++i) {
+        max_load_imbalance = std::max(max_load_imbalance, n_elements_per_proc[i] * total_weight_/(n_elements_global_new * worker_weights_[i]));
     }
 
     // If there is little imbalance, do nothing.
-    const deviceFloat load_imbalance = static_cast<deviceFloat>(n_elements_max) * static_cast<deviceFloat>(global_size) / static_cast<deviceFloat>(n_elements_global_new);
-    if (load_imbalance < load_balancing_threshold_) {
+    if (max_load_imbalance < load_balancing_threshold_) {
         return;
     }
 
     std::vector<size_t> global_element_offset_new(global_size); // This is the first element that is owned by the proc
-    std::vector<size_t> global_element_offset_end_new(global_size); // This is the last element that is owned by the proc
+    std::vector<size_t> global_element_offset_end_new(global_size); // This is the first element after elements owned by the proc
     std::vector<size_t> n_elements_new(global_size);
     std::vector<size_t> n_elements_send_left(global_size);
     std::vector<size_t> n_elements_recv_left(global_size);
     std::vector<size_t> n_elements_send_right(global_size);
     std::vector<size_t> n_elements_recv_right(global_size);
 
-    const auto [n_elements_div, n_elements_mod] = std::div(n_elements_global_new, global_size);
-    
+    const deviceFloat n_elements_per_weight = n_elements_global_new/total_weight_;
+    size_t current_element_index = 0;
     for (int i = 0; i < global_size; ++i) {
-        global_element_offset_new[i] = i * n_elements_div + std::min(i, n_elements_mod);
-        global_element_offset_end_new[i] = (i + 1) * n_elements_div + std::min(i + 1, n_elements_mod);
-        n_elements_new[i] = global_element_offset_end_new[i] - global_element_offset_new[i];
+        n_elements_new[i] = static_cast<size_t>(std::floor(n_elements_per_weight * worker_weights_[i]));
+        current_element_index += n_elements_new[i];
+    }
 
-        n_elements_send_left[i] = (global_element_offset_new[i] > global_element_offset_current[i]) ? std::min(global_element_offset_new[i] - global_element_offset_current[i], n_elements_per_proc[i]) : size_t{0}; // CHECK what if more elements have to be moved than the number of elements in the proc?
+    const size_t elements_remainder = n_elements_global_new - current_element_index;
+    current_element_index = 0;
+    for (int i = 0; i < global_size; ++i) {
+        if (i < elements_remainder) {
+            ++n_elements_new[i];
+        }
+
+        global_element_offset_new[i] = current_element_index;
+        global_element_offset_end_new[i] = global_element_offset_new[i] + n_elements_new[i];
+        current_element_index = global_element_offset_end_new[i];
+
+        n_elements_send_left[i] = (global_element_offset_new[i] > global_element_offset_current[i]) ? std::min(global_element_offset_new[i] - global_element_offset_current[i], n_elements_per_proc[i]) : size_t{0};
         n_elements_recv_left[i] = (global_element_offset_current[i] > global_element_offset_new[i]) ? std::min(global_element_offset_current[i] - global_element_offset_new[i], n_elements_new[i]) : size_t{0};
         n_elements_send_right[i] = (global_element_offset_end_current[i] > global_element_offset_end_new[i]) ? std::min(global_element_offset_end_current[i] - global_element_offset_end_new[i], n_elements_per_proc[i]) : size_t{0};
         n_elements_recv_right[i] = (global_element_offset_end_new[i] > global_element_offset_end_current[i]) ? std::min(global_element_offset_end_new[i] - global_element_offset_end_current[i], n_elements_new[i]) : size_t{0};

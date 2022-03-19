@@ -218,6 +218,11 @@ auto main(int argc, char* argv[]) -> int {
 
     MPI_Init(&argc, &argv);
 
+    /*volatile bool dodo = true;
+    while (dodo) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }*/
+
     // Argument parsing
     const fs::path mesh_file = get_input_file(input_parser);
     const fs::path output_file = get_output_file(input_parser);
