@@ -60,7 +60,7 @@ nodes_beluga_gpu_ideal_weak = nodes_beluga_gpu_weak[:, [0,-1]]
 node_strings_beluga_gpu_weak = np.array([["¼", "1", "4", "16"]])
 
 # Adaptivity efficiency
-# Back to desktop results
+# Iterative results are from Narval, sequential results are from desktop
 adaptivity_interval = np.array([5, 20, 100, 500])
 adaptivity_N = np.array([4, 4, 4, 4])
 adaptivity_K = np.array([4 * 4, 4 * 4, 4 * 4, 4 * 4])
@@ -69,18 +69,18 @@ adaptivity_C = np.array([[0, 1, 2, 3, 4, 5],
                          [0, 1, 2, 3, 4, 5],
                          [0, 1, 2, 3, 4, 5],
                          [0, 1, 2, 3, 4, 5]])
-adaptivity_solving_t_iterative =  np.array([[756.998, 79.3406, 34.8423, 33.2593, 34.2067, 33.837],
-                                            [402.506, 161.173, 75.4176, 106.632, 107.869, 107.174],
-                                            [0.599613, 85.0128, 80.9539, 39.3668, 38.5888, 38.4088],
-                                            [0.358333, 1.15364, 3.19285, 24.848, 41.9107, 54.8861]])
+adaptivity_solving_t_iterative =  np.array([[568.537, 50.2221, 27.0194, 24.8199, 24.9935, 24.8425],
+                                            [361.345, 87.5917, 39.5757, 51.7299, 51.6251, 51.6749],
+                                            [0.414409, 39.018, 34.6826, 15.8131, 15.9021, 15.7603],
+                                            [0.152319, 0.467167, 1.56873, 9.2288, 13.8472, 18.0576]])
 adaptivity_solving_t_sequential = np.array([[756.998, 78.5987, 376.426, 71.308, 120.742, 151.535],
                                             [402.506, 158.75, 121.156, 168.402, 72.085, 114.967],
                                             [0.599613, 85.0527, 33.4027, 54.1339, 87.9368, 147.392],
                                             [0.358333, 1.17821, 1.14392, 1.14803, 1.14488, 1.13517]])
-adaptivity_condition_t_iterative =  np.array([[0, 0.0856078, 0.178829, 0.206234, 0.241323, 0.286487],
-                                              [0, 0.119764, 0.338031, 0.5194, 0.833618, 1.10331],
-                                              [0, 0.47911, 0.798256, 2.02763, 3.48152, 5.03281],
-                                              [0, 1.2573, 3.70869, 6.50839, 12.1026, 21.7693]])
+adaptivity_condition_t_iterative =  np.array([[0, 0.0825008, 0.19362, 0.212391, 0.229018, 0.24586],
+                                              [0, 0.131457, 0.317237, 0.416562, 0.502704, 0.574876],
+                                              [0, 0.309875, 0.597094, 1.01954, 1.55069, 2.07073],
+                                              [0, 0.583054, 1.8537, 3.28107, 5.33752, 8.6036]])
 adaptivity_condition_t_sequential = np.array([[0, 0.109984, 0.246979, 0.573679, 1.01607, 1.61849],
                                               [0, 0.129859, 0.405687, 0.833624, 1.85428, 3.86756],
                                               [0, 0.376936, 0.972618, 2.71825, 6.66742, 13.7539],
@@ -98,9 +98,9 @@ adaptivity_max_error_sequential = np.array([[2.9e-5, 1.3e-6, 4.8e-7, 5.9e-7, 6.5
                                             [1.2e-2, 2.1e-3, 2.1e-3, 2.1e-3, 2.3e-3, 2.1e-3]])
 
 adaptivity_baseline_C = adaptivity_C[:, [0,-1]]
-adaptivity_baseline_t = np.array([29001.6, 29001.6, 29001.6, 29001.6])
+adaptivity_baseline_t = np.array([1136.14, 1136.14, 1136.14, 1136.14])
 adaptivity_baseline_max_error = np.array([5.1e-9, 5.1e-9, 5.1e-9, 5.1e-9])
-adaptivity_same_error_t = np.array([143.326, 143.326, 143.326, 143.326])
+adaptivity_same_error_t = np.array([48.3641, 48.3641, 48.3641, 48.3641])
 adaptivity_same_error_max_error = np.array([8.3e-8, 8.3e-8, 8.3e-8, 8.3e-8])
 best_pre_condition = 4
 
@@ -117,7 +117,7 @@ load_balancing_interval_L = np.array([[20, 100, 200, 500, 1000],
                                       [20, 100, 200, 500, 1000]]) # Load balancing interval
 load_balancing_interval_t = np.array([[346.838, 284.198, 266.794, 248.574, 254.721],
                                       [2928.21, 2107.16, 1989.26, 1966.79, 2112.57],
-                                      [0, 0, 0, 0, 24976.3]]) # Simulation time
+                                      [35725.2, 26116.9, 24765.6, 39612, 24976.3]]) # Simulation time
 
 load_balancing_interval_baseline_L = load_balancing_interval_L[:, [0,-1]]
 load_balancing_interval_baseline_t = np.array([274.415, 4962.06, 107196])
@@ -137,7 +137,7 @@ load_balancing_threshold_T = np.array([[1, 1.01, 1.1, 1.5, 2],
                                        [1, 1.01, 1.1, 1.5, 2]]) # Load balancing threshold
 load_balancing_threshold_t = np.array([[344.277, 295.591, 243.566, 241.076, 252.407],
                                        [2925.25, 2248.53, 1869.24, 1865.98, 2043.47],
-                                       [0, 0, 0, 24976.3, 0]]) # Simulation time
+                                       [35725.2, 25204.1, 39443.3, 1, 32521.2]]) # Simulation time
 
 load_balancing_threshold_baseline_T = load_balancing_threshold_T[:, [0,-1]]
 load_balancing_threshold_baseline_t = np.array([274.359, 4962.06, 107196])
