@@ -105,6 +105,7 @@ resulting children are shown in the following figure.
 	\caption{The four states splitting, with their children's state and ordering.}\label{fig:hilbert_splits}
 \end{figure}
 
+\noindent
 When put together, and assigning \(H\) as the first state of the mesh, the mesh can be iteratively
 constructed to the required level as shown in Figure~\ref{fig:hilbert_levels}.
 
@@ -121,9 +122,10 @@ constructed to the required level as shown in Figure~\ref{fig:hilbert_levels}.
 	\caption{First levels of the Hilbert curve with statuses \(s\) (\(s \in \left \{ H, A , B , R \right \} \)).}\label{fig:hilbert_levels}
 \end{figure}
 
+\noindent
 This construction can be summarised in Tables~\ref{table:children_state}
 and~\ref{table:children_ordering}. The ordering of the children elements is from the bottom left
-element, in counter-clockwise order. 
+element, in counter-clockwise order as shown in Figure~\ref{fig:child_order}. 
 
 \begin{figure}[H]
 	\centering
@@ -131,6 +133,7 @@ element, in counter-clockwise order.
 	\caption{Children numbering: The \(j = 0, 1, 2, 3\) children of an element, used to assign states and ordering.}\label{fig:child_order}
 \end{figure}
 
+\noindent
 These tables are implemented directly in the code, with the state defined as an enumeration from 0
 to 3 and the tables as arrays. The state indexes into the array to get the resulting ordering and
 states. This gives the state \(S(s, j)\) of the j\textsuperscript{th} child element of a parent
@@ -195,14 +198,14 @@ as the mesh refines and non-conforming interfaces are created.
 	\caption{Mesh refinement Hilbert curve: One element refining. (a) Before splitting (b) After splitting}\label{fig:hilbert_refining}
 \end{figure}
 
-This process assumes knowledge of each element's status. However, the main solver program is made to
-accept standard \acrshort{acr:CGNS} meshes as an input. The \acrshort{acr:CGNS} format format does
-not provide status information. Furthermore, the program can accept any 2D unstructured mesh using
-the format, which may not be numbered according to a Hilbert curve. 
+This process assumes knowledge of each element's status. However, the main solver program is
+designed to accept standard \acrshort{acr:CGNS} meshes as an input. The \acrshort{acr:CGNS} format
+does not provide status information. Furthermore, the program can accept any 2D unstructured mesh
+using the format, which may not be numbered according to a Hilbert curve. 
 
-It is therefore necessary to deduct the status of elements when reading a mesh file.
+It is therefore necessary to deduce the status of elements when reading a mesh file.
 Figure~\ref{fig:hilbert_l2} gives a hint of a possible way to do this. For an element \(k\), the
-curves goes from element \(k - 1\) to element \(k\), and then from element \(k\) to element \(k +
+curve goes from element \(k - 1\) to element \(k\), and then from element \(k\) to element \(k +
 1\). When entering element \(k\) from element \(k - 1\), the curve will pass through one of the four
 sides of element \(k\). The same goes for the curve leaving element \(k\) towards element \(k + 1\).
 Following the curve, each combination of entrance side and exit side corresponds to a single state.
@@ -255,7 +258,7 @@ and exiting side for elements, and 1D matrices for the first and last elements.
 A few combinations are still undefined in the matrix. They represent the cases where the curve
 enters and leaves through the same side of the element. These cases should not occur with correct
 Hilbert curves. However, nonconforming geometries created while refining, or meshes created without
-using a Hilbert curve may generate those geometries. Examining Figure~\ref{fig:hilbert_splits}, we
+using a Hilbert curve, may generate those geometries. Examining Figure~\ref{fig:hilbert_splits}, we
 observe that for each status the first and last child elements occupy the same side. We match that
 side in Figure~\ref{fig:hilbert_missing_splits} with the incoming and exiting sides of the undefined
 cases.
@@ -299,10 +302,11 @@ We can then obtain the full matrix.
 Until now, we assumed the elements were axis-aligned, and numbered such that their first edge is at
 the bottom. This is important, as the elements number their children from their bottom left, in a
 counter-clockwise order. If an element's first edge is not at the bottom, the wrong numbering will
-be given to refining elements, as on Figure~\ref{fig:hilbert_rotated}. Since elements can be
-oriented in any direction in meshes, this situation is expected to happen. The following examples
-use elements numbered such that their first side is not at the bottom, but at the right, as shown on
-Figure~\ref{fig:node_order}.
+be given to refining elements, as in Figure~\ref{fig:hilbert_rotated}.
+Figure~\ref{fig:node_order_rotated} does not match the correct Hilbert curve in
+Figure~\ref{fig:hilbert_l2}. Since elements can be oriented in any direction in meshes, this
+situation is expected to happen. The following examples use elements numbered such that their first
+side is not at the bottom, but at the right, as shown in Figure~\ref{fig:node_order}.
 
 \begin{figure}[H]
 	\centering
@@ -321,14 +325,16 @@ Figure~\ref{fig:node_order}.
 	\hfill
 	\subfloat[After refining]
 	{\includesvg[width=0.4\textwidth]{Chapter_load_balancing/media/hilbert_level_2_r}\label{fig:hilbert_l2_r}}
-	\caption{Refinement with rotated elements: The numbering is wrong. (a) Initial mesh (b) Refined mesh}\label{fig:hilbert_rotated}
+	\caption{Refinement with rotated elements: The numbering is wrong when compared to the correct Hilbert curve from Figure~\ref{fig:hilbert_l2}. (a) Initial mesh (b) Refined mesh}\label{fig:hilbert_rotated}
 \end{figure}
 
-One might be tempted to deduct the element status in the local element referential instead.
+One might be tempted to deduce the element status in the local element referential instead.
 Figure~\ref{fig:referentials} shows the same rotated element in the global referential and in its
 local referential. Note that the entering and exiting sides of the Hilbert curve are not the same,
-which will change the deducted state. Figure~\ref{fig:hilbert_local} shows the result of one step of
+which will change the deduced state. Figure~\ref{fig:hilbert_local} shows the result of one step of
 refinement using the local referential instead of the global referential.
+Figure~\ref{fig:local_referential} shows that even though there are no jumps, the correct Hilbert
+curve shown in Figure~\ref{fig:hilbert_l2} is not attained.
 
 \begin{figure}[H]
 	\centering
@@ -337,7 +343,7 @@ refinement using the local referential instead of the global referential.
 	\hfill
 	\subfloat[Local referential]
 	{\includesvg[width=0.42\textwidth]{Chapter_load_balancing/media/local_referential}\label{fig:local_referential}}
-	\caption{Different referentials: The different referentials will change the deducted state. (a) H (b) R}\label{fig:referentials}
+	\caption{Different referentials: The different referentials will change the deduced state. (a) H (b) R}\label{fig:referentials}
 \end{figure}
 
 \begin{figure}[H]
@@ -347,7 +353,7 @@ refinement using the local referential instead of the global referential.
 	\hfill
 	\subfloat[After refining]
 	{\includesvg[width=0.4\textwidth]{Chapter_load_balancing/media/hilbert_level_2_l}\label{fig:hilbert_l2_l}}
-	\caption{Refinement with rotated elements using local referential: This is not the next level curve. (a) Initial mesh (b) Refined mesh}\label{fig:hilbert_local}
+	\caption{Refinement with rotated elements using local referential: This is not the next level curve, as seen in Figure~\ref{fig:hilbert_l2}. (a) Initial mesh (b) Refined mesh}\label{fig:hilbert_local}
 \end{figure}
 
 Both methods give wrong results when the elements are rotated compared to the first edge at the
@@ -356,7 +362,8 @@ depending on the direction the curve goes in x and y. When splitting, the elemen
 rotation as an offset when numbering their children elements. The rotation of the elements is
 defined as the number of quarter turns the element is rotated compared to the normal case, with the
 first edge at the bottom. The refined mesh using this method is shown in
-Figure~\ref{fig:hilbert_correct}.
+Figure~\ref{fig:hilbert_l2_c} and now has the correct Hilbert curve as in
+Figure~\ref{fig:hilbert_l2}.
 
 \begin{figure}[H]
 	\centering
@@ -368,21 +375,21 @@ Figure~\ref{fig:hilbert_correct}.
 	\caption{Refinement with rotation offset: The next level Hilbert curve is correct. (a) Initial mesh (b) Refined mesh}\label{fig:hilbert_correct}
 \end{figure}
 
-With this out of the way, it is possible to store the rotation once when the mesh is read, store it
-as a member of the element class, and use it whenever the element splits to get the correct
-ordering. The different elements split independently in parallel, and the Hilbert curve keeps the
-ordering coherent. An element gets the new indices of its children by knowing how many elements
-split before it on the curve to give a starting index and then using the table to order the
-individual children.
+With this out of the way, it is possible to compute the rotation when the mesh is read, store it as
+a member of the element class, and use it whenever the element splits to get the correct ordering.
+The different elements split independently in parallel, and the Hilbert curve keeps the ordering
+coherent. An element gets the new indices of its children by knowing how many elements split before
+it on the curve to give a starting index and then using the table to order the individual children.
 
-The mesh can be refined multiple times that way and the locality of the Hilbert curve. Even
-non-confirming interfaces do not create any jumps in the curve. Figure~\ref{fig:mesh_1_after2} shows
-a mesh of initially \(K = 4 \times 4\) elements refined and load balanced three times. The Hilbert
-curve is shown in Green to access the quality of the ordering.
+The mesh can be refined multiple times that way and the locality of the Hilbert curve can be
+preserved. Even non-confirming interfaces do not create any jumps in the curve.
+Figure~\ref{fig:mesh_1_after2} shows a mesh of initially \(K = 4 \times 4\) elements refined and
+load balanced three times. The Hilbert curve is shown in green to assess the quality of the
+ordering.
 
 \begin{figure}[H]
 	\centering
-	\includesvg[width=0.95\textwidth]{Chapter_load_balancing/media/mesh_1_after2}
+	\includesvg[width=0.95\textwidth]{Chapter_load_balancing/media/mesh_1_after2_MOD}
 	\caption{Mesh refining: The elements follow mixed levels of the Hilbert curve, without jumps or discontinuities.}\label{fig:mesh_1_after2}
 \end{figure}
 
@@ -510,17 +517,17 @@ Section~\ref{section:conclusion:future_work} for proposals of a solver that has 
 Such a system would necessitate the use of different capacities, since these nodes have many more
 \acrshort{acr:CPU} cores than \acrshortpl{acr:GPU}, while each \acrshort{acr:GPU} is much faster. 
 
-Secondly, each element will be given equal weight. This simplifies greatly the computing of total
-weight within a \acrshort{acr:GPU}, since it becomes the number of elements. It also simplifies
-transfers between processes, as now only the number of elements in each process is needed to compute
-which elements need to sent or received. This assumes that each element has the same computation
-complexity regardless of any factor, like its polynomial order. Of course, this is not true. It has
-been observed that in this program, with relatively low polynomial orders, the computational cost of
-elements is not significantly different. When the polynomial order is very different between
-elements, the increased number of collocation points to compute and the increased memory needed to
-store the solution start increasing the computation time for those elements. If this proves to be a
-significant problem, Section~\ref{section:conclusion:future_work} discusses using weights for
-elements, and a way to find out how the polynomial order should affect that weight.
+Secondly, each element will be given equal weight. This greatly simplifies the computing of total
+weight within a \acrshort{acr:GPU}, since it becomes  directly related to the number of elements. It
+also simplifies transfers between processes, as now only the number of elements in each process is
+needed to compute which elements need to sent or received. This assumes that each element has the
+same computational complexity regardless of any factor, like its polynomial order. Of course, this
+is not true. It has been observed that in this program, with relatively low polynomial orders, the
+computational cost of elements is not significantly different. When the polynomial order is very
+different between elements, the increased number of collocation points to compute and the increased
+memory needed to store the solution start increasing the computation time for those elements. If
+this proves to be a significant problem, Section~\ref{section:conclusion:future_work} discusses
+using weights for elements, and a way to relate polynomial order to the weight. 
 
 \section{Reconstruction}\label{section:load_balancing:reconstruction}
 % Having no state
@@ -537,30 +544,32 @@ their global element id. Any element missing from their new range, they need to 
 using the previous number of elements per process, it is easy to compute from which process these
 elements should come. 
 
-The knowledge of which elements to receive and send with which process is used to setup
+The knowledge of which elements to receive and send with which process is used to set up
 \acrshort{acr:MPI} transfers. All the data is sent and received in a non-blocking way with
 \(MPI\_Isend\) and \(MPI\_Irecv\), and once these transactions are completed the mesh can be
 reconstructed in each process.
 
 \subsection{Data transfer}\label{subsection:load_balancing:reconstruction:data_transfer}
 
-Elements are allocated from the \acrshort{acr:CPU}, therefore they can be copied from the
-\acrshort{acr:GPU} to the \acrshort{acr:CPU} directly. The relevant members are the polynomial order
-of the elements, their Hilbert curve status, their rotation and their split level. All other members
-are either not stored directly in the element structure and therefore cannot be copied directly, or
-can be computed again when received. An \acrshort{acr:MPI} datatype is created to be able to send
-and receive arrays of elements directly without copying that data into separate arrays.
-Subsection~\ref{subsection:load_balancing:implementation:element_exchange} details this process.
+The element objects array is allocated from the \acrshort{acr:CPU}, therefore elements can be copied
+from the \acrshort{acr:GPU} to the \acrshort{acr:CPU} directly. The relevant data members are the
+polynomial order of the elements, their Hilbert curve status, their rotation and their split level.
+All other members are either not stored directly in the element structure and therefore cannot be
+copied directly, or can be computed again when received. An \acrshort{acr:MPI} datatype is created
+to be able to send and receive arrays of elements directly without copying that data into separate
+arrays. Subsection~\ref{subsection:load_balancing:implementation:element_exchange} details this
+process.
 
-The solution of all elements to send is not so easy to transfer between processes. It is stored in
-\acrshort{acr:GPU} dynamic memory and the elements only hold a pointer to it. It cannot be
-transferred to the \acrshort{acr:CPU} directly. It also has a different size depending on the
-element's polynomial order. To solve this, a buffer is allocated from the \acrshort{acr:CPU} on the
-\acrshort{acr:GPU}, and a kernel is launched to copy each element's solution into this buffer on the
-\acrshort{acr:GPU}. To do this in parallel, the buffer is of the maximum size of the solution, times
-the number of elements. This is so elements can easily compute where to copy their data without race
-conditions. This uses more memory than if the solution was packed, but then it would be harder for
-elements to find their data on the receiving end, and to find where to write it on the sending end. 
+The solution data of an element is not so easy to transfer between processes. The solution arrays
+are stored in \acrshort{acr:GPU} dynamic memory and the elements only hold a pointer to it. Being
+allocated from the \acrshort{acr:GPU}, these arrays cannot be transferred to the \acrshort{acr:CPU}
+directly. They also have a different size depending on the element's polynomial order. To solve
+this, a buffer is allocated from the \acrshort{acr:CPU} on the \acrshort{acr:GPU}, and a kernel is
+launched to copy each element's solution into this buffer on the \acrshort{acr:GPU}. To do this in
+parallel, the buffer is of the maximum size of the solution, times the number of elements. This is
+so elements can easily compute where to copy their data without race conditions. This uses more
+memory than if the solution was packed, but then it would be harder for elements to find their data
+on the receiving end, and to find where to write it on the sending end. 
 
 This kernel allows us to fetch other data that is not readily available on the \acrshort{acr:CPU}.
 Processes only store the mesh block assigned to them, with no information on elements, nodes, faces
@@ -580,10 +589,10 @@ a side of an element has no upper bound, so the data will need to be packed and 
 be computed. A first kernel retrieves the number of faces, and therefore neighbours, on each side of
 elements to be sent. This information is used on both the sending and receiving sides to allocate
 arrays that can fit the total number of neighbours, as well as compute offsets to where each element
-has its neighbours in these arrays. Neighbour information to send includes: their local index, their
-process, their side, their polynomial order, and the two nodes on their connecting side. This
-information is used both to find the relevant neighbour if it is also in the receiving process, and
-to create \acrshort{acr:MPI} boundaries if the neighbour is in another process.
+has its neighbours in these arrays. Information to be fetched from neighbours and sent includes: the
+neighbours' local indices, process, side, polynomial order, and the two nodes on the connecting
+side. This information is used both to find the relevant neighbour if it is also in the receiving
+process, and to create \acrshort{acr:MPI} boundaries if the neighbour is in another process.
 
 On the subject of \acrshort{acr:MPI} boundaries, another data exchange must take place during load
 balancing. Every process that has an \acrshort{acr:MPI} boundary with another process must send the
