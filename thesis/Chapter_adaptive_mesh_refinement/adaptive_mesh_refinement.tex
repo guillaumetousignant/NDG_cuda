@@ -217,7 +217,7 @@ of the truncation error can then be approximated.
 
 \begin{equation} \label{equ:error_norm}
 	\begin{aligned}
-		\left \| \tau_{est} \right \| &= \sqrt{\int_{-1}^{1} \sum_{n = N + 1}^{\infty } {\left( \widetilde{a}_n L_n(r) \right)}^2 dr} \\
+		\left \| \tau \right \| \approx \tau_{est} &= \sqrt{\int_{-1}^{1} \sum_{n = N + 1}^{\infty } {\left( \widetilde{a}_n L_n(r) \right)}^2 dr} \\
 		&= \sqrt{\sum_{n = N + 1}^{\infty }\widetilde{a}_n^2 \int_{-1}^{1} L_n(r) L_n(r) dr},
 	\end{aligned}
 \end{equation}
@@ -228,34 +228,52 @@ polynomials shown in Equation~\ref{equ:polynomial_orthogonality} to obtain a sim
 truncation error norm.
 
 \begin{equation} \label{equ:error_norm_1D}
-	\left \| \tau_{est} \right \| = \sqrt{\sum_{n = N + 1}^{\infty } \frac{\widetilde{a}_{n}^2}{\frac{(2n + 1)}{2}}}
+	\tau_{est} = \sqrt{\sum_{n = N + 1}^{\infty } \frac{\widetilde{a}_{n}^2}{\frac{(2n + 1)}{2}}}
 \end{equation}
 
 \noindent
 In 2D, the solution is a tensor product of polynomials, so the truncation error changes accordingly. 
 
 \begin{equation} \label{equ:error_norm_2D}
-	\left \| \tau_{est} \right \| = \sqrt{\sum_{n = N + 1}^{\infty } \sum_{m = M + 1}^{\infty}\frac{\widetilde{a}_{nm}^2}{\frac{(2n + 1)(2m + 1)}{2^2}}}
+	\tau_{est} = \sqrt{\sum_{n = N + 1}^{\infty } \sum_{m = M + 1}^{\infty}\frac{\widetilde{a}_{nm}^2}{\frac{(2n + 1)(2m + 1)}{2^2}}}
 \end{equation}
 
 Furthermore, the decay rate of the modes provides an indication of the quality of the solution, in
 addition to a model for error estimation. For a smooth function, in this context this means a
-well-resolved solution, the modes
-\(a_n\) decay exponentially. As per~\cite{Mavriplis1990}, we model the exponential decay as follows
+well-resolved solution, the modes \(a_n\) decay exponentially. As per~\cite{Mavriplis1990}, we model
+the exponential decay as follows
 
 \begin{equation} \label{equ:exponential_decay}
 	a_n = Ce^{-\sigma n}
 \end{equation}
 
-We obtain these modes by extrapolating the known modes. In order to fit a straight line to the data
-by linear least-squares, we want a linear relation between the decay rate \(\sigma \) and the modes.
-We take the logarithm of both sides of Equation~\ref{equ:exponential_decay} and get our linear
-relation.
+\noindent
+by least squares best fit to the existing calculated modes \(a_n, n = 0 \cdots N\).
+Figure~\ref{fig:sin_read_modes} shows an example with the modes of the smooth function \(u = \sin(\pi
+x)\) with a polynomial order \(N = 15\). It can be observed that the decay of the modes start
+slowly, but decays exponentially after the first few modes. Figure~\ref{fig:sin_computed_modes}
+shows the modeled \(a_n\), with the dotted line being the slope \( \sigma \).
+
+\begin{figure}[H]
+	\centering
+	\subfloat[Modes of the solution]
+	{\includesvg[width=0.45\textwidth]{Chapter_adaptive_mesh_refinement/media/modes_N15}\label{fig:sin_read_modes}}
+	\hfill
+	\subfloat[Modeled modes]
+	{\includesvg[width=0.45\textwidth]{Chapter_adaptive_mesh_refinement/media/modes_computed_N15}\label{fig:sin_computed_modes}}
+	\caption{Modes of the solution: We use the known modes and their decay rate to eventually
+	extrapolate unknown modes. (a) Known modes (b) Modeled exponentially decaying modes}\label{fig:sin_modes}
+\end{figure}
+
+In order to fit a straight line to the data by linear least-squares, we want a linear relation
+between the decay rate \(\sigma \) and the modes. We take the logarithm of both sides of
+Equation~\ref{equ:exponential_decay} and get our linear relation.
 
 \begin{equation} \label{equ:exponential_decay_linear}
-	\ln(\widetilde{a}_n) = \ln(C) - \sigma n
+	\ln(a_n) = \ln(C) - \sigma n
 \end{equation}
 
+\noindent
 We apply a linear least-squares fit to the last points of the known modes \(a_n\). The slope of the
 line, \(\sigma \), is the error refinement criterion. It will help choose a refinement strategy in
 Section~\ref{section:adaptive_mesh_refinement:refinement_criteria}. The linear least-squares fit
@@ -275,18 +293,20 @@ and its coefficients are computed by:
 \end{align}
 
 \noindent
-with \(\overline{x}\) and \(\overline{y}\) being the \(x\) and \(y\) averages of the data. The error
-decay slope becomes \(\sigma = - \beta \), and the constant becomes \(C = e^\alpha \).
+with \(\overline{x}\) and \(\overline{y}\) being the averages of the \(x\) and \(y\) data
+respectively. The \(x\) data is the mode number \(n = 0 \cdots N\), and the \(y\) data are the known
+modes in log form, \( \log(a_n) \).The error decay slope becomes \(\sigma = - \beta \), and the constant becomes \(C =
+e^\alpha \).
 
 Back to the error estimation, we can replace the sums of~\ref{equ:error_norm_1D}
 and~\ref{equ:error_norm_2D} by integrals since the behaviour of the modes is known as an analytic
 function of \(n\).
 
 \begin{align}
-	&1D: \quad \tau = \sqrt{\sum_{n = N + 1}^{\infty } \frac{\widetilde{a}_n^2}{\frac{2n + 1}{2}}} 
+	&1D: \quad \tau_{est} = \sqrt{\sum_{n = N + 1}^{\infty } \frac{\widetilde{a}_n^2}{\frac{2n + 1}{2}}} 
 			   \Rightarrow \sqrt{\int_{N + 1}^{\infty } a_n^2 dn}, \label{equ:error_1D}
 	\\
-	&2D: \quad \tau = \sqrt{\sum_{n = N + 1}^{\infty }\sum_{m = M + 1}^{\infty}\frac{\widetilde{a}^2_{nm}}{\frac{(2n + 1)(2m + 1)}{2^2}}}
+	&2D: \quad \tau_{est} = \sqrt{\sum_{n = N + 1}^{\infty }\sum_{m = M + 1}^{\infty}\frac{\widetilde{a}^2_{nm}}{\frac{(2n + 1)(2m + 1)}{2^2}}}
 			   \Rightarrow \sqrt{\int_{M+1}^{\infty }\int_{N + 1 }^{\infty}{(a_{nm})}^2 dn dm} \label{equ:error_2D}
 \end{align}
 
@@ -336,11 +356,11 @@ most appropriate strategy using the error decay rate \(\sigma \) computed previo
 
 \section{Refinement Criteria}\label{section:adaptive_mesh_refinement:refinement_criteria}
 
-Once we compute the error approximation on every element and know which elements we want to refine,
-we must choose how to refine them. Recall from
+Once we compute the error estimate on every element and know which elements we want to refine, we
+must choose how to refine them. Recall from
 Section~\ref{section:adaptive_mesh_refinement:refinement_strategies} that we can choose
 p-refinement, increasing the polynomial order \(N\) of an element, or h-refinement, splitting the
-element in smaller elements to increase the total number of elements \(K\).
+element into smaller elements to increase the total number of elements \(K\).
 
 The method~\cite{Mavriplis1990} used here is to look at the decay rate of the modes \(a_n\) of the
 solution. The error decay rate \(\sigma \) computed in
@@ -357,15 +377,15 @@ fast to a well resolved solution whose modes decay fast.
 	\hfill
 	\subfloat[Well resolved solution]
 	{\includegraphics[width=0.4\textwidth]{Chapter_adaptive_mesh_refinement/media/decaying_modes_fast}\label{fig:decaying_modes_fast}}
-	\caption{Modes decaying: How the modes decay in an element, and the fitted line. (a) \(\sigma \leqslant 1\) (b) \(\sigma > 1\)}\label{fig:decaying_modes}
+	\caption{Modes decaying: Decay of spectral modes within an element and their best fit line. (a) \(\sigma \leqslant 1\) (b) \(\sigma > 1\)}\label{fig:decaying_modes}
 \end{figure}
 
 The truncation error is related to the value of the extrapolated modes. If the slope of the modes is
-steep, each added mode is expected to reduce the error significantly. This is because the truncated modes
-have a smaller value, therefore the truncated part of the solution is also small. On the other hand,
-a flat slope indicates that the value of the modes does not decay fast, and adding additional modes
-is not expected to reduce the truncation error much. This is often the case in non-smooth parts of
-the solution.
+steep, each added mode is expected to reduce the error significantly. This is because the truncated
+modes have successively much smaller values, therefore the truncated part of the solution is also
+small. On the other hand, a flat slope indicates that the value of the modes does not decay fast,
+and adding additional modes is not expected to reduce the truncation error much. This is often the
+case in non-smooth parts of the solution.
 
 We choose the slope of the modes, \(\sigma \), as our error refinement criterion. If \(\sigma > 1\),
 adding polynomial modes is expected to reduce the error significantly, so we use p-refinement and
@@ -660,7 +680,7 @@ The projection operation from faces to elements is therefore:
 	&= \sum_{m = 0}^{N} b \: l_j^{\Omega}(a + bz_m)\frac{w_m^{\Xi}}{w_j^{\Omega}} \Phi (a + b z_j), \quad j = 0, \ldots, J.
 \end{align}
 
-\section{Pre-conditioning}\label{section:adaptive_mesh_refinement:pre_conditioning}
+\section{Mesh Pre-conditioning}\label{section:adaptive_mesh_refinement:pre_conditioning}
 
 When initial conditions are applied to a coarse mesh, some error is introduced to the problem. This
 error does not reduce with refinement, it simply propagates through the domain. To address this

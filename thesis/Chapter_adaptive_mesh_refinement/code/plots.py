@@ -1,7 +1,61 @@
 import matplotlib.pyplot as plt
 from pathlib import Path
 import numpy as np
+import numpy.typing as npt
+import math
 import sem
+
+def print_modes(
+        N: int, 
+        save_path: Path, 
+        modes_colour: npt.ArrayLike = np.array([78, 201, 176])/255,  
+        computed_modes_colour: npt.ArrayLike = np.array([244, 71, 71])/255, 
+        computed_slope_colour: npt.ArrayLike = np.array([209, 105, 105])/255, 
+        modes_size: int = 12, 
+        modes_shape: str = ".",
+        slope_style: str = "--",
+        slope_width: int = 2):
+
+    nodes, weights = sem.LegendreGaussNodesAndWeights(N)
+    u = np.zeros(N + 1)
+    for i in range(N + 1):
+        u[i] = math.sin(math.pi * nodes[i])
+
+    wanted_n = range(1, N + 1, 2)
+    
+    spectrum = sem.GetSpectrum(u, nodes, weights)
+    C, sigma = sem.ExponentialDecay(4, wanted_n, spectrum[wanted_n])
+    n = np.array(range(N + 1))
+    spectrum_computed = C * np.exp(-sigma * n)
+    
+    fig = plt.figure(figsize=(5, 4.5))
+    ax = fig.add_subplot(1, 1, 1)
+    ax.set_xlabel("n")
+    ax.set_ylabel("$|a_n|$")
+    title = f"Sin function modes, N = {N}"
+    fig.canvas.manager.set_window_title(title)
+    ax.grid()
+
+    ax.semilogy(wanted_n, spectrum[wanted_n], color=modes_colour, linestyle="", marker=modes_shape, markersize=modes_size)
+
+    fig.tight_layout()
+
+    fig.savefig(save_path / f"modes_N{N}.svg", format='svg', transparent=True)
+
+    fig_computed = plt.figure(figsize=(5, 4.5))
+    ax_computed = fig_computed.add_subplot(1, 1, 1)
+    ax_computed.set_xlabel("n")
+    ax_computed.set_ylabel("$|a_n|$")
+    title = f"Sin function computed modes, N = {N}"
+    fig_computed.canvas.manager.set_window_title(title)
+    ax_computed.grid()
+
+    ax_computed.semilogy([0, N + 1], [C * math.exp(-sigma * 0), C * math.exp(-sigma * (N + 1))], color=computed_slope_colour, linestyle=slope_style, linewidth=slope_width)
+    ax_computed.semilogy(wanted_n, spectrum_computed[wanted_n], color=computed_modes_colour, linestyle="", marker=modes_shape, markersize=modes_size)
+
+    fig_computed.tight_layout()
+
+    fig_computed.savefig(save_path / f"modes_computed_N{N}.svg", format='svg', transparent=True)
 
 N = [4, 6]
 points_colour = np.array([197, 134, 192])/255
@@ -9,12 +63,19 @@ outline_colour = np.array([0, 0, 0])
 lines_colour = np.array([37, 37, 37])/255
 faces_colour = np.array([86, 156, 214])/255
 face_points_colour = np.array([156, 220, 254])/255
+modes_colour = np.array([78, 201, 176])/255
+computed_modes_colour = np.array([244, 71, 71])/255
+computed_slope_colour = np.array([209, 105, 105])/255
 points_width = 12
 outline_width = 2
 lines_width = 1
 faces_width = 4
+slope_width = 2
 points_size = 12
+modes_size = 12
 points_shape = "."
+modes_shape = "."
+slope_style = "--"
 
 save_path = Path(__file__).parent.parent / "media"
 save_path.mkdir(parents=True, exist_ok=True)
@@ -402,6 +463,9 @@ for i in range(N[1] + 1):
     m_to_e_ax.arrow(1.25, nodes[1][i]/2 - 0.6, 0.1, 0, length_includes_head=True, width=0.02, head_length=0.05, color=outline_colour)
 
 m_to_e_fig.savefig(save_path / f"mortar_to_element_N{N[0]}_N{N[1]}.svg", format='svg', transparent=True)
+
+# Modes
+print_modes(15, save_path, modes_colour, computed_modes_colour, computed_slope_colour, modes_size, modes_shape, slope_style, slope_width)
 
 plt.show()
     
