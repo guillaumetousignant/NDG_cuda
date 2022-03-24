@@ -414,7 +414,7 @@ Figure~\ref{fig:non_conforming_interfaces}. This makes it impossible to compute 
 the flux computations need a left and right value at every point. These are non-conforming
 interfaces. There are three types of non-conforming interfaces. Geometrically non-conforming
 interfaces appear when two elements of the same polynomial order do not line up, either because they
-are not the same size of because they are offset. Functionally non-conforming interfaces appear when
+are not the same size or because they are offset. Functionally non-conforming interfaces appear when
 two elements line up but have a different polynomial orders. Finally, an interface can be both
 geometrically and functionally non-conforming.
 
@@ -425,7 +425,7 @@ geometrically and functionally non-conforming.
 \end{figure}
 
 We could simply interpolate values on the points that do not line up, but we want to conserve the
-fast convergence of the higher-order methods. We use the mortar element method
+fast convergence of the higher-order methods. We therefore use the mortar element method
 from~\cite{Maday1989}. This method adds mortar, or faces, between the elements. These faces have
 their own collocation points, unto which the extrapolated solution from the elements is projected.
 The flux computations can then be performed on the face's collocation points and be projected back
@@ -437,8 +437,8 @@ to the elements afterwards.
 	\caption{The mortar element method: Mortar is added between the elements, shown in blue.}\label{fig:mortar_element_method}
 \end{figure}
 
-We define the faces as the smallest of the element side it connects to. This ensures each face only
-has one element on either side, their \textit{left} and \textit{right} elements. Elements can
+We define the faces as the smallest of the element sides of a connection. This ensures each face
+only has one element on either side, their \textit{left} and \textit{right} elements. Elements can
 therefore have multiple faces on each of their sides. The functional of the face has the polynomial
 order of the highest-order of its neighbours. The next sections describe how to project to and from
 these new faces. The flux calculations are performed on the faces as described in
@@ -455,7 +455,7 @@ Section~\ref{chapter:spectral_element_method}.
 Elements are denoted \(\Omega \) and faces are denoted \(\Xi \). We will use two coordinates, \(s\)
 for the element side coordinate and \(z\) for the face side coordinate. We project to the faces,
 therefore the face space will be used as a reference, \(z \in [-1, 1]\). The coordinate change from
-element to face has the form \(s = a + bz\), where \(a\) and \(b\) are scalars computer for each
+element to face has the form \(s = a + bz\), where \(a\) and \(b\) are scalars computed for each
 face side when generating the mesh. We can then define the element boundary solution \(U\) and its
 projection on the face \(\Psi \). 
 
@@ -464,9 +464,10 @@ projection on the face \(\Psi \).
 	& \Psi (z) = \sum_{k = 0}^{J} \Psi(z_k) l_k(z) \label{equ:face_projected_solution}
 \end{align}
 
-With \(l\) being the Lagrange polynomials, \(N\) being the element polynomial order, and \(J\) being
+\noindent
+with \(l\) being the Lagrange polynomials, \(N\) being the element polynomial order, and \(J\) being
 the face polynomial order. We then require that the integral of the error between the solution and
-its projection multiplied by the Lagrange polynomials be zero. 
+its projection weighted by the Lagrange polynomials be zero. 
 
 \begin{equation} \label{equ:zero_error}
 	\int_{-1}^{1} \left( \Psi (z) - U(a + bz) \right) l_j^\Xi dz = 0, \quad j = 0, \ldots,J
@@ -512,7 +513,8 @@ polynomials will be used to simplify the matrices.
 	\end{aligned}
 \end{equation}
 
-Where \(w_k\) are the same Gauss-Legendre weights used in
+\noindent
+where \(w_k\) are the same Gauss-Legendre weights used in
 Chapter~\ref{chapter:spectral_element_method}. We use Equation~(\ref{equ:orthogonality_M}) to
 simplify the matrix \(M\) to a diagonal matrix.
 
@@ -523,6 +525,7 @@ simplify the matrix \(M\) to a diagonal matrix.
 	\end{matrix}\right.
 \end{equation}
 
+\noindent
 The same can be done for \(S\), with the following orthogonality relation:
 
 \begin{equation} \label{equ:orthogonality_S}
@@ -540,6 +543,7 @@ The same can be done for \(S\), with the following orthogonality relation:
 	\end{aligned}
 \end{equation}
 
+\noindent
 We use Equation~(\ref{equ:orthogonality_S}) to simplify the matrix \(S\).
 
 \begin{equation}
@@ -572,11 +576,12 @@ The projection operation from element to faces is therefore:
 \end{figure}
 
 After projecting the element boundary solution to the faces, the fluxes can be computed on the
-faces. The result then needs to be projected back to the element boundaries to be useful. The
-projection from faces to elements is slightly more complicated than the other way around because we
-defined faces to have the size of the smallest elements they connect to. This means that while each
-face can only have one element on either side, elements can have multiple faces on each of their
-sides. The flux solution must then be projected from multiple faces unto each element edge.
+faces. The result then needs to be projected back to the element boundaries to be useful in
+subsequent calculations. The projection from faces to elements is slightly more complicated than the
+other way around because we defined faces to have the size of the smallest elements they connect to.
+This means that while each face can only have one element on either side, elements can have multiple
+faces on each of their sides. The flux solution must then be projected from multiple faces onto each
+element edge.
 
 This time, we take the element coordinates as a basis, \(s \in [-1, 1]\). The coordinate change is
 the inverse of that of the element to face projection, \(z = \frac{s - a}{b}\). Here \(\Phi \) is
@@ -590,10 +595,11 @@ multiplied by the test function, the Lagrange polynomials here, be zero.
 	\quad j = 0 \ldots N,
 \end{equation}
 
+\noindent
 This looks very much like the condition we imposed for the element to face projection, except that
 the coordinate change is reversed and there are as many integrals as there are faces connecting to
 the element edge. In this case there are two, but there could be an arbitrary number. We can get the
-projection solution \(F\) out of the each face's integral to an integral over the whole element
+projection solution \(F\) out of each face's integral to form an integral over the whole element
 edge.
 
 \begin{equation} \label{equ:zero_error_to_element_rewritten}
@@ -602,6 +608,7 @@ edge.
 	\int_{o'}^{1} \Phi(\frac{s-a}{b})l_j^\Omega(s)ds.
 \end{equation}
 
+\noindent
 We then rewrite the solutions in Lagrange form.
 
 \begin{gather}
@@ -609,6 +616,7 @@ We then rewrite the solutions in Lagrange form.
 	\Phi(\frac{s -a}{b}) = \sum_{m = 0}^{J}\Phi(\frac{s_m -a}{b})l_m^\Xi(\frac{s -a}{b}).
 \end{gather}
 
+\noindent
 Incorporating those in Equation~(\ref{equ:zero_error_to_element_rewritten}):
 
 \begin{equation} 
@@ -618,18 +626,21 @@ Incorporating those in Equation~(\ref{equ:zero_error_to_element_rewritten}):
 	\end{aligned}
 \end{equation}
 
+\noindent
 Or in matrix form:
 
 \begin{equation} 
 	MF = S \Phi
 \end{equation}
 
+\noindent
 We can again isolate the projected solution.
 
 \begin{equation} 
 	F = M^{-1} S \Phi
 \end{equation}
 
+\noindent
 The \(M\) matrix is the same as for the element to face projection.
 
 \begin{equation} \label{equ:matrix_M_face_to_element}
@@ -643,6 +654,7 @@ The \(M\) matrix is the same as for the element to face projection.
 	\end{aligned}
 \end{equation}
 
+\noindent
 The \(S\) matrix needs a change of referential from element space \(s\) to face space \(z\) to have
 it integrate on faces.
 
@@ -662,6 +674,7 @@ it integrate on faces.
 	\end{aligned}
 \end{equation}
 
+\noindent
 With \(M\) and \(S\), we can finally define a projection matrix from face space to element boundary
 space.
 
@@ -673,6 +686,7 @@ space.
 	\end{aligned}
 \end{equation} 
 
+\noindent
 The projection operation from faces to elements is therefore:
 
 \begin{align} \label{projection_face_to_element}
@@ -697,9 +711,9 @@ As detailed in Chapter~\ref{chapter:graphics_processing_units}, the grid is stor
 arrays, stored in \acrshort{acr:GPU} dynamic memory. This ensures the elements have a fixed size
 regardless of their polynomial order. The element vector is allocated in \acrshort{acr:GPU} memory
 by the \acrshort{acr:CPU} using the \acrshort{acr:CUDA} runtime. Only this memory can be transferred
-between the \acrshort{acr:CPU} and \acrshort{acr:GPU}. Each element's solution arrays, being
-allocated from the \acrshort{acr:GPU}, cannot be transferred between the \acrshort{acr:CPU} and
-\acrshort{acr:GPU}. The same goes for the faces of the grid. The grid being unstructured, the
+between the \acrshort{acr:CPU} and \acrshort{acr:GPU}. Elemental solution arrays cannot be
+transferred between the \acrshort{acr:CPU} and \acrshort{acr:GPU} since they are allocated on the
+\acrshort{acr:GPU}. The same goes for the faces of the grid. Since the grid is unstructured, the
 elements and faces store the index of their neighbours. The faces have one element on either side,
 and the elements can have one or multiple faces on each of their four sides.
 
@@ -708,7 +722,8 @@ polynomial order of elements, replace elements that have split, create, replace 
 polynomial order of faces, and keep the element and face references coherent. The whole adaptivity
 process happens in parallel on each \acrshort{acr:GPU}, each on its mesh block. The adaptivity
 process starts by calculating the error in parallel on each element on the \acrshort{acr:GPU}. The
-elements store their estimated error \(\tau \) and their error refinement criterion \(\sigma \).
+elements store their estimated error \(\tau_{est}\) and their error refinement criterion \(\sigma
+\).
 
 \subsection{Counting refining elements}\label{subsection:adaptive_mesh_refinement:implementation:counting_refining_elements}
 
@@ -716,23 +731,23 @@ elements store their estimated error \(\tau \) and their error refinement criter
 
 We start by finding out the total number of h-refining elements. A reduction~\cite{Harris2007} is
 computed on the \acrshort{acr:GPU} on a per-block basis. In this reduction each thread examines the
-estimated error \(\tau \) of an element against a set threshold and marks it as refining or not. If
-refining, the error refinement criterion \(\sigma \) is read to mark it as h or p refining. If
-h-refining, the thread sets to 1 the value of an intermediate array at the thread's index within the
-bock. Then, through a sequence of synchronisations and additions, the threads add up those values
-until the block total is known. The block total is then written to an output vector at the block's
-index within the mesh.
+estimated error \(\tau_{est}\) of an element against a set threshold and marks it as refining or
+not. If refining, the error refinement criterion \(\sigma \) is read to mark it as h or p refining.
+If h-refining, the thread sets to 1 the value of an intermediate array at the thread's index within
+the block. Then, through a sequence of synchronisations and additions, the threads add up those
+values until the block total is known. The block total is then written to an output vector at the
+block's index within the mesh.
 
 Once this is done, the array with each block's total number of h-refining elements is copied to the
 \acrshort{acr:CPU} and the total number of splitting elements is computed by adding all the values.
-It would be possible to launch this kernel again with fewer blocks on the resulting vector to reduce
-further to fewer values. This would not fill the \acrshort{acr:GPU}, and having the sum be defined
-with the same blocks as the elements will help us later when we want to know where to place new
-elements in the element vector.
+Although it would be possible to launch this kernel again with fewer blocks on the resulting vector
+to reduce further to fewer values, this would not fill the \acrshort{acr:GPU}. Having the sum be
+defined with the same blocks as the elements will help us later when we want to know where to place
+new elements in the element vector.
 
 If no elements split in the mesh, we can skip the next steps and only p-refine the elements in
 place. In this case, a kernel is launched on the \acrshort{acr:GPU} and p-refining elements will
-resize their solution arrays and project their solution unto the new array. The faces can then
+resize their solution arrays and project their solution onto the new array. The faces can then
 increase their polynomial order if either of their neighbour elements has increased their polynomial
 order beyond that of the face. 
 
@@ -753,17 +768,19 @@ to solution data. The solution data itself, representing most of the element's s
 dynamic memory on the \acrshort{acr:GPU}. It does not need to be copied, only the pointer to it
 needs to be copied in the new element vector. 
 
-P-refining elements act a bit like non-refining elements, except that they need to create new
+\noindent
+p-refining elements act a bit like non-refining elements, except that they need to create new
 solution arrays with their new polynomial order and project their solution to it.
 
-H-refining elements create four smaller elements in the new vector. They are placed consecutively at
+\noindent
+h-refining elements create four smaller elements in the new vector. They are placed consecutively at
 the new index of the splitting element, in an order determined by the \acrfull{acr:SFC} used,
-detailed in~\ref{chapter:adaptive_mesh_refinement}. The solution of the splitting element is
-projected on the smaller elements. Four associated faces have to be created to connect the smaller
-elements to each other, as well as a node in the center. 
+detailed in~\ref{chapter:load_balancing}. The solution of the splitting element is projected onto
+the smaller elements. Four associated faces have to be created to connect the smaller elements to
+each other, as well as a node in the center. 
 
 Once the elements have been moved, their index has changed. All faces need to correct their
-neighbour elements indices to reflect their new indices. The faces use the same block prefix sum as
+neighbour elements' indices to reflect their new indices. The faces use the same block prefix sum as
 the elements to find the new index of their neighbours.
 
 This section is prone to race conditions. The new element indices must be computed in parallel to be
