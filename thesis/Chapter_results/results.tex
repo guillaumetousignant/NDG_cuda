@@ -632,6 +632,16 @@ this work.
 	\caption{Polynomial order influence: Iteration time with increasing polynomial order.}\label{fig:N_influence}
 \end{figure}
 
+As seen in Figure~\ref{fig:N_influence}, the relation between iteration time and polynomial order
+\(N\) is nearly linear in this range. This is unexpected, as we expect the relation between
+polynomial order and computing time to be relative to \({\left( N + 1 \right)}^2\), as the number of
+nodes in an element is \({\left( N + 1 \right)}^2\). This my be explained by \acrshort{acr:GPU}
+favouring more arithmetically intense computations. As \(N\) increases, there are more compute
+operations to perform relative to other operations like scheduling and launching kernels, which may
+increase the workload of \acrshortpl{acr:GPU} and increase their performance. This has been observed
+to be caused by an increase in realisable \acrshort{cr:GPU} performance in GFLOPS when \(N\)
+increases by Chan et al.~\cite{Chan2016}.
+
 \section{Complex Case}\label{section:results:complex_application}
 
 We now present a more complex case with all modules of the program enabled. Figure~\ref{fig:cloud_p}
