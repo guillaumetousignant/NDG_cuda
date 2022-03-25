@@ -727,16 +727,15 @@ elements store their estimated error \(\tau_{est}\) and their error refinement c
 
 \subsection{Counting refining elements}\label{subsection:adaptive_mesh_refinement:implementation:counting_refining_elements}
 
-% Add reduction figure here
-
 We start by finding out the total number of h-refining elements. A reduction~\cite{Harris2007} is
-computed on the \acrshort{acr:GPU} on a per-block basis. In this reduction each thread examines the
-estimated error \(\tau_{est}\) of an element against a set threshold and marks it as refining or
-not. If refining, the error refinement criterion \(\sigma \) is read to mark it as h or p refining.
-If h-refining, the thread sets to 1 the value of an intermediate array at the thread's index within
-the block. Then, through a sequence of synchronisations and additions, the threads add up those
-values until the block total is known. The block total is then written to an output vector at the
-block's index within the mesh.
+computed on the \acrshort{acr:GPU} on a per-block basis, as described in
+Subsection~\ref{subsection:graphics_processing_units:implementation:reductions}. In this reduction
+each thread examines the estimated error \(\tau_{est}\) of an element against a set threshold and
+marks it as refining or not. If refining, the error refinement criterion \(\sigma \) is read to mark
+it as h or p refining. If h-refining, the thread sets to 1 the value of an intermediate array at the
+thread's index within the block. Then, through a sequence of synchronisations and additions, the
+threads add up those values until the block total is known. The block total is then written to an
+output vector at the block's index within the mesh.
 
 Once this is done, the array with each block's total number of h-refining elements is copied to the
 \acrshort{acr:CPU} and the total number of splitting elements is computed by adding all the values.
@@ -753,14 +752,19 @@ order beyond that of the face.
 
 \subsection{Moving elements}\label{subsection:adaptive_mesh_refinement:implementation:moving_elements}
 
-% Add splitting elements index figure here
-
 If any element h-refines, it will create more elements and the element vector will need to be
 resized. A new vector is created in \acrshort{acr:GPU} memory by the \acrshort{acr:CPU} with the new
 increased size. A prefix sum vector is created for each block of threads, indicating how many
 elements have split before it. This tells threads where to put existing and new elements in the new
 vector. A kernel is launched on the \acrshort{acr:GPU}, and all elements are assigned to threads and
-will either move, p-refine or h-refine.
+will either move, p-refine or h-refine. Figure~\ref{fig:refinement_offset} shows a mesh with 6
+elements refining, with two elements being h-refined in red.
+
+\begin{figure}[H]
+	\centering
+	\includesvg[width=0.8\textwidth]{Chapter_adaptive_mesh_refinement/media/refinement_offset}
+	\caption{Moving elements: Two elements are h-refined (in red), the others are moved.}\label{fig:refinement_offset}
+\end{figure}
 
 Non-refining elements are simply moved to their new index in the new vector. This is not a very
 costly operation because the element structure only contains geometric data, error data and pointers
@@ -795,5 +799,3 @@ to the correct location concurrently.
 
 
 \subsection{Moving boundaries}\label{subsection:adaptive_mesh_refinement:implementation:moving_boundaries}
-
-% Then something about projection to faces and elements
