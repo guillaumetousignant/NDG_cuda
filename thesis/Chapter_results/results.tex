@@ -186,8 +186,8 @@ elements to use for computations.
 At the end of the curve, we see that the scaling lowers slightly. This could be a hint that the
 \acrshortpl{acr:GPU} are then not loaded enough. These \acrshortpl{acr:GPU} have many
 \acrshort{acr:CUDA} cores, 5120 each in the case of Béluga. If the workload does not saturate
-the \acrshort{acr:GPU}, some of those cores will be idle, leading to worse performance. The optimal
-number of elements per \acrshort{acr:GPU} seems to be around 4096.
+the \acrshort{acr:GPU}, some of those cores will be idle, leading to worse performance. The best
+number of elements per \acrshort{acr:GPU} seems to be around 4096 in this case.
 
 The next test, shown on Figure~\ref{fig:strong_scaling_N6_W32}, shows the same test case but with an
 increased polynomial order of \(N = 6\) for all elements. The rationale is that the
@@ -370,7 +370,7 @@ adaptive case starting from a coarse mesh is able to reach a maximum error only 
 the non-adaptive case, while being 34\% faster. The other cases also attain the error estimation
 target of \num{1e-6} while being faster.
 
-It is to be noted that the non-adaptive cases are closer to being optimal for the \acrshort{acr:GPU}
+It is to be noted that the non-adaptive cases are closer to being ideal for the \acrshort{acr:GPU}
 architecture. The non-adaptive cases have less thread divergence than the adaptive case. There is a
 lot more branching in the adaptive case, with elements having a different polynomial order,
 non-conforming interfaces, and different numbers of neighbours. This increased divergence lowers the
@@ -384,7 +384,7 @@ for it, and with improvements to fit it better it could perform even better.
 Section~\ref{section:conclusion:future_work} discusses some improvements to make the program even
 better suited for the \acrshort{acr:GPU} architecture.
 
-The optimal number of pre-processing steps seems to be four for this case, as the target error is
+The best number of pre-processing steps seems to be four for this case, as the target error is
 reached with all refinement intervals. After this number of steps the solution doesn't change much
 as the error estimation target is likely reached. We use that number of steps to compare the
 different refinement intervals in Figure~\ref{fig:adaptivity_efficiency_C4}.
@@ -410,9 +410,9 @@ error. The adaptive case can refine elements where they are most needed, saving 
 There is a balance to be made between refining often and spending more time in the costly
 \acrshort{acr:AMR} routine, and refining less often therefore using a less refined mesh for longer.
 Section~\ref{section:conclusion:future_work} discusses ideas for alternative approaches to sidestep
-this problem. In this case it seems optimal to perform \acrshort{acr:AMR} every 20 time steps to get
-the best error, while waiting 100 timesteps between refinements yields a faster runtime at the price
-of a worse error that stays below the error estimation threshold we set.
+this problem. In this case it seems that performing \acrshort{acr:AMR} every 20 time steps yields
+the lowest error, while waiting 100 timesteps between refinements yields a faster runtime at the
+price of a worse error that stays below the error estimation threshold we set.
 
 \section{Dynamic Load Balancing Performance}\label{section:results:load_balancing_performance}
 
@@ -713,7 +713,7 @@ why the mesh is already refined at \(t = 0 s\). It is computed in parallel on \(
 \acrshortpl{acr:GPU}.
 
 The mesh is unstructured, and the original mesh file is numbered in a way that places elements with
-neighbouring indices very far appart in the 2D domain. This is not optimal, as it scatters memory
+neighbouring indices very far appart in the 2D domain. This is not ideal, as it scatters memory
 accesses in a way that is detrimental to \acrshort{acr:GPU} performance, and increases dramatically
 the number of inter-\acrshort{acr:GPU} boundaries. To improve the numbering, the mesh was renumbered
 to a pseudo-Hilbert curve according to an algorithm presented in Annex~\ref{chapter:renumbering}. It
@@ -800,5 +800,54 @@ between \acrshortpl{acr:GPU} is small. The elements are well divided between the
 \acrshortpl{acr:GPU}, as the \acrshortpl{acr:GPU} in more heavily refined areas have a smaller
 footprint in the domain.
 
-% ADD add profiling table
-Profiling table goes here!
+This complex case was also profiled in order to assess which parts of the program were more
+computationally intensive. The simulation was run on four \acrshortpl{acr:GPU} up to \(t = 1 s\)
+simulation time, refining every \(1000\) time steps and load balancing with a threshold of \(L =
+1.1\). Table~\ref{table:profiling} shows the result of this profiling session. This is a report of
+\acrshort{acr:GPU} time spent in the different kernels of the program. The report has a resolution
+of \(0.1 \% \), therefore most smaller kernels are not shown here. This could artificially reduce
+slightly the apparent time spent load balancing the mesh, as the load balancing module is made up of
+many smaller kernels, which may not show up in the report. The numbers are the average time spend
+between the four \acrshortpl{acr:GPU}. There may also be profiler overhead, especially when memory
+is allocated and deallocated. This overhead could artificially inflate the time spent in memory
+allocation heavy parts of the program like \acrshort{acr:AMR} and load balancing.
+
+\begin{table}[H]
+	\centering
+	\begin{tabular}{ c c c c }
+		Module & Time proportion (\%) & Algorithm & Time proportion (\%) \\
+		\toprule
+		\multirow{9}{*}{Solver} & \multirow{9}{*}{\(59.7\)} & compute\_derivative & \(26.68\) \\
+		                                                  & & project\_to\_elements & \(19.2\) \\
+		                                                  & & interpolate\_to\_edges & \(7.73\) \\
+		                                                  & & rk3\_step & \(3.75\) \\
+		                                                  & & project\_to\_faces & \(1.35\) \\
+		                                                  & & boundary\_conditions & \(0.37\) \\
+		                                                  & & compute\_fluxes & \(0.35\) \\
+		                                                  & & mpi\_interfaces & \(0.2\) \\
+		                                                  & & reduce\_delta\_t & \(<0.1\) \\
+        \midrule
+        \multirow{6}{*}{\Acrshort{acr:AMR}} & \multirow{6}{*}{\(38.5\)} & hp\_adapt & \(32.43\) \\
+                                                                      & & split\_faces & \(2.63\) \\
+                                                                      & & split\_mpi\_interfaces & \(2.55\) \\
+                                                                      & & split\_boundaries & \(0.65\) \\
+                                                                      & & p\_adapt & \(0.15\) \\
+                                                                      & & estimate\_error & \(<0.1\) \\
+        \midrule
+        \multirow{3}{*}{Load balancing} & \multirow{3}{*}{\(1.4\)} & fill\_received\_elements & \(1.22\) \\
+                                                                 & & create\_mpi\_boundaries & \(0.12\) \\
+                                                                 & & create\_neighbours & \(<0.1\) \\
+        \midrule
+        \multirow{1}{*}{Other} & \multirow{1}{*}{\(0.7\)} & empty\_device\_vector & \(0.73\) \\
+	\end{tabular}
+	\caption{Program profiling: The relative \acrshort{acr:GPU} computation time spent in the three main modules is shown, along as specific kernels and their relative \acrshort{acr:GPU} computation time.}\label{table:profiling}
+\end{table}
+
+This case end up performing \(281078\) time steps, and took 5h04 to complete. The mesh was refined
+281 times. These results show that the majority of the time is spent solving the problem and that
+the time spent load balancing the mesh is small. This is very good, with the only concerning result
+being the proportion of the computation time spent refining the mesh. The high time spent in the
+\acrshort{acr:AMR} routine could be reduced by refining the mesh less often, at the price of using a
+worse mesh for longer. Section~\ref{section:conclusion:future_work} discusses a different approach
+to choose when to refine the mesh which could improve these situations by only refining the mesh
+when a global error estimation threshold is met.
