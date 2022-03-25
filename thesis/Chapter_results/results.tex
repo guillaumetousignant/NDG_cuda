@@ -10,11 +10,12 @@
 This chapter presents results of the implementation of the adaptive \acrshort{acr:DG-SEM} wave
 equation solver on \acrshort{acr:GPU} architectures and studies its effectiveness. Three main
 components are studied. First, the performance of the core spectral element method code on
-\acrshortpl{acr:GPU}, with a comparison with the same code running on \acrshortpl{acr:CPU} is
-presented in Section~\ref{section:results:scaling_tests}. Then, the performance of the
-\acrlong{acr:AMR} is studied in Section~\ref{section:results:adaptivity_performance}. Dynamic load
-balancing is studied in Section~\ref{section:results:load_balancing_performance}. Finally more
-complex applications are shown in Sections~\ref{section:results:complex_application}
+\acrshortpl{acr:GPU}, with a comparison with the same code running on \acrshortpl{acr:CPU} for a
+simple wave problem is presented in Section~\ref{section:results:scaling_tests}. Then, the
+performance of the \acrlong{acr:AMR} is studied in
+Section~\ref{section:results:adaptivity_performance}. Dynamic load balancing is studied in
+Section~\ref{section:results:load_balancing_performance}. Finally more complex applications are
+shown in Sections~\ref{section:results:complex_application}
 and~\ref{section:results:complex_meshes}.
 
 \section{Platforms}\label{section:results:platforms}
@@ -22,8 +23,8 @@ and~\ref{section:results:complex_meshes}.
 The implementation we have developed aims to perform large scale computations, and as such targets
 \acrshort{acr:HPC} platforms. The program has been designed to scale to multiple levels of
 parallelism, the highest being splitting the workload between several \acrshort{acr:HPC} nodes, each
-having multiple \acrshortpl{acr:CPU} and \acrshortpl{acr:GPU}. To test this use case, most of the
-following tests were run on clusters graciously offered by Compute
+having multiple \acrshortpl{acr:CPU} and \acrshortpl{acr:GPU}. To showcase how the program works on
+such platforms, most of the following tests were run on clusters graciously offered by Compute
 Canada\footnote{https://www.computecanada.ca/}. Two such clusters were used for our experiments,
 Béluga and Narval.
 
@@ -77,7 +78,7 @@ equation from Section~\ref{section:spectral_element_method:equation} on a square
 diagonally. Figure~\ref{fig:problem} shows the pressure distribution at \(0.5 s\). The number of
 elements \( K \) varies depending on the problem, as does the polynomial order \( N \). This problem
 should help demonstrate key aspects of the program, as the solution is steeper near the wave and
-needs refinement for optimal results.
+needs refinement for accurate results.
 
 \begin{figure}[H]
 	\centering
@@ -89,12 +90,15 @@ needs refinement for optimal results.
 
 Parallel scaling is an important aspect of the performance of a program. It describes how the
 execution time varies when more resources are assigned to the problem. This is an optimisation
-problem, as each problem will have an optimal amount of resources dedicated to it. 
+problem, as each problem will need a different amount of resources dedicated to it to attain the
+best scaling possible. 
 
 A completely parallelisable program, often called embarrassingly parallel, should scale linearly
 with the amount of resources. The speedup \(S\) of a workload split between \(P\) workers should be
-equal to the number of workers in Equation~\ref{equ:scaling}. In this work, workers are a single
-\acrshort{acr:GPU} or a single \acrshort{acr:CPU} core for comparative tests.
+equal to the number of workers in Equation~\ref{equ:scaling}, with \(t_1\) being the time to solve
+the problem serially using a single worker, and \(t_p\) being the time to solve the problem in
+parallel using \(P\) workers. In this work, workers are a single \acrshort{acr:GPU} or a single
+\acrshort{acr:CPU} core for comparative tests.
 
 \begin{equation} \label{equ:scaling}
 	S = \frac{t_1}{t_P}
