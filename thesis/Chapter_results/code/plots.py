@@ -175,8 +175,8 @@ same_error_style = ":"
 for i in range(N.shape[0]):
     fig = plt.figure(figsize=(5, 4.5))
     ax = fig.add_subplot(1, 1, 1)
-    ax.set_xlabel("log(number of nodes) [-]")
-    ax.set_ylabel("log(time) [s]")
+    ax.set_xlabel("Number of nodes [-]")
+    ax.set_ylabel("Time [s]")
     title = f"Strong scaling, N = {N[i]} K = {K[i]} W = {W[i]}"
     fig.canvas.manager.set_window_title(title)
     ax.grid()
@@ -198,7 +198,7 @@ for i in range(N.shape[0]):
 for i in range(N_weak.shape[0]):
     fig = plt.figure(figsize=(5, 4.5))
     ax = fig.add_subplot(1, 1, 1)
-    ax.set_xlabel("log(number of nodes) [-]")
+    ax.set_xlabel("Number of nodes [-]")
     ax.set_ylabel("Time [s]")
     title = f"Weak scaling, N = {N_weak[i]} K = {K_weak[i]}/proc W = {W_weak[i]}"
     fig.canvas.manager.set_window_title(title)
@@ -224,7 +224,7 @@ for i in range(adaptivity_interval.shape[0]):
     fig = plt.figure(figsize=(5.5, 4.5))
     ax = fig.add_subplot(1, 1, 1)
     ax.set_xlabel("Number of pre-condition refinement steps [-]")
-    ax.set_ylabel("log(time) [s]")
+    ax.set_ylabel("Time [s]")
     title = f"Adaptivity performance time, N = {adaptivity_N[i]} K = {adaptivity_K[i]} A = {adaptivity_interval[i]}"
     fig.canvas.manager.set_window_title(title)
     ax.grid()
@@ -243,7 +243,7 @@ for i in range(adaptivity_interval.shape[0]):
     error_fig = plt.figure(figsize=(5.5, 4.5))
     error_ax = error_fig.add_subplot(1, 1, 1)
     error_ax.set_xlabel("Number of pre-condition refinement steps [-]")
-    error_ax.set_ylabel("log(analytical solution error) [-]")
+    error_ax.set_ylabel("Analytical solution error [-]")
     error_title = f"Adaptivity performance error, N = {adaptivity_N[i]} K = {adaptivity_K[i]} A = {adaptivity_interval[i]}"
     error_fig.canvas.manager.set_window_title(error_title)
     error_ax.grid()
@@ -260,8 +260,8 @@ for i in range(adaptivity_interval.shape[0]):
 
 amr_fig = plt.figure(figsize=(5.5, 4.5))
 amr_ax = amr_fig.add_subplot(1, 1, 1)
-amr_ax.set_xlabel("log(refinement interval) [-]")
-amr_ax.set_ylabel("log(time) [s]")
+amr_ax.set_xlabel("Refinement interval [-]")
+amr_ax.set_ylabel("Time [s]")
 amr_title = f"Adaptivity performance time, N = {adaptivity_N[0]} K = {adaptivity_K[0]} C = {adaptivity_C[0][best_pre_condition]}"
 amr_fig.canvas.manager.set_window_title(amr_title)
 amr_ax.grid()
@@ -280,8 +280,8 @@ amr_fig.savefig(save_path / f"adaptivity_time_N{adaptivity_N[0]}_K{adaptivity_K[
 
 amr_error_fig = plt.figure(figsize=(5.5, 4.5))
 amr_error_ax = amr_error_fig.add_subplot(1, 1, 1)
-amr_error_ax.set_xlabel("log(refinement interval) [-]")
-amr_error_ax.set_ylabel("log(analytical solution error) [-]")
+amr_error_ax.set_xlabel("Refinement interval [-]")
+amr_error_ax.set_ylabel("Analytical solution error [-]")
 amr_error_title = f"Adaptivity performance error, N = {adaptivity_N[0]} K = {adaptivity_K[0]} C = {adaptivity_C[0][best_pre_condition]}"
 amr_error_fig.canvas.manager.set_window_title(amr_error_title)
 amr_error_ax.grid()
@@ -339,7 +339,7 @@ for i in range(load_balancing_threshold_N.shape[0]):
 
 lb_fig = plt.figure(figsize=(5, 4.5))
 lb_ax = lb_fig.add_subplot(1, 1, 1)
-lb_ax.set_xlabel("log(load imbalance) [-]")
+lb_ax.set_xlabel("Load imbalance [-]")
 lb_ax.set_ylabel("Speedup [-]")
 lb_title = f"Load balancing performance, threshold test, N = {load_balancing_threshold_N[0]} K = {load_balancing_threshold_K[0]} A = {load_balancing_threshold_A[0]} L = {load_balancing_threshold_L[0]} P = {load_balancing_threshold_P[0]} N_max = {load_balancing_threshold_max_N[0]} T = {load_balancing_threshold_T[0][best_T]}"
 lb_fig.canvas.manager.set_window_title(lb_title)
