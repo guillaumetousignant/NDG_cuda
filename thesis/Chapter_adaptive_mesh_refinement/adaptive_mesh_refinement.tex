@@ -762,8 +762,8 @@ elements refining, with two elements being h-refined in red.
 
 \begin{figure}[H]
 	\centering
-	\includesvg[width=0.8\textwidth]{Chapter_adaptive_mesh_refinement/media/refinement_offset}
-	\caption{Moving elements: Two elements are h-refined (in red), the others are moved.}\label{fig:refinement_offset}
+	\includesvg[height=0.3\textwidth]{Chapter_adaptive_mesh_refinement/media/refinement_offset}
+	\caption{Moving elements from the old vector to the new: Two elements are h-refined (in red), the others are moved.}\label{fig:refinement_offset}
 \end{figure}
 
 Non-refining elements are simply moved to their new index in the new vector. This is not a very
@@ -797,5 +797,24 @@ to the correct location concurrently.
 
 \subsection{Moving faces}\label{subsection:adaptive_mesh_refinement:implementation:moving_faces}
 
+Faces are refined similarly to elements. If an element on either side of a face splits while the
+face covers the whole element side, the face will split too. This ensures that the face always has
+the length of the smallest of the two elements it connects to. 
 
-\subsection{Moving boundaries}\label{subsection:adaptive_mesh_refinement:implementation:moving_boundaries}
+Unlike elements, faces do not need any specific ordering like described in
+Section~\ref{section:load_balancing:hilbert_curve}. This simplifies the refinement process for
+faces, as moving faces keep the same index and splitting faces add a face at the end of the vector.
+Faces also increase their polynomial order if needed. Figure~\ref{fig:refinement_offset_face} shows
+an array of faces being refined, with the splitting faces in red adding faces to the end of the new
+array. A prefix sum for each block of threads is also computed for faces to permit them to split in
+parallel without race conditions.
+
+The splitting faces become two faces each, one at their initial index and another at the end of the
+array. Elements must then check their neighbouring faces for splitting, and update the face indices
+as needed.
+
+\begin{figure}[H]
+	\centering
+	\includesvg[height=0.3\textwidth]{Chapter_adaptive_mesh_refinement/media/refinement_offset_faces}
+	\caption{Moving faces from the old vector to the new: Two faces split (in red), the others are moved.}\label{fig:refinement_offset_face}
+\end{figure}
