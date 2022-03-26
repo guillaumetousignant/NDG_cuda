@@ -1,18 +1,53 @@
 \chapter{Conclusion}\label{chapter:conclusion}
 
-\section{Conclusion}\label{section:conclusion:conclusion}
+\section{Summary}\label{section:conclusion:summary}
+
+\begin{itemize}
+    \item Possible and worth it to do amr and load balancing on GPU, though hard
+    \item GPU faster than CPU for base solver, amr makes it faster and load balancing regains performance lost to load imbalance
+    \item GPU accelerate spectral methods significantly, no longer tied to \(N^2\) in 2D
+\end{itemize}
+
+\section{Concluding remarks}\label{section:conclusion:remarks}
+
+\begin{itemize}
+    \item GPU requires different strategies for amr and load balancing vs CPU
+    \item Surprising things have impact on performance, or in surprising ways
+    \item Difficult to program dynamic meshes, LB required most changes in approach
+\end{itemize}
 
 \section{Future Work}\label{section:conclusion:future_work}
-% Block adaptivity, 3D, cooler equations, more cases, have cpu workers, 
-% load balancing have weights for N and worker capacity, 
-% local time stepping (so the simulation doesn't run exactly as slow as the slowest worker)
-% triangles
-% Capacity weights especially for split GPUs
-% CUDA-aware MPI
-% OpenMP, more parallel levels for threads sharing nodes or GPUs
-% Limit branching, sorting faces etc in separate arrays
-% Coarsening
-% Store parent information separately for coarsening
-% Different polynomial order in x and y
-% Less branching
-% Refined when global error is high instead of interval, similar to load imbalance threshold
+
+\subsection{GPU computing}\label{subsection:conclusion:future_work:gpu}
+
+\begin{itemize}
+    \item Reduce divergence: sort faces by non-conforming type, elements by N, adapt by blocks
+    \item Structure of arrays, not array of structures
+    \item Improve performance with profiler
+    \item Hybrid solver CPU/GPU
+    \item More fine-grained parallelism, openMP
+\end{itemize}
+
+\subsection{DG-SEM}\label{subsection:conclusion:future_work:dg_sem}
+
+\begin{itemize}
+    \item N-S equations
+    \item Not only quads
+    \item Curved elements
+    \item 3D
+\end{itemize}
+
+\subsection{AMR}\label{subsection:conclusion:future_work:amr}
+
+\begin{itemize}
+    \item Coarsening
+    \item When to refine, use global error threshold like load balancing?
+\end{itemize}
+
+\subsection{Load Balancing}\label{subsection:conclusion:future_work:load_balancing}
+
+\begin{itemize}
+    \item Having weights for N
+    \item Having capacity per worker (link to annex B)
+    \item Compute capacity on the fly
+\end{itemize}
