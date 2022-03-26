@@ -662,6 +662,255 @@ The two approaches are compared in Section~\ref{section:results:load_balancing_p
 
 \section{Implementation}\label{section:load_balancing:implementation}
 
+Dynamic load balancing presents significant challenges when \acrshortpl{acr:GPU} are used. Mesh data
+that resides on the \acrshort{acr:GPU} is not readily accessible by the \acrshort{acr:CPU} to be
+transferred from one \acrshort{acr:GPU}to another, and as much of the algorithm as possible should
+run on the \acrshort{acr:GPU} in parallel. Also, reconstructing the mesh and the connectivity
+between blocks is difficult when no worker has a global view of the mesh. 
+
 \subsection{Element exchange}\label{subsection:load_balancing:implementation:element_exchange}
-% and MPI datatype
-% ghost elements numbering
+
+Computing which elements to exchange from one \acrshort{acr:GPU} to another is fairly
+straightforward. The workload levelling from Section~\ref{section:load_balancing:workload_leveling}
+informs each worker of which elements it should send to which other worker, and which elements it
+should receive from which other worker. 
+
+As mentioned previously, element solution is stored in dynamic \acrshort{acr:GPU} memory, and cannot
+be copied directly to the \acrshort{acr:CPU}. A kernel is launched to copy that data to an array
+which can then be copied to the \acrshort{acr:CPU}. Algorithm~\ref{alg:get_transfer_solution} shows
+how that data is packed in the solution array to be sent between workers. The value of the four
+nodes of each element is also stored, as well as the number of neighbours on each side. The data is
+aligned to the maximum polynomial order used by the program, so that elements can store their
+solution in parallel without knowledge of other elements' polynomial order. This wastes space as
+most elements do not use the entire space they are assigned to in the transfer arrays. Since this
+avoids computing an offset array to indicate where each element's solution should be placed if the
+data was packed, this tradeoff is accepted.
+
+\begin{algorithm}[H]
+    \begin{cuda}
+        __global__
+        auto get_transfer_solution(size_t n_elements, const Element2D_t* elements, 
+                int maximum_N, const Vec2<deviceFloat>* nodes, deviceFloat* solution, 
+                size_t* n_neighbours, deviceFloat* element_nodes) -> void {
+
+            const int index = blockIdx.x * blockDim.x + threadIdx.x;
+            const int stride = blockDim.x * gridDim.x;
+
+            for (size_t i = index; i < n_elements; i += stride) {
+                const size_t p_offset =  3 * i      * std::pow(maximum_N + 1, 2);
+                const size_t u_offset = (3 * i + 1) * std::pow(maximum_N + 1, 2);
+                const size_t v_offset = (3 * i + 2) * std::pow(maximum_N + 1, 2);
+                const size_t neighbours_offset = 4 * i;
+                const size_t nodes_offset = 8 * i;
+
+                const Element2D_t& element = elements[i];
+
+                n_neighbours[neighbours_offset]     = element.faces_[0].size();
+                n_neighbours[neighbours_offset + 1] = element.faces_[1].size();
+                n_neighbours[neighbours_offset + 2] = element.faces_[2].size();
+                n_neighbours[neighbours_offset + 3] = element.faces_[3].size();
+                element_nodes[nodes_offset]     = nodes[element.nodes_[0]].x();
+                element_nodes[nodes_offset + 1] = nodes[element.nodes_[0]].y();
+                element_nodes[nodes_offset + 2] = nodes[element.nodes_[1]].x();
+                element_nodes[nodes_offset + 3] = nodes[element.nodes_[1]].y();
+                element_nodes[nodes_offset + 4] = nodes[element.nodes_[2]].x();
+                element_nodes[nodes_offset + 5] = nodes[element.nodes_[2]].y();
+                element_nodes[nodes_offset + 6] = nodes[element.nodes_[3]].x();
+                element_nodes[nodes_offset + 7] = nodes[element.nodes_[3]].y();
+
+                for (int j = 0; j < std::pow(element.N_ + 1, 2); ++j) {
+                    solution[p_offset + j] = element.p_[j];
+                    solution[u_offset + j] = element.u_[j];
+                    solution[v_offset + j] = element.v_[j];
+                }
+            }
+        }\end{cuda}
+\caption{\textbf{get\_transfer\_solution:} The solution data of elements is stored in parallel in an array.}\label{alg:get_transfer_solution}
+\end{algorithm}
+
+Elements can have an arbitrary number of neighbours, therefore neighbour data cannot be staggered in
+the same way as solution data. This is why we need to transfer the number of neighbours on each side
+of elements, so as to generate the neighbour information arrays with the correct size, and to
+generate offset arrays so each element stores its neighbour data in the correct emplacement. The
+neighbour data fetch kernel is much more complicated than Algorithm~\ref{alg:get_transfer_solution},
+but operates similarly. The main difference is that neighbour data is not readily available if a
+neighbour is a boundary element. In that case the different boundary condition and
+\acrshort{acr:MPI} interface arrays are searched to find which one the boundary element belongs to,
+and find the required information that way. This is because boundary elements part of an
+\acrshort{acr:MPI} interface must present the local index and process of the element on the other
+side of the interface, and boundary condition boundary elements must encode which kind of boundary
+condition they are.
+
+Elements themselves are copied directly from the \acrshort{acr:GPU} to the \acrshort{acr:CPU} since
+they are stored in \acrshort{acr:CPU}-allocated \acrshort{acr:CUDA} \acrshort{acr:GPU} memory. Using
+a created \acrshort{acr:MPI} datatype, arrays of elements objects can be directly sent through
+\acrshort{acr:MPI}. Algorithm~\ref{alg:mpi_datatype} shows how the datatype is created, and which
+data members from the element object are sent.
+
+\begin{algorithm}[H]
+    \begin{cuda}
+        Element2D_t::Datatype::Datatype() {
+            constexpr int n = 4;
+            constexpr std::array<int, n> lengths {
+                1, 
+                1, 
+                1, 
+                1
+            };
+            constexpr std::array<MPI_Aint, n> displacements {
+                offsetof(Element2D_t, N_), 
+                offsetof(Element2D_t, status_), 
+                offsetof(Element2D_t, rotation_), 
+                offsetof(Element2D_t, split_level_)
+            };
+            const std::array<MPI_Datatype, n> types {
+                MPI_INT, 
+                MPI_INT, 
+                MPI_INT, 
+                MPI_INT
+            };
+
+            MPI_Datatype tmp_type;
+            MPI_Type_create_struct(n, lengths.data(), 
+                displacements.data(), types.data(), &tmp_type);
+            // We resize the datatype to be able to send arrays of elements
+            MPI_Type_create_resized(tmp_type, 0, sizeof(Element2D_t), &datatype_);
+            MPI_Type_commit(&datatype_);
+        }\end{cuda}
+\caption{\textbf{MPI\_datatype:} The solution data of elements is stored in parallel in an array.}\label{alg:mpi_datatype}
+\end{algorithm}
+
+\subsection{Mesh reconstruction}\label{subsection:load_balancing:implementation:reconstruction}
+
+Once all elements to be transferred and their neighbour information have been sent and received, the
+mesh must me reconstructed. This is the more difficult par of the process, as many edge cases exist.
+An example operation is the \textbf{find\_faces\_to\_delete} kernel, showcased in
+Algorithm~\ref{alg:find_faces_to_delete}, which marks faces without any remaining domain elements as
+neighbours for deletion.
+
+\begin{algorithm}[H]
+    \begin{cuda}
+        __global__
+        auto find_faces_to_delete(size_t n_faces, size_t n_domain_elements, 
+                size_t n_elements_send_left, size_t n_elements_send_right, 
+                const Face2D_t* faces, bool* faces_to_delete) -> void {
+
+            const int index = blockIdx.x * blockDim.x + threadIdx.x;
+            const int stride = blockDim.x * gridDim.x;
+
+            for (size_t i = index; i < n_faces; i += stride) {
+                const Face2D_t& face = faces[i];
+                const std::array<bool, 2> elements_leaving {
+                    face.elements_[0] < n_elements_send_left 
+                        || (face.elements_[0] >= n_domain_elements - n_elements_send_right 
+                            && face.elements_[0] < n_domain_elements),
+                    face.elements_[1] < n_elements_send_left 
+                        || (face.elements_[1] >= n_domain_elements - n_elements_send_right 
+                            && face.elements_[1] < n_domain_elements)
+                };
+                const std::array<bool, 2> boundary_elements {
+                    face.elements_[0] >= n_domain_elements,
+                    face.elements_[1] >= n_domain_elements
+                };
+
+                faces_to_delete[i] = elements_leaving[0] && elements_leaving[1] 
+                                  || elements_leaving[0] && boundary_elements[1] 
+                                  || elements_leaving[1] && boundary_elements[0];
+            }
+        }\end{cuda}
+\caption{\textbf{find\_faces\_to\_delete:} Faces with no remaining domain neighbour elements are marked for deletion.}\label{alg:find_faces_to_delete}
+\end{algorithm}
+
+This algorithm provides part of the foundation of the part of load balancing concerning faces, but
+is only the start. Faces need to be moved to a new index to remove the gaps from deleted faces. We
+then need to update the face indices in all elements, and resize the elements' neighbour faces
+arrays if some of the faces have been deleted. New faces have to be added to the face array to
+connect the new received elements to the mesh.
+
+Ghost elements can be marked for deletion is all the faces connecting them to the domain are to be
+deleted, except in two special cases. Ghost elements part of an \acrshort{acr:MPI} interfaces need
+to be deleted if the element on the other side of the interface is sent to the process containing
+the boundary element. Algorithm~\ref{alg:find_mpi_interface_elements_to_delete} shows a kernel that
+is launched specially to deal with this edge case. Also, boundary elements can be marked for
+deletion because no domain element connects them anymore, but some received elements could connect
+to them. Another kernel, shown in Algorithm~\ref{alg:find_mpi_interface_elements_to_keep}, is
+launched to deal with this case.
+
+\begin{algorithm}[H]
+    \begin{cuda}
+        __global__
+        auto find_mpi_interface_elements_to_delete(size_t n_mpi_interface_elements, 
+                size_t n_domain_elements, int rank, 
+                const size_t* mpi_interfaces_destination, 
+                const int* mpi_interfaces_new_process_incoming, 
+                bool* boundary_elements_to_delete) -> void {
+
+            const int index = blockIdx.x * blockDim.x + threadIdx.x;
+            const int stride = blockDim.x * gridDim.x;
+
+            for (size_t i = index; i < n_mpi_interface_elements; i += stride) {
+                if (mpi_interfaces_new_process_incoming[i] == rank) {
+                    boundary_elements_to_delete[mpi_interfaces_destination[i] 
+                                              - n_domain_elements] = true;
+                }
+            }
+        }\end{cuda}
+\caption{\textbf{find\_mpi\_interface\_elements\_to\_delete:} \Acrshort{acr:MPI} interface elements should be deleted if the element on the other side of the interface is moved to the same process.}\label{alg:find_mpi_interface_elements_to_delete}
+\end{algorithm}
+
+\begin{algorithm}[H]
+    \begin{cuda}
+        __global__
+        auto find_mpi_interface_elements_to_keep(size_t n_mpi_destinations, 
+                size_t n_neighbours, int rank, size_t n_domain_elements, 
+                const int* neighbour_procs, const size_t* neighbour_indices, 
+                const size_t* neighbour_sides, const int* mpi_destination_procs, 
+                const size_t* mpi_destination_local_indices, 
+                const size_t* mpi_destination_sides, 
+                const size_t* mpi_interfaces_destination, 
+                bool* boundary_elements_to_delete) -> void {
+
+            const int index = blockIdx.x * blockDim.x + threadIdx.x;
+            const int stride = blockDim.x * gridDim.x;
+
+            for (size_t i = index; i < n_mpi_destinations; i += stride) {
+                const int mpi_proc = mpi_destination_procs[i];
+
+                // The element is marked for deletion because either all linking elements are sent
+                // Maybe we received an element that links to it, then we must keep it
+                if  (mpi_proc != rank 
+                  && boundary_elements_to_delete[mpi_interfaces_destination[i]-n_domain_elements]) {
+                    const size_t mpi_index = mpi_destination_local_indices[i];
+                    const size_t mpi_side = mpi_destination_sides[i];
+                    for (size_t j = 0; j < n_neighbours; ++j) {
+                        const int neighbour_proc = neighbour_procs[j];
+                        const size_t neighbour_index = neighbour_indices[j];
+                        const size_t neighbour_side = neighbour_sides[j];
+
+                        if  (mpi_proc  == neighbour_proc 
+                          && mpi_index == neighbour_index 
+                          && mpi_side  == neighbour_side) {
+                            boundary_elements_to_delete[mpi_interfaces_destination[i] 
+                                                      - n_domain_elements] = false; 
+                            break;
+                        }
+                    }
+                }
+            }
+        }\end{cuda}
+\caption{\textbf{find\_mpi\_interface\_elements\_to\_keep:} \Acrshort{acr:MPI} interface elements should be kept if a received element now connects to it.}\label{alg:find_mpi_interface_elements_to_keep}
+\end{algorithm}
+
+This exemple is presented to show that the apparent simplicity of
+Algorithm~\ref{alg:find_faces_to_delete} is complicated when all the edge cases of a mesh
+dynamically changing are factored in. Adding to the complexity is the fact that the
+\acrshort{acr:GPU} workers only have knowledge of their own mesh block, as well as the neighbour
+information of the received elements. The different computations are also executed in parallel on
+the \acrshort{acr:GPU}, since each \acrshort{acr:GPU} is paired with a single \acrshort{acr:CPU}
+which would bottleneck heavily the process if it was used for all calculations.
+
+Many more operations remain, such as moving elements that are not deleted to their new position in
+the array, adding received elements, adding boundary elements around received elements, and updating
+the element indices in all faces. The \acrshort{acr:MPI} interfaces must also be rebuilt and ordered
+since elements may have moved from one process to another. The methods used are similar to that used
+for faces, and those seen in Section~\ref{section:adaptive_mesh_refinement:implementation}. 
