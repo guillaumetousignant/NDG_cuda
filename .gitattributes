@@ -1,20 +1,10 @@
 .gitignore linguist-vendored
-.makeignore linguist-vendored
-.travis.yml linguist-vendored
 LICENSE linguist-vendored
-makefile linguist-vendored
 README.md linguist-vendored
 catch.hpp linguist-vendored
-freeglut.dll linguist-vendored
-freeflut_ext.h linguist-vendored
-freeglut_std.h linguist-vendored
-freeglut.h linguist-vendored
-glut.h linguist-vendored
-freeglut.lib linguist-vendored
-another_path_tracer.sln linguist-vendored
-another_path_tracer.vcxproj linguist-vendored
-another_path_tracer.vcxproj.filters linguist-vendored
-winlibs/* linguist-vendored
+json.hpp linguist-vendored
+termcolor.hpp linguist-vendored
+CITATION.cff linguist-vendored
 
 * text=auto eol=crlf
 *.{cmd,[cC][mM][dD]} text eol=crlf
