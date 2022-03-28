@@ -298,9 +298,7 @@ It is shown as a dashed line on the figures. The second non-adaptive case aims t
 error similar to the adaptive case. The mesh is refined uniformly to 32 elements in the \(x\) and
 \(y\) dimensions, for \(K = 1024\), with a polynomial order \(N\) of 10. It is shown as a dotted
 line on the figures. Both the simulation time and the error against the analytical solution
-are compared.
-
-% say on what it was run
+are compared. The cases were computed using the Narval supercomputer.
 
 \begin{figure}[H]
 	\centering
@@ -308,7 +306,7 @@ are compared.
 	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_time_N4_K16_A5}\label{fig:adaptivity_efficiency_A5_time}}
 	\subfloat[Maximum error]
 	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_A5}\label{fig:adaptivity_efficiency_A5_error}}
-	\caption{\Acrlong{acr:AMR} performance: Simulation time and analytical error with refinement and increasing pre-processing steps. \(N_{initial} = 4\), \(K_{initial} = 16\), \(S = 5\), refinement interval = 5}\label{fig:adaptivity_efficiency_A5}
+	\caption{\Acrlong{acr:AMR} performance: Simulation time and analytical error with refinement and increasing number of pre-conditioning steps. \(N_{initial} = 4\), \(K_{initial} = 16\), \(S = 5\), refinement interval = 5}\label{fig:adaptivity_efficiency_A5}
 \end{figure}
 
 \begin{figure}[H]
@@ -318,7 +316,7 @@ are compared.
 	\hfill
 	\subfloat[Maximum error]
 	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_A20}\label{fig:adaptivity_efficiency_A20_error}}
-	\caption{\Acrlong{acr:AMR} performance: Simulation time and analytical error with refinement and increasing pre-processing steps. \(N_{initial} = 4\), \(K_{initial} = 16\), \(S = 5\), refinement interval = 20}\label{fig:adaptivity_efficiency_A20}
+	\caption{\Acrlong{acr:AMR} performance: Simulation time and analytical error with refinement and increasing number of pre-conditioning steps. \(N_{initial} = 4\), \(K_{initial} = 16\), \(S = 5\), refinement interval = 20}\label{fig:adaptivity_efficiency_A20}
 \end{figure}
 
 \begin{figure}[H]
@@ -328,7 +326,7 @@ are compared.
 	\hfill
 	\subfloat[Maximum error]
 	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_A100}\label{fig:adaptivity_efficiency_A100_error}}
-	\caption{\Acrlong{acr:AMR} performance: Simulation time and analytical error with refinement and increasing pre-processing steps. \(N_{initial} = 4\), \(K_{initial} = 16\), \(S = 5\), refinement interval = 100}\label{fig:adaptivity_efficiency_A100}
+	\caption{\Acrlong{acr:AMR} performance: Simulation time and analytical error with refinement and increasing number of pre-conditioning steps. \(N_{initial} = 4\), \(K_{initial} = 16\), \(S = 5\), refinement interval = 100}\label{fig:adaptivity_efficiency_A100}
 \end{figure}
 
 \begin{figure}[H]
@@ -338,7 +336,7 @@ are compared.
 	\hfill
 	\subfloat[Maximum error]
 	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_A500}\label{fig:adaptivity_efficiency_A500_error}}
-	\caption{\Acrlong{acr:AMR} performance: Simulation time and analytical error with refinement and increasing pre-processing steps. \(N_{initial} = 4\), \(K_{initial} = 16\), \(S = 5\), refinement interval = 500}\label{fig:adaptivity_efficiency_A500}
+	\caption{\Acrlong{acr:AMR} performance: Simulation time and analytical error with refinement and increasing number of pre-conditioning steps. \(N_{initial} = 4\), \(K_{initial} = 16\), \(S = 5\), refinement interval = 500}\label{fig:adaptivity_efficiency_A500}
 \end{figure}
 
 From
@@ -384,7 +382,7 @@ for it, and with improvements to fit it better it could perform even better.
 Section~\ref{section:conclusion:future_work} discusses some improvements to make the program even
 better suited for the \acrshort{acr:GPU} architecture.
 
-The best number of pre-processing steps seems to be four for this case, as the target error is
+The best number of pre-conditioning steps seems to be four for this case, as the target error is
 reached with all refinement intervals. After this number of steps the solution doesn't change much
 as the error estimation target is likely reached. We use that number of steps to compare the
 different refinement intervals in Figure~\ref{fig:adaptivity_efficiency_C4}.
@@ -396,7 +394,7 @@ different refinement intervals in Figure~\ref{fig:adaptivity_efficiency_C4}.
 	\hfill
 	\subfloat[Maximum error]
 	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_C4}\label{fig:adaptivity_efficiency_C4_error}}
-	\caption{\Acrlong{acr:AMR} performance: Simulation time and analytical error with four pre-processing steps and increasing refinement interval. \(N_{initial} = 4\), \(K_{initial} = 16\), \(S = 5\), pre-processing steps = 4}\label{fig:adaptivity_efficiency_C4}
+	\caption{\Acrlong{acr:AMR} performance: Simulation time and analytical error with four pre-conditioning steps and increasing refinement interval. \(N_{initial} = 4\), \(K_{initial} = 16\), \(S = 5\), pre-conditioning steps = 4}\label{fig:adaptivity_efficiency_C4}
 \end{figure}
 
 Figure~\ref{fig:adaptivity_efficiency_C4} gives a good overview of the \acrshort{acr:AMR}
@@ -809,6 +807,8 @@ locality to the elements, are there are few discontinuities between elements, an
 between \acrshortpl{acr:GPU} is small. The elements are well divided between the
 \acrshortpl{acr:GPU}, as the \acrshortpl{acr:GPU} in more heavily refined areas have a smaller
 footprint in the domain.
+
+\subsection{Profiling}\label{subsection:results:complex_meshes:profiling}
 
 This complex case was also profiled in order to assess which parts of the program were more
 computationally intensive. The simulation was run on four \acrshortpl{acr:GPU} up to \(t = 1 s\)

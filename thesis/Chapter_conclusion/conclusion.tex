@@ -2,11 +2,103 @@
 
 \section{Summary}\label{section:conclusion:summary}
 
-\begin{itemize}
-    \item Possible and worth it to do amr and load balancing on GPU, though hard
-    \item GPU faster than CPU for base solver, amr makes it faster and load balancing regains performance lost to load imbalance
-    \item GPU accelerate spectral methods significantly, no longer tied to \(N^2\) in 2D
-\end{itemize}
+In this work, we presented a \acrshort{acr:GPU}-based wave equation solver using the
+\acrlong{acr:DG-SEM}, as well as \acrlong{acr:AMR} and dynamic load balancing. The main
+contributions of this work are: showing that \acrshort{acr:AMR} and load balancing on
+\acrshortpl{acr:GPU} is possible and beneficial to solution quality and performance, showing that
+significant performance can be gained by performing computations using \acrshortpl{acr:GPU}, and
+showing that \acrshortpl{acr:GPU} accelerate spectral methods significantly.
+
+The goal of using \acrshortpl{acr:GPU} to perform these computations was to increase the available
+computing power, as spectral methods are notoriously expensive to compute. Spectral are needed when
+highly accurate solutions of complex flows are needed. Section~\ref{section:results:scaling_tests}
+shows that for a baseline case without \acrshort{acr:AMR} on a \acrshort{acr:HPC} platform can be
+computed up to three times faster using \acrshortpl{acr:GPU} when they are sufficiently loaded. The
+program has also been shown to scale well up to \(64\) \acrshortpl{acr:GPU}.
+Chapter~\ref{chapter:graphics_processing_units} discusses the architectures decisions taken to use
+the massively parallel \acrshort{acr:GPU} architecture. One such decision is to implement a data
+structure such that only high-level objects such as elements and faces are stored in flat arrays
+that can be transferred from the \acrshort{acr:GPU} to the \acrshort{acr:CPU}. The data arrays
+within those objects are instead allocated directly by the \acrshort{acr:GPU} in \acrshort{acr:GPU}
+code, and stored in dynamic memory. This permits a more flexible data structure, where the
+\acrshort{acr:GPU} itself can perform some of the dynamic mesh changes necessary to
+\acrshort{acr:AMR} and load balancing, and reduces the overhead of moving objects around because the
+bulk of the data is stored outside of the objects themselves.
+
+Some problems have localised areas where more precision is needed, such as shocks and boundary
+layers. Even with the increased processing power of \acrshortpl{acr:GPU}, uniformly refining a mesh
+to the level needed by those areas makes the computing time increase to the point where it is not
+economic to solve these problems. We use \acrlong{acr:AMR} to assess which parts of the problem have
+an increased estimated error and to refine them, all while the program is running.
+Section~\ref{section:results:adaptivity_performance} shows that a case with \acrshort{acr:AMR} can
+be more than \(20 \times \) faster to execute than the same case initially uniformly refined up to
+the maximum attained by the \acrshort{acr:AMR} case. When compared to another case initially
+uniformly refined to the point that it reaches a similar maximum error to the \acrshort{acr:AMR}
+case, the \acrshort{acr:AMR} case is still generally faster. This is an excellent result, given that
+\acrshortpl{acr:GPU} are not tailored to these kind of dynamically changing computations. 
+
+The \acrshort{acr:AMR} process itself does not match well with the \acrshort{acr:GPU} architecture,
+as it reallocates and moves large amounts of memory, and is fundamentally sequential. Since each
+\acrshort{acr:GPU} is paired with a single \acrshort{acr:CPU} and is massively faster, we want to
+execute as much as possible of the process in parallel on the \acrshort{acr:GPU}. We devised an
+algorithm to perform \acrshort{acr:AMR} in parallel, described in
+Chapter~\ref{chapter:adaptive_mesh_refinement}, offloading most of the computation to the
+\acrshort{acr:GPU}. Elements moving, h-refining, p-refining and the renumbering that comes with the
+process all happen on the \acrshort{acr:GPU}. The only significant parts happening on the
+\acrshort{acr:CPU} is the allocation of the resized high-level arrays, and the computing of offset
+arrays, so that the different \acrshort{acr:GPU} threads can operate in parallel without race
+conditions. Despite this, \acrshort{acr:AMR} is a costly process on \acrshortpl{acr:GPU}, making up
+a significant portion of the total runtime as seen in
+Subsection~\ref{subsection:results:complex_meshes:profiling}.
+
+We also implement a mesh pre-conditioning algorithm, described in
+Section~\ref{section:adaptive_mesh_refinement:pre_conditioning}, to refine the mesh before the
+computation up to a point where initial conditions are well applied.
+Section~\ref{section:results:adaptivity_performance} shows that performing a few pre-condition steps
+can significantly increase the solution quality when the starting mesh is very coarse. Combined with
+\acrshort{acr:AMR}, this means that meshes do not need to be tailored to problems as much. An
+uniform coarse mesh can be used, and the pre-conditioning will refine the mesh to capture initial
+conditions correctly, and \acrshort{acr:AMR} will refine the mesh as the solution is computed to
+capture the important areas of the flow.
+
+To combat the load imbalance that can arise when the problem is solved in parallel using multiple
+\acrshortpl{acr:GPU}, we implemented a dynamic load balancing algorithm. The algorithm uses the
+Hilbert curve, a space-filling curve that has good locality. This is especially important when using
+\acrshortpl{acr:GPU} because data transfers between \acrshortpl{acr:GPU} are more expensive,
+therefore we want to reduce the size of the boundaries between mesh blocks as much as possible. 
+Section~\ref{section:results:load_balancing_performance} shows that dynamic load balancing
+significantly increases performance when there is load imbalance. The performance increase scales
+well with load imbalance, meaning that dynamic load balancing should improve the performance no
+matter how much load imbalance is present. By judiciously choosing when we load balance, as
+explained in Section~\ref{section:load_balancing:criteria}, the computing time spent in the load
+balancing algorithm can be very low, as reported in
+Subsection~\ref{subsection:results:complex_meshes:profiling}. 
+
+The same limitations as \acrshort{acr:AMR} apply, namely that load balancing is not particularly
+well suited for the \acrshort{acr:GPU} architecture, and we want to execute as much of it as
+possible on the \acrshort{acr:GPU}. \Acrshortpl{acr:GPU} have less memory than \acrshortpl{acr:CPU},
+therefore we want each worker \acrshort{acr:GPU} to only have knowledge about the mesh block it is
+assigned to reduce its memory footprint. This complicates load balancing, as it is harder to
+reconstruct the mesh once elements are exchanged. Because of this, the load balancing algorithm is
+made up of several smaller dependent functions, in order to catch every possible edge case. Most of
+those functions execute on the \acrshort{acr:GPU}, including the generation of the Hilbert curve
+ordering of the elements. This algorithm has a good performance, despite performing many data
+transfers between \acrshortpl{acr:GPU} and reallocating a lot of memory.
+Chapter~\ref{chapter:load_balancing} details how the algorithm is designed, and what strategies have
+had to be used to make it perform well on \acrshortpl{acr:GPU}.
+
+Another significant conclusion is that \acrshortpl{acr:GPU} are particularly well suited the
+spectral methods, specifically. As described in Chapter~\ref{chapter:spectral_element_method}, the
+number of collocation points in a element is \({\left( N + 1 \right)}^2\), there \(N\) is the
+polynomial order of an element. This indicates that the computational complexity should scale with
+\({\left( N + 1 \right)}^2\). However, as reported in
+Subsection~\ref{subsection:results:load_balancing_performance:polynomial_order}, it seems that
+increasing the polynomial order of elements increases the density of computations, which lends
+better performance. The computation time relative to \(N\) seems closer to a linear relation than a
+quadratic one. This means that using higher order elements and the higher accuracy that comes with
+them is more attractive on \acrshortpl{acr:GPU} than on traditional platforms. It also hints that
+spectral methods in general could be less computationally expensive to use compared to other methods
+when using \acrshortpl{acr:GPU}.
 
 \section{Concluding Remarks}\label{section:conclusion:remarks}
 
