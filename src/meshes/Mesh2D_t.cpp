@@ -4807,7 +4807,7 @@ auto SEM::Host::Meshes::get_MPI_interfaces_adaptivity(
                 }
             }
             if (process == -1) {
-                printf("Error: MPI origin element %llu, index %llu, cannot be found with mpi_interfaces_outgoing_size_. Results are undefined.\n", i, element_index);
+                std::cout << "Error: MPI origin element " << i << ", index " << element_index << ", cannot be found with mpi_interfaces_outgoing_size_. Results are undefined." << std::endl;
             }
 
             const size_t side = MPI_interfaces_origin_side[i];
@@ -6804,7 +6804,7 @@ auto SEM::Host::Meshes::split_mpi_outgoing_interfaces(
                 }
             }
             if (process == -1) {
-                printf("Error: MPI origin element %llu, index %llu, cannot be found with mpi_interfaces_outgoing_size_. Results are undefined.\n", i, origin_element_index);
+                std::cout << "Error: MPI origin element " << i << ", index " << origin_element_index << ", cannot be found with mpi_interfaces_outgoing_size_. Results are undefined." << std::endl;
             }
 
             const size_t side = mpi_interfaces_origin_side[i];
@@ -6955,7 +6955,7 @@ auto SEM::Host::Meshes::split_mpi_incoming_interfaces(
                     }
                 }
                 if (face_index == static_cast<size_t>(-1)) {
-                    printf("Error: Boundary element %llu, index %llu, splits to single element and can't find its node. Results are undefined.\n", i, mpi_interfaces_destination[i]);
+                    std::cout << "Error: Boundary element " << i << ", index " << mpi_interfaces_destination[i] << ", splits to single element and can't find its node. Results are undefined." << std::endl;
                 }
 
                 new_node_index = n_nodes + n_splitting_elements;
@@ -7117,7 +7117,7 @@ auto SEM::Host::Meshes::split_mpi_incoming_interfaces(
                     }
                 }
                 if (face_index == static_cast<size_t>(-1)) {
-                    printf("Error: Boundary element %llu, index %llu, splits to single element and can't find its node. Results are undefined.\n", i, mpi_interfaces_destination[i]);
+                    std::cout << "Error: Boundary element " << i << ", index " << mpi_interfaces_destination[i] << ", splits to single element and can't find its node. Results are undefined." << std::endl;
                 }
 
                 new_node_index = n_nodes + n_splitting_elements;
@@ -8167,7 +8167,7 @@ auto SEM::Host::Meshes::get_neighbours(
                                         }
             
                                         if (missing) {
-                                            printf("Error: Element %llu is not part of local or mpi interfaces, or boundaries. Results are undefined.\n", other_element_index);
+                                            std::cout << "Error: Element " << other_element_index << " is not part of local or mpi interfaces, or boundaries. Results are undefined." << std::endl;
                                         }
                                     }
                                 }
