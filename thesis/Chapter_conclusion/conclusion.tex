@@ -63,9 +63,9 @@ capture the important areas of the flow.
 
 To combat the load imbalance that can arise when the problem is solved in parallel using multiple
 \acrshortpl{acr:GPU}, we implemented a dynamic load balancing algorithm. The algorithm uses the
-Hilbert curve, a space-filling curve that has good locality. This is especially important when using
+Hilbert curve, a \acrlong{acr:SFC} that has good locality. This is especially important when using
 \acrshortpl{acr:GPU} because data transfers between \acrshortpl{acr:GPU} are more expensive,
-therefore we want to reduce the size of the boundaries between mesh blocks as much as possible. 
+therefore we want to reduce the size of the boundaries between mesh blocks as much as possible.
 Section~\ref{section:results:load_balancing_performance} shows that dynamic load balancing
 significantly increases performance when there is load imbalance. The performance increase scales
 well with load imbalance, meaning that dynamic load balancing should improve the performance no
