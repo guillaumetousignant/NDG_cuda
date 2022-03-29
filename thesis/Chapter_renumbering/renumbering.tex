@@ -1,1 +1,19 @@
 \chapter{Mesh Renumbering}\label{chapter:renumbering}
+
+\begin{figure}[H]
+	\centering
+	\subfloat[Solution time]
+	{\includesvg[width=0.45\textwidth]{Chapter_renumbering/media/mesh_P0_before_adaptivity1}\label{fig:mesh_P0_before_adaptivity1_far}}
+	\subfloat[Maximum error]
+	{\includesvg[width=0.45\textwidth]{Chapter_renumbering/media/mesh_P0_before_adaptivity1_near}\label{fig:mesh_P0_before_adaptivity1_near}}
+	\caption{\Acrlong{acr:AMR} performance: Simulation time and analytical error with refinement and increasing number of pre-conditioning steps. \(N_{initial} = 4\), \(K_{initial} = 16\), \(S = 5\), refinement interval = 5}\label{fig:mesh_P0_before_adaptivity1}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\subfloat[Solution time]
+	{\includesvg[width=0.45\textwidth]{Chapter_renumbering/media/mesh_P0_after_adaptivity1}\label{fig:mesh_P0_after_adaptivity1_far}}
+	\subfloat[Maximum error]
+	{\includesvg[width=0.45\textwidth]{Chapter_renumbering/media/mesh_P0_after_adaptivity1_near}\label{fig:mesh_P0_after_adaptivity1_near}}
+	\caption{\Acrlong{acr:AMR} performance: Simulation time and analytical error with refinement and increasing number of pre-conditioning steps. \(N_{initial} = 4\), \(K_{initial} = 16\), \(S = 5\), refinement interval = 5}\label{fig:mesh_P0_after_adaptivity1}
+\end{figure}
