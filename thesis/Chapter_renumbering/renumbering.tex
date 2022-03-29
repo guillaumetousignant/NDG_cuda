@@ -53,7 +53,13 @@ partitioning shown in Figure~\ref{fig:mesh_circular}.
 
 % is no good
 
-% Figure about how we do it
+% Figure about how we do it, that the curve is not defined but we map too square, make hilbert curve
+% and sort elements according to into which index they fall. If multiple are in the same they keep
+% their relative order. This is why we make very fine Hilbert curve
+
+% figure about how we do it
+
+% This is the ordering and blocks it gives
 
 \begin{figure}[H]
 	\centering
@@ -63,6 +69,9 @@ partitioning shown in Figure~\ref{fig:mesh_circular}.
 	{\includegraphics[width=0.45\textwidth]{Chapter_renumbering/media/rank_hilbert}\label{fig:rank_hilbert}}
 	\caption{Pseudo-Hilbert sorted mesh:The elements are sorted according to their index along a Hilbert curve, and the mesh is partitioned into \(16\) mesh blocks. (a) Ordering of the elements within the mesh (b) Mesh blocks once partitioned}\label{fig:mesh_hilbert}
 \end{figure}
+
+% Good, good grouping elements and looks a bit like the real curve from ref{}
+% Then we show the next figures, how is the ordering and how it works for refinement
 
 \begin{figure}[H]
 	\centering
@@ -81,3 +90,10 @@ partitioning shown in Figure~\ref{fig:mesh_circular}.
 	{\includesvg[width=0.45\textwidth]{Chapter_renumbering/media/mesh_P0_after_adaptivity1_near}\label{fig:mesh_P0_after_adaptivity1_near}}
 	\caption{\Acrlong{acr:AMR} with an unstructured mesh (detail): The mesh is refined, created elements follow the initial pseudo-Hilbert curve. There are jumps along the curve around the fuselage. (a) Initial mesh (b) Mesh after a single refinement step}\label{fig:mesh_P0_adaptivity_near}
 \end{figure}
+
+% Very good, refinement keeps the order of the curve well
+% The order of the curve is good, but there are discontinuities near airfoil and weird jumps.
+% Discontinuities: curve is not defined to have holes. Not too bad in this case since hole in middle
+% Weird jumps:
+% When too fine, the curve will "miss" elements by a little, giving surprising results. Future work:
+% do with coarse grid, and refine for elements that fall in the same index only until they do not.
