@@ -724,10 +724,10 @@ The mesh is unstructured, and the original mesh file is numbered in a way that p
 neighbouring indices very far appart in the 2D domain. This is not ideal, as it scatters memory
 accesses in a way that is detrimental to \acrshort{acr:GPU} performance, and increases dramatically
 the number of inter-\acrshort{acr:GPU} boundaries. To improve the numbering, the mesh was renumbered
-to a pseudo-Hilbert curve according to an algorithm presented in Annex~\ref{chapter:renumbering}. It
-is not a real Hilbert curve, as the Hilbert curve is only defined in 2D square domains with a power
-of two number of axis-aligned elements in both dimensions. Nonetheless, this pseudo-Hilbert curve
-ressembles the Hilbert curve, and improves locality.
+to a pseudo-Hilbert curve according to an algorithm presented in Appendix~\ref{chapter:renumbering}.
+It is not a real Hilbert curve, as the Hilbert curve is only defined in 2D square domains with a
+power of two number of axis-aligned elements in both dimensions. Nonetheless, this pseudo-Hilbert
+curve ressembles the Hilbert curve, and improves locality.
 
 \begin{figure}[H]
 	\centering

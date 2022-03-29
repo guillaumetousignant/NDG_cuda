@@ -97,49 +97,195 @@ increasing the polynomial order of elements increases the density of computation
 better performance. The computation time relative to \(N\) seems closer to a linear relation than a
 quadratic one. This means that using higher order elements and the higher accuracy that comes with
 them is more attractive on \acrshortpl{acr:GPU} than on traditional platforms. It also hints that
-spectral methods in general could be less computationally expensive to use compared to other methods
-when using \acrshortpl{acr:GPU}.
+spectral methods in general could have an increased speedup when using \acrshortpl{acr:GPU} compared
+to other methods.
 
 \section{Concluding Remarks}\label{section:conclusion:remarks}
 
-\begin{itemize}
-    \item GPU requires different strategies for amr and load balancing vs CPU
-    \item Surprising things have impact on performance, or in surprising ways
-    \item Difficult to program dynamic meshes, LB required most changes in approach
-\end{itemize}
+The \acrshort{acr:AMR} and load balancing algorithms destined for \acrshortpl{acr:GPU} are very
+different from the same algorithms for \acrshortpl{acr:CPU} only. Many different strategies must be
+used, such as finding which parts of the algorithm can be executed in parallel. These parts should
+be executed on the \acrshort{acr:GPU} in order to improve performance and avoid unnecessary copies
+from the \acrshort{acr:GPU} to the \acrshort{acr:CPU}. Once these parallel parts have been
+identified, they must be modified until a single kind of data. For example, a kernel that is
+parallelised over elements and moves elements to a new index can modify the elements, arrays that
+are indexed per element, but it cannot modify faces. This is because multiple elements can link to
+the same face. If for example that kernel would update the element indices in the faces, a race
+condition would occur and the results would not be correct. In this case, the faces should update
+their element indices in another kernel, that parallelises over faces. There are many such issues
+that do not impact sequential code but start appearing when a few thousand threads execute in
+parallel.
+
+Another noteworthy difference about \acrshort{acr:GPU} computing is that surprising things can have
+an impact on performance. One example is increasing the thread block size in
+Subsection~\ref{subsection:results:scaling_tests:strong}. Increasing the block size should improve
+performance by reducing the number of instructions to dispatch. This is because there is a lot of
+divergence in the code, and with an increased block size more threads will be waiting for divergents
+threads. It is important to profile the code and look at which parts are taking up more time that
+they should. Sometimes some problematic functions can be made much faster, such as the error
+estimation routine that went from taking up \(15 \% \) of the total execution time to \(0.1 \% \) by
+precomputing a set of values.
+
+The \acrshortpl{acr:GPU} need to be saturated with work in order to have good performance. This can
+lead to peculiar situations like in Subsection~\ref{subsection:results:scaling_tests:strong}, where
+the relation between number of elements in a \acrshort{acr:GPU} and the computation time is not
+linear. Under a certain workload, the cores of a \acrshort{acr:GPU} do not all have work to perform,
+and the \acrshort{acr:GPU} is partly idle. On the other hand, if there is too much work in a
+\acrshort{acr:GPU} its memory may fill up, or the constant cache swapping from each core working on
+different elements successively may degrade performance. There is an ideal amount of work per
+\acrshort{acr:GPU} to be found, depending on the problem.
+
+Thread divergence can also cause surprising results, such as a single if/else statement reducing the
+performance of a function by half. For example, the projection from faces to elements has four
+different paths, depending on if the face is forward or backward compared to the element, and if it
+is conforming or not. Since threads execute in groups of 32, threads that do not take a particular
+branch are stopped while the threads that took that branch execute, and the the next branch is
+evaluated. For our projection, if it happens that there are threads that take each of the four
+branches in a group, each of the branches will be executed one after the other with different
+threads inactivated, taking up four times as much time as it should. This is a significant
+difference when programming for \acrshortpl{acr:GPU}, branching must be minimised as much as
+possible.
+
+It is also difficult to program dynamic meshes on the \acrshort{acr:GPU}. The fact that neither the
+\acrshort{acr:CPU} or \acrshort{acr:GPU} have the complete picture, and that all data has to be
+transferred from one to the other complicates some of the algorithms. Load balancing in particular
+required the most changes compared to a sequential \acrshort{acr:CPU} algorithm. In that algorithm,
+there are many dependencies between the different parts, which must be computed in a specific order.
+It is possible that it would be easier to re-create the mesh once elements have been exchanged, and
+rebuild all the connectivity from scratch. That approach was not chosen, instead the mesh is
+modified to remove unneeded parts and add new parts. Seeing that modifying the mesh with limited
+information is very difficult and error-prone, it is hard to say which approach is best.
 
 \section{Future Work}\label{section:conclusion:future_work}
 
 \subsection{GPU Computing}\label{subsection:conclusion:future_work:gpu}
 
-\begin{itemize}
-    \item Reduce divergence: sort faces by non-conforming type, elements by N, adapt by blocks
-    \item Structure of arrays, not array of structures
-    \item Improve performance with profiler
-    \item Hybrid solver CPU/GPU
-    \item More fine-grained parallelism, openMP
-\end{itemize}
+There is still a lot of work to be done in order to match the \acrshort{acr:GPU} architecture
+better. For one, there is a lot of divergence in the code, due to \acrshort{acr:AMR} creating
+elements with different polynomial orders and non-conforming interfaces among other things. An
+avenue for future work would be to try to reduce divergence as much as possible. For example,
+sorting the faces by type and storing them in different arrays, so that different kernels could be
+launched for each type of face. In that case, each \acrshort{acr:GPU} thread in a kernel would
+execute the same instructions and there would be no divergence. The same could be performed for
+elements by refining elements per block, so that the elements assigned to a block of threads are
+always kept the same and there is no divergence.
+
+Another approach would be to decompose the objects, like faces and elements, to a separate array for
+each member. This is changing from a array of structures to a structure of arrays data structure.
+This could help alleviate cache pressure, since \acrshortpl{acr:GPU} have smaller caches than
+\acrshortpl{acr:CPU}. This helps by reducing the amount of data that has to be loaded in cache since
+only the data members used can be loaded instead of whole objects. This could improve performance,
+especially when the \acrshort{acr:GPU} is very loaded.
+
+There is also always work to be done by profiling the code and examining which parts of the code
+take up more execution time than they should, or are not optimal. Many tools exist to profile
+\acrshort{acr:CUDA} code. Two profilers were used to summarily examine the code for this work. The
+first is an overall profiler, the result of which is shown in
+Subsection~\ref{subsection:results:complex_meshes:profiling}. The other is a profiler for single
+kernels, and was used to improve the error estimation kernel. These tools give a lot of information,
+such as latency statistics, data dependencies, and optimal occupancy of the \acrshort{acr:GPU}.
+
+There is no reason to only use \acrshortpl{acr:CPU} or \acrshortpl{acr:GPU}. A future path to
+explore is to make a hybrid solver. If the program was modified to enable using both
+\acrshort{acr:CPU} and \acrshort{acr:GPU} workers together, it would be possible to use the complete
+processing power of computers. Since \acrshortpl{acr:CPU} and \acrshortpl{acr:GPU} have very
+different computing powers and capacities, this would make load balancing more difficult as elements
+would need to be split unequally between the workers. Since we implemented a \acrshort{acr:CPU} of
+the program as a comparison, and both versions have the same interface between workers, it was
+possible to create a crude hybrid version to assess its potential. This tentative hybrid version is
+presented in Appendix~\ref{chapter:hybrid_solver}.
+
+Finally, another area of work would be to add more fine-grained parallelism. As it stands, every
+process communicates with others via \acrshort{acr:MPI}. This happens regardless of if
+the other process is on the same machine or not. Workers on the same machine could access the same
+memory, and even transfer data between \acrshortpl{acr:GPU} directly if they are connected together.
+We could use multithreading in addition to multiprocessing, where there is one process per machine
+and all workers on a machine execute via threads. This would completely remove necessary transfers
+between workers on the same machine, as they could all access the same data. This would also reduce
+the number of \acrshort{acr:MPI} transfers needed, as only one process per machine would need to
+communicate.
 
 \subsection{DG-SEM}\label{subsection:conclusion:future_work:dg_sem}
 
-\begin{itemize}
-    \item N-S equations
-    \item Not only quads
-    \item Curved elements
-    \item 3D
-\end{itemize}
+In this work, we solved the wave equation. We use this simple equation in order to show the program
+works, but it is not very useful in itself. A possible avenue would be to upgrade the solver to
+solve a more interesting and complex equation. For example, solving the full Navier-Stokes equations
+would make the program useful for solving real-world problems.
+
+Another possible improvement is using different shapes other than quads, ideally within the same
+mesh. Many meshes use triangles, ans some unstructured meshes use a mix of quads and triangles. Some
+meshes even use elements with an arbitrary number of sides. Supporting these element types would
+make the program more general, and able to work with more off-the-shelf meshes. This would mean
+changing the structure of the program to be generic over element types.
+
+Speaking of elements, we often want to model curved surfaces, such as the airfoil from
+Subsection~\ref{section:results:complex_meshes}. In order to model curved surfaces with
+straight-edged elements, the elements need to be very small, and only approximate such surfaces.
+Implementing curved elements would help model these geometries better. An added advantage of curved
+elements is the possibility of smoothing the transition between very skewed elements, which becomes
+a problem with more complex equations.
+
+Finally, it would be very interesting transform the program from a 2D solver to a 3D solver. Many
+interesting problems appear only in 3D, and more complex geometries can be modeled. Also, 3D
+problems are an order of magnitude more computationally intensive to solve. These problems would
+benefit even more from the computational power of \acrshortpl{acr:GPU}, and would have no problem
+saturating them with work thanks to the increased complexity. With another dimension to fill, the
+number of elements that is possible to put in each dimension is reduced. This means that
+\acrshort{acr:AMR} is even more crucial in 3D, as computational resources are limited.
 
 \subsection{AMR}\label{subsection:conclusion:future_work:amr}
 
-\begin{itemize}
-    \item Coarsening
-    \item When to refine, use global error threshold like load balancing?
-\end{itemize}
+There is also work to do to improve \acrlong{acr:AMR}. Firstly, it takes up a large proportion of
+the total computation time. Maybe being more judicious about when we refine could alleviate this
+problem. There could be an error estimation threshold below which the \acrshort{acr:AMR} routine is
+not launched, similarly to the load balancing threshold described in
+Section~\ref{section:load_balancing:criteria}. Care should be taken to not worsen the issue by
+refining more often than necessary. It would also be possible to refine only some parts of the mesh,
+and avoid moving and reallocating the whole mesh.
 
-\subsection{Load Balancing}\label{subsection:conclusion:future_work:load_balancing}
+As it stands not, we do not perform mesh coarsening in this work. This is an important avenue to
+explore, as it saves even more resources than refinement alone. In many cases, such as the one shown
+in Section~\ref{section:results:test_case}, the areas that need refinement are not static in space.
+In that example, a wave goes through the domain diagonally. As it advances, the mesh is refined to
+better capture the wave. In its wake are many very refined elements that do not contribute to the
+solution anymore, as the wave is not present anymore. These elements take up computation power for
+no benefit. Mesh coarsening would do the inverse of h-refinement and p-refinement, and either lower
+the polynomial order of elements or merge elements together. This would be a significant challenge
+to add to the program because of its flat arrays data structure. Many \acrshort{acr:AMR} programs
+store their elements in a tree data structure in order to keep track of which elements are the
+children of which and to be able to reform element that have split. In our data structure, elements
+resulting of h-refinement are just regular elements like other, and have no knowledge of their
+previous topology. Coarsening would imply searching through nearby elements for other elements to be
+coarsened, and that can form a quadrilateral together. This is difficult, but brings the interesting
+ability of reforming elements that did not exist previously.
 
-\begin{itemize}
-    \item Having weights for N
-    \item Having capacity per worker (link to annex B)
-    \item Compute capacity on the fly
-\end{itemize}
+\subsection{Dynamic Load Balancing}\label{subsection:conclusion:future_work:load_balancing}
+
+The implementation of dynamic load balancing we present operates on the assumption that all elements
+have the same weight, ans are all equally as expensive to compute. With \acrshort{acr:AMR}, all
+elements can have a different polynomial order. As shown in
+Subsection~\ref{subsection:results:load_balancing_performance:polynomial_order}, the polynomial
+order of elements influence the computation time. A way to load balance more fairly would be to give
+a weight to each element, and split that weight equally between workers. That weight could be
+influenced by an element's polynomial order and its number of neighbours. This is not trivial to
+add, as then all workers would need to be aware of the weight of all elements in order to know how
+to split the workload equally.
+
+Since we would like to add a hybrid solver as stated in
+Subsection~\ref{subsection:conclusion:future_work:gpu} and assign weights to elements of different
+complexity, the next logical step is to assign different capacities to workers. This is evident in
+the case of a hybrid solver, as a \acrshort{acr:GPU} has vastly more computing power than a
+\acrshort{acr:CPU}. By assigning a different capacity to each worker, \acrshort{acr:GPU} workers can
+be assigned more work than \acrshort{acr:CPU} workers. Even in the case of a \acrshort{acr:GPU} only
+solver, assigning capacity to workers would enable better load balancing on heterogenous platforms.
+For example, different computers with different kinds of \acrshortpl{acr:GPU} working together, or
+full \acrshortpl{acr:GPU} working with fractions of \acrshortpl{acr:GPU} such as when sharing a
+system. 
+
+This capacity per worker could even be computed on the fly, with the program performing some
+iterations, and then examining how much time each worker took to perform such iterations. If we put
+in relation that time and the number of elements in each worker, the capacity the workers could be
+computed. This would enable a hybrid solver to work well out of the box without doing trial runs or
+guessing to know the relative weight of specific \acrshortpl{acr:CPU} and \acrshortpl{acr:GPU}. This
+could even tailor the capacity of identical \acrshortpl{acr:GPU} to unit-to-unit differences, or
+alleviate the load on thermally limited \acrshortpl{acr:GPU} in systems where it is an issue.
