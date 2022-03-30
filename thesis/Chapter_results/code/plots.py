@@ -117,7 +117,7 @@ load_balancing_interval_L = np.array([[20, 100, 200, 500, 1000],
                                       [20, 100, 200, 500, 1000]]) # Load balancing interval
 load_balancing_interval_t = np.array([[346.838, 284.198, 266.794, 248.574, 254.721],
                                       [2928.21, 2107.16, 1989.26, 1966.79, 2112.57],
-                                      [35725.2, 26116.9, 24765.6, 13990.2, 24976.3]]) # Simulation time
+                                      [20480.5, 26116.9, 24765.6, 13990.2, 24976.3]]) # Simulation time
 
 load_balancing_interval_baseline_L = load_balancing_interval_L[:, [0,-1]]
 load_balancing_interval_baseline_t = np.array([274.415, 4962.06, 107196])
@@ -129,7 +129,7 @@ load_balancing_threshold_N = np.array([4, 4, 4])                            # In
 load_balancing_threshold_K = np.array([128 * 128, 128 * 128, 128 * 128])    # Initial number of elements
 load_balancing_threshold_P = np.array([16, 16, 16])                         # Number of processes
 load_balancing_threshold_S = np.array([3, 5, 7])                            # Max split level
-load_balancing_threshold_I = np.array([2.16, 6.81, 12.50])                  # Load imbalance
+load_balancing_threshold_I = np.array([2.16, 6.81, 12.07])                  # Load imbalance
 load_balancing_threshold_max_N = np.array([12, 12, 12])                     # Max N
 
 load_balancing_threshold_T = np.array([[1, 1.01, 1.1, 1.5, 2],
@@ -140,7 +140,7 @@ load_balancing_threshold_t = np.array([[344.277, 295.591, 243.566, 241.076, 252.
                                        [20480.5, 14096.5, 13855.5, 14416.9, 15507.3]]) # Simulation time
 
 load_balancing_threshold_baseline_T = load_balancing_threshold_T[:, [0,-1]]
-load_balancing_threshold_baseline_t = np.array([274.359, 4962.06, 107196])
+load_balancing_threshold_baseline_t = np.array([274.359, 4962.06, 59061.9])
 best_T = 3
 
 # N scaling
