@@ -60,15 +60,16 @@ What we really want is to number the elements according to the Hilbert curve, wh
 results. As the Hilbert curve is not defined for unstructured geometries like this one, we will have
 to approximate it. Firstly we will do an elliptic mapping to transform the circular geometry to a
 square. We then generate a Hilbert curve over that square, and number the elements by the 1D index
-of where their center falls on the Hilbert curve. By sorting the elements by that index, they will
-be numbered according to the Hilbert curve. If two elements fall to the same index, they are sorted
-by their initial index. To avoid this we generate a very fine, or high level, Hilbert curve.
-Figure~\ref{fig:hilbert_renumbering} shows the underlying curve along which the elements are sorted.
+of where their center falls on the Hilbert curve when rounded to the closest point on the curve. By
+sorting the elements by that index, they will be numbered according to the Hilbert curve. If two
+elements fall to the same index, they are sorted by their initial index. To avoid this we generate a
+very fine, or high level, Hilbert curve. Figure~\ref{fig:hilbert_renumbering} shows the underlying
+curve along which the elements are sorted.
 
 \begin{figure}[H]
 	\centering
-	\includesvg[width=0.45\textwidth]{Chapter_renumbering/media/hilbert_renumbering}
-	\caption{Hilbert renumbering: The element centers are rounded to an underlying Hilbert curve.}\label{fig:hilbert_renumbering}
+	\includesvg[width=0.95\textwidth]{Chapter_renumbering/media/hilbert_renumbering}
+	\caption{Hilbert renumbering: The element centres are rounded to an underlying Hilbert curve.}\label{fig:hilbert_renumbering}
 \end{figure}
 
 When we use this method on the same mesh as Figure~\ref{fig:mesh_unsorted}, we obtain a mesh sorted
@@ -134,7 +135,9 @@ This is because the underlying Hilbert curve along which the elements are sorted
 compared to the elements. The elements are only sorted according to where their centres fall on that
 curve, and sometimes the curve will miss the centre of an element and make multiple round trips
 before intersecting it, while encountering elements that are further along the way. This can be seen
-at \textcolor{vs_red}{\textbf{SOMEWHERE}} in Figure~\ref{fig:hilbert_renumbering}.
+by looking closely at Figures~\ref{fig:hilbert_renumbering}
+and~\ref{fig:mesh_P0_before_adaptivity1_near}, some elements would be sorted very differently if
+their centres were moved slightly.
 
 A potential solution to this problem would be to generate a very coarse underlying Hilbert curve,
 sorting the elements along that curve, and only refining the parts of the curve where multiple
