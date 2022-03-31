@@ -132,7 +132,7 @@ indefinitely, with the slope of the scaling being influenced by the parallel pro
 This section will also serve as a general comparison between \acrshortpl{acr:CPU} and
 \acrshortpl{acr:GPU}. All scaling tests have been performed on the Béluga supercomputer. Scaling is
 evaluated by varying the number of \textit{nodes}, where a node in this context is a single computer
-from Béluga, sporting 40 \acrshort{acr:CPU} cores and 4 \acrshortpl{acr:GPU}, as stated in
+from Béluga, sporting 40 \acrshort{acr:CPU} cores and 4 \acrshortpl{acr:GPU} as stated in
 Subsection~\ref{subsection:results:platforms:beluga}. The four-node execution time of those tests
 therefore represents the program running on 16 \acrshortpl{acr:GPU} or 160 \acrshort{acr:CPU} cores,
 for the \acrshort{acr:GPU} and \acrshort{acr:CPU} computations respectively.
@@ -168,7 +168,7 @@ linearly to the other number of nodes.
 
 \begin{figure}[H]
 	\centering
-	\includesvg[width=0.6\textwidth]{Chapter_results/media/strong_scaling_N4_K65536_W32}
+	\includesvg[width=0.5\textwidth]{Chapter_results/media/strong_scaling_N4_K65536_W32}
 	\caption{Weak scaling: The problem size increases with the number of workers. N = 4, K = 65536, B = 32}\label{fig:strong_scaling_N4_W32}
 \end{figure}
 
@@ -196,7 +196,7 @@ heavier, while spending the same time on the overhead of kernel calls and other 
 
 \begin{figure}[H]
 	\centering
-	\includesvg[width=0.6\textwidth]{Chapter_results/media/strong_scaling_N6_K65536_W32}
+	\includesvg[width=0.5\textwidth]{Chapter_results/media/strong_scaling_N6_K65536_W32}
 	\caption{Weak scaling: The problem size increases with the number of workers. N = 6, K = 65536, B = 32}\label{fig:strong_scaling_N6_W32}
 \end{figure}
 
@@ -214,23 +214,20 @@ the solution time.
 
 \begin{figure}[H]
 	\centering
-	\includesvg[width=0.6\textwidth]{Chapter_results/media/strong_scaling_N6_K65536_W64}
-	\caption{Weak scaling: The problem size increases with the number of workers. N = 6, K = 65536, B = 64}\label{fig:strong_scaling_N6_W64}
+	\subfloat[\(B = 64\)]
+	{\includesvg[width=0.5\textwidth]{Chapter_results/media/strong_scaling_N6_K65536_W64}\label{fig:strong_scaling_N6_W64}}
+	\hfill
+	\subfloat[\(B = 128\)]
+	{\includesvg[width=0.5\textwidth]{Chapter_results/media/strong_scaling_N6_K65536_W128}\label{fig:strong_scaling_N6_W128}}
+	\caption{Weak scaling: The problem size increases with the number of workers. N = 6, K = 65536 (a) \(B = 64\) (b) \(B = 128\)}\label{fig:strong_scaling_N6_W64-128}
 \end{figure}
 
-\begin{figure}[H]
-	\centering
-	\includesvg[width=0.6\textwidth]{Chapter_results/media/strong_scaling_N6_K65536_W128}
-	\caption{Weak scaling: The problem size increases with the number of workers. N = 6, K = 65536, B = 128}\label{fig:strong_scaling_N6_W128}
-\end{figure}
-
-A the last two figures suggest, increasing the block size \(B\) does incur a performance penalty.
-This is possible caused by a high amount of thread divergence within blocks. This is consistent with
-how the program is written, for example
-Section~\ref{section:adaptive_mesh_refinement:implementation} shows how the projection back and
-forth between the elements and faces have a low of branching code paths. A lot of changes in the
-architecture of the program would have to be made to reduce this branching, and switch to a more
-data-driven approach.
+A the last figure suggests, increasing the block size \(B\) does incur a performance penalty. This
+is possibly caused by a high amount of thread divergence within blocks. This is consistent with how
+the program is written, for example Section~\ref{section:adaptive_mesh_refinement:implementation}
+shows how the projection back and forth between the elements and faces have a low of branching code
+paths. A lot of changes in the architecture of the program would have to be made to reduce this
+branching, and switch to a more data-driven approach.
 
 One thing to note is that the curve of the \acrshort{acr:CPU} implementation on
 Figures~\ref{fig:strong_scaling_N4_W32} and~\ref{fig:strong_scaling_N6_W32} is similar, whereas the
@@ -285,11 +282,11 @@ Figures~\ref{fig:adaptivity_efficiency_A5},~\ref{fig:adaptivity_efficiency_A20},
 and~\ref{fig:adaptivity_efficiency_A500} show the results of refining the mesh every 5, 20, 100 and
 500 timesteps, respectively.
 
-Secondly, the simulations are performed with an increasing number of refinement pre-conditioning
-steps as described in Section~\ref{section:adaptive_mesh_refinement:pre_conditioning}. The analysis
-ranges from no pre-conditioning step to five steps. The total simulation time is shown in blue. It
-is the sum of the time taken up by the pre-condition of the mesh, shown in green, and the
-computation time to solve the problem, shown in yellow. 
+Secondly, the simulations are performed with an increasing number of refinement pre-condition steps
+as described in Section~\ref{section:adaptive_mesh_refinement:pre_conditioning}. The analysis ranges
+from no pre-condition step to five steps. The total simulation time is shown in blue. It is the sum
+of the time taken up by the pre-condition of the mesh, shown in green, and the computation time to
+solve the problem, shown in yellow. 
 
 We compare those simulation to two non-adaptive cases. In the first case, the initial mesh is fully
 refined uniformly up to the maximum level attained by the adaptive cases. The mesh is split into 128
@@ -298,45 +295,45 @@ It is shown as a dashed line on the figures. The second non-adaptive case aims t
 error similar to the adaptive case. The mesh is refined uniformly to 32 elements in the \(x\) and
 \(y\) dimensions, for \(K = 1024\), with a polynomial order \(N\) of 10. It is shown as a dotted
 line on the figures. Both the simulation time and the error against the analytical solution
-are compared. The cases were computed using the Narval supercomputer.
+are compared. The cases were computed using the Narval supercomputer on a single \acrshort{acr:GPU}.
 
 \begin{figure}[H]
 	\centering
 	\subfloat[Solution time]
-	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_time_N4_K16_A5}\label{fig:adaptivity_efficiency_A5_time}}
+	{\includesvg[width=0.49\textwidth]{Chapter_results/media/adaptivity_time_N4_K16_A5}\label{fig:adaptivity_efficiency_A5_time}}
 	\subfloat[Maximum error]
-	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_A5}\label{fig:adaptivity_efficiency_A5_error}}
-	\caption{\Acrlong{acr:AMR} performance: Simulation time and analytical error with refinement and increasing number of pre-conditioning steps. \(N_{initial} = 4\), \(K_{initial} = 16\), \(S = 5\), refinement interval = 5}\label{fig:adaptivity_efficiency_A5}
+	{\includesvg[width=0.49\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_A5}\label{fig:adaptivity_efficiency_A5_error}}
+	\caption{\Acrlong{acr:AMR} performance: Simulation time and analytical error with refinement and increasing number of pre-condition steps. \(N_{initial} = 4\), \(K_{initial} = 16\), \(S = 5\), refinement interval = 5}\label{fig:adaptivity_efficiency_A5}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\subfloat[Solution time]
-	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_time_N4_K16_A20}\label{fig:adaptivity_efficiency_A20_time}}
+	{\includesvg[width=0.49\textwidth]{Chapter_results/media/adaptivity_time_N4_K16_A20}\label{fig:adaptivity_efficiency_A20_time}}
 	\hfill
 	\subfloat[Maximum error]
-	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_A20}\label{fig:adaptivity_efficiency_A20_error}}
-	\caption{\Acrlong{acr:AMR} performance: Simulation time and analytical error with refinement and increasing number of pre-conditioning steps. \(N_{initial} = 4\), \(K_{initial} = 16\), \(S = 5\), refinement interval = 20}\label{fig:adaptivity_efficiency_A20}
+	{\includesvg[width=0.49\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_A20}\label{fig:adaptivity_efficiency_A20_error}}
+	\caption{\Acrlong{acr:AMR} performance: Simulation time and analytical error with refinement and increasing number of pre-condition steps. \(N_{initial} = 4\), \(K_{initial} = 16\), \(S = 5\), refinement interval = 20}\label{fig:adaptivity_efficiency_A20}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\subfloat[Solution time]
-	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_time_N4_K16_A100}\label{fig:adaptivity_efficiency_A100_time}}
+	{\includesvg[width=0.49\textwidth]{Chapter_results/media/adaptivity_time_N4_K16_A100}\label{fig:adaptivity_efficiency_A100_time}}
 	\hfill
 	\subfloat[Maximum error]
-	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_A100}\label{fig:adaptivity_efficiency_A100_error}}
-	\caption{\Acrlong{acr:AMR} performance: Simulation time and analytical error with refinement and increasing number of pre-conditioning steps. \(N_{initial} = 4\), \(K_{initial} = 16\), \(S = 5\), refinement interval = 100}\label{fig:adaptivity_efficiency_A100}
+	{\includesvg[width=0.49\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_A100}\label{fig:adaptivity_efficiency_A100_error}}
+	\caption{\Acrlong{acr:AMR} performance: Simulation time and analytical error with refinement and increasing number of pre-condition steps. \(N_{initial} = 4\), \(K_{initial} = 16\), \(S = 5\), refinement interval = 100}\label{fig:adaptivity_efficiency_A100}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\subfloat[Solution time]
-	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_time_N4_K16_A500}\label{fig:adaptivity_efficiency_A500_time}}
+	{\includesvg[width=0.49\textwidth]{Chapter_results/media/adaptivity_time_N4_K16_A500}\label{fig:adaptivity_efficiency_A500_time}}
 	\hfill
 	\subfloat[Maximum error]
-	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_A500}\label{fig:adaptivity_efficiency_A500_error}}
-	\caption{\Acrlong{acr:AMR} performance: Simulation time and analytical error with refinement and increasing number of pre-conditioning steps. \(N_{initial} = 4\), \(K_{initial} = 16\), \(S = 5\), refinement interval = 500}\label{fig:adaptivity_efficiency_A500}
+	{\includesvg[width=0.49\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_A500}\label{fig:adaptivity_efficiency_A500_error}}
+	\caption{\Acrlong{acr:AMR} performance: Simulation time and analytical error with refinement and increasing number of pre-condition steps. \(N_{initial} = 4\), \(K_{initial} = 16\), \(S = 5\), refinement interval = 500}\label{fig:adaptivity_efficiency_A500}
 \end{figure}
 
 From
@@ -382,7 +379,7 @@ for it, and with improvements to fit it better it could perform even better.
 Section~\ref{section:conclusion:future_work} discusses some improvements to make the program even
 better suited for the \acrshort{acr:GPU} architecture.
 
-The best number of pre-conditioning steps seems to be four for this case, as the target error is
+The best number of pre-condition steps seems to be four for this case, as the target error is
 reached with all refinement intervals. After this number of steps the solution doesn't change much
 as the error estimation target is likely reached. We use that number of steps to compare the
 different refinement intervals in Figure~\ref{fig:adaptivity_efficiency_C4}.
@@ -390,11 +387,11 @@ different refinement intervals in Figure~\ref{fig:adaptivity_efficiency_C4}.
 \begin{figure}[H]
 	\centering
 	\subfloat[Solution time]
-	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_time_N4_K16_C4}\label{fig:adaptivity_efficiency_C4_time}}
+	{\includesvg[width=0.49\textwidth]{Chapter_results/media/adaptivity_time_N4_K16_C4}\label{fig:adaptivity_efficiency_C4_time}}
 	\hfill
 	\subfloat[Maximum error]
-	{\includesvg[width=0.45\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_C4}\label{fig:adaptivity_efficiency_C4_error}}
-	\caption{\Acrlong{acr:AMR} performance: Simulation time and analytical error with four pre-conditioning steps and increasing refinement interval. \(N_{initial} = 4\), \(K_{initial} = 16\), \(S = 5\), pre-conditioning steps = 4}\label{fig:adaptivity_efficiency_C4}
+	{\includesvg[width=0.49\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_C4}\label{fig:adaptivity_efficiency_C4_error}}
+	\caption{\Acrlong{acr:AMR} performance: Simulation time and analytical error with four pre-condition steps and increasing refinement interval. \(N_{initial} = 4\), \(K_{initial} = 16\), \(S = 5\), pre-condition steps = 4}\label{fig:adaptivity_efficiency_C4}
 \end{figure}
 
 Figure~\ref{fig:adaptivity_efficiency_C4} gives a good overview of the \acrshort{acr:AMR}
@@ -436,60 +433,60 @@ order of \(N = 12\).
 \begin{figure}[H]
 	\centering
 	\subfloat[Full domain]
-	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/problem_low_far}\label{fig:load_imbalance_case_low_p_far}}
+	{\includegraphics[width=0.5\textwidth]{Chapter_results/media/problem_low_far}\label{fig:load_imbalance_case_low_p_far}}
 	\hfill
 	\subfloat[Detail]
-	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/problem_low_near}\label{fig:load_imbalance_case_low_p_near}}
+	{\includegraphics[width=0.48\textwidth]{Chapter_results/media/problem_low_near}\label{fig:load_imbalance_case_low_p_near}}
 	\caption{Low load imbalance (\(S = 3\)) test case pressure: A wave passes through a very big domain. \(K_{initial} = 16384\), \(K_{final} = 17752\) (a) Complete domain (b) Area of interest}\label{fig:load_imbalance_case_low_p}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\subfloat[Full domain]
-	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/split_level_low_far}\label{fig:load_imbalance_case_low_s_far}}
+	{\includegraphics[width=0.5\textwidth]{Chapter_results/media/split_level_low_far}\label{fig:load_imbalance_case_low_s_far}}
 	\hfill
 	\subfloat[Detail]
-	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/split_level_low_near}\label{fig:load_imbalance_case_low_s_near}}
+	{\includegraphics[width=0.48\textwidth]{Chapter_results/media/split_level_low_near}\label{fig:load_imbalance_case_low_s_near}}
 	\caption{Low load imbalance (\(S = 3\)) test case split level: Split level, indicating how many times the elements have split, only the bottom right refines. \(K_{initial} = 16384\), \(K_{final} = 17752\) (a) Complete domain (b) Area of interest}\label{fig:load_imbalance_case_low_s}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\subfloat[Full domain]
-	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/problem_medium_far}\label{fig:load_imbalance_case_medium_p_far}}
+	{\includegraphics[width=0.5\textwidth]{Chapter_results/media/problem_medium_far}\label{fig:load_imbalance_case_medium_p_far}}
 	\hfill
 	\subfloat[Detail]
-	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/problem_medium_near}\label{fig:load_imbalance_case_medium_p_near}}
+	{\includegraphics[width=0.48\textwidth]{Chapter_results/media/problem_medium_near}\label{fig:load_imbalance_case_medium_p_near}}
 	\caption{Medium load imbalance (\(S = 5\)) test case pressure: A wave passes through a very big domain. \(K_{initial} = 16384\), \(K_{final} = 26734\) (a) Complete domain (b) Area of interest}\label{fig:load_imbalance_case_medium_p}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\subfloat[Full domain]
-	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/split_level_medium_far}\label{fig:load_imbalance_case_s_far}}
+	{\includegraphics[width=0.5\textwidth]{Chapter_results/media/split_level_medium_far}\label{fig:load_imbalance_case_s_far}}
 	\hfill
 	\subfloat[Detail]
-	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/split_level_medium_near}\label{fig:load_imbalance_case_s_near}}
+	{\includegraphics[width=0.48\textwidth]{Chapter_results/media/split_level_medium_near}\label{fig:load_imbalance_case_s_near}}
 	\caption{Medium load imbalance (\(S = 5\)) test case split level: Split level, indicating how many times the elements have split, only the bottom right refines. \(K_{initial} = 16384\), \(K_{final} = 26734\) (a) Complete domain (b) Area of interest}\label{fig:load_imbalance_case_medium_s}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\subfloat[Full domain]
-	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/problem_high_far}\label{fig:load_imbalance_case_high_p_far}}
+	{\includegraphics[width=0.5\textwidth]{Chapter_results/media/problem_high_far}\label{fig:load_imbalance_case_high_p_far}}
 	\hfill
 	\subfloat[Detail]
-	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/problem_high_near}\label{fig:load_imbalance_case_high_p_near}}
+	{\includegraphics[width=0.48\textwidth]{Chapter_results/media/problem_high_near}\label{fig:load_imbalance_case_high_p_near}}
 	\caption{High load imbalance (\(S = 7\)) test case pressure: A wave passes through a very big domain. \(K_{initial} = 16384\), \(K_{final} = 54837\) (a) Complete domain (b) Area of interest}\label{fig:load_imbalance_case_high_p}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\subfloat[Full domain]
-	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/split_level_high_far}\label{fig:load_imbalance_case_high_s_far}}
+	{\includegraphics[width=0.5\textwidth]{Chapter_results/media/split_level_high_far}\label{fig:load_imbalance_case_high_s_far}}
 	\hfill
 	\subfloat[Detail]
-	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/split_level_high_near}\label{fig:load_imbalance_case_high_s_near}}
+	{\includegraphics[width=0.48\textwidth]{Chapter_results/media/split_level_high_near}\label{fig:load_imbalance_case_high_s_near}}
 	\caption{High load imbalance (\(S = 7\)) test case split level: Split level, indicating how many times the elements have split, only the bottom right refines. \(K_{initial} = 16384\), \(K_{final} = 54837\) (a) Complete domain (b) Area of interest}\label{fig:load_imbalance_case_high_s}
 \end{figure}
 
@@ -518,7 +515,7 @@ load balancing.
 \subsection{Load balancing interval}\label{subsection:results:load_balancing_performance:interval}
 
 We start by varying the load balancing interval for the three cases in
-Figures~\ref{fig:load_balancing_efficiency_interval},~\ref{fig:load_balancing_efficiency_interval_s5}
+Figures~\ref{fig:load_balancing_efficiency_interval_s3},~\ref{fig:load_balancing_efficiency_interval_s5}
 and~\ref{fig:load_balancing_efficiency_interval_s7}. Since we refine the mesh every 20 time steps, a
 load balancing interval of 20 is equivalent to load balancing the mesh every time we refine it, up
 to every 50 times we refine for a load balancing interval of 1000. The dashed line represents the
@@ -526,20 +523,15 @@ performance without load balancing.
 
 \begin{figure}[H]
 	\centering
-	\includesvg[width=0.6\textwidth]{Chapter_results/media/load_balancing_interval_N4_K16384_A20_P16_S3}
-	\caption{Low load imbalance load balancing performance interval test: Simulation time with refinement and load balancing while increasing load balancing interval. \(N_{initial} = 4\), \(K_{initial} = 16384\), refinement interval = 20, \(P = 16\), \(S = 3\)}\label{fig:load_balancing_efficiency_interval}
-\end{figure}
-
-\begin{figure}[H]
-	\centering
-	\includesvg[width=0.6\textwidth]{Chapter_results/media/load_balancing_interval_N4_K16384_A20_P16_S5}
-	\caption{Medium imbalance load balancing performance interval test: Simulation time with refinement and load balancing while increasing load balancing interval. \(N_{initial} = 4\), \(K_{initial} = 16384\), refinement interval = 20, \(P = 16\), \(S = 5\)}\label{fig:load_balancing_efficiency_interval_s5}
-\end{figure}
-
-\begin{figure}[H]
-	\centering
-	\includesvg[width=0.6\textwidth]{Chapter_results/media/load_balancing_interval_N4_K16384_A20_P16_S7}
-	\caption{High load imbalance load balancing performance interval test: Simulation time with refinement and load balancing while increasing load balancing interval. \(N_{initial} = 4\), \(K_{initial} = 16384\), refinement interval = 20, \(P = 16\), \(S = 7\)}\label{fig:load_balancing_efficiency_interval_s7}
+	\subfloat[Low load imbalance]
+	{\includesvg[width=0.32\textwidth]{Chapter_results/media/load_balancing_interval_N4_K16384_A20_P16_S3}\label{fig:load_balancing_efficiency_interval_s3}}
+	\hfill
+	\subfloat[Medium load imbalance]
+	{\includesvg[width=0.32\textwidth]{Chapter_results/media/load_balancing_interval_N4_K16384_A20_P16_S5}\label{fig:load_balancing_efficiency_interval_s5}}
+	\hfill
+	\subfloat[High load imbalance]
+	{\includesvg[width=0.32\textwidth]{Chapter_results/media/load_balancing_interval_N4_K16384_A20_P16_S7}\label{fig:load_balancing_efficiency_interval_s7}}
+	\caption{Load balancing performance interval test: Simulation time with refinement and load balancing while increasing load balancing interval. \(N_{initial} = 4\), \(K_{initial} = 16384\), refinement interval = 20, \(P = 16\) (a) \(s = 3\) (b) \(s = 5\) (c) \(s = 7\)}\label{fig:load_balancing_efficiency_interval}
 \end{figure}
 
 \subsection{Load balancing threshold}\label{subsection:results:load_balancing_performance:threshold}
@@ -578,7 +570,7 @@ From the results of Subsections~\ref{subsection:results:load_balancing_performan
 and~\ref{subsection:results:load_balancing_performance:threshold}, we observe that load balancing at
 every occasion incurs a significant performance penality, even performing worse than the non
 load-balanced case in the low load imbalance case, in
-Figures~\ref{fig:load_balancing_efficiency_interval}
+Figures~\ref{fig:load_balancing_efficiency_interval_s3}
 and~\ref{fig:load_balancing_efficiency_threshold_s3}. The two other cases also show worse
 performance with a low load balancing interval or load imbalance threshold. This is because the
 dynamic load balancing process is expensive, especially since we are using \acrshortpl{acr:GPU},
@@ -627,7 +619,7 @@ this work.
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_results/media/N_iteration_time}
-	\caption{Polynomial order influence: Iteration time with increasing polynomial order.}\label{fig:N_influence}
+	\caption{Polynomial order influence: Iteration time with increasing polynomial order \(N\).}\label{fig:N_influence}
 \end{figure}
 
 As seen in Figure~\ref{fig:N_influence}, the relation between iteration time and polynomial order
@@ -658,40 +650,40 @@ mesh, and how it changes with time as the mesh is load balanced.
 \begin{figure}[H]
 	\centering
 	\subfloat[\( t = 0 s\)]
-	{\includegraphics[width=0.5\textwidth]{Chapter_results/media/cloud_t0}\label{fig:cloud_p_t0}}
+	{\includegraphics[width=0.48\textwidth]{Chapter_results/media/cloud_t0}\label{fig:cloud_p_t0}}
 	\hfill
 	\subfloat[\( t = 0.2 s\)]
-	{\includegraphics[width=0.5\textwidth]{Chapter_results/media/cloud_t0_2}\label{fig:cloud_p_t0_2}}
+	{\includegraphics[width=0.48\textwidth]{Chapter_results/media/cloud_t0_2}\label{fig:cloud_p_t0_2}}
 	\caption{Complex case: A wave goes through a cloud of high pressure. \(N_{initial} = 4\), \(K_{initial} = 256\), \(S = 3\), \(P = 16\) (a) Initial conditions (b) After the wave and cloud collide}\label{fig:cloud_p}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\subfloat[\( t = 0 s\)]
-	{\includegraphics[width=0.5\textwidth]{Chapter_results/media/cloud_split_level_t0}\label{fig:cloud_s_t0}}
+	{\includegraphics[width=0.48\textwidth]{Chapter_results/media/cloud_split_level_t0}\label{fig:cloud_s_t0}}
 	\hfill
 	\subfloat[\( t = 0.2 s\)]
-	{\includegraphics[width=0.5\textwidth]{Chapter_results/media/cloud_split_level_t0_2}\label{fig:cloud_s_t0_2}}
+	{\includegraphics[width=0.48\textwidth]{Chapter_results/media/cloud_split_level_t0_2}\label{fig:cloud_s_t0_2}}
 	\caption{Complex case h-refinement: The elements split more where the cloud meets the wave. \(N_{initial} = 4\), \(K_{initial} = 256\), \(S = 3\), \(P = 16\) (a) Start of computation (b) After the wave and cloud collide}\label{fig:cloud_s}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\subfloat[\( t = 0 s\)]
-	{\includegraphics[width=0.5\textwidth]{Chapter_results/media/cloud_N_t0}\label{fig:cloud_N_t0}}
+	{\includegraphics[width=0.48\textwidth]{Chapter_results/media/cloud_N_t0}\label{fig:cloud_N_t0}}
 	\hfill
 	\subfloat[\( t = 0.2 s\)]
-	{\includegraphics[width=0.5\textwidth]{Chapter_results/media/cloud_N_t0_2}\label{fig:cloud_N_t0_2}}
+	{\includegraphics[width=0.48\textwidth]{Chapter_results/media/cloud_N_t0_2}\label{fig:cloud_N_t0_2}}
 	\caption{Complex case p-refinement: The polynomial order increases more at the center of the cloud and where cloud meets the wave. \(N_{initial} = 4\), \(K_{initial} = 256\), \(S = 3\), \(P = 16\) (a) Start of computation (b) After the wave and cloud collide}\label{fig:cloud_N}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\subfloat[\( t = 0 s\)]
-	{\includegraphics[width=0.5\textwidth]{Chapter_results/media/cloud_rank_t0}\label{fig:cloud_rank_t0}}
+	{\includegraphics[width=0.48\textwidth]{Chapter_results/media/cloud_rank_t0}\label{fig:cloud_rank_t0}}
 	\hfill
 	\subfloat[\( t = 0.2 s\)]
-	{\includegraphics[width=0.5\textwidth]{Chapter_results/media/cloud_rank_t0_2}\label{fig:cloud_rank_t0_2}}
+	{\includegraphics[width=0.48\textwidth]{Chapter_results/media/cloud_rank_t0_2}\label{fig:cloud_rank_t0_2}}
 	\caption{Complex case rank: As the mesh is refined load imbalance can occur, and elements are sent from one \acrshort{acr:GPU} to another when load balancing. \(N_{initial} = 4\), \(K_{initial} = 256\), \(S = 3\), \(P = 16\) (a) Start of computation (b) After the wave and cloud collide}\label{fig:cloud_rank}
 \end{figure}
 
@@ -732,21 +724,21 @@ curve ressembles the Hilbert curve, and improves locality.
 \begin{figure}[H]
 	\centering
 	\subfloat[Circular domain]
-	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/airfoil_mesh_far}\label{fig:complex_mesh_far}}
+	{\includegraphics[width=0.48\textwidth]{Chapter_results/media/airfoil_mesh_far}\label{fig:complex_mesh_far}}
 	\hfill
 	\subfloat[Airfoil]
-	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/airfoil_mesh_near}\label{fig:complex_mesh_near}}
+	{\includegraphics[width=0.48\textwidth]{Chapter_results/media/airfoil_mesh_near}\label{fig:complex_mesh_near}}
 	\caption{Complex mesh: An airfoil in an unstructured circular domain. \(N_{initial} = 4\), \(K_{initial} = 2128\), \(S = 3\), \(P = 4\) (a) Complete domain (b) Up close}\label{fig:complex_mesh}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\subfloat[Circular domain]
-	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/airfoil_mesh_pre_condition_far}\label{fig:complex_mesh_pre_condition_far}}
+	{\includegraphics[width=0.48\textwidth]{Chapter_results/media/airfoil_mesh_pre_condition_far}\label{fig:complex_mesh_pre_condition_far}}
 	\hfill
 	\subfloat[Airfoil]
-	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/airfoil_mesh_pre_condition_near}\label{fig:complex_mesh_pre_condition_near}}
-	\caption{Complex mesh after pre-conditioning: Elements have been added to better apply initial conditions. \(N_{initial} = 4\), \(K = 24072\), \(S = 3\), \(P = 4\) (a) Complete domain (b) Up close}\label{fig:complex_mesh_pre_condition}
+	{\includegraphics[width=0.48\textwidth]{Chapter_results/media/airfoil_mesh_pre_condition_near}\label{fig:complex_mesh_pre_condition_near}}
+	\caption{Complex mesh after pre-condition: Elements have been added to better apply initial conditions. \(N_{initial} = 4\), \(K = 24072\), \(S = 3\), \(P = 4\) (a) Complete domain (b) Up close}\label{fig:complex_mesh_pre_condition}
 \end{figure}
 
 Figure~\ref{fig:complex_mesh_solution} shows the problem after \(1.5\) seconds of solution time.
@@ -763,18 +755,18 @@ many times elements have h-refined. Figure~\ref{fig:complex_mesh_N} shows the po
 	\centering
 
 	\subfloat[Pressure]
-	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/airfoil_pressure_near_t1_5}\label{fig:complex_mesh_solution_p}}
+	{\includegraphics[width=0.48\textwidth]{Chapter_results/media/airfoil_pressure_near_t1_5}\label{fig:complex_mesh_solution_p}}
 	\hfill
 	\subfloat[Pressure \(\sigma \)]
-	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/airfoil_pressure_sigma_near_t1_5}\label{fig:complex_mesh_solution_sigma}}
+	{\includegraphics[width=0.48\textwidth]{Chapter_results/media/airfoil_pressure_sigma_near_t1_5}\label{fig:complex_mesh_solution_sigma}}
 	
 	\smallskip
 
 	\subfloat[Split level]
-	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/airfoil_split_level_t1_5}\label{fig:complex_mesh_split_level}}
+	{\includegraphics[width=0.48\textwidth]{Chapter_results/media/airfoil_split_level_t1_5}\label{fig:complex_mesh_split_level}}
 	\hfill
 	\subfloat[N]
-	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/airfoil_N_t1_5}\label{fig:complex_mesh_N}}
+	{\includegraphics[width=0.48\textwidth]{Chapter_results/media/airfoil_N_t1_5}\label{fig:complex_mesh_N}}
 
 	\caption{Complex mesh: A wave going over an airfoil at \(t = 1.5 s\). \(N_{initial} = 4\), \(K = 55680\), \(S = 3\), \(P = 4\) (a) Pressure (b) Pressure \(\sigma \), denoting if h-refinement or p-refinement would be chosen (c) h-refinement, the split level denotes how many times elements have split (d) p-refinement, polynomial order \(N\)}\label{fig:complex_mesh_solution}
 \end{figure}
@@ -795,10 +787,10 @@ shows the elements' rank, or in which \acrshort{acr:GPU} they are stored.
 \begin{figure}[H]
 	\centering
 	\subfloat[Element index]
-	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/airfoil_index_t1_5_single}\label{fig:complex_mesh_index}}
+	{\includegraphics[width=0.48\textwidth]{Chapter_results/media/airfoil_index_t1_5_single}\label{fig:complex_mesh_index}}
 	\hfill
 	\subfloat[Rank]
-	{\includegraphics[width=0.45\textwidth]{Chapter_results/media/airfoil_rank_t1_5}\label{fig:complex_mesh_rank}}
+	{\includegraphics[width=0.48\textwidth]{Chapter_results/media/airfoil_rank_t1_5}\label{fig:complex_mesh_rank}}
 	\caption{Element distribution: How elements are distributed between \acrshortpl{acr:GPU}. \(N_{initial} = 4\), \(K = 55680\), \(S = 3\), \(P = 4\) (a) Element indices, showing how they are ordered along the pseudo-Hilbert curve (b) Rank, showing which \acrshort{acr:GPU} contains which elements}\label{fig:complex_mesh_elements}
 \end{figure}
 

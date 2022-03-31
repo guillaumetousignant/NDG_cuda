@@ -170,6 +170,7 @@ solving_shape = "X"
 pre_condition_shape = ">"
 ideal_style = "--"
 same_error_style = ":"
+adaptivity_style = ""
 
 # Strong scaling
 for i in range(N.shape[0]):
@@ -181,11 +182,11 @@ for i in range(N.shape[0]):
     fig.canvas.manager.set_window_title(title)
     ax.grid()
 
-    ax.loglog(nodes_beluga_cpu[i, :], times_beluga_cpu[i, :], color=cpu_colour, linewidth=data_width, marker=data_shape, markersize=data_size, label="Beluga CPU time")
-    ax.loglog(nodes_beluga_cpu_ideal[i, :], times_beluga_cpu_ideal[i, :], color=cpu_colour, linewidth=data_width, linestyle=ideal_style, label="Beluga ideal CPU time")
+    ax.loglog(nodes_beluga_cpu[i, :], times_beluga_cpu[i, :], color=cpu_colour, linewidth=data_width, marker=data_shape, markersize=data_size, label="CPU time")
+    ax.loglog(nodes_beluga_cpu_ideal[i, :], times_beluga_cpu_ideal[i, :], color=cpu_colour, linewidth=data_width, linestyle=ideal_style, label="CPU ideal time")
     
-    ax.loglog(nodes_beluga_gpu[i, :], times_beluga_gpu[i, :], color=gpu_colour, linewidth=data_width, marker=data_shape, markersize=data_size, label="Beluga GPU time")
-    ax.loglog(nodes_beluga_gpu_ideal[i, :], times_beluga_gpu_ideal[i, :], color=gpu_colour, linewidth=data_width, linestyle=ideal_style, label="Beluga ideal GPU time")
+    ax.loglog(nodes_beluga_gpu[i, :], times_beluga_gpu[i, :], color=gpu_colour, linewidth=data_width, marker=data_shape, markersize=data_size, label="GPU time")
+    ax.loglog(nodes_beluga_gpu_ideal[i, :], times_beluga_gpu_ideal[i, :], color=gpu_colour, linewidth=data_width, linestyle=ideal_style, label="GPU ideal time")
 
     ax.set_xticks(nodes_beluga_gpu[i, :], node_strings_beluga_gpu[i, :])
 
@@ -204,11 +205,11 @@ for i in range(N_weak.shape[0]):
     fig.canvas.manager.set_window_title(title)
     ax.grid()
 
-    ax.semilogx(nodes_beluga_cpu_weak[i, :], times_beluga_cpu_weak[i, :], color=cpu_colour, linewidth=data_width, marker=data_shape, markersize=data_size, label="Beluga CPU time")
-    ax.semilogx(nodes_beluga_cpu_ideal_weak[i, :], [min_total_time_beluga_cpu_weak[i], min_total_time_beluga_cpu_weak[i]], color=cpu_colour, linewidth=data_width, linestyle=ideal_style, label="Beluga ideal CPU time")
+    ax.semilogx(nodes_beluga_cpu_weak[i, :], times_beluga_cpu_weak[i, :], color=cpu_colour, linewidth=data_width, marker=data_shape, markersize=data_size, label="CPU time")
+    ax.semilogx(nodes_beluga_cpu_ideal_weak[i, :], [min_total_time_beluga_cpu_weak[i], min_total_time_beluga_cpu_weak[i]], color=cpu_colour, linewidth=data_width, linestyle=ideal_style, label="CPU ideal time")
     
-    ax.semilogx(nodes_beluga_gpu_weak[i, :], times_beluga_gpu_weak[i, :], color=gpu_colour, linewidth=data_width, marker=data_shape, markersize=data_size, label="Beluga GPU time")
-    ax.semilogx(nodes_beluga_gpu_ideal_weak[i, :], [min_total_time_beluga_gpu_weak[i], min_total_time_beluga_gpu_weak[i]], color=gpu_colour, linewidth=data_width, linestyle=ideal_style, label="Beluga ideal GPU time")
+    ax.semilogx(nodes_beluga_gpu_weak[i, :], times_beluga_gpu_weak[i, :], color=gpu_colour, linewidth=data_width, marker=data_shape, markersize=data_size, label="GPU time")
+    ax.semilogx(nodes_beluga_gpu_ideal_weak[i, :], [min_total_time_beluga_gpu_weak[i], min_total_time_beluga_gpu_weak[i]], color=gpu_colour, linewidth=data_width, linestyle=ideal_style, label="GPU ideal time")
 
     ax.set_ylim([0, 1.2 * max(max(times_beluga_cpu_weak[i, :]), max(times_beluga_gpu_weak[i, :]))])
 
@@ -229,11 +230,11 @@ for i in range(adaptivity_interval.shape[0]):
     fig.canvas.manager.set_window_title(title)
     ax.grid()
 
-    ax.semilogy(adaptivity_C[i, :], adaptivity_solving_t_iterative[i, :], color=solving_colour, linewidth=data_width, marker=solving_shape, markersize=data_size, label="solving time")
-    ax.semilogy(adaptivity_C[i, 1:], adaptivity_condition_t_iterative[i, 1:], color=pre_condition_colour, linewidth=data_width, marker=pre_condition_shape, markersize=data_size, label="pre-condition time")
-    ax.semilogy(adaptivity_C[i, :], adaptivity_t_iterative[i, :], color=gpu_colour, linewidth=data_width_small, marker=data_shape, markersize=data_size_small, label="total time")
-    ax.semilogy(adaptivity_baseline_C[i, :], [adaptivity_baseline_t[i], adaptivity_baseline_t[i]], color=gpu_colour, linewidth=data_width, linestyle=ideal_style, label="non-adaptive fully refined total time")
-    ax.semilogy(adaptivity_baseline_C[i, :], [adaptivity_same_error_t[i], adaptivity_same_error_t[i]], color=gpu_colour, linewidth=data_width, linestyle=same_error_style, label="non-adaptive similar error total time")
+    ax.semilogy(adaptivity_C[i, :], adaptivity_solving_t_iterative[i, :], color=solving_colour, linewidth=data_width, marker=solving_shape, markersize=data_size, linestyle=adaptivity_style, label="Solving time")
+    ax.semilogy(adaptivity_C[i, 1:], adaptivity_condition_t_iterative[i, 1:], color=pre_condition_colour, linewidth=data_width, marker=pre_condition_shape, markersize=data_size, linestyle=adaptivity_style, label="Pre-condition time")
+    ax.semilogy(adaptivity_C[i, :], adaptivity_t_iterative[i, :], color=gpu_colour, linewidth=data_width_small, marker=data_shape, markersize=data_size_small, linestyle=adaptivity_style, label="Total time")
+    ax.semilogy(adaptivity_baseline_C[i, :], [adaptivity_baseline_t[i], adaptivity_baseline_t[i]], color=gpu_colour, linewidth=data_width, linestyle=ideal_style, label="Non-adaptive fully refined total time")
+    ax.semilogy(adaptivity_baseline_C[i, :], [adaptivity_same_error_t[i], adaptivity_same_error_t[i]], color=gpu_colour, linewidth=data_width, linestyle=same_error_style, label="Non-adaptive similar error total time")
 
     ax.legend()
     fig.tight_layout()
@@ -249,9 +250,9 @@ for i in range(adaptivity_interval.shape[0]):
     error_ax.grid()
 
     # For the legend entries from the other axes
-    error_ax.semilogy(adaptivity_C[i, :], adaptivity_max_error_iterative[i, :], color=error_colour, linewidth=data_width, marker=data_shape, markersize=data_size, label="max error")
-    error_ax.semilogy(adaptivity_baseline_C[i, :], [adaptivity_baseline_max_error[i], adaptivity_baseline_max_error[i]], color=error_colour, linewidth=data_width, linestyle=ideal_style, label="non-adaptive fully refined max error")
-    error_ax.semilogy(adaptivity_baseline_C[i, :], [adaptivity_same_error_max_error[i], adaptivity_same_error_max_error[i]], color=error_colour, linewidth=data_width, linestyle=same_error_style, label="non-adaptive similar error max error")
+    error_ax.semilogy(adaptivity_C[i, :], adaptivity_max_error_iterative[i, :], color=error_colour, linewidth=data_width, marker=data_shape, markersize=data_size, linestyle=adaptivity_style, label="Max error")
+    error_ax.semilogy(adaptivity_baseline_C[i, :], [adaptivity_baseline_max_error[i], adaptivity_baseline_max_error[i]], color=error_colour, linewidth=data_width, linestyle=ideal_style, label="Non-adaptive fully refined max error")
+    error_ax.semilogy(adaptivity_baseline_C[i, :], [adaptivity_same_error_max_error[i], adaptivity_same_error_max_error[i]], color=error_colour, linewidth=data_width, linestyle=same_error_style, label="Non-adaptive similar error max error")
 
     error_ax.legend()
     error_fig.tight_layout()
@@ -266,11 +267,11 @@ amr_title = f"Adaptivity performance time, N = {adaptivity_N[0]} K = {adaptivity
 amr_fig.canvas.manager.set_window_title(amr_title)
 amr_ax.grid()
 
-amr_ax.loglog(adaptivity_interval, adaptivity_solving_t_iterative[:, best_pre_condition], color=solving_colour, linewidth=data_width, marker=solving_shape, markersize=data_size, label="solving time")
-amr_ax.loglog(adaptivity_interval, adaptivity_condition_t_iterative[:, best_pre_condition], color=pre_condition_colour, linewidth=data_width, marker=pre_condition_shape, markersize=data_size, label="pre-condition time")
-amr_ax.loglog(adaptivity_interval, adaptivity_t_iterative[:, best_pre_condition], color=gpu_colour, linewidth=data_width_small, marker=data_shape, markersize=data_size_small, label="total time")
-amr_ax.loglog(adaptivity_interval, adaptivity_baseline_t, color=gpu_colour, linewidth=data_width, linestyle=ideal_style, label="non-adaptive fully refined total time")
-amr_ax.loglog(adaptivity_interval, adaptivity_same_error_t, color=gpu_colour, linewidth=data_width, linestyle=same_error_style, label="non-adaptive similar error total time")
+amr_ax.loglog(adaptivity_interval, adaptivity_solving_t_iterative[:, best_pre_condition], color=solving_colour, linewidth=data_width, marker=solving_shape, markersize=data_size, linestyle=adaptivity_style, label="Solving time")
+amr_ax.loglog(adaptivity_interval, adaptivity_condition_t_iterative[:, best_pre_condition], color=pre_condition_colour, linewidth=data_width, marker=pre_condition_shape, markersize=data_size, linestyle=adaptivity_style, label="Pre-condition time")
+amr_ax.loglog(adaptivity_interval, adaptivity_t_iterative[:, best_pre_condition], color=gpu_colour, linewidth=data_width_small, marker=data_shape, markersize=data_size_small, linestyle=adaptivity_style, label="Total time")
+amr_ax.loglog(adaptivity_interval, adaptivity_baseline_t, color=gpu_colour, linewidth=data_width, linestyle=ideal_style, label="Non-adaptive fully refined total time")
+amr_ax.loglog(adaptivity_interval, adaptivity_same_error_t, color=gpu_colour, linewidth=data_width, linestyle=same_error_style, label="Non-adaptive similar error total time")
 
 amr_ax.set_xticks(adaptivity_interval, adaptivity_interval.astype(str))
 amr_ax.legend()
@@ -287,9 +288,9 @@ amr_error_fig.canvas.manager.set_window_title(amr_error_title)
 amr_error_ax.grid()
 
 # For the legend entries from the other axes
-amr_error_ax.loglog(adaptivity_interval, adaptivity_max_error_iterative[:, best_pre_condition], color=error_colour, linewidth=data_width, marker=data_shape, markersize=data_size, label="max error")
-amr_error_ax.loglog(adaptivity_interval, adaptivity_baseline_max_error, color=error_colour, linewidth=data_width, linestyle=ideal_style, label="non-adaptive fully refined max error")
-amr_error_ax.loglog(adaptivity_interval, adaptivity_same_error_max_error, color=error_colour, linewidth=data_width, linestyle=same_error_style, label="non-adaptive similar error max error")
+amr_error_ax.loglog(adaptivity_interval, adaptivity_max_error_iterative[:, best_pre_condition], color=error_colour, linewidth=data_width, marker=data_shape, markersize=data_size, linestyle=adaptivity_style, label="Max error")
+amr_error_ax.loglog(adaptivity_interval, adaptivity_baseline_max_error, color=error_colour, linewidth=data_width, linestyle=ideal_style, label="Non-adaptive fully refined max error")
+amr_error_ax.loglog(adaptivity_interval, adaptivity_same_error_max_error, color=error_colour, linewidth=data_width, linestyle=same_error_style, label="Non-adaptive similar error max error")
 
 amr_error_ax.set_xticks(adaptivity_interval, adaptivity_interval.astype(str))
 amr_error_ax.legend()
@@ -307,8 +308,8 @@ for i in range(load_balancing_interval_N.shape[0]):
     fig.canvas.manager.set_window_title(title)
     ax.grid()
 
-    ax.plot(load_balancing_interval_L[i, :], load_balancing_interval_t[i, :], color=gpu_colour, linewidth=data_width, marker=data_shape, markersize=data_size, label="Narval GPU time")
-    ax.plot(load_balancing_interval_baseline_L[i, :], [load_balancing_interval_baseline_t[i], load_balancing_interval_baseline_t[i]], color=gpu_colour, linewidth=data_width, linestyle=ideal_style, label="Narval non load balancing time")
+    ax.plot(load_balancing_interval_L[i, :], load_balancing_interval_t[i, :], color=gpu_colour, linewidth=data_width, marker=data_shape, markersize=data_size, label="Time with load balancing")
+    ax.plot(load_balancing_interval_baseline_L[i, :], [load_balancing_interval_baseline_t[i], load_balancing_interval_baseline_t[i]], color=gpu_colour, linewidth=data_width, linestyle=ideal_style, label="Time without load balancing")
 
     ax.set_ylim([0, 1.2 * max(max(load_balancing_interval_t[i, :]), load_balancing_interval_baseline_t[i])])
 
@@ -327,8 +328,8 @@ for i in range(load_balancing_threshold_N.shape[0]):
     fig.canvas.manager.set_window_title(title)
     ax.grid()
 
-    ax.plot(load_balancing_threshold_T[i, :], load_balancing_threshold_t[i, :], color=gpu_colour, linewidth=data_width, marker=data_shape, markersize=data_size, label="Narval GPU time")
-    ax.plot(load_balancing_threshold_baseline_T[i, :], [load_balancing_threshold_baseline_t[i], load_balancing_threshold_baseline_t[i]], color=gpu_colour, linewidth=data_width, linestyle=ideal_style, label="Narval non load balancing time")
+    ax.plot(load_balancing_threshold_T[i, :], load_balancing_threshold_t[i, :], color=gpu_colour, linewidth=data_width, marker=data_shape, markersize=data_size, label="Time with load balancing")
+    ax.plot(load_balancing_threshold_baseline_T[i, :], [load_balancing_threshold_baseline_t[i], load_balancing_threshold_baseline_t[i]], color=gpu_colour, linewidth=data_width, linestyle=ideal_style, label="Time without load balancing")
 
     ax.set_ylim([0, 1.2 * max(max(load_balancing_threshold_t[i, :]), load_balancing_threshold_baseline_t[i])])
 
@@ -343,7 +344,6 @@ lb_ax.set_xlabel("Load imbalance [-]")
 lb_ax.set_ylabel("Speedup [-]")
 lb_title = f"Load balancing performance, threshold test, N = {load_balancing_threshold_N[0]} K = {load_balancing_threshold_K[0]} A = {load_balancing_threshold_A[0]} L = {load_balancing_threshold_L[0]} P = {load_balancing_threshold_P[0]} N_max = {load_balancing_threshold_max_N[0]} T = {load_balancing_threshold_T[0][best_T]}"
 lb_fig.canvas.manager.set_window_title(lb_title)
-lb_ax.grid()
 
 lb_ax.plot(load_balancing_threshold_I, load_balancing_threshold_baseline_t/load_balancing_threshold_t[:, best_T], color=imbalance_colour, linewidth=data_width, marker=data_shape, markersize=data_size, label="Speedup")
 

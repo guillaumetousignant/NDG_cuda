@@ -51,13 +51,13 @@ conditions. Despite this, \acrshort{acr:AMR} is a costly process on \acrshortpl{
 a significant portion of the total runtime as seen in
 Subsection~\ref{subsection:results:complex_meshes:profiling}.
 
-We also implement a mesh pre-conditioning algorithm, described in
+We also implement a mesh pre-condition algorithm, described in
 Section~\ref{section:adaptive_mesh_refinement:pre_conditioning}, to refine the mesh before the
 computation up to a point where initial conditions are well applied.
 Section~\ref{section:results:adaptivity_performance} shows that performing a few pre-condition steps
 can significantly increase the solution quality when the starting mesh is very coarse. Combined with
 \acrshort{acr:AMR}, this means that meshes do not need to be tailored to problems as much. An
-uniform coarse mesh can be used, and the pre-conditioning will refine the mesh to capture initial
+uniform coarse mesh can be used, and the pre-condition will refine the mesh to capture initial
 conditions correctly, and \acrshort{acr:AMR} will refine the mesh as the solution is computed to
 capture the important areas of the flow.
 
