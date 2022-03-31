@@ -162,9 +162,16 @@ having a higher block size can actually lower performance. A single thread diver
 the threads in its block waiting until it is finished, therefore a higher block size will have more
 threads stalled when divergence occurs.
 
-All tests have an ``ideal'' line both for the \acrshort{acr:GPU} and \acrshort{acr:CPU}
-calculations. This line represents the ideal time for that case, with the best scaling extrapolated
-linearly to the other number of nodes.
+We add two ``ideal'' lines both for the \acrshort{acr:GPU} and \acrshort{acr:CPU} calculations.
+These lines represent perfect scaling from a data point. The dashed and dotted line represents
+perfect scaling from the first data point, one \acrshort{acr:GPU} or \(10\) \acrshort{acr:CPU}
+cores. This is equivalent to halving the computation time every time the computing power doubles.
+Figure~\ref{fig:strong_scaling_N4_W32} shows that the \acrshort{acr:GPU} curve is always below this
+ideal line. As we increase the number of \acrshortpl{acr:GPU}, the performance scales better than
+linearly up to a point, and then decreases. We therefore add a second dashed line, which represents
+the scaling from the best point, where the computation time multiplied by the number of
+\acrshortpl{acr:GPU} is the lowest. This line is more representative, and will be used for the next
+figures.
 
 \begin{figure}[H]
 	\centering

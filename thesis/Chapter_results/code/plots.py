@@ -169,6 +169,7 @@ data_shape = "o"
 solving_shape = "X"
 pre_condition_shape = ">"
 ideal_style = "--"
+ideal_style2 = "-."
 same_error_style = ":"
 adaptivity_style = ""
 
@@ -187,6 +188,12 @@ for i in range(N.shape[0]):
     
     ax.loglog(nodes_beluga_gpu[i, :], times_beluga_gpu[i, :], color=gpu_colour, linewidth=data_width, marker=data_shape, markersize=data_size, label="GPU time")
     ax.loglog(nodes_beluga_gpu_ideal[i, :], times_beluga_gpu_ideal[i, :], color=gpu_colour, linewidth=data_width, linestyle=ideal_style, label="GPU ideal time")
+
+    if i == 0:
+        time = times_beluga_gpu[i, 0]*nodes_beluga_gpu[i, 0]
+        times_beluga_gpu_ideal2 = time/nodes_beluga_gpu_ideal
+
+        ax.loglog(nodes_beluga_gpu_ideal[i, :], times_beluga_gpu_ideal2[i, :], color=gpu_colour, linewidth=data_width, linestyle=ideal_style2, label="GPU ideal time first point")
 
     ax.set_xticks(nodes_beluga_gpu[i, :], node_strings_beluga_gpu[i, :])
 
