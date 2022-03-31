@@ -4,6 +4,7 @@ from pathlib import Path
 import sys
 import argparse
 import hilbert
+import matplotlib.pyplot as plt
 
 def read_su2(filename: Path) -> tuple[npt.ArrayLike, npt.ArrayLike, npt.ArrayLike, npt.ArrayLike]:
     nodes = np.zeros((0, 2))
@@ -104,20 +105,46 @@ def compute_circle_square_mapping(centers: npt.ArrayLike) -> npt.ArrayLike:
     x = centers[:, 0]/radius
     y = centers[:, 1]/radius
 
+    return np.concatenate((np.atleast_2d(np.sqrt(2 + np.power(x, 2) - np.power(y, 2) + x * 2 * np.sqrt(2))/2 - np.sqrt(2 + np.power(x, 2) - np.power(y, 2) - x * 2 * np.sqrt(2))/2).T, np.atleast_2d(np.sqrt(2 - np.power(x, 2) + np.power(y, 2) + y * 2 * np.sqrt(2))/2 - np.sqrt(2 - np.power(x, 2) + np.power(y, 2) - y * 2 * np.sqrt(2))/2).T), axis=1), radius
+
+def compute_circle_square_mapping_radius(centers: npt.ArrayLike, radius) -> npt.ArrayLike:
+    x = centers[:, 0]/radius
+    y = centers[:, 1]/radius
+
     return np.concatenate((np.atleast_2d(np.sqrt(2 + np.power(x, 2) - np.power(y, 2) + x * 2 * np.sqrt(2))/2 - np.sqrt(2 + np.power(x, 2) - np.power(y, 2) - x * 2 * np.sqrt(2))/2).T, np.atleast_2d(np.sqrt(2 - np.power(x, 2) + np.power(y, 2) + y * 2 * np.sqrt(2))/2 - np.sqrt(2 - np.power(x, 2) + np.power(y, 2) - y * 2 * np.sqrt(2))/2).T), axis=1)
 
-def compute_hilbert_circular_order(centers: npt.ArrayLike) -> npt.ArrayLike:
-    centers_square = compute_circle_square_mapping(centers)
+def compute_hilbert_circular_order(centers: npt.ArrayLike, nodes, elements) -> npt.ArrayLike:
+    centers_square, radius = compute_circle_square_mapping(centers)
+    nodes_square = compute_circle_square_mapping_radius(nodes, radius)
 
     n = 2
     while n <= centers.shape[0]:
         n *= 2
 
     xy_coord = np.rint((centers_square + 1) * n/2).astype(np.uint64)
+    xy_coord_noot = np.rint((centers_square + 1) * n/2)
+
+    hilbert_curve = np.zeros((n * n, 2))
+    for i in range(n):
+        for j in range(n):
+            hilbert_curve[i * n + j, :] = hilbert.d2xy(n, n * i + j)
 
     d = np.zeros((centers.shape[0]), dtype=np.uint64)
     for i in range(centers.shape[0]):
         d[i] = hilbert.xy2d(n, xy_coord[i, :])
+
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1)
+    ax.set_aspect(1)
+
+    ax.plot(hilbert_curve[:, 0], hilbert_curve[:, 1], color=[0.7098, 0.8078, 0.6588], linewidth=2, label="Hilbert curve")
+    ax.plot(xy_coord_noot[:, 0], xy_coord_noot[:, 1], color=[0.9569, 0.2784, 0.2784],  linestyle="", marker=".", markersize=16, label="Element centres rounded")
+    for i in range(elements.shape[0]):
+        ax.plot([(nodes_square[elements[i, 0], 0] + 1) * n/2, (nodes_square[elements[i, 1], 0] + 1) * n/2, (nodes_square[elements[i, 2], 0] + 1) * n/2, (nodes_square[elements[i, 3], 0] + 1) * n/2, (nodes_square[elements[i, 0], 0] + 1) * n/2], [(nodes_square[elements[i, 0], 1] + 1) * n/2, (nodes_square[elements[i, 1], 1] + 1) * n/2, (nodes_square[elements[i, 2], 1] + 1) * n/2, (nodes_square[elements[i, 3], 1] + 1) * n/2, (nodes_square[elements[i, 0], 1] + 1) * n/2], color=[0.1451, 0.1451, 0.1451], linewidth=2, label="Elements" if i == 0 else "")
+
+    ax.legend()
+    
+    plt.show()
 
     return np.argsort(d)
 
@@ -146,7 +173,7 @@ def main(argv: list[str]):
         case "circular":
             order = compute_circular_order(centers)
         case "hilbert-circular":
-            order = compute_hilbert_circular_order(centers)
+            order = compute_hilbert_circular_order(centers, nodes, elements)
         case _:
             sys.exit(f"Error: unknown algorithm '{args.algorithm}', only 'circular' and 'hilbert-circular' are supported. Exiting.")
 
