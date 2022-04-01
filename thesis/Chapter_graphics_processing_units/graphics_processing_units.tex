@@ -448,7 +448,7 @@ copying, at which point we can use the \acrshort{acr:CPU} array. To finish up, w
 			cudaStreamDestroy(stream);
 			return 0;
 		}\end{cuda}
-\caption{\textbf{cuda\_memory:} An array of pressure is allocated on the \acrshort{acr:CPU}, then transferred back and forth to the \acrshort{acr:GPU}.}\label{alg:cuda_memory}
+\caption{\textbf{cuda\_memory:} A pressure array is allocated on the \acrshort{acr:CPU}, then transferred back and forth to the \acrshort{acr:GPU}.}\label{alg:cuda_memory}
 \end{algorithm}
 
 As dealing with pointers directly can become error-prone with larger programs, we encapsulate that
@@ -479,7 +479,7 @@ Algorithm~\ref{alg:cuda_memory} using this new type.
 			cudaStreamDestroy(stream);
 			return 0;
 		}\end{cuda}
-\caption{\textbf{device\_vector:} A vector of pressure is allocated on the \acrshort{acr:CPU}, then transferred back and forth to the \acrshort{acr:GPU}.}\label{alg:device_vector}
+\caption{\textbf{device\_vector:} A pressure vector is allocated on the \acrshort{acr:CPU}, then transferred back and forth to the \acrshort{acr:GPU}.}\label{alg:device_vector}
 \end{algorithm}
 
 Memory allocated in the \acrshort{acr:GPU} dynamic heap from the \acrshort{acr:GPU} is allocated
@@ -621,7 +621,7 @@ several of the optimisations from~\cite{Harris2007}.
             if (tid < 32) warp_reduce_delta_t_2D<blockSize>(sdata, tid);
             if (tid == 0) g_odata[blockIdx.x] = sdata[0];
         }\end{cuda}
-\caption{\textbf{reduce\_wave\_delta\_t:} Computations are performed in parallel on the \acrshort{acr:GPU}.}\label{alg:reduce_wave_delta_t}
+\caption{\textbf{reduce\_wave\_delta\_t:} The minimum \(\Delta t\) of the mesh is reduces in parallel.}\label{alg:reduce_wave_delta_t}
 \end{algorithm}
 
 Algorithm~\ref{alg:reduce_wave_delta_t} implements several advanced \acrshort{acr:CUDA} features not
