@@ -1,32 +1,39 @@
 \chapter{Literature Review}\label{chapter:literature_review} 
-% SEM
-% Large scale SEM (Nek)
-% Adaptivity
-% GPUs
-% Load balancing
 
 The issues that this work aims to overcome are not new, and as such a lot of work has been performed
-to overcome them. This section highlights the current state of the art in this domain, and where
-this work fits within it.
+to address them. This section highlights the current state of the art in this domain, and where this
+work fits within it.
 
 \section{Spectral Element Methods}\label{section:literature_review:sem}
 
-In this work, we will use the \acrfull{acr:DG-SEM}, first described by Reed and
-Hill~\cite{Reed1973}. Many references are available nowadays on the method, such as textbooks by
-Warburton and Hesthaven~\cite{Hesthaven2007} or Kopriva~\cite{Kopriva2009}, which describes a suite
-of algorithms that can be used to assemble a full solver using this method. This method is used in a
-wide array of domains, including aerodynamics, nanophotonics~\cite{Busch2011} and water
+Spectral methods were developed by Gottlieb and Orszag~\cite{Gottlieb1977}, starting as soon as
+1969. Spectral methods attain high order accuracy by modeling solutions as sums of weighted
+orthogonal functions. In 1984, Patera~\cite{Patera1984} proposed to combine spectral methods with
+the finite-element method, creating the \acrfull{acr:SEM}. This method has the accuracy of spectral
+methods and the geometric flexibility of finite-element methods.
+
+\textit{Continuous} \acrlongpl{acr:SEM} force the solution to be continuous at the boundary between
+elements by incorporating collocation points at the boundary of elements. \textit{Discontinuous}
+\acrlongpl{acr:SEM} let the solution be discontinuous at element boundaries, and incorporates fluxes
+to counterbalance these discontinuities. The discontinuous Galerkin formulation, first proposed by
+Reed and Hill in 1973~\cite{Reed1973}, is combined with \acrlongpl{acr:SEM} to create the
+\acrfull{acr:DG-SEM} by Warburton and Hesthaven in 2002~\ref{Hesthaven2002}. In 2009,
+Kopriva~\cite{Kopriva2009}, described a suite of algorithms that can be used to assemble a full
+solver using this method. We will use the \acrshort{acr:DG-SEM} for its geometric flexibility and
+the parallel simplicity of the flux formulation. This method is used in a wide array of domains,
+including aerodynamics~\cite{Beck2014}, turbomachinery~\cite{Garai2015} and water
 simulation~\cite{Gassner2016}.
 
 Large scale spectral element solvers have existed for quite a while now. One such solver is Nek5000,
-an open-source Navier Stokes spectral element solver that runs on \acrshortpl{acr:CPU}. It has been
-proven to scale well to above a million processors~\cite{Offermans2017}. This solver has been used
-to solve problems like simulation of micro-scale blood flow~\cite{Obabko2017}, \acrfull{acr:DNS} of
-flows in engines~\cite{Ameen2020}, and nearly exascale simulation of flows in nuclear
-reactors~\cite{Merzari2020}. Other solvers exist, such as the Nektar++~\cite{Cantwell2015} library.
-It is a spectral finite element library used to create purpose-built solvers for different kinds of
-problems. Example applications are aerodynamic \acrfull{acr:LES} of sport cars~\cite{Mengaldo2020},
-Formula One cars~\cite{Cantwell2015}, and \acrshort{acr:DNS} of flows over various airfoils.
+an open-source Navier Stokes spectral element solver that runs on \acrshortpl{acr:CPU} and uses
+structured grids. It has been proven to scale well to above a million
+processors~\cite{Offermans2017}. This solver has been used to solve problems like simulation of
+micro-scale blood flow~\cite{Obabko2017}, \acrfull{acr:DNS} of flows in engines~\cite{Ameen2020},
+and nearly exascale simulation of flows in nuclear reactors~\cite{Merzari2020}. Other solvers exist,
+such as the Nektar++~\cite{Cantwell2015} library. It is a spectral finite element library used to
+create purpose-built solvers for different kinds of problems, and works on unstructured grids.
+Example applications are aerodynamic \acrfull{acr:LES} of sport cars~\cite{Mengaldo2020}, Formula
+One cars~\cite{Cantwell2015}, and \acrshort{acr:DNS} of flows over various airfoils.
 
 These are the kind of solid foundations we wish to build upon in this work. These solvers
 traditionally use \acrshortpl{acr:CPU} to compute their solutions. The next logical step is to
@@ -36,11 +43,11 @@ methods will need to be ported to this new architecture. Additionally, none of t
 computations, using the limited processing resources at our disposal where it counts most. This
 creates the double challenge of using \acrshortpl{acr:GPU} for high-order methods and adaptivity,
 which is especially challenging on \acrshortpl{acr:GPU} as they are more tailored for static
-workload. \Acrshortpl{acr:GPU} excel at solving very parallel problems where every core of the
+workloads. \Acrshortpl{acr:GPU} excel at solving very parallel problems where every core of the
 \acrshort{acr:GPU} executes the exact same computation on neatly organised data. \Acrshort{acr:AMR}
 is not a naturally parallel process, and the resulting meshes incur divergence in the execution on
-different cores. Nonetheless, if \Acrshort{acr:AMR} implemented correctly should decrease the
-execution time of the program while reducing ressource usage.
+different cores. Nonetheless, if \Acrshort{acr:AMR} is implemented correctly it should decrease the
+execution time of the program while reducing resource usage.
 
 \section{Graphics Processing Units}\label{section:literature_review:gpu}
 
@@ -64,63 +71,64 @@ In the realm of spectral methods, there have been a few advances using \acrshort
 \acrshort{acr:GPU} that demonstrated a \(50 \times \) speedup compared to the machine's
 \acrshort{acr:CPU}~\cite{Klockner2009}. The next year, Gödel et al.\ presented a
 \acrshort{acr:GPU}-accelerated discontinuous Galerkin solver for electric fields, capable of running
-on multiple \acrshortpl{acr:GPU} in parallel. The Nek5000 solver gained a \acrshort{acr:GPU}
-compatible branch for Nekbone, a simplified version of the program that implements its core solver.
+on multiple \acrshortpl{acr:GPU} in parallel~\ref{Godel2010}. The Nek5000 solver gained several
+\acrshort{acr:GPU} compatible branches for Nekbone~\ref{Gong2016}\ref{Chalmers2022}, a simplified
+version of the program that implements its core solver.
 
-As purpose-build \acrshort{acr:GPU} solvers, NekRS is a Navier Stokes solver designed to run on
-diverse hardware, including \acrshortpl{acr:CPU} and \acrshortpl{acr:GPU}~\cite{Fischer2021}. It is
-related to the traditional Nek5000 solver. It uses the OCCA~\cite{Medina2014}, a parallel
-programming language that provides code that can be compiled to different architectures, notably
-OpenMP \acrshort{acr:CPU} code, \acrshort{acr:CUDA} \acrshort{acr:GPU} code and OpenCL code. NekRS
-shows a parallel efficiency of \(80 \% \), and \(80 \% \) to \(90 \% \) of the realizable peak
-performance of \acrshort{acr:HPC} systems for large problems~\cite{Fischer2021}.
+Purpose-built \acrshort{acr:GPU} solvers also exist. For example,  NekRS is a Navier Stokes solver
+designed to run on diverse hardware, including \acrshortpl{acr:CPU} and
+\acrshortpl{acr:GPU}~\cite{Fischer2021}. It is a rewrite of the Nek5000 solver, specifically for
+parallel architectures. It uses the OCCA~\cite{Medina2014} library, a parallel \acrshort{acr:API}
+that provides code that can be compiled to different architectures, notably OpenMP
+\acrshort{acr:CPU} code, \acrshort{acr:CUDA} \acrshort{acr:GPU} code and OpenCL code. NekRS shows a
+parallel efficiency of \(80 \% \), and \(80 \% \) to \(90 \% \) of the realizable peak performance
+of \acrshort{acr:HPC} systems for large problems~\cite{Fischer2021}.
 
-This indicates that \acrshort{acr:SEM} solvers can have very good performance on the
+These works have shown that \acrshort{acr:SEM} solvers can have very good performance on the
 \acrshort{acr:GPU} architecture. This gives a promising foundation for this work, as the core solver
-is expected to be fast. These solvers use static meshes, meaning that the mesh does not change
-during the simulation. This can be problematic for complex problems, when uniformly increasing the
-mesh resolution to capture fine detail in the solution makes the problem prohibitively expensive to
-compute. The mesh can be refined beforehand in areas of the flow expected to need refinement, which
-is not always possible if these areas cannot be predicted in advance, change position in time, or
-are not easy to predict visually. We will therefore want to implement \acrlong{acr:AMR}, which is
-not available in any of those well-known solvers. This is due to the fact that \acrlong{acr:AMR}
-does not map easily to the \acrshort{acr:GPU} architecture, as stated in
-Section~\ref{section:literature_review:sem}. 
+is expected to be fast. These solvers use static meshes however, meaning that the mesh does not
+change during the simulation. This can be problematic for complex problems, when uniformly
+increasing the mesh resolution to capture fine detail in the solution makes the problem
+prohibitively expensive to compute. The mesh can be refined beforehand in areas of the flow expected
+to need refinement, which is not always possible if these areas cannot be predicted in advance,
+change position in time, or are not easy to predict visually. The challenge of this work is to
+implement \acrlong{acr:AMR} in the context of parallel \acrshort{acr:GPU} computing.
 
 \section{Adaptive Mesh Refinement}\label{section:literature_review:amr}
 
-\Acrshort{acr:AMR} has been proved to speedup significantly the computation of fluid flow problems.
+\Acrshort{acr:AMR} has been shown to significantly speed up the computation of fluid flow problems.
 Chalmers et al.\ report a \(3 \times \) speedup as well as an improved error when using
-\acrshort{acr:AMR}~\cite{Chalmers2019}. The processing time and memory saving will be especially
+\acrshort{acr:AMR}~\cite{Chalmers2019}. The processing time and memory savings will be especially
 welcome when considering that \acrshortpl{acr:GPU} have less memory than \acrshortpl{acr:CPU}.
 
 \Acrshort{acr:AMR} implementations on \acrshortpl{acr:CPU} date from quite some time. Berger and
-Oliger~\cite{Berger1984} present the method using overset grids, and Khokhlov~\cite{Khokhlov1998}
-describes a tree-structured method that can be accessed and modified in parallel.
+Oliger~\cite{Berger1984} presented the method using overset grids in 1984, and
+Khokhlov~\cite{Khokhlov1998} described a tree-structured method that can be accessed and modified in
+parallel in 1998.
 
-Some software solutions exist to integrate into existing code and implement \acrlong{acr:AMR}. The
-PARAMESH toolkit~\cite{MacNeice2000} is such an example. It indicates that it is possible to obtain
-speedups above the order of \( 10 \times \) for high refinement levels, when compared to using an
-uniformly refined mesh. It also enables users to work with the meshes it creates in parallel. The
-p4est library~\cite{Burstedde2011} is another example, it provides parallel \acrshort{acr:AMR} to
-programs by implementing forest of octrees algorithms. It has been proven to scale well up to
-220,000 \acrshort{acr:CPU} cores.
+Some software solutions exist to enhance existing code by implementing \acrlong{acr:AMR}. The
+PARAMESH toolkit~\cite{MacNeice2000} for example has demonstrated speedups of over \( 10 \times \)
+for high refinement levels, when compared to using a uniformly refined mesh. It also enables users
+to work with the meshes it creates in parallel. The p4est library~\cite{Burstedde2011} provides
+parallel \acrshort{acr:AMR} to programs by implementing forest of octrees algorithms. It has been
+proven to scale well up to 220,000 \acrshort{acr:CPU} cores.
 
-Traditional \acrshort{acr:CPU} algorithms are well understood, and full books have been written on
-the subject, such as by Plewa et al.~\cite{Plewa2005}. Support for \acrshort{acr:AMR} has even
-started to be added to certain well-established solvers like Nek5000~\cite{Offermans2019}, where the
-parallel scaling of the method has been studied up to 32,768 \acrshort{acr:CPU}
-cores~\cite{Peplinski2016}. This particular implementation uses h-refinement only.
+Traditional \acrshort{acr:CPU} \acrshort{acr:AMR} algorithms are well understood, and full books
+have been written on the subject, such as the work by Plewa et al.~\cite{Plewa2005}. Support for
+\acrshort{acr:AMR} has even started to be added to certain well-established solvers like
+Nek5000~\cite{Offermans2019}, where the parallel scaling of the method has been studied up to 32,768
+\acrshort{acr:CPU} cores~\cite{Peplinski2016}. This particular implementation uses h-refinement
+only however.
 
 These are good results, indicating that if the challenges in implementing \acrshort{acr:AMR} on
-\acrshortpl{acr:GPU} are overcome, significant gains should be expected. These challenges are not
+\acrshortpl{acr:GPU} are overcome, significant gains can be expected. These challenges are not
 small, as the non-conforming meshes produces by \acrshort{acr:AMR} increase divergence between
-\acrshort{acr:GPU} threads, can create load imbalance when the problem is solved in parallel and the
-mesh is not refined equally in each block. The refinement process itself is also not naturally
+\acrshort{acr:GPU} threads, and can create load imbalance when the problem is solved in parallel and
+the mesh is not refined equally in each block. The refinement process itself is also not naturally
 parallel, therefore care should be taken when implementing it to have as many parts of the process
 executed in parallel on \acrshortpl{acr:GPU} as possible. Finally, adaptive meshes complicate the
-memory layout on \acrshortpl{acr:GPU}, which are more optimised to perform computations on static
-packed data.
+memory layout on \acrshortpl{acr:GPU}, which are optimised to perform computations on static packed
+data.
 
 \Acrlong{acr:AMR} is not unique to fluid dynamics. The field of astrophysics has numerous
 \acrshort{acr:AMR} solvers. First, Enzo~\cite{Bryan2014} is an open-source solver dedicated to
@@ -132,30 +140,30 @@ GAMER-2~\cite{Schive2018} solvers, both open-source \acrshort{acr:GPU}-accelerat
 magnetohydrodynamics, self-gravity and particle flows. The latter has been shown to scale up to 4096
 \acrshortpl{acr:GPU} and 65,536 \acrshort{acr:CPU} cores. In the field of data visualisation, a lot
 of work has to be done in order to directly represent the data generated by \acrshort{acr:AMR}
-programs. Wang et al.~\cite{Wang2020} propose algorithm to accurately render tree-based
+programs. Wang et al.~\cite{Wang2020} propose an algorithm to accurately render tree-based
 \acrshort{acr:AMR} data in difficult regions such as across discontinuities in the refinement level.
 Their method uses ray tracing and is computed on \acrshortpl{acr:CPU}, and can render data without
 having to interpolate it to a single refinement level.
 
 In the high-order fluid dynamics field, Giuliani and Krivodonova propose an algorithm for
-\acrshort{acr:GPU}-based \acrlong{acr:AMR} for use with high-order methods gas
+\acrshort{acr:GPU}-based \acrlong{acr:AMR} for use with high-order methods to calculate gas
 dynamics~\cite{Giuliani2019}. They use triangular meshes, and implement an edge-colouring algorithm
 in order to avoid race conditions when computing fluxes. They show that \acrshort{acr:AMR} can be
 used to solve problems that are not possible to solve in reasonable time without refining the mesh
 locally, and that with a high order solver the time spent on \acrshort{acr:AMR} can be relatively
-low, in the order of 4\%. This solver works on a single \acrshort{acr:GPU}, and as such does not
+low, on the order of 4\%. This solver works on a single \acrshort{acr:GPU}, and as such does not
 include dynamic load balancing to address the pitfalls of \acrshort{acr:AMR} on multiple
 \acrshortpl{acr:GPU}.
 
-We aim to implement \acrshort{acr:AMR} on our \acrshort{acr:DG-SEM} solver on \acrshortpl{acr:GPU}.
-The \acrshort{acr:AMR} should be fast to not dominate the execution time, therefore should be
-parallelised, run as much as possible on the \acrshort{acr:GPU}, and have a structure and resulting
-meshes compatible with the \acrshort{acr:GPU} architecture. We wish to target \acrshort{acr:HPC}
+We aim to implement \acrshort{acr:AMR} in our \acrshort{acr:DG-SEM} solver on \acrshortpl{acr:GPU}.
+The \acrshort{acr:AMR} should be fast so that it does not dominate the execution time, therefore
+should be parallelised, run as much as possible on the \acrshort{acr:GPU}, and have a structure and
+resulting meshes compatible with the \acrshort{acr:GPU} architecture. We target \acrshort{acr:HPC}
 platforms, therefore the code should have an additional parallel level. The program should be able
-to execute on multiple \acrshortpl{acr:GPU} and on multiple computers. This means that
-both the solver and the \acrshort{acr:AMR} modules should be able to execute in parallel on multiple
-mesh blocks. This adds an additional challenge, as the mesh is unlikely to be refined equally in all
-\acrshortpl{acr:GPU}. This is caused load imbalance, and will reduce the performance of the program
+to execute on multiple \acrshortpl{acr:GPU} and on multiple computers. This means that both the
+solver and the \acrshort{acr:AMR} modules should be able to execute in parallel on multiple mesh
+blocks. This adds an additional challenge, as the mesh is unlikely to be refined equally in all
+\acrshortpl{acr:GPU}. This causes a load imbalance, and will reduce the performance of the program
 as the less heavily loaded \acrshortpl{acr:GPU} will wait for the most heavily loaded
 \acrshort{acr:GPU} at each iteration. We will implement dynamic load balancing in order to rearrange
 the workload between the \acrshortpl{acr:GPU} to even out the computational load.
@@ -163,15 +171,15 @@ the workload between the \acrshortpl{acr:GPU} to even out the computational load
 \section{Dynamic Load Balancing}\label{section:literature_review:load_balancing}
 
 Load balancing is not uniquely a \acrshort{acr:CFD} issue. Many algorithms have been developed in
-varying domains to solve similar problems. For example, Willebeek-LeMair and
-Reeves~\cite{Willebeek1993} discuss different strategies to minimise the execution time of
-applications running in parallel on different computers when the computational load cannot be
-predicted. Cardellini et al.~\cite{Cardellini1999} describe load balancing algorithms for web
-servers that avoids overwhelming servers and aim to utilise the whole performances of a cluster. In
-1988, Kobayashi et al.~\cite{Kobayashi1988} described an algorithm to dynamically load balance a
-parallel ray-tracing system by subdividing the space into cubes, and dispatching them to a hierarchy
-of multiprocessors. This approach has been shown to produce better results than static load
-balancing by \(30 \% \) to \(50 \% \), and scale up to 1728 processors.
+varying domains to address the issue. For example, Willebeek-LeMair and Reeves~\cite{Willebeek1993}
+discuss different strategies to minimise the execution time of applications running in parallel on
+different computers when the computational load cannot be predicted. Cardellini et
+al.~\cite{Cardellini1999} describe load balancing algorithms for web servers that avoid overwhelming
+servers and aim to fully utilise a cluster. In 1988, Kobayashi et al.~\cite{Kobayashi1988} described
+an algorithm to dynamically load balance a parallel ray-tracing system by subdividing the space into
+cubes, and dispatching them to a hierarchy of multiprocessors. This approach has been shown to
+produce better results than static load balancing by \(30 \% \) to \(50 \% \), and scale up to 1728
+processors.
 
 Implementing dynamic load balancing starts by choosing a repartitioning scheme. Graph-based
 algorithms model a mesh as a group of nodes connected by edges, and try to partition the nodes while
@@ -179,19 +187,19 @@ breaking as few edges as possible. These solutions can be slow to execute, but r
 well-partitioned meshes. The METIS package~\cite{Karypis1997} implements such an algorithm. It
 executes serially, partitioning meshes using multiple levels of graphs. The ParMETIS
 library~\cite{Karypis1997P} implements a similar algorithm, and can work in parallel. A
-repartitioning working in parallel is highly desirable for this work, as each \acrshort{acr:GPU} is
-paired to a single \acrshort{acr:CPU} core. As much of the work as possible will have to be executed
-in parallel on the \acrshort{acr:GPU}. These solvers permit partitioning a mesh to multiple blocks
-as well as repartitioning \acrshort{acr:AMR} meshes~\cite{Karypis1997P}. These libraries are widely
-used, notably by the Nek5000 \acrshort{acr:AMR} proposal~\cite{Peplinski2016}.
+repartitioning algorithm working in parallel is highly desirable for this work, as each
+\acrshort{acr:GPU} is paired to a single \acrshort{acr:CPU} core. As much of the work as possible
+will have to be executed in parallel on the \acrshort{acr:GPU}. These solvers can partition meshes
+to multiple blocks and repartition \acrshort{acr:AMR} meshes~\cite{Karypis1997P}. These libraries
+are widely used, notably by the Nek5000 \acrshort{acr:AMR} prototype~\cite{Peplinski2016}.
 
-Another repartitioning scheme hinges on splitting a one-dimensional list of elements to smaller
+Another repartitioning scheme hinges on splitting a one-dimensional list of elements into smaller
 segments, also called \acrfull{acr:CCP}. These algorithms are very fast, but the quality of their
 partitions depend on the characteristics of the mapping from multidimensional space to the
 one-dimensional list. One such mapping uses \acrfullpl{acr:SFC}. \Acrshortpl{acr:SFC} traverse a
 multidimensional domain in its entirety, assigning a one-dimensional index to elements. The
 Peano~\cite{Peano1890} and Hilbert~\cite{Hilbert1891} curves are examples of such curves.
-\Acrshortpl{acr:SFC} are also widely used as a repartitioning scheme, for example by the PARAMESH
+\Acrshortpl{acr:SFC} are also widely used as repartitioning schemes, for example by the PARAMESH
 library~\cite{MacNeice2000} and the GAMER family of solvers~\cite{Schive2018}.
 
 In the domain of high-order methods, in 2021 He~\cite{He2021} created a \acrshort{acr:CPU}-based
@@ -200,26 +208,27 @@ dynamic load balancing algorithm for a \acrshort{acr:DG-SEM} solver with
 implementation showed good scaling to 16,384 \acrshort{acr:CPU} cores, and a speedup between \(5
 \times \) and \(8 \times \) compared to a non load-balanced case.
 
-Dynamically load balancing tasks executing on \acrshortpl{acr:GPU} is more complicated than
-traditional \acrshort{acr:CPU} tasks. Due to the parallel execution of tasks on
-\acrshortpl{acr:GPU}, memory access patterns needed for optimal performance, and the higher cost of
-transferring data between \acrshortpl{acr:GPU}, the performance may not scale as expected when
-redistributing a workload. We want to leverage the increased processing power of
-\acrshortpl{acr:GPU}, therefore the load balancing algorithm should not only redistribute a
-\acrshort{acr:GPU} workload, but also be executed on the \acrshortpl{acr:GPU} in parallel as much as
-possible. Once again, this is a very dynamic and serial process that will have to be adapted the the
-\acrshort{acr:GPU} architecture.
+Dynamically load balancing tasks executing on \acrshortpl{acr:GPU} is more complicated than on
+traditional \acrshortpl{acr:CPU}. Due to the parallel execution of tasks on \acrshortpl{acr:GPU},
+memory access patterns needed for optimal performance, and the higher cost of transferring data
+between \acrshortpl{acr:GPU}, the performance may not scale as expected when redistributing a
+workload. We want to leverage the increased processing power of \acrshortpl{acr:GPU}, therefore the
+load balancing algorithm should not only redistribute a \acrshort{acr:GPU} workload, but also
+execute on the \acrshortpl{acr:GPU} in parallel as much as possible. This very dynamic and serial
+process will have to be adapted the \acrshort{acr:GPU} architecture.
 
 Dynamically load balancing tasks executing on \acrshortpl{acr:GPU} is an active area of research.
 Chen et al.~\cite{Chen2010} discuss a task-based algorithm for balancing molecular dynamics
-workloads on a single of multiple \acrshortpl{acr:GPU}. Their algorithm offers an up to \(2.5 \times
+workloads on a single or multiple \acrshortpl{acr:GPU}. Their algorithm offers an up to \(2.5 \times
 \) speedup, and scales linearly up to four \acrshortpl{acr:GPU}. The load balancing itself executes
 serially on the \acrshort{acr:CPU}. Kijsipongse and U-ruekolan~\cite{Kijsipongse2012} propose an
-algorithm to load-balance K-Means clustering problems running on \acrshortpl{acr:GPU}.
+algorithm to load-balance K-Means clustering problems running on \acrshortpl{acr:GPU} that
+outperforms a parallel \acrshort{acr:CPU} implementation by \(6.5 \times \).
 
-We aim to implement a dynamic load balancing algorithm using a \acrshort{acr:CCP} using the Hilbert
-curve, for its speed of execution and good data locality. The data locality quality of the curve is
-well suited for use on \acrshortpl{acr:GPU}, as memory transfers resulting from large interfaces
-between \acrshortpl{acr:GPU} are even more expensive than on \acrshortpl{acr:CPU}. The algorithm
-will execute in parallel for multiple \acrshortpl{acr:GPU}, and aim to execute as much of the code
-as possible on the \acrshortpl{acr:GPU} themselves to accelerate the process.
+Building on He's work~\cite{He2021}, we develop in this work a dynamic load balancing algorithm
+using a \acrshort{acr:CCP} using the Hilbert curve, exploiting its speed of execution and good data
+locality. The data locality quality of the curve is well suited for use on \acrshortpl{acr:GPU}, as
+memory transfers resulting from large interfaces between \acrshortpl{acr:GPU} are even more
+expensive than on \acrshortpl{acr:CPU}. The algorithm will execute in parallel for multiple
+\acrshortpl{acr:GPU}, and aim to execute as much of the code as possible on the \acrshortpl{acr:GPU}
+themselves to accelerate the process.

@@ -305,13 +305,13 @@ the solution, and solutions exhibit oscillations. Also, these methods only work 
 shapes, such as quadrilaterals, triangles and circles in 2D. To accommodate more complex domains,
 such as blood vessels and airfoils, the method must be modified.
 
-Patera proposed using spectral element methods~\cite{Patera1984} to combine the accuracy of spectral
+Patera proposed using \acrlongpl{acr:SEM}~\cite{Patera1984} to combine the accuracy of spectral
 methods and the generality of finite element methods. Finite element methods can model complex
 geometries by splitting the domain into multiple elements, with the equations being solved on the
-elements. Spectral element methods are used to solve a wide range of complex
-problems~\cite{Deville2003}, including the full Navier-Stokes equations. Continuous spectral element
-methods use the Gauss-Lobatto quadrature points to make sure the solution is continuous at element
-boundaries. These quadrature points include points at \(-1\) and \(1\).
+elements. \Acrlongpl{acr:SEM} are used to solve a wide range of complex problems~\cite{Deville2003},
+including the full Navier-Stokes equations. Continuous \acrlongpl{acr:SEM} use the Gauss-Lobatto
+quadrature points to make sure the solution is continuous at element boundaries. These quadrature
+points include points at \(-1\) and \(1\).
 
 In this work, we use the \textit{\acrfull{acr:DG-SEM}}. The \acrshort{acr:DG-SEM} uses the Gauss
 quadrature points described in
