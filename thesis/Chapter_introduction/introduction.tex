@@ -36,7 +36,7 @@ simulation~\cite{Molcard2002}, atmosphere simulation~\cite{Haidvogel1997}, and m
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.95\textwidth]{Chapter_introduction/media/spectral_element_method}
-	\caption{Direct numerical simulation: Spectral methods have sufficient accuracy to model very complex flows (reprinted from~\cite{Vadsola2021}).}\label{fig:intro_sem}
+	\caption{Direct numerical simulation: Complex flow structures arising from turbulent flow over a multi-element airfoil simulated using spectral methods (reprinted from~\cite{Vadsola2021}).}\label{fig:intro_sem}
 \end{figure}
 
 Instead of modelling the solution as individual values at points, or a linear or quadratic function
@@ -47,8 +47,8 @@ within a space subdivision, spectral methods represent a function as a truncated
 \end{equation}
 
 \noindent
-where \(\phi _n(x)\) are basis functions. We use this representation in the governing equations to
-compute the unknowns \(\widehat{u}_n\). Spectral methods are usually divided into two
+where \(\phi _n(x)\) are high order basis functions. We use this representation in the governing
+equations to compute the unknowns \(\widehat{u}_n\). Spectral methods are usually divided into two
 categories~\cite{Karniadakis2005}: collocation methods and Galerkin methods. Galerkin methods solve
 governing equations in integral form over the domain~\cite{Reed1973}, which is broken up into
 elements. This method, in combination with the spectral approximation, will be used in this work. It
@@ -57,13 +57,13 @@ is called the \textit{Galerkin spectral element method}. This method can be form
 into elements, within which the solution is represented as functions. These functions join at the
 element boundaries, making the method continuous. Discontinuous methods allow the solution to be
 discontinuous at element boundaries, using fluxes between elements to stabilise the scheme. We refer
-to these as the \textit{\acrfull{acr:DG-SEM}}. We will use this method, as it is easier to be made
-parallel. The fact that elements are independent and only connect through fluxes should map better
-to the \acrshort{acr:GPU} architecture, where the solution of all elements will be computed
-concurrently. It also simplifies mesh refinement by simplifying the usage of non-conforming
-interfaces. Both \acrshort{acr:SEM} methods, continuous or discontinuous, combines the accuracy and
-exponential convergence of spectral methods with the geometric flexibility of finite element
-methods. 
+to these as the \textit{\acrfull{acr:DG-SEM}}. We will use this method, as it is easier to
+parallelise. The fact that elements are independent and only connect through fluxes should map
+better to massively parallel architectures, where the solution of all elements will be computed
+concurrently. It makes mesh refinement more straightforward by simplifying the usage of
+non-conforming interfaces. Both \acrshort{acr:SEM} methods, continuous or discontinuous, combines
+the accuracy and exponential convergence of spectral methods with the geometric flexibility of
+finite element methods. 
 
 % GPUs
 With the stagnation of traditional computer \textit{\acrfull{acr:CPU}} operating frequencies over
@@ -86,7 +86,7 @@ much greater than that using traditional \acrshortpl{acr:CPU}.
 	\caption{\Acrshort{acr:GPU} architecture~\cite{Nvidia2021}: \Acrshortpl{acr:GPU} dedicate much more die space to computations (in green).}\label{fig:intro_gpu}
 \end{figure}
 
-We will use \acrshortpl{acr:GPU} for our computations in the hope of increasing the available
+We will use \acrshortpl{acr:GPU} for our computations with the aim of increasing the available
 processing power to solve complex problems. This will not come easily, as \acrshort{acr:GPU}
 architectures are optimised for static workloads executing the exact same code on all
 \acrshort{acr:GPU} cores. We use the \acrshort{acr:CUDA} parallel computing
@@ -101,18 +101,18 @@ become impractical to compute even on the largest \acrshort{acr:HPC} systems. Th
 must be spent where they will count most. Creating grids that are more refined in areas of interest
 is possible if those areas are known beforehand. This is a time-consuming process that must be
 started over for every new problem. It is sometimes not possible to predict where areas of interest
-will be, such as when modeling chaotic turbulent flows. It is also possible that the mathematically
-important areas are not easy to identify. 
+will be, for example when modeling chaotic turbulent flows. It is also possible that the
+mathematically important areas are not easy to identify. 
 
 \textit{\Acrfull{acr:AMR}} methods have been developed in order to solve this problem. These methods
 aim to identify the areas of the mesh that need refinement, and refine those areas to obtain more
 accurate results while not wasting resources on areas of less interest. Figure~\ref{fig:intro_amr}
-shows a problem that has been refined in order to better capture the bow shock around a spacecraft.
-In 1984, Berger and Oliger~\cite{Berger1984} described a recursive method where refined grids can
-contain further refined grids, used for the finite difference method and hyperbolic equations.
-Another \acrshort{acr:AMR} method by Khokhlov~\cite{Khokhlov1998} has reported a factor of 10
-savings of both memory and computing time. We will use \acrlong{acr:AMR} to make more efficient use
-of the resources we have and to ease working with the more limited amount of memory of
+shows an example of a problem that has been refined in order to better capture the bow shock around
+a spacecraft. In 1984, Berger and Oliger~\cite{Berger1984} described a recursive method where
+refined grids can contain further refined grids, used for the finite difference method and
+hyperbolic equations. Another \acrshort{acr:AMR} method by Khokhlov~\cite{Khokhlov1998} has reported
+a factor of 10 savings of both memory and computing time. We will use \acrlong{acr:AMR} to make more
+efficient use of the resources we have and to ease working with the more limited amount of memory of
 \acrshortpl{acr:GPU} compared to \acrshortpl{acr:CPU}.
 
 \begin{figure}[H]
@@ -136,7 +136,7 @@ having elements refine independently.
 	\hfill
 	\subfloat[Tree-structured \acrlong{acr:AMR}]
 	{\includegraphics[width=0.45\textwidth]{Chapter_introduction/media/tree_structured}\label{fig:tree_structured}}
-	\caption{\Acrlong{acr:AMR} approaches: Two different approaches to refining the important areas of a mesh. (a) Finer meshes are patched onto the initial coarse mesh (reprinted from~\cite{Berger1984}) (b) Elements are refined individually (reprinted from~\cite{Khokhlov1998})}\label{fig:amr_structures}
+	\caption{\Acrlong{acr:AMR} approaches: Two different approaches to refining the important areas of a mesh. (a) Finer meshes are patched onto the initial coarse mesh (reprinted from~\cite{Berger1984}) (b) Elements are refined individually (reprinted from~\cite{Khokhlov1998}).}\label{fig:amr_structures}
 \end{figure}
 
 Two types of refinement will be used in this work. \textit{p-refinement} increases the polynomial
@@ -148,11 +148,11 @@ The choice of which refinement type to use, as well as the choice of which area 
 refine is guided by an error estimator. Mavriplis~\cite{Mavriplis1990} describes an \textit{a
 posteriori error estimator} that uses the spectral approximation to estimate the error and the
 smoothness of the solution. The smoothness of the solution is used to determine which refinement
-type is expected to increase accuracy the most. Elements with a high error get refined, using
+type is expected to increase accuracy most effectively. Elements with a high error get refined, using
 p-refinement if their solution is smooth or h-refinement if it is not.
 
 The benefits of \acrshort{acr:AMR} do not come without added complications. Two main complications
-are: non-conforming interfaces and load imbalance.
+are: non-conforming interfaces and load imbalance when performing computations in parallel.
 
 % Mortar element method
 As the mesh refines, it becomes non-uniform. Elements can have neighbours with a different
@@ -195,22 +195,22 @@ parallel systems. Figure~\ref{fig:intro_load_balancing} shows an imbalanced syst
 
 In order to avoid this problem, the mesh needs to be repartitioned as it is refined. This is the
 process of \textit{dynamic load balancing}. When the mesh is repartitioned, elements are sent
-between \acrshortpl{acr:GPU} to even out their computational load. The repartitioning scheme
-dictates which elements are sent from one \acrshort{acr:GPU} to another. This scheme should satisfy
-several conditions: it must even the load between the workers, it must be fast to execute, and it
-must minimise the boundaries between the mesh blocks it creates. 
+between processors to even out their computational load. The repartitioning scheme dictates which
+elements are sent from one processor to another. This scheme should satisfy several conditions: it
+must even the load between the workers, it must be fast to execute, and it must minimise the
+boundaries between the mesh blocks it creates. 
 
 Many approaches to this problem have been studied. \textit{Graph-based} repartitioning schemes
 represent a mesh as nodes connected by edges, which can then be partitioned by splitting it into
 parts of equal size while severing as few edges as possible. The well-known
-\textit{Metis}\cite{Karypis1998} library uses this technique. Graph-based techniques produce very
+\textit{Metis}~\cite{Karypis1998} library uses this technique. Graph-based techniques produce very
 well partitioned meshes, but can be slower to execute than other techniques and need to know the
 topology of the entire mesh to partition it, which can be a problem on parallel systems where the
 problem should be split between the different workers.
 
 A different approach is \acrfull{acr:SFC} based repartitioning schemes. These schemes reduce
 multidimensional problems to one dimension by mapping elements to a single curve going through the
-entire domain\cite{Peano1890}. The elements can then be indexed in 1D, and repartitioned by
+entire domain~\cite{Peano1890}. The elements can then be indexed in 1D, and repartitioned by
 splitting that line into segments of equal size. \Acrshortpl{acr:SFC} are very fast to generate,
 which is especially relevant to this work as the repartitioning will be performed often while the
 computation is underway. Some curves, like the \textit{Hilbert curve}~\cite{Hilbert1891}, retain a
@@ -243,12 +243,12 @@ In order to showcase these techniques, we will solve a sample problem using the 
 The structure of this thesis will follow these main concepts.
 Chapter~\ref{chapter:literature_review} discusses the current state of the art of the domain.
 Chapter~\ref{chapter:graphics_processing_units} presents the \acrshort{acr:GPU} architecture and how
-we tackle implementing our algorithms to that special architecture. In
+we tackle implementing our algorithms on that special architecture. In
 Chapter~\ref{chapter:spectral_element_method}, we present the \acrshort{acr:DG-SEM} and the
 derivation used for the sample problem. Then, Chapter~\ref{chapter:adaptive_mesh_refinement}
 explains our proposed algorithm for parallel \acrshort{acr:AMR} on \acrshortpl{acr:GPU}. We then
-present a solution to perform dynamic load balancing and the challenges of a dynamic mesh structure
-in Chapter~\ref{chapter:load_balancing}. The performance of the program, as well as several
+present a methodology to perform dynamic load balancing and the challenges of a dynamic mesh
+structure in Chapter~\ref{chapter:load_balancing}. The performance of the program as well as several
 comparisons of the impact of the different features using \acrshort{acr:HPC} systems are presented
-in Chapter~\ref{chapter:results}. We conclude with Chapter~\ref{chapter:conclusion}, and present
-ideas for future work.
+in Chapter~\ref{chapter:results}. We conclude with Chapter~\ref{chapter:conclusion}, where we also
+present ideas for future work.
