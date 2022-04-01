@@ -144,8 +144,10 @@ load_balancing_threshold_baseline_t = np.array([274.359, 4962.06, 59061.9])
 best_T = 3
 
 # N scaling
-N_scaling_N = np.array([6, 8, 10, 12])
-N_scaling_t = np.array([0.0346, 0.0594, 0.0856, 0.1196])
+N_scaling_N_cpu = np.array([4, 6, 8, 10, 12])
+N_scaling_N_gpu = np.array([4, 6, 8, 10, 12])
+N_scaling_t_cpu = np.array([0.291472, 0.498982, 0.745515, 1.09424, 1.58982])
+N_scaling_t_gpu = np.array([0.15488, 0.317389, 0.719253, 1.17563, 1.82356])
 
 # Plots
 save_path = Path(__file__).parent.parent / "media"
@@ -161,8 +163,9 @@ error_colour = np.array([197, 134, 192])/255
 error_colour_dark = np.array([168, 80, 161])/255
 solving_colour = np.array([215, 186, 125])/255
 pre_condition_colour = np.array([181, 206, 168])/255
-N_colour = np.array([78, 201, 176])/255
-imbalance_colour = np.array([86, 156, 214])/255
+N_colour_cpu = np.array([209, 105, 105])/255
+N_colour_gpu = np.array([86, 156, 214])/255
+imbalance_colour = np.array([78, 201, 176])/255
 data_size = 12
 data_size_small = 8
 data_shape = "o"
@@ -368,11 +371,12 @@ N_title = "N iteration time"
 N_fig.canvas.manager.set_window_title(N_title)
 N_ax.grid()
 
-N_ax.plot(N_scaling_N, N_scaling_t, color=N_colour, linewidth=data_width, marker=data_shape, markersize=data_size, label="Iteration time")
+N_ax.plot(N_scaling_N_cpu, N_scaling_t_cpu, color=N_colour_cpu, linewidth=data_width, marker=data_shape, markersize=data_size, label="CPU iteration time")
+N_ax.plot(N_scaling_N_gpu, N_scaling_t_gpu, color=N_colour_gpu, linewidth=data_width, marker=data_shape, markersize=data_size, label="GPU iteration time")
 
-N_ax.set_ylim([0, 1.2 * max(N_scaling_t)])
+N_ax.set_ylim([0, 1.2 * max(max(N_scaling_t_cpu), max(N_scaling_t_gpu))])
 
-#N_ax.legend()
+N_ax.legend()
 N_fig.tight_layout()
 
 N_fig.savefig(save_path / f"N_iteration_time.svg", format='svg', transparent=True)
