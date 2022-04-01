@@ -21,17 +21,18 @@
 	
 \end{center}
 
-In order to simulate complex fluid flows, high-order methods can be used to obtain very fine
-results. However, these methods are computationally expensive, and care should be taken to optimise
-their execution time. \textit{\Acrfullpl{acr:GPU}} are a relatively new architecture in the domain
-of scientific computing, leveraging massive parallelism at the expense of reduced flexibility. To
-achieve the resolution of high-order methods with the throughput of \acrshortpl{acr:GPU}, we present
-in this thesis a \acrshort{acr:GPU} implementation of the \textit{\acrfull{acr:DG-SEM}} coupled with
-parallel \textit{\acrfull{acr:AMR}} to solve the two-dimensional wave equation. 
+In order to simulate complex fluid flows with precision, high-order methods can be used to obtain
+high resolution results. However, these methods are computationally expensive, and care should be
+taken to optimise their execution time. \textit{\Acrfullpl{acr:GPU}} are a relatively new
+architecture in the domain of scientific computing, leveraging massive parallelism at the expense of
+reduced flexibility. To achieve the resolution of high-order methods with the throughput of
+\acrshortpl{acr:GPU}, we present in this thesis a \acrshort{acr:GPU} implementation of the
+\textit{\acrfull{acr:DG-SEM}} coupled with parallel \textit{\acrfull{acr:AMR}} to solve the
+two-dimensional wave equation. 
 
 The \textit{\acrlong{acr:DG-SEM}} splits the domain into elements,  within which the solution is
 represented as a weighted series of orthogonal polynomials, the \textit{Legendre polynomials} in
-this case. To insure no resources are wasted, the \textit{\acrlong{acr:AMR}} aims to increase the
+this case. To insure no resources are wasted, \textit{\acrlong{acr:AMR}} aims to increase the
 resolution in regions of interest, via two mechanisms: \textit{h-refinement}, where elements are
 split into multiple smaller ones, and \textit{p-refinement}, where the polynomial order within an
 element is increased. In order to retain the fast convergence high-order methods are known for, the
@@ -49,6 +50,6 @@ from and to the \acrshortpl{acr:GPU} in addition to between the nodes.
 % Add stuff about viscosity when it works
 % Add some results
 
-\textbf{Keywords}: \Acrlongpl{acr:SEM}, \acrlongpl{acr:GPU}, \acrlong{acr:AMR}, \acrlongpl{acr:SFC}, Hilbert curve, dynamic load balancing, \acrlong{acr:HPC}.
+\textbf{Keywords}: \Acrlongpl{acr:SEM}, discontinuous Galerkin, \acrlongpl{acr:GPU}, \acrlong{acr:AMR}, \acrlongpl{acr:SFC}, Hilbert curve, dynamic load balancing, \acrlong{acr:HPC}.
 
  
