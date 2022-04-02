@@ -17,7 +17,7 @@ elements by incorporating collocation points at the boundary of elements. \texti
 \acrlongpl{acr:SEM} let the solution be discontinuous at element boundaries, and incorporates fluxes
 to counterbalance these discontinuities. The discontinuous Galerkin formulation, first proposed by
 Reed and Hill in 1973~\cite{Reed1973}, is combined with \acrlongpl{acr:SEM} to create the
-\acrfull{acr:DG-SEM} by Warburton and Hesthaven~\ref{Hesthaven2002} in 2002. In 2009,
+\acrfull{acr:DG-SEM} by Warburton and Hesthaven~\cite{Hesthaven2002} in 2002. In 2009,
 Kopriva~\cite{Kopriva2009}, described a suite of algorithms that can be used to assemble a full
 solver using this method. We will use the \acrshort{acr:DG-SEM} for its geometric flexibility and
 the parallel simplicity of the flux formulation. This method is used in a wide array of domains,
@@ -71,8 +71,8 @@ In the realm of spectral methods, there have been a few advances using \acrshort
 \acrshort{acr:GPU} that demonstrated a \(50 \times \) speedup compared to the machine's
 \acrshort{acr:CPU}~\cite{Klockner2009}. The next year, Gödel et al.\ presented a
 \acrshort{acr:GPU}-accelerated discontinuous Galerkin solver for electric fields, capable of running
-on multiple \acrshortpl{acr:GPU} in parallel~\ref{Godel2010}. The Nek5000 solver gained several
-\acrshort{acr:GPU} compatible branches for Nekbone~\ref{Gong2016}\ref{Chalmers2022}, a simplified
+on multiple \acrshortpl{acr:GPU} in parallel~\cite{Godel2010}. The Nek5000 solver gained several
+\acrshort{acr:GPU} compatible branches for Nekbone~\cite{Gong2016}\cite{Chalmers2022}, a simplified
 version of the program that implements its core solver.
 
 Purpose-built \acrshort{acr:GPU} solvers also exist. For example,  NekRS is a Navier Stokes solver
