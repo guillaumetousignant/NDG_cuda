@@ -44,6 +44,19 @@ encourage the reader to experiment with thealgorithms.},
    year = {2009},
 }
 
+@article{Hesthaven2002,
+   abstract = {We present a convergent high-order accurate scheme for the solution of linear conservation laws in geometrically complex domains. As our main example we include a detailed development and analysis of a scheme for the time-domain solution of Maxwell's equations in a three-dimensional domain. The fully unstructured spatial discretization is made possible by the use of a high-order nodal basis, employing multivariate Lagrange polynomials defined on the triangles and tetrahedra, while the equations themselves are satisfied in a discontinuous Galerkin form with the boundary conditions being enforced weakly through a penalty term. Accuracy, stability, and convergence of the semidiscrete approximation to Maxwell's equations is established rigorously and bounds on the growth of the global divergence error are provided. Concerns related to efficient implementations are discussed in detail. This sets the stage for the presentation of examples, verifying the theoretical results, and illustrating the versatility, flexibility, and robustness when solving two- and three-dimensional benchmark problems in computational electromagnetics. Pure scattering as well as penetration is discussed and high parallel performance of the scheme is demonstrated.},
+   author = {J S Hesthaven and T Warburton},
+   doi = {https://doi.org/10.1006/jcph.2002.7118},
+   issn = {0021-9991},
+   issue = {1},
+   journal = {Journal of Computational Physics},
+   pages = {186-221},
+   title = {Nodal High-Order Methods on Unstructured Grids: I. Time-Domain Solution of Maxwell's Equations},
+   volume = {181},
+   year = {2002},
+}
+
 @article{Harris2007,
    author = {Mark Harris and others},
    issue = {4},
@@ -864,31 +877,6 @@ and Armenio},
    year = {1997},
 }
 
-@article{Chan2016,
-   author = {Jesse Chan and Zheng Wang and Axel Modave and Jean-Francois Remacle and T Warburton},
-   doi = {10.1016/j.jcp.2016.04.003},
-   journal = {Journal of Computational Physics},
-   month = {8},
-   pages = {142-168},
-   publisher = {Elsevier BV},
-   title = {GPU-accelerated discontinuous Galerkin methods on hybrid meshes},
-   volume = {318},
-   year = {2016},
-}
-
-@article{Hesthaven2002,
-   abstract = {We present a convergent high-order accurate scheme for the solution of linear conservation laws in geometrically complex domains. As our main example we include a detailed development and analysis of a scheme for the time-domain solution of Maxwell's equations in a three-dimensional domain. The fully unstructured spatial discretization is made possible by the use of a high-order nodal basis, employing multivariate Lagrange polynomials defined on the triangles and tetrahedra, while the equations themselves are satisfied in a discontinuous Galerkin form with the boundary conditions being enforced weakly through a penalty term. Accuracy, stability, and convergence of the semidiscrete approximation to Maxwell's equations is established rigorously and bounds on the growth of the global divergence error are provided. Concerns related to efficient implementations are discussed in detail. This sets the stage for the presentation of examples, verifying the theoretical results, and illustrating the versatility, flexibility, and robustness when solving two- and three-dimensional benchmark problems in computational electromagnetics. Pure scattering as well as penetration is discussed and high parallel performance of the scheme is demonstrated.},
-   author = {J S Hesthaven and T Warburton},
-   doi = {https://doi.org/10.1006/jcph.2002.7118},
-   issn = {0021-9991},
-   issue = {1},
-   journal = {Journal of Computational Physics},
-   pages = {186-221},
-   title = {Nodal High-Order Methods on Unstructured Grids: I. Time-Domain Solution of Maxwell's Equations},
-   volume = {181},
-   year = {2002},
-}
-
 @article{Beck2014,
    abstract = {SUMMARYIn this paper, we investigate the accuracy and efficiency of discontinuous Galerkin spectral method simulations of under-resolved transitional and turbulent flows at moderate Reynolds numbers, where the accurate prediction of closely coupled laminar regions, transition and developed turbulence presents a great challenge to large eddy simulation modelling. We take full advantage of the low numerical errors and associated superior scale resolving capabilities of high-order spectral methods by using high-order ansatz functions up to 12th order. We employ polynomial de-aliasing techniques to prevent instabilities arising from inexact quadrature of nonlinearities. Without the need for any additional filtering, explicit or implicit modelling, or artificial dissipation, our high-order schemes capture the turbulent flow at the considered Reynolds number range very well. Three classical large eddy simulation benchmark problems are considered: a circular cylinder flow at ReD=3900, a confined periodic hill flow at Reh=2800 and the transitional flow over a SD7003 airfoil at Rec=60,000. For all computations, the total number of degrees of freedom used for the discontinuous Galerkin spectral method simulations is chosen to be equal or considerably less than the reported data in literature. In all three cases, we achieve an equal or better match to direct numerical simulation results, compared with other schemes of lower order with explicitly or implicitly added subgrid scale models. Copyright © 2014 John Wiley & Sons, Ltd.},
    author = {Andrea D Beck and Thomas Bolemann and David Flad and Hannes Frank and Gregor J Gassner and Florian Hindenlang and Claus-Dieter Munz},
@@ -936,4 +924,17 @@ and Armenio},
    title = {HipBone: A performance-portable GPU-accelerated C++ version of the NekBone benchmark},
    url = {https://arxiv.org/abs/2202.12477},
    year = {2022},
+}
+
+% Everything after this one 
+@article{Chan2016,
+   author = {Jesse Chan and Zheng Wang and Axel Modave and Jean-Francois Remacle and T Warburton},
+   doi = {10.1016/j.jcp.2016.04.003},
+   journal = {Journal of Computational Physics},
+   month = {8},
+   pages = {142-168},
+   publisher = {Elsevier BV},
+   title = {GPU-accelerated discontinuous Galerkin methods on hybrid meshes},
+   volume = {318},
+   year = {2016},
 }
