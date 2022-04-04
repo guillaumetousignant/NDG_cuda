@@ -618,10 +618,16 @@ the problem.
 \subsection{Polynomial order influence}\label{subsection:results:load_balancing_performance:polynomial_order}
 
 Figure~\ref{fig:N_influence} shows a comparison of the iteration time in function of the polynomial
-order \(N\) of an uniformly refined mesh. This shows how computing time scales on
-\acrshortpl{acr:GPU} with increasing \(N\), and could guide how elements should be weighted
-individually when performing load balancing, instead of being all weighted equally like they are in
-this work.
+order \(N\) of an uniformly refined mesh, both on the \acrshort{acr:CPU} and \acrshort{acr:GPU}.
+This shows how computing time scales on the two types of processors with increasing \(N\), and could
+guide how elements should be weighted individually when performing load balancing, instead of being
+all weighted equally like they are in this work. The test case was computed using the Narval
+supercomputer, using a grid with \(64\) elements in the \(x\) and \(y\) directions. The initial
+polynomial order of the mesh is indicated on the \(y\) axis, and the problem is advanced by \(1000\)
+iterations in all cases. \Acrshort{acr:AMR} is performed every \(100\) iterations, but there are
+enough elements that the mesh never refines, it only estimates the error. The \acrshort{acr:CPU}
+case is computed on a single \acrshort{acr:CPU} core, and the \acrshort{acr:GPU} case is computed on
+a single \acrshort{acr:GPU}.
 
 \begin{figure}[H]
 	\centering
@@ -630,14 +636,15 @@ this work.
 \end{figure}
 
 As seen in Figure~\ref{fig:N_influence}, the relation between iteration time and polynomial order
-\(N\) is nearly linear in this range. This is unexpected, as we expect the relation between
-polynomial order and computing time to be relative to \({\left( N + 1 \right)}^2\), as the number of
-nodes in an element is \({\left( N + 1 \right)}^2\). This my be explained by \acrshort{acr:GPU}
-favouring more arithmetically intense computations. As \(N\) increases, there are more compute
-operations to perform relative to other operations like scheduling and launching kernels, which may
-increase the workload of \acrshortpl{acr:GPU} and increase their performance. This has been observed
-to be caused by an increase in realisable \acrshort{acr:GPU} performance in GFLOPS when \(N\)
-increases, like by Chan et al.~\cite{Chan2016}.
+\(N\) on the \acrshort{acr:GPU} is closer to being linear in this range. This is unexpected, as we
+expect the relation between polynomial order and computing time to be relative to \({\left( N + 1
+\right)}^2\) like on the \acrshort{acr:CPU}, as the number of nodes in an element is \({\left( N + 1
+\right)}^2\). This my be explained by \acrshort{acr:GPU} favouring more arithmetically intense
+computations. As \(N\) increases, there are more compute operations to perform relative to other
+operations like scheduling and launching kernels, which may increase the workload of
+\acrshortpl{acr:GPU} and increase their performance. This has been observed to be caused by an
+increase in realisable \acrshort{acr:GPU} performance in GFLOPS when \(N\) increases, like by Chan
+et al.~\cite{Chan2016}.
 
 \section{Complex Case}\label{section:results:complex_application}
 
