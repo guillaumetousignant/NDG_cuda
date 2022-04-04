@@ -37,8 +37,8 @@ part becomes \(\tau \), the truncation error.
 Since we discard part of the spectrum, it is important that the retained polynomial terms capture
 the essential parts of the solution. We therefore want the weights to decay as fast as possible.
 This will be a characteristic of the polynomials we choose. For example, Fourier series, Legendre
-polynomials and Chebyshev polynomials have been proved~\cite{Kopriva2009} to have exponentially
-decaying coefficients, giving them spectral accuracy.
+polynomials and Chebyshev polynomials have been proven~\cite{Kopriva2009} to have exponentially
+decaying coefficients for smooth functions \(f(x)\), giving them spectral accuracy.
 
 \subsection{Basis functions}\label{subsection:spectral_element_method:spectral_approximation:basis_functions}
 
@@ -88,7 +88,7 @@ and Chebyshev polynomials are more practical. Legendre polynomials have a weight
 
 \begin{figure}[H]
 	\centering
-	\includesvg[width=0.8\textwidth]{Chapter_spectral_element_method/media/polynomials}
+	\includesvg[width=0.9\textwidth]{Chapter_spectral_element_method/media/polynomials}
 	\caption{Legendre polynomials: The first six Legendre polynomials.}\label{fig:polynomials}
 \end{figure}
 
@@ -150,7 +150,7 @@ Figure~\ref{fig:interpolants} displays the interpolating polynomials of degree f
 
 \begin{figure}[H]
 	\centering
-	\includesvg[width=0.8\textwidth]{Chapter_spectral_element_method/media/interpolants}
+	\includesvg[width=0.9\textwidth]{Chapter_spectral_element_method/media/interpolants}
 	\caption{Polynomial interpolation: The Lagrange integrating polynomials of degree five.}\label{fig:interpolants}
 \end{figure}
 
@@ -292,7 +292,7 @@ one on the control volume \(V\) and one on the surface \(S\) of said volume.
 \end{equation}
 
 \noindent
-Where \(\widehat{n}\) is the surface normal vector, pointing outwards.
+where \(\widehat{n}\) is the surface normal vector, pointing outwards.
 
 \section{\glsentryshort{acr:DG-SEM}}\label{section:spectral_element_method:dg_sem}
 
@@ -322,11 +322,12 @@ discontinuous at their boundaries. These discontinuities are then counterbalance
 elements. Hesthaven and Warburton~\cite{Hesthaven2007} give a comprehensive reference on the
 discontinuous Galerkin methods. The present work follows the derivations from
 Kopriva~\cite{Kopriva2009} for the \acrshort{acr:DG-SEM}. This method is especially well suited for
-the intended work on \acrshortpl{acr:GPU}. It is accurate and geometrically flexible. It is also
-easy to parallelise, as the discontinuities between elements make them independent. Each element can
-be computed independently in parallel, then the fluxes are also computed in parallel. The flux
-formulation also simplifies working with non-conforming interfaces, such as those resulting of
-\acrlong{acr:AMR}, as seen in Section~\ref{section:adaptive_mesh_refinement:mortar_element_method}.
+the intended work on \acrshortpl{acr:GPU}. It is highly accurate and geometrically flexible. It is
+also easy to parallelise, as the discontinuities between elements make them independent. Each
+element can be computed independently in parallel, then the fluxes are also computed in parallel.
+The flux formulation also simplifies working with non-conforming interfaces, such as those resulting
+of \acrlong{acr:AMR}, as described in
+Section~\ref{section:adaptive_mesh_refinement:mortar_element_method}.
 
 We start by deriving the discontinuous Galerkin approximation for a simple 2D domain spanning
 \(\left[ -1, 1 \right] \times \left[ -1, 1 \right]\) shown in Figure~\ref{fig:simple_domain}.
@@ -345,7 +346,7 @@ form.
 	\mathfrak{F} \approx \mathbf{F} = \sum_{i = 0}^{N} \sum_{j = 0}^{N} \left ( \mathbf{F}_{i j} \widehat{x} + \mathbf{G}_{i j}\widehat{y}\right ) l_i(x) l_j(y)
 \end{gather}
 
-Where \(\mathbf{F}_{i j} \widehat{x} + \mathbf{G}_{i j}\widehat{y} = B \mathbf{Q}_{i j}\widehat{x}
+where \(\mathbf{F}_{i j} \widehat{x} + \mathbf{G}_{i j}\widehat{y} = B \mathbf{Q}_{i j}\widehat{x}
 + C \mathbf{Q}_{i j}\widehat{y}\). 
 
 We rewrite Equation~\ref{equ:2d_wave_conservation} in weak form, using the test functions \(v\).
@@ -398,7 +399,8 @@ Equation~\ref{equ:2d_wave_inner_product}'s second term. Green's first identity i
     \int_{\Omega} \bigtriangledown \phi \cdot \mathbf{X} + \phi \bigtriangledown \cdot \mathbf{X} d\Omega = \oint _{S} \phi \mathbf{X} \cdot \widehat{n} dS
 \end{equation}
 
-Where \(\Omega \) is the domain, and \(S\) is that domain's boundary. \(\phi \) is a scalar
+\noindent
+where \(\Omega \) is the domain, and \(S\) is that domain's boundary. \(\phi \) is a scalar
 function, and \(\mathbf{X}\) is a vector field. \(\widehat{n}\) is the boundary's normal vector,
 pointing outwards. Applied to Equation~\ref{equ:2d_wave_inner_product}'s second term, we obtain:
 
@@ -413,12 +415,14 @@ The complete equation becomes:
     \left( \mathbf{Q}_t, \phi_{i j} \right) + \oint_{S}\phi_{i j} \mathbf{F}^* \cdot \widehat{n}dS - \int_{-1}^{1}\int_{-1}^{1} \mathbf{F} \cdot \bigtriangledown \phi_{i j} dx dy = 0.
 \end{equation}
 
+\noindent
 The boundary conditions are weakly enforced using fluxes \(\mathbf{F}^*\), as explained in
 Subsection~\ref{subsection:spectral_element_method:dg_sem:fluxes}. 
 
 We then need to evaluate the integrals. A distinction is made between the interior terms that are
-evaluated using the collocation points within an element, and the boundary term which uses
-collocation points on the element boundaries.
+evaluated using the collocation points within an element shown in lilac in
+Figure~\ref{fig:domain_nodes}, and the boundary term which uses collocation points on the element
+boundaries, shown in blue.
 
 \begin{figure}[H]
 	\centering
@@ -524,17 +528,16 @@ computation of the fluxes \(\mathbf{F}^*\).
 
 \subsection{Fluxes}\label{subsection:spectral_element_method:dg_sem:fluxes}
 
-We now need to compute the numerical fluxes \(\mathbf{F}^*\) as a way to approximate the physical
-fluxes \(\mathfrak{F}\). We recall the formulation for the fluxes from
-Equation~\ref{equ:2d_wave_integral}. The flux derivation can be found in more detail
-in~\cite{Kopriva2009}.
+We now need to compute the numerical fluxes \(\mathbf{F}^*\) to approximate the physical fluxes
+\(\mathfrak{F}\). We recall the formulation for the fluxes from Equation~\ref{equ:2d_wave_integral}.
+The flux derivation can be found in more detail in~\cite{Kopriva2009}.
 
 \begin{equation} \label{equ:physical_fluxes}
 	\mathfrak{F} \cdot \widehat{n} = \mathbf{f} n_x + \mathbf{g} n_y = (B n_x + C n_y) \mathbf{q} = A \mathbf{q}
 \end{equation}
 
 \noindent
-With matrices \(B\) and \(C\) taken from Equation~\ref{equ:2d_wave_matrix}.
+with matrices \(B\) and \(C\) taken from Equation~\ref{equ:2d_wave_matrix}.
 
 \begin{equation}
 	B = \begin{bmatrix}
@@ -759,6 +762,7 @@ Finally, multiplying by \(S\), we get the full numerical flux:
     \end{bmatrix}.
 \end{equation}
 
+\noindent
 The superscripts \(L\) and \(R\) indicate which state is used, according to
 Equation~\ref{equ:flux_states}. 
 
@@ -837,7 +841,8 @@ This method is an explicit time stepping method, therefore we have to fulfill th
 	\left| \frac{c \Delta t}{\Delta x} \right| \leq \CFL
 \end{equation}
 
-Where the \(\CFL \) number is usually 1. As we have a higher-order time integration scheme, the
+\noindent
+where the \(\CFL \) number is usually 1. As we have a higher-order time integration scheme, the
 \(\CFL \) number can be increased above this number~\cite{Gottlieb2001}.
 
 To account for the uneven spacing between the collocation points inside an element, we will estimate
@@ -847,7 +852,8 @@ the smallest spacing in an element as:
     \Delta x = \frac{\Delta x_k}{N^2}
 \end{equation}
 
-Where \(\Delta x_k\) is the length of element \(k\), and \(N\) is the polynomial order of that
+\noindent
+where \(\Delta x_k\) is the length of element \(k\), and \(N\) is the polynomial order of that
 element. The global timestep will be chosen as the minimum timestep of all elemental timesteps. 
 
 \begin{equation}
@@ -863,7 +869,7 @@ element. The global timestep will be chosen as the minimum timestep of all eleme
 \subsection{Fluxes}\label{subsection:spectral_element_method:implementation:fluxes}
 
 Algorithm~\ref{alg:wave_fluxes} shows how fluxes are computed on the \acrshort{acr:GPU}. This
-function is a good exemple of measures that have to be taken in order to avoid race condition when
+function is a good example of measures that have to be taken in order to avoid race conditions when
 performing computations in parallel on \acrshortpl{acr:GPU}. In most of the program, we parallelise
 over elements, with each thread performing computations on elements. When computing fluxes, both
 elements on either side of a face add their contribution to the face. In addition, an element can
@@ -876,7 +882,7 @@ threaded \acrshort{acr:CPU} programs.
 
 To remedy this, we parallelise over faces for the flux computation. Earlier computations, also
 parallelised over faces, project the boundary solution of both elements to two solution arrays, left
-and right, in the face objects. The flux computation can then compute the fluxes and store it in a
+and right, in the face objects. The flux computation can then compute the fluxes and store them in a
 single flux solution array in the face objects. Afterwards, we will be able to once again
 parallelise on elements to project these fluxes back to the elements, and continue the normal
 execution of the program.
