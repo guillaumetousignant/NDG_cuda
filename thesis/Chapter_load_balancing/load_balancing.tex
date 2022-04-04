@@ -7,7 +7,7 @@ Chapter~\ref{chapter:adaptive_mesh_refinement}, the mesh elements can increase t
 order and split into multiple smaller elements in areas where the solution accuracy is estimated to
 be unsatisfactory. Unless the regions of interest happen to be evenly distributed between the
 different processes, this will lead to an imbalance as some processes are left with more elements,
-or higher-order elements, within their domain.
+or higher-order elements, within their domain as illustrated in Figure~\ref{fig:load_imbalance_lb}.
 
 \begin{figure}[H]
 	\centering
@@ -86,7 +86,7 @@ re-number elements when the mesh refines.
 We choose a table-driven algorithm to generate meshes. Each element has one of four possible states
 \(s\): \(s \in \left \{H, A, R, B \right \} \). This state determines the state and ordering of the
 four children elements obtained when increasing the level of the curve. The four states and their
-resulting children are shown in the following figure.
+resulting children are shown in Figure~\ref{fig:hilbert_splits}.
 
 \begin{figure}[H]
 	\centering
@@ -99,7 +99,7 @@ resulting children are shown in the following figure.
 	\subfloat[R splitting: \newline \(B, R, R, A\)]
 	{\includesvg[width=0.23\textwidth]{Chapter_load_balancing/media/hilbert_split_R}\label{fig:hilbert_split_R}}
 	\hfill
-	\subfloat[B splitting: \newline \(R, B, R, H\)]
+	\subfloat[B splitting: \newline \(R, B, B, H\)]
 	{\includesvg[width=0.23\textwidth]{Chapter_load_balancing/media/hilbert_split_B}\label{fig:hilbert_split_B}}
 	\caption{The four states splitting, with their children's state and ordering.}\label{fig:hilbert_splits}
 \end{figure}
@@ -172,7 +172,7 @@ of the children, \(P(s, j)\).
 This table-driven approach has the added benefit of working seamlessly in parallel, as each element
 can generate its children using nothing more than its own order.
 
-Without \acrlong{acr:AMR}, no more work is needed. The elements wouldn't even need to store their
+Without \acrlong{acr:AMR}, no more work is needed. The elements do not even need to store their
 state, as the compact numbering of the elements is the result of the Hilbert curve. The mesh
 generator included with the program works this way, creating a uniform power of two sized 2D mesh
 numbered according to the Hilbert curve. The mesh generator uses the standard \acrshort{acr:CGNS}
@@ -185,7 +185,9 @@ then be used by the main program running on multiple \acrshortpl{acr:GPU}.
 
 The same iterative process is used to refine elements. The parent state dictates the state and
 ordering of its children. Correct ordering is critical to maintaining good locality between elements
-as the mesh refines and non-conforming interfaces are created.
+as the mesh refines and non-conforming interfaces are created. Figure~\ref{fig:hilbert_refining}
+shows a mesh block refining, where the sixth element splits into four smaller elements. The ordering
+of the children elements must follow the Hilbert curve to maintain the locality of the mesh.
 
 \begin{figure}[H]
 	\centering
@@ -529,8 +531,6 @@ this proves to be a significant problem, Section~\ref{section:conclusion:future_
 using weights for elements, and a way to relate polynomial order to the weight. 
 
 \section{Reconstruction}\label{section:load_balancing:reconstruction}
-% Having no state
-% What is sent
 
 Now that we have a way to repartition work, the reconstruction of the mesh can begin. Each
 \acrshort{acr:GPU} worker shares its number of elements with \(MPI\_Allgather\), so that every worker
@@ -611,29 +611,28 @@ used in Subsection~\ref{subsection:adaptive_mesh_refinement:implementation:movin
 references to these faces and elements are updated.
 
 Figures~\ref{fig:lb_before} and~\ref{fig:lb_after} illustrate an example of the whole load balancing
-process, where two processes initially have an unbalanced number of elements. The domain spans \(x,
-y \in [0, 1]\) and the elements making up that domain are split between two processes, running on
-two \acrshortpl{acr:GPU}. Earlier mesh refinement has occurred, creating a load imbalance between
-the two processes.
+process, where two processes initially have an unbalanced number of elements because of a prior
+refinement. The domain spans \(x, y \in [0, 1]\) and the elements making up that domain are split
+between two \acrshortpl{acr:GPU}. 
 
 \begin{figure}[H]
 	\centering
 	\subfloat[Process 0]
 	{\includesvg[width=0.3\textwidth]{Chapter_load_balancing/media/mesh_0_before0_lb}\label{fig:lb_before_0}}
-	\hfill
+	\qquad
 	\subfloat[Process 1]
 	{\includesvg[width=0.3\textwidth]{Chapter_load_balancing/media/mesh_1_before0_lb_legend}\label{fig:lb_before_1}}
-	\caption{Mesh before load balancing: The two blocks have different numbers of elements. (a) First process (b) Second process}\label{fig:lb_before}
+	\caption{Mesh before load balancing: The two blocks have different numbers of elements.}\label{fig:lb_before}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\subfloat[Process 0]
 	{\includesvg[width=0.3\textwidth]{Chapter_load_balancing/media/mesh_0_after0_lb}\label{fig:lb_after_0}}
-	\hfill
+	\qquad
 	\subfloat[Process 1]
 	{\includesvg[width=0.6\textwidth]{Chapter_load_balancing/media/mesh_1_after0_lb_legend}\label{fig:lb_after_1}}
-	\caption{Mesh after load balancing: The two blocks have an equal numbers of elements. (a) First process (b) Second process}\label{fig:lb_after}
+	\caption{Mesh after load balancing: The two blocks have an equal numbers of elements.}\label{fig:lb_after}
 \end{figure}
 
 \section{Load Balancing Criteria}\label{section:load_balancing:criteria}
@@ -641,21 +640,21 @@ the two processes.
 Dynamic load balancing is a costly process, especially when using \acrshortpl{acr:GPU}. Transfers
 between \acrshortpl{acr:GPU} are expensive, as is reallocating memory for arrays that change size.
 Load balancing at every occasion would needlessly waste resources than could be used to solve the
-program. A balance has to be established between having an optimal mesh for a longer part of the
+program. A balance has to be established between having a good quality mesh for a longer part of the
 computation against load balancing less often and saving the load balancing processing time.
 
 Two approaches are studied in this work to alleviate this problem. The first approach is to load
-balance the mesh at an interval. If the mesh is not refined after each \acrshort{acr:AMR} step, but
-every few \acrshort{acr:AMR} steps, computation time can be saved on the load balancing routine. On
-the other hand, the mesh may be unbalanced between these steps. If a particularly large number of
-elements are refined at a time, a significant load imbalance can persist until the next load
-balancing step.
+balance the mesh at a regular interval. If the mesh is not refined after each \acrshort{acr:AMR}
+step, but every few \acrshort{acr:AMR} steps, computation time can be saved on the load balancing
+routine. On the other hand, the mesh may be unbalanced between these steps. If a particularly large
+number of elements are refined at a time, a significant load imbalance can persist until the next
+load balancing step.
 
 The second approach is to set an acceptable load imbalance, under which the mesh will not be load
 balanced. After refining, if the load imbalance \(L\) is below that threshold, the mesh will not be
 load balanced. This means that the mesh will only be load balanced when it is really needed. The
 disadvantage is that the load imbalance could stay slightly below that threshold indefinitely,
-leaving the program with a slightly non-optimal mesh for large parts of its runtime.
+leaving the program with a slightly imbalanced mesh for large parts of its runtime.
 
 The two approaches are compared in Section~\ref{section:results:load_balancing_performance}.
 
@@ -677,8 +676,8 @@ should receive from which other worker.
 As mentioned previously, element solution is stored in dynamic \acrshort{acr:GPU} memory, and cannot
 be copied directly to the \acrshort{acr:CPU}. A kernel is launched to copy that data to an array
 which can then be copied to the \acrshort{acr:CPU}. Algorithm~\ref{alg:get_transfer_solution} shows
-how that data is packed in the solution array to be sent between workers. The value of the four
-nodes of each element is also stored, as well as the number of neighbours on each side. The data is
+how that data is packed in the solution array to be sent between workers. The values of the four
+nodes of each element are also stored, as well as the number of neighbours on each side. The data is
 aligned to the maximum polynomial order used by the program, so that elements can store their
 solution in parallel without knowledge of other elements' polynomial order. This wastes space as
 most elements do not use the entire space they are assigned to in the transfer arrays. Since this
@@ -730,12 +729,12 @@ data was packed, this tradeoff is accepted.
 Elements can have an arbitrary number of neighbours, therefore neighbour data cannot be staggered in
 the same way as solution data. This is why we need to transfer the number of neighbours on each side
 of elements, so as to generate the neighbour information arrays with the correct size, and to
-generate offset arrays so each element stores its neighbour data in the correct emplacement. The
+generate offset arrays so each element stores its neighbour data in the correct memory location. The
 neighbour data fetch kernel is much more complicated than Algorithm~\ref{alg:get_transfer_solution},
 but operates similarly. The main difference is that neighbour data is not readily available if a
 neighbour is a boundary element. In that case the different boundary condition and
 \acrshort{acr:MPI} interface arrays are searched to find which one the boundary element belongs to,
-and find the required information that way. This is because boundary elements part of an
+and find the required information that way. This is because boundary elements that are part of an
 \acrshort{acr:MPI} interface must present the local index and process of the element on the other
 side of the interface, and boundary condition boundary elements must encode which kind of boundary
 condition they are.
@@ -782,7 +781,7 @@ data members from the element object are sent.
 \subsection{Mesh reconstruction}\label{subsection:load_balancing:implementation:reconstruction}
 
 Once all elements to be transferred and their neighbour information have been sent and received, the
-mesh must me reconstructed. This is the more difficult par of the process, as many edge cases exist.
+mesh must be reconstructed. This is the more difficult par of the process, as many edge cases exist.
 An example operation is the \textbf{find\_faces\_to\_delete} kernel, showcased in
 Algorithm~\ref{alg:find_faces_to_delete}, which marks faces without any remaining domain elements as
 neighbours for deletion.
@@ -820,20 +819,20 @@ neighbours for deletion.
 \caption{\textbf{find\_faces\_to\_delete:} Faces with no remaining domain neighbour elements are marked for deletion.}\label{alg:find_faces_to_delete}
 \end{algorithm}
 
-This algorithm provides part of the foundation of the part of load balancing concerning faces, but
+This algorithm provides part for the foundation of the part of load balancing concerning faces, but
 is only the start. Faces need to be moved to a new index to remove the gaps from deleted faces. We
 then need to update the face indices in all elements, and resize the elements' neighbour faces
 arrays if some of the faces have been deleted. New faces have to be added to the face array to
 connect the new received elements to the mesh.
 
-Ghost elements can be marked for deletion is all the faces connecting them to the domain are to be
-deleted, except in two special cases. Ghost elements part of an \acrshort{acr:MPI} interfaces need
-to be deleted if the element on the other side of the interface is sent to the process containing
-the boundary element. Algorithm~\ref{alg:find_mpi_interface_elements_to_delete} shows a kernel that
-is launched specially to deal with this edge case. Also, boundary elements can be marked for
-deletion because no domain element connects them anymore, but some received elements could connect
-to them. Another kernel, shown in Algorithm~\ref{alg:find_mpi_interface_elements_to_keep}, is
-launched to deal with this case.
+Ghost elements can be marked for deletion if all the faces connecting them to the domain are to be
+deleted, except in two special cases. Ghost elements that are part of an \acrshort{acr:MPI}
+interface need to be deleted if the element on the other side of the interface is sent to the
+process containing the boundary element. Algorithm~\ref{alg:find_mpi_interface_elements_to_delete}
+details a kernel that is launched specially to deal with this edge case. Also, boundary elements can
+be marked for deletion because no domain element connects them anymore, but some received elements
+could connect to them. Another kernel, shown in
+Algorithm~\ref{alg:find_mpi_interface_elements_to_keep}, is launched to deal with this case.
 
 \begin{algorithm}[H]
     \begin{cuda}
@@ -900,13 +899,13 @@ launched to deal with this case.
 \caption{\textbf{find\_mpi\_interface\_elements\_to\_keep:} \Acrshort{acr:MPI} interface elements should be kept if a received element now connects to it.}\label{alg:find_mpi_interface_elements_to_keep}
 \end{algorithm}
 
-This exemple is presented to show that the apparent simplicity of
-Algorithm~\ref{alg:find_faces_to_delete} is complicated when all the edge cases of a mesh
-dynamically changing are factored in. Adding to the complexity is the fact that the
-\acrshort{acr:GPU} workers only have knowledge of their own mesh block, as well as the neighbour
-information of the received elements. The different computations are also executed in parallel on
-the \acrshort{acr:GPU}, since each \acrshort{acr:GPU} is paired with a single \acrshort{acr:CPU}
-which would bottleneck heavily the process if it was used for all calculations.
+This example is presented to show that the apparent simplicity of
+Algorithm~\ref{alg:find_faces_to_delete} is complicated when all the edge cases of a dynamically
+changing mesh are factored in. Adding to the complexity is the fact that the \acrshort{acr:GPU}
+workers only have knowledge of their own mesh block, as well as the neighbour information of the
+received elements. The different computations are also executed in parallel on the
+\acrshort{acr:GPU}, since each \acrshort{acr:GPU} is paired with a single \acrshort{acr:CPU} which
+would heavily bottleneck the process if it was used for all calculations.
 
 Many more operations remain, such as moving elements that are not deleted to their new position in
 the array, adding received elements, adding boundary elements around received elements, and updating
