@@ -144,10 +144,10 @@ load_balancing_threshold_baseline_t = np.array([274.359, 4962.06, 59061.9])
 best_T = 3
 
 # N scaling
-N_scaling_N_cpu = np.array([4, 6, 8, 10, 12])
-N_scaling_N_gpu = np.array([4, 6, 8, 10, 12])
-N_scaling_t_cpu = np.array([0.291472, 0.498982, 0.745515, 1.09424, 1.58982])
-N_scaling_t_gpu = np.array([0.15488, 0.317389, 0.719253, 1.17563, 1.82356])
+N_scaling_N_cpu = np.array([4, 6, 8, 10, 12, 14, 16])
+N_scaling_N_gpu = np.array([4, 6, 8, 10, 12, 14, 16])
+N_scaling_t_cpu = np.array([40.1137, 71.5033, 108.358, 192.504, 257.458, 349.042, 490.11])
+N_scaling_t_gpu = np.array([2.14944, 4.13552, 8.07533, 12.7138, 18.2212, 26.0583, 33.3919])
 
 # Plots
 save_path = Path(__file__).parent.parent / "media"
