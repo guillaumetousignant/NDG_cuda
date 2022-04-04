@@ -1,8 +1,4 @@
 \chapter{Adaptive Mesh Refinement}\label{chapter:adaptive_mesh_refinement} 
-% Something about move semantics
-% No coarsening
-% Adaptivity triggers
-% Mortar here
 
 Computers constantly increase in power, thanks to incremental progress made on known processes and
 new architectures such as those described in Chapter~\ref{chapter:graphics_processing_units}.
@@ -11,7 +7,8 @@ increased in step with the available resources. It is still necessary to careful
 limited resources in order to maximise the efficiency of simulations. Some flow regions may be more
 interesting or harder to compute, benefiting from an increase in resolution. On the other hand, some
 flow regions may have less happening in them or be easier to compute, and a decrease in resolution
-may be acceptable.
+may be acceptable. An example is Figure~\ref{fig:mesh_refinement}, where the areas near the wave in
+red have been refined.
 
 \begin{figure}[H]
 	\centering
@@ -52,8 +49,8 @@ where all threads of a block execute the same instruction. Refining the mesh mov
 can introduce additional branching if the elements have different polynomial orders or
 non-conforming interfaces. The refinement process itself is also hard to implement on
 \acrshortpl{acr:GPU}, as elements must either move, change their polynomial order or split into
-multiple elements in parallel. If the different threads are not perfectly coordinated, risk the
-chance of operating on the same destination memory location, creating race conditions.
+multiple elements in parallel. If the different threads are not perfectly coordinated, we risk
+operating on the same destination memory location, creating race conditions.
 
 When solving problems in parallel, the mesh will be split into blocks, each assigned to a process
 and its \acrshort{acr:GPU}. As the mesh is refined, it is possible that the blocks are refined
@@ -71,9 +68,11 @@ Chapter~\ref{chapter:load_balancing}.
 
 The first refinement strategy is p-refinement. When refining this way, elements increase their
 polynomial order to increase their resolution. The lower-order solution is projected to the
-higher-order collocation points. In this work, the polynomial order in increased in steps of 2, and
-is required to be identical in the x and y directions. These restrictions are not necessary but are
-implemented to simplify programming and increase GPU efficiency.
+higher-order collocation points. Figure~\ref{fig:p-refinement} shows the collocation points before
+and after an element is refined from a \(N\) of four to six. In this work, the polynomial order is
+increased in steps of 2, and is required to be identical in the x and y directions. These
+restrictions are not necessary but are implemented to simplify programming and increase GPU
+efficiency.
 
 \begin{figure}[H]
 	\centering
@@ -85,8 +84,9 @@ implemented to simplify programming and increase GPU efficiency.
 
 The second refinement strategy is h-refinement\@. h-refinement splits single elements into several
 elements occupying the same space. In this work we exclusively deal with quadrilaterals, and these
-elements split into four smaller elements when h-refining for the same reasons as stated above. The
-solution is projected from the initial big element to each of the four offspring elements.
+elements split into four smaller elements when h-refining as shown in Figure~\ref{fig:h-refinement}
+for the same reasons as stated above. The solution is projected from the initial big element to each
+of the four offspring elements.
 
 \begin{figure}[H]
 	\centering
@@ -100,12 +100,6 @@ In order to maximise computation efficiency, both p-refinement and h-refinement 
 An hp-adaptive program uses either p-refinement or h-refinement on an element-by-element basis,
 depending on which is expected to reduce error the most. The choice between the two methods is
 detailed in Section~\ref{section:adaptive_mesh_refinement:refinement_criteria}.
-
-\begin{figure}[H]
-	\centering
-	\includesvg[width=0.6\textwidth]{Chapter_adaptive_mesh_refinement/media/hp-adaptivity_N4_N6}
-	\caption{2D hp-refinement: Refinement of elements creates non-conforming interfaces.}\label{fig:hp-refinement}
-\end{figure}
 
 Once the mesh has been refined, it is possible that the interfaces between elements become
 non-conforming. Each interface is made up of two element edges on either side of the interface,
@@ -125,12 +119,8 @@ Section~\ref{section:adaptive_mesh_refinement:mortar_element_method}.
 
 \begin{figure}[H]
 	\centering
-	\subfloat[Mesh before refining]
-	{\includegraphics[width=0.45\textwidth]{Chapter_adaptive_mesh_refinement/media/load_imbalance_initial}\label{fig:mesh_imbalance_initial}}
-	\hfill
-	\subfloat[Mesh after refining]
-	{\includegraphics[width=0.45\textwidth]{Chapter_adaptive_mesh_refinement/media/load_imbalance}\label{fig:mesh_imbalance_after_refinement}}
-	\caption{Load imbalance: The elements have split unequally in the two worker \acrshortpl{acr:GPU}, denoted in purple and blue, one having a higher computational load. (a) Before refining (b) After refining}\label{fig:load_imbalance}
+	\includesvg[width=0.6\textwidth]{Chapter_adaptive_mesh_refinement/media/hp-adaptivity_N4_N6}
+	\caption{2D hp-refinement: Refinement of elements creates non-conforming interfaces.}\label{fig:hp-refinement}
 \end{figure}
 
 The implication of \acrshort{acr:AMR} in the context of high performance computing, the central
@@ -150,6 +140,16 @@ between \acrshortpl{acr:CPU}, and finally back from the \acrshortpl{acr:CPU} to 
 process, and improving locality of the elements will help reduce the runtime of that part of the
 computation. This is known as dynamic load balancing, and Chapter~\ref{chapter:load_balancing} is
 dedicated to solving this problem.
+
+\begin{figure}[H]
+	\centering
+	\subfloat[Mesh before refining]
+	{\includegraphics[width=0.45\textwidth]{Chapter_adaptive_mesh_refinement/media/load_imbalance_initial}\label{fig:mesh_imbalance_initial}}
+	\hfill
+	\subfloat[Mesh after refining]
+	{\includegraphics[width=0.45\textwidth]{Chapter_adaptive_mesh_refinement/media/load_imbalance}\label{fig:mesh_imbalance_after_refinement}}
+	\caption{Load imbalance: The elements have split unequally in the two worker \acrshortpl{acr:GPU}, denoted in purple and blue, one having a higher computational load. (a) Before refining (b) After refining}\label{fig:load_imbalance}
+\end{figure}
 
 \section{Error Estimation}\label{section:adaptive_mesh_refinement:error_estimation}
 
@@ -249,10 +249,11 @@ the exponential decay as follows
 
 \noindent
 by least squares best fit to the existing calculated modes \(a_n, n = 0 \cdots N\).
-Figure~\ref{fig:sin_read_modes} shows an example with the modes of the smooth function \(u = \sin(\pi
-x)\) with a polynomial order \(N = 15\). It can be observed that the decay of the modes start
-slowly, but decays exponentially after the first few modes. Figure~\ref{fig:sin_computed_modes}
-shows the modeled \(a_n\), with the dotted line being the slope \( \sigma \).
+Figure~\ref{fig:sin_read_modes} shows an example with the modes of the smooth function \(u =
+\sin(\pi x)\) with a polynomial order \(N = 15\). It can be observed that the decay of the modes
+starts slowly, but becomes exponential after the first few modes.
+Figure~\ref{fig:sin_computed_modes} shows the modeled \(a_n\), with the dotted line being the slope
+\( \sigma \).
 
 \begin{figure}[H]
 	\centering
@@ -298,15 +299,15 @@ respectively. The \(x\) data is the mode number \(n = 0 \cdots N\), and the \(y\
 modes in log form, \( \log(a_n) \).The error decay slope becomes \(\sigma = - \beta \), and the constant becomes \(C =
 e^\alpha \).
 
-Back to the error estimation, we can replace the sums of~\ref{equ:error_norm_1D}
+Coming back to the error estimation, we can replace the sums of~\ref{equ:error_norm_1D}
 and~\ref{equ:error_norm_2D} by integrals since the behaviour of the modes is known as an analytic
 function of \(n\).
 
 \begin{align}
-	&1D: \quad \tau_{est} = \sqrt{\sum_{n = N + 1}^{\infty } \frac{\widetilde{a}_n^2}{\frac{2n + 1}{2}}} 
+	&{in}\ 1D: \quad \tau_{est} = \sqrt{\sum_{n = N + 1}^{\infty } \frac{\widetilde{a}_n^2}{\frac{2n + 1}{2}}} 
 			   \Rightarrow \sqrt{\int_{N + 1}^{\infty } a_n^2 dn}, \label{equ:error_1D}
 	\\
-	&2D: \quad \tau_{est} = \sqrt{\sum_{n = N + 1}^{\infty }\sum_{m = M + 1}^{\infty}\frac{\widetilde{a}^2_{nm}}{\frac{(2n + 1)(2m + 1)}{2^2}}}
+	&{in}\ 2D: \quad \tau_{est} = \sqrt{\sum_{n = N + 1}^{\infty }\sum_{m = M + 1}^{\infty}\frac{\widetilde{a}^2_{nm}}{\frac{(2n + 1)(2m + 1)}{2^2}}}
 			   \Rightarrow \sqrt{\int_{M+1}^{\infty }\int_{N + 1 }^{\infty}{(a_{nm})}^2 dn dm} \label{equ:error_2D}
 \end{align}
 
@@ -446,6 +447,8 @@ Section~\ref{chapter:spectral_element_method}.
 
 \subsection{Projection from Element to Mortar}\label{subsection:adaptive_mesh_refinement:mortar_element_method:element_to_mortar}
 
+Consider the projection two elements and a face as shown in Figure~\ref{fig:element_to_mortar}.
+
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_adaptive_mesh_refinement/media/element_to_mortar_N4_N6}
@@ -485,7 +488,7 @@ we get a relation for the boundary and projected solutions.
 Or, in matrix form:
 
 \begin{equation}
-	M \Psi = S U
+	M \Psi = S U.
 \end{equation}
 
 We can isolate the projected solution.
@@ -569,15 +572,18 @@ The projection operation from element to faces is therefore:
 
 \subsection{Projection from Mortar to Element}\label{subsection:adaptive_mesh_refinement:mortar_element_method:mortar_to_element}
 
+After projecting the element boundary solution to the faces, the fluxes can be computed on the
+faces. The result then needs to be projected back to the element boundaries to be useful in
+subsequent calculations. Figure~\ref{fig:mortar_to_element} shows two faces projecting their fluxes
+to three elements.
+
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.6\textwidth]{Chapter_adaptive_mesh_refinement/media/mortar_to_element_N4_N6}
 	\caption{Mortar to Element projection: The faces' values are projected to the elements.}\label{fig:mortar_to_element}
 \end{figure}
 
-After projecting the element boundary solution to the faces, the fluxes can be computed on the
-faces. The result then needs to be projected back to the element boundaries to be useful in
-subsequent calculations. The projection from faces to elements is slightly more complicated than the
+The projection from faces to elements is slightly more complicated than the
 other way around because we defined faces to have the size of the smallest elements they connect to.
 This means that while each face can only have one element on either side, elements can have multiple
 faces on each of their sides. The flux solution must then be projected from multiple faces onto each
@@ -586,8 +592,8 @@ element edge.
 This time, we take the element coordinates as a basis, \(s \in [-1, 1]\). The coordinate change is
 the inverse of that of the element to face projection, \(z = \frac{s - a}{b}\). Here \(\Phi \) is
 the computed flux on the face, and \(F\) is the projection on the element side. As in the last
-subsection, we require that the integral of the error between the flux solution and its projection
-multiplied by the test function, the Lagrange polynomials here, be zero.
+subsection, we require that the integral of the error between the flux solution and its projection,
+multiplied by the test function, be zero. We also use the Lagrange polynomials as test functions.
 
 \begin{equation} \label{equ:zero_error_to_element}
 	\int_{-1}^{o'} \left( F(s) - \Phi (\frac{s - a}{b}) \right) l_j^\Omega(s)ds + \\
@@ -622,7 +628,7 @@ Incorporating those in Equation~(\ref{equ:zero_error_to_element_rewritten}):
 \begin{equation} 
 	\begin{aligned}
 		\int_{-1}^{1}F(s_m)l_m^\Omega(s) l_j^\Omega(s)ds &= \int_{-1}^{o'} \Phi(\frac{s_m -a}{b})l_m^\Xi(\frac{s -a}{b}) l_j^\Omega(s)ds \\
-		&+ \int_{o'}^{1} \Phi(\frac{s_m -a}{b})l_m^\Xi(\frac{s -a}{b}) l_j^\Omega(s)ds
+		&+ \int_{o'}^{1} \Phi(\frac{s_m -a}{b})l_m^\Xi(\frac{s -a}{b}) l_j^\Omega(s)ds.
 	\end{aligned}
 \end{equation}
 
@@ -630,7 +636,7 @@ Incorporating those in Equation~(\ref{equ:zero_error_to_element_rewritten}):
 Or in matrix form:
 
 \begin{equation} 
-	MF = S \Phi
+	MF = S \Phi.
 \end{equation}
 
 \noindent
@@ -655,8 +661,8 @@ The \(M\) matrix is the same as for the element to face projection.
 \end{equation}
 
 \noindent
-The \(S\) matrix needs a change of referential from element space \(s\) to face space \(z\) to have
-it integrate on faces.
+The \(S\) matrix needs a change of reference from element space \(s\) to face space \(z\) in order
+to integrate on faces.
 
 \begin{equation}
 	\int_{-1}^{o'} \Phi(\frac{s_m -a}{b})l_m^\Xi(\frac{s -a}{b}) l_j^\Omega(s)ds
@@ -698,11 +704,12 @@ The projection operation from faces to elements is therefore:
 
 When initial conditions are applied to a coarse mesh, some error is introduced to the problem. This
 error does not reduce with refinement, it simply propagates through the domain. To address this
-issue, we implement a simple pre-condition algorithm. The algorithm advances the solution in time,
-refines it, then sets the initial conditions again. This is an iterative process, and can be
-performed multiple times. This is what will be called pre-condition steps. The refinement interval
-dictates how many time steps are computed before refining and resetting the initial conditions. The
-performance of this algorithm is assessed in Section~\ref{section:results:adaptivity_performance}.
+issue, we implement a simple ``pre-condition'' algorithm. The algorithm advances the solution in
+time, refines it, then sets the initial conditions again. This is an iterative process, and can be
+performed multiple times. This is what will be called ``pre-condition steps''. The refinement
+interval dictates how many time steps are computed before refining and resetting the initial
+conditions. The performance of this algorithm is assessed in
+Section~\ref{section:results:adaptivity_performance}.
 
 \section{Implementation}\label{section:adaptive_mesh_refinement:implementation}
 
@@ -732,7 +739,7 @@ computed on the \acrshort{acr:GPU} on a per-block basis, as described in
 Subsection~\ref{subsection:graphics_processing_units:implementation:reductions}. In this reduction
 each thread examines the estimated error \(\tau_{est}\) of an element against a set threshold and
 marks it as refining or not. If refining, the error refinement criterion \(\sigma \) is read to mark
-it as h or p refining. If h-refining, the thread sets to 1 the value of an intermediate array at the
+it as h- or p-refining. If h-refining, the thread sets to 1 the value of an intermediate array at the
 thread's index within the block. Then, through a sequence of synchronisations and additions, the
 threads add up those values until the block total is known. The block total is then written to an
 output vector at the block's index within the mesh.
@@ -757,7 +764,7 @@ resized. A new vector is created in \acrshort{acr:GPU} memory by the \acrshort{a
 increased size. A prefix sum vector is created for each block of threads, indicating how many
 elements have split before it. This tells threads where to put existing and new elements in the new
 vector. A kernel is launched on the \acrshort{acr:GPU}, and all elements are assigned to threads and
-will either move, p-refine or h-refine. Figure~\ref{fig:refinement_offset} shows a mesh with 6
+will either move, p-refine or h-refine. Figure~\ref{fig:refinement_offset} shows a mesh with six
 elements refining, with two elements being h-refined in red.
 
 \begin{figure}[H]
@@ -779,9 +786,9 @@ solution arrays with their new polynomial order and project their solution to it
 \noindent
 h-refining elements create four smaller elements in the new vector. They are placed consecutively at
 the new index of the splitting element, in an order determined by the \acrfull{acr:SFC} used,
-detailed in~\ref{chapter:load_balancing}. The solution of the splitting element is projected onto
-the smaller elements. Four associated faces have to be created to connect the smaller elements to
-each other, as well as a node in the center. 
+detailed in Chapter~\ref{chapter:load_balancing}. The solution of the splitting element is projected
+onto the smaller elements. Four associated faces have to be created to connect the smaller elements
+to each other, as well as a node in the center. 
 
 Once the elements have been moved, their index has changed. All faces need to correct their
 neighbour elements' indices to reflect their new indices. The faces use the same block prefix sum as
@@ -801,7 +808,7 @@ Faces are refined similarly to elements. If an element on either side of a face 
 face covers the whole element side, the face will split too. This ensures that the face always has
 the length of the smallest of the two elements it connects to. 
 
-Unlike elements, faces do not need any specific ordering like described in
+Unlike elements, faces do not need any specific ordering as described in
 Section~\ref{section:load_balancing:hilbert_curve}. This simplifies the refinement process for
 faces, as moving faces keep the same index and splitting faces add a face at the end of the vector.
 Faces also increase their polynomial order if needed. Figure~\ref{fig:refinement_offset_face} shows

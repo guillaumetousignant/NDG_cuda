@@ -38,6 +38,8 @@ def print_modes(
 
     ax.semilogy(wanted_n, spectrum[wanted_n], color=modes_colour, linestyle="", marker=modes_shape, markersize=modes_size)
 
+    ax.set_xlim([0, N + 1])
+    ax.set_ylim([1e-10, 1e1])
     fig.tight_layout()
 
     fig.savefig(save_path / f"modes_N{N}.svg", format='svg', transparent=True)
@@ -50,9 +52,11 @@ def print_modes(
     fig_computed.canvas.manager.set_window_title(title)
     ax_computed.grid()
 
-    ax_computed.semilogy([0, N + 1], [C * math.exp(-sigma * 0), C * math.exp(-sigma * (N + 1))], color=computed_slope_colour, linestyle=slope_style, linewidth=slope_width)
-    ax_computed.semilogy(wanted_n, spectrum_computed[wanted_n], color=computed_modes_colour, linestyle="", marker=modes_shape, markersize=modes_size)
+    ax_computed.semilogy([wanted_n[3] - 1, wanted_n[-1] + 1], [C * math.exp(-sigma * (wanted_n[3] - 1)), C * math.exp(-sigma * (wanted_n[-1] + 1))], color=computed_slope_colour, linestyle=slope_style, linewidth=slope_width)
+    ax_computed.semilogy(wanted_n[3:], spectrum_computed[wanted_n[3:]], color=computed_modes_colour, linestyle="", marker=modes_shape, markersize=modes_size)
 
+    ax_computed.set_xlim([0, N + 1])
+    ax_computed.set_ylim([1e-10, 1e1])
     fig_computed.tight_layout()
 
     fig_computed.savefig(save_path / f"modes_computed_N{N}.svg", format='svg', transparent=True)
