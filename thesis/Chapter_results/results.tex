@@ -637,12 +637,12 @@ Figure~\ref{fig:N_influence} shows that the relation between iteration time and 
 \(N\) on the \acrshort{acr:GPU} is closer to being linear in this range. This is unexpected, as we
 expect the relation between polynomial order and computing time to scale with \({\left( N + 1
 \right)}^3\) like on the \acrshort{acr:CPU}, as the number of operations to perform on every time
-step is \({\left( N + 1 \right)}^3\). This may be explained by the fact that \acrshortpl{acr:GPU}
-favour more arithmetically intense computations. As \(N\) increases, there are more compute
-operations to perform relative to other operations like scheduling and launching kernels, which may
-increase the workload of \acrshortpl{acr:GPU} and increase their performance. An increase in
-realisable \acrshort{acr:GPU} performance in GFLOPS has been observed when \(N\) increases, as for
-example by Chan et al.~\cite{Chan2016}.
+step scales with \({\left( N + 1 \right)}^3\). This may be explained by the fact that
+\acrshortpl{acr:GPU} favour more arithmetically intense computations. As \(N\) increases, there are
+more compute operations to perform relative to other operations like scheduling and launching
+kernels, which may increase the workload of \acrshortpl{acr:GPU} and increase their performance. An
+increase in realisable \acrshort{acr:GPU} performance in GFLOPS has been observed when \(N\)
+increases, as for example by Chan et al.~\cite{Chan2016}.
 
 \section{Complex Case}\label{section:results:complex_application}
 
