@@ -164,8 +164,8 @@ auto main(int argc, char* argv[]) -> int {
         std::cout << '\t' << "--tolerance_max"              << '\t' << "estimated error below which elements will coarsen (default: 1e-14)" << std::endl;
         std::cout << '\t' << "--load_balancing_threshold"   << '\t' << "load imbalance ratio, n_elements_max/n_elements_min below which no load balancing occurs (default: 1.01)" << std::endl;
         std::cout << '\t' << "--pre_condition"              << '\t' << "number of adaptivity steps to run before starting the computation, 0 to disable (default: 0)" << std::endl;
-        std::cout << '\t' << "--pre_condition_interval"     << '\t' << "number of iterations between adapting the mesh for pre-conditioning, 0 to disable (default: adaptivity_interval)" << std::endl;
-        std::cout << '\t' << "--pre_condition_algorithm {iterative,sequential,none}" << '\t' << "algorithm to use for pre-conditioning (default: sequential)" << std::endl;
+        std::cout << '\t' << "--pre_condition_interval"     << '\t' << "number of iterations between adapting the mesh for pre-condition, 0 to disable (default: adaptivity_interval)" << std::endl;
+        std::cout << '\t' << "--pre_condition_algorithm {iterative,sequential,none}" << '\t' << "algorithm to use for pre-condition (default: sequential)" << std::endl;
         std::cout << '\t' << "-v, --version"                << '\t' << "show program's version number and exit" << std::endl;
         exit(0);
     }

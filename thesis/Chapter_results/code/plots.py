@@ -141,7 +141,7 @@ load_balancing_threshold_t = np.array([[344.277, 295.591, 243.566, 241.076, 252.
 
 load_balancing_threshold_baseline_T = load_balancing_threshold_T[:, [0,-1]]
 load_balancing_threshold_baseline_t = np.array([274.359, 4962.06, 59061.9])
-best_T = 3
+best_T = 2
 
 # N scaling
 N_scaling_N_cpu = np.array([4, 6, 8, 10, 12, 14, 16])

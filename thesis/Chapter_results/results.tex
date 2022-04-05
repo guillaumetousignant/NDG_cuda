@@ -341,7 +341,7 @@ and~\ref{fig:adaptivity_efficiency_A500}, we can see that this is an optimisatio
 tradeoffs between the simulation time and the error generated.
 
 An important part of the error comes from the initial conditions being applied on too coarse a mesh.
-Even if the mesh is refined, this error propagates through the domain. Pre-conditioning, as
+Even if the mesh is refined, this error propagates through the domain. Mesh pre-condition, as
 described in Section~\ref{section:adaptive_mesh_refinement:pre_conditioning}, aims to alleviate this
 problem. Indeed, with enough pre-condition steps all cases converge to an acceptable error. Adding
 more pre-condition steps does not improve the results, as the error estimation threshold of
@@ -532,35 +532,42 @@ performance without load balancing.
 	\caption{Load balancing performance interval test: Simulation time with refinement and load balancing while increasing load balancing interval. \(N_{initial} = 4\), \(K_{initial} = 16384\), refinement interval = 20, \(P = 16\) (a) \(s = 3\) (b) \(s = 5\) (c) \(s = 7\)}\label{fig:load_balancing_efficiency_interval}
 \end{figure}
 
+From Figure~\ref{fig:load_balancing_efficiency_interval}, we can see that load balancing diminishes
+the computation time of all three problems. The low load imbalance case needs a higher load
+balancing interval to offset the cost of the load balancing algorithm. In the other cases, the load
+imbalance is great enough that the cases with load balancing are always faster. It takes a certain
+load balancing interval to obtain the best performance, and that interval changes with the case.
+Next, we will study an alternative algorithm to improve on those two points.
+
 \subsection{Load balancing threshold}\label{subsection:results:load_balancing_performance:threshold}
 
 We then use an allowable load imbalance threshold to choose when to perform load balancing, as
 described in Section~\ref{section:load_balancing:criteria}. This means we assess the load imbalance
 \(L\) of the mesh after each refinement step, and we only perform load balancing if it is above a
 certain threshold. We start with a threshold of \(1\), equivalent to load balancing after every
-refinement step no matter what, to \(2\), equivalent to load balancing only if a \acrshort{acr:GPU}
-has twice of more the amount it would have if the mesh was perfectly balanced. The same three load
-imbalance cases are shown in
-Figures~\ref{fig:load_balancing_efficiency_threshold_s3},~\ref{fig:load_balancing_efficiency_threshold_s5},
-and~\ref{fig:load_balancing_efficiency_threshold_s7}.
+refinement step, to \(2\), equivalent to load balancing only if a \acrshort{acr:GPU} has two or more
+times the amount it would have if the mesh was perfectly balanced. The same three load imbalance
+cases are shown in Figure~\ref{fig:load_balancing_efficiency_threshold}.
 
 \begin{figure}[H]
 	\centering
-	\includesvg[width=0.6\textwidth]{Chapter_results/media/load_balancing_threshold_N4_K16384_A20_L20_P16_S3}
-	\caption{Low load imbalance load balancing performance threshold test: Simulation time with refinement and load balancing while increasing load balancing threshold. \(N_{initial} = 4\), \(K_{initial} = 16384\), refinement interval = 20, load balancing interval = 20, \(P = 16\), \(S = 3\)}\label{fig:load_balancing_efficiency_threshold_s3}
+	\subfloat[Low load imbalance]
+	{\includesvg[width=0.32\textwidth]{Chapter_results/media/load_balancing_threshold_N4_K16384_A20_L20_P16_S3}\label{fig:load_balancing_efficiency_threshold_s3}}
+	\hfill
+	\subfloat[Medium load imbalance]
+	{\includesvg[width=0.32\textwidth]{Chapter_results/media/load_balancing_threshold_N4_K16384_A20_L20_P16_S5}\label{fig:load_balancing_efficiency_threshold_s5}}
+	\hfill
+	\subfloat[High load imbalance]
+	{\includesvg[width=0.32\textwidth]{Chapter_results/media/load_balancing_threshold_N4_K16384_A20_L20_P16_S7}\label{fig:load_balancing_efficiency_threshold_s7}}
+	\caption{Load balancing performance threshold test: Simulation time with refinement and load balancing while increasing load balancing threshold. \(N_{initial} = 4\), \(K_{initial} = 16384\), refinement interval = 20, load balancing interval = 20, \(P = 16\) (a) \(s = 3\) (b) \(s = 5\) (c) \(s = 7\)}\label{fig:load_balancing_efficiency_threshold}
 \end{figure}
 
-\begin{figure}[H]
-	\centering
-	\includesvg[width=0.6\textwidth]{Chapter_results/media/load_balancing_threshold_N4_K16384_A20_L20_P16_S5}
-	\caption{Medium load imbalance load balancing performance threshold test: Simulation time with refinement and load balancing while increasing load balancing threshold. \(N_{initial} = 4\), \(K_{initial} = 16384\), refinement interval = 20, load balancing interval = 20, \(P = 16\), \(S = 5\)}\label{fig:load_balancing_efficiency_threshold_s5}
-\end{figure}
-
-\begin{figure}[H]
-	\centering
-	\includesvg[width=0.6\textwidth]{Chapter_results/media/load_balancing_threshold_N4_K16384_A20_L20_P16_S7}
-	\caption{High load imbalance load balancing performance threshold test: Simulation time with refinement and load balancing while increasing load balancing threshold. \(N_{initial} = 4\), \(K_{initial} = 16384\), refinement interval = 20, load balancing interval = 20, \(P = 16\), \(S = 7\)}\label{fig:load_balancing_efficiency_threshold_s7}
-\end{figure}
+From Figure~\ref{fig:load_balancing_efficiency_threshold}, we observe that using a load imbalance
+threshold to control when we load balance is a much better solution than simply increasing the
+interval at which we perform load balancing. The performance attains its maximum very fast when
+increasing the threshold, and the good performing threshold values do not seem to change with the
+problem. A load imbalance threshold of around \(1.1\) seems to give good performance in all cases,
+and would not need to be adapted to different cases.
 
 \subsection{Overall load balancing performance}\label{subsection:results:load_balancing_performance:overall}
 
@@ -575,10 +582,10 @@ dynamic load balancing process is expensive, especially since we are using \acrs
 because of the numerous data transfers and memory allocations performed. We must choose judiciously
 our load balancing strategy. 
 
-The performance increases as we space out load balancing, either by
-increasing the load balancing interval, or by increasing the load imbalance threshold, up to a
-point. Past that point, an interval of 1000 or a threshold of \(2\) in this case, the performance
-goes down due to the mesh being more imbalanced for longer periods of time.
+The performance increases as we space out load balancing, either by increasing the load balancing
+interval, or by increasing the load imbalance threshold, up to a point. Past that point, an interval
+of \(500\) or a threshold of \(1.5\) in this case, the performance goes down due to the mesh being
+more imbalanced for longer periods of time.
 
 The load imbalance threshold strategy from
 Subsection~\ref{subsection:results:load_balancing_performance:threshold} gives better results, with
@@ -589,36 +596,36 @@ is also case dependent, and must be adjusted according to the scale of the probl
 is refined. 
 
 For these reasons we chose the load imbalance threshold strategy with a load imbalance threshold of
-\(1.5\) to assess the overall dynamic load balancing performance in
+\(1.1\) to assess the overall dynamic load balancing performance in
 Figure~\ref{fig:load_balancing_efficiency}. It shows the speedup we get from load balancing the
-three problems. The \(x\) axis shows the load imbalance \(L\) of the problems if they are not load
-balanced.
+three problems. The \(x\) axis represents the load imbalance \(L\) of the problems if they are not
+load balanced.
 
 \begin{figure}[H]
 	\centering
-	\includesvg[width=0.6\textwidth]{Chapter_results/media/load_balancing_threshold_N4_K16384_A20_L20_P16_T1.5}
-	\caption{Load balancing performance: Simulation time with refinement and load balancing while increasing load imbalance. \(N_{initial} = 4\), \(K_{initial} = 16384\), refinement interval = 20, load balancing interval = 20, \(P = 16\), load balancing threshold = \(1.5\)}\label{fig:load_balancing_efficiency}
+	\includesvg[width=0.6\textwidth]{Chapter_results/media/load_balancing_threshold_N4_K16384_A20_L20_P16_T1.1}
+	\caption{Load balancing performance: Simulation time with refinement and load balancing while increasing load imbalance. \(N_{initial} = 4\), \(K_{initial} = 16384\), refinement interval = 20, load balancing interval = 20, \(P = 16\), load balancing threshold = \(1.1\)}\label{fig:load_balancing_efficiency}
 \end{figure}
 
 Figure~\ref{fig:load_balancing_efficiency} shows that dynamic load balancing performs well, and is
 able to regain performance lost to load imbalance. In the high load imbalance case, with a load
 imbalance of \(L = 12.07\), dynamic load balancing can improve performance by \(4.1 \times \). It
-scale well with load imbalance, meaning it gives good results no matter the level of imbalance of
+scales well with load imbalance, meaning it gives good results no matter the level of imbalance of
 the problem.
 
 \subsection{Polynomial order influence}\label{subsection:results:load_balancing_performance:polynomial_order}
 
-Figure~\ref{fig:N_influence} shows a comparison of the iteration time in function of the polynomial
-order \(N\) of an uniformly refined mesh, both on the \acrshort{acr:CPU} and \acrshort{acr:GPU}.
-This shows how computing time scales on the two types of processors with increasing \(N\), and could
-guide how elements should be weighted individually when performing load balancing, instead of being
-all weighted equally like they are in this work. The test case was computed using the Narval
-supercomputer, using a grid with \(64\) elements in the \(x\) and \(y\) directions. The initial
-polynomial order of the mesh is indicated on the \(y\) axis, and the problem is advanced by \(1000\)
-iterations in all cases. \Acrshort{acr:AMR} is performed every \(100\) iterations, but there are
-enough elements that the mesh never refines, it only estimates the error. The \acrshort{acr:CPU}
-case is computed on a single \acrshort{acr:CPU} core, and the \acrshort{acr:GPU} case is computed on
-a single \acrshort{acr:GPU}.
+Figure~\ref{fig:N_influence} shows a comparison of the iteration time as a function of the
+polynomial order \(N\) of a uniformly refined mesh, both on the \acrshort{acr:CPU} and
+\acrshort{acr:GPU}. This shows how computing time scales on the two types of processors with
+increasing \(N\), and could guide how elements should be weighted individually when performing load
+balancing, instead of being all weighted equally as they are in this work. The test case was
+computed using the Narval supercomputer, using a grid with \(64\) elements in the \(x\) and \(y\)
+directions. The initial polynomial order of the mesh is indicated on the \(y\) axis, and the problem
+is advanced by \(1000\) iterations in all cases. \Acrshort{acr:AMR} is performed every \(100\)
+iterations, but there are enough elements that the mesh never refines, it only estimates the error.
+The \acrshort{acr:CPU} case is computed on a single \acrshort{acr:CPU} core, and the
+\acrshort{acr:GPU} case is computed on a single \acrshort{acr:GPU}.
 
 \begin{figure}[H]
 	\centering
@@ -626,31 +633,31 @@ a single \acrshort{acr:GPU}.
 	\caption{Polynomial order influence: Iteration time with increasing polynomial order \(N\).}\label{fig:N_influence}
 \end{figure}
 
-As seen in Figure~\ref{fig:N_influence}, the relation between iteration time and polynomial order
+Figure~\ref{fig:N_influence} shows that the relation between iteration time and polynomial order
 \(N\) on the \acrshort{acr:GPU} is closer to being linear in this range. This is unexpected, as we
-expect the relation between polynomial order and computing time to be relative to \({\left( N + 1
-\right)}^2\) like on the \acrshort{acr:CPU}, as the number of nodes in an element is \({\left( N + 1
-\right)}^2\). This my be explained by \acrshort{acr:GPU} favouring more arithmetically intense
-computations. As \(N\) increases, there are more compute operations to perform relative to other
-operations like scheduling and launching kernels, which may increase the workload of
-\acrshortpl{acr:GPU} and increase their performance. This has been observed to be caused by an
-increase in realisable \acrshort{acr:GPU} performance in GFLOPS when \(N\) increases, like by Chan
-et al.~\cite{Chan2016}.
+expect the relation between polynomial order and computing time to scale with \({\left( N + 1
+\right)}^3\) like on the \acrshort{acr:CPU}, as the number of operations to perform on every time
+step is \({\left( N + 1 \right)}^3\). This may be explained by the fact that \acrshortpl{acr:GPU}
+favour more arithmetically intense computations. As \(N\) increases, there are more compute
+operations to perform relative to other operations like scheduling and launching kernels, which may
+increase the workload of \acrshortpl{acr:GPU} and increase their performance. An increase in
+realisable \acrshort{acr:GPU} performance in GFLOPS has been observed when \(N\) increases, as for
+example by Chan et al.~\cite{Chan2016}.
 
 \section{Complex Case}\label{section:results:complex_application}
 
 We now present a more complex case with all modules of the program enabled. Figure~\ref{fig:cloud_p}
 shows the pressure distribution at two times. The problem depicts a diagonal wave moving through a
-small circular ``cloud'' of higher pressure. The cloud expands and interacts with the wave. It is
-initially split into \(16\) elements in the \(x\) and \(y\) directions, for \(K = 256\) elements.
-The polynomial order of the elements is initially \(4\). It is computer in parallel on \(16\)
-\acrshortpl{acr:GPU}. The mesh is refined every \(50\) timesteps, and load balanced with a imbalance
-threshold of \(L = 1.1\). It is allowed to refine up to \(S = 3\) and \(N = 16\). Pre-conditioning
-was performed with three steps, which is why the \(t = 0 s\) mesh is already refined.
-Figure~\ref{fig:cloud_s} shows the split level \(S\) of the mesh, Figure~\ref{fig:cloud_N} shoes the
-polynomial order \(N\) of the mesh, and Figure~\ref{fig:cloud_rank} shows the rank of the elements.
-The rank indicates which of the \(16\) \acrshortpl{acr:GPU} is responsible for which part of the
-mesh, and how it changes with time as the mesh is load balanced.
+small circular ``cloud'' of higher pressure. The cloud expands and interacts with the wave. The mesh
+is initially split into \(16\) elements in the \(x\) and \(y\) directions, for a total of \(K =
+256\) elements. The polynomial order of the elements is initially \(N = 4\). The solution is
+computed in parallel on \(16\) \acrshortpl{acr:GPU}. The mesh is refined every \(50\) timesteps, and
+load balanced with an imbalance threshold of \(L = 1.1\). It is allowed to refine up to \(S = 3\)
+and \(N = 16\). Three steps of mesh pre-condition are performed, which is why the \(t = 0 s\)
+mesh is already refined. Figure~\ref{fig:cloud_s} shows the split level \(S\) of the mesh,
+Figure~\ref{fig:cloud_N} the polynomial order \(N\) of the mesh, and Figure~\ref{fig:cloud_rank} the
+rank of the elements. The rank indicates which of the \(16\) \acrshortpl{acr:GPU} is responsible for
+which part of the mesh, and how this changes with time as the mesh is load balanced.
 
 \begin{figure}[H]
 	\centering
@@ -693,38 +700,38 @@ mesh, and how it changes with time as the mesh is load balanced.
 \end{figure}
 
 These figures show that the pre-condition steps do a good job of refining the mesh to capture the
-initial conditions correctly in the \(t = 0 s\) figures. Afterwards, Figures~\ref{fig:cloud_s_t0_2}
-and~\ref{fig:cloud_N_t0_2} show that the mesh is refined along the movement of the linear wave and
-the expansion of the circular, and especially refined at their intersection. This indicates that the
-error estimation correctly identify the more difficult areas of the solution. As more elements are
-created at the intersection of both waves, load imbalance occurs, and by the end of the computation
-there are \(K = 5088\) elements. From Figures~\ref{fig:cloud_s_t0_2} and~\ref{fig:cloud_rank_t0}, we
-can observe that there are more h-refining elements around \acrshortpl{acr:GPU} \(6\) and \(8\),
-which have load balanced by \(t = 0.2 s\) in Figure~\ref{fig:cloud_rank_t0_2}. The elements are
-moved around by dynamic load balancing, while keeping good locality and limiting the surface area
-between \acrshortpl{acr:GPU}.
+initial conditions correctly in the \(t = 0 s\) figures (a). Afterwards,
+Figures~\ref{fig:cloud_s_t0_2} and~\ref{fig:cloud_N_t0_2} show that the mesh is refined along the
+movement of the linear wave and the expansion of the circular cloud, and is especially refined at
+their intersection. This indicates that the error estimation correctly identify the more difficult
+areas of the solution. As more elements are created at the intersection of both waves, load
+imbalance occurs, and by the end of the computation there are \(K = 5088\) elements. From
+Figures~\ref{fig:cloud_s_t0_2} and~\ref{fig:cloud_rank_t0}, we can observe that there are more
+h-refining elements around \acrshortpl{acr:GPU} \(6\) and \(8\), which are load balanced by \(t =
+0.2 s\) in Figure~\ref{fig:cloud_rank_t0_2}. The elements are moved around by dynamic load
+balancing, while keeping good locality and limiting the surface area between \acrshortpl{acr:GPU}.
 
 \section{Complex Meshes}\label{section:results:complex_meshes}
 
-We now introduce a case on a complex, to show that the program work with more complex unstructured
-meshes that are not axis-aligned. Figure~\ref{fig:complex_mesh} shows the initial mesh used for this
-case. Figure~\ref{fig:complex_mesh_pre_condition}. It depicts wave moving around a NACA 0012 airfoil
-inside a circular domain of radius \(20\). It initially has \(K = 2128\) elements, is allowed to
-h-refine up to \(S = 3\), and by the end of the computation there are \(K = 55680\) elements. The
-polynomial order of the elements is initially \(N = 4\), and is allowed to p-refine up to \(N =
-16\). The mesh is refined every \(1000\) timesteps, and load balanced with a imbalance threshold of
-\(L = 1.1\). At the beginning of the computation, three pre-condition steps are performed, which is
-why the mesh is already refined at \(t = 0 s\). It is computed in parallel on \(P = 4\)
-\acrshortpl{acr:GPU}.
+We now introduce a case on a complex geometry to show that the program works with more complex
+unstructured meshes that are not axis-aligned. Figure~\ref{fig:complex_mesh} shows the initial mesh
+used for this case. Figure~\ref{fig:complex_mesh_pre_condition} depicts a wave moving across a NACA
+0012 airfoil inside a circular domain of radius \(20\). The mesh initially has \(K = 2128\)
+elements, is allowed to h-refine up to \(S = 3\), and by the end of the computation there are \(K =
+55680\) elements. The polynomial order of the elements is initially \(N = 4\) and is allowed to
+p-refine up to \(N = 16\). The mesh is refined every \(1000\) timesteps and load balanced with a
+imbalance threshold of \(L = 1.1\). At the beginning of the computation, three pre-condition steps
+are performed, which is why the mesh is already refined at \(t = 0 s\). The solution is computed in
+parallel on \(P = 4\) \acrshortpl{acr:GPU}.
 
 The mesh is unstructured, and the original mesh file is numbered in a way that places elements with
-neighbouring indices very far appart in the 2D domain. This is not ideal, as it scatters memory
+neighbouring indices very far apart in the 2D domain. This is not ideal, as it scatters memory
 accesses in a way that is detrimental to \acrshort{acr:GPU} performance, and increases dramatically
 the number of inter-\acrshort{acr:GPU} boundaries. To improve the numbering, the mesh was renumbered
 to a pseudo-Hilbert curve according to an algorithm presented in Appendix~\ref{chapter:renumbering}.
 It is not a real Hilbert curve, as the Hilbert curve is only defined in 2D square domains with a
 power of two number of axis-aligned elements in both dimensions. Nonetheless, this pseudo-Hilbert
-curve ressembles the Hilbert curve, and improves locality.
+curve resembles the Hilbert curve, and improves locality.
 
 \begin{figure}[H]
 	\centering
@@ -749,12 +756,12 @@ curve ressembles the Hilbert curve, and improves locality.
 Figure~\ref{fig:complex_mesh_solution} shows the problem after \(1.5\) seconds of solution time.
 Figure~\ref{fig:complex_mesh_solution_p} shows the pressure distribution, the wave having passed
 around the airfoil and created a reflected circular wave.
-Figure~\ref{fig:complex_mesh_solution_sigma} shows the pressure \(\sigma \), the error decay rate,
-which informs the decision between h-refinement and p-refinement. An orange value, above \(1\),
-indicates p-refinement would be chosen, whereas a blue value, below \(1\), indicates h-refinement
-would be chosen. Figure~\ref{fig:complex_mesh_split_level} shows the split level \(S\), denoting how
-many times elements have h-refined. Figure~\ref{fig:complex_mesh_N} shows the polynomial order
-\(N\), which increases when elements are p-refined.
+Figure~\ref{fig:complex_mesh_solution_sigma} shows the pressure error decay rate \(\sigma \), which
+informs the decision between h-refinement and p-refinement. An orange value, above \(1\), indicates
+p-refinement would be chosen, whereas a blue value, below \(1\), indicates h-refinement would be
+chosen. Figure~\ref{fig:complex_mesh_split_level} shows the split level \(S\), denoting how many
+times elements have h-refined. Figure~\ref{fig:complex_mesh_N} shows the polynomial order \(N\),
+which increases when elements are p-refined.
 
 \begin{figure}[H]
 	\centering
@@ -773,7 +780,7 @@ many times elements have h-refined. Figure~\ref{fig:complex_mesh_N} shows the po
 	\subfloat[N]
 	{\includegraphics[width=0.48\textwidth]{Chapter_results/media/airfoil_N_t1_5}\label{fig:complex_mesh_N}}
 
-	\caption{Complex mesh: A wave going over an airfoil at \(t = 1.5 s\). \(N_{initial} = 4\), \(K = 55680\), \(S = 3\), \(P = 4\) (a) Pressure (b) Pressure \(\sigma \), denoting if h-refinement or p-refinement would be chosen (c) h-refinement, the split level denotes how many times elements have split (d) p-refinement, polynomial order \(N\)}\label{fig:complex_mesh_solution}
+	\caption{Complex mesh: A wave going across an airfoil at \(t = 1.5 s\). \(N_{initial} = 4\), \(K = 55680\), \(S = 3\), \(P = 4\) (a) Pressure (b) Pressure \(\sigma \), denoting if h-refinement or p-refinement would be chosen (c) h-refinement, the split level denotes how many times elements have split (d) p-refinement, polynomial order \(N\)}\label{fig:complex_mesh_solution}
 \end{figure}
 
 Figure~\ref{fig:complex_mesh_solution} shows that the program has refined the mesh in more difficult
@@ -781,8 +788,8 @@ areas of the domain, such as along the linear wave, close to the domain, and ins
 wave. This is consistent with the fact that the interactions between the wave and the airfoil would
 create steeper areas in the pressure distribution.
 
-This also shows that the program is able to compute solutions on complex geometries, and on in
-unstructured domains where elements can be different from axis-aligned squares.
+This also shows that the program is able to compute solutions on complex geometries, and with
+unstructured meshes where elements can be different from axis-aligned squares.
 
 Figure~\ref{fig:complex_mesh_elements} shows how the elements are arranged among the four
 \acrshortpl{acr:GPU}. Figure~\ref{fig:complex_mesh_index} shows the indices of the elements, or how
@@ -800,7 +807,7 @@ shows the elements' rank, or in which \acrshort{acr:GPU} they are stored.
 \end{figure}
 
 On Figure~\ref{fig:complex_mesh_elements}, we can observe that the pseudo-Hilbert curve gives good
-locality to the elements, are there are few discontinuities between elements, and the surface area
+locality to the elements, there are few discontinuities between elements, and the surface area
 between \acrshortpl{acr:GPU} is small. The elements are well divided between the
 \acrshortpl{acr:GPU}, as the \acrshortpl{acr:GPU} in more heavily refined areas have a smaller
 footprint in the domain.
@@ -814,7 +821,7 @@ simulation time, refining every \(1000\) time steps and load balancing with a th
 \acrshort{acr:GPU} time spent in the different kernels of the program. The report has a resolution
 of \(0.1 \% \), therefore most smaller kernels are not shown here. This could artificially reduce
 slightly the apparent time spent load balancing the mesh, as the load balancing module is made up of
-many smaller kernels, which may not show up in the report. The numbers are the average time spend
+many smaller kernels, which may not show up in the report. The numbers are the average time spent
 between the four \acrshortpl{acr:GPU}. There may also be profiler overhead, especially when memory
 is allocated and deallocated. This overhead could artificially inflate the time spent in memory
 allocation heavy parts of the program like \acrshort{acr:AMR} and load balancing.
@@ -847,14 +854,15 @@ allocation heavy parts of the program like \acrshort{acr:AMR} and load balancing
         \midrule
         \multirow{1}{*}{Other} & \multirow{1}{*}{\(0.7\)} & empty\_device\_vector & \(0.73\) \\
 	\end{tabular}
-	\caption{Program profiling: The relative \acrshort{acr:GPU} computation time spent in the three main modules is shown, along as specific kernels and their relative \acrshort{acr:GPU} computation time.}\label{table:profiling}
+	\caption{Program profiling: The relative \acrshort{acr:GPU} computation time spent in the three main modules, along with specific kernels and their relative \acrshort{acr:GPU} computation time.}\label{table:profiling}
 \end{table}
 
-This case end up performing \(281078\) time steps, and took 5h04 to complete. The mesh was refined
+This case ended up performing \(281078\) time steps, and took 5h04 to complete. The mesh was refined
 281 times. These results show that the majority of the time is spent solving the problem and that
-the time spent load balancing the mesh is small. This is very good, with the only concerning result
-being the proportion of the computation time spent refining the mesh. The high time spent in the
-\acrshort{acr:AMR} routine could be reduced by refining the mesh less often, at the price of using a
-worse mesh for longer. Section~\ref{section:conclusion:future_work} discusses a different approach
-to choose when to refine the mesh which could improve these situations by only refining the mesh
-when a global error estimation threshold is met.
+the time spent load balancing the mesh is small. This demonstrates very good performance of the
+algorithm, with the only concerning result being the proportion of the computation time spent
+refining the mesh. The high time spent in the \acrshort{acr:AMR} routine could be reduced by
+refining the mesh less often, at the price of using a worse mesh for longer.
+Section~\ref{section:conclusion:future_work} discusses a different approach to choose when to refine
+the mesh which could improve these situations by only refining the mesh when a global error
+estimation threshold is met.
