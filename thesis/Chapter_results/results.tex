@@ -168,7 +168,7 @@ figures.
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.5\textwidth]{Chapter_results/media/strong_scaling_N4_K65536_W32}
-	\caption{Weak scaling: The problem size increases with the number of workers. N = 4, K = 65536, B = 32}\label{fig:strong_scaling_N4_W32}
+	\caption{Strong scaling: The number of workers increases while the problem stays fixed. N = 4, K = 65536, B = 32}\label{fig:strong_scaling_N4_W32}
 \end{figure}
 
 Figure~\ref{fig:strong_scaling_N4_W32} shows that the \acrshort{acr:GPU} implementation, initially
@@ -196,7 +196,7 @@ heavier, while spending the same time on the overhead of kernel calls and other 
 \begin{figure}[H]
 	\centering
 	\includesvg[width=0.5\textwidth]{Chapter_results/media/strong_scaling_N6_K65536_W32}
-	\caption{Weak scaling: The problem size increases with the number of workers. N = 6, K = 65536, B = 32}\label{fig:strong_scaling_N6_W32}
+	\caption{Strong scaling: The number of workers increases while the problem stays fixed. N = 6, K = 65536, B = 32}\label{fig:strong_scaling_N6_W32}
 \end{figure}
 
 Figure~\ref{fig:strong_scaling_N6_W32} shows that the increased polynomial order has not increased
@@ -218,7 +218,7 @@ the solution time.
 	\hfill
 	\subfloat[\(B = 128\)]
 	{\includesvg[width=0.5\textwidth]{Chapter_results/media/strong_scaling_N6_K65536_W128}\label{fig:strong_scaling_N6_W128}}
-	\caption{Weak scaling: The problem size increases with the number of workers. N = 6, K = 65536 (a) \(B = 64\) (b) \(B = 128\)}\label{fig:strong_scaling_N6_W64-128}
+	\caption{Strong scaling: The number of workers increases while the problem stays fixed. N = 6, K = 65536 (a) \(B = 64\) (b) \(B = 128\)}\label{fig:strong_scaling_N6_W64-128}
 \end{figure}
 
 As the last figure suggests, increasing the block size \(B\) does incur a performance penalty. This
