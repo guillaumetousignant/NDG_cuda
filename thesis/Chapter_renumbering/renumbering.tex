@@ -1,17 +1,17 @@
 \chapter{Mesh Renumbering}\label{chapter:renumbering}
 
-This program aims to be able to process unstructured meshes, to be more general and to be able to
-perform computations on already available meshes. The program also aims to use the Hilbert curve, a
-\acrlong{acr:SFC}, to preserve locality and reduce the size of inter-\acrshort{acr:GPU} boundaries.
-The curve is described in Section~\ref{section:load_balancing:hilbert_curve}. These two objectives
-are at odds, as the overwhelming majority of meshes that were created for other purposes will not be
-numbered according to the Hilbert curve. Also, the Hilbert curve is only defined for square domains
-with \(n\) axis-aligned quadrilateral elements in the \(x\) and \(y\) directions, where \(n\) is a
-power of two. Therefore, most off-the-shelf meshes will not inherit the good locality and small
-boundaries between mesh blocks that we put a lot of effort to achieve in
+The \acrshort{acr:DG-SEM} solver described in this work is able to process unstructured meshes, to
+be more general and perform computations on pre-constructed meshes. The program utilises the Hilbert
+curve, a \acrlong{acr:SFC}, to preserve locality and reduce the size of inter-\acrshort{acr:GPU}
+boundaries. The curve is described in Section~\ref{section:load_balancing:hilbert_curve}. These two
+capabilities are at odds, as the overwhelming majority of meshes created for other purposes will not
+be numbered according to the Hilbert curve. Also, the Hilbert curve is only defined for square
+domains with \(n\) axis-aligned quadrilateral elements in the \(x\) and \(y\) directions, where
+\(n\) is a power of two. Therefore, most off-the-shelf meshes will not inherit the good locality and
+small boundaries between mesh blocks that we put a lot of effort to achieve in
 Chapter~\ref{chapter:load_balancing}. Not only that, but there is even a performance penalty when
 using a single \acrshort{acr:GPU} if elements that are close in the ordering are not geometrically
-close, as memory access patterns are worsened. An extreme example is the original mesh used for
+close, as memory access patterns are compromised. An extreme example is the original mesh used for
 Section~\ref{section:results:complex_meshes}. Figure~\ref{fig:mesh_unsorted} shows the ordering of
 the elements and how the mesh is split into mesh blocks if partitioned into \(16\) blocks as-is. 
 
@@ -24,13 +24,14 @@ the elements and how the mesh is split into mesh blocks if partitioned into \(16
 	\caption{Unsorted mesh: The mesh is partitioned into \(16\) mesh blocks. (a) Ordering of the elements within the mesh (b) Mesh blocks once partitioned}\label{fig:mesh_unsorted}
 \end{figure}
 
-As we see, the resulting mesh blocks are scattered around the mesh, leading to unnecessarily large
-boundaries between blocks. In order to get good performance, we will need to renumber the mesh. 
+The resulting mesh blocks are scattered around the mesh, leading to unnecessarily large boundaries
+between blocks. In order to get good performance, we will need to renumber the mesh. 
 
-Since this mesh is circular, and the discontinuity representing the fuselage is in the middle, a
-simple sorting algorithm could be to represent the elements in polar coordinates, and sort them
-according to their angle around the center \(\theta \). Doing this, we get the ordering and
-partitioning shown in Figure~\ref{fig:mesh_circular}.
+Since this mesh is circular, and the hole representing the airfoil is in the middle, a simple
+sorting algorithm could represent the elements in polar coordinates, and sort them according to
+their angle around the center. The resulting ordering and partitioning are shown in
+Figure~\ref{fig:mesh_circular}. The index represents how the elements are ordered in the mesh, and
+the rank indicates which mesh block they are part of.
 
 \begin{figure}[H]
 	\centering
@@ -43,13 +44,13 @@ partitioning shown in Figure~\ref{fig:mesh_circular}.
 
 This method seems to give reasonable results, but is only useful for circular meshes. Also, the
 partitions it generates have good grouping for a low number of blocks, but as the number of blocks
-increases the blocks become shaped like thin slices. This is not ideal, as in increases the size of
+increases the blocks become shaped like thin slices. This is not ideal, as it increases the size of
 inter-block boundaries. Figure~\ref{fig:mesh_circular_ordering} shows the ordering of elements more
 clearly.
 
 \begin{figure}[H]
 	\centering
-	\includesvg[width=0.45\textwidth]{Chapter_renumbering/media/mesh_P0_before_adaptivity1_circular}
+	\includesvg[width=0.98\textwidth]{Chapter_renumbering/media/mesh_P0_before_adaptivity1_circular}
 	\caption{Circular sorted mesh element ordering: The elements are very far from their neighbours.}\label{fig:mesh_circular_ordering}
 \end{figure}
 
@@ -68,7 +69,7 @@ curve along which the elements are sorted.
 
 \begin{figure}[H]
 	\centering
-	\includesvg[width=0.95\textwidth]{Chapter_renumbering/media/hilbert_renumbering}
+	\includesvg[width=0.98\textwidth]{Chapter_renumbering/media/hilbert_renumbering}
 	\caption{Hilbert renumbering: The element centres are rounded to an underlying Hilbert curve.}\label{fig:hilbert_renumbering}
 \end{figure}
 
@@ -98,7 +99,7 @@ Figure~\ref{fig:rank_hilbert} is good, and has short inter-block interfaces.
 
 Next, Figures~\ref{fig:mesh_P0_adaptivity_far} and~\ref{fig:mesh_P0_adaptivity_near} show the
 pseudo-Hilbert curve generated by this ordering method in more detail. We show the mesh before and
-after a single refinement step to showcase how the propriety of the curve are kept when refining.
+after a single refinement step to showcase how the properties of the curve are kept when refining.
 Figure~\ref{fig:mesh_P0_adaptivity_far} and~\ref{fig:mesh_P0_adaptivity_near} show the entirety of
 the domain and a closer view of the airfoil, respectively.
 
@@ -117,13 +118,13 @@ the domain and a closer view of the airfoil, respectively.
 	{\includesvg[width=0.45\textwidth]{Chapter_renumbering/media/mesh_P0_before_adaptivity1_near}\label{fig:mesh_P0_before_adaptivity1_near}}
 	\subfloat[After refinement]
 	{\includesvg[width=0.45\textwidth]{Chapter_renumbering/media/mesh_P0_after_adaptivity1_near}\label{fig:mesh_P0_after_adaptivity1_near}}
-	\caption{\Acrlong{acr:AMR} with an unstructured mesh (detail): The mesh is refined, created elements follow the initial pseudo-Hilbert curve. There are jumps along the curve around the fuselage. (a) Initial mesh (b) Mesh after a single refinement step}\label{fig:mesh_P0_adaptivity_near}
+	\caption{\Acrlong{acr:AMR} with an unstructured mesh (detail): The mesh is refined, created elements follow the initial pseudo-Hilbert curve. There are jumps along the curve around the airfoil. (a) Initial mesh (b) Mesh after a single refinement step}\label{fig:mesh_P0_adaptivity_near}
 \end{figure}
 
 As the previous figures show, the refinement maintains the path of the curve very well, even if the
-initial mesh before refinement shows some issues. Firstly, there are some jumps along the fuselage
+initial mesh before refinement shows some problems. Firstly, there are some jumps along the airfoil
 and the edges of the domain. This is caused by the fact that the Hilbert curve is not defined for
-domains with holes and them. The fuselage is a hole in the domain, and the elements at the edges of
+domains with holes and them. The airfoil is a hole in the domain, and the elements at the edges of
 the domain are very big compared to the Hilbert curve resolution, which functionally creates a big
 hole on the edge of the domain where there are no elements. Luckily, the Hilbert curve naturally
 forms a path around the center of the domain, which is why the pseudo-Hilbert curve also goes around
@@ -136,7 +137,7 @@ compared to the elements. The elements are only sorted according to where their 
 curve, and sometimes the curve will miss the centre of an element and make multiple round trips
 before intersecting it, while encountering elements that are further along the way. This can be seen
 by looking closely at Figures~\ref{fig:hilbert_renumbering}
-and~\ref{fig:mesh_P0_before_adaptivity1_near}, some elements would be sorted very differently if
+and~\ref{fig:mesh_P0_before_adaptivity1_near}, where elements would be sorted very differently if
 their centres were moved slightly.
 
 A potential solution to this problem would be to generate a very coarse underlying Hilbert curve,

@@ -21361,27 +21361,27 @@ L 746.554226 755.776626
    </g>
    <g id="legend_1">
     <g id="patch_2">
-     <path d="M 815.61875 81.809375 
-L 912.425 81.809375 
-Q 914.425 81.809375 914.425 79.809375 
-L 914.425 36.775 
-Q 914.425 34.775 912.425 34.775 
-L 815.61875 34.775 
-Q 813.61875 34.775 813.61875 36.775 
-L 813.61875 79.809375 
-Q 813.61875 81.809375 815.61875 81.809375 
+     <path d="M 714.8125 128.84375 
+L 910.425 128.84375 
+Q 914.425 128.84375 914.425 124.84375 
+L 914.425 38.775 
+Q 914.425 34.775 910.425 34.775 
+L 716.8125 34.775 
+Q 712.8125 34.775 712.8125 38.775 
+L 712.8125 124.84375 
+Q 712.8125 128.84375 716.8125 128.84375 
 z
 " style="fill: #ffffff; opacity: 0.8; stroke: #cccccc; stroke-linejoin: miter"/>
     </g>
     <g id="line2d_2131">
-     <path d="M 817.61875 42.873437 
-L 827.61875 42.873437 
-L 837.61875 42.873437 
+     <path d="M 720.8125 54.51562 
+L 740.8125 54.51562  
+L 760.8125 54.51562  
 " style="fill: none; stroke: #252525; stroke-width: 3; stroke-linecap: square"/>
     </g>
     <g id="text_1">
      <!-- Elements -->
-     <g transform="translate(845.61875 46.373437)scale(0.1 -0.1)">
+     <g transform="translate(776.8125 61.51562)scale(0.2 -0.2)">
       <defs>
        <path id="DejaVuSans-45" d="M 628 4666 
 L 3578 4666 
@@ -21544,12 +21544,12 @@ z
     </g>
     <g id="line2d_2132">
      <g>
-      <use xlink:href="#mb99cf4e56f" x="827.61875" y="57.551562" style="fill: #c586c0; stroke: #c586c0"/>
+      <use xlink:href="#mb99cf4e56f" x="740.8125" y="83.407812" style="fill: #c586c0; stroke: #c586c0"/>
      </g>
     </g>
     <g id="text_2">
      <!-- Nodes -->
-     <g transform="translate(845.61875 61.051562)scale(0.1 -0.1)">
+     <g transform="translate(776.8125 90.407812)scale(0.2 -0.2)">
       <defs>
        <path id="DejaVuSans-4e" d="M 628 4666 
 L 1478 4666 
@@ -21620,14 +21620,14 @@ z
      </g>
     </g>
     <g id="line2d_2133">
-     <path d="M 817.61875 72.229687 
-L 827.61875 72.229687 
-L 837.61875 72.229687 
+     <path d="M 720.8125 112.898375 
+L 740.8125 112.898375 
+L 760.8125 112.898375 
 " style="fill: none; stroke: #6a9955; stroke-width: 5; stroke-linecap: square"/>
     </g>
     <g id="text_3">
      <!-- Hilbert curve -->
-     <g transform="translate(845.61875 75.729687)scale(0.1 -0.1)">
+     <g transform="translate(776.8125 119.764029)scale(0.2 -0.2)">
       <defs>
        <path id="DejaVuSans-48" d="M 628 4666 
 L 1259 4666 
