@@ -529,7 +529,7 @@ performance without load balancing.
 	\hfill
 	\subfloat[High load imbalance]
 	{\includesvg[width=0.32\textwidth]{Chapter_results/media/load_balancing_interval_N4_K16384_A20_P16_S7}\label{fig:load_balancing_efficiency_interval_s7}}
-	\caption{Load balancing performance interval test: Simulation time with refinement and load balancing while increasing load balancing interval. \(N_{initial} = 4\), \(K_{initial} = 16384\), refinement interval = 20, \(P = 16\) (a) \(s = 3\) (b) \(s = 5\) (c) \(s = 7\)}\label{fig:load_balancing_efficiency_interval}
+	\caption{Load balancing performance interval test: Simulation time with refinement and load balancing while increasing load balancing interval. \(N_{initial} = 4\), \(K_{initial} = 16384\), refinement interval = 20, \(P = 16\) (a) \(S = 3\) (b) \(S = 5\) (c) \(S = 7\)}\label{fig:load_balancing_efficiency_interval}
 \end{figure}
 
 From Figure~\ref{fig:load_balancing_efficiency_interval}, we can see that load balancing diminishes
@@ -559,7 +559,7 @@ cases are shown in Figure~\ref{fig:load_balancing_efficiency_threshold}.
 	\hfill
 	\subfloat[High load imbalance]
 	{\includesvg[width=0.32\textwidth]{Chapter_results/media/load_balancing_threshold_N4_K16384_A20_L20_P16_S7}\label{fig:load_balancing_efficiency_threshold_s7}}
-	\caption{Load balancing performance threshold test: Simulation time with refinement and load balancing while increasing load balancing threshold. \(N_{initial} = 4\), \(K_{initial} = 16384\), refinement interval = 20, load balancing interval = 20, \(P = 16\) (a) \(s = 3\) (b) \(s = 5\) (c) \(s = 7\)}\label{fig:load_balancing_efficiency_threshold}
+	\caption{Load balancing performance threshold test: Simulation time with refinement and load balancing while increasing load balancing threshold. \(N_{initial} = 4\), \(K_{initial} = 16384\), refinement interval = 20, load balancing interval = 20, \(P = 16\) (a) \(S = 3\) (b) \(S = 5\) (c) \(S = 7\)}\label{fig:load_balancing_efficiency_threshold}
 \end{figure}
 
 From Figure~\ref{fig:load_balancing_efficiency_threshold}, we observe that using a load imbalance
@@ -629,8 +629,12 @@ The \acrshort{acr:CPU} case is computed on a single \acrshort{acr:CPU} core, and
 
 \begin{figure}[H]
 	\centering
-	\includesvg[width=0.6\textwidth]{Chapter_results/media/N_iteration_time}
-	\caption{Polynomial order influence: Iteration time with increasing polynomial order \(N\).}\label{fig:N_influence}
+	\subfloat[\Acrshort{acr:CPU}]
+	{\includegraphics[width=0.5\textwidth]{Chapter_results/media/N_cpu_iteration_time}\label{fig:N_cpu_influence}}
+	\hfill
+	\subfloat[\Acrshort{acr:GPU}]
+	{\includegraphics[width=0.48\textwidth]{Chapter_results/media/N_gpu_iteration_time}\label{fig:N_gpu_influence}}
+	\caption{Polynomial order influence: Iteration time with increasing polynomial order \(N\). (a) \Acrshort{acr:CPU} (b) \Acrshort{acr:GPU}}\label{fig:N_influence}
 \end{figure}
 
 Figure~\ref{fig:N_influence} shows that the relation between iteration time and polynomial order
