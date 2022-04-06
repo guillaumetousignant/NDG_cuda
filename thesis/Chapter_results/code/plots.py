@@ -103,6 +103,9 @@ adaptivity_baseline_max_error = np.array([5.1e-9, 5.1e-9, 5.1e-9, 5.1e-9])
 adaptivity_same_error_t = np.array([48.3641, 48.3641, 48.3641, 48.3641])
 adaptivity_same_error_max_error = np.array([8.3e-8, 8.3e-8, 8.3e-8, 8.3e-8])
 best_pre_condition = 4
+adaptivity_legend_locations = [(0.3, 0.665), (0.3, 0.665), (0.3, 0.665), (0.3, 0.665)] # Must be changed if
+adaptivity_all_legend_location = (0.31, 0.65)               	    	    	       # data is modified
+adaptivity_all_error_legend_location = (0.3, 0.1)   # Turns out that "best" only has a few locations
 
 # Load balancing efficiency interval
 load_balancing_interval_A = np.array([20, 20, 20])                      # Adaptivity interval
@@ -175,6 +178,7 @@ ideal_style = "--"
 ideal_style2 = "-."
 same_error_style = ":"
 adaptivity_style = ""
+load_balancing_style = ""
 
 # Strong scaling
 for i in range(N.shape[0]):
@@ -246,7 +250,7 @@ for i in range(adaptivity_interval.shape[0]):
     ax.semilogy(adaptivity_baseline_C[i, :], [adaptivity_baseline_t[i], adaptivity_baseline_t[i]], color=gpu_colour, linewidth=data_width, linestyle=ideal_style, label="Non-adaptive fully refined total time")
     ax.semilogy(adaptivity_baseline_C[i, :], [adaptivity_same_error_t[i], adaptivity_same_error_t[i]], color=gpu_colour, linewidth=data_width, linestyle=same_error_style, label="Non-adaptive similar error total time")
 
-    ax.legend()
+    ax.legend(loc=adaptivity_legend_locations[i])
     fig.tight_layout()
 
     fig.savefig(save_path / f"adaptivity_time_N{adaptivity_N[i]}_K{adaptivity_K[i]}_A{adaptivity_interval[i]}.svg", format='svg', transparent=True)
@@ -284,7 +288,7 @@ amr_ax.loglog(adaptivity_interval, adaptivity_baseline_t, color=gpu_colour, line
 amr_ax.loglog(adaptivity_interval, adaptivity_same_error_t, color=gpu_colour, linewidth=data_width, linestyle=same_error_style, label="Non-adaptive similar error total time")
 
 amr_ax.set_xticks(adaptivity_interval, adaptivity_interval.astype(str))
-amr_ax.legend()
+amr_ax.legend(loc=adaptivity_all_legend_location)
 amr_fig.tight_layout()
 
 amr_fig.savefig(save_path / f"adaptivity_time_N{adaptivity_N[0]}_K{adaptivity_K[0]}_C{adaptivity_C[0][best_pre_condition]}.svg", format='svg', transparent=True)
@@ -303,7 +307,7 @@ amr_error_ax.loglog(adaptivity_interval, adaptivity_baseline_max_error, color=er
 amr_error_ax.loglog(adaptivity_interval, adaptivity_same_error_max_error, color=error_colour, linewidth=data_width, linestyle=same_error_style, label="Non-adaptive similar error max error")
 
 amr_error_ax.set_xticks(adaptivity_interval, adaptivity_interval.astype(str))
-amr_error_ax.legend()
+amr_error_ax.legend(loc=adaptivity_all_error_legend_location)
 amr_error_fig.tight_layout()
 
 amr_error_fig.savefig(save_path / f"adaptivity_error_N{adaptivity_N[0]}_K{adaptivity_K[0]}_C{adaptivity_C[0][best_pre_condition]}.svg", format='svg', transparent=True)
@@ -318,7 +322,7 @@ for i in range(load_balancing_interval_N.shape[0]):
     fig.canvas.manager.set_window_title(title)
     ax.grid()
 
-    ax.plot(load_balancing_interval_L[i, :], load_balancing_interval_t[i, :], color=gpu_colour, linewidth=data_width, marker=data_shape, markersize=data_size, label="Time with load balancing")
+    ax.plot(load_balancing_interval_L[i, :], load_balancing_interval_t[i, :], color=gpu_colour, linewidth=data_width, marker=data_shape, markersize=data_size, linestyle=load_balancing_style, label="Time with load balancing")
     ax.plot(load_balancing_interval_baseline_L[i, :], [load_balancing_interval_baseline_t[i], load_balancing_interval_baseline_t[i]], color=gpu_colour, linewidth=data_width, linestyle=ideal_style, label="Time without load balancing")
 
     ax.set_ylim([0, 1.2 * max(max(load_balancing_interval_t[i, :]), load_balancing_interval_baseline_t[i])])
@@ -338,7 +342,7 @@ for i in range(load_balancing_threshold_N.shape[0]):
     fig.canvas.manager.set_window_title(title)
     ax.grid()
 
-    ax.plot(load_balancing_threshold_T[i, :], load_balancing_threshold_t[i, :], color=gpu_colour, linewidth=data_width, marker=data_shape, markersize=data_size, label="Time with load balancing")
+    ax.plot(load_balancing_threshold_T[i, :], load_balancing_threshold_t[i, :], color=gpu_colour, linewidth=data_width, marker=data_shape, markersize=data_size, linestyle=load_balancing_style, label="Time with load balancing")
     ax.plot(load_balancing_threshold_baseline_T[i, :], [load_balancing_threshold_baseline_t[i], load_balancing_threshold_baseline_t[i]], color=gpu_colour, linewidth=data_width, linestyle=ideal_style, label="Time without load balancing")
 
     ax.set_ylim([0, 1.2 * max(max(load_balancing_threshold_t[i, :]), load_balancing_threshold_baseline_t[i])])
