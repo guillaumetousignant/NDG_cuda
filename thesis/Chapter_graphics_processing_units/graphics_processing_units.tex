@@ -421,37 +421,37 @@ copying, at which point we can use the \acrshort{acr:CPU} array. To finish up, w
 
 \begin{algorithm}[H]
     \begin{cuda}
-		auto main(int argc, char* argv[]) -> int {
-			cudaStream_t stream;
-			cudaStreamCreate(&stream); 
+        auto main(int argc, char* argv[]) -> int {
+            cudaStream_t stream;
+            cudaStreamCreate(&stream); 
 
-			const size_t length = 1000;
-			double* pressure_cpu = new double[length];
-			for (size_t i = 0; i < length; ++i){
-				pressure_cpu[i] = 1.0;
-			}
-			double* pressure_gpu = nullptr;
+            const size_t length = 1000;
+            double* pressure_cpu = new double[length];
+            for (size_t i = 0; i < length; ++i){
+                pressure_cpu[i] = 1.0;
+            }
+            double* pressure_gpu = nullptr;
 
-			cudaMallocAsync(&pressure_gpu, length * sizeof(double), stream);
-			cudaMemcpyAsync(pressure_gpu, pressure_cpu, length * sizeof(double), 
+            cudaMallocAsync(&pressure_gpu, length * sizeof(double), stream);
+            cudaMemcpyAsync(pressure_gpu, pressure_cpu, length * sizeof(double), 
                 cudaMemcpyHostToDevice, stream);
 
-			const numBlocks = 10;
-			const blockSize = 100;
-			perform_gpu_computations<<<numBlocks, blockSize, 0, stream>>>(
-				length, pressure_gpu);
+            const numBlocks = 10;
+            const blockSize = 100;
+            perform_gpu_computations<<<numBlocks, blockSize, 0, stream>>>(
+            length, pressure_gpu);
 			
-			cudaMemcpyAsync(pressure_cpu, pressure_gpu, length * sizeof(double), 
+            cudaMemcpyAsync(pressure_cpu, pressure_gpu, length * sizeof(double), 
                 cudaMemcpyDeviceToHost, stream);
-			cudaStreamSynchronize(stream);
+            cudaStreamSynchronize(stream);
 
-			display_cpu_results(length, pressure_cpu);
+            display_cpu_results(length, pressure_cpu);
 
-			delete[] pressure_cpu;
-			cudaFreeAsync(pressure_gpu, stream);
-			cudaStreamDestroy(stream);
-			return 0;
-		}\end{cuda}
+            delete[] pressure_cpu;
+            cudaFreeAsync(pressure_gpu, stream);
+            cudaStreamDestroy(stream);
+            return 0;
+        }\end{cuda}
 \caption{\textbf{cuda\_memory:} A pressure array is allocated on the \acrshort{acr:CPU}, then transferred back and forth to the \acrshort{acr:GPU}.}\label{alg:cuda_memory}
 \end{algorithm}
 
