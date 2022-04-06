@@ -149,8 +149,8 @@ best_T = 2
 # N scaling
 N_scaling_N_cpu = np.array([4, 6, 8, 10, 12, 14, 16])
 N_scaling_N_gpu = np.array([4, 6, 8, 10, 12, 14, 16])
-N_scaling_t_cpu = np.array([40.1137, 71.5033, 108.358, 192.504, 257.458, 349.042, 490.11])
-N_scaling_t_gpu = np.array([2.14944, 4.13552, 8.07533, 12.7138, 18.2212, 26.0583, 33.3919])
+N_scaling_t_cpu = np.array([40.1137, 71.5033, 108.358, 166.614, 257.458, 349.042, 490.11])/1000
+N_scaling_t_gpu = np.array([2.14944, 4.13552, 8.07533, 12.7138, 18.2212, 26.0583, 33.3919])/1000
 N_scaling_wanted_N = range(1, 5)
 
 # Plots
