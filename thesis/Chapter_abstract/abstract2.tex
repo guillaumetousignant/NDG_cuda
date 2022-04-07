@@ -1,7 +1,7 @@
 \thispagestyle{plain} % stop the headers being added in
 
 \begin{center}
-	\vspace*{0.45cm} % vertical gap. *" makes sure Latex does not ignore the command. 
+	\vspace*{0.4cm} % vertical gap. *" makes sure Latex does not ignore the command. 
 	\phantomsection\addcontentsline{toc}{chapter}{Abstract}
 	{ \Large
 		\textbf{A Graphics Processing Unit Based \\ 
@@ -9,27 +9,28 @@
 			with hp-Adaptivity and Load Balancing \\
 		}
 	}
-	\vspace{0.35cm}
+	\vspace{0.3cm}
 	\large
 
 	by \\
-	\vspace{0.35cm}
+	\vspace{0.3cm}
 	\textbf{Guillaume Tousignant}
 	
 	\vspace{0.8cm}
 	\textbf{Abstract}
+    \vspace{0.25cm}
 \end{center}
 
 \begin{adjustwidth}{-0.5in}{-0.5in}
 
 \hspace{\parindent} % Don't know why it isn't indented by default
-In \acrfull{acr:CFD}, we often need to solve complex problems with high precision. We propose
-a three-pronged approach to attain this goal. First, we use the \textit{\acrfull{acr:DG-SEM}} for
-its high accuracy. Second, we use \textit{\acrfullpl{acr:GPU}} to perform our computations to
-increase the available parallel computing power. Third, we implement a parallel
-\textit{\acrfull{acr:AMR}} algorithm to efficiently use our computing power where it is most needed.
-We present a \acrshort{acr:GPU} \acrshort{acr:DG-SEM} solver with \acrshort{acr:AMR} for the 2D wave
-equation. 
+In \acrfull{acr:CFD}, we often need to solve complex problems with high precision. We propose a
+three-pronged approach to attain this goal. First, we use the \textit{\acrfull{acr:DG-SEM}} for its
+high accuracy. Second, we use \textit{\acrfullpl{acr:GPU}} to perform our computations to increase
+the available parallel computing power. Third, we implement a parallel \textit{\acrfull{acr:AMR}}
+algorithm to efficiently use our computing power where it is most needed. We present a
+\acrshort{acr:GPU} \acrshort{acr:DG-SEM} solver with \acrshort{acr:AMR} and dynamic load balancing
+for the 2D wave equation. 
 
 The \acrshort{acr:DG-SEM} is a higher-order method that splits a domain into elements and represents
 the solution within these elements as a truncated series of orthogonal polynomials. This approach
