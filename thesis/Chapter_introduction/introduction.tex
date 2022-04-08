@@ -2,13 +2,13 @@
 
 Fluid flows are an important part of everyday life. Fluid mechanics is a whole discipline dedicated
 to studying and describing the behaviour of liquids and gasses in motion. More and more industrial
-and scientific applications surface everyday, from great scales like climate studies encompassing
-the whole earth over millennia, to the study of microscopic cells flowing through tiny blood
-vessels. The aerospace industry is probably the most evident example of how prevalent aerodynamics
-are in today's world. Before the advent of computers, there were really only two methods used in
-engineering fluid dynamics: experimental and theoretical. Since the widespread use of computers
-became the norm, a third method appeared: \textit{\acrfull{acr:CFD}}. This is a numerical approach
-to solving the equations governing those processes.
+and scientific applications of this discipline surface everyday, from large-scales studies of
+climate encompassing the whole earth over millennia, to the study of microscopic cells flowing
+through tiny blood vessels. The aerospace industry is probably the most evident example of how
+prevalent aerodynamics are in today's world. Before the advent of computers, there were really only
+two approaches to study the dynamics of fluids: experimental and theoretical. Once the widespread
+use of computers became the norm, a third method appeared: \textit{\acrfull{acr:CFD}}.
+\Acrshort{acr:CFD} is a numerical approach to solving the equations governing the motion of fluids.
 
 Usage of \acrshort{acr:CFD} has been steadily rising in recent years~\cite{Slotnick2014}. It is easy
 to imagine why, when experimental results are so costly to obtain, and a theoretical approach is
@@ -31,7 +31,9 @@ methods are high-order methods and converge exponentially fast. Such methods are
 complex flows, but are expensive and are only recently emerging from the research environment to
 tackle more and more complex problems from classical aerodynamics~\cite{Vadsola2021} to nuclear
 reactor flows~\cite{Merzari2017}, internal combustion~\cite{Wu2021}, ocean
-simulation~\cite{Molcard2002}, atmosphere simulation~\cite{Haidvogel1997}, and more. 
+simulation~\cite{Molcard2002}, atmosphere simulation~\cite{Haidvogel1997}, and more.
+Figure~\ref{fig:intro_sem} shows \acrfull{acr:DNS} of the transition to turbulence of a
+multi-element airfoil and the arising complex flow structures.
 
 \begin{figure}[H]
 	\centering
@@ -50,35 +52,36 @@ within a space subdivision, spectral methods represent a function as a truncated
 where \(\phi _n(x)\) are high order basis functions. We use this representation in the governing
 equations to compute the unknowns \(\widehat{u}_n\). Spectral methods are usually divided into two
 categories~\cite{Karniadakis2005}: collocation methods and Galerkin methods. Galerkin methods solve
-governing equations in integral form over the domain~\cite{Reed1973}, which is broken up into
-elements. This method, in combination with the spectral approximation, will be used in this work. It
-is called the \textit{Galerkin spectral element method}. This method can be formulated both in
-\textit{continuous} and \textit{discontinuous} versions. Continuous methods decompose the domain
+governing equations in integral form over the domain of interest~\cite{Reed1973}, which is broken up
+into elements. This method, in combination with the spectral approximation, will be used in this
+work. It is called the \textit{Galerkin spectral element method}. This method can be formulated both
+in \textit{continuous} and \textit{discontinuous} versions. Continuous methods decompose the domain
 into elements, within which the solution is represented as functions. These functions join at the
 element boundaries, making the method continuous. Discontinuous methods allow the solution to be
 discontinuous at element boundaries, using fluxes between elements to stabilise the scheme. We refer
-to these as the \textit{\acrfull{acr:DG-SEM}}. We will use this method, as it is easier to
-parallelise. The fact that elements are independent and only connect through fluxes should map
+to these as the \textit{\acrfull{acr:DG-SEM}}. We will use this second method, as it is easier to
+parallelise. Since elements are independent and only connect through fluxes the algorithm should map
 better to massively parallel architectures, where the solution of all elements will be computed
-concurrently. It makes mesh refinement more straightforward by simplifying the usage of
-non-conforming interfaces. Both \acrshort{acr:SEM} methods, continuous or discontinuous, combines
-the accuracy and exponential convergence of spectral methods with the geometric flexibility of
-finite element methods. 
+concurrently. Non-conforming interfaces are more straightforward to implement with the flux
+formulation, which should simplify the mesh refinement algorithm. Both \acrshort{acr:SEM} methods,
+continuous or discontinuous, combine the accuracy and exponential convergence of spectral methods
+with the geometric flexibility of finite element methods. 
 
 % GPUs
 With the stagnation of traditional computer \textit{\acrfull{acr:CPU}} operating frequencies over
-the last years~\cite{Parkhurst2006}, computer systems have evolved to use more parallel
+the last few years~\cite{Parkhurst2006}, computer systems have evolved to use more parallel
 architectures. \Acrshortpl{acr:CPU} are now composed of several computing cores~\cite{Nayfeh1997}
 executing tasks together or in parallel, and contemporary \textit{\acrfull{acr:HPC}} platforms
 consist of several whole computers networked together executing tasks in parallel. Amidst those
-changes, an inherently parallel architecture has started to be used in scientific computing.
-\textit{\Acrfullpl{acr:GPU}} are computer chips that were initially used in computer graphics, for
-massively parallel workloads. \Acrshortpl{acr:GPU} can now be programmed similarly to traditional
-\acrshortpl{acr:CPU}~\cite{Owens2008}, offering their thousands of simpler cores to many kinds of
-computation. This architecture is optimised for maximal bandwidth, to process great amounts of data
-as fast as possible. Recently, these processors have been incorporated into \acrshort{acr:HPC}
-platforms~\cite{Fan2004}, enabling massively parallel workloads with theoretical processing power
-much greater than that using traditional \acrshortpl{acr:CPU}.
+changes, an inherently parallel architecture has emerged in scientific computing.
+\textit{\Acrfullpl{acr:GPU}} are computer chips that were initially intended only for computer
+graphics, for massively parallel workloads. \Acrshortpl{acr:GPU} can now be programmed similarly to
+traditional \acrshortpl{acr:CPU}~\cite{Owens2008}, offering their thousands of simpler cores to many
+kinds of computation. This architecture is optimised for maximal bandwidth, to process great amounts
+of data as fast as possible. Figure~\ref{fig:intro_gpu} reflects this, with the \acrshort{acr:GPU}
+having much more die space dedicated to computations in green. Recently, these processors have been
+incorporated into \acrshort{acr:HPC} platforms~\cite{Fan2004}, enabling massively parallel workloads
+with theoretical processing power much greater than that using traditional \acrshortpl{acr:CPU}.
 
 \begin{figure}[H]
 	\centering
@@ -109,16 +112,16 @@ aim to identify the areas of the mesh that need refinement, and refine those are
 accurate results while not wasting resources on areas of less interest. Figure~\ref{fig:intro_amr}
 shows an example of a problem that has been refined in order to better capture the bow shock around
 a spacecraft. In 1984, Berger and Oliger~\cite{Berger1984} described a recursive method where
-refined grids can contain further refined grids, used for the finite difference method and
+refined grids can contain further refined grids, used for the finite difference method to resolve
 hyperbolic equations. Another \acrshort{acr:AMR} method by Khokhlov~\cite{Khokhlov1998} has reported
-a factor of 10 savings of both memory and computing time. We will use \acrlong{acr:AMR} to make more
-efficient use of the resources we have and to ease working with the more limited amount of memory of
-\acrshortpl{acr:GPU} compared to \acrshortpl{acr:CPU}.
+a factor of 10 savings of both memory and computing time for a 2D solver for the Euler equations. We
+will use \acrlong{acr:AMR} to make more efficient use of the resources we have and to ease working
+with the more limited amount of memory of \acrshortpl{acr:GPU} compared to \acrshortpl{acr:CPU}.
 
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.8\textwidth]{Chapter_introduction/media/adaptive_mesh_refinement}
-	\caption{\Acrlong{acr:AMR}: The mesh is more refined in certain flow regions to capture important features of the flow (reprinted from~\cite{Siemens2020}).}\label{fig:intro_amr}
+	\caption{\Acrlong{acr:AMR} example for flow around a spacecraft: The mesh is more refined in certain flow regions to capture important features of the flow such as the bow shock ahead of the vehicle (reprinted from~\cite{Siemens2020}).}\label{fig:intro_amr}
 \end{figure}
 
 Two general approaches to \acrshort{acr:AMR} exist. Berger and Oliger~\cite{Berger1984} use
@@ -224,14 +227,14 @@ In summary, we want to solve complex problems with high accuracy. We will need a
 numerical method, more processing power than traditional \acrshort{acr:CPU} programming methods
 possess, and a way to use that increased processing power as efficiently as possible. 
 
-We propose using the \acrlong{acr:DG-SEM} as a very accurate numerical method. We will perform the
+We propose using the \acrlong{acr:DG-SEM} as a very accurate numerical method. We perform the
 computations on \acrlongpl{acr:GPU} to access their great amount of parallel processing power. We
-will use this increased amount of computing power more efficiently by performing \acrlong{acr:AMR}
-to use more resources where needed, and less elsewhere. We will finally add dynamic load balancing
-to keep the parallel efficiency of the program as high as possible while the topology changes. This
+use this increased amount of computing power more efficiently by performing \acrlong{acr:AMR} to use
+more resources where needed, and less elsewhere. We finally add dynamic load balancing to keep the
+parallel efficiency of the program as high as possible while the topology changes. This approach
 tackles the main challenges necessary to keep advancing \acrshort{acr:CFD}.
 
-In order to showcase these techniques, we will solve a sample problem using the 2D wave equation:
+In order to showcase these techniques, we solve a sample problem using the 2D wave equation:
 
 \begin{gather}
 	\frac{\partial^2p}{\partial t^2} - c^2(p_{xx} + p_{yy}) = 0 \\
@@ -240,10 +243,10 @@ In order to showcase these techniques, we will solve a sample problem using the 
 \end{gather}
 
 % Structure
-The structure of this thesis will follow these main concepts.
+The structure of this thesis follows the list of concepts elaborated above.
 Chapter~\ref{chapter:literature_review} discusses the current state of the art of the domain.
 Chapter~\ref{chapter:graphics_processing_units} presents the \acrshort{acr:GPU} architecture and how
-we tackle implementing our algorithms on that special architecture. In
+we tackle the implementation of our algorithms on that special architecture. In
 Chapter~\ref{chapter:spectral_element_method}, we present the \acrshort{acr:DG-SEM} and the
 derivation used for the sample problem. Then, Chapter~\ref{chapter:adaptive_mesh_refinement}
 explains our proposed algorithm for parallel \acrshort{acr:AMR} on \acrshortpl{acr:GPU}. We then
