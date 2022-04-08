@@ -26,7 +26,7 @@
 \usepackage{graphicx}                               % figures
 \usepackage[inkscapelatex=false]{svg}               % svg figures, without changing the fonts
 \usepackage{subfig}                                 % sub figures
-\usepackage[nottoc]{tocbibind}                      % put bib in the table of content 
+\usepackage{tocbibind}                              % put bib and toc in the table of content 
 \usepackage{amsfonts}                               % for math equations
 \usepackage{array}                                  % table
 \newcolumntype{M}[1]{>{\centering\arraybackslash}m{#1}}
@@ -93,25 +93,22 @@
     \pagenumbering{roman}
 
     % title page------------------------------------------------------------------------------------
-    \addcontentsline{toc}{chapter}{Title Page}
-    \input{Chapter_title/title_page.tex}
+    \include{Chapter_title/title_page.tex}
     % ----------------------------------------------------------------------------------------------
 
     \newpage
     \setcounter{page}{2}
     % abstract -------------------------------------------------------------------------------------
-    \input{Chapter_abstract/abstract2.tex}
+    \include{Chapter_abstract/abstract2.tex}
     % ----------------------------------------------------------------------------------------------
 
     % acknowledgement ------------------------------------------------------------------------------
-    \input{Chapter_acknowledgements/acknowledgements.tex}
-    \addcontentsline{toc}{chapter}{Acknowledgements}
+    \include{Chapter_acknowledgements/acknowledgements.tex}
     % ----------------------------------------------------------------------------------------------
 
     % generate table of contents ===================================================================
     \setcounter{tocdepth}{5}    % set the depth of table of contents
     \tableofcontents
-    \addcontentsline{toc}{chapter}{Contents}    % put toc to the toc
     % ==============================================================================================
     
     % ==============================================================================================
