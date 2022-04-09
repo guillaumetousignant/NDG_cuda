@@ -165,10 +165,10 @@ h_ax.arrow(1.5, 0, 1, 0, length_includes_head=False, width=0.05, head_length=0.1
 
 h_fig.savefig(save_path / f"h-adaptivity_N{N[0]}.svg", format='svg', transparent=True)
 
-hp_fig = plt.figure(figsize=(4.95,3.55))
+hp_fig = plt.figure(figsize=(4.4,3))
 hp_ax = hp_fig.add_subplot(1, 1, 1)
-hp_ax.set_xlim(-1.1, 2.5)
-hp_ax.set_ylim(-1.3, 1.3)
+hp_ax.set_xlim(-1.1, 2.1)
+hp_ax.set_ylim(-1.1, 1.1)
 hp_ax.set_aspect(1)
 hp_ax.axis('off')
 hp_fig.subplots_adjust(left=0.0, right=1.0, bottom=0.0, top=1.0)
@@ -183,35 +183,24 @@ for i in range(N[0] + 1):
     for j in range(N[0] + 1):
         hp_ax.plot(nodes[0][i], nodes[0][j], color=points_colour, linewidth=points_width, marker=points_shape, markersize=points_size)
 
-hp_ax.plot([1.4, 2.4, 2.4, 1.4, 1.4], [-1.2, -1.2, -0.2, -0.2, -1.2], color=outline_colour, linewidth=outline_width)
-hp_ax.plot([1.4, 2.4, 2.4, 1.4, 1.4], [0.2, 0.2, 1.2, 1.2, 0.2], color=outline_colour, linewidth=outline_width)
+hp_ax.plot([1, 2, 2, 1, 1], [-1, -1, 0, 0, -1], color=outline_colour, linewidth=outline_width)
+hp_ax.plot([1, 2, 2, 1, 1], [0, 0, 1, 1, 0], color=outline_colour, linewidth=outline_width)
 
 for i in range(N[1] + 1):
-    hp_ax.plot([nodes[1][i]/2 + 1.9, nodes[1][i]/2 + 1.9], [-1.2, -0.2], color=lines_colour, linewidth=lines_width)
-    hp_ax.plot([1.4, 2.4], [nodes[1][i]/2 - 0.7, nodes[1][i]/2 - 0.7], color=lines_colour, linewidth=lines_width)
+    hp_ax.plot([nodes[1][i]/2 + 1.5, nodes[1][i]/2 + 1.5], [-1, 0], color=lines_colour, linewidth=lines_width)
+    hp_ax.plot([1, 2], [nodes[1][i]/2 - 0.5, nodes[1][i]/2 - 0.5], color=lines_colour, linewidth=lines_width)
 
 for i in range(N[0] + 1):
-    hp_ax.plot([nodes[0][i]/2 + 1.9, nodes[0][i]/2 + 1.9], [0.2, 1.2], color=lines_colour, linewidth=lines_width)
-    hp_ax.plot([1.4, 2.4], [nodes[0][i]/2 + 0.7, nodes[0][i]/2 + 0.7], color=lines_colour, linewidth=lines_width)
+    hp_ax.plot([nodes[0][i]/2 + 1.5, nodes[0][i]/2 + 1.5], [0, 1], color=lines_colour, linewidth=lines_width)
+    hp_ax.plot([1, 2], [nodes[0][i]/2 + 0.5, nodes[0][i]/2 + 0.5], color=lines_colour, linewidth=lines_width)
 
 for i in range(N[1] + 1):
     for j in range(N[1] + 1):
-        hp_ax.plot(nodes[1][i]/2 + 1.9, nodes[1][j]/2 - 0.7, color=points_colour, linewidth=points_width, marker=points_shape, markersize=points_size)
+        hp_ax.plot(nodes[1][i]/2 + 1.5, nodes[1][j]/2 - 0.5, color=points_colour, linewidth=points_width, marker=points_shape, markersize=points_size)
 
 for i in range(N[0] + 1):
     for j in range(N[0] + 1):
-        hp_ax.plot(nodes[0][i]/2 + 1.9, nodes[0][j]/2 + 0.7, color=points_colour, linewidth=points_width, marker=points_shape, markersize=points_size) 
-
-hp_ax.plot([1.2, 1.2], [-1.1, -0.1], color=faces_colour, linewidth=faces_width)
-hp_ax.plot([1.2, 1.2], [0.1, 1.1], color=faces_colour, linewidth=faces_width)
-hp_ax.plot([1.4, 2.4], [0, 0], color=faces_colour, linewidth=faces_width)
-
-for i in range(N[0] + 1):
-    hp_ax.plot(1.2, nodes[0][i]/2 + 0.6, color=face_points_colour, linewidth=points_width, marker=points_shape, markersize=points_size) 
-
-for i in range(N[1] + 1):
-    hp_ax.plot(1.2, nodes[1][i]/2 - 0.6, color=face_points_colour, linewidth=points_width, marker=points_shape, markersize=points_size) 
-    hp_ax.plot(nodes[1][i]/2 + 1.9, 0, color=face_points_colour, linewidth=points_width, marker=points_shape, markersize=points_size) 
+        hp_ax.plot(nodes[0][i]/2 + 1.5, nodes[0][j]/2 + 0.5, color=points_colour, linewidth=points_width, marker=points_shape, markersize=points_size) 
 
 hp_fig.savefig(save_path / f"hp-adaptivity_N{N[0]}_N{N[1]}.svg", format='svg', transparent=True)
 

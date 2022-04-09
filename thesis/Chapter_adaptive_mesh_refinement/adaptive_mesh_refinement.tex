@@ -2,13 +2,13 @@
 
 Computers constantly increase in power, thanks to incremental progress made on known processes and
 new architectures such as those described in Chapter~\ref{chapter:graphics_processing_units}.
-However, processing power and memory are still limited and the size of problems studied has
-increased in step with the available resources. It is still necessary to carefully manage those
+However, processing power and memory are still limited. While the size of problems studied has
+increased in step with the available resources, it is still necessary to carefully manage those
 limited resources in order to maximise the efficiency of simulations. Some flow regions may be more
 interesting or harder to compute, benefiting from an increase in resolution. On the other hand, some
 flow regions may have less happening in them or be easier to compute, and a decrease in resolution
-may be acceptable. An example is Figure~\ref{fig:mesh_refinement}, where the areas near the wave in
-red have been refined.
+may be acceptable. An example is given in Figure~\ref{fig:mesh_refinement}, where the areas near the
+wave in red have been refined.
 
 \begin{figure}[H]
     \centering
@@ -29,13 +29,13 @@ areas before the computation starts. However, it is not always possible to know 
 beforehand, or these areas may move as time advances if the problem is transient. The error may also
 be higher in unforeseen areas.
 
-\Acrlong{acr:AMR} is the process of altering the mesh as the computation goes, in areas where the
-effect of that increase in resolution is most needed. To find out where to refine, the solution
-error must be estimated, and a refinement method must be chosen. The error can be estimated by
-extrapolating the value of the next mode in the spectral approximation, and the slope of the last
-few modes can guide the choice of the refinement method. The two refinement methods studied here are
-h-refinement and p-refinement, increasing the number of elements and the polynomial order,
-respectively.
+\Acrlong{acr:AMR} is the process of automatically altering the mesh as the computation goes, in
+areas where the effect of that increase in resolution is most needed. To find out where to refine,
+the solution error must be estimated, and a refinement method must be chosen. The error can be
+estimated by extrapolating the value of the next mode in the spectral approximation, and the slope
+of the last few modes can guide the choice of the refinement method. The two refinement methods
+studied here are h-refinement and p-refinement, increasing the number of elements and the polynomial
+order, respectively.
 
 Once the mesh has been refined, the element boundaries can become geometrically or functionally
 non-conforming. In order to accurately compute fluxes between the elements, we use the mortar element
@@ -59,7 +59,7 @@ different \acrshortpl{acr:GPU} need to synchronise at each timestep, lightly-loa
 \acrshortpl{acr:GPU} will always be waiting for heavily-loaded \acrshortpl{acr:GPU}. The computation
 time will therefore be driven by the most heavily-loaded \acrshort{acr:GPU}, and the speedup
 incurred by parallelizing the program will be reduced. To improve this side effect of mesh
-refinement, a dynamic load balancing algorithm will be implemented in
+refinement, a dynamic load balancing algorithm is implemented in
 Chapter~\ref{chapter:load_balancing}.
 
 \section{Strategies}\label{section:adaptive_mesh_refinement:refinement_strategies}
@@ -103,18 +103,18 @@ detailed in Section~\ref{section:adaptive_mesh_refinement:refinement_criteria}.
 
 Once the mesh has been refined, it is possible that the interfaces between elements become
 non-conforming. Each interface is made up of two element edges on either side of the interface,
-shown in bold black on Figure~\ref{fig:hp-refinement}, and a face, in blue. Recall from
+shown in bold black on Figure~\ref{fig:hp-refinement}. Recall from
 Chapter~\ref{chapter:spectral_element_method} that fluxes are computed between the elements from the
 extrapolated values of the solution on collocation points corresponding to the polynomial order of
-the elements. These sit on the bold black lines in the figure above. This works directly if two
+the elements. These sit on the bold black lines in the figure. This works directly if two
 neighbouring elements have the same polynomial order and they completely share an edge. However,
 after p-refinement, interfaces can become functionally non-conforming, as seen with the horizontal
-interface in the figure above. The nodes do not match anymore since one element has more points than
-the other. After h-refining, interfaces can become geometrically non-conforming, as seen with the
-topmost blue line in the figure above. The nodes do not match because one element edge is shorter
-than the other. Finally, interfaces can be both geometrically and functionally non-conforming, as
-seen with the bottom blue line in the figure above. We will have to find a way to connect those
-elements in a way that retains the spectral convergence of the method. Such a method is described in
+interface in the figure. The nodes do not match anymore since one element has more points than the
+other. After h-refining, interfaces can become geometrically non-conforming, as seen with the
+topmost interface in the figure. The nodes do not match because one element edge is shorter than the
+other. Finally, interfaces can be both geometrically and functionally non-conforming, as seen with
+the bottom interface in the figure. We will have to find a way to connect those elements in a way
+that retains the spectral convergence of the method. Such a method is described in
 Section~\ref{section:adaptive_mesh_refinement:mortar_element_method}.
 
 \begin{figure}[H]
@@ -126,7 +126,7 @@ Section~\ref{section:adaptive_mesh_refinement:mortar_element_method}.
 The implication of \acrshort{acr:AMR} in the context of high performance computing, the central
 challenge of this thesis, is the appearance of load imbalance and loss of computing efficiency on
 and between processors. For example, the mesh from Figure~\ref{fig:mesh_refinement} is split into
-two blocks for two \acrshortpl{acr:GPU} to work in parallel, as shown on
+two blocks for two \acrshortpl{acr:GPU} to work in parallel, as shown in
 Figure~\ref{fig:load_imbalance}. Initially, both the left (purple) and right (blue)
 \acrshortpl{acr:GPU} have the same number of elements in their domain. After refining, the left
 \acrshort{acr:GPU} has more elements as the wave is in its domain and more elements have split
@@ -225,7 +225,7 @@ of the truncation error can then be approximated.
 \noindent
 where \(\widetilde{a}_n\) are the extrapolated modes. We use the orthogonality of the Legendre
 polynomials shown in Equation~\ref{equ:polynomial_orthogonality} to obtain a simpler form of the
-truncation error norm.
+truncation error estimate.
 
 \begin{equation} \label{equ:error_norm_1D}
     \tau_{est} = \sqrt{\sum_{n = N + 1}^{\infty } \frac{\widetilde{a}_{n}^2}{\frac{(2n + 1)}{2}}}
@@ -252,8 +252,8 @@ by least squares best fit to the existing calculated modes \(a_n, n = 0 \cdots N
 Figure~\ref{fig:sin_read_modes} shows an example with the modes of the smooth function \(u =
 \sin(\pi x)\) with a polynomial order \(N = 15\). It can be observed that the decay of the modes
 starts slowly, but becomes exponential after the first few modes.
-Figure~\ref{fig:sin_computed_modes} shows the modeled \(a_n\), with the dashed line being the slope
-\( \sigma \).
+Figure~\ref{fig:sin_computed_modes} shows the modeled \(a_n\), with the dashed line being the
+modeled exponential decay of slope \( \sigma \) in the log plot. 
 
 \begin{figure}[H]
     \centering
@@ -276,10 +276,10 @@ Equation~\ref{equ:exponential_decay} and get our linear relation.
 
 \noindent
 We apply a linear least-squares fit to the last points of the known modes \(a_n\). The slope of the
-line, \(\sigma \), is the error refinement criterion. It will help choose a refinement strategy in
-Section~\ref{section:adaptive_mesh_refinement:refinement_criteria}. The linear least-squares fit
-finds a straight line by minimising the sum of the squares of the distances between the fitted
-points and the line. The resulting line is given by:
+line, \(\sigma \), serves as the error refinement criterion. It will help choose a refinement
+strategy in Section~\ref{section:adaptive_mesh_refinement:refinement_criteria}. The linear
+least-squares fit finds a straight line by minimising the sum of the squares of the distances
+between the fitted points and the line. The resulting line is given by:
 
 \begin{equation}
     y = \alpha + \beta x,
@@ -296,8 +296,8 @@ and its coefficients are computed by:
 \noindent
 with \(\overline{x}\) and \(\overline{y}\) being the averages of the \(x\) and \(y\) data
 respectively. The \(x\) data is the mode number \(n = 0 \cdots N\), and the \(y\) data are the known
-modes in log form, \( \log(a_n) \).The error decay slope becomes \(\sigma = - \beta \), and the constant becomes \(C =
-e^\alpha \).
+modes in log form, \( \log(a_n) \). The error decay slope becomes \(\sigma = - \beta \), and the
+constant becomes \(C = e^\alpha \).
 
 Coming back to the error estimation, we can replace the sums of~\ref{equ:error_norm_1D}
 and~\ref{equ:error_norm_2D} by integrals since the behaviour of the modes is known as an analytic
@@ -349,7 +349,7 @@ We use the equivalent modes to estimate the error.
 The error estimator constants \(\sigma \) and \(C\) are computed from the 1D equivalent modes
 \(\overline{a}_n\).
 
-It is now possible to refine when the estimated error is past a certain threshold. We still need to
+It is now possible to refine when the estimated error exceeds a certain threshold. We still need to
 choose one of the refinement strategies from
 Section~\ref{section:adaptive_mesh_refinement:refinement_strategies}.
 Section~\ref{section:adaptive_mesh_refinement:refinement_criteria} describes a method to choose the
@@ -447,7 +447,8 @@ Section~\ref{chapter:spectral_element_method}.
 
 \subsection{Projection from Element to Mortar}\label{subsection:adaptive_mesh_refinement:mortar_element_method:element_to_mortar}
 
-Consider the projection two elements and a face as shown in Figure~\ref{fig:element_to_mortar}.
+Consider the projection between two elements and a face as shown in
+Figure~\ref{fig:element_to_mortar}.
 
 \begin{figure}[H]
     \centering
@@ -598,7 +599,7 @@ multiplied by the test function, be zero. We also use the Lagrange polynomials a
 \begin{equation} \label{equ:zero_error_to_element}
     \int_{-1}^{o'} \left( F(s) - \Phi (\frac{s - a}{b}) \right) l_j^\Omega(s)ds + \\
     \int_{o'}^{1} \left( F(s) - \Phi (\frac{s - a}{b}) \right) l_j^\Omega (s)ds = 0, \\
-    \quad j = 0 \ldots N,
+    \quad j = 0 \ldots N
 \end{equation}
 
 \noindent
@@ -720,9 +721,12 @@ regardless of their polynomial order. The element vector is allocated in \acrsho
 by the \acrshort{acr:CPU} using the \acrshort{acr:CUDA} runtime. Only this memory can be transferred
 between the \acrshort{acr:CPU} and \acrshort{acr:GPU}. Elemental solution arrays cannot be
 transferred between the \acrshort{acr:CPU} and \acrshort{acr:GPU} since they are allocated on the
-\acrshort{acr:GPU}. The same goes for the faces of the grid. Since the grid is unstructured, the
-elements and faces store the index of their neighbours. The faces have one element on either side,
-and the elements can have one or multiple faces on each of their four sides.
+\acrshort{acr:GPU}. The faces are also stored in a vector on the \acrshort{acr:GPU} by the
+\acrshort{acr:CPU} using the \acrshort{acr:CUDA} runtime. Since the grid is unstructured, the
+elements and faces store the index of their neighbour faces and elements, respectively. This is only
+the position of the neighbours in their respective vector, acting as references so that multiple
+elements can refer to the same face and vice versa. The faces have one element on either side, and
+the elements can have one or multiple faces on each of their four sides.
 
 With that structure in mind, \acrlong{acr:AMR} must be able to add elements to the mesh, change the
 polynomial order of elements, replace elements that have split, create, replace and change the
