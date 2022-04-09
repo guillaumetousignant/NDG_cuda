@@ -369,17 +369,19 @@ lb_fig.savefig(save_path / f"load_balancing_threshold_N{load_balancing_threshold
 
 # N scaling
 N_cpu_fig = plt.figure(figsize=(5, 4.5))
-N_gpu_ax = N_cpu_fig.add_subplot(1, 1, 1)
-N_gpu_ax.set_xlabel("N [-]")
-N_gpu_ax.set_ylabel("Iteration time [s]")
+N_cpu_ax = N_cpu_fig.add_subplot(1, 1, 1)
+N_cpu_ax.set_xlabel("N [-]")
+N_cpu_ax.set_ylabel("Iteration time [s]")
 N_cpu_title = "N CPU iteration time"
 N_cpu_fig.canvas.manager.set_window_title(N_cpu_title)
-N_gpu_ax.grid()
+N_cpu_ax.grid()
 
-N_gpu_ax.plot(N_scaling_N_cpu[N_scaling_wanted_N], N_scaling_t_cpu[N_scaling_wanted_N], color=N_colour_cpu, linewidth=data_width, marker=data_shape, markersize=data_size, label="CPU iteration time")
+N_cpu_ax.plot(N_scaling_N_cpu[N_scaling_wanted_N], N_scaling_t_cpu[N_scaling_wanted_N], color=N_colour_cpu, linewidth=data_width, marker=data_shape, markersize=data_size, label="CPU iteration time")
+N_cpu_ax.plot(N_scaling_N_gpu[N_scaling_wanted_N], N_scaling_t_gpu[N_scaling_wanted_N], color=N_colour_gpu, linewidth=data_width, marker=data_shape, markersize=data_size, label="GPU iteration time")
 
-N_gpu_ax.set_ylim([0, 1.2 * max(N_scaling_t_cpu[N_scaling_wanted_N])])
+N_cpu_ax.set_ylim([0, 1.2 * max(max(N_scaling_t_cpu[N_scaling_wanted_N]), max(N_scaling_t_gpu[N_scaling_wanted_N]))])
 
+N_cpu_ax.legend()
 N_cpu_fig.tight_layout()
 
 N_cpu_fig.savefig(save_path / f"N_cpu_iteration_time.svg", format='svg', transparent=True)

@@ -37,7 +37,7 @@ HDR (100 Gb/s) interconnections.
 
 Narval is a heterogeneous cluster suitable for a variety of purposes, from traditional
 \acrshort{acr:CPU} computing to massively parallel \acrshort{acr:GPU} computing and artificial
-intelligence workloads. It is located at the École de technologie supérieure in Montréal. Narval is
+intelligence workloads. It is also located at École de technologie supérieure in Montréal. Narval is
 made up of 1301 compute nodes of different types, totaling 80,720 \acrshort{acr:CPU} cores and 636
 \acrshortpl{acr:GPU}. For our testing, we use Narval's \acrshort{acr:GPU} nodes. Each one of the 159
 \acrshort{acr:GPU} nodes contains 48 \acrshort{acr:CPU} cores and 498 GB of memory across two AMD
@@ -106,7 +106,8 @@ parallel part \(l\), with only the parallel part scaling with the number of work
 \end{equation}
 
 This is called \textit{strong scaling}, where a fixed problem is solved using varying amount of
-resources. This is discussed in Subsection~\ref{subsection:results:scaling_tests:strong}.
+resources. Results of strong scaling tests of the solver are discussed in
+Subsection~\ref{subsection:results:scaling_tests:strong}.
 
 On the other hand, increased available resources can enable working on bigger problems. Gustafson
 argues that modern highly parallel computers will be used to solve more complex problems instead of
@@ -121,13 +122,14 @@ amount of resources, while the task size per worker stays constant. Weak scaling
 Subsection~\ref{subsection:results:scaling_tests:weak}. With weak scaling a program will scale
 indefinitely, with the slope of the scaling being influenced by the parallel proportion of the task.
 
-This section will also serve as a general comparison between \acrshortpl{acr:CPU} and
-\acrshortpl{acr:GPU}. All scaling tests have been performed on the Béluga supercomputer. Scaling is
-evaluated by varying the number of \textit{nodes}, where a node in this context is a single computer
-from Béluga, sporting 40 \acrshort{acr:CPU} cores and 4 \acrshortpl{acr:GPU} as stated in
-Subsection~\ref{subsection:results:platforms:beluga}. The four-node execution time of those tests
-therefore represents the program running on 16 \acrshortpl{acr:GPU} or 160 \acrshort{acr:CPU} cores,
-for the \acrshort{acr:GPU} and \acrshort{acr:CPU} computations respectively.
+This section will also serve as a general comparison between performance of the code on
+\acrshortpl{acr:CPU} and \acrshortpl{acr:GPU}. All scaling tests have been performed on the Béluga
+supercomputer. Scaling is evaluated by varying the number of \textit{nodes}, where a node in this
+context is a single computer from Béluga, sporting 40 \acrshort{acr:CPU} cores and 4
+\acrshortpl{acr:GPU} as stated in Subsection~\ref{subsection:results:platforms:beluga}. The
+four-node execution time of those tests therefore represents the program running on 16
+\acrshortpl{acr:GPU} or 160 \acrshort{acr:CPU} cores, for the \acrshort{acr:GPU} and
+\acrshort{acr:CPU} computations respectively.
 
 Both scaling tests evaluate the core solver part of the program, as the meshes start with enough
 elements to have a well resolved solution all along the simulation. The \acrlong{acr:AMR} and
@@ -138,12 +140,13 @@ estimated error and load imbalance high enough to trigger the whole subroutine.
 \subsection{Strong scaling}\label{subsection:results:scaling_tests:strong}
 
 The test case for this section is described in Section~\ref{section:results:test_case}. It is
-divided into 256 elements in the \(x\) and \(y\) direction, for a total of \(K = 65536\). The
-problem is then solved in parallel using a range of nodes, from one quarter node to eight nodes. One
-quarter node contains 1 \acrshort{acr:GPU} and 10 \acrshort{acr:CPU} cores, while eight nodes
-contain 16 \acrshortpl{acr:GPU} and 160 \acrshort{acr:CPU} cores. The mesh is split into blocks
-accordingly, one block per \acrshort{acr:GPU} or one block per \acrshort{acr:CPU} core. The first
-test has a polynomial order \(N\) of four for all elements, and a block size \(B\) of 32. 
+divided into \(256\) elements in each of the \(x\) and \(y\) directions, for a total of \(K =
+65536\) elements. The problem is then solved in parallel using a range of nodes, from one quarter
+node to eight nodes. One quarter node contains \(1\) \acrshort{acr:GPU} and \(10\)
+\acrshort{acr:CPU} cores, while eight nodes contain \(16\) \acrshortpl{acr:GPU} and \(160\)
+\acrshort{acr:CPU} cores. The mesh is split into blocks accordingly, one block per
+\acrshort{acr:GPU} or one block per \acrshort{acr:CPU} core. The first test has a polynomial order
+\(N = 4\) for all elements, and a block size \(B = 32\). 
 
 The block size, as explained in
 Subsection~\ref{subsection:graphics_processing_units:architecture:programming_model}, is the number
@@ -168,7 +171,8 @@ figures.
 \begin{figure}[H]
     \centering
     \includesvg[width=0.5\textwidth]{Chapter_results/media/strong_scaling_N4_K65536_W32}
-    \caption{Strong scaling: The number of workers increases while the problem stays fixed. N = 4, K = 65536, B = 32}\label{fig:strong_scaling_N4_W32}
+    \caption{Strong scaling: The number of workers increases while the problem size stays fixed. \(N
+        = 4\), \(K = 65536\), \(B = 32\)}\label{fig:strong_scaling_N4_W32}
 \end{figure}
 
 Figure~\ref{fig:strong_scaling_N4_W32} shows that the \acrshort{acr:GPU} implementation, initially
@@ -182,13 +186,13 @@ rate lowers the performance of \acrshortpl{acr:GPU} in that regime. With a lower
 being worked on by a \acrshort{acr:GPU}, cache has to be emptied less often to make room for more
 elements to use for computations.
 
-At the end of the curve, we see that the scaling lowers slightly. This could be a hint that the
-\acrshortpl{acr:GPU} are then not sufficiently loaded. These \acrshortpl{acr:GPU} have many
-\acrshort{acr:CUDA} cores, 5120 each in the case of Béluga. If the workload does not saturate the
-\acrshort{acr:GPU}, some of those cores will be idle, leading to worse performance. The best number
-of elements per \acrshort{acr:GPU} seems to be around 4096 in this case.
+At the end of the curve, we see that the scaling is slightly reduced. This could be a hint that the
+\acrshortpl{acr:GPU} are not sufficiently loaded for those cases. These \acrshortpl{acr:GPU} have
+many \acrshort{acr:CUDA} cores, \(5120\) each in the case of Béluga. If the workload does not saturate
+the \acrshort{acr:GPU}, some of those cores will be idle, leading to worse performance. The best
+number of elements per \acrshort{acr:GPU} seems to be around \(4096\) for this case.
 
-The next test, shown on Figure~\ref{fig:strong_scaling_N6_W32}, shows the same test case but with an
+The next test, shown in Figure~\ref{fig:strong_scaling_N6_W32}, shows the same test case but with an
 increased polynomial order of \(N = 6\) for all elements. The rationale is that the
 \acrshort{acr:GPU} should spend more time on the computations, since the computations will be
 heavier, while spending the same time on the overhead of kernel calls and other housekeeping.
@@ -196,15 +200,16 @@ heavier, while spending the same time on the overhead of kernel calls and other 
 \begin{figure}[H]
     \centering
     \includesvg[width=0.5\textwidth]{Chapter_results/media/strong_scaling_N6_K65536_W32}
-    \caption{Strong scaling: The number of workers increases while the problem stays fixed. N = 6, K = 65536, B = 32}\label{fig:strong_scaling_N6_W32}
+    \caption{Strong scaling: The number of workers increases while the problem size stays fixed. \(N
+        = 6\), \(K = 65536\), \(B = 32\)}\label{fig:strong_scaling_N6_W32}
 \end{figure}
 
 Figure~\ref{fig:strong_scaling_N6_W32} shows that the increased polynomial order has not increased
 the performance of the \acrshort{acr:GPU} implementation compared to the \acrshort{acr:CPU}
 implementation, rather shifting to the right the crossover point where the \acrshort{acr:GPU}
 implementation is faster. It is possible that the reduced relative performance is linked to the
-increased memory used by the solution, as the needed storage is relative to \(2 N + 1\), where \(N\)
-is the polynomial order of elements.
+increased memory used by the solution, as the needed storage scales with \({2 N + 1}^2\), where
+\(N\) is the polynomial order of elements.
 
 Next, this last case is computed again with increased block size \(B\), first 64 on
 Figure~\ref{fig:strong_scaling_N6_W64}, then 128 on Figure~\ref{fig:strong_scaling_N6_W128}. The
@@ -218,13 +223,14 @@ the solution time.
     \hfill
     \subfloat[\(B = 128\)]
     {\includesvg[width=0.5\textwidth]{Chapter_results/media/strong_scaling_N6_K65536_W128}\label{fig:strong_scaling_N6_W128}}
-    \caption{Strong scaling: The number of workers increases while the problem stays fixed. N = 6, K = 65536 (a) \(B = 64\) (b) \(B = 128\)}\label{fig:strong_scaling_N6_W64-128}
+    \caption{Strong scaling: The number of workers increases while the problem size stays fixed. \(N
+        = 6\), \(K = 65536\) (a) \(B = 64\) (b) \(B = 128\)}\label{fig:strong_scaling_N6_W64-128}
 \end{figure}
 
 As the last figure suggests, increasing the block size \(B\) does incur a performance penalty. This
 is possibly caused by a high amount of thread divergence within blocks. This is consistent with how
 the program is written, for example Section~\ref{section:adaptive_mesh_refinement:implementation}
-shows how the projection back and forth between the elements and faces have several branching code
+shows how the projection back and forth between the elements and faces has several branching code
 paths. A lot of changes in the architecture of the program would have to be made to reduce this
 branching, and switch to a more data-driven approach.
 
@@ -248,7 +254,8 @@ same. The problem is studied from ¼ node to 16 nodes.
 \begin{figure}[H]
     \centering
     \includesvg[width=0.6\textwidth]{Chapter_results/media/weak_scaling_N4_K4096_W32}
-    \caption{Weak scaling: The problem size increases with the number of workers. N = 4, K = 16384/node}\label{fig:weak_scaling}
+    \caption{Weak scaling: The problem size increases with the number of workers. \(N = 4\), \(K =
+        16384/{node}\)}\label{fig:weak_scaling}
 \end{figure}
 
 Figure~\ref{fig:weak_scaling} shows good weak scaling from the \acrshort{acr:GPU} implementation.
@@ -257,29 +264,29 @@ do any \acrshort{acr:MPI} communication over the network, and the quarter node \
 case has no \acrshort{acr:MPI} communication to do at all, the \acrshort{acr:GPU} curve is
 reasonably flat. The \acrshort{acr:CPU} curve is not as good, indicating that there may be a
 bottleneck in the communication part of the program. The \acrshort{acr:CPU} implementation has a
-much higher number of workers than the \acrshort{acr:GPU} one, 40 per node instead of four,
+much higher number of workers than the \acrshort{acr:GPU} one, \(40\) per node instead of four,
 increasing the inter-process communication needed. The slope of the \acrshort{acr:CPU} curve is
-about \(0.2\) with respect to the number of \acrshort{acr:CPU} cores. 
+about \(0.4\) with respect to the number of \acrshort{acr:CPU} cores. 
 
 \section{Adaptive Mesh Refinement Performance}\label{section:results:adaptivity_performance}
 
 This section establishes the performance of the \acrlong{acr:AMR}. The problem from
-Section~\ref{section:results:test_case} is used, initially split into four elements in the \(x\) and
-\(y\) direction, for \(K = 16\). The initial polynomial order \(N\) is four. The system is allowed
-to refine up to a split level \(S\) of five, meaning a cell can split five times and become \(
-\frac{1}{32}\) of the size of the original cell, and up to a polynomial order \(N\) of 16. The error
-estimation threshold is set to \num{1e-6}, meaning it will refine elements whose estimated error is
-greater than that number.
+Section~\ref{section:results:test_case} is used, initially split into four elements in each of the
+\(x\) and \(y\) directions, fora total of \(K = 16\) elements. The initial polynomial order is \(N =
+4\). The system is allowed to refine up to a split level \(S = 5\), meaning a cell can split five
+times and become \(\frac{1}{32}\) of the size of the original cell, and up to a polynomial order \(N
+= 16\). The target error estimate is set to \num{1e-6}, meaning it will refine elements whose
+estimated error is greater than that number.
 
 \Acrlong{acr:AMR} is a costly process, as the \acrshort{acr:CPU} must reallocate arrays on the
 \acrshort{acr:GPU} for the different objects making up the mesh, and then schedule kernels to move
 objects to the new arrays. We test here two strategies to reduce the performance overhead of
 \acrlong{acr:AMR}, while reducing error. 
 
-First, \acrlong{acr:AMR} will be performed at an interval.
+First, \acrlong{acr:AMR} will be performed at a regular interval.
 Figures~\ref{fig:adaptivity_efficiency_A5},~\ref{fig:adaptivity_efficiency_A20},~\ref{fig:adaptivity_efficiency_A100}
-and~\ref{fig:adaptivity_efficiency_A500} show the results of refining the mesh every 5, 20, 100 and
-500 timesteps, respectively.
+and~\ref{fig:adaptivity_efficiency_A500} show the results of refining the mesh every \(5\), \(20\),
+\(100\) and \(500\) timesteps, respectively.
 
 Secondly, the simulations are performed with an increasing number of refinement pre-condition steps
 as described in Section~\ref{section:adaptive_mesh_refinement:pre_conditioning}. The analysis ranges
@@ -288,13 +295,14 @@ of the time taken up by the pre-condition of the mesh, shown in green, and the c
 solve the problem, shown in yellow. 
 
 We compare those simulations to two non-adaptive cases. In the first case, the initial mesh is fully
-refined uniformly up to the maximum level attained by the adaptive cases. The mesh is split into 128
-elements in the \(x\) and \(y\) dimensions, for \(K = 16384\), with a polynomial order \(N\) of 10.
-It is shown as a dashed line on the figures. The second non-adaptive case aims to obtain a maximum
-error similar to the adaptive case. The mesh is refined uniformly to 32 elements in the \(x\) and
-\(y\) dimensions, for \(K = 1024\), with a polynomial order \(N\) of 10. It is shown as a dotted
-line on the figures. Both the simulation time and the error are compared against the analytical
-solution. The cases were computed using the Narval supercomputer on a single \acrshort{acr:GPU}.
+refined uniformly up to the maximum level attained by the adaptive cases. The mesh is split into
+\(128\) elements in each of the \(x\) and \(y\) dimensions, for a total of \(K = 16384\) elements,
+with a polynomial order \(N = 10\). This result is shown as a dashed line on the figures. The second
+non-adaptive case aims to obtain a maximum error similar to the adaptive case. The mesh is refined
+uniformly to \(32\) elements in each of the \(x\) and \(y\) dimensions, for a total of \(K = 1024\)
+elements, with a polynomial order \(N = 10\). This case is shown as a dotted line on the figures.
+Both the simulation time and the error relative to the analytical solution are plotted. The cases
+were computed using the Narval supercomputer on a single \acrshort{acr:GPU}.
 
 \begin{figure}[H]
     \centering
@@ -302,7 +310,7 @@ solution. The cases were computed using the Narval supercomputer on a single \ac
     {\includesvg[width=0.49\textwidth]{Chapter_results/media/adaptivity_time_N4_K16_A5}\label{fig:adaptivity_efficiency_A5_time}}
     \subfloat[Maximum error]
     {\includesvg[width=0.49\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_A5}\label{fig:adaptivity_efficiency_A5_error}}
-    \caption{\Acrlong{acr:AMR} performance: Simulation time and analytical error with refinement and increasing number of pre-condition steps. \(N_{initial} = 4\), \(K_{initial} = 16\), \(S = 5\), refinement interval = 5}\label{fig:adaptivity_efficiency_A5}
+    \caption{\Acrlong{acr:AMR} performance: Simulation time and error for increasing number increasing number of pre-condition steps. \(N_{initial} = 4\), \(K_{initial} = 16\), \(S = 5\), refinement interval = 5}\label{fig:adaptivity_efficiency_A5}
 \end{figure}
 
 \begin{figure}[H]
@@ -312,7 +320,7 @@ solution. The cases were computed using the Narval supercomputer on a single \ac
     \hfill
     \subfloat[Maximum error]
     {\includesvg[width=0.49\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_A20}\label{fig:adaptivity_efficiency_A20_error}}
-    \caption{\Acrlong{acr:AMR} performance: Simulation time and analytical error with refinement and increasing number of pre-condition steps. \(N_{initial} = 4\), \(K_{initial} = 16\), \(S = 5\), refinement interval = 20}\label{fig:adaptivity_efficiency_A20}
+    \caption{\Acrlong{acr:AMR} performance: Simulation time and error for increasing number of pre-condition steps. \(N_{initial} = 4\), \(K_{initial} = 16\), \(S = 5\), refinement interval = 20}\label{fig:adaptivity_efficiency_A20}
 \end{figure}
 
 \begin{figure}[H]
@@ -322,7 +330,7 @@ solution. The cases were computed using the Narval supercomputer on a single \ac
     \hfill
     \subfloat[Maximum error]
     {\includesvg[width=0.49\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_A100}\label{fig:adaptivity_efficiency_A100_error}}
-    \caption{\Acrlong{acr:AMR} performance: Simulation time and analytical error with refinement and increasing number of pre-condition steps. \(N_{initial} = 4\), \(K_{initial} = 16\), \(S = 5\), refinement interval = 100}\label{fig:adaptivity_efficiency_A100}
+    \caption{\Acrlong{acr:AMR} performance: Simulation time and error for increasing number of pre-condition steps. \(N_{initial} = 4\), \(K_{initial} = 16\), \(S = 5\), refinement interval = 100}\label{fig:adaptivity_efficiency_A100}
 \end{figure}
 
 \begin{figure}[H]
@@ -332,44 +340,43 @@ solution. The cases were computed using the Narval supercomputer on a single \ac
     \hfill
     \subfloat[Maximum error]
     {\includesvg[width=0.49\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_A500}\label{fig:adaptivity_efficiency_A500_error}}
-    \caption{\Acrlong{acr:AMR} performance: Simulation time and analytical error with refinement and increasing number of pre-condition steps. \(N_{initial} = 4\), \(K_{initial} = 16\), \(S = 5\), refinement interval = 500}\label{fig:adaptivity_efficiency_A500}
+    \caption{\Acrlong{acr:AMR} performance: Simulation time and error for increasing number of pre-condition steps. \(N_{initial} = 4\), \(K_{initial} = 16\), \(S = 5\), refinement interval = 500}\label{fig:adaptivity_efficiency_A500}
 \end{figure}
 
 From
 Figures~\ref{fig:adaptivity_efficiency_A5},~\ref{fig:adaptivity_efficiency_A20},~\ref{fig:adaptivity_efficiency_A100}
-and~\ref{fig:adaptivity_efficiency_A500}, we can see that this is an optimisation problem, with
+and~\ref{fig:adaptivity_efficiency_A500}, we see that this is an optimisation problem, with
 tradeoffs between the simulation time and the error generated.
 
 An important part of the error comes from the initial conditions being applied on too coarse a mesh.
 Even if the mesh is refined, this error propagates through the domain. Mesh pre-condition, as
 described in Section~\ref{section:adaptive_mesh_refinement:pre_conditioning}, aims to alleviate this
 problem. Indeed, with enough pre-condition steps all cases converge to an acceptable error. Adding
-more pre-condition steps does not improve the results, as the error estimation threshold of
-\num{1e-6} is likely reached.
+more pre-condition steps does not improve the results, as the target error estimate of \num{1e-6} is
+likely reached.
 
-It can be observed that the fully refined non-adaptive case, shown in dashed lines on
+The fully refined non-adaptive case, shown in dashed lines on
 Figures~\ref{fig:adaptivity_efficiency_A5},~\ref{fig:adaptivity_efficiency_A20},~\ref{fig:adaptivity_efficiency_A100}
 and~\ref{fig:adaptivity_efficiency_A500}, is prohibitively time consuming to compute. The solution
 is well resolved as shown on Figure~\ref{fig:adaptivity_efficiency_A20_error}, with the analytical
-solution error being \(19 \times \) smaller than the adaptive case. On the other hand, it takes
+solution error being \(19 \times \) smaller than in the adaptive case. On the other hand, it takes
 \(271 \times \) as much time to compute. The difference is even more pronounced when the refinement
-interval is increased to 100, as on Figure~\ref{fig:adaptivity_efficiency_A100_time}, where the
+interval is increased to 100, as in Figure~\ref{fig:adaptivity_efficiency_A100_time}, where the
 adaptive solution with three to five pre-condition steps is around \(750 \times \) faster, at the
 expense of a worse error compared to the 50 refinement interval case.
 
 As for the similar maximum error non-adaptive case, shown with dotted lines, the results are closer.
 The case with a refinement interval of 20 on Figure~\ref{fig:adaptivity_efficiency_A20} was used to
-set the target error for that non-adaptive case. In this comparison, it can be observed that the
-adaptive case starting from a coarse mesh is able to reach a maximum error only 14\% greater than
-the non-adaptive case, while being 34\% faster. The other cases also attain the error estimation
-target of \num{1e-6} while being faster.
+set the target error for that non-adaptive case. The adaptive case starting from a coarse mesh is
+able to reach a maximum error only 14\% greater than the non-adaptive case, while being 34\% faster.
+The other cases also attain the target error estimate of \num{1e-6} while being faster.
 
 The non-adaptive cases are closer to being ideal for the \acrshort{acr:GPU} architecture. The
 non-adaptive cases have less thread divergence than the adaptive case. There is a lot more branching
 in the adaptive case, with elements having a different polynomial order, non-conforming interfaces,
-and different numbers of neighbours. This increased divergence lowers the performance by having
-threads be predicated off while others execute an instruction. The memory access patterns of the
-non-adaptive cases are also better, as for example the different faces connecting to an element are
+and different numbers of neighbours. This increased divergence lowers the performance since some
+threads are predicated off while others execute an instruction. The memory access patterns of the
+non-adaptive cases are also better, for example the different faces connecting to an element are
 closer in memory. Threads from a same warp accessing memory that is not contiguous must perform
 several memory fetches. The non-adaptive cases play to the strengths of the \acrshortpl{acr:GPU},
 yet the adaptive case shows performance improvements. This means that \acrshort{acr:AMR} is worth it
@@ -379,8 +386,8 @@ some improvements to make the program even better suited for the \acrshort{acr:G
 
 The best number of pre-condition steps seems to be four for this case, as the target error is
 reached with all refinement intervals. After this number of steps the solution does not change much
-as the error estimation target is likely reached. We use that number of steps to compare the
-different refinement intervals in Figure~\ref{fig:adaptivity_efficiency_C4}.
+as the target error estimate target is likely reached. We use that number of steps to compare the
+effects of different refinement intervals in Figure~\ref{fig:adaptivity_efficiency_C4}.
 
 \begin{figure}[H]
     \centering
@@ -389,23 +396,24 @@ different refinement intervals in Figure~\ref{fig:adaptivity_efficiency_C4}.
     \hfill
     \subfloat[Maximum error]
     {\includesvg[width=0.49\textwidth]{Chapter_results/media/adaptivity_error_N4_K16_C4}\label{fig:adaptivity_efficiency_C4_error}}
-    \caption{\Acrlong{acr:AMR} performance: Simulation time and analytical error with four pre-condition steps and increasing refinement interval. \(N_{initial} = 4\), \(K_{initial} = 16\), \(S = 5\), pre-condition steps = 4}\label{fig:adaptivity_efficiency_C4}
+    \caption{\Acrlong{acr:AMR} performance: Simulation time and error for four pre-condition steps and increasing refinement interval. \(N_{initial} = 4\), \(K_{initial} = 16\), \(S = 5\), pre-condition steps = 4}\label{fig:adaptivity_efficiency_C4}
 \end{figure}
 
 Figure~\ref{fig:adaptivity_efficiency_C4} gives a good overview of the \acrshort{acr:AMR}
-performance. All refinement intervals attain the target error estimation of \num{1e-6}, and obtain a
+performance. All refinement intervals attain the target error estimate of \num{1e-6}, and obtain a
 real maximum error under \num{1e-6} when compared to the analytical solution. 
 
 It is always faster to use \acrshort{acr:AMR} than to start with a uniform fully refined mesh, and
-it is faster to use it than a uniformly refined mesh that has the same maximal analytical solution
-error. The adaptive case can refine elements where they are most needed, saving computing resources.
+it is faster to use \acrshort{acr:AMR} than a uniformly refined mesh that has the same maximum
+solution error. The adaptive case can refine elements where they are most needed, saving computing
+resources.
 
 There is a balance to be made between refining often and spending more time in the
 \acrshort{acr:AMR} routine, and refining less often therefore using a less refined mesh for longer.
 Section~\ref{section:conclusion:future_work} discusses ideas for alternative approaches to choose
 when to refine. In this case it seems that performing \acrshort{acr:AMR} every 20 time steps yields
 the lowest error, while waiting 100 timesteps between refinements yields a faster runtime at the
-price of a worse error that stays below the error estimation threshold we set.
+price of a worse error that still stays below the target error estimate we set.
 
 \section{Dynamic Load Balancing Performance}\label{section:results:load_balancing_performance}
 
@@ -414,13 +422,13 @@ adaptive cases where varying levels of load imbalance are generated. The sample 
 as described in Section~\ref{section:results:test_case}, except that the domain size is increased
 from a size of 1 to 100 in either dimension. The wave stays the same, effectively only staying in
 the lower left corner during the program runtime. The program advances the solution to a simulation
-time of two seconds. The mesh is split into 128 elements in the \(x\) and \(y\) directions, for a
-total of \(K = 16384\) elements. The initial polynomial order is \(N = 4\). The problem is solved
-using four \acrshort{acr:GPU} nodes from the Narval supercomputer, for a total of \(P = 16\)
+time of two seconds. The mesh is split into 128 elements in each of the \(x\) and \(y\) directions,
+for a total of \(K = 16384\) elements. The initial polynomial order is \(N = 4\). The problem is
+solved using four \acrshort{acr:GPU} nodes from the Narval supercomputer, for a total of \(P = 16\)
 \acrshortpl{acr:GPU}. This initially amounts to 1024 elements per \acrshort{acr:GPU}. The mesh is
-refined every 20 timesteps. In order to prescribe a different load imbalance for different cases,
-they have a different maximum split level \(S\). This parameter controls how many times an element
-can h-refine. Three cases are presented, a low load imbalance case with \(S = 3\) shown in
+refined every 20 timesteps. In order to prescribe a different load imbalance for different cases, a
+different maximum split level \(S\) is set. This parameter controls how many times an element can
+h-refine. Three cases are presented, a low load imbalance case with \(S = 3\) shown in
 Figures~\ref{fig:load_imbalance_case_low_p} and~\ref{fig:load_imbalance_case_low_s}, a medium load
 imbalance case with \(S = 5\) shown in Figures~\ref{fig:load_imbalance_case_medium_p}
 and~\ref{fig:load_imbalance_case_medium_s}, and a high load imbalance case with \(S = 7\) shown in
@@ -445,7 +453,7 @@ order of \(N = 12\).
     \hfill
     \subfloat[Detail]
     {\includegraphics[width=0.48\textwidth]{Chapter_results/media/split_level_low_near}\label{fig:load_imbalance_case_low_s_near}}
-    \caption{Low load imbalance (\(S = 3\)) test case split level: Split level, indicating how many times the elements have split, only the bottom right refines. \(K_{initial} = 16384\), \(K_{final} = 17752\) (a) Complete domain (b) Area of interest}\label{fig:load_imbalance_case_low_s}
+    \caption{Low load imbalance (\(S = 3\)) test case split level: Split level, indicating how many times the elements have split, only the bottom left refines. \(K_{initial} = 16384\), \(K_{final} = 17752\) (a) Complete domain (b) Area of interest}\label{fig:load_imbalance_case_low_s}
 \end{figure}
 
 \begin{figure}[H]
@@ -465,7 +473,7 @@ order of \(N = 12\).
     \hfill
     \subfloat[Detail]
     {\includegraphics[width=0.48\textwidth]{Chapter_results/media/split_level_medium_near}\label{fig:load_imbalance_case_s_near}}
-    \caption{Medium load imbalance (\(S = 5\)) test case split level: Split level, indicating how many times the elements have split, only the bottom right refines. \(K_{initial} = 16384\), \(K_{final} = 26734\) (a) Complete domain (b) Area of interest}\label{fig:load_imbalance_case_medium_s}
+    \caption{Medium load imbalance (\(S = 5\)) test case split level: Split level, indicating how many times the elements have split, only the bottom left refines. \(K_{initial} = 16384\), \(K_{final} = 26734\) (a) Complete domain (b) Area of interest}\label{fig:load_imbalance_case_medium_s}
 \end{figure}
 
 \begin{figure}[H]
@@ -485,7 +493,7 @@ order of \(N = 12\).
     \hfill
     \subfloat[Detail]
     {\includegraphics[width=0.48\textwidth]{Chapter_results/media/split_level_high_near}\label{fig:load_imbalance_case_high_s_near}}
-    \caption{High load imbalance (\(S = 7\)) test case split level: Split level, indicating how many times the elements have split, only the bottom right refines. \(K_{initial} = 16384\), \(K_{final} = 54837\) (a) Complete domain (b) Area of interest}\label{fig:load_imbalance_case_high_s}
+    \caption{High load imbalance (\(S = 7\)) test case split level: Split level, indicating how many times the elements have split, only the bottom left refines. \(K_{initial} = 16384\), \(K_{final} = 54837\) (a) Complete domain (b) Area of interest}\label{fig:load_imbalance_case_high_s}
 \end{figure}
 
 Table~\ref{table:load_imbalance} describes the load imbalance of the three cases. \(S\) is the
@@ -506,7 +514,7 @@ Equation~\ref{equ:load_imbalance}.
     \caption{Load imbalance cases.}\label{table:load_imbalance}
 \end{table}
 
-We will compare two approaches to choose when to load balance the mesh, as described in
+We compare two approaches to choose when to load balance the mesh, as described in
 Section~\ref{section:load_balancing:criteria}. We compare the three cases above with and without
 load balancing.
 
@@ -534,22 +542,23 @@ performance without load balancing.
     \caption{Load balancing performance interval test: Simulation time with refinement and load balancing while increasing load balancing interval. \(N_{initial} = 4\), \(K_{initial} = 16384\), refinement interval = 20, \(P = 16\) (a) \(S = 3\) (b) \(S = 5\) (c) \(S = 7\)}\label{fig:load_balancing_efficiency_interval}
 \end{figure}
 
-From Figure~\ref{fig:load_balancing_efficiency_interval}, we can see that load balancing diminishes
-the computation time of all three problems. The low load imbalance case needs a higher load
-balancing interval to offset the cost of the load balancing algorithm. In the other cases, the load
-imbalance is great enough that the cases with load balancing are always faster. It takes a certain
-load balancing interval to obtain the best performance, and that interval changes with the case.
-Next, we will study an alternative algorithm to improve on those two points.
+From Figure~\ref{fig:load_balancing_efficiency_interval}, we see that load balancing diminishes the
+computation time of all three problems. The low load imbalance case needs a higher load balancing
+interval to offset the cost of the load balancing algorithm. In the other cases, the load imbalance
+is great enough that the cases with load balancing are always faster. It takes a certain load
+balancing interval to obtain the best performance, and that interval changes with the case. Next, we
+will study an alternative algorithm to improve on those two points.
 
 \subsection{Load balancing threshold}\label{subsection:results:load_balancing_performance:threshold}
 
-We then use an allowable load imbalance threshold to choose when to perform load balancing, as
+We now use an allowable load imbalance threshold to choose when to perform load balancing, as
 described in Section~\ref{section:load_balancing:criteria}. This means we assess the load imbalance
 \(L\) of the mesh after each refinement step, and we only perform load balancing if it is above a
 certain threshold. We start with a threshold of \(1\), equivalent to load balancing after every
 refinement step, to \(2\), equivalent to load balancing only if a \acrshort{acr:GPU} has two or more
-times the amount it would have if the mesh was perfectly balanced. The same three load imbalance
-cases are shown in Figure~\ref{fig:load_balancing_efficiency_threshold}.
+times the workload it would have if the mesh was perfectly balanced. The same three load imbalance
+cases from Section~\ref{section:results:load_balancing_performance} are shown in
+Figure~\ref{fig:load_balancing_efficiency_threshold}.
 
 \begin{figure}[H]
     \begin{adjustwidth}{-0.5in}{-0.5in}
@@ -568,16 +577,16 @@ cases are shown in Figure~\ref{fig:load_balancing_efficiency_threshold}.
 
 From Figure~\ref{fig:load_balancing_efficiency_threshold}, we observe that using a load imbalance
 threshold to control when we load balance is a much better solution than simply increasing the
-interval at which we perform load balancing. The performance attains its maximum very fast when
-increasing the threshold, and the good performing threshold values do not seem to change with the
-problem. A load imbalance threshold of around \(1.1\) seems to give good performance in all cases,
-and would not need to be adapted to different cases.
+interval at which we perform load balancing. The performance improves quickly when increasing the
+threshold, and the threshold values that work well do not seem to change with the problem. A load
+imbalance threshold of around \(1.1\) seems to give good performance in all cases, and would not
+need to be adapted to different cases.
 
 \subsection{Overall load balancing performance}\label{subsection:results:load_balancing_performance:overall}
 
 From the results of Subsections~\ref{subsection:results:load_balancing_performance:interval}
 and~\ref{subsection:results:load_balancing_performance:threshold}, we observe that load balancing at
-every occasion incurs a significant performance penality, even performing worse than the non
+every occasion incurs a significant performance penality, sometimes performing worse than the non
 load-balanced case in the low load imbalance case, in
 Figures~\ref{fig:load_balancing_efficiency_interval_s3}
 and~\ref{fig:load_balancing_efficiency_threshold_s3}. The two other cases also show worse
@@ -592,18 +601,18 @@ of \(500\) or a threshold of \(1.5\) in this case, the performance goes down due
 more imbalanced for longer periods of time.
 
 The load imbalance threshold strategy from
-Subsection~\ref{subsection:results:load_balancing_performance:threshold} gives better results, with
-the performance reaching its maximum much faster when increasing the threshold and staying high
-longer than the load balancing interval strategy from
+Subsection~\ref{subsection:results:load_balancing_performance:threshold} gives better results, the
+performance improves quickly when increasing the threshold and stays high longer than the load
+balancing interval strategy from
 Subsection~\ref{subsection:results:load_balancing_performance:interval}. The load balancing interval
 is also case dependent, and must be adjusted according to the scale of the problem and how often it
 is refined. 
 
-For these reasons we chose the load imbalance threshold strategy with a load imbalance threshold of
+For these reasons we choose the load imbalance threshold strategy with a load imbalance threshold of
 \(1.1\) to assess the overall dynamic load balancing performance in
 Figure~\ref{fig:load_balancing_efficiency}. It shows the speedup we get from load balancing the
-three problems. The \(x\) axis represents the load imbalance \(L\) of the problems if they are not
-load balanced.
+three problems. The \(x\) axis represents the equivalent load imbalance \(L\) of the problems if
+they were not load balanced.
 
 \begin{figure}[H]
     \centering
@@ -615,7 +624,9 @@ Figure~\ref{fig:load_balancing_efficiency} shows that dynamic load balancing per
 able to regain performance lost to load imbalance. In the high load imbalance case, with a load
 imbalance of \(L = 12.07\), dynamic load balancing can improve performance by \(4.1 \times \). It
 scales well with load imbalance, meaning it gives good results no matter the level of imbalance of
-the problem.
+the problem. The gains are especially crucial for high imbalance levels, where the load imbalance
+can degrade performance by an order of magnitude. In these cases, dynamic load balancing can regain
+most of the lost performance.
 
 \subsection{Polynomial order influence}\label{subsection:results:load_balancing_performance:polynomial_order}
 
@@ -624,21 +635,23 @@ polynomial order \(N\) of a uniformly refined mesh, both on the \acrshort{acr:CP
 \acrshort{acr:GPU}. This shows how computing time scales on the two types of processors with
 increasing \(N\), and could guide how elements should be weighted individually when performing load
 balancing, instead of being all weighted equally as they are in this work. The test case was
-computed using the Narval supercomputer, using a grid with \(64\) elements in the \(x\) and \(y\)
-directions. The initial polynomial order of the mesh is indicated on the \(y\) axis, and the problem
-is advanced by \(1000\) iterations in all cases. \Acrshort{acr:AMR} is performed every \(100\)
-iterations, but there are enough elements that the mesh never refines, it only estimates the error.
-The \acrshort{acr:CPU} case is computed on a single \acrshort{acr:CPU} core, and the
+computed using the Narval supercomputer, using a grid with \(64\) elements in each of the the \(x\)
+and \(y\) directions. The initial polynomial order of the mesh is indicated on the \(y\) axis, and
+the problem is advanced by \(1000\) iterations in all cases. \Acrshort{acr:AMR} is performed every
+\(100\) iterations, but there are enough elements that the mesh never refines, it only estimates the
+error. The \acrshort{acr:CPU} case is computed on a single \acrshort{acr:CPU} core, and the
 \acrshort{acr:GPU} case is computed on a single \acrshort{acr:GPU}.
 
 \begin{figure}[H]
     \centering
-    \subfloat[\Acrshort{acr:CPU}]
+    \subfloat[\Acrshort{acr:CPU} and \Acrshort{acr:GPU}]
     {\includesvg[width=0.5\textwidth]{Chapter_results/media/N_cpu_iteration_time}\label{fig:N_cpu_influence}}
     \hfill
-    \subfloat[\Acrshort{acr:GPU}]
+    \subfloat[\Acrshort{acr:GPU} detail]
     {\includesvg[width=0.48\textwidth]{Chapter_results/media/N_gpu_iteration_time}\label{fig:N_gpu_influence}}
-    \caption{Polynomial order influence: Iteration time with increasing polynomial order \(N\). (a) \Acrshort{acr:CPU} (b) \Acrshort{acr:GPU}}\label{fig:N_influence}
+    \caption{Polynomial order influence: Iteration time with increasing polynomial order \(N\). (a)
+        \Acrshort{acr:CPU} and \Acrshort{acr:GPU}. (b) \Acrshort{acr:GPU} detail, emphasising the 
+        slope.}\label{fig:N_influence}
 \end{figure}
 
 Figure~\ref{fig:N_influence} shows that the relation between iteration time and polynomial order
@@ -657,15 +670,16 @@ increases, as for example by Chan et al.~\cite{Chan2016}.
 We now present a more complex case with all modules of the program enabled. Figure~\ref{fig:cloud_p}
 shows the pressure distribution at two times. The problem depicts a diagonal wave moving through a
 small circular ``cloud'' of higher pressure. The cloud expands and interacts with the wave. The mesh
-is initially split into \(16\) elements in the \(x\) and \(y\) directions, for a total of \(K =
-256\) elements. The polynomial order of the elements is initially \(N = 4\). The solution is
+is initially split into \(16\) elements in each of the \(x\) and \(y\) directions, for a total of
+\(K = 256\) elements. The polynomial order of the elements is initially \(N = 4\). The solution is
 computed in parallel on \(16\) \acrshortpl{acr:GPU}. The mesh is refined every \(50\) timesteps, and
 load balanced with an imbalance threshold of \(L = 1.1\). It is allowed to refine up to \(S = 3\)
-and \(N = 16\). Three steps of mesh pre-condition are performed, which is why the \(t = 0 s\)
-mesh is already refined. Figure~\ref{fig:cloud_s} shows the split level \(S\) of the mesh,
-Figure~\ref{fig:cloud_N} the polynomial order \(N\) of the mesh, and Figure~\ref{fig:cloud_rank} the
-rank of the elements. The rank indicates which of the \(16\) \acrshortpl{acr:GPU} is responsible for
-which part of the mesh, and how this changes with time as the mesh is load balanced.
+and \(N = 16\). Three steps of mesh pre-condition are performed, which is why the \(t = 0 s\) mesh
+is already refined in Figures~\ref{fig:cloud_s_t0} and~\ref{fig:cloud_N_t0}.
+Figure~\ref{fig:cloud_s} shows the split level \(S\) of the mesh, Figure~\ref{fig:cloud_N} the
+polynomial order \(N\) of the mesh, and Figure~\ref{fig:cloud_rank} the rank of the elements. The
+rank indicates which of the \(16\) \acrshortpl{acr:GPU} is responsible for which part of the mesh,
+and how this changes with time as the mesh is load balanced.
 
 \begin{figure}[H]
     \centering
@@ -684,7 +698,9 @@ which part of the mesh, and how this changes with time as the mesh is load balan
     \hfill
     \subfloat[\( t = 0.2 s\)]
     {\includegraphics[width=0.48\textwidth]{Chapter_results/media/cloud_split_level_t0_2}\label{fig:cloud_s_t0_2}}
-    \caption{Complex case h-refinement: The elements split more where the cloud meets the wave. \(N_{initial} = 4\), \(K_{initial} = 256\), \(S = 3\), \(P = 16\) (a) Start of computation (b) After the wave and cloud collide}\label{fig:cloud_s}
+    \caption{Complex case h-refinement: The elements split more where the cloud meets the wave.
+        \(N_{initial} = 4\), \(K_{initial} = 256\), \(S = 3\), \(P = 16\) (a) Start of time 
+        advancing (b) After the wave and cloud collide}\label{fig:cloud_s}
 \end{figure}
 
 \begin{figure}[H]
@@ -694,7 +710,10 @@ which part of the mesh, and how this changes with time as the mesh is load balan
     \hfill
     \subfloat[\( t = 0.2 s\)]
     {\includegraphics[width=0.48\textwidth]{Chapter_results/media/cloud_N_t0_2}\label{fig:cloud_N_t0_2}}
-    \caption{Complex case p-refinement: The polynomial order increases more at the center of the cloud and where cloud meets the wave. \(N_{initial} = 4\), \(K_{initial} = 256\), \(S = 3\), \(P = 16\) (a) Start of computation (b) After the wave and cloud collide}\label{fig:cloud_N}
+    \caption{Complex case p-refinement: The polynomial order increases more at the center of the
+        cloud and where cloud meets the wave. \(N_{initial} = 4\), \(K_{initial} = 256\), \(S = 3\), 
+        \(P = 16\) (a) Start of time advancing (b) After the wave and cloud 
+        collide}\label{fig:cloud_N}
 \end{figure}
 
 \begin{figure}[H]
@@ -704,14 +723,17 @@ which part of the mesh, and how this changes with time as the mesh is load balan
     \hfill
     \subfloat[\( t = 0.2 s\)]
     {\includegraphics[width=0.48\textwidth]{Chapter_results/media/cloud_rank_t0_2}\label{fig:cloud_rank_t0_2}}
-    \caption{Complex case rank: As the mesh is refined load imbalance can occur, and elements are sent from one \acrshort{acr:GPU} to another when load balancing. \(N_{initial} = 4\), \(K_{initial} = 256\), \(S = 3\), \(P = 16\) (a) Start of computation (b) After the wave and cloud collide}\label{fig:cloud_rank}
+    \caption{Complex case rank: As the mesh is refined load imbalance can occur, and elements are
+        sent from one \acrshort{acr:GPU} to another when load balancing. \(N_{initial} = 4\),
+        \(K_{initial} = 256\), \(S = 3\), \(P = 16\) (a) Start of time advancing (b) After the wave 
+        and cloud collide}\label{fig:cloud_rank}
 \end{figure}
 
 These figures show that the pre-condition steps do a good job of refining the mesh to capture the
 initial conditions correctly in the \(t = 0 s\) figures (a). Afterwards,
 Figures~\ref{fig:cloud_s_t0_2} and~\ref{fig:cloud_N_t0_2} show that the mesh is refined along the
 movement of the linear wave and the expansion of the circular cloud, and is especially refined at
-their intersection. This indicates that the error estimation correctly identify the more difficult
+their intersection. This indicates that the error estimation correctly identifies the more difficult
 areas of the solution. As more elements are created at the intersection of both waves, load
 imbalance occurs, and by the end of the computation there are \(K = 5088\) elements. From
 Figures~\ref{fig:cloud_s_t0_2} and~\ref{fig:cloud_rank_t0}, we can observe that there are more
@@ -723,14 +745,15 @@ balancing, while keeping good locality and limiting the surface area between \ac
 
 We now introduce a case on a complex geometry to show that the program works with more complex
 unstructured meshes that are not axis-aligned. Figure~\ref{fig:complex_mesh} shows the initial mesh
-used for this case. Figure~\ref{fig:complex_mesh_pre_condition} depicts a wave moving across a NACA
-0012 airfoil inside a circular domain of radius \(20\). The mesh initially has \(K = 2128\)
-elements, is allowed to h-refine up to \(S = 3\), and by the end of the computation there are \(K =
-55680\) elements. The polynomial order of the elements is initially \(N = 4\) and is allowed to
-p-refine up to \(N = 16\). The mesh is refined every \(1000\) timesteps and load balanced with a
-imbalance threshold of \(L = 1.1\). At the beginning of the computation, three pre-condition steps
-are performed, which is why the mesh is already refined at \(t = 0 s\). The solution is computed in
-parallel on \(P = 4\) \acrshortpl{acr:GPU}.
+used for this case. Figure~\ref{fig:complex_mesh_pre_condition} shows the adapted mesh and
+Figure~\ref{fig:complex_mesh_solution_p} depicts a wave moving across a NACA 0012 airfoil inside a
+circular domain of radius \(20\). The mesh initially has \(K = 2128\) elements, is allowed to
+h-refine up to \(S = 3\), and by the end of the computation there are \(K = 55680\) elements. The
+polynomial order of the elements is initially \(N = 4\) and is allowed to p-refine up to \(N = 16\).
+The mesh is refined every \(1000\) timesteps and load balanced with a imbalance threshold of \(L =
+1.1\). At the beginning of the computation, three pre-condition steps are performed, which is why
+the mesh is already refined at \(t = 0 s\) in Figure~\ref{fig:complex_mesh_pre_condition_far}. The
+solution is computed in parallel on \(P = 4\) \acrshortpl{acr:GPU}.
 
 The mesh is unstructured, and the original mesh file is numbered in a way that places elements with
 neighbouring indices very far apart in the 2D domain. This is not ideal, as it scatters memory
@@ -748,7 +771,9 @@ curve resembles the Hilbert curve, and improves locality.
     \hfill
     \subfloat[Airfoil]
     {\includegraphics[width=0.48\textwidth]{Chapter_results/media/airfoil_mesh_near}\label{fig:complex_mesh_near}}
-    \caption{Complex mesh: An airfoil in an unstructured circular domain. \(N_{initial} = 4\), \(K_{initial} = 2128\), \(S = 3\), \(P = 4\) (a) Complete domain (b) Up close}\label{fig:complex_mesh}
+    \caption{Complex mesh example: An airfoil in an unstructured circular domain with its initial 
+        mesh. \(N_{initial} = 4\), \(K_{initial} = 2128\), \(S = 3\), \(P = 4\) (a) Complete domain 
+        (b) Up close}\label{fig:complex_mesh}
 \end{figure}
 
 \begin{figure}[H]
@@ -758,7 +783,9 @@ curve resembles the Hilbert curve, and improves locality.
     \hfill
     \subfloat[Airfoil]
     {\includegraphics[width=0.48\textwidth]{Chapter_results/media/airfoil_mesh_pre_condition_near}\label{fig:complex_mesh_pre_condition_near}}
-    \caption{Complex mesh after pre-condition: Elements have been added to better apply initial conditions. \(N_{initial} = 4\), \(K = 24072\), \(S = 3\), \(P = 4\) (a) Complete domain (b) Up close}\label{fig:complex_mesh_pre_condition}
+    \caption{Complex mesh after pre-condition: Elements have been added to better apply initial 
+        conditions. \(N_{initial} = 4\), \(K = 24072\), \(S = 3\), \(P = 4\) (a) Complete domain (b) 
+        Up close}\label{fig:complex_mesh_pre_condition}
 \end{figure}
 
 Figure~\ref{fig:complex_mesh_solution} shows the problem after \(1.5\) seconds of solution time.
@@ -792,11 +819,11 @@ which increases when elements are p-refined.
 \end{figure}
 
 Figure~\ref{fig:complex_mesh_solution} shows that the program has refined the mesh in more difficult
-areas of the domain, such as along the linear wave, close to the domain, and inside the circular
+areas of the domain, such as along the linear wave, close to the airfoil, and inside the circular
 wave. This is consistent with the fact that the interactions between the wave and the airfoil would
 create steeper areas in the pressure distribution.
 
-This also shows that the program is able to compute solutions on complex geometries, and with
+This also shows that the program is able to compute solutions on complex geometries, including
 unstructured meshes where elements can be different from axis-aligned squares.
 
 Figure~\ref{fig:complex_mesh_elements} shows how the elements are arranged among the four
@@ -870,7 +897,7 @@ This case ended up performing \(281078\) time steps, and took 5h04 to complete. 
 the time spent load balancing the mesh is small. This demonstrates very good performance of the
 algorithm, with the only concerning result being the proportion of the computation time spent
 refining the mesh. The high time spent in the \acrshort{acr:AMR} routine could be reduced by
-refining the mesh less often, at the price of using a worse mesh for longer.
+refining the mesh less often, at the price of using a worse mesh for longer periods.
 Section~\ref{section:conclusion:future_work} discusses a different approach to choose when to refine
-the mesh which could improve these situations by only refining the mesh when a global error
-estimation threshold is met.
+the mesh which could improve these situations by only refining the mesh when a global target error
+estimate is met.
