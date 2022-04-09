@@ -360,16 +360,16 @@ Figures~\ref{fig:adaptivity_efficiency_A5},~\ref{fig:adaptivity_efficiency_A20},
 and~\ref{fig:adaptivity_efficiency_A500}, is prohibitively time consuming to compute. The solution
 is well resolved as shown on Figure~\ref{fig:adaptivity_efficiency_A20_error}, with the analytical
 solution error being \(19 \times \) smaller than in the adaptive case. On the other hand, it takes
-\(271 \times \) as much time to compute. The difference is even more pronounced when the refinement
-interval is increased to 100, as in Figure~\ref{fig:adaptivity_efficiency_A100_time}, where the
-adaptive solution with three to five pre-condition steps is around \(750 \times \) faster, at the
-expense of a worse error compared to the 50 refinement interval case.
+\(22 \times \) as much time to compute. The difference is even more pronounced when the refinement
+interval is increased to \(100\), as in Figure~\ref{fig:adaptivity_efficiency_A100_time}, where the
+adaptive solution with three to five pre-condition steps is around \(67 \times \) faster, at the
+expense of a worse error compared to the \(20\) refinement interval case.
 
 As for the similar maximum error non-adaptive case, shown with dotted lines, the results are closer.
 The case with a refinement interval of 20 on Figure~\ref{fig:adaptivity_efficiency_A20} was used to
 set the target error for that non-adaptive case. The adaptive case starting from a coarse mesh is
-able to reach a maximum error only 14\% greater than the non-adaptive case, while being 34\% faster.
-The other cases also attain the target error estimate of \num{1e-6} while being faster.
+able to reach a similar maximum error and similar computation time when compared to the non-adaptive
+case. The other cases also attain the target error estimate of \num{1e-6} while being faster.
 
 The non-adaptive cases are closer to being ideal for the \acrshort{acr:GPU} architecture. The
 non-adaptive cases have less thread divergence than the adaptive case. There is a lot more branching
@@ -411,9 +411,9 @@ resources.
 There is a balance to be made between refining often and spending more time in the
 \acrshort{acr:AMR} routine, and refining less often therefore using a less refined mesh for longer.
 Section~\ref{section:conclusion:future_work} discusses ideas for alternative approaches to choose
-when to refine. In this case it seems that performing \acrshort{acr:AMR} every 20 time steps yields
-the lowest error, while waiting 100 timesteps between refinements yields a faster runtime at the
-price of a worse error that still stays below the target error estimate we set.
+when to refine. In this case it seems that performing \acrshort{acr:AMR} every \(20\) time steps
+yields the lowest error, while waiting \(100\) timesteps between refinements yields a faster runtime
+at the price of a worse error that still stays below the target error estimate we set.
 
 \section{Dynamic Load Balancing Performance}\label{section:results:load_balancing_performance}
 
