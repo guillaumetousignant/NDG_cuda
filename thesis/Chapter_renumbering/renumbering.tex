@@ -16,12 +16,12 @@ Section~\ref{section:results:complex_meshes}. Figure~\ref{fig:mesh_unsorted} sho
 the elements and how the mesh is split into mesh blocks if partitioned into \(16\) blocks as-is. 
 
 \begin{figure}[H]
-	\centering
-	\subfloat[Ordering]
-	{\includegraphics[width=0.45\textwidth]{Chapter_renumbering/media/ordering_unsorted}\label{fig:ordering_unsorted}}
-	\subfloat[Rank]
-	{\includegraphics[width=0.45\textwidth]{Chapter_renumbering/media/rank_unsorted}\label{fig:rank_unsorted}}
-	\caption{Unsorted mesh: The mesh is partitioned into \(16\) mesh blocks. (a) Ordering of the elements within the mesh (b) Mesh blocks once partitioned}\label{fig:mesh_unsorted}
+    \centering
+    \subfloat[Ordering]
+    {\includegraphics[width=0.45\textwidth]{Chapter_renumbering/media/ordering_unsorted}\label{fig:ordering_unsorted}}
+    \subfloat[Rank]
+    {\includegraphics[width=0.45\textwidth]{Chapter_renumbering/media/rank_unsorted}\label{fig:rank_unsorted}}
+    \caption{Unsorted mesh: The mesh is partitioned into \(16\) mesh blocks. (a) Ordering of the elements within the mesh (b) Mesh blocks once partitioned}\label{fig:mesh_unsorted}
 \end{figure}
 
 The resulting mesh blocks are scattered around the mesh, leading to unnecessarily large boundaries
@@ -34,12 +34,12 @@ Figure~\ref{fig:mesh_circular}. The index represents how the elements are ordere
 the rank indicates which mesh block they are part of.
 
 \begin{figure}[H]
-	\centering
-	\subfloat[Ordering]
-	{\includegraphics[width=0.45\textwidth]{Chapter_renumbering/media/ordering_circular}\label{fig:ordering_circular}}
-	\subfloat[Rank]
-	{\includegraphics[width=0.45\textwidth]{Chapter_renumbering/media/rank_circular}\label{fig:rank_circular}}
-	\caption{Circular sorted mesh: The elements are sorted according to their angle and the mesh is partitioned into \(16\) mesh blocks. (a) Ordering of the elements within the mesh (b) Mesh blocks once partitioned}\label{fig:mesh_circular}
+    \centering
+    \subfloat[Ordering]
+    {\includegraphics[width=0.45\textwidth]{Chapter_renumbering/media/ordering_circular}\label{fig:ordering_circular}}
+    \subfloat[Rank]
+    {\includegraphics[width=0.45\textwidth]{Chapter_renumbering/media/rank_circular}\label{fig:rank_circular}}
+    \caption{Circular sorted mesh: The elements are sorted according to their angle and the mesh is partitioned into \(16\) mesh blocks. (a) Ordering of the elements within the mesh (b) Mesh blocks once partitioned}\label{fig:mesh_circular}
 \end{figure}
 
 This method seems to give reasonable results, but is only useful for circular meshes. Also, the
@@ -49,9 +49,9 @@ inter-block boundaries. Figure~\ref{fig:mesh_circular_ordering} shows the orderi
 clearly.
 
 \begin{figure}[H]
-	\centering
-	\includesvg[width=0.98\textwidth]{Chapter_renumbering/media/mesh_P0_before_adaptivity1_circular}
-	\caption{Circular sorted mesh element ordering: The elements are very far from their neighbours.}\label{fig:mesh_circular_ordering}
+    \centering
+    \includesvg[width=0.98\textwidth]{Chapter_renumbering/media/mesh_P0_before_adaptivity1_circular}
+    \caption{Circular sorted mesh element ordering: The elements are very far from their neighbours.}\label{fig:mesh_circular_ordering}
 \end{figure}
 
 This is evidently not a good result. Even if this method creates reasonable partitions, the elements
@@ -68,9 +68,9 @@ very fine, or high level, Hilbert curve. Figure~\ref{fig:hilbert_renumbering} sh
 curve along which the elements are sorted.
 
 \begin{figure}[H]
-	\centering
-	\includesvg[width=0.98\textwidth]{Chapter_renumbering/media/hilbert_renumbering}
-	\caption{Hilbert renumbering: The element centres are rounded to an underlying Hilbert curve.}\label{fig:hilbert_renumbering}
+    \centering
+    \includesvg[width=0.98\textwidth]{Chapter_renumbering/media/hilbert_renumbering}
+    \caption{Hilbert renumbering: The element centres are rounded to an underlying Hilbert curve.}\label{fig:hilbert_renumbering}
 \end{figure}
 
 When we use this method on the same mesh as Figure~\ref{fig:mesh_unsorted}, we obtain a mesh sorted
@@ -78,12 +78,12 @@ along a pseudo-Hilbert curve. Figure~\ref{fig:mesh_hilbert} shows the ordering o
 well as the partitions generated.
 
 \begin{figure}[H]
-	\centering
-	\subfloat[Ordering]
-	{\includegraphics[width=0.45\textwidth]{Chapter_renumbering/media/ordering_hilbert}\label{fig:ordering_hilbert}}
-	\subfloat[Rank]
-	{\includegraphics[width=0.45\textwidth]{Chapter_renumbering/media/rank_hilbert}\label{fig:rank_hilbert}}
-	\caption{Pseudo-Hilbert sorted mesh: The elements are sorted according to their index along a Hilbert curve, and the mesh is partitioned into \(16\) mesh blocks. (a) Ordering of the elements within the mesh (b) Mesh blocks once partitioned}\label{fig:mesh_hilbert}
+    \centering
+    \subfloat[Ordering]
+    {\includegraphics[width=0.45\textwidth]{Chapter_renumbering/media/ordering_hilbert}\label{fig:ordering_hilbert}}
+    \subfloat[Rank]
+    {\includegraphics[width=0.45\textwidth]{Chapter_renumbering/media/rank_hilbert}\label{fig:rank_hilbert}}
+    \caption{Pseudo-Hilbert sorted mesh: The elements are sorted according to their index along a Hilbert curve, and the mesh is partitioned into \(16\) mesh blocks. (a) Ordering of the elements within the mesh (b) Mesh blocks once partitioned}\label{fig:mesh_hilbert}
 \end{figure}
 
 Figure~\ref{fig:ordering_hilbert} shows an ordering that looks a lot like the correct Hilbert curve,
@@ -92,9 +92,9 @@ Figure~\ref{fig:rank_hilbert} is good, and has short inter-block interfaces.
 
 
 \begin{figure}[H]
-	\centering
-	\includegraphics[width=0.45\textwidth]{Chapter_renumbering/media/correct_hilbert_ordering}
-	\caption{Correct Hilbert curve: This is the real Hilbert curve, on a \(128 \times 128\) domain where it is defined.}\label{fig:correct_hilbert_numbering}
+    \centering
+    \includegraphics[width=0.45\textwidth]{Chapter_renumbering/media/correct_hilbert_ordering}
+    \caption{Correct Hilbert curve: This is the real Hilbert curve, on a \(128 \times 128\) domain where it is defined.}\label{fig:correct_hilbert_numbering}
 \end{figure}
 
 Next, Figures~\ref{fig:mesh_P0_adaptivity_far} and~\ref{fig:mesh_P0_adaptivity_near} show the
@@ -104,21 +104,21 @@ Figure~\ref{fig:mesh_P0_adaptivity_far} and~\ref{fig:mesh_P0_adaptivity_near} sh
 the domain and a closer view of the airfoil, respectively.
 
 \begin{figure}[H]
-	\centering
-	\subfloat[Before refinement]
-	{\includesvg[width=0.45\textwidth]{Chapter_renumbering/media/mesh_P0_before_adaptivity1}\label{fig:mesh_P0_before_adaptivity1_far}}
-	\subfloat[After refinement]
-	{\includesvg[width=0.45\textwidth]{Chapter_renumbering/media/mesh_P0_after_adaptivity1}\label{fig:mesh_P0_after_adaptivity1_far}}
-	\caption{\Acrlong{acr:AMR} with an unstructured mesh: The mesh is refined, created elements follow the initial pseudo-Hilbert curve. (a) Initial mesh (b) Mesh after a single refinement step}\label{fig:mesh_P0_adaptivity_far}
+    \centering
+    \subfloat[Before refinement]
+    {\includesvg[width=0.45\textwidth]{Chapter_renumbering/media/mesh_P0_before_adaptivity1}\label{fig:mesh_P0_before_adaptivity1_far}}
+    \subfloat[After refinement]
+    {\includesvg[width=0.45\textwidth]{Chapter_renumbering/media/mesh_P0_after_adaptivity1}\label{fig:mesh_P0_after_adaptivity1_far}}
+    \caption{\Acrlong{acr:AMR} with an unstructured mesh: The mesh is refined, created elements follow the initial pseudo-Hilbert curve. (a) Initial mesh (b) Mesh after a single refinement step}\label{fig:mesh_P0_adaptivity_far}
 \end{figure}
 
 \begin{figure}[H]
-	\centering
-	\subfloat[Before refinement]
-	{\includesvg[width=0.45\textwidth]{Chapter_renumbering/media/mesh_P0_before_adaptivity1_near}\label{fig:mesh_P0_before_adaptivity1_near}}
-	\subfloat[After refinement]
-	{\includesvg[width=0.45\textwidth]{Chapter_renumbering/media/mesh_P0_after_adaptivity1_near}\label{fig:mesh_P0_after_adaptivity1_near}}
-	\caption{\Acrlong{acr:AMR} with an unstructured mesh (detail): The mesh is refined, created elements follow the initial pseudo-Hilbert curve. There are jumps along the curve around the airfoil. (a) Initial mesh (b) Mesh after a single refinement step}\label{fig:mesh_P0_adaptivity_near}
+    \centering
+    \subfloat[Before refinement]
+    {\includesvg[width=0.45\textwidth]{Chapter_renumbering/media/mesh_P0_before_adaptivity1_near}\label{fig:mesh_P0_before_adaptivity1_near}}
+    \subfloat[After refinement]
+    {\includesvg[width=0.45\textwidth]{Chapter_renumbering/media/mesh_P0_after_adaptivity1_near}\label{fig:mesh_P0_after_adaptivity1_near}}
+    \caption{\Acrlong{acr:AMR} with an unstructured mesh (detail): The mesh is refined, created elements follow the initial pseudo-Hilbert curve. There are jumps along the curve around the airfoil. (a) Initial mesh (b) Mesh after a single refinement step}\label{fig:mesh_P0_adaptivity_near}
 \end{figure}
 
 As the previous figures show, the refinement maintains the path of the curve very well, even if the
