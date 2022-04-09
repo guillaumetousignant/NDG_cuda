@@ -1,6 +1,6 @@
 \chapter{Discontinuous Galerkin Spectral Element Method}\label{chapter:spectral_element_method}
 
-In this chapter we expose the methodology of the \textit{\acrfull{acr:DG-SEM}} and detail its
+In this chapter we present the methodology of the \textit{\acrfull{acr:DG-SEM}} and detail its
 application to solving the 2D wave equation. This method is part of the broader class of spectral
 methods, applied within local elements as in finite-element methods. This method exhibits the
 exponential convergence of spectral methods, while adding the ability to model difficult geometries
@@ -92,9 +92,10 @@ and Chebyshev polynomials are more practical. Legendre polynomials have a weight
 	\caption{Legendre polynomials: The first six Legendre polynomials.}\label{fig:polynomials}
 \end{figure}
 
-The Legendre polynomials were discovered by Adrien-Marie Legendre in 1782. Using their associated
-weights \(w(x) = 1\) and the interval \(\left[ -1, 1 \right]\), the polynomials are orthogonal. The
-Legendre polynomials \(L_k \left( x \right)\) of degree \(k\) therefore have the property:
+The Legendre polynomials, illustrated in Figure~\ref{fig:polynomials}, were discovered by
+Adrien-Marie Legendre in 1782. Using their associated weights \(w(x) = 1\) and the interval \(\left[
+-1, 1 \right]\), the polynomials are orthogonal. The Legendre polynomials \(L_k \left( x \right)\)
+of degree \(k\) therefore have the property:
 
 \begin{equation}
 	\int_{-1}^{1}L_{k_1}(x) L_{k_2}(x) dx = 0, \quad if \: \: k_1 \neq k_2.
@@ -129,8 +130,8 @@ weights \(w_i\).
 \subsection{Polynomial interpolation}\label{subsection:spectral_element_method:spectral_approximation:polynomial_interpolation}
 
 Polynomial interpolation fits data to a polynomial passing through known points. The polynomial has
-an order equal to the number of points. In this work we use Lagrange integrating polynomials \(l_j\)
-of degree N.
+an order equal to the number of points minus one. In this work we use Lagrange integrating
+polynomials \(l_j\) of degree N.
 
 \begin{equation}
 	l_j(x) = \prod_{\substack{i = 0 \\ i \neq j}}^{N}\frac{x- x_i}{x_j - x_i}
@@ -169,7 +170,7 @@ We can also modify the Lagrange interpolation to the barycentric form.
 \end{gather}
 
 \noindent
-We retain the same property as the initial form:
+We retain the same property as for the initial form:
 
 \begin{equation}
 	\psi(x)\sum_{j = 0}^{N}\frac{w_j}{x - x_j} = 1.
@@ -320,7 +321,7 @@ discontinuous Galerkin method, first proposed by Reed and Hill in 1973~\cite{Ree
 absence of quadrature points at the edges of the domain, letting the different elements be
 discontinuous at their boundaries. These discontinuities are then counterbalanced by fluxes between
 elements. Hesthaven and Warburton~\cite{Hesthaven2007} give a comprehensive reference on the
-discontinuous Galerkin methods. The present work follows the derivations from
+discontinuous Galerkin method. The present work follows the derivations from
 Kopriva~\cite{Kopriva2009} for the \acrshort{acr:DG-SEM}. This method is especially well suited for
 the intended work on \acrshortpl{acr:GPU}. It is highly accurate and geometrically flexible. It is
 also easy to parallelise, as the discontinuities between elements make them independent. Each
@@ -416,12 +417,12 @@ The complete equation becomes:
 \end{equation}
 
 \noindent
-The boundary conditions are weakly enforced using fluxes \(\mathbf{F}^*\), as explained in
-Subsection~\ref{subsection:spectral_element_method:dg_sem:fluxes}. 
+The boundary conditions are weakly enforced using numerically computed boundary fluxes
+\(\mathbf{F}^*\), as explained in Subsection~\ref{subsection:spectral_element_method:dg_sem:fluxes}. 
 
 We then need to evaluate the integrals. A distinction is made between the interior terms that are
 evaluated using the collocation points within an element shown in lilac in
-Figure~\ref{fig:domain_nodes}, and the boundary term which uses collocation points on the element
+Figure~\ref{fig:domain_nodes}, and the boundary term calculated collocation points on the element
 boundaries, shown in blue.
 
 \begin{figure}[H]
@@ -524,13 +525,13 @@ This simplifies Equation~\ref{equ:2d_wave_full} to:
 The collocation points, weights and derivative matrices from Equation~\ref{equ:2d_wave_d} can be
 computed directly and stored for the whole computation. Algorithms for those are discussed in
 Section~\ref{section:spectral_element_method:implementation}. The next section discusses the
-computation of the fluxes \(\mathbf{F}^*\).
+computation of the numerical boundary fluxes \(\mathbf{F}^*\).
 
 \subsection{Fluxes}\label{subsection:spectral_element_method:dg_sem:fluxes}
 
 We now need to compute the numerical fluxes \(\mathbf{F}^*\) to approximate the physical fluxes
 \(\mathfrak{F}\). We recall the formulation for the fluxes from Equation~\ref{equ:2d_wave_integral}.
-The flux derivation can be found in more detail in~\cite{Kopriva2009}.
+A more detailed derivation for the flux is found in~\cite{Kopriva2009}.
 
 \begin{equation} \label{equ:physical_fluxes}
 	\mathfrak{F} \cdot \widehat{n} = \mathbf{f} n_x + \mathbf{g} n_y = (B n_x + C n_y) \mathbf{q} = A \mathbf{q}
@@ -563,14 +564,14 @@ We also define the normal vector \(\widehat{n} = \alpha \widehat{x} + \beta \wid
 	\end{bmatrix}.
 \end{equation}
 
-We will use an upwind scheme~\cite{Toro2009} to impose the boundary conditions. On an interface
-between two elements, the left and right elements in that coordinate system, the state at the
-interface is the left state if the wave goes from left to right, or the right state if the wave goes
-from right to left. This is the upwind state of the boundary.
+We will use an upwind scheme~\cite{Toro2009} to calculate the flux at element interfaces. On an
+interface between two elements, the left and right elements in that coordinate system, the state at
+the interface is the left state if the wave goes from left to right, or the right state if the wave
+goes from right to left. This is the upwind state of the elemental boundary.
 
-Since it is not evident what the upwind state of the system as is described in
-Equation~\ref{equ:physical_fluxes}, we will decouple the wave components. We decompose \(A\) into a
-diagonal matrix \(\Lambda \), its right eigenvectors \(S\), and their inverse \(S^{-1}\).
+Since it is not evident what the upwind state of the system in Equation~\ref{equ:physical_fluxes},
+we will decouple the wave components. We decompose \(A\) into a diagonal matrix \(\Lambda \), its
+right eigenvectors \(S\), and their inverse \(S^{-1}\).
 
 \begin{equation}
     \Lambda = 
@@ -639,16 +640,16 @@ We can evaluate the flux with:
 	\centering
 	\includesvg[width=0.25\textwidth]{Chapter_spectral_element_method/media/waves}
 	\caption{States on both sides of an interface: The normal \(\widehat{n}\) of the interface
-	    determines the left and right sides. \(\mathbf{Q}^L\) and \(\mathbf{Q}^R\) are the states on the
-	    left and right of the interface, respectively. \(w^+\) and \(w^-\) indicate the left-to-right
-	    and right-to-left waves, respectively.}\label{fig:waves}
+	    determines the left and right sides. \(\mathbf{Q}^L\) and \(\mathbf{Q}^R\) are the states on
+	    the left and right of the interface, respectively. \(w^+\) and \(w^-\) indicate the
+	    left-to-right and right-to-left running waves, respectively.}\label{fig:waves}
 \end{figure}
 
 Figure~\ref{fig:waves} shows a boundary, with the associated states and waves. This guides us in
 choosing the states \(\mathbf{q}\) in Equation~\ref{equ:flux}. The upwind state for the
-left-to-right wave is \(\mathbf{Q}^L\), and the upwind state for the right-to-left wave is
-\(\mathbf{Q}^R\). The stationary wave only has zeros in its matrix, and can be removed. This gives
-us the formulation for the numerical fluxes. This is what is called the Riemann problem.
+left-to-right running wave is \(\mathbf{Q}^L\), and the upwind state for the right-to-left running
+wave is \(\mathbf{Q}^R\). The stationary wave only has zeros in its matrix, and can be removed. This
+gives us the formulation for the numerical fluxes. This is what is called the Riemann problem.
 
 \begin{equation} \label{equ:flux_states}
 	\mathbf{F}^* \cdot \widehat{n} = A^+ \mathbf{Q}^L + A^- \mathbf{Q}^R
@@ -685,9 +686,9 @@ respectively:
 
 \begin{equation} \label{equ:waves_x}
 	\begin{split}
-        w_B^+ & \equiv p + c \left( \alpha u + \beta v \right) \\
-        w_B^- & \equiv p - c \left( \alpha u + \beta v \right) \\
-        w_B^0 & \equiv \beta u - \alpha v.
+        w^+ & \equiv p + c \left( \alpha u + \beta v \right) \\
+        w^- & \equiv p - c \left( \alpha u + \beta v \right) \\
+        w^0 & \equiv \beta u - \alpha v.
 	\end{split} 
 \end{equation}
 
@@ -849,19 +850,20 @@ To account for the uneven spacing between the collocation points inside an eleme
 the smallest spacing in an element as: 
 
 \begin{equation}
-    \Delta x = \frac{\Delta x_k}{N^2}
+    \Delta x = \frac{\Delta x^k_{\min}}{N^2}
 \end{equation}
 
 \noindent
-where \(\Delta x_k\) is the length of element \(k\), and \(N\) is the polynomial order of that
-element. The global timestep will be chosen as the minimum timestep of all elemental timesteps. 
+where \(\Delta x^k_{\min}\) is the minimum length of element \(k\), and \(N\) is the polynomial
+order of that element. The global timestep will be chosen as the minimum timestep of all elemental
+timesteps. 
 
 \begin{equation}
     \Delta t = \min_{k \in 0:K} \left( \Delta t_k \right)
 \end{equation}
 
 \begin{equation}
-    \Delta t_k \leq \CFL \frac{\Delta x_k}{cN^2}
+    \Delta t_k \leq \CFL \frac{\Delta x^k_{\min}}{cN^2}
 \end{equation}
 
 \section{Implementation}\label{section:spectral_element_method:implementation}
@@ -876,15 +878,15 @@ elements on either side of a face add their contribution to the face. In additio
 have multiple faces on each side, a side effect of the non-conforming interfaces from
 Section~\ref{section:adaptive_mesh_refinement:mortar_element_method}. If we parallelise over
 elements, race conditions will occur when multiple elements try to add their contribution to the
-same face at the same time. It is then possible that the contribution of some elements is ignored,
-as it is overwritten by another element. This is not a problem for serial or multi-process single
-threaded \acrshort{acr:CPU} programs.
+same face at the same time. The possibility then arises that the contribution of some elements would
+be dropped if it is overwritten by another element. This is not a problem for serial or
+multi-process single threaded \acrshort{acr:CPU} programs.
 
 To remedy this, we parallelise over faces for the flux computation. Earlier computations, also
 parallelised over faces, project the boundary solution of both elements to two solution arrays, left
 and right, in the face objects. The flux computation can then compute the fluxes and store them in a
 single flux solution array in the face objects. Afterwards, we will be able to once again
-parallelise on elements to project these fluxes back to the elements, and continue the normal
+parallelise over elements to project these fluxes back to the elements, and continue the normal
 execution of the program.
 
 \begin{algorithm}[H]
