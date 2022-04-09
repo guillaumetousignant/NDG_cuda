@@ -1,51 +1,76 @@
 \thispagestyle{plain} % stop the headers being added in
 
 \begin{center}
-    \vspace*{0.5cm} % vertical gap. *" makes sure Latex does not ignore the command. 
+    \vspace*{0cm} % vertical gap. *" makes sure Latex does not ignore the command. 
     \phantomsection\addcontentsline{toc}{chapter}{Abstract}
-    { \Large
+    {\large
         \textbf{A Graphics Processing Unit Based \\ 
             Discontinuous Galerkin Wave Equation Solver \\
             with hp-Adaptivity and Load Balancing \\
         }
     }
-    \vspace{0.4cm}
-    \large
+    \vspace{0cm}
+    \normalsize
 
     by \\
-    \vspace{0.4cm}
+    \vspace{0cm}
     \textbf{Guillaume Tousignant}
 
-    \vspace{0.9cm}
+    \vspace{0.4cm}
+    \large
     \textbf{Abstract}
 \end{center}
 
-In order to simulate complex fluid flows with precision, high-order methods can be used to obtain
-high resolution results. However, these methods are computationally expensive, and care should be
-taken to optimise their execution time. \textit{\Acrfullpl{acr:GPU}} are a relatively new
-architecture in the domain of scientific computing, leveraging massive parallelism at the expense of
-reduced flexibility. To achieve the resolution of high-order methods with the throughput of
-\acrshortpl{acr:GPU}, we present in this thesis a \acrshort{acr:GPU} implementation of the
-\textit{\acrfull{acr:DG-SEM}} coupled with parallel \textit{\acrfull{acr:AMR}} to solve the
-two-dimensional wave equation. 
+\begin{adjustwidth}{-0.5in}{-0.5in}
 
-The \textit{\acrlong{acr:DG-SEM}} splits the domain into elements, within which the solution is
-represented as a weighted series of orthogonal polynomials, the \textit{Legendre polynomials} in
-this case. To insure no resources are wasted, \textit{\acrlong{acr:AMR}} aims to increase the
-resolution in regions of interest, via two mechanisms: \textit{h-refinement}, where elements are
-split into multiple smaller ones, and \textit{p-refinement}, where the polynomial order within an
-element is increased. In order to retain the fast convergence high-order methods are known for, the
-\textit{mortar element method} is used to resolve the fluxes between geometrically or functionally
-non-conforming elements.
+\hspace{\parindent} % Don't know why it isn't indented by default
+In \acrlong{acr:CFD}, we often need to solve complex problems with high precision and efficiency. We
+propose a three-pronged approach to attain this goal. First, we use the
+\textit{\acrfull{acr:DG-SEM}} for its high accuracy. Second, we use \textit{\acrfullpl{acr:GPU}} to
+perform our computations to exploit available parallel computing power. Third, we implement a
+parallel \textit{\acrfull{acr:AMR}} algorithm to efficiently use our computing power where it is
+most needed. We present a \acrshort{acr:GPU} \acrshort{acr:DG-SEM} solver with \acrshort{acr:AMR}
+and dynamic load balancing for the 2D wave equation. 
 
-Since mesh refinement can increase resolution anywhere in the domain, it is possible that some nodes
-end up with more work to perform than others. Since the nodes need to synchronise multiple times
-during the calculation, the computation time will be determined by the most heavily loaded node. To
-remedy this imbalance, a \textit{\acrfull{acr:SFC}} based repartitioning algorithm is used to even
-out the computational load and to keep a node's elements together, limiting the number of interfaces
-between nodes, as these transfers are particularly costly when the data also has to be  transferred
-from and to the \acrshortpl{acr:GPU} in addition to between the nodes.
+The \acrshort{acr:DG-SEM} is a higher-order method that splits a domain into elements and represents
+the solution within these elements as a truncated series of orthogonal polynomials. This approach
+combines the geometric flexibility of finite-element methods with the exponential convergence of
+spectral methods.
 
-% Add some results
+\Acrshortpl{acr:GPU} provide a massively parallel architecture, achieving a higher throughput than
+traditional \acrshortpl{acr:CPU}. They are relatively new as a platform in the scientific community,
+therefore most algorithms need to be adapted to that new architecture. We perform most of our
+computations in parallel on multiple \acrshortpl{acr:GPU}.
 
-\textbf{Keywords}: \Acrlongpl{acr:SEM}, discontinuous Galerkin, \acrlongpl{acr:GPU}, \acrlong{acr:AMR}, \acrlongpl{acr:SFC}, Hilbert curve, dynamic load balancing, \acrlong{acr:HPC}.
+\Acrshort{acr:AMR} selectively refines elements in the domain where the error is estimated to be
+higher than a prescribed tolerance, via two mechanisms: \textit{p-refinement} increases the
+polynomial order within elements, and \textit{h-refinement} splits elements into several smaller
+ones. This provides a higher accuracy in important flow regions and increases capabilities of
+modeling complex flows, while saving computing power in other parts of the domain. We use the
+\textit{mortar element method} to retain the exponential convergence of high-order methods at the
+non-conforming interfaces created by \acrshort{acr:AMR}.
+
+We implement a parallel \textit{dynamic load balancing} algorithm to even out the load imbalance
+caused by solving problems in parallel over multiple \acrshortpl{acr:GPU} with \acrshort{acr:AMR}.
+We implement a \textit{\acrlong{acr:SFC}}-based repartitioning algorithm which ensures good locality
+and small interfaces.
+
+While the intense calculations of the high order approach suit the \acrshort{acr:GPU} architecture,
+programming of the highly dynamic adaptive algorithm on \acrshortpl{acr:GPU} is the most challenging
+aspect of this work. The resulting solver is tested on up to \(64\) \acrshortpl{acr:GPU} on
+\acrshort{acr:HPC} platforms, where it shows good strong and weak scaling characteristics. Several
+example problems of increasing complexity are performed, showing a reduction in computation time of
+up to \(3 \times \) on \acrshortpl{acr:GPU} vs \acrshortpl{acr:CPU}, depending on the loading of the
+\acrshortpl{acr:GPU} and other user-defined choices of parameters. \Acrshort{acr:AMR} is shown to
+improve computation times by an order of magnitude or more.
+
+\begin{footnotesize}
+\begin{spacing}{1.125}
+\vspace*{\fill}
+\noindent
+\textbf{Keywords}: \Acrlongpl{acr:SEM}, discontinuous Galerkin, \acrlongpl{acr:GPU},
+\acrlong{acr:AMR}, \acrlongpl{acr:SFC}, Hilbert curve, dynamic load balancing, \acrlong{acr:HPC}.
+\end{spacing}
+\end{footnotesize}
+
+\end{adjustwidth}
