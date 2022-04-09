@@ -6,12 +6,11 @@ started to be used in the scientific computing domain. \Acrshortpl{acr:GPU} were
 to perform repetitive graphical computations, such as the output to a computer screen, video
 processing, and synthetic image generation. These computations are \textit{embarrassingly parallel},
 meaning that they are comprised of many identical computations independent of each other.
-\Acrshortpl{acr:GPU} are therefore optimised for parallel efficiency. Combined with the fact that
-these problems deal with huge amounts of data, \acrshortpl{acr:GPU} are also optimised for maximum
-bandwidth. They are significantly different from \textit{\acrfullpl{acr:CPU}}, the traditional
-architecture on which code is run. \Acrshortpl{acr:CPU} are optimised to solve serial problems as
-fast as possible, meaning they prioritise serial speed over parallel efficiency, and latency over
-bandwidth. 
+\Acrshortpl{acr:GPU} are therefore optimised for parallel efficiency. Since these problems deal with
+huge amounts of data, \acrshortpl{acr:GPU} are also optimised for maximum bandwidth. They are
+significantly different from \textit{\acrfullpl{acr:CPU}}, the traditional architecture on which
+code is run. \Acrshortpl{acr:CPU} are optimised to solve serial problems as fast as possible,
+meaning they prioritise serial speed over parallel efficiency, and latency over bandwidth. 
 
 Solving fluid flows on a mesh is a parallel problem, as at most steps it is possible to compute the
 solution on the different elements making up the mesh in parallel. On the other hand, elements must
@@ -19,7 +18,7 @@ exchange information at their interfaces at each time step, meaning careful sync
 needed. Finally, the \acrlong{acr:AMR} process detailed in
 Chapter~\ref{chapter:adaptive_mesh_refinement} and the dynamic load balancing process from
 Chapter~\ref{chapter:load_balancing} are not inherently parallel processes. A significant
-programming task then becomes necessary to break up these algorithms into parallel tasks to be run
+programming effort then becomes necessary to break up these algorithms into parallel tasks to be run
 on \acrshortpl{acr:GPU}. Overall, if it is possible to efficiently parallelise these sequential
 parts of the problem, the gains from running the main solving loop on the highly parallel
 \acrshortpl{acr:GPU} should incur a significant speedup to the program.
@@ -78,31 +77,31 @@ at once while waiting for the result of the conditional, keeping only the correc
 conditional has been evaluated. The more powerful control flow units of \acrshortpl{acr:CPU} may
 also perform branch prediction, consisting of the \acrshort{acr:CPU} guessing the most likely branch
 based on the result of previous computations and starting to execute this branch while waiting for
-the conditional. All this is performed as an effort to reduce latency as much as possible. Programs
+the conditional. All this is performed in an effort to reduce latency as much as possible. Programs
 running on \acrshortpl{acr:GPU} must compensate by avoiding divergence as much as possible within
 warps.
 
 \subsection{Programming model}\label{subsection:graphics_processing_units:architecture:programming_model}
 
 This work uses the \acrshort{acr:CUDA} programming model. It is a programming language, framework
-and runtime developed to enable programming on \acrshortpl{acr:GPU} with an extension of the C++
-language. Programs using the language execute on the \acrshort{acr:CPU} like a normal program, but
-can schedule parts of the program, called kernels, to be executed on the \acrshort{acr:GPU}. Kernels
-are run in parallel on the \acrshort{acr:GPU}, asynchronously from the \acrshort{acr:CPU}. The
-\acrshort{acr:CPU} is therefore free to do computations of its own while the \acrshort{acr:GPU} is
-executing, including adding more kernels or transfers to the \acrshort{acr:GPU} execution queue.
-Multiple such queues, called streams, can exist. The purpose of using multiple streams is to execute
-independent computations on the \acrshort{acr:GPU} concurrently, and maximise \acrshort{acr:GPU}
-usage in case a stream is waiting. \Acrshortpl{acr:GPU} can concurrently execute kernels, transfer
-data from the \acrshort{acr:CPU} to the \acrshort{acr:GPU}, and transfer data from the
-\acrshort{acr:GPU} to the \acrshort{acr:CPU}. These transfers are necessary because
-\acrshort{acr:CPU} and \acrshort{acr:GPU} main \acrlong{acr:RAM} are separate. This means that data
-needed for computations on the \acrshort{acr:GPU} that cannot be generated on it must be explicitly
-transferred from the \acrshort{acr:CPU}, and results living on the \acrshort{acr:GPU} must be
-transferred back to the \acrshort{acr:CPU} in order to be displayed or written to disk. As
-\acrshortpl{acr:GPU} are also generally running the displays of non-server computers, results that
-are only meant to be viewed can be directly displayed and such transfers can be skipped. This is not
-the case for this work. 
+and runtime \acrfull{acr:API} developed to enable programming on \acrshortpl{acr:GPU} with an
+extension of the C++ language. Programs using the language execute on the \acrshort{acr:CPU} like a
+normal program, but can schedule parts of the program, called kernels, to be executed on the
+\acrshort{acr:GPU}. Kernels are run in parallel on the \acrshort{acr:GPU}, asynchronously from the
+\acrshort{acr:CPU}. The \acrshort{acr:CPU} is therefore free to do computations of its own while the
+\acrshort{acr:GPU} is executing, including adding more kernels or transfers to the
+\acrshort{acr:GPU} execution queue. Multiple such queues, called streams, can exist. The purpose of
+using multiple streams is to execute independent computations on the \acrshort{acr:GPU}
+concurrently, and maximise \acrshort{acr:GPU} usage in case a stream is waiting.
+\Acrshortpl{acr:GPU} can concurrently execute kernels, transfer data from the \acrshort{acr:CPU} to
+the \acrshort{acr:GPU}, and transfer data from the \acrshort{acr:GPU} to the \acrshort{acr:CPU}.
+These transfers are necessary because \acrshort{acr:CPU} and \acrshort{acr:GPU} main
+\acrlong{acr:RAM} are separate. This means that data needed for computations on the
+\acrshort{acr:GPU} that cannot be generated on it must be explicitly transferred from the
+\acrshort{acr:CPU}, and results living on the \acrshort{acr:GPU} must be transferred back to the
+\acrshort{acr:CPU} in order to be displayed or written to disk. As \acrshortpl{acr:GPU} are also
+generally running the displays of non-server computers, results that are only meant to be viewed can
+be directly displayed and such transfers can be skipped. This is not the case for this work. 
 
 \begin{figure}[H]
 	\centering
@@ -134,10 +133,10 @@ level for the next one.
 Typical execution of a program that adds an array A to an array B and stores the result in an array
 C will proceed as follows. The \acrshort{acr:CPU} side of the program will create two arrays of data
 in its memory, and initialise them as needed. It will then create two arrays of the same size on the
-\acrshort{acr:GPU} using the \acrshort{acr:CUDA} runtime, and transfer the data from the
-\acrshort{acr:CPU} arrays A and B to the \acrshort{acr:GPU} arrays. It will then create a result
-array C on the \acrshort{acr:GPU}, and one on the \acrshort{acr:CPU}. It will then launch a kernel
-on the \acrshort{acr:GPU}, with pointers to the \acrshort{acr:GPU} A and B arrays, and the
+\acrshort{acr:GPU} using the \acrshort{acr:CUDA} runtime \acrshort{acr:API}, and transfer the data
+from the \acrshort{acr:CPU} arrays A and B to the \acrshort{acr:GPU} arrays. It will then create a
+result array C on the \acrshort{acr:GPU}, and one on the \acrshort{acr:CPU}. It will then launch a
+kernel on the \acrshort{acr:GPU}, with pointers to the \acrshort{acr:GPU} A and B arrays, and the
 \acrshort{acr:GPU} C array. The number of elements in the vectors will dictate the size of the
 execution grid. The number of elements will be split in blocks of threads of fixed size, for example
 blocks of 128 threads. The number and size of blocks are given to the \acrshort{acr:GPU} when
@@ -149,13 +148,13 @@ This model fits well with many \acrshort{acr:CFD} methods, including the \acrsho
 in this work. We work on a mesh made up of elements and faces connecting them. Elements are
 independent during most of the computation and their computations can be executed in parallel. The
 only step from the main solver loop needing extra care is the computation of the fluxes between the
-elements. The flux computation uses the data from the elements on either side of a face, computes a
-flux and stores that flux back in both elements so they can compute their derivative. Since there
-can be multiple faces on each side of an element as detailed in
+elements. The flux computation needs the data from the elements on either side of a face and stores
+the resulting flux back in both elements so they can compute their derivative. Since there can be
+multiple faces on each side of an element as detailed in
 Section~\ref{section:adaptive_mesh_refinement:mortar_element_method}, and each element has multiple
 sides, multiple threads will attempt to read and write to the same locations at the same time. This
-is a race condition, where the result of the computation will be dependent on the order in which the
-threads will try to access the memory location. The results may also be wrong. If two threads read a
+is a race condition, where the result of the computation will depend on the order in which the
+threads try to access the memory location. The results may also be wrong. If two threads read a
 value, add their contribution, and store the value, only whichever thread wrote its result last will
 have its contribution accounted for in the final result. Different approaches are possible to solve
 this issue. For example, Giuliani and Krivodonova~\cite{Giuliani2019} use an edge colouring method
@@ -168,19 +167,18 @@ should be efficient to run on the \acrshort{acr:GPU}.
 
 The \acrlong{acr:AMR} and dynamic load balancing algorithms shown in
 Chapters~\ref{chapter:adaptive_mesh_refinement} and~\ref{chapter:load_balancing} are not so easily
-parallelisable. These algorithms are sequential in nature, with many operations needing the result
-of previous ones to complete their calculations. In order to parallelise them, a few support
-structures have to be added for the different processing threads to be able to find the data they
-have been assigned, and the different memory locations they are allowed to access. Another issue is
-that a kernel operating on certain objects, elements for example, should not modify other objects,
-such as faces. This is done to avoid race conditions when multiple threads try to access the same
-memory location, faces in this example. The practical consequence of this is that objects moving to
-a new index in their storage arrays cannot update their neighbour faces to point to their new index.
-Their neighbours must therefore have the required information to compute where the element will move
-when the face moves itself, and update the index itself. By designing the algorithms this way, a
-kernel running on an object type will have each thread writing to only a single object corresponding
-to its index, avoiding race conditions. More information on how the algorithms are designed is
-available in
+parallelised. These algorithms are sequential in nature, with many operations needing the result of
+previous ones to complete their calculations. In order to parallelise them, a few support structures
+have to be added for the different processing threads to be able to find the data they have been
+assigned, and the different memory locations they are allowed to access. In addition, a kernel
+operating on certain objects, elements for example, should not modify other objects, such as faces.
+This is done to avoid race conditions when multiple threads try to access the same memory location,
+faces in this example. The practical consequence of this is that objects moving to a new index in
+their storage arrays cannot update their neighbour faces to point to their new index. Their
+neighbours must therefore have the required information to compute where the element will move when
+the face moves itself, and update the index itself. By designing the algorithms this way, a kernel
+running on an object type will have each thread writing to only a single object corresponding to its
+index, avoiding race conditions. More information on how the algorithms are designed is available in
 Sections~\ref{section:spectral_element_method:implementation},~\ref{section:adaptive_mesh_refinement:implementation}
 and~\ref{section:load_balancing:implementation}.
 
@@ -190,7 +188,7 @@ splitting, changing their polynomial order and moving elements around will reduc
 the computations if care is not taken to tune the algorithms to this platform. Elements with
 different polynomial orders in a thread warp will introduce branching, and the warp will take as
 much time to execute as the highest polynomial order elements. Moving and splitting elements will
-put more pressure on the limited cache of \acrshortpl{acr:GPU}, as threads will loop on different
+put more pressure on the limited cache of \acrshortpl{acr:GPU}, as threads will loop over different
 elements after refinement and load balancing. The interval between each refinement and load
 balancing will have to be tuned to trade off between having an optimal mesh for computations and
 having a static mesh for more iterations.
@@ -198,9 +196,9 @@ having a static mesh for more iterations.
 \section{Process Parallelism}\label{section:graphics_processing_units:process_parallelism}
 
 When trying to solve very large problems, a single node with a single \acrshort{acr:GPU} will have
-insufficient processing power and memory to solve the problem in a reasonable time, or at all. To
-work with these larger problems, the work needs to be split at another level than \acrshort{acr:GPU}
-parallelism.  
+insufficient processing power and memory to solve the problem in a reasonable amount of time, or at
+all. To work with these larger problems, the work needs to be split at another level than
+\acrshort{acr:GPU} parallelism.  
 
 The program can use multi-block meshes, with each block being worked on by one process and one
 \acrshort{acr:GPU}. If there are fewer \acrshortpl{acr:GPU} available on a system than there are
@@ -253,7 +251,7 @@ Figure~\ref{fig:mesh_structure} shows the different components of a two block me
 	\hfill
 	\subfloat[Second mesh block]
 	{\includesvg[height=0.55\textwidth]{Chapter_graphics_processing_units/media/mesh_1_after0_P2}\label{fig:mesh_right}}
-	\caption{Data structure: A mesh split into two blocks (a) First block (b) Second block}\label{fig:mesh_structure}
+	\caption{Data structure: A refined mesh split into two blocks (a) First block (b) Second block}\label{fig:mesh_structure}
 \end{figure}
 
 \subsection{Performance}\label{subsection:graphics_processing_units:data_structure:performance}
@@ -270,11 +268,11 @@ refinement and load balancing the mesh changes constantly. With arrays, an array
 allocated and the objects are moved to it. Thanks to the structure from
 Subsection~\ref{subsection:graphics_processing_units:data_structure:ease_of_programming}, the
 elements themselves have a known constant size regardless of polynomial order, and have the bulk of
-their size out of the element object, making them fast to move and making the element array smaller.
-The flat arrays also reduce indirection and structure the memory accesses. Memory indirection occurs
-when data is not accessed directly, but multiple data structures must be accessed sequentially to
-find the address of where the data is stored. Threads from a kernel executing on elements directly
-access the element at their thread index in the element array.
+their data outside the element object, making them fast to move and making the element array
+smaller. The flat arrays also reduce indirection and structure the memory accesses. Memory
+indirection occurs when data is not accessed directly, but multiple data structures must be accessed
+sequentially to find the address of where the data is stored. Threads from a kernel executing on
+elements directly access the element at their thread index in the element array.
 
 This greatly simplifies transfers between the \acrshort{acr:CPU} and \acrshort{acr:GPU}, and mesh
 reallocation when refining or load balancing. On the other hand, it carries less context on the
@@ -297,17 +295,17 @@ made to also read structured meshes. In unstructured meshes, elements are not ne
 in any order. Elements hold an explicit list of the indices of their neighbours. In structured
 meshes, elements are placed in a regular grid, and have an index describing their location. In 2D,
 this is the row and column of the element. The neighbours of an element are found by simply
-incrementing or decrementing the index. Figure~\ref{fig:mesh_types} shows a comparison of the two
-types of meshes used to represent the same geometry. 
+incrementing or decreasing by one the index. Figure~\ref{fig:mesh_types} shows a comparison of the
+two types of meshes used to represent the same geometry. 
 
 \begin{figure}[H]
     \centering
     \subfloat[Structured mesh]
-    {\includegraphics[width=0.229\textwidth]{Chapter_graphics_processing_units/media/structured_mesh}\label{fig:structured_mesh}}
+    {\includegraphics[width=0.45\textwidth]{Chapter_graphics_processing_units/media/structured_mesh}\label{fig:structured_mesh}}
     \qquad
     \subfloat[Unstructured mesh]
-    {\includegraphics[width=0.225\textwidth]{Chapter_graphics_processing_units/media/unstructured_mesh}\label{fig:unstructured_mesh}}
-    \caption{Types of meshes~\cite{Clucas1999}: (a) Structured (b) Unstructured}\label{fig:mesh_types}
+    {\includegraphics[width=0.45\textwidth]{Chapter_graphics_processing_units/media/unstructured_mesh}\label{fig:unstructured_mesh}}
+    \caption{Types of meshes: (a) Structured (reprinted from~\cite{Rahman2015}) (b) Unstructured}\label{fig:mesh_types}
 \end{figure}
 
 Here a concession has been made for flexibility, as structured meshes would be faster than
@@ -344,22 +342,26 @@ program should then be easy to manipulate and display.
 \subsection{Ease of programming}\label{subsection:graphics_processing_units:data_structure:ease_of_programming}
 
 The program is written partly using the object-oriented paradigm, especially for the data structure
-part. Elements, faces and nodes are objects, each with multiple data members and methods. This
-groups many parameters together that would be separate arrays otherwise, making it easier to program
-and keep track of the different members of objects. This has the disadvantage of putting more
-pressure on the limited cache of \acrshortpl{acr:GPU} and of potentially increasing the number of
-memory accesses needed. This is the structure of arrays vs array of structures debate. It increases
-cache pressure when a loop only accesses a subset of the data members of an object. For example, the
-solution update function only uses the solution and derivative of an element. When threads loop over
-those elements, they have to load entire elements into cache. If the solution and derivative were
-stored into separate arrays, many more elements could fit in cache as only their solution and
-derivative would be fetched. This would also improve memory accesses, as warps of threads would need
-fewer memory accesses since the data is continuous.
+part. Elements, faces and nodes are objects, each with multiple data members and member functions.
+This groups many parameters together that would be separate arrays otherwise, making it easier to
+program and keep track of the different members of objects. This has the disadvantage of putting
+more pressure on the limited cache of \acrshortpl{acr:GPU} and of potentially increasing the number
+of memory accesses needed. This is the structure of arrays vs array of structures debate. It
+increases cache pressure when a loop only accesses a subset of the data members of an object. For
+example, the solution update function only uses the solution and derivative of an element. When
+threads loop over those elements, they have to load entire elements into cache. If the solution and
+derivative were stored into separate arrays, many more elements could fit in cache as only their
+solution and derivative would be fetched. This would also improve memory accesses, as warps of
+threads would need fewer memory accesses since the data is continuous.
 
 On the other hand, using objects simplifies many parts of the code. Elements can be sent and
-received from process to process as a whole: adding a data member doesn't necessitate modifying
-every part of the code that copies or creates elements. This is especially useful as we can use
-constructors and destructors for objects.
+received from process to process as a whole: adding a data member does not necessarily mean
+modifying every part of the code that copies or creates elements. This is especially useful as we
+can use constructors and destructors for objects.
+On the other hand, using objects simplifies many parts of the code. Elements can be sent and
+received from process to process as a whole: adding a data member does not necessarily mean
+modifying every part of the code that copies or creates elements. This is especially useful as we
+can use constructors and destructors for objects.
 
 Constructors and destructors are used here because the objects use dynamic memory for their solution
 data. As elements and faces can have a different polynomial order, they need to store more or less
@@ -371,22 +373,24 @@ benefit of making the objects smaller and easier to move around, as only the poi
 geometry data have to be moved while the bigger solution data stays in dynamic memory.
 Figure~\ref{fig:moving_elements} shows how an element is moved from the sixth position of an array
 to the fifth of another. Only the data contained directly in the element object is copied, while the
-bulk of its data, the yellow pressure solution array in this case, stays in place in dynamic memory.
+bulk of its data, the yellow pressure solution array in the case of the wave equation solver, stays
+in place in dynamic memory. The green arrow represents the element being moved, and the red arrows
+represent pointers.
 
 \begin{figure}[H]
 	\centering
-	\includesvg[width=0.5\textwidth]{Chapter_graphics_processing_units/media/moving_elements}
+	\includesvg[width=0.65\textwidth]{Chapter_graphics_processing_units/media/moving_elements}
 	\caption{Moving elements: The data stored in dynamic memory does not need to be copied}\label{fig:moving_elements}
 \end{figure}
 
 Unlike the main arrays which are allocated from the \acrshort{acr:CPU} on the \acrshort{acr:GPU}
 using the \acrshort{acr:CUDA} runtime, \acrshort{acr:GPU} dynamic memory is allocated on the
-\acrshort{acr:GPU} itself. When the elements are created in a kernel, each thread will allocate
-memory in parallel in the object constructor. That memory will be deallocated when the element is
-deleted. Coupled with move semantics of modern C++, this allows an automatic management of that
-memory on the \acrshort{acr:GPU}, similar to how we would use smart pointers or arrays in usual C++.
-Dynamic memory allocation on the \acrshort{acr:GPU} is a relatively new feature, which enables
-programming patterns closer to those used for \acrshort{acr:CPU} programming.
+\acrshort{acr:GPU} itself. When the elements are created in a kernel, each thread allocates memory
+in parallel in the object constructor. That memory is deallocated when the element is deleted.
+Coupled with move semantics of modern C++, this allows an automatic management of that memory on the
+\acrshort{acr:GPU}, similar to how we would use smart pointers or arrays in usual C++. Dynamic
+memory allocation on the \acrshort{acr:GPU} is a relatively new feature, which enables programming
+patterns closer to those used for \acrshort{acr:CPU} programming.
 
 \section{Implementation}\label{section:graphics_processing_units:implementation}
 
@@ -404,14 +408,14 @@ nodes. These allocations and transfers can be performed asynchronously using exe
 asynchronous execution on the \acrshort{acr:GPU}. The \acrshort{acr:CPU} is then free to continue
 executing the program. The \acrshort{acr:CPU} will only wait for the \acrshort{acr:GPU} to finish
 execution if a non-asynchronous function is added to the stream, or we issue an explicit
-synchronisation instruction such as \textit{cudaStreamSynchronize}. The \acrshort{acr:CPU} will then
-wait until all operations queued on the stream are completed on the \acrshort{acr:GPU}. The results
+synchronisation instruction such as \textit{cudaStreamSynchronize}. The \acrshort{acr:CPU} then
+waits until all operations queued on the stream are completed on the \acrshort{acr:GPU}. The results
 can then be used on the \acrshort{acr:CPU}.
 
 Algorithm~\ref{alg:cuda_memory} shows how we would use that kind of memory. After creating our
-execution stream, we allocate and fill a pressure array on the \acrshort{acr:CPU} as usual. We then
-allocate an array on the \acrshort{acr:GPU}, and copy the data from the \acrshort{acr:CPU} array to
-it. We can then perform computations on the \acrshort{acr:GPU} using that array with the
+execution stream, we allocate and fill a pressure solution array on the \acrshort{acr:CPU} as usual.
+We then allocate an array on the \acrshort{acr:GPU}, and copy the data from the \acrshort{acr:CPU}
+array to it. We can then perform computations on the \acrshort{acr:GPU} using that array with the
 \textit{perform\_gpu\_computations} kernel. Kernels are explained in
 Subsection~\ref{subsection:graphics_processing_units:implementation:kernels}. We can then copy back
 the data from the \acrshort{acr:GPU} array to the \acrshort{acr:CPU} array using
@@ -452,7 +456,7 @@ copying, at which point we can use the \acrshort{acr:CPU} array. To finish up, w
             cudaStreamDestroy(stream);
             return 0;
         }\end{cuda}
-\caption{\textbf{cuda\_memory:} A pressure array is allocated on the \acrshort{acr:CPU}, then transferred back and forth to the \acrshort{acr:GPU}.}\label{alg:cuda_memory}
+\caption{\textbf{cuda\_memory:} A pressure solution array is allocated on the \acrshort{acr:CPU}, then transferred back and forth to the \acrshort{acr:GPU}.}\label{alg:cuda_memory}
 \end{algorithm}
 
 Since dealing with pointers directly can become error-prone in larger programs, we encapsulate that
@@ -483,19 +487,19 @@ Algorithm~\ref{alg:cuda_memory} using this new type.
 			cudaStreamDestroy(stream);
 			return 0;
 		}\end{cuda}
-\caption{\textbf{device\_vector:} A pressure vector is allocated on the \acrshort{acr:CPU}, then transferred back and forth to the \acrshort{acr:GPU}.}\label{alg:device_vector}
+\caption{\textbf{device\_vector:} A pressure solution vector is allocated on the \acrshort{acr:CPU}, then transferred back and forth to the \acrshort{acr:GPU}.}\label{alg:device_vector}
 \end{algorithm}
 
 Memory allocated in the \acrshort{acr:GPU} dynamic heap from the \acrshort{acr:GPU} is allocated by
-the \textit{new} or \textit{malloc} functions similarly to how we would normally do on the
-\acrshort{acr:CPU}, but by the \acrshort{acr:GPU} inside \acrshort{acr:GPU} functions like kernels.
+the \textit{new} or \textit{malloc} functions similarly to how we would normally do this on the
+\acrshort{acr:CPU}, but from the \acrshort{acr:GPU} using \acrshort{acr:GPU} functions like kernels.
 We encapsulate these operations into \textit{cuda\_vector}, another vector type similar to that of
 Algorithm~\ref{alg:device_vector}.
 
 Memory from \acrshort{acr:GPU} heap cannot be transferred directly to the \acrshort{acr:CPU} using
 \acrshort{acr:CUDA} functions like \textit{cudaMemcpyAsync}, as heap memory is not mapped to the
 \acrshort{acr:CUDA} runtime. To transfer data from that kind of memory, we must copy it to a
-\acrshort{acr:CUDA} runtime allocated array on the using a kernel.
+\acrshort{acr:CUDA} runtime allocated array on \acrshort{acr:GPU} the using a kernel.
 
 We use heap memory for dynamic data structures living on the \acrshort{acr:GPU} that the
 \acrshort{acr:CPU} does not need to use, like the variably-sized solution arrays of individual
@@ -654,9 +658,9 @@ the fact that elements can have a different polynomial order \(N\) which changes
 solution arrays, and that these solution arrays are stored in \acrshort{acr:GPU} heap memory.
 
 Algorithm~\ref{alg:boundary_conditions} displays a simplified version of the \acrshort{acr:MPI}
-transfers necessary each time step to update the solution at boundaries between
+transfers necessary at each time step to update the solution at boundaries between
 \acrshortpl{acr:GPU}. This increased cost compared to traditional \acrshort{acr:CPU} versions of
-these algorithms highlight the need to minimise the surface area between \acrshortpl{acr:GPU}, as
+these algorithms highlights the need to minimise the surface area between \acrshortpl{acr:GPU}, as
 described in Chapter~\ref{chapter:load_balancing}. Note that variables ending with an underscore are
 data members of the mesh object.
 
