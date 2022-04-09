@@ -36,16 +36,16 @@ Figure~\ref{fig:intro_sem} shows \acrfull{acr:DNS} of the transition to turbulen
 multi-element airfoil and the arising complex flow structures.
 
 \begin{figure}[H]
-	\centering
-	\includegraphics[width=0.95\textwidth]{Chapter_introduction/media/spectral_element_method}
-	\caption{Direct numerical simulation: Complex flow structures arising from turbulent flow over a multi-element airfoil simulated using spectral methods (reprinted from~\cite{Vadsola2021}).}\label{fig:intro_sem}
+    \centering
+    \includegraphics[width=0.95\textwidth]{Chapter_introduction/media/spectral_element_method}
+    \caption{Direct numerical simulation: Complex flow structures arising from turbulent flow over a multi-element airfoil simulated using spectral methods (reprinted from~\cite{Vadsola2021}).}\label{fig:intro_sem}
 \end{figure}
 
 Instead of modelling the solution as individual values at points, or a linear or quadratic function
 within a space subdivision, spectral methods represent a function as a truncated series:
 
 \begin{equation}
-	u(x) \approx u_N(x) = \sum_{n = 0}^{N} \widehat{u}_n \phi _n(x),
+    u(x) \approx u_N(x) = \sum_{n = 0}^{N} \widehat{u}_n \phi _n(x),
 \end{equation}
 
 \noindent
@@ -84,9 +84,9 @@ incorporated into \acrshort{acr:HPC} platforms~\cite{Fan2004}, enabling massivel
 with theoretical processing power much greater than that using traditional \acrshortpl{acr:CPU}.
 
 \begin{figure}[H]
-	\centering
-	\includegraphics[width=0.8\textwidth]{Chapter_introduction/media/gpu-devotes-more-transistors-to-data-processing}
-	\caption{\Acrshort{acr:GPU} architecture~\cite{Nvidia2021}: \Acrshortpl{acr:GPU} dedicate much more die space to computations (in green).}\label{fig:intro_gpu}
+    \centering
+    \includegraphics[width=0.8\textwidth]{Chapter_introduction/media/gpu-devotes-more-transistors-to-data-processing}
+    \caption{\Acrshort{acr:GPU} architecture~\cite{Nvidia2021}: \Acrshortpl{acr:GPU} dedicate much more die space to computations (in green).}\label{fig:intro_gpu}
 \end{figure}
 
 We will use \acrshortpl{acr:GPU} for our computations with the aim of increasing the available
@@ -119,9 +119,9 @@ will use \acrlong{acr:AMR} to make more efficient use of the resources we have a
 with the more limited amount of memory of \acrshortpl{acr:GPU} compared to \acrshortpl{acr:CPU}.
 
 \begin{figure}[H]
-	\centering
-	\includegraphics[width=0.8\textwidth]{Chapter_introduction/media/adaptive_mesh_refinement}
-	\caption{\Acrlong{acr:AMR} example for flow around a spacecraft: The mesh is more refined in certain flow regions to capture important features of the flow such as the bow shock ahead of the vehicle (reprinted from~\cite{Siemens2020}).}\label{fig:intro_amr}
+    \centering
+    \includegraphics[width=0.8\textwidth]{Chapter_introduction/media/adaptive_mesh_refinement}
+    \caption{\Acrlong{acr:AMR} example for flow around a spacecraft: The mesh is more refined in certain flow regions to capture important features of the flow such as the bow shock ahead of the vehicle (reprinted from~\cite{Siemens2020}).}\label{fig:intro_amr}
 \end{figure}
 
 Two general approaches to \acrshort{acr:AMR} exist. Berger and Oliger~\cite{Berger1984} use
@@ -133,13 +133,13 @@ fully in parallel. We will use a tree-structured approach, since it can easily w
 having elements refine independently.
 
 \begin{figure}[H]
-	\centering
-	\subfloat[Block-structured \acrlong{acr:AMR}]
-	{\includegraphics[width=0.45\textwidth]{Chapter_introduction/media/block_structured}\label{fig:block_structured}}
-	\hfill
-	\subfloat[Tree-structured \acrlong{acr:AMR}]
-	{\includegraphics[width=0.45\textwidth]{Chapter_introduction/media/tree_structured}\label{fig:tree_structured}}
-	\caption{\Acrlong{acr:AMR} approaches: Two different approaches to refining the important areas of a mesh. (a) Finer meshes are patched onto the initial coarse mesh (reprinted from~\cite{Berger1984}) (b) Elements are refined individually (reprinted from~\cite{Khokhlov1998}).}\label{fig:amr_structures}
+    \centering
+    \subfloat[Block-structured \acrlong{acr:AMR}]
+    {\includegraphics[width=0.45\textwidth]{Chapter_introduction/media/block_structured}\label{fig:block_structured}}
+    \hfill
+    \subfloat[Tree-structured \acrlong{acr:AMR}]
+    {\includegraphics[width=0.45\textwidth]{Chapter_introduction/media/tree_structured}\label{fig:tree_structured}}
+    \caption{\Acrlong{acr:AMR} approaches: Two different approaches to refining the important areas of a mesh. (a) Finer meshes are patched onto the initial coarse mesh (reprinted from~\cite{Berger1984}) (b) Elements are refined individually (reprinted from~\cite{Khokhlov1998}).}\label{fig:amr_structures}
 \end{figure}
 
 Two types of refinement will be used in this work. \textit{p-refinement} increases the polynomial
@@ -167,13 +167,15 @@ use the \textit{mortar element method}~\cite{Maday1989}, as it retains the expon
 of spectral methods.
 
 \begin{figure}[H]
-	\centering
-	\subfloat[Conforming interface]
-	{\includesvg[width=0.45\textwidth]{Chapter_introduction/media/conforming_interface_N4}\label{fig:intro_conforming_interface}}
-	\hfill
-	\subfloat[Non-conforming interfaces]
-	{\includesvg[width=0.45\textwidth]{Chapter_introduction/media/non_conforming_interfaces_N4_N6}\label{fig:intro_non_conforming_interfaces}}
-	\caption{Two types of interfaces: Interfaces can be either conforming or non-conforming. (a) The collocation points line up (b) The collocation points do not line up}\label{fig:intro_interfaces}
+    \centering
+    \subfloat[Conforming interface]
+    {\includesvg[width=0.45\textwidth]{Chapter_introduction/media/conforming_interface_N4}\label{fig:intro_conforming_interface}}
+    \hfill
+    \subfloat[Non-conforming interfaces]
+    {\includesvg[width=0.45\textwidth]{Chapter_introduction/media/non_conforming_interfaces_N4_N6}\label{fig:intro_non_conforming_interfaces}}
+    \caption{Two types of elemental interfaces: Interfaces can be either conforming or
+        non-conforming. (a) The collocation points line up (b) The collocation points do not line
+        up}\label{fig:intro_interfaces}
 \end{figure}
 
 % Load balancing
@@ -187,13 +189,13 @@ parallel systems. Figure~\ref{fig:intro_load_balancing} shows an imbalanced syst
 
 
 \begin{figure}[H]
-	\centering
-	\subfloat[Mesh before refining]
-	{\includegraphics[width=0.45\textwidth]{Chapter_introduction/media/load_imbalance_initial}\label{fig:intro_mesh_imbalance_initial}}
-	\hfill
-	\subfloat[Mesh after refining]
-	{\includegraphics[width=0.45\textwidth]{Chapter_introduction/media/load_imbalance}\label{fig:intro_mesh_imbalance_after_refinement}}
-	\caption{Load imbalance: The elements have split unequally in the two worker \acrshortpl{acr:GPU}, purple and blue, one having a higher computational load. (a) Before refining (b) After refining}\label{fig:intro_load_balancing}
+    \centering
+    \subfloat[Mesh before refining]
+    {\includegraphics[width=0.45\textwidth]{Chapter_introduction/media/load_imbalance_initial}\label{fig:intro_mesh_imbalance_initial}}
+    \hfill
+    \subfloat[Mesh after refining]
+    {\includegraphics[width=0.45\textwidth]{Chapter_introduction/media/load_imbalance}\label{fig:intro_mesh_imbalance_after_refinement}}
+    \caption{Load imbalance: The elements have split unequally in the two worker \acrshortpl{acr:GPU}, purple and blue, one having a higher computational load. (a) Before refining (b) After refining}\label{fig:intro_load_balancing}
 \end{figure}
 
 In order to avoid this problem, the mesh needs to be repartitioned as it is refined. This is the
@@ -237,9 +239,9 @@ tackles the main challenges necessary to keep advancing \acrshort{acr:CFD}.
 In order to showcase these techniques, we solve a sample problem using the 2D wave equation:
 
 \begin{gather}
-	\frac{\partial^2p}{\partial t^2} - c^2(p_{xx} + p_{yy}) = 0 \\
-	u_t = - p_x \\
-	v_t = -p_y
+    \frac{\partial^2p}{\partial t^2} - c^2(p_{xx} + p_{yy}) = 0 \\
+    u_t = - p_x \\
+    v_t = -p_y
 \end{gather}
 
 \noindent

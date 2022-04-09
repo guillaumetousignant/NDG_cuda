@@ -104,7 +104,7 @@ adaptivity_same_error_t = np.array([48.3641, 48.3641, 48.3641, 48.3641])
 adaptivity_same_error_max_error = np.array([8.3e-8, 8.3e-8, 8.3e-8, 8.3e-8])
 best_pre_condition = 4
 adaptivity_legend_locations = [(0.3, 0.665), (0.3, 0.665), (0.3, 0.665), (0.3, 0.665)] # Must be changed if
-adaptivity_all_legend_location = (0.31, 0.65)               	    	    	       # data is modified
+adaptivity_all_legend_location = (0.31, 0.65)                                          # data is modified
 adaptivity_all_error_legend_location = (0.3, 0.1)   # Turns out that "best" only has a few locations
 
 # Load balancing efficiency interval

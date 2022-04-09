@@ -61,7 +61,7 @@ auto SEM::Host::inverse_quad_map(Vec2<T> global_coordinates, const std::array<Ve
         return {u * 2 - 1, -k0/k1 * 2 - 1};
     }
     // otherwise, it's a quadratic
-	else
+    else
     {
         T w = k1 * k1 - 4 * k0 * k2;
         if(w < 0.0) return {-1, -1};

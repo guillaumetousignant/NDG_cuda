@@ -182,10 +182,10 @@ auto SEM::Device::Entities::Element2D_t::estimate_error(deviceFloat tolerance_mi
     p_error_ = std::sqrt(spectrum_[n_points_least_squares - 1] * spectrum_[n_points_least_squares - 1] // Why this part?
                          + C_p * C_p * deviceFloat{0.5} / sigma_p * std::exp(-2 * sigma_p * (N_ + 1)));
 
-    if(p_error_ > tolerance_min) {	// need refinement
+    if(p_error_ > tolerance_min) {  // need refinement
         refine_ = true;
     }
-    if(p_error_ > tolerance_max) {	// need coarsening
+    if(p_error_ > tolerance_max) {  // need coarsening
         coarsen_ = false;
     }
 
@@ -225,10 +225,10 @@ auto SEM::Device::Entities::Element2D_t::estimate_error(deviceFloat tolerance_mi
     u_error_ = std::sqrt(spectrum_[n_points_least_squares - 1] * spectrum_[n_points_least_squares - 1] // Why this part?
                          + C_u * C_u * deviceFloat{0.5} / sigma_u * std::exp(-2 * sigma_u * (N_ + 1)));
 
-    if(u_error_ > tolerance_min) {	// need refinement
+    if(u_error_ > tolerance_min) {  // need refinement
         refine_ = true;
     }
-    if(u_error_ > tolerance_max) {	// need coarsening
+    if(u_error_ > tolerance_max) {  // need coarsening
         coarsen_ = false;
     }
 
@@ -269,10 +269,10 @@ auto SEM::Device::Entities::Element2D_t::estimate_error(deviceFloat tolerance_mi
     v_error_ = std::sqrt(spectrum_[n_points_least_squares - 1] * spectrum_[n_points_least_squares - 1] // Why this part?
                          + C_v * C_v * deviceFloat{0.5} / sigma_v * std::exp(-2 * sigma_v * (N_ + 1)));
 
-    if(v_error_ > tolerance_min) {	// need refinement
+    if(v_error_ > tolerance_min) {  // need refinement
         refine_ = true;
     }
-    if(v_error_ > tolerance_max) {	// need coarsening
+    if(v_error_ > tolerance_max) {  // need coarsening
         coarsen_ = false;
     }
 }

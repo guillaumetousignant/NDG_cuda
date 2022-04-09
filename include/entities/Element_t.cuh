@@ -15,7 +15,7 @@ namespace SEM { namespace Device { namespace Entities {
             Element_t(const Element_t& other);
 
             __device__
-            Element_t(Element_t&& other);	
+            Element_t(Element_t&& other);
 
             __device__
             Element_t& operator=(const Element_t& other);

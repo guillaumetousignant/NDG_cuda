@@ -10,13 +10,13 @@ different processes, this will lead to an imbalance as some processes are left w
 or higher-order elements, within their domain as illustrated in Figure~\ref{fig:load_imbalance_lb}.
 
 \begin{figure}[H]
-	\centering
-	\subfloat[Mesh before refining]
-	{\includegraphics[width=0.45\textwidth]{Chapter_load_balancing/media/load_imbalance_initial}\label{fig:mesh_imbalance_initial_lb}}
-	\hfill
-	\subfloat[Mesh after refining]
-	{\includegraphics[width=0.45\textwidth]{Chapter_load_balancing/media/load_imbalance}\label{fig:mesh_imbalance_after_refinement_lb}}
-	\caption{Load imbalance: The elements have split unequally in the two worker \acrshortpl{acr:GPU}, one having a higher computational load. (a) Before refining (b) After refining}\label{fig:load_imbalance_lb}
+    \centering
+    \subfloat[Mesh before refining]
+    {\includegraphics[width=0.45\textwidth]{Chapter_load_balancing/media/load_imbalance_initial}\label{fig:mesh_imbalance_initial_lb}}
+    \hfill
+    \subfloat[Mesh after refining]
+    {\includegraphics[width=0.45\textwidth]{Chapter_load_balancing/media/load_imbalance}\label{fig:mesh_imbalance_after_refinement_lb}}
+    \caption{Load imbalance: The elements have split unequally in the two worker \acrshortpl{acr:GPU}, one having a higher computational load. (a) Before refining (b) After refining}\label{fig:load_imbalance_lb}
 \end{figure}
 
 The wall clock time of the simulation will be driven by the most heavily loaded process, as the
@@ -58,16 +58,16 @@ power of two resolution in x and y. Some newer research~\cite{Haverkort2011} sho
 can be expanded to three dimensions, and arbitrary domains.
 
 \begin{figure}[H]
-	\centering
-	\subfloat[First level]
-	{\includesvg[width=0.3\textwidth]{Chapter_load_balancing/media/hilbert_curve_K2}\label{fig:hilbert_k2}}
-	\hfill
-	\subfloat[Second level]
-	{\includesvg[width=0.3\textwidth]{Chapter_load_balancing/media/hilbert_curve_K4}\label{fig:hilbert_k4}}
-	\hfill
-	\subfloat[Third level]
-	{\includesvg[width=0.3\textwidth]{Chapter_load_balancing/media/hilbert_curve_K8}\label{fig:hilbert_k8}}
-	\caption{Hilbert curve: The first thee Hilbert curves. (a) \(2\times2\) (b) \(4\times4\) (c) \(8\times8\)}\label{fig:hilbert_curves}
+    \centering
+    \subfloat[First level]
+    {\includesvg[width=0.3\textwidth]{Chapter_load_balancing/media/hilbert_curve_K2}\label{fig:hilbert_k2}}
+    \hfill
+    \subfloat[Second level]
+    {\includesvg[width=0.3\textwidth]{Chapter_load_balancing/media/hilbert_curve_K4}\label{fig:hilbert_k4}}
+    \hfill
+    \subfloat[Third level]
+    {\includesvg[width=0.3\textwidth]{Chapter_load_balancing/media/hilbert_curve_K8}\label{fig:hilbert_k8}}
+    \caption{Hilbert curve: The first thee Hilbert curves. (a) \(2\times2\) (b) \(4\times4\) (c) \(8\times8\)}\label{fig:hilbert_curves}
 \end{figure}
 
 Figure~\ref{fig:hilbert_curves} shows the first three levels of the Hilbert curve. The curve
@@ -89,19 +89,19 @@ four children elements obtained when increasing the level of the curve. The four
 resulting children are shown in Figure~\ref{fig:hilbert_splits}.
 
 \begin{figure}[H]
-	\centering
-	\subfloat[H splitting: \newline \(A, H, H, B\)]
-	{\includesvg[width=0.23\textwidth]{Chapter_load_balancing/media/hilbert_split_H}\label{fig:hilbert_split_H}}
-	\hfill
-	\subfloat[A splitting: \newline \(H, A, A, R\)]
-	{\includesvg[width=0.23\textwidth]{Chapter_load_balancing/media/hilbert_split_A}\label{fig:hilbert_split_A}}
-	\hfill
-	\subfloat[R splitting: \newline \(B, R, R, A\)]
-	{\includesvg[width=0.23\textwidth]{Chapter_load_balancing/media/hilbert_split_R}\label{fig:hilbert_split_R}}
-	\hfill
-	\subfloat[B splitting: \newline \(R, B, B, H\)]
-	{\includesvg[width=0.23\textwidth]{Chapter_load_balancing/media/hilbert_split_B}\label{fig:hilbert_split_B}}
-	\caption{The four states splitting, with their children's state and ordering.}\label{fig:hilbert_splits}
+    \centering
+    \subfloat[H splitting: \newline \(A, H, H, B\)]
+    {\includesvg[width=0.23\textwidth]{Chapter_load_balancing/media/hilbert_split_H}\label{fig:hilbert_split_H}}
+    \hfill
+    \subfloat[A splitting: \newline \(H, A, A, R\)]
+    {\includesvg[width=0.23\textwidth]{Chapter_load_balancing/media/hilbert_split_A}\label{fig:hilbert_split_A}}
+    \hfill
+    \subfloat[R splitting: \newline \(B, R, R, A\)]
+    {\includesvg[width=0.23\textwidth]{Chapter_load_balancing/media/hilbert_split_R}\label{fig:hilbert_split_R}}
+    \hfill
+    \subfloat[B splitting: \newline \(R, B, B, H\)]
+    {\includesvg[width=0.23\textwidth]{Chapter_load_balancing/media/hilbert_split_B}\label{fig:hilbert_split_B}}
+    \caption{The four states splitting, with their children's state and ordering.}\label{fig:hilbert_splits}
 \end{figure}
 
 \noindent
@@ -109,16 +109,16 @@ When put together, and assigning \(H\) as the first state of the mesh, the mesh 
 constructed to the required level as shown in Figure~\ref{fig:hilbert_levels}.
 
 \begin{figure}[H]
-	\centering
-	\subfloat[Level 0]
-	{\includesvg[width=0.3\textwidth]{Chapter_load_balancing/media/hilbert_level_0}\label{fig:hilbert_l0}}
-	\hfill
-	\subfloat[Level 1]
-	{\includesvg[width=0.3\textwidth]{Chapter_load_balancing/media/hilbert_level_1}\label{fig:hilbert_l1}}
-	\hfill
-	\subfloat[Level 2]
-	{\includesvg[width=0.3\textwidth]{Chapter_load_balancing/media/hilbert_level_2}\label{fig:hilbert_l2}}
-	\caption{First levels of the Hilbert curve with statuses \(s\) (\(s \in \left \{ H, A , B , R \right \} \)).}\label{fig:hilbert_levels}
+    \centering
+    \subfloat[Level 0]
+    {\includesvg[width=0.3\textwidth]{Chapter_load_balancing/media/hilbert_level_0}\label{fig:hilbert_l0}}
+    \hfill
+    \subfloat[Level 1]
+    {\includesvg[width=0.3\textwidth]{Chapter_load_balancing/media/hilbert_level_1}\label{fig:hilbert_l1}}
+    \hfill
+    \subfloat[Level 2]
+    {\includesvg[width=0.3\textwidth]{Chapter_load_balancing/media/hilbert_level_2}\label{fig:hilbert_l2}}
+    \caption{First levels of the Hilbert curve with statuses \(s\) (\(s \in \left \{ H, A , B , R \right \} \)).}\label{fig:hilbert_levels}
 \end{figure}
 
 \noindent
@@ -127,9 +127,9 @@ and~\ref{table:children_ordering}. The ordering of the children elements is from
 element, in counter-clockwise order as shown in Figure~\ref{fig:child_order}. 
 
 \begin{figure}[H]
-	\centering
-	\includesvg[width=0.3\textwidth]{Chapter_load_balancing/media/child_order}
-	\caption{Children numbering: The \(j = 0, 1, 2, 3\) children of an element, used to assign states and ordering.}\label{fig:child_order}
+    \centering
+    \includesvg[width=0.3\textwidth]{Chapter_load_balancing/media/child_order}
+    \caption{Children numbering: The \(j = 0, 1, 2, 3\) children of an element, used to assign states and ordering.}\label{fig:child_order}
 \end{figure}
 
 \noindent
@@ -140,33 +140,33 @@ element as a function of the state \(s\) of the parent element. The same goes fo
 of the children, \(P(s, j)\).
 
 \begin{table}[H]
-	\begin{center}
-		\begin{tabular}{ c | c c c c} 
-			\(S( s, j )\) & \(j = 0\) & \(j = 1\) & \(j = 2\) & \(j = 3\)  \\
-			\hline
-			\(s = H\) & \textcolor{vs_red}{\(A\)} & \textcolor{vs_red}{\(B\)} & \textcolor{vs_red}{\(H\)} & \textcolor{vs_red}{\(H\)} \\ 
-			\(s = A\) & \textcolor{vs_blue}{\(H\)} & \textcolor{vs_blue}{\(A\)} & \textcolor{vs_blue}{\(A\)} & \textcolor{vs_blue}{\(R\)} \\
-			\(s = R\) & \textcolor{vs_teal}{\(R\)} & \textcolor{vs_teal}{\(R\)} & \textcolor{vs_teal}{\(B\)} & \textcolor{vs_teal}{\(A\)} \\
-			\(s = B\) & \textcolor{vs_plum}{\(B\)} & \textcolor{vs_plum}{\(H\)} & \textcolor{vs_plum}{\(R\)} & \textcolor{vs_plum}{\(B\)} \\
-		\end{tabular}
-	
-		\caption{Children element state table: children state \(S\), with \(s\) being the state of the parent element and \(j\) being the j\textsuperscript{th} child.}\label{table:children_state}
-	\end{center}
+    \begin{center}
+        \begin{tabular}{ c | c c c c} 
+            \(S( s, j )\) & \(j = 0\) & \(j = 1\) & \(j = 2\) & \(j = 3\)  \\
+            \hline
+            \(s = H\) & \textcolor{vs_red}{\(A\)} & \textcolor{vs_red}{\(B\)} & \textcolor{vs_red}{\(H\)} & \textcolor{vs_red}{\(H\)} \\ 
+            \(s = A\) & \textcolor{vs_blue}{\(H\)} & \textcolor{vs_blue}{\(A\)} & \textcolor{vs_blue}{\(A\)} & \textcolor{vs_blue}{\(R\)} \\
+            \(s = R\) & \textcolor{vs_teal}{\(R\)} & \textcolor{vs_teal}{\(R\)} & \textcolor{vs_teal}{\(B\)} & \textcolor{vs_teal}{\(A\)} \\
+            \(s = B\) & \textcolor{vs_plum}{\(B\)} & \textcolor{vs_plum}{\(H\)} & \textcolor{vs_plum}{\(R\)} & \textcolor{vs_plum}{\(B\)} \\
+        \end{tabular}
+    
+        \caption{Children element state table: children state \(S\), with \(s\) being the state of the parent element and \(j\) being the j\textsuperscript{th} child.}\label{table:children_state}
+    \end{center}
 \end{table}
 
 \begin{table}[H]
-	\begin{center}
-		\begin{tabular}{ c | c c c c} 
-			\(P( s, j )\) & \(j = 0\) & \(j = 1\) & \(j = 2\) & \(j = 3\)  \\
-			\hline
-			\(s = H\) & \textcolor{vs_red}{\(0\)} & \textcolor{vs_red}{\(3\)} & \textcolor{vs_red}{\(2\)} & \textcolor{vs_red}{\(1\)} \\ 
-			\(s = A\) & \textcolor{vs_blue}{\(0\)} & \textcolor{vs_blue}{\(1\)} & \textcolor{vs_blue}{\(2\)} & \textcolor{vs_blue}{\(3\)} \\
-			\(s = R\) & \textcolor{vs_teal}{\(2\)} & \textcolor{vs_teal}{\(1\)} & \textcolor{vs_teal}{\(0\)} & \textcolor{vs_teal}{\(3\)} \\
-			\(s = B\) & \textcolor{vs_plum}{\(2\)} & \textcolor{vs_plum}{\(3\)} & \textcolor{vs_plum}{\(0\)} & \textcolor{vs_plum}{\(1\)} \\
-		\end{tabular}
-		
-		\caption{Children element order table: children order \(P\), with \(s\) being the state of the parent element and \(j\) being the j\textsuperscript{th} child.}\label{table:children_ordering}
-	\end{center}
+    \begin{center}
+        \begin{tabular}{ c | c c c c} 
+            \(P( s, j )\) & \(j = 0\) & \(j = 1\) & \(j = 2\) & \(j = 3\)  \\
+            \hline
+            \(s = H\) & \textcolor{vs_red}{\(0\)} & \textcolor{vs_red}{\(3\)} & \textcolor{vs_red}{\(2\)} & \textcolor{vs_red}{\(1\)} \\ 
+            \(s = A\) & \textcolor{vs_blue}{\(0\)} & \textcolor{vs_blue}{\(1\)} & \textcolor{vs_blue}{\(2\)} & \textcolor{vs_blue}{\(3\)} \\
+            \(s = R\) & \textcolor{vs_teal}{\(2\)} & \textcolor{vs_teal}{\(1\)} & \textcolor{vs_teal}{\(0\)} & \textcolor{vs_teal}{\(3\)} \\
+            \(s = B\) & \textcolor{vs_plum}{\(2\)} & \textcolor{vs_plum}{\(3\)} & \textcolor{vs_plum}{\(0\)} & \textcolor{vs_plum}{\(1\)} \\
+        \end{tabular}
+        
+        \caption{Children element order table: children order \(P\), with \(s\) being the state of the parent element and \(j\) being the j\textsuperscript{th} child.}\label{table:children_ordering}
+    \end{center}
 \end{table}
 
 This table-driven approach has the added benefit of working seamlessly in parallel, as each element
@@ -190,13 +190,13 @@ shows a mesh block refining, where the sixth element splits into four smaller el
 of the children elements must follow the Hilbert curve to maintain the locality of the mesh.
 
 \begin{figure}[H]
-	\centering
-	\subfloat[Before refining]
-	{\includesvg[width=0.4\textwidth]{Chapter_load_balancing/media/mesh_1_before_adaptivity0}\label{fig:hilbert_before}}
-	\hfill
-	\subfloat[After refining]
-	{\includesvg[width=0.4\textwidth]{Chapter_load_balancing/media/mesh_1_after_adaptivity0}\label{fig:hilbert_after}}
-	\caption{Mesh refinement Hilbert curve: One element refining. (a) Before splitting (b) After splitting}\label{fig:hilbert_refining}
+    \centering
+    \subfloat[Before refining]
+    {\includesvg[width=0.4\textwidth]{Chapter_load_balancing/media/mesh_1_before_adaptivity0}\label{fig:hilbert_before}}
+    \hfill
+    \subfloat[After refining]
+    {\includesvg[width=0.4\textwidth]{Chapter_load_balancing/media/mesh_1_after_adaptivity0}\label{fig:hilbert_after}}
+    \caption{Mesh refinement Hilbert curve: One element refining. (a) Before splitting (b) After splitting}\label{fig:hilbert_refining}
 \end{figure}
 
 This process assumes knowledge of each element's status. However, the main solver program is
@@ -217,43 +217,43 @@ respectively. Using this information, we can create a 2D matrix of state as a fu
 and exiting side for elements, and 1D matrices for the first and last elements.
 
 \begin{table}[H]
-	\begin{center}
-		\begin{tabular}{ c | c c c c} 
-			& \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_0} \end{tabular} & \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_1} \end{tabular} & \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_2} \end{tabular} & \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_3} \end{tabular} \\
-			\hline
-			\begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_0} \end{tabular} & \begin{tabular}{c}       \end{tabular} & \begin{tabular}{c} \(H\) \end{tabular} & \begin{tabular}{c} \(A\) \end{tabular} & \begin{tabular}{c} \(A\) \end{tabular} \\ 
-			\begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_1} \end{tabular} & \begin{tabular}{c} \(B\) \end{tabular} & \begin{tabular}{c}       \end{tabular} & \begin{tabular}{c} \(R\) \end{tabular} & \begin{tabular}{c} \(R\) \end{tabular} \\
-			\begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_2} \end{tabular} & \begin{tabular}{c} \(B\) \end{tabular} & \begin{tabular}{c} \(B\) \end{tabular} & \begin{tabular}{c}       \end{tabular} & \begin{tabular}{c} \(R\) \end{tabular} \\
-			\begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_3} \end{tabular} & \begin{tabular}{c} \(H\) \end{tabular} & \begin{tabular}{c} \(H\) \end{tabular} & \begin{tabular}{c} \(A\) \end{tabular} & \begin{tabular}{c}       \end{tabular} \\
-		\end{tabular}
-	
-		\caption{Element state deduction table: Element state as a function of curve entrance and exit side.}\label{table:guess_table_incomplete}
-	\end{center}
+    \begin{center}
+        \begin{tabular}{ c | c c c c} 
+            & \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_0} \end{tabular} & \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_1} \end{tabular} & \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_2} \end{tabular} & \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_3} \end{tabular} \\
+            \hline
+            \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_0} \end{tabular} & \begin{tabular}{c}       \end{tabular} & \begin{tabular}{c} \(H\) \end{tabular} & \begin{tabular}{c} \(A\) \end{tabular} & \begin{tabular}{c} \(A\) \end{tabular} \\ 
+            \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_1} \end{tabular} & \begin{tabular}{c} \(B\) \end{tabular} & \begin{tabular}{c}       \end{tabular} & \begin{tabular}{c} \(R\) \end{tabular} & \begin{tabular}{c} \(R\) \end{tabular} \\
+            \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_2} \end{tabular} & \begin{tabular}{c} \(B\) \end{tabular} & \begin{tabular}{c} \(B\) \end{tabular} & \begin{tabular}{c}       \end{tabular} & \begin{tabular}{c} \(R\) \end{tabular} \\
+            \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_3} \end{tabular} & \begin{tabular}{c} \(H\) \end{tabular} & \begin{tabular}{c} \(H\) \end{tabular} & \begin{tabular}{c} \(A\) \end{tabular} & \begin{tabular}{c}       \end{tabular} \\
+        \end{tabular}
+    
+        \caption{Element state deduction table: Element state as a function of curve entrance and exit side.}\label{table:guess_table_incomplete}
+    \end{center}
 \end{table}
 
 \begin{table}[H]
-	\begin{center}
-		\begin{tabular}{ c c c c} 
-			\begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_0} \end{tabular} & \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_1} \end{tabular} & \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_2} \end{tabular} & \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_3} \end{tabular} \\
-			\midrule
-			\begin{tabular}{c} \(B\) \end{tabular} & \begin{tabular}{c} \(H\) \end{tabular} & \begin{tabular}{c} \(A\) \end{tabular} & \begin{tabular}{c} \(R\) \end{tabular} \\ 
-		\end{tabular}
-	
-		\caption{First element state deduction table: Element state as a function of curve exit side.}\label{table:guess_table_first}
-	\end{center}
+    \begin{center}
+        \begin{tabular}{ c c c c} 
+            \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_0} \end{tabular} & \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_1} \end{tabular} & \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_2} \end{tabular} & \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_3} \end{tabular} \\
+            \midrule
+            \begin{tabular}{c} \(B\) \end{tabular} & \begin{tabular}{c} \(H\) \end{tabular} & \begin{tabular}{c} \(A\) \end{tabular} & \begin{tabular}{c} \(R\) \end{tabular} \\ 
+        \end{tabular}
+    
+        \caption{First element state deduction table: Element state as a function of curve exit side.}\label{table:guess_table_first}
+    \end{center}
 \end{table}
 
 \begin{table}[H]
-	\begin{center}
-		\begin{tabular}{ c | c} 
-			\begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_0} \end{tabular} & \begin{tabular}{c} \(A\) \end{tabular} \\ 
-			\begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_1} \end{tabular} & \begin{tabular}{c} \(R\) \end{tabular} \\
-			\begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_2} \end{tabular} & \begin{tabular}{c} \(B\) \end{tabular} \\
-			\begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_3} \end{tabular} & \begin{tabular}{c} \(H\) \end{tabular} \\
-		\end{tabular}
-	
-		\caption{Last element state deduction table: Element state as a function of curve entrance side.}\label{table:guess_table_last}
-	\end{center}
+    \begin{center}
+        \begin{tabular}{ c | c} 
+            \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_0} \end{tabular} & \begin{tabular}{c} \(A\) \end{tabular} \\ 
+            \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_1} \end{tabular} & \begin{tabular}{c} \(R\) \end{tabular} \\
+            \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_2} \end{tabular} & \begin{tabular}{c} \(B\) \end{tabular} \\
+            \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_3} \end{tabular} & \begin{tabular}{c} \(H\) \end{tabular} \\
+        \end{tabular}
+    
+        \caption{Last element state deduction table: Element state as a function of curve entrance side.}\label{table:guess_table_last}
+    \end{center}
 \end{table}
 
 A few combinations are still undefined in the matrix. They represent the cases where the curve
@@ -265,19 +265,19 @@ side in Figure~\ref{fig:hilbert_missing_splits} with the incoming and exiting si
 cases.
 
 \begin{figure}[H]
-	\centering
-	\subfloat[Bottom: \(H\)]
-	{\includesvg[width=0.23\textwidth]{Chapter_load_balancing/media/inout_0}\label{fig:hilbert_missing_0}}
-	\hfill
-	\subfloat[Right: \(B\)]
-	{\includesvg[width=0.23\textwidth]{Chapter_load_balancing/media/inout_1}\label{fig:hilbert_missing_1}}
-	\hfill
-	\subfloat[Top: \(R\)]
-	{\includesvg[width=0.23\textwidth]{Chapter_load_balancing/media/inout_2}\label{fig:hilbert_missing_2}}
-	\hfill
-	\subfloat[Left: \(A\)]
-	{\includesvg[width=0.23\textwidth]{Chapter_load_balancing/media/inout_3}\label{fig:hilbert_missing_3}}
-	\caption{The four missing combinations: Each corresponds to a single state.}\label{fig:hilbert_missing_splits}
+    \centering
+    \subfloat[Bottom: \(H\)]
+    {\includesvg[width=0.23\textwidth]{Chapter_load_balancing/media/inout_0}\label{fig:hilbert_missing_0}}
+    \hfill
+    \subfloat[Right: \(B\)]
+    {\includesvg[width=0.23\textwidth]{Chapter_load_balancing/media/inout_1}\label{fig:hilbert_missing_1}}
+    \hfill
+    \subfloat[Top: \(R\)]
+    {\includesvg[width=0.23\textwidth]{Chapter_load_balancing/media/inout_2}\label{fig:hilbert_missing_2}}
+    \hfill
+    \subfloat[Left: \(A\)]
+    {\includesvg[width=0.23\textwidth]{Chapter_load_balancing/media/inout_3}\label{fig:hilbert_missing_3}}
+    \caption{The four missing combinations: Each corresponds to a single state.}\label{fig:hilbert_missing_splits}
 \end{figure}
 
 We can then obtain the full matrix.
@@ -286,18 +286,18 @@ We can then obtain the full matrix.
 % or paragraphs of syntax is to enclose each cell in a tabular block. Then people wonder why I don't
 % like Latex.
 \begin{table}[H]
-	\begin{center}
-		\begin{tabular}{ c | c c c c} 
-			& \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_0} \end{tabular} & \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_1} \end{tabular} & \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_2} \end{tabular} & \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_3} \end{tabular} \\
-			\hline
-			\begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_0} \end{tabular} & \begin{tabular}{c} \(H\) \end{tabular} & \begin{tabular}{c} \(H\) \end{tabular} & \begin{tabular}{c} \(A\) \end{tabular} & \begin{tabular}{c} \(A\) \end{tabular} \\ 
-			\begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_1} \end{tabular} & \begin{tabular}{c} \(B\) \end{tabular} & \begin{tabular}{c} \(B\) \end{tabular} & \begin{tabular}{c} \(R\) \end{tabular} & \begin{tabular}{c} \(R\) \end{tabular} \\
-			\begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_2} \end{tabular} & \begin{tabular}{c} \(B\) \end{tabular} & \begin{tabular}{c} \(B\) \end{tabular} & \begin{tabular}{c} \(R\) \end{tabular} & \begin{tabular}{c} \(R\) \end{tabular} \\
-			\begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_3} \end{tabular} & \begin{tabular}{c} \(H\) \end{tabular} & \begin{tabular}{c} \(H\) \end{tabular} & \begin{tabular}{c} \(A\) \end{tabular} & \begin{tabular}{c} \(A\) \end{tabular} \\
-		\end{tabular}
-	
-		\caption{Element state deduction table: Element state as a function of curve entrance and exit sides.}\label{table:guess_table}
-	\end{center}
+    \begin{center}
+        \begin{tabular}{ c | c c c c} 
+            & \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_0} \end{tabular} & \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_1} \end{tabular} & \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_2} \end{tabular} & \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/out_3} \end{tabular} \\
+            \hline
+            \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_0} \end{tabular} & \begin{tabular}{c} \(H\) \end{tabular} & \begin{tabular}{c} \(H\) \end{tabular} & \begin{tabular}{c} \(A\) \end{tabular} & \begin{tabular}{c} \(A\) \end{tabular} \\ 
+            \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_1} \end{tabular} & \begin{tabular}{c} \(B\) \end{tabular} & \begin{tabular}{c} \(B\) \end{tabular} & \begin{tabular}{c} \(R\) \end{tabular} & \begin{tabular}{c} \(R\) \end{tabular} \\
+            \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_2} \end{tabular} & \begin{tabular}{c} \(B\) \end{tabular} & \begin{tabular}{c} \(B\) \end{tabular} & \begin{tabular}{c} \(R\) \end{tabular} & \begin{tabular}{c} \(R\) \end{tabular} \\
+            \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_3} \end{tabular} & \begin{tabular}{c} \(H\) \end{tabular} & \begin{tabular}{c} \(H\) \end{tabular} & \begin{tabular}{c} \(A\) \end{tabular} & \begin{tabular}{c} \(A\) \end{tabular} \\
+        \end{tabular}
+    
+        \caption{Element state deduction table: Element state as a function of curve entrance and exit sides.}\label{table:guess_table}
+    \end{center}
 \end{table}
 
 Until now, we assumed the elements were axis-aligned, and numbered such that their first edge is at
@@ -310,23 +310,23 @@ situation is expected to happen. The following examples use elements numbered su
 side is not at the bottom, but at the right, as shown in Figure~\ref{fig:node_order}.
 
 \begin{figure}[H]
-	\centering
-	\subfloat[Upright element]
-	{\includesvg[width=0.42\textwidth]{Chapter_load_balancing/media/node_order}\label{fig:node_order_normal}}
-	\hfill
-	\subfloat[Rotated element]
-	{\includesvg[width=0.42\textwidth]{Chapter_load_balancing/media/node_order_r}\label{fig:node_order_rotated}}
-	\caption{Element rotation: The numbering of the nodes of an element can affect its refinement. (a) Expected orientation (b) Unexpected orientation}\label{fig:node_order}
+    \centering
+    \subfloat[Upright element]
+    {\includesvg[width=0.42\textwidth]{Chapter_load_balancing/media/node_order}\label{fig:node_order_normal}}
+    \hfill
+    \subfloat[Rotated element]
+    {\includesvg[width=0.42\textwidth]{Chapter_load_balancing/media/node_order_r}\label{fig:node_order_rotated}}
+    \caption{Element rotation: The numbering of the nodes of an element can affect its refinement. (a) Expected orientation (b) Unexpected orientation}\label{fig:node_order}
 \end{figure}
 
 \begin{figure}[H]
-	\centering
-	\subfloat[Before refining]
-	{\includesvg[width=0.4\textwidth]{Chapter_load_balancing/media/hilbert_level_1_r}\label{fig:hilbert_l1_r}}
-	\hfill
-	\subfloat[After refining]
-	{\includesvg[width=0.4\textwidth]{Chapter_load_balancing/media/hilbert_level_2_r}\label{fig:hilbert_l2_r}}
-	\caption{Refinement with rotated elements: The numbering is wrong when compared to the correct Hilbert curve from Figure~\ref{fig:hilbert_l2}. (a) Initial mesh (b) Refined mesh}\label{fig:hilbert_rotated}
+    \centering
+    \subfloat[Before refining]
+    {\includesvg[width=0.4\textwidth]{Chapter_load_balancing/media/hilbert_level_1_r}\label{fig:hilbert_l1_r}}
+    \hfill
+    \subfloat[After refining]
+    {\includesvg[width=0.4\textwidth]{Chapter_load_balancing/media/hilbert_level_2_r}\label{fig:hilbert_l2_r}}
+    \caption{Refinement with rotated elements: The numbering is wrong when compared to the correct Hilbert curve from Figure~\ref{fig:hilbert_l2}. (a) Initial mesh (b) Refined mesh}\label{fig:hilbert_rotated}
 \end{figure}
 
 One might be tempted to deduce the element status in the local element referential instead.
@@ -338,23 +338,23 @@ Figure~\ref{fig:local_referential} shows that even though there are no jumps, th
 curve shown in Figure~\ref{fig:hilbert_l2} is not attained.
 
 \begin{figure}[H]
-	\centering
-	\subfloat[Global referential]
-	{\includesvg[width=0.42\textwidth]{Chapter_load_balancing/media/global_referential}\label{fig:global_referential}}
-	\hfill
-	\subfloat[Local referential]
-	{\includesvg[width=0.42\textwidth]{Chapter_load_balancing/media/local_referential}\label{fig:local_referential}}
-	\caption{Different referentials: The different referentials will change the deduced state. (a) H (b) R}\label{fig:referentials}
+    \centering
+    \subfloat[Global referential]
+    {\includesvg[width=0.42\textwidth]{Chapter_load_balancing/media/global_referential}\label{fig:global_referential}}
+    \hfill
+    \subfloat[Local referential]
+    {\includesvg[width=0.42\textwidth]{Chapter_load_balancing/media/local_referential}\label{fig:local_referential}}
+    \caption{Different referentials: The different referentials will change the deduced state. (a) H (b) R}\label{fig:referentials}
 \end{figure}
 
 \begin{figure}[H]
-	\centering
-	\subfloat[Before refining]
-	{\includesvg[width=0.4\textwidth]{Chapter_load_balancing/media/hilbert_level_1_l}\label{fig:hilbert_l1_l}}
-	\hfill
-	\subfloat[After refining]
-	{\includesvg[width=0.4\textwidth]{Chapter_load_balancing/media/hilbert_level_2_l}\label{fig:hilbert_l2_l}}
-	\caption{Refinement with rotated elements using local referential: This is not the next level curve, as seen in Figure~\ref{fig:hilbert_l2}. (a) Initial mesh (b) Refined mesh}\label{fig:hilbert_local}
+    \centering
+    \subfloat[Before refining]
+    {\includesvg[width=0.4\textwidth]{Chapter_load_balancing/media/hilbert_level_1_l}\label{fig:hilbert_l1_l}}
+    \hfill
+    \subfloat[After refining]
+    {\includesvg[width=0.4\textwidth]{Chapter_load_balancing/media/hilbert_level_2_l}\label{fig:hilbert_l2_l}}
+    \caption{Refinement with rotated elements using local referential: This is not the next level curve, as seen in Figure~\ref{fig:hilbert_l2}. (a) Initial mesh (b) Refined mesh}\label{fig:hilbert_local}
 \end{figure}
 
 Both methods give wrong results when the elements are rotated compared to the first edge at the
@@ -367,13 +367,13 @@ Figure~\ref{fig:hilbert_l2_c} and now has the correct Hilbert curve as in
 Figure~\ref{fig:hilbert_l2}.
 
 \begin{figure}[H]
-	\centering
-	\subfloat[Before refining]
-	{\includesvg[width=0.4\textwidth]{Chapter_load_balancing/media/hilbert_level_1_r}\label{fig:hilbert_l1_c}}
-	\hfill
-	\subfloat[After refining]
-	{\includesvg[width=0.4\textwidth]{Chapter_load_balancing/media/hilbert_level_2}\label{fig:hilbert_l2_c}}
-	\caption{Refinement with rotation offset: The next level Hilbert curve is correct. (a) Initial mesh (b) Refined mesh}\label{fig:hilbert_correct}
+    \centering
+    \subfloat[Before refining]
+    {\includesvg[width=0.4\textwidth]{Chapter_load_balancing/media/hilbert_level_1_r}\label{fig:hilbert_l1_c}}
+    \hfill
+    \subfloat[After refining]
+    {\includesvg[width=0.4\textwidth]{Chapter_load_balancing/media/hilbert_level_2}\label{fig:hilbert_l2_c}}
+    \caption{Refinement with rotation offset: The next level Hilbert curve is correct. (a) Initial mesh (b) Refined mesh}\label{fig:hilbert_correct}
 \end{figure}
 
 With this out of the way, it is possible to compute the rotation when the mesh is read, store it as
@@ -389,9 +389,9 @@ load balanced three times. The Hilbert curve is shown in green to assess the qua
 ordering.
 
 \begin{figure}[H]
-	\centering
-	\includesvg[width=0.95\textwidth]{Chapter_load_balancing/media/mesh_1_after2_MOD}
-	\caption{Mesh refining: The elements follow mixed levels of the Hilbert curve, without jumps or discontinuities.}\label{fig:mesh_1_after2}
+    \centering
+    \includesvg[width=0.95\textwidth]{Chapter_load_balancing/media/mesh_1_after2_MOD}
+    \caption{Mesh refining: The elements follow mixed levels of the Hilbert curve, without jumps or discontinuities.}\label{fig:mesh_1_after2}
 \end{figure}
 
 \section{Workload Leveling}\label{section:load_balancing:workload_leveling}
@@ -405,7 +405,7 @@ split into \(P\) parts, equal to the number of workers \(P\). Each worker \(p\) 
 To repartition, each worker sums the total weight of the \(I_p\) tasks it contains, \(w_p\).
 
 \begin{equation}
-	w_p = \sum_{i = 0}^{I_p}w_i
+    w_p = \sum_{i = 0}^{I_p}w_i
 \end{equation}
 
 \noindent
@@ -413,99 +413,99 @@ The total amount of work in the problem \(W\) is obtained by adding up the total
 worker.
 
 \begin{equation}
-	W = \sum_{p = 0}^{p}w_p
+    W = \sum_{p = 0}^{p}w_p
 \end{equation}
 
 \noindent
 Similarly, the total capacity of the system is summed.
 
 \begin{equation}
-	C = \sum_{p = 0}^{P}c_p
+    C = \sum_{p = 0}^{P}c_p
 \end{equation}
 
 \noindent
 The ideal workload \(w_{ideal,p}\) of a worker is given by:
 
 \begin{equation} \label{equ:ideal_workload}
-	w_{ideal,p} = W \frac{c_p}{C}.
+    w_{ideal,p} = W \frac{c_p}{C}.
 \end{equation}
 
 The load imbalance \(L\) of the system is defined as the maximum of each worker's load imbalance
 \(l_p\). A worker's load imbalance is the ratio between its current workload and its ideal workload:
 
 \begin{equation}
-	l_{p} = \frac{w_p}{w_{ideal,p}},
+    l_{p} = \frac{w_p}{w_{ideal,p}},
 \end{equation}
 
 \begin{equation} \label{equ:load_imbalance}
-	L = \max_{0 \leq p \leq P}{(l_{p})}.
+    L = \max_{0 \leq p \leq P}{(l_{p})}.
 \end{equation}
 
 \noindent
 The parallel load efficiency \(E\) is the reciprocal of the load imbalance:
 
 \begin{equation}
-	E = \frac{1}{L}.
+    E = \frac{1}{L}.
 \end{equation}
 
 The new starting task \(i_{0, p}\) of the worker is given by the new total weight of the previous
 workers.
 
 \begin{equation}
-	i_{0, p} = \sum_{j = 0}^{p - 1}w_{ideal,j}
+    i_{0, p} = \sum_{j = 0}^{p - 1}w_{ideal,j}
 \end{equation}
 
 Tables~\ref{table:before_repartition} and~\ref{table:after_repartition} provide an example of
 repartitioning between four workers using this method.
 
 \begin{table}[H]
-	\begin{center}
-		\begin{tabular}{ | c | c | c | c | c | c | c | c | c | c | c | c | c | c | c | c | c | } 
-			\hline
-			worker \(p\) & \multicolumn{4}{c|}{\cellcolor{vs_lightgreen}0} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}1} & \multicolumn{4}{c|}{\cellcolor{vs_lightred}2} & \multicolumn{4}{c|}{\cellcolor{vs_lightplum}3}  \\
-			\hline
-			capacity \(c_p\) & \multicolumn{4}{c|}{\cellcolor{vs_lightgreen}2} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}2} & \multicolumn{4}{c|}{\cellcolor{vs_lightred}1} & \multicolumn{4}{c|}{\cellcolor{vs_lightplum}1}  \\
-			\hline
-			global id & \cellcolor{vs_lightgreen}0 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}2 & \cellcolor{vs_lightgreen}3 & \cellcolor{vs_lightblue}4 & \cellcolor{vs_lightblue}5 & \cellcolor{vs_lightblue}6 & \cellcolor{vs_lightblue}7 & \cellcolor{vs_lightred}8 & \cellcolor{vs_lightred}9 & \cellcolor{vs_lightred}10 & \cellcolor{vs_lightred}11 & \cellcolor{vs_lightplum}12 & \cellcolor{vs_lightplum}13 & \cellcolor{vs_lightplum}14 & \cellcolor{vs_lightplum}15 \\ 
-			\hline
-			local id i & \cellcolor{vs_lightgreen}0 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}2 & \cellcolor{vs_lightgreen}3 & \cellcolor{vs_lightblue}0 & \cellcolor{vs_lightblue}1 & \cellcolor{vs_lightblue}2 & \cellcolor{vs_lightblue}3 & \cellcolor{vs_lightred}0 & \cellcolor{vs_lightred}1 & \cellcolor{vs_lightred}2 & \cellcolor{vs_lightred}3 & \cellcolor{vs_lightplum}0 & \cellcolor{vs_lightplum}1 & \cellcolor{vs_lightplum}2 & \cellcolor{vs_lightplum}3 \\ 
-			\hline
-			weight \(w_i\) & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightblue}2 & \cellcolor{vs_lightblue}2 & \cellcolor{vs_lightblue}3 & \cellcolor{vs_lightblue}2 & \cellcolor{vs_lightred}2 & \cellcolor{vs_lightred}1 & \cellcolor{vs_lightred}2 & \cellcolor{vs_lightred}1 & \cellcolor{vs_lightplum}1 & \cellcolor{vs_lightplum}1 & \cellcolor{vs_lightplum}2 & \cellcolor{vs_lightplum}1 \\ 
-			\hline
-			total weight \(w_p\) & \multicolumn{4}{c|}{\cellcolor{vs_lightgreen}4} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}9} & \multicolumn{4}{c|}{\cellcolor{vs_lightred}6} & \multicolumn{4}{c|}{\cellcolor{vs_lightplum}5} \\ 
-			\hline
-			ideal weight \(w_{ideal,p}\) & \multicolumn{4}{c|}{\cellcolor{vs_lightgreen}8} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}8} & \multicolumn{4}{c|}{\cellcolor{vs_lightred}4} & \multicolumn{4}{c|}{\cellcolor{vs_lightplum}4} \\ 
-			\hline
-		\end{tabular}
-	
-		\caption{Problem before repartition: The workers have uneven weight.}\label{table:before_repartition}
-	\end{center}
+    \begin{center}
+        \begin{tabular}{ | c | c | c | c | c | c | c | c | c | c | c | c | c | c | c | c | c | } 
+            \hline
+            worker \(p\) & \multicolumn{4}{c|}{\cellcolor{vs_lightgreen}0} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}1} & \multicolumn{4}{c|}{\cellcolor{vs_lightred}2} & \multicolumn{4}{c|}{\cellcolor{vs_lightplum}3}  \\
+            \hline
+            capacity \(c_p\) & \multicolumn{4}{c|}{\cellcolor{vs_lightgreen}2} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}2} & \multicolumn{4}{c|}{\cellcolor{vs_lightred}1} & \multicolumn{4}{c|}{\cellcolor{vs_lightplum}1}  \\
+            \hline
+            global id & \cellcolor{vs_lightgreen}0 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}2 & \cellcolor{vs_lightgreen}3 & \cellcolor{vs_lightblue}4 & \cellcolor{vs_lightblue}5 & \cellcolor{vs_lightblue}6 & \cellcolor{vs_lightblue}7 & \cellcolor{vs_lightred}8 & \cellcolor{vs_lightred}9 & \cellcolor{vs_lightred}10 & \cellcolor{vs_lightred}11 & \cellcolor{vs_lightplum}12 & \cellcolor{vs_lightplum}13 & \cellcolor{vs_lightplum}14 & \cellcolor{vs_lightplum}15 \\ 
+            \hline
+            local id i & \cellcolor{vs_lightgreen}0 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}2 & \cellcolor{vs_lightgreen}3 & \cellcolor{vs_lightblue}0 & \cellcolor{vs_lightblue}1 & \cellcolor{vs_lightblue}2 & \cellcolor{vs_lightblue}3 & \cellcolor{vs_lightred}0 & \cellcolor{vs_lightred}1 & \cellcolor{vs_lightred}2 & \cellcolor{vs_lightred}3 & \cellcolor{vs_lightplum}0 & \cellcolor{vs_lightplum}1 & \cellcolor{vs_lightplum}2 & \cellcolor{vs_lightplum}3 \\ 
+            \hline
+            weight \(w_i\) & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightblue}2 & \cellcolor{vs_lightblue}2 & \cellcolor{vs_lightblue}3 & \cellcolor{vs_lightblue}2 & \cellcolor{vs_lightred}2 & \cellcolor{vs_lightred}1 & \cellcolor{vs_lightred}2 & \cellcolor{vs_lightred}1 & \cellcolor{vs_lightplum}1 & \cellcolor{vs_lightplum}1 & \cellcolor{vs_lightplum}2 & \cellcolor{vs_lightplum}1 \\ 
+            \hline
+            total weight \(w_p\) & \multicolumn{4}{c|}{\cellcolor{vs_lightgreen}4} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}9} & \multicolumn{4}{c|}{\cellcolor{vs_lightred}6} & \multicolumn{4}{c|}{\cellcolor{vs_lightplum}5} \\ 
+            \hline
+            ideal weight \(w_{ideal,p}\) & \multicolumn{4}{c|}{\cellcolor{vs_lightgreen}8} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}8} & \multicolumn{4}{c|}{\cellcolor{vs_lightred}4} & \multicolumn{4}{c|}{\cellcolor{vs_lightplum}4} \\ 
+            \hline
+        \end{tabular}
+    
+        \caption{Problem before repartition: The workers have uneven weight.}\label{table:before_repartition}
+    \end{center}
 \end{table}
 
 We repartition the problem, so that the workers have a weight closer to their ideal weight.
 
 \begin{table}[H]
-	\begin{center}
-		\begin{tabular}{ | c | c | c | c | c | c | c | c | c | c | c | c | c | c | c | c | c | } 
-			\hline
-			worker \(p\) & \multicolumn{6}{c|}{\cellcolor{vs_lightgreen}0} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}1} & \multicolumn{3}{c|}{\cellcolor{vs_lightred}2} & \multicolumn{3}{c|}{\cellcolor{vs_lightplum}3}  \\
-			\hline
-			capacity \(c_p\) & \multicolumn{6}{c|}{\cellcolor{vs_lightgreen}2} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}2} & \multicolumn{3}{c|}{\cellcolor{vs_lightred}1} & \multicolumn{3}{c|}{\cellcolor{vs_lightplum}1}  \\
-			\hline
-			global id & \cellcolor{vs_lightgreen}0 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}2 & \cellcolor{vs_lightgreen}3 & \cellcolor{vs_lightgreen}4 & \cellcolor{vs_lightgreen}5 & \cellcolor{vs_lightblue}6 & \cellcolor{vs_lightblue}7 & \cellcolor{vs_lightblue}8 & \cellcolor{vs_lightblue}9 & \cellcolor{vs_lightred}10 & \cellcolor{vs_lightred}11 & \cellcolor{vs_lightred}12 & \cellcolor{vs_lightplum}13 & \cellcolor{vs_lightplum}14 & \cellcolor{vs_lightplum}15 \\ 
-			\hline
-			local id i & \cellcolor{vs_lightgreen}0 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}2 & \cellcolor{vs_lightgreen}3 & \cellcolor{vs_lightgreen}0 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightblue}2 & \cellcolor{vs_lightblue}3 & \cellcolor{vs_lightblue}0 & \cellcolor{vs_lightblue}1 & \cellcolor{vs_lightred}2 & \cellcolor{vs_lightred}3 & \cellcolor{vs_lightred}0 & \cellcolor{vs_lightplum}1 & \cellcolor{vs_lightplum}2 & \cellcolor{vs_lightplum}3 \\ 
-			\hline
-			weight \(w_i\) & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}2 & \cellcolor{vs_lightgreen}2 & \cellcolor{vs_lightblue}3 & \cellcolor{vs_lightblue}2 & \cellcolor{vs_lightblue}2 & \cellcolor{vs_lightblue}1 & \cellcolor{vs_lightred}2 & \cellcolor{vs_lightred}1 & \cellcolor{vs_lightred}1 & \cellcolor{vs_lightplum}1 & \cellcolor{vs_lightplum}2 & \cellcolor{vs_lightplum}1 \\ 
-			\hline
-			total weight \(w_p\) & \multicolumn{6}{c|}{\cellcolor{vs_lightgreen}8} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}8} & \multicolumn{3}{c|}{\cellcolor{vs_lightred}4} & \multicolumn{3}{c|}{\cellcolor{vs_lightplum}4} \\ 
-			\hline
-			ideal weight \(w_{ideal,p}\) & \multicolumn{6}{c|}{\cellcolor{vs_lightgreen}8} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}8} & \multicolumn{3}{c|}{\cellcolor{vs_lightred}4} & \multicolumn{3}{c|}{\cellcolor{vs_lightplum}4} \\ 
-			\hline
-		\end{tabular}
-	
-		\caption{Problem after repartition: The workers have a better workload distribution.}\label{table:after_repartition}
-	\end{center}
+    \begin{center}
+        \begin{tabular}{ | c | c | c | c | c | c | c | c | c | c | c | c | c | c | c | c | c | } 
+            \hline
+            worker \(p\) & \multicolumn{6}{c|}{\cellcolor{vs_lightgreen}0} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}1} & \multicolumn{3}{c|}{\cellcolor{vs_lightred}2} & \multicolumn{3}{c|}{\cellcolor{vs_lightplum}3}  \\
+            \hline
+            capacity \(c_p\) & \multicolumn{6}{c|}{\cellcolor{vs_lightgreen}2} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}2} & \multicolumn{3}{c|}{\cellcolor{vs_lightred}1} & \multicolumn{3}{c|}{\cellcolor{vs_lightplum}1}  \\
+            \hline
+            global id & \cellcolor{vs_lightgreen}0 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}2 & \cellcolor{vs_lightgreen}3 & \cellcolor{vs_lightgreen}4 & \cellcolor{vs_lightgreen}5 & \cellcolor{vs_lightblue}6 & \cellcolor{vs_lightblue}7 & \cellcolor{vs_lightblue}8 & \cellcolor{vs_lightblue}9 & \cellcolor{vs_lightred}10 & \cellcolor{vs_lightred}11 & \cellcolor{vs_lightred}12 & \cellcolor{vs_lightplum}13 & \cellcolor{vs_lightplum}14 & \cellcolor{vs_lightplum}15 \\ 
+            \hline
+            local id i & \cellcolor{vs_lightgreen}0 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}2 & \cellcolor{vs_lightgreen}3 & \cellcolor{vs_lightgreen}0 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightblue}2 & \cellcolor{vs_lightblue}3 & \cellcolor{vs_lightblue}0 & \cellcolor{vs_lightblue}1 & \cellcolor{vs_lightred}2 & \cellcolor{vs_lightred}3 & \cellcolor{vs_lightred}0 & \cellcolor{vs_lightplum}1 & \cellcolor{vs_lightplum}2 & \cellcolor{vs_lightplum}3 \\ 
+            \hline
+            weight \(w_i\) & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}1 & \cellcolor{vs_lightgreen}2 & \cellcolor{vs_lightgreen}2 & \cellcolor{vs_lightblue}3 & \cellcolor{vs_lightblue}2 & \cellcolor{vs_lightblue}2 & \cellcolor{vs_lightblue}1 & \cellcolor{vs_lightred}2 & \cellcolor{vs_lightred}1 & \cellcolor{vs_lightred}1 & \cellcolor{vs_lightplum}1 & \cellcolor{vs_lightplum}2 & \cellcolor{vs_lightplum}1 \\ 
+            \hline
+            total weight \(w_p\) & \multicolumn{6}{c|}{\cellcolor{vs_lightgreen}8} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}8} & \multicolumn{3}{c|}{\cellcolor{vs_lightred}4} & \multicolumn{3}{c|}{\cellcolor{vs_lightplum}4} \\ 
+            \hline
+            ideal weight \(w_{ideal,p}\) & \multicolumn{6}{c|}{\cellcolor{vs_lightgreen}8} & \multicolumn{4}{c|}{\cellcolor{vs_lightblue}8} & \multicolumn{3}{c|}{\cellcolor{vs_lightred}4} & \multicolumn{3}{c|}{\cellcolor{vs_lightplum}4} \\ 
+            \hline
+        \end{tabular}
+    
+        \caption{Problem after repartition: The workers have a better workload distribution.}\label{table:after_repartition}
+    \end{center}
 \end{table}
 
 This is the more general approach to repartitioning. Knowing our problem, we can simplify in two
@@ -616,23 +616,23 @@ refinement. The domain spans \(x, y \in [0, 1]\) and the elements making up that
 between two \acrshortpl{acr:GPU}. 
 
 \begin{figure}[H]
-	\centering
-	\subfloat[Process 0]
-	{\includesvg[width=0.3\textwidth]{Chapter_load_balancing/media/mesh_0_before0_lb}\label{fig:lb_before_0}}
-	\qquad
-	\subfloat[Process 1]
-	{\includesvg[width=0.3\textwidth]{Chapter_load_balancing/media/mesh_1_before0_lb_legend}\label{fig:lb_before_1}}
-	\caption{Mesh before load balancing: The two blocks have different numbers of elements.}\label{fig:lb_before}
+    \centering
+    \subfloat[Process 0]
+    {\includesvg[width=0.3\textwidth]{Chapter_load_balancing/media/mesh_0_before0_lb}\label{fig:lb_before_0}}
+    \qquad
+    \subfloat[Process 1]
+    {\includesvg[width=0.3\textwidth]{Chapter_load_balancing/media/mesh_1_before0_lb_legend}\label{fig:lb_before_1}}
+    \caption{Mesh before load balancing: The two blocks have different numbers of elements.}\label{fig:lb_before}
 \end{figure}
 
 \begin{figure}[H]
-	\centering
-	\subfloat[Process 0]
-	{\includesvg[width=0.3\textwidth]{Chapter_load_balancing/media/mesh_0_after0_lb}\label{fig:lb_after_0}}
-	\qquad
-	\subfloat[Process 1]
-	{\includesvg[width=0.6\textwidth]{Chapter_load_balancing/media/mesh_1_after0_lb_legend}\label{fig:lb_after_1}}
-	\caption{Mesh after load balancing: The two blocks have an equal numbers of elements.}\label{fig:lb_after}
+    \centering
+    \subfloat[Process 0]
+    {\includesvg[width=0.3\textwidth]{Chapter_load_balancing/media/mesh_0_after0_lb}\label{fig:lb_after_0}}
+    \qquad
+    \subfloat[Process 1]
+    {\includesvg[width=0.6\textwidth]{Chapter_load_balancing/media/mesh_1_after0_lb_legend}\label{fig:lb_after_1}}
+    \caption{Mesh after load balancing: The two blocks have an equal numbers of elements.}\label{fig:lb_after}
 \end{figure}
 
 \section{Load Balancing Criteria}\label{section:load_balancing:criteria}

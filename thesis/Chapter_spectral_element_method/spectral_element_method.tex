@@ -46,14 +46,14 @@ Spectral methods exploit the orthogonality property of sets of functions. For or
 functions in the domain \([a, b]\), we have:
 
 \begin{equation} \label{equ:orthogonality}
-	\int_{a}^{b}\phi_i(x) \phi_j(x)dx = C_i \delta_{i j}
+    \int_{a}^{b}\phi_i(x) \phi_j(x)dx = C_i \delta_{i j}
 \end{equation}
 
 \noindent
 with \(C_i\) being a constant, and \(\delta_{i j}\) being the Kronecker delta, defined as such:
 
 \begin{equation} \label{equ:kronecker}
-	\delta _{i j} = \left \{ \begin{matrix}
+    \delta _{i j} = \left \{ \begin{matrix}
                     1, & \textrm{if} \quad i = j,\\ 
                     0, & \textrm{if} \quad i \neq j.
                     \end{matrix} \right.
@@ -70,13 +70,13 @@ The inner product of two functions \(f(x)\) and \(g(x)\) continuous in
 We can therefore rewrite Equation~\ref{equ:orthogonality} in inner product form:
 
 \begin{equation}
-	\left( \phi_i, \phi_j \right) = \int_{a}^{b} \phi_i(x) \phi_j(x) dx = C_i \delta_{i j}.
+    \left( \phi_i, \phi_j \right) = \int_{a}^{b} \phi_i(x) \phi_j(x) dx = C_i \delta_{i j}.
 \end{equation}
 
 Some sets of functions are only orthogonal in the context of integration with a weighting function \(w\):
 
 \begin{equation}
-	\left( \phi_i, \phi_j \right) = \int_a^b \phi_i(x) \phi_j(x) w(x) dx = B_{i} \delta_{i j},
+    \left( \phi_i, \phi_j \right) = \int_a^b \phi_i(x) \phi_j(x) w(x) dx = B_{i} \delta_{i j},
 \end{equation}
 
 \noindent
@@ -87,9 +87,9 @@ and Chebyshev polynomials are more practical. Legendre polynomials have a weight
 \(w(x) = 1\), which simplifies computations. We will therefore use the Legendre polynomials.
 
 \begin{figure}[H]
-	\centering
-	\includesvg[width=0.9\textwidth]{Chapter_spectral_element_method/media/polynomials}
-	\caption{Legendre polynomials: The first six Legendre polynomials.}\label{fig:polynomials}
+    \centering
+    \includesvg[width=0.9\textwidth]{Chapter_spectral_element_method/media/polynomials}
+    \caption{Legendre polynomials: The first six Legendre polynomials.}\label{fig:polynomials}
 \end{figure}
 
 The Legendre polynomials, illustrated in Figure~\ref{fig:polynomials}, were discovered by
@@ -98,7 +98,7 @@ Adrien-Marie Legendre in 1782. Using their associated weights \(w(x) = 1\) and t
 of degree \(k\) therefore have the property:
 
 \begin{equation}
-	\int_{-1}^{1}L_{k_1}(x) L_{k_2}(x) dx = 0, \quad if \: \: k_1 \neq k_2.
+    \int_{-1}^{1}L_{k_1}(x) L_{k_2}(x) dx = 0, \quad if \: \: k_1 \neq k_2.
 \end{equation}
 
 The Legendre polynomials can be generated using a three-term recursive formula. Knowing that the
@@ -106,14 +106,14 @@ first two polynomials are \(L_0 \left( x \right) = 1\) and \(L_1 \left( x \right
 subsequent polynomials can be generated from the following formula.
 
 \begin{equation} \label{equ:three_terms}
-	L_{k + 1}(x) = \frac{2k + 1}{k + 1}xL_k(x) - \frac{k}{k + 1}L_{k - 1}(x)
+    L_{k + 1}(x) = \frac{2k + 1}{k + 1}xL_k(x) - \frac{k}{k + 1}L_{k - 1}(x)
 \end{equation}
 
 These polynomials will help us compute integrals using Gauss quadrature. For an interval \(\left[
 -1, 1 \right]\), the Gauss quadrature formula is:
 
 \begin{equation}
-	\int_{-1}^{1}f(x)dx \approx \sum_{i = 0}^{N}w_i f(x_i).
+    \int_{-1}^{1}f(x)dx \approx \sum_{i = 0}^{N}w_i f(x_i).
 \end{equation}
 
 The points \(x_i\) used for the quadrature are the Gauss quadrature points, or collocation points.
@@ -123,8 +123,8 @@ the roots of the (N + 1)\textsuperscript{th} Legendre polynomial to get the poin
 weights \(w_i\).
 
 \begin{gather}
-	x_i = roots \: \: of \: \: L_{N + 1}(x), \quad i = 0, \ldots, N \\
-	w_i = \frac{2}{(1-x_i^2) {\left[ L'_{N + 1}(x_i) \right]}^2}
+    x_i = roots \: \: of \: \: L_{N + 1}(x), \quad i = 0, \ldots, N \\
+    w_i = \frac{2}{(1-x_i^2) {\left[ L'_{N + 1}(x_i) \right]}^2}
 \end{gather}
 
 \subsection{Polynomial interpolation}\label{subsection:spectral_element_method:spectral_approximation:polynomial_interpolation}
@@ -134,46 +134,46 @@ an order equal to the number of points minus one. In this work we use Lagrange i
 polynomials \(l_j\) of degree N.
 
 \begin{equation}
-	l_j(x) = \prod_{\substack{i = 0 \\ i \neq j}}^{N}\frac{x- x_i}{x_j - x_i}
+    l_j(x) = \prod_{\substack{i = 0 \\ i \neq j}}^{N}\frac{x- x_i}{x_j - x_i}
 \end{equation}
 
 At each Gauss-Legendre collocation point \(x_i\) only one of the integrating polynomials has the
 value 1, the others having a value of 0. This mimics the Kronecker delta \(\delta_{i j}\).
 
 \begin{equation}
-	l_j(x_i) = \delta_{i j} = \left \{\begin{matrix}
-	1, \quad i = j\\ 
-	0, \quad i \neq j
-	\end{matrix}\right.
+    l_j(x_i) = \delta_{i j} = \left \{\begin{matrix}
+    1, \quad i = j\\ 
+    0, \quad i \neq j
+    \end{matrix}\right.
 \end{equation}
 
 Figure~\ref{fig:interpolants} displays the interpolating polynomials of degree five:
 
 \begin{figure}[H]
-	\centering
-	\includesvg[width=0.9\textwidth]{Chapter_spectral_element_method/media/interpolants}
-	\caption{Polynomial interpolation: The Lagrange interpolating polynomials of degree five.}\label{fig:interpolants}
+    \centering
+    \includesvg[width=0.9\textwidth]{Chapter_spectral_element_method/media/interpolants}
+    \caption{Polynomial interpolation: The Lagrange interpolating polynomials of degree five.}\label{fig:interpolants}
 \end{figure}
 
 With this, we can interpolate a function \(p_N(x)\) of degree N\@:
 
 \begin{equation}
-	p_N(x) = \sum_{j = 0}^{N}p(x_j)l_j(x).
+    p_N(x) = \sum_{j = 0}^{N}p(x_j)l_j(x).
 \end{equation}
 
 We can also modify the Lagrange interpolation to the barycentric form.
 
 \begin{gather}
-	p_N(x) = \psi(x)\sum_{j = 0}^{N}p(x_j)\frac{w_j}{x - x_j} \\
-	\psi(x) = \prod_{i = 0}^{N}\left ( x - x_i \right ) \\
-	w_j = \frac{1}{\prod_{\genfrac{}{}{0pt}{2}{i = 0}{i \neq j}}^{N}(x_j - x_i)}
+    p_N(x) = \psi(x)\sum_{j = 0}^{N}p(x_j)\frac{w_j}{x - x_j} \\
+    \psi(x) = \prod_{i = 0}^{N}\left ( x - x_i \right ) \\
+    w_j = \frac{1}{\prod_{\genfrac{}{}{0pt}{2}{i = 0}{i \neq j}}^{N}(x_j - x_i)}
 \end{gather}
 
 \noindent
 We retain the same property as for the initial form:
 
 \begin{equation}
-	\psi(x)\sum_{j = 0}^{N}\frac{w_j}{x - x_j} = 1.
+    \psi(x)\sum_{j = 0}^{N}\frac{w_j}{x - x_j} = 1.
 \end{equation}
 
 We can then rewrite the complete Lagrange interpolation in barycentric form. By pre-computing the
@@ -181,7 +181,7 @@ barycentric weights \(w_j\), we can compute the interpolated value at any point 
 known values at the collocation points, without computing the interpolating polynomials. 
 
 \begin{equation}
-	p_N(x) = \frac{\sum_{j = 0}^{N} p(x_j)\frac{w_j}{x - x_j}}{\sum_{j = 0}^{N}\frac{w_j}{x - x_j}}
+    p_N(x) = \frac{\sum_{j = 0}^{N} p(x_j)\frac{w_j}{x - x_j}}{\sum_{j = 0}^{N}\frac{w_j}{x - x_j}}
 \end{equation}
 
 \section{The Wave Equation Model}\label{section:spectral_element_method:equation}
@@ -189,9 +189,9 @@ known values at the collocation points, without computing the interpolating poly
 We want to solve the 2D wave equation:
 
 \begin{gather}
-	\frac{\partial^2p}{\partial t^2} - c^2(p_{xx} + p_{yy}) = 0 \\
-	u_t = - p_x \\
-	v_t = -p_y
+    \frac{\partial^2p}{\partial t^2} - c^2(p_{xx} + p_{yy}) = 0 \\
+    u_t = - p_x \\
+    v_t = -p_y
 \end{gather}
 
 \noindent
@@ -199,86 +199,86 @@ with \(p\) being the pressure, \(u\) and \(v\) being the two components of the v
 being the sound speed. The three equations can be combined into one.
 
 \begin{equation} \label{equ:2d_wave}
-	\frac{\partial^2p}{\partial t^2} + c^2 \left( {\left( u_x \right)}_t + {\left( v_y \right)}_t \right) = 0
+    \frac{\partial^2p}{\partial t^2} + c^2 \left( {\left( u_x \right)}_t + {\left( v_y \right)}_t \right) = 0
 \end{equation}
 
 We then integrate once with respect to time, to get:
 
 \begin{equation} \label{equ:2d_wave_integrated}
-	p_t + c^2\left ( u_x + v_y \right ) = 0.
+    p_t + c^2\left ( u_x + v_y \right ) = 0.
 \end{equation}
 
 We can also write Equation~\ref{equ:2d_wave_integrated} in matrix form,
 
 \begin{equation} \label{equ:2d_wave_matrix}
-	\begin{bmatrix}
+    \begin{bmatrix}
         p \\ 
         u \\ 
         v
-	\end{bmatrix}_t +
-	\begin{bmatrix}
+    \end{bmatrix}_t +
+    \begin{bmatrix}
         0 & c^2 & 0 \\ 
         1 & 0 & 0 \\ 
         0 & 0 & 0
-	\end{bmatrix}
-	\begin{bmatrix}
+    \end{bmatrix}
+    \begin{bmatrix}
         p\\ 
         u\\ 
         v
-	\end{bmatrix}_x + 
-	\begin{bmatrix}
+    \end{bmatrix}_x + 
+    \begin{bmatrix}
         0 & 0 & c^2 \\ 
         0 & 0 & 0 \\ 
         1 & 0 & 0
-	\end{bmatrix}
-	\begin{bmatrix}
+    \end{bmatrix}
+    \begin{bmatrix}
         p\\ 
         u\\ 
         v
-	\end{bmatrix}_y = 0,
+    \end{bmatrix}_y = 0,
 \end{equation}
 
 \noindent
 or in vector form:
 
 \begin{equation} \label{equ:2d_wave_vector}
-	\mathbf{q_t} + B \mathbf{q_x} + C \mathbf{q_y} = 0,
+    \mathbf{q_t} + B \mathbf{q_x} + C \mathbf{q_y} = 0,
 \end{equation}
 
 \noindent
 where
 
 \begin{equation} \label{equ:q}
-	\mathbf{q}  = 
+    \mathbf{q}  = 
     \begin{bmatrix}
         p\\ 
         u\\ 
         v
-	\end{bmatrix}.
+    \end{bmatrix}.
 \end{equation}
 
 \(B\) and \(C\) are constant matrices and as such can be combined with the derivatives.
 
 \begin{gather}
-	\mathbf{f} = B \mathbf{q} \\
-	\mathbf{g} = C \mathbf{q}
+    \mathbf{f} = B \mathbf{q} \\
+    \mathbf{g} = C \mathbf{q}
 \end{gather}
 
 \begin{equation}
-	\mathbf{q_t} + \mathbf{f_x} + \mathbf{g_y} = 0
+    \mathbf{q_t} + \mathbf{f_x} + \mathbf{g_y} = 0
 \end{equation}
 
 By combining \(\mathbf{f}\) and \(\mathbf{g}\) into a flux vector \(\mathfrak{F}\), 
 
 \begin{equation} \label{equ:2d_wave_fluxes}
-	\mathfrak{F} = \mathbf{f}\widehat{x} + \mathbf{g}\widehat{y},
+    \mathfrak{F} = \mathbf{f}\widehat{x} + \mathbf{g}\widehat{y},
 \end{equation}
 
 \noindent
 we get the conservative form of the wave equation:
 
 \begin{equation} \label{equ:2d_wave_conservation}
-	\mathbf{q_t} + \bigtriangledown \cdot \mathfrak{F} = 0,
+    \mathbf{q_t} + \bigtriangledown \cdot \mathfrak{F} = 0,
 \end{equation}
 
 \noindent
@@ -289,7 +289,7 @@ We apply the divergence theorem to Equation~\ref{equ:2d_wave_conservation} to ob
 one on the control volume \(V\) and one on the surface \(S\) of said volume.
 
 \begin{equation} \label{equ:2d_wave_integral}
-	\frac{d}{dt}\int_{V}\mathbf{q}dV = -\int_{S} \mathfrak{F} \cdot \widehat{n}dS
+    \frac{d}{dt}\int_{V}\mathbf{q}dV = -\int_{S} \mathfrak{F} \cdot \widehat{n}dS
 \end{equation}
 
 \noindent
@@ -334,17 +334,17 @@ We start by deriving the discontinuous Galerkin approximation for a simple 2D do
 \(\left[ -1, 1 \right] \times \left[ -1, 1 \right]\) shown in Figure~\ref{fig:simple_domain}.
 
 \begin{figure}[H]
-	\centering
-	\includesvg[width=0.6\textwidth]{Chapter_spectral_element_method/media/domain}
-	\caption{2D simple domain: \(\left[ -1, 1 \right] \times \left[ -1, 1 \right]\), with the four normals \(n_i\), i = 0, 1, 2, 3.}\label{fig:simple_domain}
+    \centering
+    \includesvg[width=0.6\textwidth]{Chapter_spectral_element_method/media/domain}
+    \caption{2D simple domain: \(\left[ -1, 1 \right] \times \left[ -1, 1 \right]\), with the four normals \(n_i\), i = 0, 1, 2, 3.}\label{fig:simple_domain}
 \end{figure}
 
 We approximate our solutions by polynomials of degree \(N\) in both directions, in Lagrange
 form. 
 
 \begin{gather}
-	\mathbf{q} \approx \mathbf{Q} = \sum_{i = 0}^{N}\sum_{j = 0}^{N}\mathbf{Q}_{i j}l_i(x)l_j(y) \\
-	\mathfrak{F} \approx \mathbf{F} = \sum_{i = 0}^{N} \sum_{j = 0}^{N} \left ( \mathbf{F}_{i j} \widehat{x} + \mathbf{G}_{i j}\widehat{y}\right ) l_i(x) l_j(y)
+    \mathbf{q} \approx \mathbf{Q} = \sum_{i = 0}^{N}\sum_{j = 0}^{N}\mathbf{Q}_{i j}l_i(x)l_j(y) \\
+    \mathfrak{F} \approx \mathbf{F} = \sum_{i = 0}^{N} \sum_{j = 0}^{N} \left ( \mathbf{F}_{i j} \widehat{x} + \mathbf{G}_{i j}\widehat{y}\right ) l_i(x) l_j(y)
 \end{gather}
 
 where \(\mathbf{F}_{i j} \widehat{x} + \mathbf{G}_{i j}\widehat{y} = B \mathbf{Q}_{i j}\widehat{x}
@@ -353,19 +353,19 @@ where \(\mathbf{F}_{i j} \widehat{x} + \mathbf{G}_{i j}\widehat{y} = B \mathbf{Q
 We rewrite Equation~\ref{equ:2d_wave_conservation} in weak form, using the test functions \(v\).
 
 \begin{equation} \label{equ:2d_wave_weak}
-	\left( \mathbf{q_t}, v \right) + \left( \bigtriangledown \cdot \mathfrak{F}, v \right) = 0
+    \left( \mathbf{q_t}, v \right) + \left( \bigtriangledown \cdot \mathfrak{F}, v \right) = 0
 \end{equation}
 
 The test functions themselves can also be expressed in Lagrange form:
 
 \begin{equation} \label{equ:test_lagrange}
-	v = \sum^{N}_{i = 0}\sum_{j = 0}^{N}\widetilde{v}_{i j}l_i(x)l_j(y).
+    v = \sum^{N}_{i = 0}\sum_{j = 0}^{N}\widetilde{v}_{i j}l_i(x)l_j(y).
 \end{equation}
 
 Substituting Equation~\ref{equ:test_lagrange} in~\ref{equ:2d_wave_weak}, we obtain
 
 \begin{equation}
-	\sum_{i = 0}^{N}\sum_{j = 0}^{N} \left[ \int_{\Omega }\mathbf{q_t} l_i(x) l_j(y) dx dy + \int_{\Omega } \left( \bigtriangledown \cdot \mathfrak{F} \right) l_i(x) l_j(y) dx dy \right] \widetilde{v}_{i j} = 0,
+    \sum_{i = 0}^{N}\sum_{j = 0}^{N} \left[ \int_{\Omega }\mathbf{q_t} l_i(x) l_j(y) dx dy + \int_{\Omega } \left( \bigtriangledown \cdot \mathfrak{F} \right) l_i(x) l_j(y) dx dy \right] \widetilde{v}_{i j} = 0,
 \end{equation}
 
 \noindent
@@ -389,7 +389,7 @@ with \(\phi_{i j} = l_i(x)l_j(y)\). We can then rewrite Equation~\ref{equ:2d_wav
 product form: 
 
 \begin{equation} \label{equ:2d_wave_inner_product}
-	\left( \mathbf{Q}_t, \phi_{i j} \right) + \left( \bigtriangledown \cdot \mathbf{F}, \phi_{i j} \right) = 0.
+    \left( \mathbf{Q}_t, \phi_{i j} \right) + \left( \bigtriangledown \cdot \mathbf{F}, \phi_{i j} \right) = 0.
 \end{equation}
 
 We then use Green's first identity to extract the boundary contribution from
@@ -426,19 +426,19 @@ Figure~\ref{fig:domain_nodes}, and the boundary term calculated collocation poin
 boundaries, shown in blue.
 
 \begin{figure}[H]
-	\centering
-	\includesvg[width=0.4\textwidth]{Chapter_spectral_element_method/media/nodes}
-	\caption{2D simple domain: Interior collocation points in lilac, boundary collocation points in blue.}\label{fig:domain_nodes}
+    \centering
+    \includesvg[width=0.4\textwidth]{Chapter_spectral_element_method/media/nodes}
+    \caption{2D simple domain: Interior collocation points in lilac, boundary collocation points in blue.}\label{fig:domain_nodes}
 \end{figure}
 
 We start by applying Gauss quadrature to the first term of Equation~\ref{equ:integral_equ}.
 
 \begin{equation}
-	\begin{split}
+    \begin{split}
         \int_{-1}^{1}\int_{-1}^{1} \mathbf{Q}_t \phi_{i j} dx dy 
         &= \int_{-1}^{1}\int_{-1}^{1}\mathbf{Q}_t l_i(x) l_j(y) dx dy \\
         &= \sum_{k = 0}^{N} \sum_{l = 0}^{N}\frac{d\mathbf{Q} \left( x_k, y_l \right)}{dt} l_i(x_k) l_j(y_l) w_k^{(x)} w_l^{(y)}
-	\end{split}
+    \end{split}
 \end{equation}
 
 Since the integrand is a polynomial of degree \(2 N\), and the Gauss quadrature is exact for
@@ -454,19 +454,19 @@ to get:
 We do the same for the third term of Equation~\ref{equ:integral_equ}.
 
 \begin{equation} \label{equ:integral_3}
-	\begin{split}
-		\int_{-1}^{1}\int_{-1}^{1}\mathbf{F} \cdot \bigtriangledown \phi_{i j} dx dy 
-		&= \int_{-1}^{1}\int_{-1}^{1}\mathbf{F}(x, y) l'_i(x)l_j(y) + \mathbf{G}(x, y) l_i(x) l'_j(y) \: \: dx dy \\ 
-		&= \sum_{k = 0}^{N} \sum_{l = 0}^{N}\left [ \mathbf{F}(x_k, y_l)l'_i(x_k)l_j(y_l) + \mathbf{G}(x_k, y_l) l_i(x_k)l'_j(y_l) \right ]w_k^{(x)} w_l^{(y)} \\
-		&= \sum_{k = 0}^{N} \mathbf{F}(x_k, y_j)l'_i(x_k)w_k^{(x)} w_j^{(y)} + \sum_{l = 0}^{N}\mathbf{G}(x_i, y_l) l'_j(y_l) w_i^{(x)} w_l^{(y)}
-	\end{split}
+    \begin{split}
+        \int_{-1}^{1}\int_{-1}^{1}\mathbf{F} \cdot \bigtriangledown \phi_{i j} dx dy 
+        &= \int_{-1}^{1}\int_{-1}^{1}\mathbf{F}(x, y) l'_i(x)l_j(y) + \mathbf{G}(x, y) l_i(x) l'_j(y) \: \: dx dy \\ 
+        &= \sum_{k = 0}^{N} \sum_{l = 0}^{N}\left [ \mathbf{F}(x_k, y_l)l'_i(x_k)l_j(y_l) + \mathbf{G}(x_k, y_l) l_i(x_k)l'_j(y_l) \right ]w_k^{(x)} w_l^{(y)} \\
+        &= \sum_{k = 0}^{N} \mathbf{F}(x_k, y_j)l'_i(x_k)w_k^{(x)} w_j^{(y)} + \sum_{l = 0}^{N}\mathbf{G}(x_i, y_l) l'_j(y_l) w_i^{(x)} w_l^{(y)}
+    \end{split}
 \end{equation}
 
 Now only the second term is left, the integral over the boundary. We start by applying Gauss
 quadrature to the developed integral.
 
 \begin{equation} \label{equ:integral_2}
-	\begin{split}
+    \begin{split}
         \oint_{S} \phi_{i j}\mathbf{F}^* \cdot \widehat{n}dS = & 
         \int_{-1}^{1}l_i(x) l_j(-1)\mathbf{F}^*(x, -1) \cdot (-\widehat{y}) \: dx \\
         & + \int_{-1}^{1}l_i(x) l_j(1)\mathbf{F}^*(x, 1) \cdot (\widehat{y}) \: dx \\
@@ -480,7 +480,7 @@ quadrature to the developed integral.
         & + l_j(1)\mathbf{F}^*(x_i, 1)\cdot (\widehat{y}) \: w_i^{(x)} \\
         & + l_i(-1)\mathbf{F}^*(-1, y_j)\cdot (-\widehat{x}) \: w_j^{(y)} \\
         & + l_i(1)\mathbf{F}^*(1, y_j)\cdot (\widehat{x}) \: w_j^{(y)}
-	\end{split}
+    \end{split}
 \end{equation}
 
 Note that the integrands are also of order \(2 N\), and are computed exactly. We put
@@ -489,37 +489,37 @@ Equation~\ref{equ:integral_equ} and divide by the weights \(w_i^{ \left( x \righ
 \right) }\).
 
 \begin{equation} \label{equ:2d_wave_full}
-	\begin{split}
+    \begin{split}
         & \frac{d\mathbf{Q}(x_i, y_j)}{dt} \\
         & + \left \{ \left[ l_i \left( -1 \right) \mathbf{F}^* \left( -1, y_j \right) \cdot \left( -\widehat{x} \right) \frac{1}{w_i^{ \left( x \right) }} + l_i \left( 1 \right) \mathbf{F}^* \left( 1, y_j \right) \cdot
         \left( \widehat{x} \right) \frac{1}{w_i^{ \left( x \right) }} \right] - \sum_{k = 0}^{N} \mathbf{F} \left(x_k, y_j \right) \frac{l'_i \left( x_k \right) w_k^{ \left( x \right) }}{w_i^{ \left( x \right) }} \right \} \\
         & + \left \{ \left[ l_j \left( -1 \right) \mathbf{F}^* (x_i, -1) \cdot \left( -\widehat{y} \right) \frac{1}{w_j^{ \left( y \right) }} + l_j \left( 1 \right) \mathbf{F}^*(x_i, 1) \cdot
         \left( \widehat{y} \right) \frac{1}{w_j^{ \left( y \right) }} \right] - \sum_{l = 0}^{N} \mathbf{G} \left(x_i, y_l \right) \frac{l'_j \left( y_l \right) w_l^{ \left( y \right) }}{w_j^{ \left( y \right) }} \right \} \\
         & = 0, \quad i,j = 0, \ldots, N
-	\end{split} 
+    \end{split} 
 \end{equation}
 
 We define \(l'_i(x_k)\) as the derivative matrix \(D_{k i}\). Since it is constant, we also
 incorporate the weights \(w_i\) and \(w_k\).
 
 \begin{equation} \label{equ:d_hat}
-	\begin{split}
+    \begin{split}
         \widehat{D}_{i k} = & -\frac{D_{k i} w_k}{w_i} \\
         = & -\frac{l'_i(x_k) w_k}{w_i}
-	\end{split} 
+    \end{split} 
 \end{equation}
 
 This simplifies Equation~\ref{equ:2d_wave_full} to:
 
 \begin{equation} \label{equ:2d_wave_d}
-	\begin{split}
+    \begin{split}
         & \frac{d\mathbf{Q}(x_i, y_j)}{dt} \\
         & + \left \{ \left[ l_i \left( -1 \right) \mathbf{F}^* \left( -1, y_j \right) \cdot \left( -\widehat{x} \right) \frac{1}{w_i^{ \left( x \right) }} + l_i \left( 1 \right) \mathbf{F}^* \left( 1, y_j \right) \cdot
         \left( \widehat{x} \right) \frac{1}{w_i^{ \left( x \right) }} + \sum_{k = 0}^{N} \mathbf{F} \left( x_k, y_j \right) \widehat{D}_{i k}^{ \left( x \right) } \right] \right \} \\
         & + \left \{ \left [ l_j \left( -1 \right) \mathbf{F}^* \left( x_i, -1 \right) \cdot \left( -\widehat{y} \right) \frac{1}{w_j^{ \left( y \right) }} + l_j \left( 1 \right) \mathbf{F}^* \left(x_i, 1 \right) \cdot
         \left( \widehat{y} \right) \frac{1}{w_j^{ \left( y \right) }} + \sum_{l = 0}^{N} \mathbf{G} \left( x_i, y_l \right) \widehat{D}_{j l}^{ \left( y \right) } \right] \right \} \\
         & = 0, \quad i,j = 0, \ldots, N
-	\end{split}
+    \end{split}
 \end{equation}
 
 The collocation points, weights and derivative matrices from Equation~\ref{equ:2d_wave_d} can be
@@ -534,23 +534,23 @@ We now need to compute the numerical fluxes \(\mathbf{F}^*\) to approximate the 
 A more detailed derivation for the flux is found in~\cite{Kopriva2009}.
 
 \begin{equation} \label{equ:physical_fluxes}
-	\mathfrak{F} \cdot \widehat{n} = \mathbf{f} n_x + \mathbf{g} n_y = (B n_x + C n_y) \mathbf{q} = A \mathbf{q}
+    \mathfrak{F} \cdot \widehat{n} = \mathbf{f} n_x + \mathbf{g} n_y = (B n_x + C n_y) \mathbf{q} = A \mathbf{q}
 \end{equation}
 
 \noindent
 with matrices \(B\) and \(C\) taken from Equation~\ref{equ:2d_wave_matrix}.
 
 \begin{equation}
-	B = \begin{bmatrix}
+    B = \begin{bmatrix}
         0 & c^2 & 0 \\ 
         1 & 0 & 0 \\ 
         0 & 0 & 0 
-	\end{bmatrix}
-	C = \begin{bmatrix}
+    \end{bmatrix}
+    C = \begin{bmatrix}
         0 & 0 & c^2\\ 
         0 & 0 & 0 \\ 
         1 & 0 & 0
-	\end{bmatrix}
+    \end{bmatrix}
 \end{equation}
 
 We also define the normal vector \(\widehat{n} = \alpha \widehat{x} + \beta \widehat{y} = n_x
@@ -561,7 +561,7 @@ We also define the normal vector \(\widehat{n} = \alpha \widehat{x} + \beta \wid
         0 & \alpha c^2 & \beta c^2 \\ 
         \alpha & 0 & 0 \\ 
         \beta & 0 & 0 
-	\end{bmatrix}.
+    \end{bmatrix}.
 \end{equation}
 
 We will use an upwind scheme~\cite{Toro2009} to calculate the flux at element interfaces. On an
@@ -598,51 +598,51 @@ The diagonal matrix can be further decomposed into three wave directions: left-t
 right-to-left, and stationary.
 
 \begin{equation}
-	\begin{split}
-		\Lambda & = 
+    \begin{split}
+        \Lambda & = 
         \begin{bmatrix}
             c & 0 & 0 \\ 
             0 & -c & 0 \\ 
             0 & 0 & 0
-		\end{bmatrix} = 
-		\begin{bmatrix}
+        \end{bmatrix} = 
+        \begin{bmatrix}
             c & 0 & 0 \\ 
             0 & 0 & 0 \\ 
             0 & 0 & 0
-		\end{bmatrix} +
-		\begin{bmatrix}
+        \end{bmatrix} +
+        \begin{bmatrix}
             0 & 0 & 0 \\ 
             0 & -c & 0 \\ 
             0 & 0 & 0
-		\end{bmatrix} +
-		\begin{bmatrix}
+        \end{bmatrix} +
+        \begin{bmatrix}
             0 & 0 & 0 \\ 
             0 & 0 & 0 \\ 
             0 & 0 & 0
-		\end{bmatrix} \\
-		&= \Lambda^+ + \Lambda^- + \Lambda^0
-	\end{split}
+        \end{bmatrix} \\
+        &= \Lambda^+ + \Lambda^- + \Lambda^0
+    \end{split}
 \end{equation}
 
 We can then split the wave into three components, each containing only one direction.
 
 \begin{equation}
-	A = S \Lambda^+ S^{-1} + S \Lambda^- S^{-1} + S \Lambda^0 S^{-1} = A^+ + A^- + A^0
+    A = S \Lambda^+ S^{-1} + S \Lambda^- S^{-1} + S \Lambda^0 S^{-1} = A^+ + A^- + A^0
 \end{equation}
 
 We can evaluate the flux with:
 
 \begin{equation} \label{equ:flux}
-	\mathbf{F} \cdot \widehat{n} = A^+\mathbf{q} + A^-\mathbf{q} + A^0 \mathbf{q}.
+    \mathbf{F} \cdot \widehat{n} = A^+\mathbf{q} + A^-\mathbf{q} + A^0 \mathbf{q}.
 \end{equation}
 
 \begin{figure}[H]
-	\centering
-	\includesvg[width=0.25\textwidth]{Chapter_spectral_element_method/media/waves}
-	\caption{States on both sides of an interface: The normal \(\widehat{n}\) of the interface
-	    determines the left and right sides. \(\mathbf{Q}^L\) and \(\mathbf{Q}^R\) are the states on
-	    the left and right of the interface, respectively. \(w^+\) and \(w^-\) indicate the
-	    left-to-right and right-to-left running waves, respectively.}\label{fig:waves}
+    \centering
+    \includesvg[width=0.25\textwidth]{Chapter_spectral_element_method/media/waves}
+    \caption{States on both sides of an interface: The normal \(\widehat{n}\) of the interface
+        determines the left and right sides. \(\mathbf{Q}^L\) and \(\mathbf{Q}^R\) are the states on
+        the left and right of the interface, respectively. \(w^+\) and \(w^-\) indicate the
+        left-to-right and right-to-left running waves, respectively.}\label{fig:waves}
 \end{figure}
 
 Figure~\ref{fig:waves} shows a boundary, with the associated states and waves. This guides us in
@@ -652,28 +652,28 @@ wave is \(\mathbf{Q}^R\). The stationary wave only has zeros in its matrix, and 
 gives us the formulation for the numerical fluxes. This is what is called the Riemann problem.
 
 \begin{equation} \label{equ:flux_states}
-	\mathbf{F}^* \cdot \widehat{n} = A^+ \mathbf{Q}^L + A^- \mathbf{Q}^R
+    \mathbf{F}^* \cdot \widehat{n} = A^+ \mathbf{Q}^L + A^- \mathbf{Q}^R
 \end{equation}
 
 We can now compute the numerical fluxes. We define the characteristic variable \(\mathbf{W}\).
 
 \begin{equation}
-	\mathbf{W} = S^{-1} \mathbf{q} = 
+    \mathbf{W} = S^{-1} \mathbf{q} = 
     \begin{bmatrix}
         1 & \alpha c & \beta c \\ 
         1 & -\alpha c & -\beta c \\ 
         0 & \beta & -\alpha
-	\end{bmatrix}
-	\begin{bmatrix}
+    \end{bmatrix}
+    \begin{bmatrix}
         p \\ 
         u \\ 
         v
-	\end{bmatrix} = 
-	\begin{bmatrix}
+    \end{bmatrix} = 
+    \begin{bmatrix}
         p + c \left( \alpha u + \beta v \right) \\ 
         p - c \left( \alpha u + \beta v \right) \\ 
         \beta u - \alpha v
-	\end{bmatrix} \equiv
+    \end{bmatrix} \equiv
     \begin{bmatrix}
         w^+ \\
         w^- \\
@@ -685,17 +685,17 @@ We define \(w^+\), \(w^-\) and \(w^0\) as the left-to-right, right-to-left and s
 respectively:
 
 \begin{equation} \label{equ:waves_x}
-	\begin{split}
+    \begin{split}
         w^+ & \equiv p + c \left( \alpha u + \beta v \right) \\
         w^- & \equiv p - c \left( \alpha u + \beta v \right) \\
         w^0 & \equiv \beta u - \alpha v.
-	\end{split} 
+    \end{split} 
 \end{equation}
 
 Next, we multiply with the diagonal matrices \(\Lambda \), which contain the direction of the waves:
 
 \begin{equation}
-	\begin{split}
+    \begin{split}
         \Lambda^+ \mathbf{W} & = 
         \begin{bmatrix}
             c & 0 & 0 \\ 
@@ -787,7 +787,7 @@ temporary arrays, which will then be added to the real time derivative arrays.
 The method works as follows. For a differential equation
 
 \begin{equation}
-	u_t = H(u, t),
+    u_t = H(u, t),
 \end{equation}
 
 \noindent
@@ -797,15 +797,15 @@ variables, and \(U^n\) is the approximation of the solution at \(t_n\). The meth
 approximation of the solution at the next timestep as:
 
 \begin{equation} \label{equ:runge_kutta}
-	\begin{split}
-		& U \leftarrow U^n \\
-		& T \leftarrow H \left( U, t_n \right) \\
-		& U \leftarrow U + \frac{1}{3} \Delta t T \\
-		& T = -\frac{5}{9} T + H \left( U, t_n + \frac{1}{3} \Delta t \right) \\
-		& U \leftarrow U + \frac{15}{16} \Delta t T \\
-		& T \leftarrow -\frac{153}{128} T + H \left( U, t_n + \frac{3}{4} \Delta t \right) \\
-		& U^{n + 1} \leftarrow U + \frac{8}{15} \Delta t T
-	\end{split}
+    \begin{split}
+        & U \leftarrow U^n \\
+        & T \leftarrow H \left( U, t_n \right) \\
+        & U \leftarrow U + \frac{1}{3} \Delta t T \\
+        & T = -\frac{5}{9} T + H \left( U, t_n + \frac{1}{3} \Delta t \right) \\
+        & U \leftarrow U + \frac{15}{16} \Delta t T \\
+        & T \leftarrow -\frac{153}{128} T + H \left( U, t_n + \frac{3}{4} \Delta t \right) \\
+        & U^{n + 1} \leftarrow U + \frac{8}{15} \Delta t T
+    \end{split}
 \end{equation}
 
 \(T\) is introduced as a temporary variable to store the time derivative after partial time steps.
@@ -814,24 +814,24 @@ N\), where \(N\) is the number of variables making up \(U\). The algorithm can b
 following stage run three times, where \(m\) is the stage number.
 
 \begin{equation} \label{equ:runge_kutta_stage}
-	\begin{split}
-		& T \leftarrow a_m T + H \left( U, t_n + b_m \Delta t \right) \\
-		& U \leftarrow U + g_m \Delta t T
-	\end{split}
+    \begin{split}
+        & T \leftarrow a_m T + H \left( U, t_n + b_m \Delta t \right) \\
+        & U \leftarrow U + g_m \Delta t T
+    \end{split}
 \end{equation}
 
 The following table lists the coefficients \(a_m\), \(b_m\) and \(g_m\).
 
 \begin{table}[H]
-	\centering
-	\begin{tabular}{c c c c}
-		\(m\) & \(a_m\) & \(b_m\) & \(g_m\) \\
-		\midrule
-		0 & 0 & 0 & \(\frac{1}{3}\) \\
-		1 & \(-\frac{5}{9}\) & \(\frac{1}{3}\) & \(\frac{15}{16}\) \\
-		2 & \(-\frac{153}{128}\) & \(\frac{3}{4}\) & \(\frac{8}{15}\) \\
-	\end{tabular}
-	\caption{Coefficients of the third-order low storage Runge-Kutta method.}\label{table:runge_kutta_coefficient}
+    \centering
+    \begin{tabular}{c c c c}
+        \(m\) & \(a_m\) & \(b_m\) & \(g_m\) \\
+        \midrule
+        0 & 0 & 0 & \(\frac{1}{3}\) \\
+        1 & \(-\frac{5}{9}\) & \(\frac{1}{3}\) & \(\frac{15}{16}\) \\
+        2 & \(-\frac{153}{128}\) & \(\frac{3}{4}\) & \(\frac{8}{15}\) \\
+    \end{tabular}
+    \caption{Coefficients of the third-order low storage Runge-Kutta method.}\label{table:runge_kutta_coefficient}
 \end{table}
 
 This method is an explicit time stepping method, therefore we have to fulfill the
@@ -839,7 +839,7 @@ This method is an explicit time stepping method, therefore we have to fulfill th
 \acrshort{acr:CFL} condition is stated as:
 
 \begin{equation}
-	\left| \frac{c \Delta t}{\Delta x} \right| \leq \CFL
+    \left| \frac{c \Delta t}{\Delta x} \right| \leq \CFL
 \end{equation}
 
 \noindent

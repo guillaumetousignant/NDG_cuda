@@ -20,15 +20,15 @@ void SEM::Host::Entities::Element_t::estimate_error(const std::vector<std::vecto
     // sum of error
     error_ = std::sqrt(std::pow(C, 2) * 0.5/sigma_) * std::exp(-sigma_ * (N_ + 1));
 
-    if(error_ > tolerance_min) {	// need refine
+    if(error_ > tolerance_min) {    // need refine
         refine_ = true;
         coarsen_ = false;
     }
-    else if(error_ <= tolerance_max ) {	// need coarsen
+    else if(error_ <= tolerance_max ) { // need coarsen
         refine_ = false;
         coarsen_ = true;
     }
-    else {	// if error in between then do nothing
+    else {  // if error in between then do nothing
         refine_ = false;
         coarsen_ = false;
     }

@@ -30,7 +30,7 @@ case if we can have both \acrshort{acr:CPU} and \acrshort{acr:GPU} workers. We w
 Equation~\ref{equ:ideal_workload} to separate the work between workers. It states:
 
 \begin{equation}
-	w_{ideal,p} = W \frac{c_p}{C},
+    w_{ideal,p} = W \frac{c_p}{C},
 \end{equation}
 
 \noindent
@@ -60,9 +60,9 @@ polynomial order \(N\) of four. Figure~\ref{fig:hybrid_load_balancing} shows the
 after load balancing.
 
 \begin{figure}[H]
-	\centering
-	\includegraphics[width=0.65\textwidth]{Chapter_hybrid_solver/media/cpu_gpu}
-	\caption{Load balancing with heterogenous workers: The first worker is a \acrshort{acr:GPU} and has more elements in its mesh block.}\label{fig:hybrid_load_balancing}
+    \centering
+    \includegraphics[width=0.65\textwidth]{Chapter_hybrid_solver/media/cpu_gpu}
+    \caption{Load balancing with heterogenous workers: The first worker is a \acrshort{acr:GPU} and has more elements in its mesh block.}\label{fig:hybrid_load_balancing}
 \end{figure}
 
 Figure~\ref{fig:hybrid_load_balancing} shows that the first worker, with a rank of zero, has much

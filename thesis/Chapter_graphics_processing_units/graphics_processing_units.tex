@@ -38,9 +38,9 @@ main memory, and as such stores parts of the memory that the processing hardware
 in order to speed up access.
 
 \begin{figure}[H]
-	\centering
-	\includegraphics[width=0.8\textwidth]{Chapter_graphics_processing_units/media/gpu-devotes-more-transistors-to-data-processing}
-	\caption{\Acrshort{acr:CPU} and \acrshort{acr:GPU} architecture~\cite{Nvidia2021}: \acrshortpl{acr:GPU} dedicate more space to data processing}\label{fig:cpu_gpu}
+    \centering
+    \includegraphics[width=0.8\textwidth]{Chapter_graphics_processing_units/media/gpu-devotes-more-transistors-to-data-processing}
+    \caption{\Acrshort{acr:CPU} and \acrshort{acr:GPU} architecture~\cite{Nvidia2021}: \acrshortpl{acr:GPU} dedicate more space to data processing}\label{fig:cpu_gpu}
 \end{figure}
 
 The two architectures differ in the balance between the size and capacities of these components.
@@ -104,9 +104,9 @@ generally running the displays of non-server computers, results that are only me
 be directly displayed and such transfers can be skipped. This is not the case for this work. 
 
 \begin{figure}[H]
-	\centering
-	\includegraphics[width=0.6\textwidth]{Chapter_graphics_processing_units/media/grid-of-thread-blocks}
-	\caption{\Acrshort{acr:GPU} programming model~\cite{Nvidia2021}: Execution is split into multiple parallelism levels}\label{fig:gpu_programming_model}
+    \centering
+    \includegraphics[width=0.6\textwidth]{Chapter_graphics_processing_units/media/grid-of-thread-blocks}
+    \caption{\Acrshort{acr:GPU} programming model~\cite{Nvidia2021}: Execution is split into multiple parallelism levels}\label{fig:gpu_programming_model}
 \end{figure}
 
 The programing model ties in with the hardware model from
@@ -245,13 +245,13 @@ code. The mesh is unstructured, made up of elements, faces and nodes.
 Figure~\ref{fig:mesh_structure} shows the different components of a two block mesh.
 
 \begin{figure}[H]
-	\centering
-	\subfloat[First mesh block]
-	{\includesvg[height=0.55\textwidth]{Chapter_graphics_processing_units/media/mesh_0_after0_P2_MOD}\label{fig:mesh_left}}
-	\hfill
-	\subfloat[Second mesh block]
-	{\includesvg[height=0.55\textwidth]{Chapter_graphics_processing_units/media/mesh_1_after0_P2}\label{fig:mesh_right}}
-	\caption{Data structure: A refined mesh split into two blocks (a) First block (b) Second block}\label{fig:mesh_structure}
+    \centering
+    \subfloat[First mesh block]
+    {\includesvg[height=0.55\textwidth]{Chapter_graphics_processing_units/media/mesh_0_after0_P2_MOD}\label{fig:mesh_left}}
+    \hfill
+    \subfloat[Second mesh block]
+    {\includesvg[height=0.55\textwidth]{Chapter_graphics_processing_units/media/mesh_1_after0_P2}\label{fig:mesh_right}}
+    \caption{Data structure: A refined mesh split into two blocks (a) First block (b) Second block}\label{fig:mesh_structure}
 \end{figure}
 
 \subsection{Performance}\label{subsection:graphics_processing_units:data_structure:performance}
@@ -321,13 +321,13 @@ represented than strictly regular quadrilaterals, this tradeoff is accepted, and
 case scenario for the performance of \acrshortpl{acr:GPU}.
 
 \begin{figure}[H]
-	\centering
-	\subfloat[Structured mesh]
-	{\includesvg[height=0.32\textwidth]{Chapter_graphics_processing_units/media/structured_memory}\label{fig:structured_memory}}
-	\hfill
-	\subfloat[Unstructured mesh]
-	{\includesvg[height=0.32\textwidth]{Chapter_graphics_processing_units/media/unstructured_memory}\label{fig:unstructured_memory}}
-	\caption{Memory accesses: (a) Structured (b) Unstructured}\label{fig:mesh_memory}
+    \centering
+    \subfloat[Structured mesh]
+    {\includesvg[height=0.32\textwidth]{Chapter_graphics_processing_units/media/structured_memory}\label{fig:structured_memory}}
+    \hfill
+    \subfloat[Unstructured mesh]
+    {\includesvg[height=0.32\textwidth]{Chapter_graphics_processing_units/media/unstructured_memory}\label{fig:unstructured_memory}}
+    \caption{Memory accesses: (a) Structured (b) Unstructured}\label{fig:mesh_memory}
 \end{figure}
 
 The program uses the \textit{\acrfull{acr:CGNS}} mesh format. Both the provided mesh generator and
@@ -378,9 +378,9 @@ in place in dynamic memory. The green arrow represents the element being moved, 
 represent pointers.
 
 \begin{figure}[H]
-	\centering
-	\includesvg[width=0.65\textwidth]{Chapter_graphics_processing_units/media/moving_elements}
-	\caption{Moving elements: The data stored in dynamic memory does not need to be copied}\label{fig:moving_elements}
+    \centering
+    \includesvg[width=0.65\textwidth]{Chapter_graphics_processing_units/media/moving_elements}
+    \caption{Moving elements: The data stored in dynamic memory does not need to be copied}\label{fig:moving_elements}
 \end{figure}
 
 Unlike the main arrays which are allocated from the \acrshort{acr:CPU} on the \acrshort{acr:GPU}
@@ -444,7 +444,7 @@ copying, at which point we can use the \acrshort{acr:CPU} array. To finish up, w
             const blockSize = 100;
             perform_gpu_computations<<<numBlocks, blockSize, 0, stream>>>(
             length, pressure_gpu);
-			
+
             cudaMemcpyAsync(pressure_cpu, pressure_gpu, length * sizeof(double), 
                 cudaMemcpyDeviceToHost, stream);
             cudaStreamSynchronize(stream);
@@ -465,28 +465,28 @@ Algorithm~\ref{alg:cuda_memory} using this new type.
 
 \begin{algorithm}[H]
     \begin{cuda}
-		using SEM::Device::Entities::device_vector;
+        using SEM::Device::Entities::device_vector;
 
-		auto main(int argc, char* argv[]) -> int {
-			cudaStream_t stream;
-			cudaStreamCreate(&stream); 
+        auto main(int argc, char* argv[]) -> int {
+            cudaStream_t stream;
+            cudaStreamCreate(&stream); 
 
-			std::vector<double> pressure_cpu(1000, 1.0);
-			device_vector<double> pressure_gpu(pressure_cpu, stream);
+            std::vector<double> pressure_cpu(1000, 1.0);
+            device_vector<double> pressure_gpu(pressure_cpu, stream);
 
-			const numBlocks = 10;
-			const blockSize = 100;
-			perform_gpu_computations<<<numBlocks, blockSize, 0, stream>>>(
-				pressure_gpu.size(), pressure_gpu.data());
-			
-			pressure_gpu.copy_to(pressure_cpu, stream);
-			cudaStreamSynchronize(stream);
+            const numBlocks = 10;
+            const blockSize = 100;
+            perform_gpu_computations<<<numBlocks, blockSize, 0, stream>>>(
+                pressure_gpu.size(), pressure_gpu.data());
+            
+            pressure_gpu.copy_to(pressure_cpu, stream);
+            cudaStreamSynchronize(stream);
 
-			display_cpu_results(pressure_cpu);
+            display_cpu_results(pressure_cpu);
 
-			cudaStreamDestroy(stream);
-			return 0;
-		}\end{cuda}
+            cudaStreamDestroy(stream);
+            return 0;
+        }\end{cuda}
 \caption{\textbf{device\_vector:} A pressure solution vector is allocated on the \acrshort{acr:CPU}, then transferred back and forth to the \acrshort{acr:GPU}.}\label{alg:device_vector}
 \end{algorithm}
 
@@ -530,20 +530,20 @@ function. Kernels are annotated with \textbf{\_ \_global\_ \_}, and device funct
 
 \begin{algorithm}[H]
     \begin{cuda}
-		__device__ 
-		auto get_pressure(double p, size_t i) -> double {
-			return std::pow(p, i);
-		}
+        __device__ 
+        auto get_pressure(double p, size_t i) -> double {
+            return std::pow(p, i);
+        }
 
-		__global__
-		auto perform_gpu_computations(size_t n, double* pressure) -> void {
-			const int index = blockIdx.x * blockDim.x + threadIdx.x;
-			const int stride = blockDim.x * gridDim.x;
+        __global__
+        auto perform_gpu_computations(size_t n, double* pressure) -> void {
+            const int index = blockIdx.x * blockDim.x + threadIdx.x;
+            const int stride = blockDim.x * gridDim.x;
 
-			for (size_t i = index; i < n; i += stride) {
-				pressure[i] = get_pressure(pressure[i], i);
-			}
-		}\end{cuda}
+            for (size_t i = index; i < n; i += stride) {
+                pressure[i] = get_pressure(pressure[i], i);
+            }
+        }\end{cuda}
 \caption{\textbf{perform\_gpu\_computations:} Computations are performed in parallel on the \acrshort{acr:GPU}.}\label{alg:perform_gpu_computations}
 \end{algorithm}
 
@@ -608,7 +608,7 @@ several of the optimisations from~\cite{Harris2007}.
                 if (tid < 512) { sdata[tid] = std::min(sdata[tid], sdata[tid + 512]); } 
                 __syncthreads(); 
             }
-        	if (blockSize >= 512) { 
+            if (blockSize >= 512) { 
                 if (tid < 256) { sdata[tid] = std::min(sdata[tid], sdata[tid + 256]); } 
                 __syncthreads(); 
             }
@@ -642,9 +642,9 @@ branching based on \textit{blockSize} will disappear when compiled, as the code 
 specific \textit{blockSize}.
 
 \begin{figure}[H]
-	\centering
-	\includesvg[width=0.45\textwidth]{Chapter_graphics_processing_units/media/reduction}
-	\caption{Reduction: A block of threads computes the minimum of data}\label{fig:reduction}
+    \centering
+    \includesvg[width=0.45\textwidth]{Chapter_graphics_processing_units/media/reduction}
+    \caption{Reduction: A block of threads computes the minimum of data}\label{fig:reduction}
 \end{figure}
 
 \subsection{MPI transfers}\label{subsection:graphics_processing_units:implementation:mpi_transfers}
@@ -667,60 +667,60 @@ data members of the mesh object.
 \begin{algorithm}[H]
     \begin{cuda}
         auto boundary_conditions() -> void {
-        	int global_rank;
-        	MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
-        	int global_size;
-        	MPI_Comm_size(MPI_COMM_WORLD, &global_size);
+            int global_rank;
+            MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
+            int global_size;
+            MPI_Comm_size(MPI_COMM_WORLD, &global_size);
 
-        	get_MPI_interfaces<<<mpi_outgoing_numBlocks_, mpi_blockSize_, 0, stream_>>>(
-        		mpi_origin_.size(), elements_.data(), 
-        		mpi_origin_.data(), mpi_origin_side_.data(), max_N_, 
+            get_MPI_interfaces<<<mpi_outgoing_numBlocks_, mpi_blockSize_, 0, stream_>>>(
+                mpi_origin_.size(), elements_.data(), 
+                mpi_origin_.data(), mpi_origin_side_.data(), max_N_, 
                 device_p_.data(), device_u_.data(), device_v_.data());
 
-        	device_p_.copy_to(host_p_, stream_);
-        	device_u_.copy_to(host_u_, stream_);
-        	device_v_.copy_to(host_v_, stream_);
-        	cudaStreamSynchronize(stream_);
-			
-        	for (size_t i = 0; i < mpi_process_.size(); ++i) {
-        		MPI_Isend(
+            device_p_.copy_to(host_p_, stream_);
+            device_u_.copy_to(host_u_, stream_);
+            device_v_.copy_to(host_v_, stream_);
+            cudaStreamSynchronize(stream_);
+            
+            for (size_t i = 0; i < mpi_process_.size(); ++i) {
+                MPI_Isend(
                     host_p_.data() + mpi_outgoing_offset_[i] * (max_N_ + 1), 
                     mpi_outgoing_size_[i] * (max_N_ + 1), 
                     MPI_DOUBLE, mpi_process_[i], /*[...]*/);
-        		MPI_Irecv(
+                MPI_Irecv(
                     host_receiving_p_.data() + mpi_incoming_offset_[i] * (max_N_ + 1), 
                     mpi_incoming_size_[i] * (max_N_ + 1), 
                     MPI_DOUBLE, mpi_process_[i], /*[...]*/);
 
-        		MPI_Isend(
+                MPI_Isend(
                     host_u_.data() + mpi_outgoing_offset_[i] * (max_N_ + 1), 
                     mpi_outgoing_size_[i] * (max_N_ + 1), 
                     MPI_DOUBLE, mpi_process_[i], /*[...]*/);
-        		MPI_Irecv(
+                MPI_Irecv(
                     host_receiving_u_.data() + mpi_incoming_offset_[i] * (max_N_ + 1), 
                     mpi_incoming_size_[i] * (max_N_ + 1), 
                     MPI_DOUBLE, mpi_process_[i], /*[...]*/);
 
-        		MPI_Isend(
+                MPI_Isend(
                     host_v_.data() + mpi_outgoing_offset_[i] * (max_N_ + 1), 
                     mpi_outgoing_size_[i] * (max_N_ + 1), 
                     MPI_DOUBLE, mpi_process_[i], /*[...]*/);
-        		MPI_Irecv(
+                MPI_Irecv(
                     host_receiving_v_.data() + mpi_incoming_offset_[i] * (max_N_ + 1), 
                     mpi_incoming_size_[i] * (max_N_ + 1), 
                     MPI_DOUBLE, mpi_process_[i], /*[...]*/);
-        	}
+            }
 
-        	MPI_Waitall(6 * mpi_process_.size(), requests_.data(), statuses_.data());
+            MPI_Waitall(6 * mpi_process_.size(), requests_.data(), statuses_.data());
 
-        	device_receiving_p_.copy_from(host_receiving_p_, stream_);
-        	device_receiving_u_.copy_from(host_receiving_u_, stream_);
-        	device_receiving_v_.copy_from(host_receiving_v_, stream_);
+            device_receiving_p_.copy_from(host_receiving_p_, stream_);
+            device_receiving_u_.copy_from(host_receiving_u_, stream_);
+            device_receiving_v_.copy_from(host_receiving_v_, stream_);
 
-        	put_MPI_interfaces<<<mpi_incoming_numBlocks_, mpi_blockSize_, 0, stream_>>>(
-        		mpi_destination_.size(), elements_.data(), 
-        		mpi_destination_.data(), max_N_, 
-        		device_receiving_p_.data(), device_receiving_u_.data(), device_receiving_v_.data());
+            put_MPI_interfaces<<<mpi_incoming_numBlocks_, mpi_blockSize_, 0, stream_>>>(
+                mpi_destination_.size(), elements_.data(), 
+                mpi_destination_.data(), max_N_, 
+                device_receiving_p_.data(), device_receiving_u_.data(), device_receiving_v_.data());
         }\end{cuda}
 \caption{\textbf{boundary\_conditions:} The solution of elements on either side of the interface between \acrshortpl{acr:GPU} is transferred.}\label{alg:boundary_conditions}
 \end{algorithm}
