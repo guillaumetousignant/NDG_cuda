@@ -16,7 +16,9 @@ or higher-order elements, within their domain as illustrated in Figure~\ref{fig:
     \hfill
     \subfloat[Mesh after refining]
     {\includegraphics[width=0.45\textwidth]{Chapter_load_balancing/media/load_imbalance}\label{fig:mesh_imbalance_after_refinement_lb}}
-    \caption{Load imbalance: The elements have split unequally in the two worker \acrshortpl{acr:GPU}, one having a higher computational load. (a) Before refining (b) After refining}\label{fig:load_imbalance_lb}
+    \caption{Load imbalance: The elements have split unequally in the two worker
+        \acrshortpl{acr:GPU},  purple and blue, one having a higher computational load. (a) Before
+        refining (b) After refining}\label{fig:load_imbalance_lb}
 \end{figure}
 
 The wall clock time of the simulation will be driven by the most heavily loaded process, as the
@@ -78,15 +80,20 @@ close together. This is the first desirable property of the curve for this progr
 reduce the contact area between the mesh blocks dispatched to each \acrshort{acr:GPU}. The iterative
 nature of those curves is also apparent when put side by side. Each increasing level of the curve
 follows the general path of the previous curve. Iteration is one of the possible ways to generate
-this curve. It will be used to generate the initial meshes used by the program, as well as to
-re-number elements when the mesh refines.
+this curve. The Hilbert curve is used to generate the initial meshes used by the program, as well as
+to re-number elements when the mesh refines.
 
 \subsection{Generation}\label{subsection:load_balancing:hilbert_curve:generation}
 
-We choose a table-driven algorithm to generate meshes. Each element has one of four possible states
-\(s\): \(s \in \left \{H, A, R, B \right \} \). This state determines the state and ordering of the
-four children elements obtained when increasing the level of the curve. The four states and their
-resulting children are shown in Figure~\ref{fig:hilbert_splits}.
+I think we need a sentence distinguishing H A R B or saying at least that the state identifies the 
+type of a cell within the topology of the Hilbert curve or something like that
+
+
+We choose a table-driven algorithm to generate meshes. Each element has one of four possible
+\textit{states} \(s\): \(s \in \left \{H, A, R, B \right \} \). The state of an element represents
+the local pattern of the curve inside the element. This state determines the state and ordering of
+the four children elements obtained when increasing the level of the curve. The four states and
+their resulting children are shown in Figure~\ref{fig:hilbert_splits}.
 
 \begin{figure}[H]
     \centering
@@ -129,15 +136,15 @@ element, in counter-clockwise order as shown in Figure~\ref{fig:child_order}.
 \begin{figure}[H]
     \centering
     \includesvg[width=0.3\textwidth]{Chapter_load_balancing/media/child_order}
-    \caption{Children numbering: The \(j = 0, 1, 2, 3\) children of an element, used to assign states and ordering.}\label{fig:child_order}
+    \caption{Child numbering: The \(j = 0, 1, 2, 3\) children of an element, used to assign states and ordering.}\label{fig:child_order}
 \end{figure}
 
 \noindent
 These tables are implemented directly in the code, with the state defined as an enumeration from 0
-to 3 and the tables as arrays. The state indexes into the array to get the resulting ordering and
-states. This gives the state \(S(s, j)\) of the j\textsuperscript{th} child element of a parent
-element as a function of the state \(s\) of the parent element. The same goes for the ordering \(p\)
-of the children, \(P(s, j)\).
+to 3 and the tables as arrays. The state is used as an index for the arrays to get the resulting
+ordering and states. This gives the state \(S(s, j)\) of the j\textsuperscript{th} child element of
+a parent element as a function of the state \(s\) of the parent element. The same goes for the
+ordering \(p\) of the children, \(P(s, j)\).
 
 \begin{table}[H]
     \begin{center}
@@ -150,7 +157,7 @@ of the children, \(P(s, j)\).
             \(s = B\) & \textcolor{vs_plum}{\(B\)} & \textcolor{vs_plum}{\(H\)} & \textcolor{vs_plum}{\(R\)} & \textcolor{vs_plum}{\(B\)} \\
         \end{tabular}
     
-        \caption{Children element state table: children state \(S\), with \(s\) being the state of the parent element and \(j\) being the j\textsuperscript{th} child.}\label{table:children_state}
+        \caption{Children element state table: child state \(S\), with \(s\) being the state of the parent element and \(j\) being the j\textsuperscript{th} child.}\label{table:children_state}
     \end{center}
 \end{table}
 
@@ -165,7 +172,7 @@ of the children, \(P(s, j)\).
             \(s = B\) & \textcolor{vs_plum}{\(2\)} & \textcolor{vs_plum}{\(3\)} & \textcolor{vs_plum}{\(0\)} & \textcolor{vs_plum}{\(1\)} \\
         \end{tabular}
         
-        \caption{Children element order table: children order \(P\), with \(s\) being the state of the parent element and \(j\) being the j\textsuperscript{th} child.}\label{table:children_ordering}
+        \caption{Children element order table: child order \(P\), with \(s\) being the state of the parent element and \(j\) being the j\textsuperscript{th} child.}\label{table:children_ordering}
     \end{center}
 \end{table}
 
@@ -186,7 +193,7 @@ then be used by the main program running on multiple \acrshortpl{acr:GPU}.
 The same iterative process is used to refine elements. The parent state dictates the state and
 ordering of its children. Correct ordering is critical to maintaining good locality between elements
 as the mesh refines and non-conforming interfaces are created. Figure~\ref{fig:hilbert_refining}
-shows a mesh block refining, where the sixth element splits into four smaller elements. The ordering
+shows a mesh block refining, where the element \(6\) splits into four smaller elements. The ordering
 of the children elements must follow the Hilbert curve to maintain the locality of the mesh.
 
 \begin{figure}[H]
@@ -214,7 +221,8 @@ For example, the curve entering from the left side of the element and exiting th
 always has the state \(A\). This is confirmed by examining other levels of the Hilbert curve. The
 same can be deduced for the first and last elements, using only the exiting and entering side,
 respectively. Using this information, we can create a 2D matrix of state as a function of entering
-and exiting side for elements, and 1D matrices for the first and last elements.
+and exiting side for elements (Table~\ref{table:guess_table_incomplete}), and 1D matrices for the
+first and last elements (Table~\ref{table:guess_table_first}).
 
 \begin{table}[H]
     \begin{center}
@@ -227,7 +235,8 @@ and exiting side for elements, and 1D matrices for the first and last elements.
             \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_3} \end{tabular} & \begin{tabular}{c} \(H\) \end{tabular} & \begin{tabular}{c} \(H\) \end{tabular} & \begin{tabular}{c} \(A\) \end{tabular} & \begin{tabular}{c}       \end{tabular} \\
         \end{tabular}
     
-        \caption{Element state deduction table: Element state as a function of curve entrance and exit side.}\label{table:guess_table_incomplete}
+        \caption{Element state deduction table: Element state as a function of curve entrance and
+            exit side.}\label{table:guess_table_incomplete}
     \end{center}
 \end{table}
 
@@ -239,7 +248,8 @@ and exiting side for elements, and 1D matrices for the first and last elements.
             \begin{tabular}{c} \(B\) \end{tabular} & \begin{tabular}{c} \(H\) \end{tabular} & \begin{tabular}{c} \(A\) \end{tabular} & \begin{tabular}{c} \(R\) \end{tabular} \\ 
         \end{tabular}
     
-        \caption{First element state deduction table: Element state as a function of curve exit side.}\label{table:guess_table_first}
+        \caption{First element state deduction table: Element state as a function of curve exit
+            side.}\label{table:guess_table_first}
     \end{center}
 \end{table}
 
@@ -280,11 +290,11 @@ cases.
     \caption{The four missing combinations: Each corresponds to a single state.}\label{fig:hilbert_missing_splits}
 \end{figure}
 
-We can then obtain the full matrix.
+We can then obtain the full matrix, given in Table~\ref{table:guess_table}.
 
-% This is madness. The easiest to vertically and horizontally center that doesn't use many packages
-% or paragraphs of syntax is to enclose each cell in a tabular block. Then people wonder why I don't
-% like Latex.
+% This is madness. The easiest way to vertically and horizontally center that doesn't use many
+% packages or paragraphs of syntax is to enclose each cell in a tabular block. Then people wonder
+% why I don't like Latex.
 \begin{table}[H]
     \begin{center}
         \begin{tabular}{ c | c c c c} 
@@ -296,18 +306,20 @@ We can then obtain the full matrix.
             \begin{tabular}{c} \includesvg[width=0.1\textwidth]{Chapter_load_balancing/media/in_3} \end{tabular} & \begin{tabular}{c} \(H\) \end{tabular} & \begin{tabular}{c} \(H\) \end{tabular} & \begin{tabular}{c} \(A\) \end{tabular} & \begin{tabular}{c} \(A\) \end{tabular} \\
         \end{tabular}
     
-        \caption{Element state deduction table: Element state as a function of curve entrance and exit sides.}\label{table:guess_table}
+        \caption{Element state deduction table: Element state as a function of curve entrance and
+            exit sides.}\label{table:guess_table}
     \end{center}
 \end{table}
 
 Until now, we assumed the elements were axis-aligned, and numbered such that their first edge is at
 the bottom. This is important, as the elements number their children from their bottom left, in a
-counter-clockwise order. If an element's first edge is not at the bottom, the wrong numbering will
-be given to refining elements, as in Figure~\ref{fig:hilbert_rotated}.
-Figure~\ref{fig:node_order_rotated} does not match the correct Hilbert curve in
-Figure~\ref{fig:hilbert_l2}. Since elements can be oriented in any direction in meshes, this
-situation is expected to happen. The following examples use elements numbered such that their first
-side is not at the bottom, but at the right, as shown in Figure~\ref{fig:node_order}.
+counter-clockwise order, shown in Figure~\ref{fig:node_order_normal}. If an element's first edge is
+not at the bottom as in Figure~\ref{fig:node_order_rotated}, the wrong ordering will be given to
+refining elements, as in Figure~\ref{fig:hilbert_l2_r}. Figure~\ref{ffig:hilbert_l2_r} does not
+match the correct Hilbert curve in Figure~\ref{fig:hilbert_l2}. Since elements can be oriented in
+any direction in meshes, this situation is expected to happen. The following examples use elements
+numbered such that their first side is not at the bottom, but at the right, as shown in
+Figure~\ref{fig:node_order_rotated}.
 
 \begin{figure}[H]
     \centering
@@ -332,7 +344,7 @@ side is not at the bottom, but at the right, as shown in Figure~\ref{fig:node_or
 One might be tempted to deduce the element status in the local element referential instead.
 Figure~\ref{fig:referentials} shows the same rotated element in the global referential and in its
 local referential. Note that the entering and exiting sides of the Hilbert curve are not the same,
-which will change the deduced state. Figure~\ref{fig:hilbert_local} shows the result of one step of
+which will change the deduced state. Figure~\ref{fig:hilbert_l2_l} shows the result of one step of
 refinement using the local referential instead of the global referential.
 Figure~\ref{fig:local_referential} shows that even though there are no jumps, the correct Hilbert
 curve shown in Figure~\ref{fig:hilbert_l2} is not attained.
@@ -521,14 +533,14 @@ Such a system would necessitate the use of different capacities, since these nod
 Secondly, each element will be given equal weight. This greatly simplifies the computing of total
 weight within a \acrshort{acr:GPU}, since it becomes  directly related to the number of elements. It
 also simplifies transfers between processes, as now only the number of elements in each process is
-needed to compute which elements need to sent or received. This assumes that each element has the
+needed to compute which elements need to be sent or received. This assumes that each element has the
 same computational complexity regardless of any factor, like its polynomial order. Of course, this
-is not true. It has been observed that in this program, with relatively low polynomial orders, the
-computational cost of elements is not significantly different. When the polynomial order is very
-different between elements, the increased number of collocation points to compute and the increased
-memory needed to store the solution start increasing the computation time for those elements. If
-this proves to be a significant problem, Section~\ref{section:conclusion:future_work} discusses
-using weights for elements, and a way to relate polynomial order to the weight. 
+is not true. However, the computational cost of elements was not observed to vary significantly for
+relatively low order polynomials. When the polynomial order is very different between elements, the
+increased number of collocation points to compute and the increased memory needed to store the
+solution start increasing the computation time for those elements. If this proves to be a
+significant problem, Section~\ref{section:conclusion:future_work} discusses using weights for
+elements, and a way to relate polynomial order to the weight. 
 
 \section{Reconstruction}\label{section:load_balancing:reconstruction}
 
@@ -560,7 +572,7 @@ arrays. Subsection~\ref{subsection:load_balancing:implementation:element_exchang
 process.
 
 The solution data of an element is not so easy to transfer between processes. The solution arrays
-are stored in \acrshort{acr:GPU} dynamic memory and the elements only hold a pointer to it. Being
+are stored in \acrshort{acr:GPU} dynamic memory and the elements only hold a pointer to them. Being
 allocated from the \acrshort{acr:GPU}, these arrays cannot be transferred to the \acrshort{acr:CPU}
 directly. They also have a different size depending on the element's polynomial order. To solve
 this, a buffer is allocated from the \acrshort{acr:CPU} on the \acrshort{acr:GPU}, and a kernel is
@@ -605,10 +617,11 @@ elements will have neighbours in another process whose local indices need to be 
 Once all the data has been received, the mesh needs to be reassembled. Faces and boundary elements
 that link to elements that have been sent are removed. Faces around received elements are created,
 or reused if the element happens to have been the destination of an \acrshort{acr:MPI} interface.
-New boundary elements are created around received elements, and as a replacement for sent elements.
-Elements and faces that are kept are moved to new indices, using a similar prefix sum to the one
-used in Subsection~\ref{subsection:adaptive_mesh_refinement:implementation:moving_elements}. All
-references to these faces and elements are updated.
+New boundary elements, also called ghost elements because they are not part of the domain, are
+created around received elements, and as a replacement for sent elements. Elements and faces that
+are kept are moved to new indices, using a similar prefix sum to the one used in
+Subsection~\ref{subsection:adaptive_mesh_refinement:implementation:moving_elements}. All references
+to these faces and elements are updated.
 
 Figures~\ref{fig:lb_before} and~\ref{fig:lb_after} illustrate an example of the whole load balancing
 process, where two processes initially have an unbalanced number of elements because of a prior
@@ -632,7 +645,7 @@ between two \acrshortpl{acr:GPU}.
     \qquad
     \subfloat[Process 1]
     {\includesvg[width=0.6\textwidth]{Chapter_load_balancing/media/mesh_1_after0_lb_legend}\label{fig:lb_after_1}}
-    \caption{Mesh after load balancing: The two blocks have an equal numbers of elements.}\label{fig:lb_after}
+    \caption{Mesh after load balancing: The two blocks have equal numbers of elements.}\label{fig:lb_after}
 \end{figure}
 
 \section{Load Balancing Criteria}\label{section:load_balancing:criteria}
@@ -673,14 +686,14 @@ straightforward. The workload levelling from Section~\ref{section:load_balancing
 informs each worker of which elements it should send to which other worker, and which elements it
 should receive from which other worker. 
 
-As mentioned previously, element solution is stored in dynamic \acrshort{acr:GPU} memory, and cannot
-be copied directly to the \acrshort{acr:CPU}. A kernel is launched to copy that data to an array
-which can then be copied to the \acrshort{acr:CPU}. Algorithm~\ref{alg:get_transfer_solution} shows
-how that data is packed in the solution array to be sent between workers. The values of the four
-nodes of each element are also stored, as well as the number of neighbours on each side. The data is
-aligned to the maximum polynomial order used by the program, so that elements can store their
-solution in parallel without knowledge of other elements' polynomial order. This wastes space as
-most elements do not use the entire space they are assigned to in the transfer arrays. Since this
+As mentioned previously, the element solution is stored in dynamic \acrshort{acr:GPU} memory, and
+cannot be copied directly to the \acrshort{acr:CPU}. A kernel is launched to copy that data to an
+array which can then be copied to the \acrshort{acr:CPU}. Algorithm~\ref{alg:get_transfer_solution}
+shows how that data is packed in the solution array to be sent between workers. The values of the
+four nodes of each element are also stored, as well as the number of neighbours on each side. The
+data is aligned to the maximum polynomial order used by the program, so that elements can store
+their solution in parallel without knowledge of other elements' polynomial order. This wastes space
+as most elements do not use the entire space they are assigned to in the transfer arrays. Since this
 avoids computing an offset array to indicate where each element's solution should be placed if the
 data was packed, this tradeoff is accepted.
 
@@ -731,10 +744,10 @@ the same way as solution data. This is why we need to transfer the number of nei
 of elements, so as to generate the neighbour information arrays with the correct size, and to
 generate offset arrays so each element stores its neighbour data in the correct memory location. The
 neighbour data fetch kernel is much more complicated than Algorithm~\ref{alg:get_transfer_solution},
-but operates similarly. The main difference is that neighbour data is not readily available if a
-neighbour is a boundary element. In that case the different boundary condition and
+but operates in a similar manner. The main difference is that neighbour data is not readily
+available if a neighbour is a boundary element. In that case the different boundary condition and
 \acrshort{acr:MPI} interface arrays are searched to find which one the boundary element belongs to,
-and find the required information that way. This is because boundary elements that are part of an
+and to find the required information that way. This is because boundary elements that are part of an
 \acrshort{acr:MPI} interface must present the local index and process of the element on the other
 side of the interface, and boundary condition boundary elements must encode which kind of boundary
 condition they are.
@@ -781,8 +794,8 @@ data members from the element object are sent.
 \subsection{Mesh reconstruction}\label{subsection:load_balancing:implementation:reconstruction}
 
 Once all elements to be transferred and their neighbour information have been sent and received, the
-mesh must be reconstructed. This is the more difficult par of the process, as many edge cases exist.
-An example operation is the \textbf{find\_faces\_to\_delete} kernel, showcased in
+mesh must be reconstructed. This is the more difficult part of the process, as many edge cases
+exist. An example operation is the \textbf{find\_faces\_to\_delete} kernel, showcased in
 Algorithm~\ref{alg:find_faces_to_delete}, which marks faces without any remaining domain elements as
 neighbours for deletion.
 
@@ -819,7 +832,7 @@ neighbours for deletion.
 \caption{\textbf{find\_faces\_to\_delete:} Faces with no remaining domain neighbour elements are marked for deletion.}\label{alg:find_faces_to_delete}
 \end{algorithm}
 
-This algorithm provides part for the foundation of the part of load balancing concerning faces, but
+This algorithm provides part of the foundation of the part of load balancing concerning faces, but
 is only the start. Faces need to be moved to a new index to remove the gaps from deleted faces. We
 then need to update the face indices in all elements, and resize the elements' neighbour faces
 arrays if some of the faces have been deleted. New faces have to be added to the face array to
@@ -910,5 +923,5 @@ would heavily bottleneck the process if it was used for all calculations.
 Many more operations remain, such as moving elements that are not deleted to their new position in
 the array, adding received elements, adding boundary elements around received elements, and updating
 the element indices in all faces. The \acrshort{acr:MPI} interfaces must also be rebuilt and ordered
-since elements may have moved from one process to another. The methods used are similar to that used
-for faces, and those seen in Section~\ref{section:adaptive_mesh_refinement:implementation}. 
+since elements may have moved from one process to another. The methods used are similar to those
+used for faces, and those seen in Section~\ref{section:adaptive_mesh_refinement:implementation}. 
