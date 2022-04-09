@@ -73,7 +73,7 @@
 \DeclareFieldFormat[article]{pages}{#1}
 \DeclareFieldFormat[book,inproceedings,proceedings]{series}{\mkbibemph{#1}}
 \DeclareFieldFormat{journaltitle}{\mkbibemph{#1}\isdot}
-\DeclareFieldFormat{titlecase}{\MakeTitleCase{#1}}
+\DeclareFieldFormat{titlecase}{#1}
 
 \newrobustcmd{\MakeTitleCase}[1]{%
   \ifthenelse{\ifcurrentfield{booktitle}\OR\ifcurrentfield{booksubtitle}%
