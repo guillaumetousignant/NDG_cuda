@@ -788,7 +788,9 @@ data members from the element object are sent.
             MPI_Type_create_resized(tmp_type, 0, sizeof(Element2D_t), &datatype_);
             MPI_Type_commit(&datatype_);
         }\end{cuda}
-\caption{\textbf{MPI\_datatype:} The solution data of elements is stored in parallel in an array.}\label{alg:mpi_datatype}
+            \caption{\textbf{MPI\_datatype:} A \acrshort{acr:MPI} datatype is created to send and
+                receive arrays of elements. Only some data members are 
+                sent.}\label{alg:mpi_datatype}
 \end{algorithm}
 
 \subsection{Mesh reconstruction}\label{subsection:load_balancing:implementation:reconstruction}

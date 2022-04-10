@@ -624,7 +624,7 @@ several of the optimisations from~\cite{Harris2007}.
             if (tid < 32) warp_reduce_delta_t_2D<blockSize>(sdata, tid);
             if (tid == 0) g_odata[blockIdx.x] = sdata[0];
         }\end{cuda}
-\caption{\textbf{reduce\_wave\_delta\_t:} The minimum \(\Delta t\) of the mesh is reduces in parallel.}\label{alg:reduce_wave_delta_t}
+\caption{\textbf{reduce\_wave\_delta\_t:} The minimum \(\Delta t\) of the mesh is reduced in parallel.}\label{alg:reduce_wave_delta_t}
 \end{algorithm}
 
 Algorithm~\ref{alg:reduce_wave_delta_t} implements several advanced \acrshort{acr:CUDA} features not
