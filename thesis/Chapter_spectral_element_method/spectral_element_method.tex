@@ -850,11 +850,11 @@ To account for the uneven spacing between the collocation points inside an eleme
 the smallest spacing in an element as: 
 
 \begin{equation}
-    \Delta x = \frac{\Delta x_k}{N^2}
+    \Delta x = \frac{\Delta x_l}{N^2}
 \end{equation}
 
 \noindent
-where \(\Delta x_k\) is the minimum length of element \(k\), and \(N\) is the polynomial
+where \(\Delta x_l\) is the minimum length of element \(k\), and \(N\) is the polynomial
 order of that element. The global timestep will be chosen as the minimum timestep of all elemental
 timesteps. 
 
@@ -863,7 +863,7 @@ timesteps.
 \end{equation}
 
 \begin{equation}
-    \Delta t_k \leq \CFL \frac{\Delta x_k}{cN^2}
+    \Delta t_k \leq \CFL \frac{\Delta x_l}{cN^2}
 \end{equation}
 
 \section{Implementation}\label{section:spectral_element_method:implementation}
