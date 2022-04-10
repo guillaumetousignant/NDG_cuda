@@ -654,10 +654,10 @@
     {\newunit
      \printfield{series}%
      \setunit{\addcomma\space}}%
-  \usebibmacro{volume+number+pages+eid}%
+  \usebibmacro{volume+issue+number+pages+eid}%
   \newcommaunit
 %  \setunit{\addspace}%
-  \usebibmacro{issue+date-parens}%
+  \usebibmacro{date-parens}%
   \setunit*{\addcolon\space}%
   \usebibmacro{issue}%
   \newunit}
@@ -666,6 +666,16 @@
   \printfield{volume}%
   \setunit*{\volumenumberdelim}%
   \printfield{number}%
+  \setunit{\addcolon}
+  \printfield{pages}%
+  \newcommaunit
+  \printfield{eid}}
+
+\newbibmacro*{volume+issue+number+pages+eid}{%
+  \printfield{volume}%
+  \setunit*{\volumenumberdelim}%
+  \printfield{number}%
+  \mkbibparens{\printfield{issue}}%
   \setunit{\addcolon}
   \printfield{pages}%
   \newcommaunit
@@ -774,6 +784,10 @@
 \newbibmacro*{issue+date-parens}{%
   \printfield{issue}%
   \newcommaunit*%
+  \usebibmacro{date}%
+  \newunit}
+
+\newbibmacro*{date-parens}{%
   \usebibmacro{date}%
   \newunit}
 
