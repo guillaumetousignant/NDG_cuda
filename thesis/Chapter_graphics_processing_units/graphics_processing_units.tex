@@ -85,8 +85,8 @@ warps.
 
 This work uses the \acrshort{acr:CUDA} programming model. It is a programming language, framework
 and runtime \acrfull{acr:API} developed to enable programming on \acrshortpl{acr:GPU} with an
-extension of the C++ language. Programs using the language execute on the \acrshort{acr:CPU} like a
-normal program, but can schedule parts of the program, called kernels, to be executed on the
+extension of the C++ language. Programs using the language execute on the \acrshort{acr:CPU} like
+normal programs, but can schedule parts of the program, called kernels, to be executed on the
 \acrshort{acr:GPU}. Kernels are run in parallel on the \acrshort{acr:GPU}, asynchronously from the
 \acrshort{acr:CPU}. The \acrshort{acr:CPU} is therefore free to do computations of its own while the
 \acrshort{acr:GPU} is executing, including adding more kernels or transfers to the
@@ -96,12 +96,12 @@ concurrently, and maximise \acrshort{acr:GPU} usage in case a stream is waiting.
 \Acrshortpl{acr:GPU} can concurrently execute kernels, transfer data from the \acrshort{acr:CPU} to
 the \acrshort{acr:GPU}, and transfer data from the \acrshort{acr:GPU} to the \acrshort{acr:CPU}.
 These transfers are necessary because \acrshort{acr:CPU} and \acrshort{acr:GPU} main
-\acrlong{acr:RAM} are separate. This means that data needed for computations on the
-\acrshort{acr:GPU} that cannot be generated on it must be explicitly transferred from the
-\acrshort{acr:CPU}, and results living on the \acrshort{acr:GPU} must be transferred back to the
-\acrshort{acr:CPU} in order to be displayed or written to disk. As \acrshortpl{acr:GPU} are also
-generally running the displays of non-server computers, results that are only meant to be viewed can
-be directly displayed and such transfers can be skipped. This is not the case for this work. 
+\acrlong{acr:RAM} are separate. Data needed for computations on the \acrshort{acr:GPU} that cannot
+be generated on it must be explicitly transferred from the \acrshort{acr:CPU}, and results living on
+the \acrshort{acr:GPU} must be transferred back to the \acrshort{acr:CPU} in order to be displayed
+or written to disk. As \acrshortpl{acr:GPU} are also generally running the displays of non-server
+computers, results that are only meant to be viewed can be directly displayed and such transfers can
+be skipped. This is not the case for this work. 
 
 \begin{figure}[H]
     \centering
@@ -499,7 +499,7 @@ Algorithm~\ref{alg:device_vector}.
 Memory from \acrshort{acr:GPU} heap cannot be transferred directly to the \acrshort{acr:CPU} using
 \acrshort{acr:CUDA} functions like \textit{cudaMemcpyAsync}, as heap memory is not mapped to the
 \acrshort{acr:CUDA} runtime. To transfer data from that kind of memory, we must copy it to a
-\acrshort{acr:CUDA} runtime allocated array on \acrshort{acr:GPU} the using a kernel.
+\acrshort{acr:CUDA} runtime allocated array on the \acrshort{acr:GPU} using a kernel.
 
 We use heap memory for dynamic data structures living on the \acrshort{acr:GPU} that the
 \acrshort{acr:CPU} does not need to use, like the variably-sized solution arrays of individual

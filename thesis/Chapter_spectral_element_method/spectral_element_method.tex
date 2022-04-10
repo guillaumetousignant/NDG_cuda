@@ -422,7 +422,7 @@ The boundary conditions are weakly enforced using numerically computed boundary 
 
 We then need to evaluate the integrals. A distinction is made between the interior terms that are
 evaluated using the collocation points within an element shown in lilac in
-Figure~\ref{fig:domain_nodes}, and the boundary term calculated collocation points on the element
+Figure~\ref{fig:domain_nodes}, and the boundary term calculated at collocation points on the element
 boundaries, shown in blue.
 
 \begin{figure}[H]
@@ -569,9 +569,9 @@ interface between two elements, the left and right elements in that coordinate s
 the interface is the left state if the wave goes from left to right, or the right state if the wave
 goes from right to left. This is the upwind state of the elemental boundary.
 
-Since it is not evident what the upwind state of the system in Equation~\ref{equ:physical_fluxes},
-we will decouple the wave components. We decompose \(A\) into a diagonal matrix \(\Lambda \), its
-right eigenvectors \(S\), and their inverse \(S^{-1}\).
+Since it is not evident what the upwind state of the system is in
+Equation~\ref{equ:physical_fluxes}, we will decouple the wave components. We decompose \(A\) into a
+diagonal matrix \(\Lambda \), its right eigenvectors \(S\), and their inverse \(S^{-1}\).
 
 \begin{equation}
     \Lambda = 
