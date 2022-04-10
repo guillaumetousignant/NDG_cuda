@@ -208,8 +208,8 @@ Figure~\ref{fig:strong_scaling_N6_W32} shows that the increased polynomial order
 the performance of the \acrshort{acr:GPU} implementation compared to the \acrshort{acr:CPU}
 implementation, rather shifting to the right the crossover point where the \acrshort{acr:GPU}
 implementation is faster. It is possible that the reduced relative performance is linked to the
-increased memory used by the solution, as the needed storage scales with \({2 N + 1}^2\), where
-\(N\) is the polynomial order of elements.
+increased memory used by the solution, as the needed storage scales with \({\left( 2 N + 1
+\right)}^2\), where \(N\) is the polynomial order of elements.
 
 Next, this last case is computed again with increased block size \(B\), first 64 on
 Figure~\ref{fig:strong_scaling_N6_W64}, then 128 on Figure~\ref{fig:strong_scaling_N6_W128}. The
@@ -272,10 +272,10 @@ about \(0.4\) with respect to the number of \acrshort{acr:CPU} cores.
 
 This section establishes the performance of the \acrlong{acr:AMR}. The problem from
 Section~\ref{section:results:test_case} is used, initially split into four elements in each of the
-\(x\) and \(y\) directions, fora total of \(K = 16\) elements. The initial polynomial order is \(N =
-4\). The system is allowed to refine up to a split level \(S = 5\), meaning a cell can split five
+\(x\) and \(y\) directions, for a total of \(K = 16\) elements. The initial polynomial order is \(N
+= 4\). The system is allowed to refine up to a split level \(S = 5\), meaning a cell can split five
 times and become \(\frac{1}{32}\) of the size of the original cell, and up to a polynomial order \(N
-= 16\). The target error estimate is set to \num{1e-6}, meaning it will refine elements whose
+= 16\). The target error threshold is set to \num{1e-6}, meaning it will refine elements whose
 estimated error is greater than that number.
 
 \Acrlong{acr:AMR} is a costly process, as the \acrshort{acr:CPU} must reallocate arrays on the
@@ -352,8 +352,8 @@ An important part of the error comes from the initial conditions being applied o
 Even if the mesh is refined, this error propagates through the domain. Mesh pre-condition, as
 described in Section~\ref{section:adaptive_mesh_refinement:pre_conditioning}, aims to alleviate this
 problem. Indeed, with enough pre-condition steps all cases converge to an acceptable error. Adding
-more pre-condition steps does not improve the results, as the target error estimate of \num{1e-6} is
-likely reached.
+more pre-condition steps does not improve the results, as the target error threshold of \num{1e-6}
+is likely reached.
 
 The fully refined non-adaptive case, shown in dashed lines on
 Figures~\ref{fig:adaptivity_efficiency_A5},~\ref{fig:adaptivity_efficiency_A20},~\ref{fig:adaptivity_efficiency_A100}
@@ -369,7 +369,7 @@ As for the similar maximum error non-adaptive case, shown with dotted lines, the
 The case with a refinement interval of 20 on Figure~\ref{fig:adaptivity_efficiency_A20} was used to
 set the target error for that non-adaptive case. The adaptive case starting from a coarse mesh is
 able to reach a similar maximum error and similar computation time when compared to the non-adaptive
-case. The other cases also attain the target error estimate of \num{1e-6} while being faster.
+case. The other cases also attain the target error threshold of \num{1e-6} while being faster.
 
 The non-adaptive cases are closer to being ideal for the \acrshort{acr:GPU} architecture. The
 non-adaptive cases have less thread divergence than the adaptive case. There is a lot more branching
@@ -386,8 +386,8 @@ some improvements to make the program even better suited for the \acrshort{acr:G
 
 The best number of pre-condition steps seems to be four for this case, as the target error is
 reached with all refinement intervals. After this number of steps the solution does not change much
-as the target error estimate target is likely reached. We use that number of steps to compare the
-effects of different refinement intervals in Figure~\ref{fig:adaptivity_efficiency_C4}.
+as the target error threshold is likely reached. We use that number of steps to compare the effects
+of different refinement intervals in Figure~\ref{fig:adaptivity_efficiency_C4}.
 
 \begin{figure}[H]
     \centering
@@ -400,7 +400,7 @@ effects of different refinement intervals in Figure~\ref{fig:adaptivity_efficien
 \end{figure}
 
 Figure~\ref{fig:adaptivity_efficiency_C4} gives a good overview of the \acrshort{acr:AMR}
-performance. All refinement intervals attain the target error estimate of \num{1e-6}, and obtain a
+performance. All refinement intervals attain the target error threshold of \num{1e-6}, and obtain a
 real maximum error under \num{1e-6} when compared to the analytical solution. 
 
 It is always faster to use \acrshort{acr:AMR} than to start with a uniform fully refined mesh, and
@@ -413,7 +413,7 @@ There is a balance to be made between refining often and spending more time in t
 Section~\ref{section:conclusion:future_work} discusses ideas for alternative approaches to choose
 when to refine. In this case it seems that performing \acrshort{acr:AMR} every \(20\) time steps
 yields the lowest error, while waiting \(100\) timesteps between refinements yields a faster runtime
-at the price of a worse error that still stays below the target error estimate we set.
+at the price of a worse error that still stays below the target error threshold we set.
 
 \section{Dynamic Load Balancing Performance}\label{section:results:load_balancing_performance}
 
@@ -900,4 +900,4 @@ refining the mesh. The high time spent in the \acrshort{acr:AMR} routine could b
 refining the mesh less often, at the price of using a worse mesh for longer periods.
 Section~\ref{section:conclusion:future_work} discusses a different approach to choose when to refine
 the mesh which could improve these situations by only refining the mesh when a global target error
-estimate is met.
+threshold is met.

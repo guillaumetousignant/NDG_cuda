@@ -1,7 +1,7 @@
 \chapter{Mesh Renumbering}\label{chapter:renumbering}
 
-The \acrshort{acr:DG-SEM} solver described in this work is able to process unstructured meshes, to
-be more general and perform computations on pre-constructed meshes. The program utilises the Hilbert
+The \acrshort{acr:DG-SEM} solver described in this work can process unstructured meshes, which makes
+it more general and allows computations on pre-constructed meshes. The program utilises the Hilbert
 curve, a \acrlong{acr:SFC}, to preserve locality and reduce the size of inter-\acrshort{acr:GPU}
 boundaries. The curve is described in Section~\ref{section:load_balancing:hilbert_curve}. These two
 capabilities are at odds, as the overwhelming majority of meshes created for other purposes will not
@@ -9,9 +9,9 @@ be numbered according to the Hilbert curve. Also, the Hilbert curve is only defi
 domains with \(n\) axis-aligned quadrilateral elements in the \(x\) and \(y\) directions, where
 \(n\) is a power of two. Therefore, most off-the-shelf meshes will not inherit the good locality and
 small boundaries between mesh blocks that we put a lot of effort to achieve in
-Chapter~\ref{chapter:load_balancing}. Not only that, but there is even a performance penalty when
-using a single \acrshort{acr:GPU} if elements that are close in the ordering are not geometrically
-close, as memory access patterns are compromised. An extreme example is the original mesh used for
+Chapter~\ref{chapter:load_balancing}. Moreover, there is a performance penalty when using a single
+\acrshort{acr:GPU} if elements that are close in the ordering are not geometrically close, as memory
+access patterns are compromised. An extreme example is the original mesh used for
 Section~\ref{section:results:complex_meshes}. Figure~\ref{fig:mesh_unsorted} shows the ordering of
 the elements and how the mesh is split into mesh blocks if partitioned into \(16\) blocks as-is. 
 
@@ -59,7 +59,7 @@ are not necessarily close to their neighbours, which degrades performance.
 
 What we really want is to number the elements according to the Hilbert curve, which gives good
 results. As the Hilbert curve is not defined for unstructured geometries like this one, we will have
-to approximate it. Firstly we will do an elliptic mapping to transform the circular geometry to a
+to approximate it. First, we perform an elliptic mapping to transform the circular geometry to a
 square. We then generate a Hilbert curve over that square, and number the elements by the 1D index
 of where their center falls on the Hilbert curve when rounded to the closest point on the curve. By
 sorting the elements by that index, they will be numbered according to the Hilbert curve. If two
@@ -118,7 +118,10 @@ the domain and a closer view of the airfoil, respectively.
     {\includesvg[width=0.45\textwidth]{Chapter_renumbering/media/mesh_P0_before_adaptivity1_near}\label{fig:mesh_P0_before_adaptivity1_near}}
     \subfloat[After refinement]
     {\includesvg[width=0.45\textwidth]{Chapter_renumbering/media/mesh_P0_after_adaptivity1_near}\label{fig:mesh_P0_after_adaptivity1_near}}
-    \caption{\Acrlong{acr:AMR} with an unstructured mesh (detail): The mesh is refined, created elements follow the initial pseudo-Hilbert curve. There are jumps along the curve around the airfoil. (a) Initial mesh (b) Mesh after a single refinement step}\label{fig:mesh_P0_adaptivity_near}
+    \caption{\Acrlong{acr:AMR} with an unstructured mesh (detail): The mesh is refined, created
+        elements follow the initial pseudo-Hilbert curve. There are some jumps along the curve 
+        around the airfoil. (a) Initial mesh (b) Mesh after a single refinement 
+        step}\label{fig:mesh_P0_adaptivity_near}
 \end{figure}
 
 As the previous figures show, the refinement maintains the path of the curve very well, even if the
@@ -131,8 +134,8 @@ forms a path around the center of the domain, which is why the pseudo-Hilbert cu
 the airfoil instead of through it. If the airfoil was anywhere else in the domain, the result would
 be worse.
 
-Also, the pseudo-Hilbert curve sometimes jumps over elements and sometimes takes surprising paths.
-This is because the underlying Hilbert curve along which the elements are sorted is very fine
+Secondly, the pseudo-Hilbert curve sometimes jumps over elements and sometimes takes surprising
+paths. This is because the underlying Hilbert curve along which the elements are sorted is very fine
 compared to the elements. The elements are only sorted according to where their centres fall on that
 curve, and sometimes the curve will miss the centre of an element and make multiple round trips
 before intersecting it, while encountering elements that are further along the way. This can be seen

@@ -85,15 +85,11 @@ to re-number elements when the mesh refines.
 
 \subsection{Generation}\label{subsection:load_balancing:hilbert_curve:generation}
 
-I think we need a sentence distinguishing H A R B or saying at least that the state identifies the 
-type of a cell within the topology of the Hilbert curve or something like that
-
-
 We choose a table-driven algorithm to generate meshes. Each element has one of four possible
-\textit{states} \(s\): \(s \in \left \{H, A, R, B \right \} \). The state of an element represents
-the local pattern of the curve inside the element. This state determines the state and ordering of
-the four children elements obtained when increasing the level of the curve. The four states and
-their resulting children are shown in Figure~\ref{fig:hilbert_splits}.
+\textit{states} \(s\): \(s \in \left \{H, A, R, B \right \} \). The state of an element
+distinguishes the local pattern of the curve inside the element. This state determines the state and
+ordering of the four children elements obtained when increasing the level of the curve. The four
+states and their resulting children are shown in Figure~\ref{fig:hilbert_splits}.
 
 \begin{figure}[H]
     \centering
@@ -222,7 +218,7 @@ always has the state \(A\). This is confirmed by examining other levels of the H
 same can be deduced for the first and last elements, using only the exiting and entering side,
 respectively. Using this information, we can create a 2D matrix of state as a function of entering
 and exiting side for elements (Table~\ref{table:guess_table_incomplete}), and 1D matrices for the
-first and last elements (Table~\ref{table:guess_table_first}).
+first and last elements (Tables~\ref{table:guess_table_first} and~\ref{table:guess_table_last}).
 
 \begin{table}[H]
     \begin{center}
