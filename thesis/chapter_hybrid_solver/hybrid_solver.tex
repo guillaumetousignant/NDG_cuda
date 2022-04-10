@@ -72,13 +72,13 @@ and as such should have \(16\) times as many elements as the other workers. Alon
 about one third of the total elements of the mesh. The partitioning seen on the figure corroborates
 this. 
 
-In this case, the time for the hybrid solver was only faster than the \acrshort{acr:CPU} and
-\acrshort{acr:GPU} solvers when computed with a relative capacity of \(4\) instead of \(16\). This
-is possibly linked to the fact that the \acrshort{acr:GPU} is no longer optimally loaded since it
-only has part of the elements compared to the comparison case used to determine the capacity. More
-work will need to be performed in order to find the optimal capacities. The fact that the platform
-used for testing only has a consumer-level \acrshort{acr:GPU} is probably also influencing the
-results. 
+In this case, the computing time for the hybrid solver was only faster than the \acrshort{acr:CPU}
+and \acrshort{acr:GPU} solvers when computed with a relative capacity of \(4\) instead of \(16\).
+This is possibly linked to the fact that the \acrshort{acr:GPU} is no longer optimally loaded since
+it only has part of the elements compared to the comparison case used to determine the capacity.
+More work will need to be performed in order to find the optimal capacities. The fact that the
+platform used for testing only has a consumer-level \acrshort{acr:GPU} is probably also influencing
+the results. 
 
 Two limitations should be addressed before this hybrid solver becomes a real solution: the meshes
 are initially partitioned equally, and we have to use heuristics for the capacity of different
