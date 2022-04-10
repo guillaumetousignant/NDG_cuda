@@ -48,7 +48,7 @@
 
 \newglossaryentry{gls:D_ij}{name={\(D_{i j}\)},sort={D_ij},description={derivative matrix}}
 
-\newglossaryentry{gls:D_hat_ij}{name={\(\widehat{D}_{i k}\)},sort={D_hat_ij},description={weighted derivative matrix}}
+\newglossaryentry{gls:D_ij_hat}{name={\(\widehat{D}_{i k}\)},sort={D_hat_ij},description={weighted derivative matrix}}
 
 \newglossaryentry{gls:L}{name={\(L, L_k\)},sort={L},description={Legendre polynomial, load imbalance}}
 
@@ -62,7 +62,7 @@
 
 \newglossaryentry{gls:u}{name={\(u\)},sort={u},description={\(x\) velocity}}
 
-\newglossaryentry{gls:v}{name={\(v\)},sort={v},description={\(y\) velocity}}
+\newglossaryentry{gls:v}{name={\(v\)},sort={v},description={test function, \(y\) velocity}}
 
 \newglossaryentry{gls:c}{name={\(c\)},sort={c},description={speed of sound}}
 
@@ -82,15 +82,11 @@
 
 \newglossaryentry{gls:n_i}{name={\(n_i\)},sort={n_i},description={normal vector}}
 
-\newglossaryentry{gls:v_tilde}{name={\(\widetilde{v}_{i j}\)},sort={v_ij_tilde},description={nodal value of basis function}}
-
 \newglossaryentry{gls:X_bold}{name={\(\mathbf{X}\)},sort={X_bold},sort={X},description={vector field}}
 
 \newglossaryentry{gls:F_star}{name={\(\mathbf{F}^*\)},sort={F_bold_star},sort={F star},description={numerical fluxes}}
 
 \newglossaryentry{gls:x_k}{name={\(x_k, y_l\)},sort={x_k},description={collocation point}}
-
-\newglossaryentry{gls:Delta_t}{name = {\(\Delta t\)}, sort={zz_Delta_t}, description = {time step size}}
 
 \newglossaryentry{gls:t}{name={\(t\)},sort={t},description={time}}
 
@@ -99,10 +95,6 @@
 \newglossaryentry{gls:U}{name={\(U\)},sort={U},description={element boundary solution, solution approximation}}
 
 \newglossaryentry{gls:rk_coeffs}{name={\(a_m, b_m, g_m\)},sort={a_m},description={3rd-order Runge-Kutta coefficients}}
-
-\newglossaryentry{gls:Delta_x}{name = {\(\Delta x_k, \Delta y_k\)}, sort={zz_Delta x_k}, description = {size of element \(k\) in the \(x\) and \(y\) directions respectively}}
-
-\newglossaryentry{gls:Delta_x_min}{name = {\(\Delta x^k_{\min}\)}, sort={zz_Delta x_k_min}, description = {minimum length of element \(k\)}}
 
 \newglossaryentry{gls:u_h}{name={\(u_h(x)\)},sort={u_h},description={approximated solution}}
 
@@ -139,15 +131,15 @@
 \newglossaryentry{gls:E}{name={\(E\)},sort={E},description={parallel load efficiency}}
 
 % greek --------------------------------------------------------------------------------------------
-\newglossaryentry{gls:phi}{name = {\(\phi_i, \phi_n\)}, description = {basis function, orthogonal basis functions}, sort = {b21}, type = greekstyle}
+\newglossaryentry{gls:phi}{name = {\(\phi_i\)}, description = {basis function}, sort = {b21}, type = greekstyle}
 
-\newglossaryentry{gls:delta_ij}{name = {\(\delta_{i j}, \delta_{n m}\)}, description = {Kronecker delta}, sort = {b04}, type = greekstyle}
+\newglossaryentry{gls:delta_ij}{name = {\(\delta_{i j}\)}, description = {Kronecker delta}, sort = {b04}, type = greekstyle}
 
 \newglossaryentry{gls:tau}{name = {\(\tau \)}, description = {truncation error}, sort = {b19}, type = greekstyle}
 
 \newglossaryentry{gls:sigma}{name = {\(\sigma \)}, description = {modes decay rate}, sort = {b18}, type = greekstyle}
 
-\newglossaryentry{gls:beta}{name = {\(\beta \)}, description = {slope of linear least squares best fit, normal vector y component}, sort = {b02}, type = greekstyle}
+\newglossaryentry{gls:beta}{name = {\(\beta \)}, description = {slope of linear least squares best fit, normal vector x component}, sort = {b02}, type = greekstyle}
 
 \newglossaryentry{gls:Omega}{name = {\(\Omega \)}, description = {element, domain}, sort = {a23}, type = greekstyle}
 
@@ -162,6 +154,12 @@
 \newglossaryentry{gls:Lambda}{name={\(\Lambda \)},description={diagonal matrix of coefficient matrix \(\mathbf{A}\)},  sort = {a11}, type = greekstyle}
 
 \newglossaryentry{gls:alpha}{name={\(\alpha \)},description={offset of linear least squares best fit}, sort = {b01}, type=greekstyle}
+
+\newglossaryentry{gls:Delta_t}{name = {\(\Delta t\)}, sort = {a01}, description = {time step size}, type=greekstyle}
+
+\newglossaryentry{gls:Delta_x}{name = {\(\Delta x_k, \Delta y_k\)}, sort = {a02}, description = {size of element \(k\) in the \(x\) and \(y\) directions respectively}, type=greekstyle}
+
+\newglossaryentry{gls:Delta_x_min}{name = {\(\Delta x^k_{\min}\)}, sort = {a03}, description = {minimum length of element \(k\)}, type=greekstyle}
 
 % superscript --------------------------------------------------------------------------------------
 \newglossaryentry{gls:der}{name={\('\)},description={function first derivative}, type=superscript}
