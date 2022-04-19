@@ -2,7 +2,6 @@
 \documentclass[12pt]{Uottawa_thesis}
 
 % preamble contains title page, signature page, acknowledgment and abstract texts
-\usepackage{import}
 
 % packages used
 \usepackage[english]{babel}
@@ -29,9 +28,7 @@
 \usepackage{tocbibind}                              % put bib and toc in the table of content 
 \usepackage{amsfonts}                               % for math equations
 \usepackage{array}                                  % table
-\newcolumntype{M}[1]{>{\centering\arraybackslash}m{#1}}
 \usepackage{adjustbox}                              % adjust table width
-
 \usepackage[chapter]{algorithm}                     % algorithm numbered by chapter
 \usepackage{algorithmicx}                           % algorithm
 \usepackage{varwidth}                               % code indentation
@@ -48,9 +45,8 @@
 \usepackage{multirow}                               % merge rows in tables
 \usepackage{changepage}                             % momentarily change margins
 \usepackage{setspace}                               % momentarily change interline
-
 % nonumberlist: no page number in glossary
-\usepackage[section=section, nopostdot, nonumberlist, nogroupskip, acronym, order=letter, sanitizesort]{glossaries}
+\usepackage[section=section, nopostdot, nonumberlist, nogroupskip, acronym, order=letter, sanitizesort]{glossaries} % multiple glossaries
 
 % Glossaries----------------------------------------------------------------------------------------
 \newglossary*{greekstyle}{List of Greek Symbols}
