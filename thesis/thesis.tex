@@ -56,14 +56,14 @@
 %---------------------------------------------------------------------------------------------------
 
 \setglossarystyle{long}                     % left align
-\renewcommand{\glsnamefont}[1]{\textbf{#1}} % acronyms will be in bold style. 
+\renewcommand{\glsnamefont}[1]{\textbf{#1}} % acronyms will be in bold style
 %---------------------------------------------------------------------------------------------------
 
 \makenoidxglossaries{}
 
 \glsdisablehyper{}              % disable hyper of the symbol in text
 
-\loadglsentries{glossary_entries}   % define all symbols in a separated file.
+\loadglsentries{glossary_entries}   % define all symbols in a separated file
 \usepackage{colours}                % define all colours in a separated file
 
 % Operator definitions 
@@ -89,17 +89,17 @@
     \pagenumbering{roman}
 
     % title page------------------------------------------------------------------------------------
-    \include{Chapter_title/title_page.tex}
+    \include{Chapter_title/title_page}
     % ----------------------------------------------------------------------------------------------
 
     \newpage
     \setcounter{page}{2}
     % abstract -------------------------------------------------------------------------------------
-    \include{Chapter_abstract/abstract.tex}
+    \include{Chapter_abstract/abstract}
     % ----------------------------------------------------------------------------------------------
 
     % acknowledgement ------------------------------------------------------------------------------
-    \include{Chapter_acknowledgements/acknowledgements.tex}
+    \include{Chapter_acknowledgements/acknowledgements}
     % ----------------------------------------------------------------------------------------------
 
     % generate table of contents ===================================================================
@@ -141,36 +141,36 @@
     %-----------------------------------------------------------------------------------------------
     
     % intro
-    \include{Chapter_introduction/introduction.tex}
+    \include{Chapter_introduction/introduction}
 
     % literature review
-    \include{Chapter_literature_review/literature_review.tex}
+    \include{Chapter_literature_review/literature_review}
 
     % graphics processing units
-    \include{Chapter_graphics_processing_units/graphics_processing_units.tex}
+    \include{Chapter_graphics_processing_units/graphics_processing_units}
 
     % spectral element method
-    \include{Chapter_spectral_element_method/spectral_element_method.tex}
+    \include{Chapter_spectral_element_method/spectral_element_method}
 
     % adaptive mesh refinement
-    \include{Chapter_adaptive_mesh_refinement/adaptive_mesh_refinement.tex}
+    \include{Chapter_adaptive_mesh_refinement/adaptive_mesh_refinement}
 
     % load balancing
-    \include{Chapter_load_balancing/load_balancing.tex}
+    \include{Chapter_load_balancing/load_balancing}
 
     % results
-    \include{Chapter_results/results.tex}
+    \include{Chapter_results/results}
     
     % conclusion
-    \include{Chapter_conclusion/conclusion.tex}
+    \include{Chapter_conclusion/conclusion}
     
     % bibliography
     \printbibliography[heading=bibintoc]
     %===============================================================================================
 
     \appendix
-    \include{Chapter_renumbering/renumbering.tex}
+    \include{Chapter_renumbering/renumbering}
 
-    \include{Chapter_hybrid_solver/hybrid_solver.tex}
+    \include{Chapter_hybrid_solver/hybrid_solver}
 
 \end{document}
