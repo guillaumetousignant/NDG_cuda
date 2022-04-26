@@ -118,12 +118,12 @@ load_balancing_interval_max_N = np.array([12, 12, 12])                  # Max N
 load_balancing_interval_L = np.array([[20, 100, 200, 500, 1000],
                                       [20, 100, 200, 500, 1000],
                                       [20, 100, 200, 500, 1000]]) # Load balancing interval
-load_balancing_interval_t = np.array([[346.838, 284.198, 266.794, 248.574, 254.721],
-                                      [2928.21, 2107.16, 1989.26, 1966.79, 2112.57],
+load_balancing_interval_t = np.array([[384.142, 319.137, 295.112, 286.641, 298.804],
+                                      [3014.34, 2144.81, 2036.82, 1976.06, 2051.75],
                                       [20480.5, 14927.6, 14096.4, 13990.2, 14621.5]]) # Simulation time
 
 load_balancing_interval_baseline_L = load_balancing_interval_L[:, [0,-1]]
-load_balancing_interval_baseline_t = np.array([274.415, 4962.06, 107196])
+load_balancing_interval_baseline_t = np.array([302.773, 5265.46, 59061.9])
 
 # Load balancing efficiency threshold
 load_balancing_threshold_A = np.array([20, 20, 20])                         # Adaptivity interval
@@ -138,12 +138,12 @@ load_balancing_threshold_max_N = np.array([12, 12, 12])                     # Ma
 load_balancing_threshold_T = np.array([[1, 1.01, 1.1, 1.5, 2],
                                        [1, 1.01, 1.1, 1.5, 2],
                                        [1, 1.01, 1.1, 1.5, 2]]) # Load balancing threshold
-load_balancing_threshold_t = np.array([[344.277, 295.591, 243.566, 241.076, 252.407],
-                                       [2925.25, 2248.53, 1869.24, 1865.98, 2043.47],
+load_balancing_threshold_t = np.array([[384.142, 324.228, 270.152, 283.113, 286.048],
+                                       [3014.34, 2223.96, 1884.26, 1892.44, 1918.89],
                                        [20480.5, 14096.5, 13855.5, 14416.9, 15507.3]]) # Simulation time
 
 load_balancing_threshold_baseline_T = load_balancing_threshold_T[:, [0,-1]]
-load_balancing_threshold_baseline_t = np.array([274.359, 4962.06, 59061.9])
+load_balancing_threshold_baseline_t = np.array([302.773, 5265.46, 59061.9])
 best_T = 2
 
 # N scaling
