@@ -658,8 +658,8 @@ error. The \acrshort{acr:CPU} case is computed on a single \acrshort{acr:CPU} co
 Figure~\ref{fig:N_influence} shows that the relation between iteration time and polynomial order
 \(N\) on the \acrshort{acr:GPU} is closer to being linear in this range. This is unexpected, as we
 expect the relation between polynomial order and computing time to scale with \({\left( N + 1
-\right)}^3\) like on the \acrshort{acr:CPU}, as the number of operations to perform on every time
-step scales with \({\left( N + 1 \right)}^3\). This may be explained by the fact that
+\right)}^2\) like on the \acrshort{acr:CPU}, as the number of operations to perform on every time
+step scales with \({\left( N + 1 \right)}^2\). This may be explained by the fact that
 \acrshortpl{acr:GPU} favour more arithmetically intense computations. As \(N\) increases, there are
 more compute operations to perform relative to other operations like scheduling and launching
 kernels, which may increase the workload of \acrshortpl{acr:GPU} and increase their performance. An

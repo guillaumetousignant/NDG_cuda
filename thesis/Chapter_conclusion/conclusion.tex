@@ -89,9 +89,9 @@ strategies were used to make it perform well on \acrshortpl{acr:GPU}.
 
 Another significant conclusion is that \acrshortpl{acr:GPU} are particularly well suited to the
 spectral methods, specifically. As described in Chapter~\ref{chapter:spectral_element_method}, the
-number of operations to perform every time steps scales with \({\left( N + 1 \right)}^3\), where
+number of operations to perform every time steps scales with \({\left( N + 1 \right)}^2\), where
 \(N\) is the polynomial order of an element. This indicates that the computational complexity should
-scale with \({\left( N + 1 \right)}^3\). However, as reported in
+scale with \({\left( N + 1 \right)}^2\). However, as reported in
 Subsection~\ref{subsection:results:load_balancing_performance:polynomial_order}, it seems that
 increasing the polynomial order of elements increases the density of computations, which lends
 itself to better performance. The computation time relative to \(N\) seems closer to a linear
