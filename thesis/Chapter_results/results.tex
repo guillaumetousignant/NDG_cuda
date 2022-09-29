@@ -745,16 +745,21 @@ balancing, while keeping good locality and limiting the surface area between \ac
 \section{Complex Meshes}\label{section:results:complex_meshes}
 
 We now introduce a case on a complex geometry to show that the program works with more complex
-unstructured meshes that are not axis-aligned. Figure~\ref{fig:complex_mesh} shows the initial mesh
-used for this case. Figure~\ref{fig:complex_mesh_pre_condition} shows the adapted mesh and
+unstructured meshes that are not axis-aligned. A wave travels diagonally through the domain
+containing an airfoil at a wave speed \(c = 1\). The \(\Delta t\) is chosen to satisfy \(\CFL =
+0.5\). The domain has a radius of \(20\) chords. The boundary conditions are the analytical solution
+for the outer edge of the domain, and a reflection mimicking a wall for the airfoil surface.
+Figure~\ref{fig:complex_mesh} shows the initial mesh used for this case.
+Figure~\ref{fig:complex_mesh_pre_condition} shows the adapted mesh and
 Figure~\ref{fig:complex_mesh_solution_p} depicts a wave moving across a NACA 0012 airfoil inside a
 circular domain of radius \(20\). The mesh initially has \(K = 2128\) elements, is allowed to
 h-refine up to \(S = 3\), and by the end of the computation there are \(K = 55680\) elements. The
 polynomial order of the elements is initially \(N = 4\) and is allowed to p-refine up to \(N = 16\).
 The mesh is refined every \(1000\) timesteps and load balanced with a imbalance threshold of \(L =
-1.1\). At the beginning of the computation, three pre-condition steps are performed, which is why
-the mesh is already refined at \(t = 0 s\) in Figure~\ref{fig:complex_mesh_pre_condition_far}. The
-solution is computed in parallel on \(P = 4\) \acrshortpl{acr:GPU}.
+1.1\). At the beginning of the computation, three pre-condition steps are performed at an interval
+of \(1000\) timesteps, which is why the mesh is already refined at \(t = 0 s\) in
+Figure~\ref{fig:complex_mesh_pre_condition_far}. The solution is computed in parallel on \(P = 4\)
+\acrshortpl{acr:GPU}.
 
 The mesh is unstructured, and the original mesh file is numbered in a way that places elements with
 neighbouring indices very far apart in the 2D domain. This is not ideal, as it scatters memory
@@ -774,7 +779,7 @@ curve resembles the Hilbert curve, and improves locality.
     {\includegraphics[width=0.48\textwidth]{Chapter_results/media/airfoil_mesh_near}\label{fig:complex_mesh_near}}
     \caption{Complex mesh example: An airfoil in an unstructured circular domain with its initial 
         mesh. \(N_{initial} = 4\), \(K_{initial} = 2128\), \(S = 3\), \(P = 4\) (a) Complete domain 
-        (b) Up close}\label{fig:complex_mesh}
+        (b) Detail}\label{fig:complex_mesh}
 \end{figure}
 
 \begin{figure}[H]
@@ -786,7 +791,7 @@ curve resembles the Hilbert curve, and improves locality.
     {\includegraphics[width=0.48\textwidth]{Chapter_results/media/airfoil_mesh_pre_condition_near}\label{fig:complex_mesh_pre_condition_near}}
     \caption{Complex mesh after pre-condition: Elements have been added to better apply initial 
         conditions. \(N_{initial} = 4\), \(K = 24072\), \(S = 3\), \(P = 4\) (a) Complete domain (b) 
-        Up close}\label{fig:complex_mesh_pre_condition}
+        Detail}\label{fig:complex_mesh_pre_condition}
 \end{figure}
 
 Figure~\ref{fig:complex_mesh_solution} shows the problem after \(1.5\) seconds of solution time.
