@@ -66,11 +66,14 @@ floating point numbers will execute at one sixteenth of the speed of compute-ori
 
 The test case used in this chapter is shown in Figure~\ref{fig:problem}. We solve the 2D wave
 equation from Section~\ref{section:spectral_element_method:equation} on a square domain of size 1 in
-each dimension. A linear wave starts just outside of the domain, and traverses the domain
-diagonally. Figure~\ref{fig:problem} shows the pressure distribution at \(0.5 s\). The number of
-elements \( K \) varies depending on the problem, as does the polynomial order \( N \). This problem
-should help demonstrate key aspects of the program, as the solution is steeper near the wave and
-needs refinement for accurate results.
+each dimension. A linear wave starts just outside of the domain, and traverses the domain diagonally
+with \(c = 1\). The solution is computed until a time of \(t = 2 s\), with a \(\Delta t\) satisfying
+\(\CFL = 0.5\). Figure~\ref{fig:problem} shows the pressure distribution at \(0.5 s\). The initial
+conditions are set to form a linear gaussian distribution of pressure. The boundary conditions at
+the edges of the domain are constrained to the analytical solution. The number of elements \( K \)
+varies depending on the problem, as does the polynomial order \( N \). This problem should help
+demonstrate key aspects of the program, as the solution is steeper near the wave and needs
+refinement for accurate results.
 
 \begin{figure}[H]
     \centering
