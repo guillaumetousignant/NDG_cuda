@@ -232,14 +232,16 @@ As the last figure suggests, increasing the block size \(B\) does incur a perfor
 is possibly caused by a high amount of thread divergence within blocks. This is consistent with how
 the program is written, for example Section~\ref{section:adaptive_mesh_refinement:implementation}
 shows how the projection back and forth between the elements and faces has several branching code
-paths. A lot of changes in the architecture of the program would have to be made to reduce this
-branching, and switch to a more data-driven approach.
+paths. This creates divergence between threads if the threads in a block happen to take different
+code paths, which reduces performance as these paths are then executed serially. A lot of changes in
+the architecture of the program would have to be made to reduce this branching, and switch to a more
+data-driven approach.
 
 One thing to note is that the curve of the \acrshort{acr:CPU} implementation on
 Figures~\ref{fig:strong_scaling_N4_W32} and~\ref{fig:strong_scaling_N6_W32} is similar, whereas the
-\acrshort{acr:GPU} curves from all the figures differ significantly. This is a recurring theme of
-all the tests in this chapter: code running on \acrshortpl{acr:GPU} seems to be harder to optimise
-and some factors have unexpected influences on the performance.
+\acrshort{acr:GPU} curves from all the figures differs more. This is a recurring theme of all the
+tests in this chapter: code running on \acrshortpl{acr:GPU} seems to be harder to optimise and some
+factors have unexpected influences on the performance.
 
 \subsection{Weak scaling}\label{subsection:results:scaling_tests:weak}
 
