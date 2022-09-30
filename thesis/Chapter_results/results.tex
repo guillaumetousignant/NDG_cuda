@@ -134,9 +134,9 @@ four-node execution time of those tests therefore represents the program running
 
 Both scaling tests evaluate the core solver part of the program, as the meshes start with enough
 elements to have a well resolved solution all along the simulation. The \acrlong{acr:AMR} and
-dynamic load balancing subroutines are still enabled. The subroutines still run their evaluation
-phases, the error estimation and load imbalance computation respectively, but do not deem the
-estimated error and load imbalance high enough to trigger the whole subroutine. 
+dynamic load balancing subroutines are still enabled, but the error is never estimated to be high
+enough to perform \acrshort{acr:AMR}. In turn, no load imbalance occurs and the load balancing
+routine never finds enough load imbalance to trigger.
 
 \subsection{Strong scaling}\label{subsection:results:scaling_tests:strong}
 
@@ -144,30 +144,31 @@ The test case for this section is described in Section~\ref{section:results:test
 divided into \(256\) elements in each of the \(x\) and \(y\) directions, for a total of \(K =
 65536\) elements. The problem is then solved in parallel using a range of nodes, from one quarter
 node to eight nodes. One quarter node contains \(1\) \acrshort{acr:GPU} and \(10\)
-\acrshort{acr:CPU} cores, while eight nodes contain \(16\) \acrshortpl{acr:GPU} and \(160\)
+\acrshort{acr:CPU} cores, while eight nodes contain \(32\) \acrshortpl{acr:GPU} and \(320\)
 \acrshort{acr:CPU} cores. The mesh is split into blocks accordingly, one block per
 \acrshort{acr:GPU} or one block per \acrshort{acr:CPU} core. The first test has a polynomial order
-\(N = 4\) for all elements, and a block size \(B = 32\). 
+\(N = 4\) for all elements, and a block size of \(B = 32\) threads per block. 
 
 The block size, as explained in
 Subsection~\ref{subsection:graphics_processing_units:architecture:programming_model}, is the number
 of threads in a block of threads. Having a higher block size can speed up execution by reducing the
 number of instructions to dispatch by the control flow unit of the \acrshort{acr:GPU}, because the
-instructions are dispatched by block of threads. However, if the threads within a block diverge,
-having a higher block size can actually lower performance. A single thread diverging will have all
-the threads in its block waiting until it is finished, therefore a higher block size will have more
-threads stalled when divergence occurs.
+instructions are dispatched by block of threads. However, if the threads within a block diverge by
+taking different branching code paths, having a higher block size can actually lower performance. A
+single thread diverging will have all the threads in its block waiting until it is finished,
+therefore a higher block size will have more threads stalled when divergence occurs.
 
-We add two ``ideal'' lines both for the \acrshort{acr:GPU} and \acrshort{acr:CPU} calculations.
-These lines represent perfect scaling from a data point. The dashed and dotted line represents
-perfect scaling from the first data point, one \acrshort{acr:GPU} or \(10\) \acrshort{acr:CPU}
-cores. This is equivalent to halving the computation time every time the computing power doubles.
-Figure~\ref{fig:strong_scaling_N4_W32} shows that the \acrshort{acr:GPU} curve is always below this
-ideal line. As we increase the number of \acrshortpl{acr:GPU}, the performance scales better than
-linearly up to a point, and then decreases. We therefore add a second dashed line, which represents
-the scaling from the best point, where the computation time multiplied by the number of
-\acrshortpl{acr:GPU} is the lowest. This line is more representative, and will be used for the next
-figures.
+In Figure~\ref{fig:strong_scaling_N4_W32}, we add two ``ideal'' lines both for the
+\acrshort{acr:GPU} and \acrshort{acr:CPU} calculations. These lines represent perfect scaling from a
+data point. The dashed and dotted line represents perfect scaling from the first data point, one
+\acrshort{acr:GPU} or \(10\) \acrshort{acr:CPU} cores. This is equivalent to halving the computation
+time every time the computing power doubles. The \acrshort{acr:GPU} curve is always below this ideal
+line. As we increase the number of \acrshortpl{acr:GPU}, the performance scales better than linearly
+up to a point, and then decreases. This indicates that the most efficient point for
+\acrshortpl{acr:GPU} is not the first. We therefore add a second dashed line, which represents the
+scaling from the best point. The best point is where the computation time multiplied by the number
+of \acrshortpl{acr:GPU}, which gives the total computation time, is the lowest. This line is more
+representative, and will be used for the next figures.
 
 \begin{figure}[H]
     \centering
@@ -187,11 +188,12 @@ rate lowers the performance of \acrshortpl{acr:GPU} in that regime. With a lower
 being worked on by a \acrshort{acr:GPU}, cache has to be emptied less often to make room for more
 elements to use for computations.
 
-At the end of the curve, we see that the scaling is slightly reduced. This could be a hint that the
-\acrshortpl{acr:GPU} are not sufficiently loaded for those cases. These \acrshortpl{acr:GPU} have
-many \acrshort{acr:CUDA} cores, \(5120\) each in the case of Béluga. If the workload does not saturate
-the \acrshort{acr:GPU}, some of those cores will be idle, leading to worse performance. The best
-number of elements per \acrshort{acr:GPU} seems to be around \(4096\) for this case.
+At the highest number of \acrshortpl{acr:GPU} working on the same problem, we see that the scaling
+is slightly reduced. This could be a hint that the \acrshortpl{acr:GPU} are not sufficiently loaded
+for those cases. These \acrshortpl{acr:GPU} have many \acrshort{acr:CUDA} cores, \(5120\) each in
+the case of Béluga. If the workload does not saturate the \acrshort{acr:GPU}, some of those cores
+will be idle, leading to worse performance. The best number of elements per \acrshort{acr:GPU} seems
+to be around \(4096\) for this case.
 
 The next test, shown in Figure~\ref{fig:strong_scaling_N6_W32}, shows the same test case but with an
 increased polynomial order of \(N = 6\) for all elements. The rationale is that the
