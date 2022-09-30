@@ -669,18 +669,21 @@ increases, as for example by Chan et al.~\cite{Chan2016}.
 \section{Complex Case}\label{section:results:complex_application}
 
 We now present a more complex case with all modules of the program enabled. Figure~\ref{fig:cloud_p}
-shows the pressure distribution at two times. The problem depicts a diagonal wave moving through a
-small circular ``cloud'' of higher pressure. The cloud expands and interacts with the wave. The mesh
-is initially split into \(16\) elements in each of the \(x\) and \(y\) directions, for a total of
-\(K = 256\) elements. The polynomial order of the elements is initially \(N = 4\). The solution is
-computed in parallel on \(16\) \acrshortpl{acr:GPU}. The mesh is refined every \(50\) timesteps, and
-load balanced with an imbalance threshold of \(L = 1.1\). It is allowed to refine up to \(S = 3\)
-and \(N = 16\). Three steps of mesh pre-condition are performed, which is why the \(t = 0 s\) mesh
-is already refined in Figures~\ref{fig:cloud_s_t0} and~\ref{fig:cloud_N_t0}.
-Figure~\ref{fig:cloud_s} shows the split level \(S\) of the mesh, Figure~\ref{fig:cloud_N} the
-polynomial order \(N\) of the mesh, and Figure~\ref{fig:cloud_rank} the rank of the elements. The
-rank indicates which of the \(16\) \acrshortpl{acr:GPU} is responsible for which part of the mesh,
-and how this changes with time as the mesh is load balanced.
+shows the pressure distribution at two times. The problem depicts a diagonal wave moving at a wave
+speed \(c = 1\) through a small circular ``cloud'' of higher pressure. The cloud expands and
+interacts with the wave. The \(\Delta t\) is chosen to satisfy \(\CFL = 0.5\), and the simulation is
+run until a solution time of \(t = 0.2 s\). The domain has a size of \(1\) in either dimensions, and
+has the analytical solution imposed to its outer edge as a boundary condition. The mesh is initially
+split into \(16\) elements in each of the \(x\) and \(y\) directions, for a total of \(K = 256\)
+elements. The polynomial order of the elements is initially \(N = 4\). The solution is computed in
+parallel on \(16\) \acrshortpl{acr:GPU}. The mesh is refined every \(50\) timesteps, and load
+balanced with an imbalance threshold of \(L = 1.1\). It is allowed to refine up to \(S = 3\) and \(N
+= 16\). Three steps of mesh pre-condition are performed at an interval of \(50\) timesteps, which is
+why the \(t = 0 s\) mesh is already refined in Figures~\ref{fig:cloud_s_t0}
+and~\ref{fig:cloud_N_t0}. Figure~\ref{fig:cloud_s} shows the split level \(S\) of the mesh,
+Figure~\ref{fig:cloud_N} the polynomial order \(N\) of the mesh, and Figure~\ref{fig:cloud_rank} the
+rank of the elements. The rank indicates which of the \(16\) \acrshortpl{acr:GPU} is responsible for
+which part of the mesh, and how this changes with time as the mesh is load balanced.
 
 \begin{figure}[H]
     \centering
@@ -745,19 +748,19 @@ balancing, while keeping good locality and limiting the surface area between \ac
 \section{Complex Meshes}\label{section:results:complex_meshes}
 
 We now introduce a case on a complex geometry to show that the program works with more complex
-unstructured meshes that are not axis-aligned. A wave travels diagonally through the domain
-containing an airfoil at a wave speed \(c = 1\). The \(\Delta t\) is chosen to satisfy \(\CFL =
-0.5\). The domain has a radius of \(20\) chords. The boundary conditions are the analytical solution
-for the outer edge of the domain, and a reflection mimicking a wall for the airfoil surface.
-Figure~\ref{fig:complex_mesh} shows the initial mesh used for this case.
-Figure~\ref{fig:complex_mesh_pre_condition} shows the adapted mesh and
-Figure~\ref{fig:complex_mesh_solution_p} depicts a wave moving across a NACA 0012 airfoil inside a
-circular domain of radius \(20\). The mesh initially has \(K = 2128\) elements, is allowed to
-h-refine up to \(S = 3\), and by the end of the computation there are \(K = 55680\) elements. The
-polynomial order of the elements is initially \(N = 4\) and is allowed to p-refine up to \(N = 16\).
-The mesh is refined every \(1000\) timesteps and load balanced with a imbalance threshold of \(L =
-1.1\). At the beginning of the computation, three pre-condition steps are performed at an interval
-of \(1000\) timesteps, which is why the mesh is already refined at \(t = 0 s\) in
+unstructured meshes that are not axis-aligned. A wave travels diagonally a wave speed \(c = 1\)
+through a circular domain containing a NACA 0012 airfoil. The domain has a radius of \(20\) chords.
+The \(\Delta t\) is chosen to satisfy \(\CFL = 0.5\), and the simulation is run until a solution
+time of \(t = 1.5 s\). The boundary conditions are the analytical solution for the outer edge of the
+domain, and a reflection mimicking a wall for the airfoil surface. Figure~\ref{fig:complex_mesh}
+shows the initial mesh used for this case. Figure~\ref{fig:complex_mesh_pre_condition} shows the
+adapted mesh and Figure~\ref{fig:complex_mesh_solution_p} depicts the wave moving across the
+airfoil. The mesh initially has \(K = 2128\) elements, is allowed to h-refine up to \(S = 3\), and
+by the end of the computation there are \(K = 55680\) elements. The polynomial order of the elements
+is initially \(N = 4\) and is allowed to p-refine up to \(N = 16\). The mesh is refined every
+\(1000\) timesteps and load balanced with a imbalance threshold of \(L = 1.1\). At the beginning of
+the computation, three pre-condition steps are performed at an interval of \(1000\) timesteps, which
+is why the mesh is already refined at \(t = 0 s\) in
 Figure~\ref{fig:complex_mesh_pre_condition_far}. The solution is computed in parallel on \(P = 4\)
 \acrshortpl{acr:GPU}.
 
