@@ -243,14 +243,16 @@ and some factors have unexpected influences on the performance.
 
 \subsection{Weak scaling}\label{subsection:results:scaling_tests:weak}
 
-The weak scaling test uses the test case from Section~\ref{section:results:test_case}. The domain is
-split up into elements such that each node contains 16384 elements. This amounts to 4096 elements
-per \acrshort{acr:GPU}, or 410 elements per \acrshort{acr:CPU} core. The simulation is first
-computed with the highest number of nodes, therefore the smallest elements and time step size. The
-\acrshort{acr:CFL} number is adjusted for all other simulations in order to use the same time step
-size, therefore the same total number of iterations. An ideal result is a flat curve, indicating
-that by increasing the problem size and resources by the same amount, the simulation time stays the
-same. The problem is studied from ¼ node to 16 nodes.
+The weak scaling test uses the test case from Section~\ref{section:results:test_case}. Weak scaling
+increases both the size of the problem and the amount of processing power at the same rate. To
+achieve this, we increase the number of elements in the domain to keep the number of elements per
+supercomputer node constant. The domain is split up into elements such that each node's mesh block
+contains 16384 elements. Since each node is made up of four \acrshortpl{acr:GPU} and 40
+\acrshortpl{acr:CPU}, this amounts to 4096 elements per \acrshort{acr:GPU}, or 410 elements per
+\acrshort{acr:CPU} core. To ensure that all these cases perform the same number of iterations, the
+\acrshort{acr:CFL} is adjusted to keep the time step size equal. An ideal result is a flat curve,
+indicating that by increasing the problem size and resources by the same amount, the simulation time
+stays the same. The problem is studied from ¼ node to 16 nodes.
 
 \begin{figure}[H]
     \centering
