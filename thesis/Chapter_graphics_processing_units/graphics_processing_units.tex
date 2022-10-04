@@ -547,13 +547,13 @@ function. Kernels are annotated with \textbf{\_ \_global\_ \_}, and device funct
 \caption{\textbf{perform\_gpu\_computations:} Computations are performed in parallel on the \acrshort{acr:GPU}.}\label{alg:perform_gpu_computations}
 \end{algorithm}
 
-\subsection{Reductions}\label{subsection:graphics_processing_units:implementation:reductions}
+\subsection{Parallel reductions}\label{subsection:graphics_processing_units:implementation:reductions}
 
-Reductions are operations that are difficult to make efficient and parallel on \acrshortpl{acr:GPU}.
-Harris et al.~\cite{Harris2007} show a few different ways to optimise these operations. In this
-work, we need to compute the minimum time step over the whole mesh at every time step. This
-operation uses geometric and solution data from the elements to find each element's minimum time
-step size. This data is only available on the \acrshort{acr:GPU}. 
+Parallel reductions are operations that are difficult to make efficient on \acrshortpl{acr:GPU} and
+saturate them with work. Harris et al.~\cite{Harris2007} show a few different ways to optimise these
+operations. In this work, we need to compute the minimum time step over the whole mesh at every time
+step. This operation uses geometric and solution data from the elements to find each element's
+minimum time step size. This data is only available on the \acrshort{acr:GPU}. 
 
 An implementation must saturate the \acrshort{acr:GPU} with work as much as possible: blindly
 looping one thread over the whole mesh will only use one of the approximately five thousand cores of
