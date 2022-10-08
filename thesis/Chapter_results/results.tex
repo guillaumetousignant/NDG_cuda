@@ -66,14 +66,32 @@ floating point numbers will execute at one sixteenth of the speed of compute-ori
 
 The test case used in this chapter is shown in Figure~\ref{fig:problem}. We solve the 2D wave
 equation from Section~\ref{section:spectral_element_method:equation} on a square domain of size 1 in
-each dimension. A linear wave starts just outside of the domain, and traverses the domain diagonally
-with \(c = 1\). The solution is computed until a time of \(t = 2 s\), with a \(\Delta t\) satisfying
-\(\CFL = 0.5\). Figure~\ref{fig:problem} shows the pressure distribution at \(0.5 s\). The initial
-conditions are set to form a linear gaussian distribution of pressure. The boundary conditions at
-the edges of the domain are constrained to the analytical solution. The number of elements \( K \)
-varies depending on the problem, as does the polynomial order \( N \). This problem should help
-demonstrate key aspects of the program, as the solution is steeper near the wave and needs
-refinement for accurate results.
+each dimension. A linear gaussian wave starts just outside of the domain, and traverses the domain
+diagonally. The wave solution is given by Equation~\ref{equ:wave_initial_conditions}.
+
+\begin{equation} \label{equ:wave_initial_conditions}
+    \begin{bmatrix}
+		p \\ u \\ v
+	\end{bmatrix} = 
+	\begin{bmatrix}
+		1 \\ \frac{k_x}{c} \\ \frac{k_y}{c}
+	\end{bmatrix}
+	e^{-\frac{ {\left[ k_x(x - x_0) + k_y(y - y_0) -ct \right]}^2} {d^2}}
+\end{equation}
+
+\noindent
+Where \(c = 1\) is the speed of sound. \(k_x\) and \(k_y\) are the components of the wavevector
+\(\mathbf{k}\). We set both \(k_x\) and \(k_y\) and to \(\frac{\sqrt{2}}{2}\) to normalise
+\(\mathbf{k}\). We set \(d = \frac{0.2}{2\sqrt{\ln{2}}}\). \(x_0\) and \(y_0\) govern the initial
+location of the wave. We use \(x_0, y_0 = -0.2\) so that the wave starts just outside of the domain.
+
+The solution is computed until a time of \(t = 2 s\), with a \(\Delta t\) satisfying \(\CFL = 0.5\).
+Figure~\ref{fig:problem} shows the pressure distribution at \(0.5 s\). The initial conditions are
+set using Equation~\ref{equ:wave_initial_conditions}. The boundary conditions at the edges of the
+domain are constrained to the analytical solution. The number of elements \( K \) varies depending
+on the problem, as does the polynomial order \( N \). This problem should help demonstrate key
+aspects of the program, as the solution is steeper near the wave and needs refinement for accurate
+results.
 
 \begin{figure}[H]
     \centering
