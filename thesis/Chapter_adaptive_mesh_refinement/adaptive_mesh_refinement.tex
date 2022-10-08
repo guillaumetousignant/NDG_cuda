@@ -703,14 +703,57 @@ The projection operation from faces to elements is therefore:
 
 \section{Mesh Pre-condition}\label{section:adaptive_mesh_refinement:pre_conditioning}
 
-When initial conditions are applied to a coarse mesh, some error is introduced to the problem. This
-error does not reduce with refinement, it simply propagates through the domain. To address this
-issue, we implement a simple ``pre-condition'' algorithm. The algorithm advances the solution in
-time, refines it, then sets the initial conditions again. This is an iterative process, and can be
-performed multiple times. This is what will be called ``pre-condition steps''. The refinement
-interval dictates how many time steps are computed before refining and resetting the initial
-conditions. The performance of this algorithm is assessed in
-Section~\ref{section:results:adaptivity_performance}.
+One type of error that cannot be alleviated by \acrshort{acr:AMR} is error caused by the application
+of initial conditions. If the mesh is too coarse at the start of the computation, error is
+introduced in the solution since the mesh does not have enough resolution to adequately represent
+the initial conditions. Since this error is part of the solution, it does not reduce with
+refinement, it is simply projected to the refined elements.
+
+To alleviate this problem, we aim to refine the mesh before the main computation starts to a
+resolution high enough to capture the initial conditions correctly. We implement a simple
+``pre-condition'' algorithm based on our \acrshort{acr:AMR} implementation. 
+
+\subsection{Algorithm}\label{section:adaptive_mesh_refinement:pre_conditioning:algorithm}
+
+The algorithm applies the initial conditions as usual, and runs the simulation for a set number of
+timesteps, usually the same as the \acrshort{acr:AMR} interval. At that point, the
+\acrshort{acr:AMR} algorithm is run. If the application of the initial conditions has introduced
+significant error to the solution, the error estimate will be higher in these regions and the mesh
+will be refined there by the \acrshort{acr:AMR} algorithm. To remove this error, the initial
+conditions are then applied again to this new refined mesh which should capture the initial
+conditions better. Care should be taken to perform a low number of iterations before refining, so as
+to refine the mesh close to the problematic areas at the time of initial conditions application.
+This is one pre-condition step.
+
+It is possible that the application of initial conditions is still not satisfactory after a single
+pre-condition step. In this case, multiple pre-condition steps can be performing, each advancing the
+solution a set number of timesteps, refining the mesh, and applying the initial conditions to that
+refined mesh. The flow of the algorithm is illustrated in Figure~\ref{fig:pre-condition_flowchart}.
+Section~\ref{section:results:adaptivity_performance} discusses the performance and solution quality
+of this algorithm.
+
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[node distance=1.5cm]
+        \node (start) [start, align=center] {Pre-condition\\start};
+        \node (init) [process, right of=start, xshift=2cm, align=center] {Apply initial\\conditions};
+        \node (n_steps) [decision, right of=init, xshift=2.5cm, align=center] {Number of\\pre-condition\\steps reached?};
+        \node (timestep) [process, below of=n_steps, yshift=-1.5cm, align=center] {Perform\\timesteps};
+        \node (refine) [process, below of=init, yshift=-1.5cm, align=center] {\Acrshort{acr:AMR}};
+        \node (compute) [start, right of=n_steps, xshift=2.5cm, align=center] {Start\\computation};
+
+        \draw [arrow] (start) -- (init);
+        \draw [arrow] (init) -- (n_steps);
+        \draw [arrow] (n_steps) -- node[anchor=north] {yes} (compute);
+        \draw [arrow] (n_steps) -- node[anchor=west] {no} (timestep);
+        \draw [arrow] (timestep) -- (refine);
+        \draw [arrow] (refine) -- (init);
+    \end{tikzpicture}
+    \caption{Flowchart of the pre-condition algorithm: Multiple iterative passes of the algorithm can be performed.}\label{fig:pre-condition_flowchart}
+\end{figure}
+
+
 
 \section{Implementation}\label{section:adaptive_mesh_refinement:implementation}
 

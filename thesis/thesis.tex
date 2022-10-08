@@ -46,6 +46,7 @@
 \usepackage{setspace}                               % momentarily change interline
 % nonumberlist: no page number in glossary
 \usepackage[section=section, nopostdot, nonumberlist, nogroupskip, acronym, order=letter, sanitizesort]{glossaries} % multiple glossaries
+\usepackage{tikz}                                   % for flowcharts
 
 % Glossaries----------------------------------------------------------------------------------------
 \newglossary*{greekstyle}{List of Greek Symbols}
@@ -83,6 +84,13 @@
 
 % Fonts
 \setmonofont[Contextuals={Alternate}]{Fira Code}    % better monospace font
+
+% Flowcharts
+\usetikzlibrary{shapes.geometric, arrows}   % For boxes and shapes between them
+\tikzstyle{start} = [rectangle, rounded corners, minimum width=3cm, minimum height=1cm,text centered, text=white, fill=vs_blue]
+\tikzstyle{process} = [rectangle, minimum width=3cm, minimum height=1cm, text centered, text=white, fill=vs_teal]
+\tikzstyle{decision} = [diamond, minimum width=3cm, minimum height=1cm, text centered, text=white, fill=vs_plum]
+\tikzstyle{arrow} = [thick,->,>=stealth]
 
 % Main document
 \begin{document}
