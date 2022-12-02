@@ -14,7 +14,7 @@ computing power, as spectral methods are notoriously expensive to compute. Spect
 useful when highly accurate solutions of complex flows are needed.
 Section~\ref{section:results:scaling_tests} shows that a baseline case without \acrshort{acr:AMR}
 can be computed on a \acrshort{acr:HPC} platform up to three times faster using \acrshortpl{acr:GPU}
-when they are sufficiently loaded. The program has also been shown to scale well up to \(64\)
+when they are sufficiently loaded. The program has also been shown to scale well on up to \(64\)
 \acrshortpl{acr:GPU}. Chapter~\ref{chapter:graphics_processing_units} discusses the architectural
 decisions taken to use the massively parallel \acrshort{acr:GPU} architecture. One such decision is
 to implement a data structure such that only high-level objects such as elements and faces are
@@ -87,15 +87,15 @@ despite performing many data transfers between \acrshortpl{acr:GPU} and realloca
 memory. Chapter~\ref{chapter:load_balancing} details how the algorithm is designed, and what
 strategies were used to make it perform well on \acrshortpl{acr:GPU}.
 
-Another significant conclusion is that \acrshortpl{acr:GPU} are particularly well suited to the
-spectral methods, specifically. As described in Chapter~\ref{chapter:spectral_element_method}, the
-number of operations to perform every time steps scales with \({\left( N + 1 \right)}^2\), where
-\(N\) is the polynomial order of an element. This indicates that the computational complexity should
-scale with \({\left( N + 1 \right)}^2\). However, as reported in
+Another significant conclusion is that \acrshortpl{acr:GPU} are particularly well suited to spectral
+methods, specifically. As described in Chapter~\ref{chapter:spectral_element_method}, the number of
+operations to perform every time step scales with \({\left( N + 1 \right)}^2\), where \(N\) is the
+polynomial order of an element. This indicates that the computational complexity should scale with
+\({\left( N + 1 \right)}^2\). However, as reported in
 Subsection~\ref{subsection:results:load_balancing_performance:polynomial_order}, it seems that
 increasing the polynomial order of elements increases the density of computations, which lends
 itself to better performance. The computation time relative to \(N\) seems closer to a linear
-relation than an exponential one. This means that using higher order elements, with the benefit of
+relation than a quadratic one. This means that using higher order elements, with the benefit of
 higher accuracy, is more attractive on \acrshortpl{acr:GPU} than on traditional platforms. It also
 points to the fact that spectral methods in general could have an increased speedup when using
 \acrshortpl{acr:GPU} compared to other methods.

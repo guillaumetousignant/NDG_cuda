@@ -1,4 +1,4 @@
-\chapter{Adaptive Mesh Refinement}\label{chapter:adaptive_mesh_refinement} 
+\chapter{Adaptive Mesh Refinement}\label{chapter:adaptive_mesh_refinement}
 
 Computers constantly increase in power, thanks to incremental progress made on known processes and
 new architectures such as those described in Chapter~\ref{chapter:graphics_processing_units}.
@@ -41,7 +41,7 @@ Once the mesh has been refined, the element boundaries can become geometrically 
 non-conforming. In order to accurately compute fluxes between the elements, we use the mortar element
 method~\cite{Maday1989}. Mortar, in the form of faces, is added between the elements, and the
 boundary solution is projected from the elements to the faces' own collocation points. After the
-fluxes are computed on the faces, they are projected back from the faces to the elements. 
+fluxes are computed on the faces, they are projected back from the faces to the elements.
 
 This whole process must be executed in parallel and with as much of the work as possible executed on
 the \acrshort{acr:GPU}. \Acrshortpl{acr:GPU} are more efficient at working with fixed workloads
@@ -172,10 +172,10 @@ truncation error of the solution.
 
 \begin{equation} \label{equ:solution_approximation}
     \begin{aligned}
-        u(x) &= \sum_{n = 0}^{\infty } a_n L_n(x) \\
-        &= \sum_{n = 0}^{N}a_n L_n(x) + \sum_{n = N + 1}^{\infty }a_n L_n(x) \\ 
-        &= \sum_{n = 0}^{N}a_n L_n(x) + \tau \\
-        &\approx \sum_{n = 0}^{N}a_n L_n(x)
+        u(x) & = \sum_{n = 0}^{\infty } a_n L_n(x)                                 \\
+             & = \sum_{n = 0}^{N}a_n L_n(x) + \sum_{n = N + 1}^{\infty }a_n L_n(x) \\
+             & = \sum_{n = 0}^{N}a_n L_n(x) + \tau                                 \\
+             & \approx \sum_{n = 0}^{N}a_n L_n(x)
     \end{aligned}
 \end{equation}
 
@@ -186,8 +186,8 @@ relation holds for the inner product of two of the polynomials.
 
 \begin{equation} \label{equ:polynomial_orthogonality}
     \begin{aligned}
-        \left( L_n, L_m \right) &= \int_{-1}^{1}L_n(r)L_m(r)dr \\
-        &= \frac{2}{2n + 1}\delta _{n m}
+        \left( L_n, L_m \right) & = \int_{-1}^{1}L_n(r)L_m(r)dr   \\
+                                & = \frac{2}{2n + 1}\delta _{n m}
     \end{aligned}
 \end{equation}
 
@@ -198,9 +198,9 @@ inner product of the approximate solution \(u_h(x)\) and  the corresponding Lege
 
 \begin{equation} \label{equ:modes_inner_product}
     \begin{aligned}
-        \left( u_h, L_n \right) &= \int_{-1}^{1} u_h(x(r)) L_n(r) dr \\
-        &= \sum_{k = 0}^{N} a_k \int_{-1}^{1} L_k(r) L_n(r)dr \\
-        &= \frac{2}{2n + 1} a_n
+        \left( u_h, L_n \right) & = \int_{-1}^{1} u_h(x(r)) L_n(r) dr                  \\
+                                & = \sum_{k = 0}^{N} a_k \int_{-1}^{1} L_k(r) L_n(r)dr \\
+                                & = \frac{2}{2n + 1} a_n
     \end{aligned}
 \end{equation}
 
@@ -217,8 +217,8 @@ of the truncation error can then be approximated.
 
 \begin{equation} \label{equ:error_norm}
     \begin{aligned}
-        \left \| \tau \right \| \approx \tau_{est} &= \sqrt{\int_{-1}^{1} \sum_{n = N + 1}^{\infty } {\left( \widetilde{a}_n L_n(r) \right)}^2 dr} \\
-        &= \sqrt{\sum_{n = N + 1}^{\infty }\widetilde{a}_n^2 \int_{-1}^{1} L_n(r) L_n(r) dr},
+        \left \| \tau \right \| \approx \tau_{est} & = \sqrt{\int_{-1}^{1} \sum_{n = N + 1}^{\infty } {\left( \widetilde{a}_n L_n(r) \right)}^2 dr} \\
+                                                   & = \sqrt{\sum_{n = N + 1}^{\infty }\widetilde{a}_n^2 \int_{-1}^{1} L_n(r) L_n(r) dr},
     \end{aligned}
 \end{equation}
 
@@ -232,7 +232,7 @@ truncation error estimate.
 \end{equation}
 
 \noindent
-In 2D, the solution is a tensor product of polynomials, so the truncation error changes accordingly. 
+In 2D, the solution is a tensor product of polynomials, so the truncation error changes accordingly.
 
 \begin{equation} \label{equ:error_norm_2D}
     \tau_{est} = \sqrt{\sum_{n = N + 1}^{\infty } \sum_{m = M + 1}^{\infty}\frac{\widetilde{a}_{nm}^2}{\frac{(2n + 1)(2m + 1)}{2^2}}}
@@ -253,7 +253,7 @@ Figure~\ref{fig:sin_read_modes} shows an example with the modes of the smooth fu
 \sin(\pi x)\) with a polynomial order \(N = 15\). It can be observed that the decay of the modes
 starts slowly, but becomes exponential after the first few modes.
 Figure~\ref{fig:sin_computed_modes} shows the modeled \(a_n\), with the dashed line being the
-modeled exponential decay of slope \( \sigma \) in the log plot. 
+modeled exponential decay of slope \( \sigma \) in the log plot.
 
 \begin{figure}[H]
     \centering
@@ -263,7 +263,7 @@ modeled exponential decay of slope \( \sigma \) in the log plot.
     \subfloat[Modeled modes]
     {\includesvg[width=0.45\textwidth]{Chapter_adaptive_mesh_refinement/media/modes_computed_N15}\label{fig:sin_computed_modes}}
     \caption{Modes of the solution: We use the known modes and their decay rate to eventually
-    extrapolate unknown modes. (a) Known modes (b) Modeled exponentially decaying modes}\label{fig:sin_modes}
+        extrapolate unknown modes. (a) Known modes (b) Modeled exponentially decaying modes}\label{fig:sin_modes}
 \end{figure}
 
 In order to fit a straight line to the data by linear least-squares, we want a linear relation
@@ -289,8 +289,8 @@ between the fitted points and the line. The resulting line is given by:
 and its coefficients are computed by:
 
 \begin{align}
-    & \beta = \frac{\sum_{i = 1}^{n}(x_i - \overline{x})(y_i - \overline{y})}{\sum_{i = 1}^{n}{(x_i -\overline{x})}^2}, \\
-    & \alpha = \overline{y} - \beta \overline{x},
+     & \beta = \frac{\sum_{i = 1}^{n}(x_i - \overline{x})(y_i - \overline{y})}{\sum_{i = 1}^{n}{(x_i -\overline{x})}^2}, \\
+     & \alpha = \overline{y} - \beta \overline{x},
 \end{align}
 
 \noindent
@@ -304,11 +304,11 @@ and~\ref{equ:error_norm_2D} by integrals since the behaviour of the modes is kno
 function of \(n\).
 
 \begin{align}
-    &{in}\ 1D: \quad \tau_{est} = \sqrt{\sum_{n = N + 1}^{\infty } \frac{\widetilde{a}_n^2}{\frac{2n + 1}{2}}} 
-               \Rightarrow \sqrt{\int_{N + 1}^{\infty } a_n^2 dn}, \label{equ:error_1D}
+     & {in}\ 1D: \quad \tau_{est} = \sqrt{\sum_{n = N + 1}^{\infty } \frac{\widetilde{a}_n^2}{\frac{2n + 1}{2}}}
+    \Rightarrow \sqrt{\int_{N + 1}^{\infty } a_n^2 dn}, \label{equ:error_1D}
     \\
-    &{in}\ 2D: \quad \tau_{est} = \sqrt{\sum_{n = N + 1}^{\infty }\sum_{m = M + 1}^{\infty}\frac{\widetilde{a}^2_{nm}}{\frac{(2n + 1)(2m + 1)}{2^2}}}
-               \Rightarrow \sqrt{\int_{M+1}^{\infty }\int_{N + 1 }^{\infty}{(a_{nm})}^2 dn dm} \label{equ:error_2D}
+     & {in}\ 2D: \quad \tau_{est} = \sqrt{\sum_{n = N + 1}^{\infty }\sum_{m = M + 1}^{\infty}\frac{\widetilde{a}^2_{nm}}{\frac{(2n + 1)(2m + 1)}{2^2}}}
+    \Rightarrow \sqrt{\int_{M+1}^{\infty }\int_{N + 1 }^{\infty}{(a_{nm})}^2 dn dm} \label{equ:error_2D}
 \end{align}
 
 \noindent
@@ -317,16 +317,16 @@ evaluated directly.
 
 \begin{equation}
     \begin{aligned}
-        \tau_{est} &= \sqrt{\int_{N + 1}^{\infty } a_n^2 dn} \\
-        &= \sqrt{\int_{N + 1}^{\infty } {\left( Ce^{-\sigma n} \right)}^2 dn} \\
-        &= \sqrt{\frac{C^2}{2\sigma }}e^{-\sigma (N + 1)}. 
+        \tau_{est} & = \sqrt{\int_{N + 1}^{\infty } a_n^2 dn}                             \\
+                   & = \sqrt{\int_{N + 1}^{\infty } {\left( Ce^{-\sigma n} \right)}^2 dn} \\
+                   & = \sqrt{\frac{C^2}{2\sigma }}e^{-\sigma (N + 1)}.
     \end{aligned}
 \end{equation}
 
 The same method cannot be applied to the 2D case, as the modes in Equation~\ref{equ:error_2D} are
 defined in two dimensions. We will need to fit these modes in 1D to find the error estimate as in
 the 1D case. We use the same polynomial order in both \(x\) and \(y\) directions, and create 1D
-equivalent modes \(\overline{a}_n\). 
+equivalent modes \(\overline{a}_n\).
 
 \begin{equation}
     \overline{a}_n = \left| a_{n,n} \right| + \sum_{i = 0}^{n-1} \left( \left| a_{i, n} \right| + \left| a_{n, i} \right| \right)
@@ -337,11 +337,11 @@ We use the equivalent modes to estimate the error.
 
 \begin{equation}
     \begin{aligned}
-        \tau_{est} &= \sqrt{\int_{M+1}^{\infty }\int_{N + 1 }^{\infty}{(a_{nm})}^2 dn dm} \\
-        &= \sqrt{\int_{N + 1}^{\infty }\overline{a}_p^2 dp} \\
-        &= \sqrt{\int_{N + 1}^{\infty} Ce^{-2\sigma p}dp} \\
-        &= \sqrt{\frac{C}{2\sigma}e^{-2\sigma(N + 1)}} \\
-        &= \sqrt{\frac{C}{2\sigma}} e^{-\sigma (N + 1)}
+        \tau_{est} & = \sqrt{\int_{M+1}^{\infty }\int_{N + 1 }^{\infty}{(a_{nm})}^2 dn dm} \\
+                   & = \sqrt{\int_{N + 1}^{\infty }\overline{a}_p^2 dp}                    \\
+                   & = \sqrt{\int_{N + 1}^{\infty} Ce^{-2\sigma p}dp}                      \\
+                   & = \sqrt{\frac{C}{2\sigma}e^{-2\sigma(N + 1)}}                         \\
+                   & = \sqrt{\frac{C}{2\sigma}} e^{-\sigma (N + 1)}
     \end{aligned}
 \end{equation}
 
@@ -443,7 +443,7 @@ only has one element on either side, their \textit{left} and \textit{right} elem
 therefore have multiple faces on each of their sides. The functional of the face has the polynomial
 order of the highest-order of its neighbours. The next sections describe how to project to and from
 these new faces. The flux calculations are performed on the faces as described in
-Section~\ref{chapter:spectral_element_method}. 
+Section~\ref{chapter:spectral_element_method}.
 
 \subsection{Projection from Element to Mortar}\label{subsection:adaptive_mesh_refinement:mortar_element_method:element_to_mortar}
 
@@ -461,17 +461,17 @@ for the element side coordinate and \(z\) for the face side coordinate. We proje
 therefore the face space will be used as a reference, \(z \in [-1, 1]\). The coordinate change from
 element to face has the form \(s = a + bz\), where \(a\) and \(b\) are scalars computed for each
 face side when generating the mesh. We can then define the element boundary solution \(U\) and its
-projection on the face \(\Psi \). 
+projection on the face \(\Psi \).
 
-\begin{align} 
-    & U(s) = \sum_{k = 0}^{N} U(s_k) l_k(s), \label{equ:element_boundary_solution} \\
-    & \Psi (z) = \sum_{k = 0}^{J} \Psi(z_k) l_k(z) \label{equ:face_projected_solution}
+\begin{align}
+     & U(s) = \sum_{k = 0}^{N} U(s_k) l_k(s), \label{equ:element_boundary_solution}     \\
+     & \Psi (z) = \sum_{k = 0}^{J} \Psi(z_k) l_k(z) \label{equ:face_projected_solution}
 \end{align}
 
 \noindent
 with \(l\) being the Lagrange polynomials, \(N\) being the element polynomial order, and \(J\) being
 the face polynomial order. We then require that the integral of the error between the solution and
-its projection weighted by the Lagrange polynomials be zero. 
+its projection weighted by the Lagrange polynomials be zero.
 
 \begin{equation} \label{equ:zero_error}
     \int_{-1}^{1} \left( \Psi (z) - U(a + bz) \right) l_j^\Xi dz = 0, \quad j = 0, \ldots,J
@@ -504,16 +504,16 @@ polynomials will be used to simplify the matrices.
 \begin{equation} \label{equ:orthogonality_M}
     l_m (z_k) l_j (z_k) = \\
     \delta _{mk} \delta _{j k} = \left \{ \begin{matrix*}[l]
-    & 1, & if & m = k = j \\ 
-    & 0, & if & m \neq k \; or \; j \neq k
+        & 1, & if & m = k = j \\
+        & 0, & if & m \neq k \; or \; j \neq k
     \end{matrix*}\right.
 \end{equation}
 
 \begin{equation} \label{equ:matrix_M}
     \begin{aligned}
-        M_{jm} &= \int_{-1}^{1} l_m ^ \Xi (z) l_j ^ \Xi (z) dz \\
-        &= \sum_{k = 0}^{J} l_m ^ \Xi (z_k) l_j ^ \Xi (z_k)w_k ^ \Xi \\
-        &= \sum_{k = 0}^{J} w_k ^ \Xi \delta_{mk}\delta_{jk}, & j, m = 0, \ldots, J
+        M_{jm} & = \int_{-1}^{1} l_m ^ \Xi (z) l_j ^ \Xi (z) dz                                    \\
+               & = \sum_{k = 0}^{J} l_m ^ \Xi (z_k) l_j ^ \Xi (z_k)w_k ^ \Xi                       \\
+               & = \sum_{k = 0}^{J} w_k ^ \Xi \delta_{mk}\delta_{jk},        & j, m = 0, \ldots, J
     \end{aligned}
 \end{equation}
 
@@ -524,8 +524,8 @@ simplify the matrix \(M\) to a diagonal matrix.
 
 \begin{equation}
     M_{jm} = \left \{ \begin{matrix}
-    w_j^{\Xi }, &  m = j \\ 
-    0, & m \neq  j
+        w_j^{\Xi }, & m = j     \\
+        0,          & m \neq  j
     \end{matrix}\right.
 \end{equation}
 
@@ -534,16 +534,16 @@ The same can be done for \(S\), with the following orthogonality relation:
 
 \begin{equation} \label{equ:orthogonality_S}
     l_j ^ \Xi (z_m) = \delta_{jm} = \left \{ \begin{matrix*}[l]
-    & 1, & if & m = j\\ 
-    & 0, & if & m \neq j
+        & 1, & if & m = j\\
+        & 0, & if & m \neq j
     \end{matrix*}\right.
 \end{equation}
 
 \begin{equation} \label{equ:matrix_S}
     \begin{aligned}
-        S_{jk} &= \int_{-1}^{1} l_k ^ \Omega \left( a + b z \right) l_j ^ \Xi \left( z \right) dz \\
-        &= \sum_{m = 0}^{J} l_k ^ \Omega \left( a + b z_m \right) l_j ^ \Xi \left( z_m \right) w_m ^ \Xi \\
-        &= \sum_{m = 0}^{J} l_k ^ \Omega \left( a + b z_m \right) w_m ^{\Xi} \delta_{jm}, \quad j = 0, \ldots, J, \: k = 0, \ldots, N.
+        S_{jk} & = \int_{-1}^{1} l_k ^ \Omega \left( a + b z \right) l_j ^ \Xi \left( z \right) dz                                             \\
+               & = \sum_{m = 0}^{J} l_k ^ \Omega \left( a + b z_m \right) l_j ^ \Xi \left( z_m \right) w_m ^ \Xi                               \\
+               & = \sum_{m = 0}^{J} l_k ^ \Omega \left( a + b z_m \right) w_m ^{\Xi} \delta_{jm}, \quad j = 0, \ldots, J, \: k = 0, \ldots, N.
     \end{aligned}
 \end{equation}
 
@@ -558,17 +558,17 @@ With \(M\) and \(S\), we can define a projection matrix from element boundary sp
 
 \begin{equation}
     \begin{aligned}
-        P_{jk} ^ {\Omega \rightarrow \Xi} &= M^{-1}S \\
-        &= {\left( w_j ^{-1} \right)}^{\Xi }  l_k ^ \Omega \left( a + b z_j \right) {\left( w_j \right)}^{\Xi} \\
-        &= l_k ^ \Omega \left(a + b z_j \right), \quad j = 0, \ldots, J, \: k = 0, \ldots, N.
+        P_{jk} ^ {\Omega \rightarrow \Xi} & = M^{-1}S                                                                                             \\
+                                          & = {\left( w_j ^{-1} \right)}^{\Xi }  l_k ^ \Omega \left( a + b z_j \right) {\left( w_j \right)}^{\Xi} \\
+                                          & = l_k ^ \Omega \left(a + b z_j \right), \quad j = 0, \ldots, J, \: k = 0, \ldots, N.
     \end{aligned}
 \end{equation}
 
 The projection operation from element to faces is therefore:
 
 \begin{align}  \label{projection_element_to_face}
-    \Psi &= P_{jk}^{\Omega \rightarrow \Xi} U_k  \\
-    &= \sum_{k = 0}^{N}l_k ^ \Omega(a+ b z_j) U(a + b z_k), \quad j = 0, \ldots, J.
+    \Psi & = P_{jk}^{\Omega \rightarrow \Xi} U_k                                          \\
+         & = \sum_{k = 0}^{N}l_k ^ \Omega(a+ b z_j) U(a + b z_k), \quad j = 0, \ldots, J.
 \end{align}
 
 \subsection{Projection from Mortar to Element}\label{subsection:adaptive_mesh_refinement:mortar_element_method:mortar_to_element}
@@ -611,7 +611,7 @@ edge.
 
 \begin{equation} \label{equ:zero_error_to_element_rewritten}
     \int_{-1}^{1}F(s)l_j^\Omega(s)ds = \\
-    \int_{-1}^{o'} \Phi (\frac{s -a}{b}) l_j^\Omega(s)ds + 
+    \int_{-1}^{o'} \Phi (\frac{s -a}{b}) l_j^\Omega(s)ds +
     \int_{o'}^{1} \Phi(\frac{s-a}{b})l_j^\Omega(s)ds.
 \end{equation}
 
@@ -626,24 +626,24 @@ We then rewrite the solutions in Lagrange form.
 \noindent
 Incorporating those in Equation~(\ref{equ:zero_error_to_element_rewritten}):
 
-\begin{equation} 
+\begin{equation}
     \begin{aligned}
-        \int_{-1}^{1}F(s_m)l_m^\Omega(s) l_j^\Omega(s)ds &= \int_{-1}^{o'} \Phi(\frac{s_m -a}{b})l_m^\Xi(\frac{s -a}{b}) l_j^\Omega(s)ds \\
-        &+ \int_{o'}^{1} \Phi(\frac{s_m -a}{b})l_m^\Xi(\frac{s -a}{b}) l_j^\Omega(s)ds.
+        \int_{-1}^{1}F(s_m)l_m^\Omega(s) l_j^\Omega(s)ds & = \int_{-1}^{o'} \Phi(\frac{s_m -a}{b})l_m^\Xi(\frac{s -a}{b}) l_j^\Omega(s)ds \\
+                                                         & + \int_{o'}^{1} \Phi(\frac{s_m -a}{b})l_m^\Xi(\frac{s -a}{b}) l_j^\Omega(s)ds.
     \end{aligned}
 \end{equation}
 
 \noindent
 Or in matrix form:
 
-\begin{equation} 
+\begin{equation}
     MF = S \Phi.
 \end{equation}
 
 \noindent
 We can again isolate the projected solution.
 
-\begin{equation} 
+\begin{equation}
     F = M^{-1} S \Phi
 \end{equation}
 
@@ -652,12 +652,12 @@ The \(M\) matrix is the same as for the element to face projection.
 
 \begin{equation} \label{equ:matrix_M_face_to_element}
     \begin{aligned}
-        M_{jm} &= \int_{-1}^{1}l_m^{\Omega}(s)l_j^{\Omega}(s)ds \\
-        &= \sum_{k = 0}^{N} w_k ^{\Omega} \delta_{mk}\delta_{jk}, & j, m = 0, \ldots, J \\
-        &= \left \{ \begin{matrix}
-            w_j^{\Omega }, & j = m \\ 
-            0 & j \neq m.
-            \end{matrix}\right.
+        M_{jm} & = \int_{-1}^{1}l_m^{\Omega}(s)l_j^{\Omega}(s)ds                                \\
+               & = \sum_{k = 0}^{N} w_k ^{\Omega} \delta_{mk}\delta_{jk}, & j, m = 0, \ldots, J \\
+               & = \left \{ \begin{matrix}
+                                w_j^{\Omega }, & j = m     \\
+                                0              & j \neq m.
+                            \end{matrix}\right.
     \end{aligned}
 \end{equation}
 
@@ -671,13 +671,13 @@ to integrate on faces.
 \end{equation}
 
 \noindent
-\(S\) then becomes: 
+\(S\) then becomes:
 
 \begin{equation}
     \begin{aligned}
-        S_{jm} &=  b\int_{-1}^{1}l_m^{\Xi}(z)l_j^{\Omega}(a + bz)dz
-        = b\sum_{k = 0}^{J}l_m^{\Xi}(z_k)l_j^{\Omega}(a +b z_k)w_k^{\Xi}, \\
-        &= b l_j^{\Omega}(a + bz_m)w_m^{\Xi}, \quad j = 0, \ldots, N, \quad m = 0, \ldots, J.
+        S_{jm} & =  b\int_{-1}^{1}l_m^{\Xi}(z)l_j^{\Omega}(a + bz)dz
+        = b\sum_{k = 0}^{J}l_m^{\Xi}(z_k)l_j^{\Omega}(a +b z_k)w_k^{\Xi},                             \\
+               & = b l_j^{\Omega}(a + bz_m)w_m^{\Xi}, \quad j = 0, \ldots, N, \quad m = 0, \ldots, J.
     \end{aligned}
 \end{equation}
 
@@ -687,31 +687,31 @@ space.
 
 \begin{equation}
     \begin{aligned}
-        P^{\Xi \rightarrow \Omega}_{jm} &= M^{-1}S \\
-        &= {(w_j^{-1})}^{\Omega } \: b \: l_j^{\Omega }(a + bz_m)w_m^{\Xi}\\
-        &= b \: l_j^{\Omega}(a + bz_m)\frac{w_m^{\Xi}}{w_j^{\Omega}}, \quad j = 0, \ldots, N, \: m = 0, \ldots J. 
+        P^{\Xi \rightarrow \Omega}_{jm} & = M^{-1}S                                                                                                \\
+                                        & = {(w_j^{-1})}^{\Omega } \: b \: l_j^{\Omega }(a + bz_m)w_m^{\Xi}                                        \\
+                                        & = b \: l_j^{\Omega}(a + bz_m)\frac{w_m^{\Xi}}{w_j^{\Omega}}, \quad j = 0, \ldots, N, \: m = 0, \ldots J.
     \end{aligned}
-\end{equation} 
+\end{equation}
 
 \noindent
 The projection operation from faces to elements is therefore:
 
 \begin{align} \label{projection_face_to_element}
-    F &= P^{\Xi \rightarrow \Omega}_{jm} \Phi_m  \\
-    &= \sum_{m = 0}^{N} b \: l_j^{\Omega}(a + bz_m)\frac{w_m^{\Xi}}{w_j^{\Omega}} \Phi (a + b z_j), \quad j = 0, \ldots, J.
+    F & = P^{\Xi \rightarrow \Omega}_{jm} \Phi_m                                                                               \\
+      & = \sum_{m = 0}^{N} b \: l_j^{\Omega}(a + bz_m)\frac{w_m^{\Xi}}{w_j^{\Omega}} \Phi (a + b z_j), \quad j = 0, \ldots, J.
 \end{align}
 
 \section{Mesh Pre-condition}\label{section:adaptive_mesh_refinement:pre_conditioning}
 
-One type of error that cannot be alleviated by \acrshort{acr:AMR} is error caused by the application
-of initial conditions. If the mesh is too coarse at the start of the computation, error is
-introduced in the solution since the mesh does not have enough resolution to adequately represent
+One type of error that cannot be alleviated by \acrshort{acr:AMR} is error caused by the inaccurate
+application of initial conditions. If the mesh is too coarse at the start of the computation, error
+is introduced in the solution since the mesh does not have enough resolution to adequately represent
 the initial conditions. Since this error is part of the solution, it does not reduce with
-refinement, it is simply projected to the refined elements.
+refinement, it is simply projected to the refined elements and convected through the domain.
 
 To alleviate this problem, we aim to refine the mesh before the main computation starts to a
 resolution high enough to capture the initial conditions correctly. We implement a simple
-``pre-condition'' algorithm based on our \acrshort{acr:AMR} implementation. 
+``pre-condition'' algorithm based on our \acrshort{acr:AMR} implementation.
 
 \subsection{Algorithm}\label{section:adaptive_mesh_refinement:pre_conditioning:algorithm}
 
@@ -726,7 +726,7 @@ to refine the mesh close to the problematic areas at the time of initial conditi
 This is one pre-condition step.
 
 It is possible that the application of initial conditions is still not satisfactory after a single
-pre-condition step. In this case, multiple pre-condition steps can be performing, each advancing the
+pre-condition step. In this case, multiple pre-condition steps can be performed, each advancing the
 solution a set number of timesteps, refining the mesh, and applying the initial conditions to that
 refined mesh. The flow of the algorithm is illustrated in Figure~\ref{fig:pre-condition_flowchart}.
 Section~\ref{section:results:adaptivity_performance} discusses the performance and solution quality
@@ -750,7 +750,7 @@ of this algorithm.
         \draw [arrow] (timestep) -- (refine);
         \draw [arrow] (refine) -- (init);
     \end{tikzpicture}
-    \caption{Flowchart of the pre-condition algorithm: Multiple iterative passes of the algorithm can be performed.}\label{fig:pre-condition_flowchart}
+    \caption{Flowchart of the pre-condition algorithm: Multiple iterative passes of the algorithm can be performed to ensure the initial conditions are well resolved.}\label{fig:pre-condition_flowchart}
 \end{figure}
 
 
@@ -802,7 +802,7 @@ If no elements split in the mesh, we can skip the next steps and only p-refine t
 place. In this case, a kernel is launched on the \acrshort{acr:GPU} and p-refining elements will
 resize their solution arrays and project their solution onto the new array. The faces can then
 increase their polynomial order if either of their neighbour elements has increased their polynomial
-order beyond that of the face. 
+order beyond that of the face.
 
 \subsection{Moving elements}\label{subsection:adaptive_mesh_refinement:implementation:moving_elements}
 
@@ -824,7 +824,7 @@ Non-refining elements are simply moved to their new index in the new vector. Thi
 costly operation because the element structure only contains geometric data, error data and pointers
 to solution data. The solution data itself, representing most of the element's size, is stored in
 dynamic memory on the \acrshort{acr:GPU}. It does not need to be copied, only the pointer to it
-needs to be copied in the new element vector. 
+needs to be copied in the new element vector.
 
 \noindent
 p-refining elements act a bit like non-refining elements, except that they need to create new
@@ -835,7 +835,7 @@ h-refining elements create four smaller elements in the new vector. They are pla
 the new index of the splitting element, in an order determined by the \acrfull{acr:SFC} used,
 detailed in Chapter~\ref{chapter:load_balancing}. The solution of the splitting element is projected
 onto the smaller elements. Four associated faces have to be created to connect the smaller elements
-to each other, as well as a node in the center. 
+to each other, as well as a node in the center.
 
 Once the elements have been moved, their index has changed. All faces need to correct their
 neighbour elements' indices to reflect their new indices. The faces use the same block prefix sum as
@@ -853,7 +853,7 @@ to the correct location concurrently.
 
 Faces are refined similarly to elements. If an element on either side of a face splits while the
 face covers the whole element side, the face will split too. This ensures that the face always has
-the length of the smallest of the two elements it connects to. 
+the length of the smallest of the two elements it connects to.
 
 Unlike elements, faces do not need any specific ordering as described in
 Section~\ref{section:load_balancing:hilbert_curve}. This simplifies the refinement process for

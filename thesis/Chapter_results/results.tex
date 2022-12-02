@@ -66,24 +66,24 @@ floating point numbers will execute at one sixteenth of the speed of compute-ori
 
 The test case used in this chapter is shown in Figure~\ref{fig:problem}. We solve the 2D wave
 equation from Section~\ref{section:spectral_element_method:equation} on a square domain of size 1 in
-each dimension. A linear gaussian wave starts just outside of the domain, and traverses the domain
+each dimension. A linear Gaussian wave starts just outside of the domain, and traverses the domain
 diagonally. The wave solution is given by Equation~\ref{equ:wave_initial_conditions}.
 
 \begin{equation} \label{equ:wave_initial_conditions}
     \begin{bmatrix}
-		p \\ u \\ v
-	\end{bmatrix} = 
-	\begin{bmatrix}
-		1 \\ \frac{k_x}{c} \\ \frac{k_y}{c}
-	\end{bmatrix}
-	e^{-\frac{ {\left[ k_x \left(x - x_0 \right) + k_y \left(y - y_0 \right) -ct \right]}^2} {d^2}}
+        p \\ u \\ v
+    \end{bmatrix} =
+    \begin{bmatrix}
+        1 \\ \frac{k_x}{c} \\ \frac{k_y}{c}
+    \end{bmatrix}
+    e^{-\frac{ {\left[ k_x \left(x - x_0 \right) + k_y \left(y - y_0 \right) -ct \right]}^2} {d^2}}
 \end{equation}
 
 \noindent
-Where \(c = 1\) is the speed of sound. \(k_x\) and \(k_y\) are the components of the wavevector
+\(c = 1\) is the speed of sound. \(k_x\) and \(k_y\) are the components of the wavevector
 \(\mathbf{k}\). We set both \(k_x\) and \(k_y\) and to \(\frac{\sqrt{2}}{2}\) to normalise
 \(\mathbf{k}\). We set \(d = \frac{0.2}{2\sqrt{\ln{2}}}\). \(x_0\) and \(y_0\) govern the initial
-location of the wave. We use \(x_0, y_0 = -0.2\) so that the wave starts just outside of the domain.
+location of the wave. We use \(\left(x_0, y_0\right) = \left(-0.2, -0.2\right)\) so that the wave starts just outside of the domain.
 
 The solution is computed until a time of \(t = 2 s\), with a \(\Delta t\) satisfying \(\CFL = 0.5\).
 Figure~\ref{fig:problem} shows the pressure distribution at \(0.5 s\). The initial conditions are
@@ -104,7 +104,7 @@ results.
 Parallel scaling is an important aspect of the performance of a program. It describes how the
 execution time varies when more resources are assigned to the problem. This is an optimisation
 problem, as each problem will need a different amount of resources dedicated to it to attain the
-best scaling possible. 
+best scaling possible.
 
 A completely parallelisable program, often called embarrassingly parallel, should scale linearly
 with the amount of resources. The speedup \(S\) of a workload split between \(P\) workers should be
@@ -126,7 +126,7 @@ parallel part \(l\), with only the parallel part scaling with the number of work
     S = \frac{1}{s + \frac{l}{P}}
 \end{equation}
 
-This is called \textit{strong scaling}, where a fixed problem is solved using varying amount of
+This is called \textit{strong scaling}, where a fixed problem is solved using varying amounts of
 resources. Results of strong scaling tests of the solver are discussed in
 Subsection~\ref{subsection:results:scaling_tests:strong}.
 
@@ -154,21 +154,21 @@ four-node execution time of those tests therefore represents the program running
 \acrshort{acr:CPU} computations respectively.
 
 Both scaling tests evaluate the core solver part of the program, as the meshes start with enough
-elements to have a well resolved solution all along the simulation. The \acrlong{acr:AMR} and
+elements to have a well resolved solution throughout the simulation. The \acrlong{acr:AMR} and
 dynamic load balancing subroutines are still enabled, but the error is never estimated to be high
 enough to perform \acrshort{acr:AMR}. In turn, no load imbalance occurs and the load balancing
 routine never finds enough load imbalance to trigger.
 
 \subsection{Strong scaling}\label{subsection:results:scaling_tests:strong}
 
-The test case for this section is described in Section~\ref{section:results:test_case}. It is
-divided into \(256\) elements in each of the \(x\) and \(y\) directions, for a total of \(K =
+The test case for this section is described in Section~\ref{section:results:test_case}. The domain
+is divided into \(256\) elements in each of the \(x\) and \(y\) directions, for a total of \(K =
 65536\) elements. The problem is then solved in parallel using a range of nodes, from one quarter
 node to eight nodes. One quarter node contains \(1\) \acrshort{acr:GPU} and \(10\)
 \acrshort{acr:CPU} cores, while eight nodes contain \(32\) \acrshortpl{acr:GPU} and \(320\)
 \acrshort{acr:CPU} cores. The mesh is split into blocks accordingly, one block per
 \acrshort{acr:GPU} or one block per \acrshort{acr:CPU} core. The first test has a polynomial order
-\(N = 4\) for all elements, and a block size of \(B = 32\) threads per block. 
+\(N = 4\) for all elements, and a block size of \(B = 32\) threads per block.
 
 The block size, as explained in
 Subsection~\ref{subsection:graphics_processing_units:architecture:programming_model}, is the number
@@ -233,7 +233,7 @@ the performance of the \acrshort{acr:GPU} implementation compared to the \acrsho
 implementation, rather shifting to the right the crossover point where the \acrshort{acr:GPU}
 implementation is faster. It is possible that the reduced relative performance is linked to the
 increased memory used by the solution, as the needed storage scales with \({\left( 2 N + 1
-\right)}^2\), where \(N\) is the polynomial order of elements.
+        \right)}^2\), where \(N\) is the polynomial order of elements.
 
 Next, this last case is computed again with increased block size \(B\), first 64 on
 Figure~\ref{fig:strong_scaling_N6_W64}, then 128 on Figure~\ref{fig:strong_scaling_N6_W128}. The
@@ -262,7 +262,7 @@ data-driven approach.
 
 One thing to note is that the curve of the \acrshort{acr:CPU} implementation on
 Figures~\ref{fig:strong_scaling_N4_W32} and~\ref{fig:strong_scaling_N6_W32} is similar, whereas the
-\acrshort{acr:GPU} curves from all the figures differs more. This is a recurring theme of all the
+\acrshort{acr:GPU} curves from all the figures differ more. This is a recurring theme of all the
 tests in this chapter: code running on \acrshortpl{acr:GPU} seems to be harder to optimise and some
 factors have unexpected influences on the performance.
 
@@ -283,7 +283,7 @@ stays the same. The problem is studied from ¼ node to 16 nodes.
     \centering
     \includesvg[width=0.6\textwidth]{Chapter_results/media/weak_scaling_N4_K4096_W32}
     \caption{Weak scaling: The problem size increases with the number of workers. \(N = 4\), \(K =
-        16384/{node}\)}\label{fig:weak_scaling}
+    16384/{node}\)}\label{fig:weak_scaling}
 \end{figure}
 
 Figure~\ref{fig:weak_scaling} shows good weak scaling from the \acrshort{acr:GPU} implementation.
@@ -294,7 +294,7 @@ reasonably flat. The \acrshort{acr:CPU} curve is not as good, indicating that th
 bottleneck in the communication part of the program. The \acrshort{acr:CPU} implementation has a
 much higher number of workers than the \acrshort{acr:GPU} one, \(40\) per node instead of four,
 increasing the inter-process communication needed. The slope of the \acrshort{acr:CPU} curve is
-about \(0.4\) with respect to the number of \acrshort{acr:CPU} cores. 
+about \(0.4\) with respect to the number of \acrshort{acr:CPU} cores.
 
 \section{Adaptive Mesh Refinement Performance}\label{section:results:adaptivity_performance}
 
@@ -309,7 +309,7 @@ estimated error is greater than that number.
 \Acrlong{acr:AMR} is a costly process, as the \acrshort{acr:CPU} must reallocate arrays on the
 \acrshort{acr:GPU} for the different objects making up the mesh, and then schedule kernels to move
 objects to the new arrays. We test here two strategies to reduce the performance overhead of
-\acrlong{acr:AMR}, while reducing error. 
+\acrlong{acr:AMR}, while reducing error.
 
 First, \acrlong{acr:AMR} will be performed at a regular interval.
 Figures~\ref{fig:adaptivity_efficiency_A5},~\ref{fig:adaptivity_efficiency_A20},~\ref{fig:adaptivity_efficiency_A100}
@@ -320,7 +320,7 @@ Secondly, the simulations are performed with an increasing number of refinement 
 as described in Section~\ref{section:adaptive_mesh_refinement:pre_conditioning}. The analysis ranges
 from no pre-condition step to five steps. The total simulation time is shown in blue. It is the sum
 of the time taken up by the pre-condition of the mesh, shown in green, and the computation time to
-solve the problem, shown in yellow. 
+solve the problem, shown in yellow.
 
 We compare those simulations to two non-adaptive cases. In the first case, the initial mesh is fully
 refined uniformly up to the maximum level attained by the adaptive cases. The mesh is split into
@@ -429,7 +429,7 @@ of different refinement intervals in Figure~\ref{fig:adaptivity_efficiency_C4}.
 
 Figure~\ref{fig:adaptivity_efficiency_C4} gives a good overview of the \acrshort{acr:AMR}
 performance. All refinement intervals attain the target error threshold of \num{1e-6}, and obtain a
-real maximum error under \num{1e-6} when compared to the analytical solution. 
+real maximum error under \num{1e-6} when compared to the analytical solution.
 
 It is always faster to use \acrshort{acr:AMR} than to start with a uniform fully refined mesh, and
 it is faster to use \acrshort{acr:AMR} than a uniformly refined mesh that has the same maximum
@@ -448,11 +448,11 @@ at the price of a worse error that still stays below the target error threshold 
 This section is dedicated to benchmarking the dynamic load balancing module of the program in
 adaptive cases where varying levels of load imbalance are generated. The sample problem is the same
 as described in Section~\ref{section:results:test_case}, except that the domain size is increased
-from a size of 1 to 100 in either dimension. The wave stays the same with \(c = 1\), effectively
-only staying in the lower left corner during the program runtime. The program advances the solution
-to a simulation time of two seconds, with a \(\Delta t\) satisfying \(\CFL = 0.5\). The mesh is
-split into 128 elements in each of the \(x\) and \(y\) directions, for a total of \(K = 16384\)
-elements. The initial polynomial order is \(N = 4\). The problem is solved using four
+from a size of 1 to 100 in both the \(x\) and \(y\) dimensions. The wave stays the same with \(c =
+1\), effectively only staying in the lower left corner during the program runtime. The program
+advances the solution to a simulation time of two seconds, with a \(\Delta t\) satisfying \(\CFL =
+0.5\). The mesh is split into 128 elements in each of the \(x\) and \(y\) directions, for a total of
+\(K = 16384\) elements. The initial polynomial order is \(N = 4\). The problem is solved using four
 \acrshort{acr:GPU} nodes from the Narval supercomputer, for a total of \(P = 16\)
 \acrshortpl{acr:GPU}. This initially amounts to 1024 elements per \acrshort{acr:GPU}. The mesh is
 refined every 20 timesteps. Load balancing is performed according to two strategies described in
@@ -536,11 +536,11 @@ Equation~\ref{equ:load_imbalance}.
 \begin{table}[H]
     \centering
     \begin{tabular}{ c c c c c c c }
-        Case & S & K & Max \(K_p\) & \(w_{ideal}\) & \(L\) \\
+        Case   & S     & K         & Max \(K_p\) & \(w_{ideal}\) & \(L\)     \\
         \midrule
-        Low & \(3\) & \(17752\) & \(2392\) & \(1110\) & \(2.16\) \\
-        Medium & \(5\) & \(26734\) & \(11374\) & \(1671\) & \(6.81\) \\
-        High & \(7\) & \(62490\) & \(47130\) & \(3906\) & \(12.07\) \\
+        Low    & \(3\) & \(17752\) & \(2392\)    & \(1110\)      & \(2.16\)  \\
+        Medium & \(5\) & \(26734\) & \(11374\)   & \(1671\)      & \(6.81\)  \\
+        High   & \(7\) & \(62490\) & \(47130\)   & \(3906\)      & \(12.07\) \\
     \end{tabular}
     \caption{Load imbalance cases.}\label{table:load_imbalance}
 \end{table}
@@ -560,15 +560,15 @@ performance without load balancing.
 
 \begin{figure}[H]
     \begin{adjustwidth}{-0.5in}{-0.5in}
-    \centering
-    \subfloat[Low load imbalance]
-    {\includesvg[width=0.39\textwidth]{Chapter_results/media/load_balancing_interval_N4_K16384_A20_P16_S3}\label{fig:load_balancing_efficiency_interval_s3}}
-    \hfill
-    \subfloat[Medium load imbalance]
-    {\includesvg[width=0.39\textwidth]{Chapter_results/media/load_balancing_interval_N4_K16384_A20_P16_S5}\label{fig:load_balancing_efficiency_interval_s5}}
-    \hfill
-    \subfloat[High load imbalance]
-    {\includesvg[width=0.39\textwidth]{Chapter_results/media/load_balancing_interval_N4_K16384_A20_P16_S7}\label{fig:load_balancing_efficiency_interval_s7}}
+        \centering
+        \subfloat[Low load imbalance]
+        {\includesvg[width=0.39\textwidth]{Chapter_results/media/load_balancing_interval_N4_K16384_A20_P16_S3}\label{fig:load_balancing_efficiency_interval_s3}}
+        \hfill
+        \subfloat[Medium load imbalance]
+        {\includesvg[width=0.39\textwidth]{Chapter_results/media/load_balancing_interval_N4_K16384_A20_P16_S5}\label{fig:load_balancing_efficiency_interval_s5}}
+        \hfill
+        \subfloat[High load imbalance]
+        {\includesvg[width=0.39\textwidth]{Chapter_results/media/load_balancing_interval_N4_K16384_A20_P16_S7}\label{fig:load_balancing_efficiency_interval_s7}}
     \end{adjustwidth}
     \caption{Load balancing performance interval test: Simulation time with refinement and load balancing while increasing load balancing interval. \(N_{initial} = 4\), \(K_{initial} = 16384\), refinement interval = 20, \(P = 16\) (a) \(S = 3\) (b) \(S = 5\) (c) \(S = 7\)}\label{fig:load_balancing_efficiency_interval}
 \end{figure}
@@ -593,17 +593,17 @@ Figure~\ref{fig:load_balancing_efficiency_threshold}.
 
 \begin{figure}[H]
     \begin{adjustwidth}{-0.5in}{-0.5in}
-    \centering
-    \subfloat[Low load imbalance]
-    {\includesvg[width=0.39\textwidth]{Chapter_results/media/load_balancing_threshold_N4_K16384_A20_L20_P16_S3}\label{fig:load_balancing_efficiency_threshold_s3}}
-    \hfill
-    \subfloat[Medium load imbalance]
-    {\includesvg[width=0.39\textwidth]{Chapter_results/media/load_balancing_threshold_N4_K16384_A20_L20_P16_S5}\label{fig:load_balancing_efficiency_threshold_s5}}
-    \hfill
-    \subfloat[High load imbalance]
-    {\includesvg[width=0.39\textwidth]{Chapter_results/media/load_balancing_threshold_N4_K16384_A20_L20_P16_S7}\label{fig:load_balancing_efficiency_threshold_s7}}
+        \centering
+        \subfloat[Low load imbalance]
+        {\includesvg[width=0.39\textwidth]{Chapter_results/media/load_balancing_threshold_N4_K16384_A20_L20_P16_S3}\label{fig:load_balancing_efficiency_threshold_s3}}
+        \hfill
+        \subfloat[Medium load imbalance]
+        {\includesvg[width=0.39\textwidth]{Chapter_results/media/load_balancing_threshold_N4_K16384_A20_L20_P16_S5}\label{fig:load_balancing_efficiency_threshold_s5}}
+        \hfill
+        \subfloat[High load imbalance]
+        {\includesvg[width=0.39\textwidth]{Chapter_results/media/load_balancing_threshold_N4_K16384_A20_L20_P16_S7}\label{fig:load_balancing_efficiency_threshold_s7}}
     \end{adjustwidth}
-    \caption{Load balancing performance threshold test: Simulation time with refinement and load balancing while increasing load balancing threshold. \(N_{initial} = 4\), \(K_{initial} = 16384\), refinement interval = 20, load balancing interval = 20, \(P = 16\) (a) \(S = 3\) (b) \(S = 5\) (c) \(S = 7\)}\label{fig:load_balancing_efficiency_threshold}    
+    \caption{Load balancing performance threshold test: Simulation time with refinement and load balancing while increasing load balancing threshold. \(N_{initial} = 4\), \(K_{initial} = 16384\), refinement interval = 20, load balancing interval = 20, \(P = 16\) (a) \(S = 3\) (b) \(S = 5\) (c) \(S = 7\)}\label{fig:load_balancing_efficiency_threshold}
 \end{figure}
 
 From Figure~\ref{fig:load_balancing_efficiency_threshold}, we observe that using a load imbalance
@@ -617,14 +617,14 @@ need to be adapted to different cases.
 
 From the results of Subsections~\ref{subsection:results:load_balancing_performance:interval}
 and~\ref{subsection:results:load_balancing_performance:threshold}, we observe that load balancing at
-every occasion incurs a significant performance penality, sometimes performing worse than the non
+every occasion incurs a significant performance penalty, sometimes performing worse than the non
 load-balanced case in the low load imbalance case, in
 Figures~\ref{fig:load_balancing_efficiency_interval_s3}
 and~\ref{fig:load_balancing_efficiency_threshold_s3}. The two other cases also show worse
 performance with a low load balancing interval or load imbalance threshold. This is because the
 dynamic load balancing process is expensive, especially since we are using \acrshortpl{acr:GPU},
 because of the numerous data transfers and memory allocations performed. We must choose judiciously
-our load balancing strategy. 
+our load balancing strategy.
 
 The performance increases as we space out load balancing, either by increasing the load balancing
 interval, or by increasing the load imbalance threshold, up to a point. Past that point, an interval
@@ -632,12 +632,12 @@ of \(500\) or a threshold of \(1.5\) in this case, the performance goes down due
 more imbalanced for longer periods of time.
 
 The load imbalance threshold strategy from
-Subsection~\ref{subsection:results:load_balancing_performance:threshold} gives better results, the
+Subsection~\ref{subsection:results:load_balancing_performance:threshold} gives better results: the
 performance improves quickly when increasing the threshold and stays high longer than the load
 balancing interval strategy from
 Subsection~\ref{subsection:results:load_balancing_performance:interval}. The load balancing interval
 is also case dependent, and must be adjusted according to the scale of the problem and how often it
-is refined. 
+is refined.
 
 For these reasons we choose the load imbalance threshold strategy with a load imbalance threshold of
 \(1.1\) to assess the overall dynamic load balancing performance in
@@ -667,7 +667,7 @@ polynomial order \(N\) of a uniformly refined mesh, both on the \acrshort{acr:CP
 increasing \(N\), and could guide how elements should be weighted individually when performing load
 balancing, instead of being all weighted equally as they are in this work. The test case was
 computed using the Narval supercomputer, using a grid with \(64\) elements in each of the the \(x\)
-and \(y\) directions. The initial polynomial order of the mesh is indicated on the \(y\) axis, and
+and \(y\) directions. The initial polynomial order of the mesh is indicated on the \(x\) axis, and
 the problem is advanced by \(1000\) iterations in all cases. \Acrshort{acr:AMR} is performed every
 \(100\) iterations, but there are enough elements that the mesh never refines, it only estimates the
 error. The \acrshort{acr:CPU} case is computed on a single \acrshort{acr:CPU} core, and the
@@ -681,14 +681,14 @@ error. The \acrshort{acr:CPU} case is computed on a single \acrshort{acr:CPU} co
     \subfloat[\Acrshort{acr:GPU} detail]
     {\includesvg[width=0.48\textwidth]{Chapter_results/media/N_gpu_iteration_time}\label{fig:N_gpu_influence}}
     \caption{Polynomial order influence: Iteration time with increasing polynomial order \(N\). (a)
-        \Acrshort{acr:CPU} and \Acrshort{acr:GPU}. (b) \Acrshort{acr:GPU} detail, emphasising the 
+        \Acrshort{acr:CPU} and \Acrshort{acr:GPU}. (b) \Acrshort{acr:GPU} detail, emphasising the
         slope.}\label{fig:N_influence}
 \end{figure}
 
 Figure~\ref{fig:N_influence} shows that the relation between iteration time and polynomial order
 \(N\) on the \acrshort{acr:GPU} is closer to being linear in this range. This is unexpected, as we
 expect the relation between polynomial order and computing time to scale with \({\left( N + 1
-\right)}^2\) like on the \acrshort{acr:CPU}, as the number of operations to perform on every time
+        \right)}^2\) like on the \acrshort{acr:CPU}, as the number of operations to perform on every time
 step scales with \({\left( N + 1 \right)}^2\). This may be explained by the fact that
 \acrshortpl{acr:GPU} favour more arithmetically intense computations. As \(N\) increases, there are
 more compute operations to perform relative to other operations like scheduling and launching
@@ -702,7 +702,7 @@ We now present a more complex case with all modules of the program enabled. Figu
 shows the pressure distribution at two times. The problem depicts a diagonal wave moving at a wave
 speed \(c = 1\) through a small circular ``cloud'' of higher pressure. The cloud expands and
 interacts with the wave. The \(\Delta t\) is chosen to satisfy \(\CFL = 0.5\), and the simulation is
-run until a solution time of \(t = 0.2 s\). The domain has a size of \(1\) in either dimensions, and
+run until a solution time of \(t = 0.2 s\). The domain has a size of \(1\) in both dimensions, and
 has the analytical solution imposed to its outer edge as a boundary condition. The mesh is initially
 split into \(16\) elements in each of the \(x\) and \(y\) directions, for a total of \(K = 256\)
 elements. The polynomial order of the elements is initially \(N = 4\). The solution is computed in
@@ -733,7 +733,7 @@ which part of the mesh, and how this changes with time as the mesh is load balan
     \subfloat[\( t = 0.2 s\)]
     {\includegraphics[width=0.48\textwidth]{Chapter_results/media/cloud_split_level_t0_2}\label{fig:cloud_s_t0_2}}
     \caption{Complex case h-refinement: The elements split more where the cloud meets the wave.
-        \(N_{initial} = 4\), \(K_{initial} = 256\), \(S = 3\), \(P = 16\) (a) Start of time 
+        \(N_{initial} = 4\), \(K_{initial} = 256\), \(S = 3\), \(P = 16\) (a) Start of time
         advancing (b) After the wave and cloud collide}\label{fig:cloud_s}
 \end{figure}
 
@@ -745,8 +745,8 @@ which part of the mesh, and how this changes with time as the mesh is load balan
     \subfloat[\( t = 0.2 s\)]
     {\includegraphics[width=0.48\textwidth]{Chapter_results/media/cloud_N_t0_2}\label{fig:cloud_N_t0_2}}
     \caption{Complex case p-refinement: The polynomial order increases more at the center of the
-        cloud and where cloud meets the wave. \(N_{initial} = 4\), \(K_{initial} = 256\), \(S = 3\), 
-        \(P = 16\) (a) Start of time advancing (b) After the wave and cloud 
+        cloud and where cloud meets the wave. \(N_{initial} = 4\), \(K_{initial} = 256\), \(S = 3\),
+        \(P = 16\) (a) Start of time advancing (b) After the wave and cloud
         collide}\label{fig:cloud_N}
 \end{figure}
 
@@ -759,7 +759,7 @@ which part of the mesh, and how this changes with time as the mesh is load balan
     {\includegraphics[width=0.48\textwidth]{Chapter_results/media/cloud_rank_t0_2}\label{fig:cloud_rank_t0_2}}
     \caption{Complex case rank: As the mesh is refined load imbalance can occur, and elements are
         sent from one \acrshort{acr:GPU} to another when load balancing. \(N_{initial} = 4\),
-        \(K_{initial} = 256\), \(S = 3\), \(P = 16\) (a) Start of time advancing (b) After the wave 
+        \(K_{initial} = 256\), \(S = 3\), \(P = 16\) (a) Start of time advancing (b) After the wave
         and cloud collide}\label{fig:cloud_rank}
 \end{figure}
 
@@ -810,8 +810,8 @@ curve resembles the Hilbert curve, and improves locality.
     \hfill
     \subfloat[Airfoil]
     {\includegraphics[width=0.48\textwidth]{Chapter_results/media/airfoil_mesh_near}\label{fig:complex_mesh_near}}
-    \caption{Complex mesh example: An airfoil in an unstructured circular domain with its initial 
-        mesh. \(N_{initial} = 4\), \(K_{initial} = 2128\), \(S = 3\), \(P = 4\) (a) Complete domain 
+    \caption{Complex mesh example: An airfoil in an unstructured circular domain with its initial
+        mesh. \(N_{initial} = 4\), \(K_{initial} = 2128\), \(S = 3\), \(P = 4\) (a) Complete domain
         (b) Detail}\label{fig:complex_mesh}
 \end{figure}
 
@@ -822,8 +822,8 @@ curve resembles the Hilbert curve, and improves locality.
     \hfill
     \subfloat[Airfoil]
     {\includegraphics[width=0.48\textwidth]{Chapter_results/media/airfoil_mesh_pre_condition_near}\label{fig:complex_mesh_pre_condition_near}}
-    \caption{Complex mesh after pre-condition: Elements have been added to better apply initial 
-        conditions. \(N_{initial} = 4\), \(K = 24072\), \(S = 3\), \(P = 4\) (a) Complete domain (b) 
+    \caption{Complex mesh after pre-condition: Elements have been added to better apply initial
+        conditions. \(N_{initial} = 4\), \(K = 24072\), \(S = 3\), \(P = 4\) (a) Complete domain (b)
         Detail}\label{fig:complex_mesh_pre_condition}
 \end{figure}
 
@@ -845,7 +845,7 @@ which increases when elements are p-refined.
     \hfill
     \subfloat[Pressure \(\sigma \)]
     {\includegraphics[width=0.48\textwidth]{Chapter_results/media/airfoil_pressure_sigma_near_t1_5}\label{fig:complex_mesh_solution_sigma}}
-    
+
     \smallskip
 
     \subfloat[Split level]
@@ -880,7 +880,7 @@ shows the elements' rank, or in which \acrshort{acr:GPU} they are stored.
     \caption{Element distribution: How elements are distributed between \acrshortpl{acr:GPU}. \(N_{initial} = 4\), \(K = 55680\), \(S = 3\), \(P = 4\) (a) Element indices, showing how they are ordered along the pseudo-Hilbert curve (b) Rank, showing which \acrshort{acr:GPU} contains which elements}\label{fig:complex_mesh_elements}
 \end{figure}
 
-On Figure~\ref{fig:complex_mesh_elements}, we can observe that the pseudo-Hilbert curve gives good
+In Figure~\ref{fig:complex_mesh_elements}, we can observe that the pseudo-Hilbert curve gives good
 locality to the elements, there are few discontinuities between elements, and the surface area
 between \acrshortpl{acr:GPU} is small. The elements are well divided between the
 \acrshortpl{acr:GPU}, as the \acrshortpl{acr:GPU} in more heavily refined areas have a smaller
@@ -903,30 +903,30 @@ allocation heavy parts of the program like \acrshort{acr:AMR} and load balancing
 \begin{table}[H]
     \centering
     \begin{tabular}{ c c c c }
-        Module & Time proportion (\%) & Algorithm & Time proportion (\%) \\
+        Module                              & Time proportion (\%)      & Algorithm                & Time proportion (\%) \\
         \toprule
-        \multirow{9}{*}{Solver} & \multirow{9}{*}{\(59.7\)} & compute\_derivative & \(26.68\) \\
-                                                          & & project\_to\_elements & \(19.2\) \\
-                                                          & & interpolate\_to\_edges & \(7.73\) \\
-                                                          & & rk3\_step & \(3.75\) \\
-                                                          & & project\_to\_faces & \(1.35\) \\
-                                                          & & boundary\_conditions & \(0.37\) \\
-                                                          & & compute\_fluxes & \(0.35\) \\
-                                                          & & mpi\_interfaces & \(0.2\) \\
-                                                          & & reduce\_delta\_t & \(<0.1\) \\
+        \multirow{9}{*}{Solver}             & \multirow{9}{*}{\(59.7\)} & compute\_derivative      & \(26.68\)            \\
+                                            &                           & project\_to\_elements    & \(19.2\)             \\
+                                            &                           & interpolate\_to\_edges   & \(7.73\)             \\
+                                            &                           & rk3\_step                & \(3.75\)             \\
+                                            &                           & project\_to\_faces       & \(1.35\)             \\
+                                            &                           & boundary\_conditions     & \(0.37\)             \\
+                                            &                           & compute\_fluxes          & \(0.35\)             \\
+                                            &                           & mpi\_interfaces          & \(0.2\)              \\
+                                            &                           & reduce\_delta\_t         & \(<0.1\)             \\
         \midrule
-        \multirow{6}{*}{\Acrshort{acr:AMR}} & \multirow{6}{*}{\(38.5\)} & hp\_adapt & \(32.43\) \\
-                                                                      & & split\_faces & \(2.63\) \\
-                                                                      & & split\_mpi\_interfaces & \(2.55\) \\
-                                                                      & & split\_boundaries & \(0.65\) \\
-                                                                      & & p\_adapt & \(0.15\) \\
-                                                                      & & estimate\_error & \(<0.1\) \\
+        \multirow{6}{*}{\Acrshort{acr:AMR}} & \multirow{6}{*}{\(38.5\)} & hp\_adapt                & \(32.43\)            \\
+                                            &                           & split\_faces             & \(2.63\)             \\
+                                            &                           & split\_mpi\_interfaces   & \(2.55\)             \\
+                                            &                           & split\_boundaries        & \(0.65\)             \\
+                                            &                           & p\_adapt                 & \(0.15\)             \\
+                                            &                           & estimate\_error          & \(<0.1\)             \\
         \midrule
-        \multirow{3}{*}{Load balancing} & \multirow{3}{*}{\(1.4\)} & fill\_received\_elements & \(1.22\) \\
-                                                                 & & create\_mpi\_boundaries & \(0.12\) \\
-                                                                 & & create\_neighbours & \(<0.1\) \\
+        \multirow{3}{*}{Load balancing}     & \multirow{3}{*}{\(1.4\)}  & fill\_received\_elements & \(1.22\)             \\
+                                            &                           & create\_mpi\_boundaries  & \(0.12\)             \\
+                                            &                           & create\_neighbours       & \(<0.1\)             \\
         \midrule
-        \multirow{1}{*}{Other} & \multirow{1}{*}{\(0.7\)} & empty\_device\_vector & \(0.73\) \\
+        \multirow{1}{*}{Other}              & \multirow{1}{*}{\(0.7\)}  & empty\_device\_vector    & \(0.73\)             \\
     \end{tabular}
     \caption{Program profiling: The relative \acrshort{acr:GPU} computation time spent in the three main modules, along with specific kernels and their relative \acrshort{acr:GPU} computation time.}\label{table:profiling}
 \end{table}
